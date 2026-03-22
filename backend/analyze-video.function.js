@@ -17,7 +17,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 async function handler({ videoId }, { entities }) {
   // 1. Fetch the video record from the database
-  const videos = await entities.Video.filter({ id: videoId });
+  const videos = await entities.Video.filter({ _id: videoId });
   const video = videos[0];
   if (!video) throw new Error(`Video not found: ${videoId}`);
 

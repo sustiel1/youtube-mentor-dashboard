@@ -78,7 +78,6 @@ function buildVideoRecord(entry, mentorId, channelCfg) {
     learningStatus: "not_started",
     topicIds: channelCfg.topicIds ?? [],
     subCategory: channelCfg.subCategory ?? "",
-    presentations: [],
     // ── YouTube Data API v3 fields (not available from RSS) ──────────────────
     // TODO: after fetching https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={entry.videoId}&key={API_KEY}
     //   duration:  item.contentDetails.duration  → convert ISO 8601 (PT4M13S) to seconds or "mm:ss" string
