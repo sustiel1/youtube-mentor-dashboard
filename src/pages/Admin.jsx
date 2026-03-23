@@ -7,6 +7,8 @@ import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllChannels, CHANNEL_CONFIG } from "@/config/channelConfig";
 import { fetchChannelRSS, filterNewVideos } from "@/services/rssIngestion";
+import { base44 } from "@/api/base44Client";
+import { Video } from "@/api/entities";
 
 const CATEGORY_CONFIG = {
   AI: { label: "בינה מלאכותית", icon: Bot, color: "text-violet-600 bg-violet-50" },
@@ -415,18 +417,43 @@ function RssTab({ videos }) {
     }
   }
 
-  // Save previewed videos to Base44
+  // Save previewed videos to Base44, then enrich with duration + viewCount
   async function handleImport(mentorId) {
     const preview = statuses[mentorId]?.preview;
     if (!preview?.length) return;
     setChannelStatus(mentorId, { state: "loading" });
     try {
       let saved = 0;
+      const savedMap = []; // [{ base44Id, youtubeId }]
+
       for (const record of preview) {
         const { _videoId, _channelName, ...videoData } = record;
-        await createVideo.mutateAsync(videoData);
+        const created = await createVideo.mutateAsync(videoData);
+        if (created?.id && _videoId) {
+          savedMap.push({ base44Id: created.id, youtubeId: _videoId });
+        }
         saved++;
       }
+
+      // Enrich with duration + viewCount from YouTube API
+      if (savedMap.length > 0) {
+        try {
+          const youtubeIds = savedMap.map((v) => v.youtubeId);
+          const stats = await base44.functions.FetchVideoStats({ videoIds: youtubeIds });
+          for (const { base44Id, youtubeId } of savedMap) {
+            const s = stats?.[youtubeId];
+            if (s?.duration || s?.viewCount) {
+              await Video.update(base44Id, {
+                ...(s.duration   && { duration: s.duration }),
+                ...(s.viewCount  && { viewCount: s.viewCount }),
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[FetchVideoStats] failed:', e.message);
+        }
+      }
+
       setChannelStatus(mentorId, { state: "success", saved, skipped: statuses[mentorId]?.skipped ?? 0, preview: null });
     } catch (err) {
       setChannelStatus(mentorId, { state: "error", error: "שגיאה בשמירה — " + err.message });
