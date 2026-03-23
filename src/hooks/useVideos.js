@@ -108,6 +108,17 @@ export function useCreateVideo() {
   });
 }
 
+// Mutation: delete a video
+export function useDeleteVideo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => Video.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    },
+  });
+}
+
 // Mutation: toggle isSaved
 export function useSaveVideo() {
   const queryClient = useQueryClient();

@@ -8,7 +8,7 @@ import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { ErrorsBar } from "@/components/dashboard/ErrorsBar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics } from "@/hooks/useVideos";
+import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 
@@ -95,6 +95,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const saveVideo = useSaveVideo();
   const updateLearningStatus = useUpdateLearningStatus();
   const assignTopics = useAssignTopics();
+  const deleteVideo = useDeleteVideo();
 
   // Apply sidebar filters (search, mentor, category)
   const filteredVideos = useMemo(() => applyFilters(videos, filters), [videos, filters]);
@@ -162,6 +163,11 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
     if (selectedVideo?.id === video.id) {
       setSelectedVideo({ ...video, learningStatus: status });
     }
+  };
+
+  const handleDeleteVideo = (video) => {
+    deleteVideo.mutate(video.id);
+    if (selectedVideo?.id === video.id) setPanelOpen(false);
   };
 
   const handleRemoveTopic = (video, topicId) => {
@@ -344,6 +350,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                     topics={topics}
                     onClick={handleVideoClick}
                     onSaveToggle={handleSaveToggle}
+                    onDelete={handleDeleteVideo}
                   />
                 ))}
               </div>

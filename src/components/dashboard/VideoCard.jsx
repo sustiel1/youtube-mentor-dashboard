@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Eye, StickyNote } from "lucide-react";
+import { Eye, StickyNote, Trash2 } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { LearningStatusBadge } from "./LearningStatusBadge";
@@ -54,6 +54,7 @@ export function VideoCard({
   topics = [],
   onSaveToggle,
   onClick,
+  onDelete,
   hasNotes = false,      // האם יש הערות אישיות לסרטון זה
   noteSnippet = null,    // תוכן ההערה הראשונה (קטע קצר)
 }) {
@@ -93,11 +94,20 @@ export function VideoCard({
         />
 
         {/* Save button — פיזית שמאל עליון */}
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex items-center gap-1">
           <SaveButton
             isSaved={video.isSaved}
             onClick={() => onSaveToggle?.(video)}
           />
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(video); }}
+              className="p-1 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+              title="מחק סרטון"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         {/* "יש הערות" badge — פיזית ימין עליון (צד ראשי ב-RTL) */}
