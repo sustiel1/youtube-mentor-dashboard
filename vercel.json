@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://alluring-mind-stream-learn.base44.app/api/:path*"
+    }
+  ]
+}
