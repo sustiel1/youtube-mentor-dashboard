@@ -88,7 +88,7 @@ export function VideoDetailPanel({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="max-w-6xl w-full h-[90vh] p-0 overflow-hidden flex flex-col"
+        className="max-w-[96vw] w-[96vw] h-[94vh] p-0 overflow-hidden flex flex-col"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>{video.title}</DialogTitle>
