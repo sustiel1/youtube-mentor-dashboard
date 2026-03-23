@@ -439,7 +439,7 @@ function RssTab({ videos }) {
       if (savedMap.length > 0) {
         try {
           const youtubeIds = savedMap.map((v) => v.youtubeId);
-          const stats = await base44.functions.invoke('fetchVideoStats', { videoIds: youtubeIds });
+          const stats = await base44.functions.fetchVideoStats({ videoIds: youtubeIds });
           for (const { base44Id, youtubeId } of savedMap) {
             const s = stats?.[youtubeId];
             if (s?.duration || s?.viewCount) {

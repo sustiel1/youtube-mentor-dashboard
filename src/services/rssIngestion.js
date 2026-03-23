@@ -94,7 +94,7 @@ function buildVideoRecord(entry, mentorId, channelCfg) {
 async function fetchRssXml(channelId, channelName) {
   // 1. Try Base44 backend function (works in both dev and production)
   try {
-    const result = await base44.functions.FetchRSS({ channelId });
+    const result = await base44.functions.fetchRSS({ channelId });
     if (result?.xml) {
       console.info(`[RSS] ${channelName}: fetched via Base44 backend`);
       return result.xml;
