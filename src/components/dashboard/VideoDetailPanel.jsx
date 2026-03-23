@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X } from "lucide-react";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -85,32 +85,23 @@ export function VideoDetailPanel({
     .filter(Boolean);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="left"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
         dir="rtl"
-        className="w-full sm:max-w-lg p-0 overflow-hidden"
+        className="max-w-6xl w-full h-[90vh] p-0 overflow-hidden flex flex-col"
       >
-        <ScrollArea className="h-full">
-          <div className="p-5 space-y-4">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{video.title}</DialogTitle>
+          <DialogDescription>פרטי סרטון</DialogDescription>
+        </DialogHeader>
 
-            {/* 1. כותרת + שמירה */}
-            <SheetHeader className="text-right space-y-0 pb-0">
-              <div className="flex items-start gap-3 flex-row-reverse">
-                <SheetTitle className="flex-1 text-right text-base font-bold leading-snug text-gray-900">
-                  {video.title}
-                </SheetTitle>
-                <SaveButton
-                  isSaved={video.isSaved}
-                  onClick={() => onSaveToggle?.(video)}
-                  size="md"
-                />
-              </div>
-              <SheetDescription className="sr-only">פרטי סרטון</SheetDescription>
-            </SheetHeader>
+        <div className="flex flex-1 overflow-hidden">
 
-            {/* 2. תמונה */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100">
+          {/* ── עמודה שמאל: תמונה + מטא ── */}
+          <div className="w-[42%] shrink-0 border-l border-gray-100 flex flex-col bg-gray-50">
+
+            {/* תמונה */}
+            <div className="relative aspect-video bg-black shrink-0">
               <img
                 src={video.thumbnail}
                 alt={video.title}
@@ -123,216 +114,222 @@ export function VideoDetailPanel({
                 className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity"
               >
                 <div className="bg-white/90 rounded-full p-3">
-                  <ExternalLink className="h-5 w-5 text-gray-800" />
+                  <ExternalLink className="h-6 w-6 text-gray-800" />
                 </div>
               </a>
             </div>
 
-            {/* 3. מנטור + תאריך + תגיות סטטוס */}
-            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2.5">
-              {/* מנטור ותאריך */}
-              <div className="flex items-center gap-3 flex-row-reverse">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shrink-0">
-                  {mentorName?.charAt(0)?.toUpperCase() || "?"}
+            <ScrollArea className="flex-1">
+              <div className="p-5 space-y-4">
+
+                {/* כותרת + שמירה */}
+                <div className="flex items-start gap-3 flex-row-reverse">
+                  <h2 className="flex-1 text-right text-base font-bold leading-snug text-gray-900">
+                    {video.title}
+                  </h2>
+                  <SaveButton
+                    isSaved={video.isSaved}
+                    onClick={() => onSaveToggle?.(video)}
+                    size="md"
+                  />
                 </div>
-                <div className="flex-1 text-right">
-                  <p className="text-sm font-semibold text-gray-900">{mentorName}</p>
-                  <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
-                    <p className="text-xs text-gray-500">{publishDate}</p>
-                    {viewCountFormatted && (
-                      <p className="text-xs text-gray-400 flex items-center gap-1 flex-row-reverse">
-                        <Eye className="h-3 w-3" />
-                        {viewCountFormatted}
-                      </p>
-                    )}
+
+                {/* מנטור + תאריך + צפיות */}
+                <div className="bg-white rounded-xl px-4 py-3 space-y-2.5 border border-gray-100">
+                  <div className="flex items-center gap-3 flex-row-reverse">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shrink-0">
+                      {mentorName?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div className="flex-1 text-right">
+                      <p className="text-sm font-semibold text-gray-900">{mentorName}</p>
+                      <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
+                        <p className="text-xs text-gray-500">{publishDate}</p>
+                        {viewCountFormatted && (
+                          <p className="text-xs text-gray-400 flex items-center gap-1 flex-row-reverse">
+                            <Eye className="h-3 w-3" />
+                            {viewCountFormatted}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-row-reverse">
+                    <CategoryBadge category={video.category} />
+                    <StatusBadge status={video.status} />
+                    <LearningStatusBadge status={video.learningStatus} />
                   </div>
                 </div>
-              </div>
 
-              {/* תגיות */}
-              <div className="flex items-center gap-2 flex-row-reverse">
-                <CategoryBadge category={video.category} />
-                <StatusBadge status={video.status} />
-                <LearningStatusBadge status={video.learningStatus} />
-              </div>
-            </div>
-
-            {/* 4. סטטוס למידה */}
-            <div className="flex items-center gap-3 flex-row-reverse bg-white rounded-xl border border-gray-100 px-4 py-3">
-              <span className="text-sm font-medium text-gray-700 shrink-0">סטטוס למידה:</span>
-              <Select
-                value={video.learningStatus || "not_started"}
-                onValueChange={(val) => onLearningStatusChange?.(video, val)}
-              >
-                <SelectTrigger
-                  className="h-8 text-xs bg-gray-50 border-gray-200 flex-1 max-w-[160px]"
-                  dir="rtl"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  {LEARNING_STATUSES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 5. נושאים — משקל ויזואלי נמוך, מוזגים לשורת מטא */}
-            {videoTopics.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 flex-row-reverse">
-                {videoTopics.map((topic) => (
-                  <span
-                    key={topic.id}
-                    className="inline-flex items-center gap-1 text-[11px] text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5"
+                {/* סטטוס למידה */}
+                <div className="flex items-center gap-3 flex-row-reverse bg-white rounded-xl border border-gray-100 px-4 py-3">
+                  <span className="text-sm font-medium text-gray-700 shrink-0">סטטוס למידה:</span>
+                  <Select
+                    value={video.learningStatus || "not_started"}
+                    onValueChange={(val) => onLearningStatusChange?.(video, val)}
                   >
-                    #{topic.name}
-                    {onRemoveTopic && (
-                      <button
-                        onClick={() => onRemoveTopic(video, topic.id)}
-                        className="hover:text-gray-600 leading-none"
-                        aria-label={`הסר ${topic.name}`}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* 6. שגיאה (אם קיימת) */}
-            {video.status === "error" && video.errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-right">
-                <p className="text-sm text-red-700">{video.errorMessage}</p>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* 7. טאבים */}
-            <Tabs defaultValue="summary" className="w-full" dir="rtl">
-              <TabsList className="w-full grid grid-cols-4 h-9">
-                <TabsTrigger value="summary" className="text-xs">סיכום</TabsTrigger>
-                <TabsTrigger value="keypoints" className="text-xs">נקודות מפתח</TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs">הערות</TabsTrigger>
-                <TabsTrigger value="transcript" className="text-xs">תמליל</TabsTrigger>
-              </TabsList>
-
-              {/* סיכום */}
-              <TabsContent value="summary" className="mt-4 space-y-4">
-                {video.shortSummary ? (
-                  <>
-                    <div className="text-right">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום קצר</h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">{video.shortSummary}</p>
-                    </div>
-                    {video.fullSummary && (
-                      <div className="text-right">
-                        <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום מלא</h4>
-                        <p className="text-sm text-gray-600 leading-relaxed">{video.fullSummary}</p>
-                      </div>
-                    )}
-                    <button
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
-                    >
-                      {isAnalyzing
-                        ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                        : <Sparkles className="h-3.5 w-3.5" />
-                      }
-                      {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
-                    </button>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center gap-4 py-5 text-center">
-                    <div className="p-3 bg-indigo-50 rounded-xl">
-                      <Sparkles className="h-6 w-6 text-indigo-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">הסרטון טרם נותח</p>
-                      <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                        ניתוח AI יפיק סיכום, נקודות מפתח ותגיות
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm"
-                    >
-                      {isAnalyzing
-                        ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                        : <Sparkles className="h-4 w-4" />
-                      }
-                      {isAnalyzing ? "מנתח..." : "נתח עם AI"}
-                    </button>
-                    {analyzeError && (
-                      <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">
-                        {analyzeError}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* נקודות מפתח */}
-              <TabsContent value="keypoints" className="mt-4 space-y-4">
-                {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <ul className="space-y-2.5">
-                    {video.keyPoints.map((point, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700 text-right"
-                      >
-                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                        <span className="leading-relaxed">{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-400 text-right py-6">אין נקודות מפתח זמינות</p>
-                )}
-
-                {video.tags && video.tags.length > 0 && (
-                  <div className="text-right">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">תגיות</h4>
-                    <div className="flex flex-wrap gap-2 flex-row-reverse">
-                      {video.tags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700"
-                        >
-                          {tag}
-                        </span>
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 flex-1 max-w-[160px]" dir="rtl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      {LEARNING_STATUSES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                       ))}
-                    </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* נושאים */}
+                {videoTopics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 flex-row-reverse">
+                    {videoTopics.map((topic) => (
+                      <span
+                        key={topic.id}
+                        className="inline-flex items-center gap-1 text-[11px] text-gray-400 bg-white border border-gray-100 rounded-full px-2 py-0.5"
+                      >
+                        #{topic.name}
+                        {onRemoveTopic && (
+                          <button
+                            onClick={() => onRemoveTopic(video, topic.id)}
+                            className="hover:text-gray-600 leading-none"
+                          >×</button>
+                        )}
+                      </span>
+                    ))}
                   </div>
                 )}
-              </TabsContent>
 
-              {/* הערות */}
-              <TabsContent value="notes" className="mt-4">
-                <NoteEditor videoId={video.id} />
-              </TabsContent>
-
-              {/* תמליל */}
-              <TabsContent value="transcript" className="mt-4">
-                {video.transcript ? (
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap text-right">
-                    {video.transcript}
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-400 text-right py-6">אין תמליל זמין</p>
+                {/* שגיאה */}
+                {video.status === "error" && video.errorMessage && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-right">
+                    <p className="text-sm text-red-700">{video.errorMessage}</p>
+                  </div>
                 )}
-              </TabsContent>
-            </Tabs>
 
+              </div>
+            </ScrollArea>
           </div>
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+
+          {/* ── עמודה ימין: טאבים ── */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Tabs defaultValue="summary" className="flex flex-col h-full" dir="rtl">
+              <div className="px-5 pt-4 pb-0 border-b border-gray-100">
+                <TabsList className="w-full grid grid-cols-4 h-9">
+                  <TabsTrigger value="summary" className="text-xs">סיכום</TabsTrigger>
+                  <TabsTrigger value="keypoints" className="text-xs">נקודות מפתח</TabsTrigger>
+                  <TabsTrigger value="notes" className="text-xs">הערות</TabsTrigger>
+                  <TabsTrigger value="transcript" className="text-xs">תמליל</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="p-5">
+
+                  {/* סיכום */}
+                  <TabsContent value="summary" className="mt-0 space-y-4">
+                    {video.shortSummary ? (
+                      <>
+                        <div className="text-right">
+                          <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום קצר</h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">{video.shortSummary}</p>
+                        </div>
+                        {video.fullSummary && (
+                          <div className="text-right">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום מלא</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">{video.fullSummary}</p>
+                          </div>
+                        )}
+                        <button
+                          onClick={handleAnalyze}
+                          disabled={isAnalyzing}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+                        >
+                          {isAnalyzing
+                            ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            : <Sparkles className="h-3.5 w-3.5" />}
+                          {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 py-10 text-center">
+                        <div className="p-3 bg-indigo-50 rounded-xl">
+                          <Sparkles className="h-6 w-6 text-indigo-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">הסרטון טרם נותח</p>
+                          <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                            ניתוח AI יפיק סיכום, נקודות מפתח ותגיות
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleAnalyze}
+                          disabled={isAnalyzing}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm"
+                        >
+                          {isAnalyzing
+                            ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                            : <Sparkles className="h-4 w-4" />}
+                          {isAnalyzing ? "מנתח..." : "נתח עם AI"}
+                        </button>
+                        {analyzeError && (
+                          <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">
+                            {analyzeError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* נקודות מפתח */}
+                  <TabsContent value="keypoints" className="mt-0 space-y-4">
+                    {video.keyPoints && video.keyPoints.length > 0 ? (
+                      <ul className="space-y-2.5">
+                        {video.keyPoints.map((point, i) => (
+                          <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700 text-right">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                            <span className="leading-relaxed">{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-400 text-right py-6">אין נקודות מפתח זמינות</p>
+                    )}
+                    {video.tags && video.tags.length > 0 && (
+                      <div className="text-right">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-2">תגיות</h4>
+                        <div className="flex flex-wrap gap-2 flex-row-reverse">
+                          {video.tags.map((tag, i) => (
+                            <span key={i} className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* הערות */}
+                  <TabsContent value="notes" className="mt-0">
+                    <NoteEditor videoId={video.id} />
+                  </TabsContent>
+
+                  {/* תמליל */}
+                  <TabsContent value="transcript" className="mt-0">
+                    {video.transcript ? (
+                      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap text-right">
+                        {video.transcript}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-400 text-right py-6">אין תמליל זמין</p>
+                    )}
+                  </TabsContent>
+
+                </div>
+              </ScrollArea>
+            </Tabs>
+          </div>
+
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
