@@ -144,7 +144,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   }, [selectedVideo, mentors]);
 
   const getMentorName = (mentorId) =>
-    mentors.find((m) => m.id === mentorId)?.name || "לא ידוע";
+    mentors.find((m) => m.id === mentorId)?.name || "";
 
   const handleVideoClick = (video) => {
     setSelectedVideo(video);

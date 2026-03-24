@@ -33,7 +33,7 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
       });
   }, [videos, filters]);
 
-  const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "לא ידוע";
+  const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "";
 
   const selectedMentorName = useMemo(() => {
     if (!selectedVideo) return "";

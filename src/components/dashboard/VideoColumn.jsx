@@ -25,7 +25,7 @@ export function VideoColumn({ status, videos, mentors, topics, onVideoClick, onS
 
   const getMentorName = (mentorId) => {
     const mentor = mentors.find((m) => m.id === mentorId);
-    return mentor?.name || "לא ידוע";
+    return mentor?.name || "";
   };
 
   return (

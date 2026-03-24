@@ -7,7 +7,7 @@ export function ErrorsBar({ errorVideos, mentors, onVideoClick }) {
   if (!errorVideos || errorVideos.length === 0) return null;
 
   const getMentorName = (mentorId) =>
-    mentors.find((m) => m.id === mentorId)?.name || "לא ידוע";
+    mentors.find((m) => m.id === mentorId)?.name || "";
 
   // Show max 3 when collapsed
   const visible = expanded ? errorVideos : errorVideos.slice(0, 3);

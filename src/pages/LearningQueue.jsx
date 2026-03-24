@@ -57,7 +57,7 @@ export default function LearningQueue() {
 
   const isLoading = videosLoading || mentorsLoading;
 
-  const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "לא ידוע";
+  const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "";
 
   const selectedMentorName = useMemo(() => {
     if (!selectedVideo) return "";
