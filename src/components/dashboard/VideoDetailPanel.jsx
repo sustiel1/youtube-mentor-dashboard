@@ -95,7 +95,7 @@ export function VideoDetailPanel({
           <div className="max-w-3xl mx-auto p-6 space-y-5">
 
             {/* תמונה */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100">
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 max-w-[680px] mx-auto">
               <img
                 src={video.thumbnail}
                 alt={video.title}
@@ -132,14 +132,14 @@ export function VideoDetailPanel({
                 <div className="flex-1 text-right">
                   {mentorName && <p className="text-sm font-semibold text-gray-900">{mentorName}</p>}
                   <div className="flex items-center gap-3 flex-row-reverse flex-wrap">
-                    <p className="text-xs text-gray-500">{publishDate}</p>
+                    <p className="text-xs text-gray-600">{publishDate}</p>
                     {viewCountFormatted && (
-                      <p className="text-xs text-gray-400 flex items-center gap-1 flex-row-reverse">
+                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-row-reverse">
                         <Eye className="h-3 w-3" />{viewCountFormatted}
                       </p>
                     )}
                     {video.duration && (
-                      <p className="text-xs text-gray-400 flex items-center gap-1 flex-row-reverse">
+                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-row-reverse">
                         <Clock className="h-3 w-3" />{video.duration}
                       </p>
                     )}
@@ -194,14 +194,14 @@ export function VideoDetailPanel({
 
             {/* טאבים */}
             <Tabs defaultValue="summary" className="w-full" dir="rtl">
-              <TabsList className="w-full grid grid-cols-4 h-9">
-                <TabsTrigger value="summary" className="text-xs">סיכום</TabsTrigger>
-                <TabsTrigger value="keypoints" className="text-xs">נקודות מפתח</TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs">הערות</TabsTrigger>
-                <TabsTrigger value="chapters" className="text-xs">פרקי הסרטון</TabsTrigger>
+              <TabsList className="h-9 flex w-fit mx-auto">
+                <TabsTrigger value="summary" className="text-xs px-4">סיכום</TabsTrigger>
+                <TabsTrigger value="keypoints" className="text-xs px-4">נקודות מפתח</TabsTrigger>
+                <TabsTrigger value="notes" className="text-xs px-4">הערות</TabsTrigger>
+                <TabsTrigger value="chapters" className="text-xs px-4">פרקי הסרטון</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="summary" className="mt-4 space-y-4">
+              <TabsContent value="summary" className="mt-4 space-y-5 min-h-[220px]">
                 {(() => {
                   const hasData = video.shortSummary || video.fullSummary || (video.keyPoints && video.keyPoints.length > 0);
                   if (hasData) {
@@ -209,14 +209,14 @@ export function VideoDetailPanel({
                       <>
                         {video.shortSummary && (
                           <div className="text-right">
-                            <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום קצר</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{video.shortSummary}</p>
+                            <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום קצר</h4>
+                            <p className="text-sm text-gray-800 leading-7">{video.shortSummary}</p>
                           </div>
                         )}
                         {video.fullSummary && (
                           <div className="text-right">
-                            <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום מלא</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{video.fullSummary}</p>
+                            <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום מלא</h4>
+                            <p className="text-sm text-gray-800 leading-7">{video.fullSummary}</p>
                           </div>
                         )}
                         {!video.shortSummary && !video.fullSummary && video.keyPoints?.length > 0 && (
@@ -261,18 +261,18 @@ export function VideoDetailPanel({
                 })()}
               </TabsContent>
 
-              <TabsContent value="keypoints" className="mt-4 space-y-4" dir="rtl">
+              <TabsContent value="keypoints" className="mt-4 space-y-4 min-h-[220px]" dir="rtl">
                 {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <ul className="space-y-2.5 text-right">
+                  <ul className="space-y-3 text-right">
                     {video.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700">
-                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                        <span className="leading-relaxed">{point}</span>
+                      <li key={i} className="flex items-start gap-3 flex-row-reverse text-sm text-gray-800">
+                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                        <span className="leading-7">{point}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-400 text-right py-6">אין נקודות מפתח זמינות</p>
+                  <p className="text-sm text-gray-500 text-right py-6">אין נקודות מפתח זמינות</p>
                 )}
                 {video.tags && video.tags.length > 0 && (
                   <div className="text-right">
@@ -286,11 +286,11 @@ export function VideoDetailPanel({
                 )}
               </TabsContent>
 
-              <TabsContent value="notes" className="mt-4">
+              <TabsContent value="notes" className="mt-4 min-h-[220px]">
                 <NoteEditor videoId={video.id} />
               </TabsContent>
 
-              <TabsContent value="chapters" className="mt-4" dir="rtl">
+              <TabsContent value="chapters" className="mt-4 min-h-[220px]" dir="rtl">
                 {video.videoTopics?.length > 0 ? (
                   <ul className="space-y-1">
                     {video.videoTopics.map((chapter, i) => {
@@ -317,7 +317,7 @@ export function VideoDetailPanel({
                 ) : (
                   <div className="py-10 text-center">
                     <p className="text-sm text-gray-400">עדיין לא נוצרה חלוקה לפי נושאים</p>
-                    <p className="text-xs text-gray-300 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
+                    <p className="text-xs text-gray-400 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
                   </div>
                 )}
               </TabsContent>
