@@ -1,17 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
-import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, GripVertical, ChevronsUp } from "lucide-react";
+import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
 import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext, sortableKeyboardCoordinates, useSortable,
-  verticalListSortingStrategy, arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllChannels, CHANNEL_CONFIG } from "@/config/channelConfig";
@@ -478,24 +470,29 @@ function applyStoredOrder(topics) {
   return [...sorted, ...newOnes];
 }
 
-// Sortable row for DnD
-function SortableTopicRow({ topic, videoCount, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+// Topic row with up/down/top ordering buttons (no external DnD library)
+function TopicRow({ topic, videoCount, isFirst, isLast, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop, onMoveUp, onMoveDown }) {
   const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
   const emoji = TOPIC_EMOJI[topic.name];
 
   return (
-    <tr ref={setNodeRef} style={style} className="border-b border-gray-50 last:border-0 bg-white">
-      {/* Drag handle */}
-      <td className="pl-3 pr-1 py-3 w-8">
-        <button
-          {...attributes} {...listeners}
-          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-0.5 rounded touch-none"
-          title="גרור לשינוי סדר"
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+    <tr className="border-b border-gray-50 last:border-0 bg-white">
+      {/* Order buttons */}
+      <td className="pl-3 pr-1 py-3 w-16">
+        <div className="flex items-center gap-0.5">
+          <button onClick={() => onMoveToTop(topic.id)} disabled={isFirst} title="לראש הרשימה"
+            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-20 transition-colors">
+            <ChevronsUp className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onMoveUp(topic.id)} disabled={isFirst} title="למעלה"
+            className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-colors">
+            <ChevronUp className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onMoveDown(topic.id)} disabled={isLast} title="למטה"
+            className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-colors">
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </td>
       {/* Name + emoji */}
       <td className="px-3 py-3">
@@ -529,9 +526,6 @@ function SortableTopicRow({ topic, videoCount, deletingId, onEdit, onDelete, onC
           </div>
         ) : (
           <div className="flex items-center justify-end gap-0.5">
-            <button onClick={() => onMoveToTop(topic.id)} title="העבר לראש הרשימה" className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
-              <ChevronsUp className="h-3.5 w-3.5" />
-            </button>
             <button onClick={() => onEdit(topic)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -639,17 +633,23 @@ function TopicsTab({ topics, videos }) {
     });
   }, [topics]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  function handleDragEnd({ active, over }) {
-    if (!over || active.id === over.id) return;
+  function handleMoveUp(id) {
     setOrderedTopics((prev) => {
-      const oldIndex = prev.findIndex((t) => t.id === active.id);
-      const newIndex = prev.findIndex((t) => t.id === over.id);
-      const next = arrayMove(prev, oldIndex, newIndex);
+      const i = prev.findIndex((t) => t.id === id);
+      if (i <= 0) return prev;
+      const next = [...prev];
+      [next[i - 1], next[i]] = [next[i], next[i - 1]];
+      saveOrder(next.map((t) => t.id));
+      return next;
+    });
+  }
+
+  function handleMoveDown(id) {
+    setOrderedTopics((prev) => {
+      const i = prev.findIndex((t) => t.id === id);
+      if (i >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[i], next[i + 1]] = [next[i + 1], next[i]];
       saveOrder(next.map((t) => t.id));
       return next;
     });
@@ -682,7 +682,7 @@ function TopicsTab({ topics, videos }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-semibold text-gray-800">נושאים ({orderedTopics.length})</h2>
-          <p className="text-xs text-gray-400 mt-0.5">גרור את ⠿ לשינוי סדר — הסדר נשמר בדפדפן</p>
+          <p className="text-xs text-gray-400 mt-0.5">השתמש בחצים לשינוי סדר — הסדר נשמר בדפדפן</p>
         </div>
       </div>
 
@@ -692,37 +692,37 @@ function TopicsTab({ topics, videos }) {
           <p className="text-xs text-gray-300 mt-1">הוסף נושא כדי לארגן סרטונים</p>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={orderedTopics.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-right">
-                    <th className="w-8 px-2 py-3" />
-                    <th className="px-3 py-3 text-gray-500 font-medium">נושא</th>
-                    <th className="px-3 py-3 text-gray-500 font-medium">תיאור</th>
-                    <th className="px-3 py-3 text-gray-500 font-medium">סרטונים</th>
-                    <th className="px-3 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderedTopics.map((topic) => (
-                    <SortableTopicRow
-                      key={topic.id}
-                      topic={topic}
-                      videoCount={getVideoCount(topic.id)}
-                      deletingId={deletingId}
-                      onEdit={setEditingTopic}
-                      onDelete={handleDelete}
-                      onCancelDelete={() => setDeletingId(null)}
-                      onMoveToTop={handleMoveToTop}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="border border-gray-100 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 text-right">
+                <th className="w-16 px-2 py-3" />
+                <th className="px-3 py-3 text-gray-500 font-medium">נושא</th>
+                <th className="px-3 py-3 text-gray-500 font-medium">תיאור</th>
+                <th className="px-3 py-3 text-gray-500 font-medium">סרטונים</th>
+                <th className="px-3 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {orderedTopics.map((topic, i) => (
+                <TopicRow
+                  key={topic.id}
+                  topic={topic}
+                  videoCount={getVideoCount(topic.id)}
+                  isFirst={i === 0}
+                  isLast={i === orderedTopics.length - 1}
+                  deletingId={deletingId}
+                  onEdit={setEditingTopic}
+                  onDelete={handleDelete}
+                  onCancelDelete={() => setDeletingId(null)}
+                  onMoveToTop={handleMoveToTop}
+                  onMoveUp={handleMoveUp}
+                  onMoveDown={handleMoveDown}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {editingTopic && (
