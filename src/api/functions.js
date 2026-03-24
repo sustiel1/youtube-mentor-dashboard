@@ -12,7 +12,7 @@ import { base44 } from './base44Client';
  * Analyze a video using Gemini AI.
  *
  * @param {{ videoId: string, title: string, description?: string, keyPoints?: string[] }} params
- * @returns {Promise<{ shortSummary: string, fullSummary: string, keyPoints: string[], tags: string[] }>}
+ * @returns {Promise<{ shortSummary: string, fullSummary: string, keyPoints: string[], tags: string[], videoTopics: {title:string, timestampSeconds:number, timestampLabel:string}[] }>}
  */
 export async function analyzeVideoWithAI({ videoId, title, description = '', keyPoints = [] }) {
 

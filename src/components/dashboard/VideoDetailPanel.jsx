@@ -198,7 +198,7 @@ export function VideoDetailPanel({
                 <TabsTrigger value="summary" className="text-xs">סיכום</TabsTrigger>
                 <TabsTrigger value="keypoints" className="text-xs">נקודות מפתח</TabsTrigger>
                 <TabsTrigger value="notes" className="text-xs">הערות</TabsTrigger>
-                <TabsTrigger value="transcript" className="text-xs">תמליל</TabsTrigger>
+                <TabsTrigger value="chapters" className="text-xs">פרקי הסרטון</TabsTrigger>
               </TabsList>
 
               <TabsContent value="summary" className="mt-4 space-y-4">
@@ -290,11 +290,35 @@ export function VideoDetailPanel({
                 <NoteEditor videoId={video.id} />
               </TabsContent>
 
-              <TabsContent value="transcript" className="mt-4">
-                {video.transcript ? (
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap text-right">{video.transcript}</p>
+              <TabsContent value="chapters" className="mt-4" dir="rtl">
+                {video.videoTopics?.length > 0 ? (
+                  <ul className="space-y-1">
+                    {video.videoTopics.map((chapter, i) => {
+                      const url = video.url
+                        ? `${video.url}${video.url.includes('?') ? '&' : '?'}t=${chapter.timestampSeconds}s`
+                        : null;
+                      return (
+                        <li key={i}>
+                          <a
+                            href={url || '#'}
+                            target={url ? '_blank' : undefined}
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 flex-row-reverse px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                          >
+                            <span className="text-xs font-mono text-indigo-500 shrink-0 group-hover:text-indigo-700">
+                              {chapter.timestampLabel || `${Math.floor(chapter.timestampSeconds / 60)}:${String(chapter.timestampSeconds % 60).padStart(2, '0')}`}
+                            </span>
+                            <span className="flex-1 text-sm text-gray-700 text-right leading-snug">{chapter.title}</span>
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 ) : (
-                  <p className="text-sm text-gray-400 text-right py-6">אין תמליל זמין</p>
+                  <div className="py-10 text-center">
+                    <p className="text-sm text-gray-400">עדיין לא נוצרה חלוקה לפי נושאים</p>
+                    <p className="text-xs text-gray-300 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
+                  </div>
                 )}
               </TabsContent>
             </Tabs>

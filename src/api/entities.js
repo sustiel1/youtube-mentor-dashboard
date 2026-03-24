@@ -9,7 +9,7 @@
 //                  transcript, shortSummary, fullSummary, keyPoints[], tags[],
 //                  status (new/processing/done/error), errorMessage,
 //                  isSaved, learningStatus (not_started/in_progress/learned/to_review/completed),
-//                  topicIds[] }
+//                  topicIds[], videoTopics[] (JSON: {title, timestampSeconds, timestampLabel, summary?}) }
 // ProcessingJob: { videoId, status (pending/running/completed/failed),
 //                  errorMessage, startedAt, finishedAt }
 // Topic:         { name, description, color, icon, createdAt }
