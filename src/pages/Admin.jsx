@@ -1,9 +1,17 @@
-import { useState, useCallback } from "react";
-import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, GripVertical, ChevronsUp } from "lucide-react";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
-import { useTopics } from "@/hooks/useTopics";
+import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable,
+  verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllChannels, CHANNEL_CONFIG } from "@/config/channelConfig";
@@ -432,78 +440,293 @@ const TOPIC_COLOR_MAP = {
   amber: "bg-amber-100 text-amber-700",
 };
 
+// Emoji map by topic name
+const TOPIC_EMOJI = {
+  "מוזיקה":              "🎶",
+  "מנופים":              "🏗️",
+  "סוכר":                "🍬",
+  "בריאות":              "🏥",
+  "פוליטיקה":            "🏛️",
+  "פוליטיקה ותוכן ישר":  "🏛️",
+  "אוכל ובישול":         "🍳",
+  "אוכל":                "🍳",
+  "אוטומציה":            "⚙️",
+  "בינה מלאכותית":       "🤖",
+  "שוק ההון":            "📈",
+  "פיתוח תוכנה":         "💻",
+  "מסחר":                "📊",
+  "השקעות":              "💰",
+  "ניתוח טכני":          "📉",
+  "ניתוח פונדמנטלי":     "🔍",
+  "מניות":               "📋",
+  "כלים וטכנולוגיות":    "🔧",
+  "בניית אפליקציות":     "📱",
+  "שיווק דיגיטלי":       "📣",
+  "פודקאסטים":           "🎙️",
+};
+
+// LocalStorage helpers for topic order (client-side persistence)
+const ORDER_KEY = "ym_topic_order";
+function loadOrder() { try { return JSON.parse(localStorage.getItem(ORDER_KEY)); } catch { return null; } }
+function saveOrder(ids) { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); }
+function applyStoredOrder(topics) {
+  const stored = loadOrder();
+  if (!stored || !stored.length) return topics;
+  const map = Object.fromEntries(topics.map((t) => [t.id, t]));
+  const sorted = stored.map((id) => map[id]).filter(Boolean);
+  const newOnes = topics.filter((t) => !stored.includes(t.id));
+  return [...sorted, ...newOnes];
+}
+
+// Sortable row for DnD
+function SortableTopicRow({ topic, videoCount, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
+  const emoji = TOPIC_EMOJI[topic.name];
+
+  return (
+    <tr ref={setNodeRef} style={style} className="border-b border-gray-50 last:border-0 bg-white">
+      {/* Drag handle */}
+      <td className="pl-3 pr-1 py-3 w-8">
+        <button
+          {...attributes} {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-0.5 rounded touch-none"
+          title="גרור לשינוי סדר"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </td>
+      {/* Name + emoji */}
+      <td className="px-3 py-3">
+        <div className="flex items-center gap-2">
+          <span className={`w-6 h-6 rounded flex items-center justify-center text-sm leading-none shrink-0 ${colorClass}`}>
+            {emoji || <Hash className="h-3.5 w-3.5" />}
+          </span>
+          <div>
+            <span className="font-medium text-gray-800">{topic.name}</span>
+            {!topic.parentId && (
+              <span className="mr-1.5 text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">ראשי</span>
+            )}
+          </div>
+        </div>
+      </td>
+      {/* Description */}
+      <td className="px-3 py-3 max-w-[200px]">
+        <span className="text-xs text-gray-500 line-clamp-2">{topic.description}</span>
+      </td>
+      {/* Videos count */}
+      <td className="px-3 py-3">
+        <span className="text-sm font-medium text-gray-700">{videoCount}</span>
+      </td>
+      {/* Actions */}
+      <td className="px-3 py-3">
+        {deletingId === topic.id ? (
+          <div className="flex items-center justify-end gap-1.5">
+            <span className="text-xs text-red-600">למחוק?</span>
+            <button onClick={() => onDelete(topic.id)} className="text-xs px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">מחק</button>
+            <button onClick={onCancelDelete} className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition-colors">בטל</button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-0.5">
+            <button onClick={() => onMoveToTop(topic.id)} title="העבר לראש הרשימה" className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+              <ChevronsUp className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => onEdit(topic)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => onDelete(topic.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+// Dialog לעריכת נושא
+function EditTopicDialog({ topic, onClose }) {
+  const updateTopic = useUpdateTopic();
+  const [form, setForm] = useState({
+    name:           topic.name || "",
+    description:    topic.description || "",
+    color:          topic.color || "violet",
+    isMainCategory: topic.isMainCategory ?? false,
+  });
+
+  const colorOptions = ["violet", "cyan", "blue", "emerald", "rose", "amber", "orange"];
+
+  function handleSave() {
+    updateTopic.mutate({ id: topic.id, ...form }, { onSuccess: onClose });
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>עריכת נושא</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">שם</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">תיאור</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">צבע</label>
+            <div className="flex gap-2 flex-wrap">
+              {colorOptions.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setForm((p) => ({ ...p, color: c }))}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border-2 ${
+                    form.color === c ? "border-indigo-500" : "border-transparent"
+                  } ${TOPIC_COLOR_MAP[c] || TOPIC_COLOR_MAP.violet}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isMainCategory}
+              onChange={(e) => setForm((p) => ({ ...p, isMainCategory: e.target.checked }))}
+              className="rounded"
+            />
+            <span className="text-sm text-gray-700">קטגוריה ראשית</span>
+          </label>
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">בטל</button>
+            <button onClick={handleSave} disabled={updateTopic.isPending} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              {updateTopic.isPending ? "שומר..." : "שמור"}
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TopicsTab({ topics, videos }) {
+  const [orderedTopics, setOrderedTopics] = useState(() => applyStoredOrder(topics));
+  const [editingTopic, setEditingTopic]   = useState(null);
+  const [deletingId, setDeletingId]       = useState(null);
+  const deleteTopic = useDeleteTopic();
+
+  // Sync when topics change from server (new topic added, etc.)
+  useEffect(() => {
+    setOrderedTopics((prev) => {
+      const prevIds = prev.map((t) => t.id);
+      const newMap = Object.fromEntries(topics.map((t) => [t.id, t]));
+      const updated = prev.map((t) => newMap[t.id] || t);
+      const added = topics.filter((t) => !prevIds.includes(t.id));
+      return [...updated, ...added];
+    });
+  }, [topics]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function handleDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return;
+    setOrderedTopics((prev) => {
+      const oldIndex = prev.findIndex((t) => t.id === active.id);
+      const newIndex = prev.findIndex((t) => t.id === over.id);
+      const next = arrayMove(prev, oldIndex, newIndex);
+      saveOrder(next.map((t) => t.id));
+      return next;
+    });
+  }
+
+  function handleMoveToTop(id) {
+    setOrderedTopics((prev) => {
+      const i = prev.findIndex((t) => t.id === id);
+      if (i <= 0) return prev;
+      const next = [prev[i], ...prev.slice(0, i), ...prev.slice(i + 1)];
+      saveOrder(next.map((t) => t.id));
+      return next;
+    });
+  }
+
+  function handleDelete(id) {
+    if (deletingId === id) {
+      deleteTopic.mutate(id);
+      setDeletingId(null);
+    } else {
+      setDeletingId(id);
+    }
+  }
+
   const getVideoCount = (topicId) =>
     videos.filter((v) => (v.topicIds || []).includes(topicId)).length;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-800">נושאים ({topics.length})</h2>
-        <button className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">
-          + הוסף נושא
-        </button>
+        <div>
+          <h2 className="text-base font-semibold text-gray-800">נושאים ({orderedTopics.length})</h2>
+          <p className="text-xs text-gray-400 mt-0.5">גרור את ⠿ לשינוי סדר — הסדר נשמר בדפדפן</p>
+        </div>
       </div>
 
-      {topics.length === 0 ? (
+      {orderedTopics.length === 0 ? (
         <div className="border border-dashed border-gray-200 rounded-xl p-10 text-center">
           <p className="text-sm text-gray-400">אין נושאים מוגדרים</p>
           <p className="text-xs text-gray-300 mt-1">הוסף נושא כדי לארגן סרטונים</p>
         </div>
       ) : (
-        <div className="border border-gray-100 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-right px-4 py-3 text-gray-500 font-medium">נושא</th>
-                <th className="text-right px-4 py-3 text-gray-500 font-medium">תיאור</th>
-                <th className="text-right px-4 py-3 text-gray-500 font-medium">צבע</th>
-                <th className="text-right px-4 py-3 text-gray-500 font-medium">סרטונים</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {topics.map((topic, i) => {
-                const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
-                return (
-                  <tr key={topic.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`p-1 rounded ${colorClass}`}>
-                          <Hash className="h-3.5 w-3.5" />
-                        </span>
-                        <span className="font-medium text-gray-800">{topic.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-gray-500">{topic.description}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${colorClass}`}>
-                        {topic.color}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-gray-700">
-                        {getVideoCount(topic.id)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedTopics.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100 text-right">
+                    <th className="w-8 px-2 py-3" />
+                    <th className="px-3 py-3 text-gray-500 font-medium">נושא</th>
+                    <th className="px-3 py-3 text-gray-500 font-medium">תיאור</th>
+                    <th className="px-3 py-3 text-gray-500 font-medium">סרטונים</th>
+                    <th className="px-3 py-3" />
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {orderedTopics.map((topic) => (
+                    <SortableTopicRow
+                      key={topic.id}
+                      topic={topic}
+                      videoCount={getVideoCount(topic.id)}
+                      deletingId={deletingId}
+                      onEdit={setEditingTopic}
+                      onDelete={handleDelete}
+                      onCancelDelete={() => setDeletingId(null)}
+                      onMoveToTop={handleMoveToTop}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      {editingTopic && (
+        <EditTopicDialog topic={editingTopic} onClose={() => setEditingTopic(null)} />
       )}
     </div>
   );

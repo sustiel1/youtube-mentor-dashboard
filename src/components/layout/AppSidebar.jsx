@@ -25,6 +25,31 @@ const ICON_MAP = {
   Hash,
 };
 
+// Emoji icons by topic name — overrides the Lucide icon when matched
+const TOPIC_EMOJI = {
+  "מוזיקה":              "🎶",
+  "מנופים":              "🏗️",
+  "סוכר":                "🍬",
+  "בריאות":              "🏥",
+  "פוליטיקה":            "🏛️",
+  "פוליטיקה ותוכן ישר":  "🏛️",
+  "אוכל ובישול":         "🍳",
+  "אוכל":                "🍳",
+  "אוטומציה":            "⚙️",
+  "בינה מלאכותית":       "🤖",
+  "שוק ההון":            "📈",
+  "פיתוח תוכנה":         "💻",
+  "מסחר":                "📊",
+  "השקעות":              "💰",
+  "ניתוח טכני":          "📉",
+  "ניתוח פונדמנטלי":     "🔍",
+  "מניות":               "📋",
+  "כלים וטכנולוגיות":    "🔧",
+  "בניית אפליקציות":     "📱",
+  "שיווק דיגיטלי":       "📣",
+  "פודקאסטים":           "🎙️",
+};
+
 // Map color string → Tailwind classes
 const TOPIC_COLOR_CLASS = {
   violet:  { chip: "bg-violet-100 text-violet-700", accent: "text-violet-600" },
@@ -180,6 +205,7 @@ export function AppSidebar({
           <div className="space-y-0.5">
             {mainTopics.map((topic) => {
               const TopicIcon   = ICON_MAP[topic.icon] || Hash;
+              const topicEmoji  = TOPIC_EMOJI[topic.name] || null;
               const colors      = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
               const isExpanded  = expandedTopicId === topic.id;
               const topicMentors = getMentorsForTopic(topic.id, topics, activeMentors);
@@ -200,10 +226,13 @@ export function AppSidebar({
                     )}
                   >
                     <span className={cn(
-                      "w-5 h-5 rounded flex items-center justify-center shrink-0",
+                      "w-6 h-6 rounded flex items-center justify-center shrink-0 text-sm leading-none",
                       colors.chip
                     )}>
-                      <TopicIcon className="h-3 w-3" />
+                      {topicEmoji
+                        ? topicEmoji
+                        : <TopicIcon className="h-3 w-3" />
+                      }
                     </span>
                     <span className="flex-1 text-right truncate text-sm">{topic.name}</span>
                     <ChevronDown className={cn(
