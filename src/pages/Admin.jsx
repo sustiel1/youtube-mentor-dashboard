@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
+import { TOPIC_ICON_CONFIG } from "@/components/layout/AppSidebar";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
@@ -433,30 +434,6 @@ const TOPIC_COLOR_MAP = {
 };
 
 // Emoji map by topic name
-const TOPIC_EMOJI = {
-  "מוזיקה":              "🎶",
-  "מנופים":              "🏗️",
-  "סוכר":                "🍬",
-  "בריאות":              "🏥",
-  "פוליטיקה":            "🏛️",
-  "פוליטיקה ותוכן ישר":  "🏛️",
-  "אוכל ובישול":         "🍳",
-  "אוכל":                "🍳",
-  "אוטומציה":            "⚙️",
-  "בינה מלאכותית":       "🤖",
-  "שוק ההון":            "📈",
-  "פיתוח תוכנה":         "💻",
-  "מסחר":                "📊",
-  "השקעות":              "💰",
-  "ניתוח טכני":          "📉",
-  "ניתוח פונדמנטלי":     "🔍",
-  "מניות":               "📋",
-  "כלים וטכנולוגיות":    "🔧",
-  "בניית אפליקציות":     "📱",
-  "שיווק דיגיטלי":       "📣",
-  "פודקאסטים":           "🎙️",
-};
-
 // LocalStorage helpers for topic order (client-side persistence)
 const ORDER_KEY = "ym_topic_order";
 function loadOrder() { try { return JSON.parse(localStorage.getItem(ORDER_KEY)); } catch { return null; } }
@@ -473,7 +450,7 @@ function applyStoredOrder(topics) {
 // Topic row with up/down/top ordering buttons (no external DnD library)
 function TopicRow({ topic, videoCount, isFirst, isLast, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop, onMoveUp, onMoveDown }) {
   const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
-  const emoji = TOPIC_EMOJI[topic.name];
+  const cfg = TOPIC_ICON_CONFIG[topic.name];
 
   return (
     <tr className="border-b border-gray-50 last:border-0 bg-white">
@@ -494,11 +471,14 @@ function TopicRow({ topic, videoCount, isFirst, isLast, deletingId, onEdit, onDe
           </button>
         </div>
       </td>
-      {/* Name + emoji */}
+      {/* Name + icon */}
       <td className="px-3 py-3">
         <div className="flex items-center gap-2">
-          <span className={`w-6 h-6 rounded flex items-center justify-center text-sm leading-none shrink-0 ${colorClass}`}>
-            {emoji || <Hash className="h-3.5 w-3.5" />}
+          <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : colorClass}`}>
+            {cfg
+              ? <cfg.Icon className="h-3.5 w-3.5" />
+              : <Hash className="h-3.5 w-3.5" />
+            }
           </span>
           <div>
             <span className="font-medium text-gray-800">{topic.name}</span>

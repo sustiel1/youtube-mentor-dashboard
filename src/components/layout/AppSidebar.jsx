@@ -1,54 +1,35 @@
 import { useState } from "react";
 import {
   House, LayoutGrid, Bookmark, BookOpen,
-  Bot, UtensilsCrossed, TrendingUp, BookOpen as BookOpenIcon,
-  Code, Music, Dumbbell, Globe, Lightbulb, Layers,
-  Settings, UserPlus, BookPlus, ChevronDown, Hash, Brain, Cpu,
+  Settings, UserPlus, BookPlus, ChevronDown,
+  Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
 } from "lucide-react";
+
+// Map topic.icon string → Lucide component (exported for use in Admin)
+export const TOPIC_ICON_MAP = {
+  Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
+};
+
+// Per-topic icon + color config by topic name (takes priority over topic.icon field)
+export const TOPIC_ICON_CONFIG = {
+  "מוזיקה":              { Icon: Music4,          bg: "bg-purple-100", text: "text-purple-600" },
+  "מנופים":              { Icon: Construction,     bg: "bg-orange-100", text: "text-orange-600" },
+  "סוכר":                { Icon: Candy,            bg: "bg-pink-100",   text: "text-pink-600"   },
+  "בריאות":              { Icon: HeartPulse,       bg: "bg-red-100",    text: "text-red-600"    },
+  "פוליטיקה":            { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
+  "פוליטיקה ותוכן ישר":  { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
+  "פוליטיקה ותוכן":      { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
+  "אוכל ובישול":         { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700" },
+  "אוכל":                { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700" },
+  "אוטומציה":            { Icon: Workflow,         bg: "bg-indigo-100", text: "text-indigo-600" },
+  "בינה מלאכותית":       { Icon: Bot,              bg: "bg-violet-100", text: "text-violet-600" },
+  "שוק ההון":            { Icon: ChartCandlestick, bg: "bg-green-100",  text: "text-green-600"  },
+};
+
 import { cn } from "@/lib/utils";
 import { AddMentorDialog } from "@/components/mentors/AddMentorDialog";
 import { AddTopicDialog } from "@/components/topics/AddTopicDialog";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
-
-// Map icon string → Lucide component
-const ICON_MAP = {
-  Bot, Brain, Cpu,
-  UtensilsCrossed,
-  TrendingUp,
-  BookOpen: BookOpenIcon,
-  Code,
-  Music,
-  Dumbbell,
-  Globe,
-  Lightbulb,
-  Layers,
-  Hash,
-};
-
-// Emoji icons by topic name — overrides the Lucide icon when matched
-const TOPIC_EMOJI = {
-  "מוזיקה":              "🎶",
-  "מנופים":              "🏗️",
-  "סוכר":                "🍬",
-  "בריאות":              "🏥",
-  "פוליטיקה":            "🏛️",
-  "פוליטיקה ותוכן ישר":  "🏛️",
-  "אוכל ובישול":         "🍳",
-  "אוכל":                "🍳",
-  "אוטומציה":            "⚙️",
-  "בינה מלאכותית":       "🤖",
-  "שוק ההון":            "📈",
-  "פיתוח תוכנה":         "💻",
-  "מסחר":                "📊",
-  "השקעות":              "💰",
-  "ניתוח טכני":          "📉",
-  "ניתוח פונדמנטלי":     "🔍",
-  "מניות":               "📋",
-  "כלים וטכנולוגיות":    "🔧",
-  "בניית אפליקציות":     "📱",
-  "שיווק דיגיטלי":       "📣",
-  "פודקאסטים":           "🎙️",
-};
 
 // Map color string → Tailwind classes
 const TOPIC_COLOR_CLASS = {
@@ -61,15 +42,24 @@ const TOPIC_COLOR_CLASS = {
   amber:   { chip: "bg-amber-100 text-amber-700",   accent: "text-amber-600"  },
 };
 
-// Common English category → Hebrew topic aliases
+// Category → topic name aliases
 const CATEGORY_ALIASES = {
-  markets: ["שוק", "שוק ההון", "השקעות"],
-  ai:      ["ai", "בינה", "בינה מלאכותית"],
-  dev:     ["dev", "פיתוח", "פיתוח תוכנה"],
-  food:    ["food", "אוכל"],
+  Markets: ["שוק ההון", "markets", "מסחר", "השקעות"],
+  AI:      ["ai", "בינה מלאכותית", "machine learning"],
+  Dev:     ["פיתוח", "dev", "programming"],
 };
 
-// Returns mentors belonging to a main topic (via topicIds or category fallback)
+function categoryMatchesTopic(mentorCategory, topicName) {
+  if (!mentorCategory || !topicName) return false;
+  const cat = mentorCategory.toLowerCase();
+  const name = topicName.toLowerCase();
+  if (cat === name || name.includes(cat) || cat.includes(name)) return true;
+  const aliases = CATEGORY_ALIASES[mentorCategory] || [];
+  return aliases.some((a) => name.includes(a.toLowerCase()) || a.toLowerCase().includes(name));
+}
+
+// Returns mentors belonging to a main topic (via topicIds — including sub-topics)
+// Fallback: match mentor.category against topic.name
 function getMentorsForTopic(mainTopicId, allTopics, allMentors) {
   const mainTopic = allTopics.find((t) => t.id === mainTopicId);
   const relevantIds = new Set([mainTopicId]);
@@ -78,17 +68,9 @@ function getMentorsForTopic(mainTopicId, allTopics, allMentors) {
   });
   return allMentors.filter((m) => {
     if (!m.active) return false;
-    // Primary: topicIds match
     if (m.topicIds?.some((tid) => relevantIds.has(tid))) return true;
-    // Fallback: category string vs topic name (for Base44 mentors without topicIds)
-    if (mainTopic && m.category) {
-      const cat       = (m.category || "").toLowerCase().trim();
-      const topicName = (mainTopic.name || "").toLowerCase().trim();
-      if (cat === topicName || topicName.includes(cat) || cat.includes(topicName)) return true;
-      const aliases = CATEGORY_ALIASES[cat] || [];
-      if (aliases.some((a) => topicName.includes(a))) return true;
-    }
-    return false;
+    // Fallback: match by category
+    return mainTopic && categoryMatchesTopic(m.category, mainTopic.name);
   });
 }
 
@@ -104,11 +86,11 @@ export function AppSidebar({
   learningCount,
 }) {
   const [expandedTopicId, setExpandedTopicId] = useState(null);
-  const [addMentorOpen, setAddMentorOpen]   = useState(false);
-  const [addTopicOpen, setAddTopicOpen]     = useState(false);
+  const [addMentorOpen, setAddMentorOpen]     = useState(false);
+  const [addTopicOpen, setAddTopicOpen]       = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
-  const activeMentor  = filters?.mentor   || "all";
+  const activeMentor  = filters?.mentor || "all";
   const activeMentors = mentors.filter((m) => m.active);
   const mainTopics    = topics.filter((t) => t.isMainCategory || !t.parentId);
 
@@ -204,10 +186,10 @@ export function AppSidebar({
 
           <div className="space-y-0.5">
             {mainTopics.map((topic) => {
-              const TopicIcon   = ICON_MAP[topic.icon] || Hash;
-              const topicEmoji  = TOPIC_EMOJI[topic.name] || null;
-              const colors      = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
-              const isExpanded  = expandedTopicId === topic.id;
+              const cfg          = TOPIC_ICON_CONFIG[topic.name];
+              const TopicIcon    = cfg?.Icon || TOPIC_ICON_MAP[topic.icon] || null;
+              const colors       = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
+              const isExpanded   = expandedTopicId === topic.id;
               const topicMentors = getMentorsForTopic(topic.id, topics, activeMentors);
               const isTopicActive =
                 (currentPage === "TopicPage" || currentPage === "TopicLearningPage") &&
@@ -226,12 +208,12 @@ export function AppSidebar({
                     )}
                   >
                     <span className={cn(
-                      "w-6 h-6 rounded flex items-center justify-center shrink-0 text-sm leading-none",
-                      colors.chip
+                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                      cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
                     )}>
-                      {topicEmoji
-                        ? topicEmoji
-                        : <TopicIcon className="h-3 w-3" />
+                      {TopicIcon
+                        ? <TopicIcon className="h-3.5 w-3.5" />
+                        : <Hash className="h-3.5 w-3.5" />
                       }
                     </span>
                     <span className="flex-1 text-right truncate text-sm">{topic.name}</span>
@@ -257,7 +239,7 @@ export function AppSidebar({
                       </button>
 
                       {topicMentors.length > 0 ? topicMentors.map((mentor) => {
-                        const initial     = mentor.name?.[0]?.toUpperCase() || "?";
+                        const initial = mentor.name?.[0]?.toUpperCase() || "?";
                         const isMentorActive =
                           currentPage === "Dashboard" && activeMentor === mentor.id;
                         return (
@@ -292,12 +274,13 @@ export function AppSidebar({
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-gray-100 space-y-1">
-        <NavButton
-          icon={UserPlus}
-          label="מנטור חדש"
-          isActive={false}
+        <button
           onClick={() => setAddMentorOpen(true)}
-        />
+          className="w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+        >
+          <UserPlus className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-right">מנטור חדש</span>
+        </button>
         <NavButton
           icon={Settings}
           label="ניהול"
