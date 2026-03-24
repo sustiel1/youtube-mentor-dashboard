@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
-import { TOPIC_ICON_CONFIG } from "@/components/layout/AppSidebar";
+import { getTopicConfig } from "@/components/layout/AppSidebar";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
@@ -450,7 +450,7 @@ function applyStoredOrder(topics) {
 // Topic row with up/down/top ordering buttons (no external DnD library)
 function TopicRow({ topic, videoCount, isFirst, isLast, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop, onMoveUp, onMoveDown }) {
   const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
-  const cfg = TOPIC_ICON_CONFIG[topic.name];
+  const cfg = getTopicConfig(topic.name);
 
   return (
     <tr className="border-b border-gray-50 last:border-0 bg-white">

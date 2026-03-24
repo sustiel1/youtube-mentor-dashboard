@@ -26,6 +26,17 @@ export const TOPIC_ICON_CONFIG = {
   "שוק ההון":            { Icon: ChartCandlestick, bg: "bg-green-100",  text: "text-green-600"  },
 };
 
+// Flexible lookup: exact match first, then partial (handles "(AI)", "ישראלי", etc.)
+export function getTopicConfig(name) {
+  if (!name) return null;
+  if (TOPIC_ICON_CONFIG[name]) return TOPIC_ICON_CONFIG[name];
+  const lower = name.toLowerCase();
+  for (const [key, cfg] of Object.entries(TOPIC_ICON_CONFIG)) {
+    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) return cfg;
+  }
+  return null;
+}
+
 import { cn } from "@/lib/utils";
 import { AddMentorDialog } from "@/components/mentors/AddMentorDialog";
 import { AddTopicDialog } from "@/components/topics/AddTopicDialog";
@@ -186,7 +197,7 @@ export function AppSidebar({
 
           <div className="space-y-0.5">
             {mainTopics.map((topic) => {
-              const cfg          = TOPIC_ICON_CONFIG[topic.name];
+              const cfg          = getTopicConfig(topic.name);
               const TopicIcon    = cfg?.Icon || TOPIC_ICON_MAP[topic.icon] || null;
               const colors       = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
               const isExpanded   = expandedTopicId === topic.id;
