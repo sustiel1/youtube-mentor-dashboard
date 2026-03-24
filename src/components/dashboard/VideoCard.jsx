@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { useState } from "react";
 import { Eye, StickyNote, Trash2, Sparkles } from "lucide-react";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { StatusBadge } from "./StatusBadge";
@@ -50,7 +49,6 @@ export function VideoCard({
   onClick,
   onDelete,
 }) {
-  const [noteExpanded, setNoteExpanded] = useState(false);
   const { data: cardNotes = [] } = useNotesByVideo(video.id);
   const firstNote = cardNotes[0]?.content ?? null;
   const hasNoteData = cardNotes.length > 0;
@@ -112,10 +110,10 @@ export function VideoCard({
                 נותח
               </span>
             )}
-            {hasNoteData && (
-              <span className="flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white rounded-full px-2 py-0.5 shadow">
-                <StickyNote className="h-2.5 w-2.5" />
-                יש הערות
+            {hasNoteData && firstNote && (
+              <span className="flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white rounded-full px-2 py-0.5 shadow max-w-[120px]">
+                <StickyNote className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{firstNote}</span>
               </span>
             )}
           </div>
@@ -162,25 +160,8 @@ export function VideoCard({
           )}
         </div>
 
-        {/* הערה / סיכום AI / נושאים */}
-        {firstNote ? (
-          <div className="flex items-start gap-1 mb-3" onClick={(e) => e.stopPropagation()}>
-            <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <p className={cn("text-xs text-red-500 leading-relaxed", !noteExpanded && "line-clamp-2")}>
-                {firstNote}
-              </p>
-              {firstNote.length > 80 && (
-                <button
-                  className="text-[10px] text-red-400 font-semibold hover:underline"
-                  onClick={() => setNoteExpanded((v) => !v)}
-                >
-                  {noteExpanded ? "פחות" : "עוד"}
-                </button>
-              )}
-            </div>
-          </div>
-        ) : video.shortSummary ? (
+        {/* סיכום AI / נושאים — ללא block הערה בגוף הכרטיס */}
+        {video.shortSummary ? (
           <p className="text-xs text-gray-600 font-medium line-clamp-2 mb-3 leading-relaxed">
             {video.shortSummary.replace(/\[MOCK\]/gi, "").replace(/^הסרטון\s*/u, "").trim()}
           </p>
