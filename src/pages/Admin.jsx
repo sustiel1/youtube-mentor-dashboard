@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code } from "lucide-react";
-import { useMentors } from "@/hooks/useMentors";
+import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
 import { useTopics } from "@/hooks/useTopics";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
@@ -29,76 +30,274 @@ const SOURCE_TYPE_ICON = {
 };
 
 // ────────────────────────────────────────────
-// ניהול מנטורים
+// ניהול מנטורים — מחולק לפי נושאים
 // ────────────────────────────────────────────
-function MentorsTab({ mentors }) {
+
+// Returns the main topic (parentId === null) for a mentor, or null if none
+function getMainTopicForMentor(mentor, topics) {
+  const mainTopics = topics.filter((t) => !t.parentId);
+  for (const tid of (mentor.topicIds || [])) {
+    const t = topics.find((x) => x.id === tid);
+    if (!t) continue;
+    if (!t.parentId) return t; // it's already a main topic
+    const parent = mainTopics.find((x) => x.id === t.parentId);
+    if (parent) return parent;
+  }
+  return null;
+}
+
+const SECTION_COLORS = {
+  violet: { header: "bg-violet-50 border-violet-100", badge: "bg-violet-100 text-violet-700" },
+  cyan:   { header: "bg-cyan-50 border-cyan-100",     badge: "bg-cyan-100 text-cyan-700"   },
+  blue:   { header: "bg-blue-50 border-blue-100",     badge: "bg-blue-100 text-blue-700"   },
+  amber:  { header: "bg-amber-50 border-amber-100",   badge: "bg-amber-100 text-amber-700" },
+  gray:   { header: "bg-gray-50 border-gray-100",     badge: "bg-gray-100 text-gray-500"   },
+};
+
+function MentorsTab({ mentors, topics }) {
+  const [editingMentor, setEditingMentor] = useState(null);
+  const [deletingId, setDeletingId]       = useState(null);
+  const deleteMentor = useDeleteMentor();
+
+  const mainTopics = topics.filter((t) => !t.parentId);
+
+  // Group mentors by their resolved main topic
+  const assigned = new Set();
+  const groups = mainTopics
+    .map((topic) => {
+      const ms = mentors.filter((m) => getMainTopicForMentor(m, topics)?.id === topic.id);
+      ms.forEach((m) => assigned.add(m.id));
+      return { topic, mentors: ms };
+    })
+    .filter((g) => g.mentors.length > 0);
+
+  const unassigned = mentors.filter((m) => !assigned.has(m.id));
+
+  // First click → show confirm; second click → delete
+  function handleDelete(id) {
+    if (deletingId === id) {
+      deleteMentor.mutate(id);
+      setDeletingId(null);
+    } else {
+      setDeletingId(id);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-800">מנטורים ({mentors.length})</h2>
-        <button className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">
-          + הוסף מנטור
-        </button>
       </div>
 
-      <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-right px-4 py-3 text-gray-500 font-medium">שם</th>
-              <th className="text-right px-4 py-3 text-gray-500 font-medium">קטגוריה</th>
-              <th className="text-right px-4 py-3 text-gray-500 font-medium">סטטוס</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {mentors.map((mentor, i) => {
-              const cat = CATEGORY_CONFIG[mentor.category];
-              const Icon = cat?.icon;
-              return (
-                <tr key={mentor.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold">
-                        {mentor.name?.[0]?.toUpperCase()}
-                      </span>
-                      <span className="font-medium text-gray-800">{mentor.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {cat && (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}>
-                        {Icon && <Icon className="h-3 w-3" />}
-                        {cat.label}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                      mentor.active
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {mentor.active ? "פעיל" : "מושבת"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        {groups.map(({ topic, mentors: gMentors }) => (
+          <MentorSection
+            key={topic.id}
+            title={topic.name}
+            color={topic.color}
+            mentors={gMentors}
+            deletingId={deletingId}
+            onEdit={setEditingMentor}
+            onDelete={handleDelete}
+            onCancelDelete={() => setDeletingId(null)}
+          />
+        ))}
+
+        {unassigned.length > 0 && (
+          <MentorSection
+            key="unassigned"
+            title="לא משויך"
+            color="gray"
+            mentors={unassigned}
+            deletingId={deletingId}
+            onEdit={setEditingMentor}
+            onDelete={handleDelete}
+            onCancelDelete={() => setDeletingId(null)}
+          />
+        )}
       </div>
+
+      {editingMentor && (
+        <EditMentorDialog
+          mentor={editingMentor}
+          mainTopics={mainTopics}
+          onClose={() => setEditingMentor(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function MentorSection({ title, color, mentors, deletingId, onEdit, onDelete, onCancelDelete }) {
+  const colors = SECTION_COLORS[color] || SECTION_COLORS.gray;
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
+      <div className={`flex items-center justify-between px-4 py-2.5 border-b ${colors.header}`}>
+        <span className="text-sm font-semibold text-gray-700">{title}</span>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${colors.badge}`}>
+          {mentors.length}
+        </span>
+      </div>
+      <table className="w-full text-sm">
+        <tbody>
+          {mentors.map((mentor, i) => (
+            <tr
+              key={mentor.id}
+              className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
+            >
+              {/* Name + description */}
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold shrink-0">
+                    {mentor.name?.[0]?.toUpperCase()}
+                  </span>
+                  <div>
+                    <p className="font-medium text-gray-800">{mentor.name}</p>
+                    {mentor.description && (
+                      <p className="text-xs text-gray-400 truncate max-w-[220px]">{mentor.description}</p>
+                    )}
+                  </div>
+                </div>
+              </td>
+              {/* Active status */}
+              <td className="px-4 py-3">
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  mentor.active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+                }`}>
+                  {mentor.active ? "פעיל" : "מושבת"}
+                </span>
+              </td>
+              {/* Actions */}
+              <td className="px-4 py-3">
+                {deletingId === mentor.id ? (
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span className="text-xs text-red-600">למחוק?</span>
+                    <button
+                      onClick={() => onDelete(mentor.id)}
+                      className="text-xs px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      מחק
+                    </button>
+                    <button
+                      onClick={onCancelDelete}
+                      className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      בטל
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onEdit(mentor)}
+                      className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(mentor.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Dialog לעריכת מנטור קיים
+function EditMentorDialog({ mentor, mainTopics, onClose }) {
+  const updateMentor = useUpdateMentor();
+  const [form, setForm] = useState({
+    name:     mentor.name || "",
+    active:   mentor.active ?? true,
+    topicIds: mentor.topicIds || [],
+  });
+
+  function toggleTopic(tid) {
+    setForm((prev) => ({
+      ...prev,
+      topicIds: prev.topicIds.includes(tid)
+        ? prev.topicIds.filter((id) => id !== tid)
+        : [...prev.topicIds, tid],
+    }));
+  }
+
+  function handleSave() {
+    updateMentor.mutate({ id: mentor.id, ...form }, { onSuccess: onClose });
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>עריכת מנטור</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          {/* Name */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">שם</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+          </div>
+
+          {/* Active toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.active}
+              onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))}
+              className="rounded"
+            />
+            <span className="text-sm text-gray-700">מנטור פעיל</span>
+          </label>
+
+          {/* Topic assignment */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">שיוך לנושאים</p>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+              {mainTopics.map((topic) => (
+                <label key={topic.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.topicIds.includes(topic.id)}
+                    onChange={() => toggleTopic(topic.id)}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700">{topic.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer buttons */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              בטל
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={updateMentor.isPending}
+              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {updateMentor.isPending ? "שומר..." : "שמור"}
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -704,7 +903,7 @@ export default function Admin() {
             <RssTab videos={videos} />
           </TabsContent>
           <TabsContent value="mentors">
-            <MentorsTab mentors={mentors} />
+            <MentorsTab mentors={mentors} topics={topics} />
           </TabsContent>
           <TabsContent value="topics">
             <TopicsTab topics={topics} videos={videos} />

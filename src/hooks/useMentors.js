@@ -89,3 +89,14 @@ export function useUpdateMentor() {
     },
   });
 }
+
+// Mutation: delete a mentor
+export function useDeleteMentor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => Mentor.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentors'] });
+    },
+  });
+}
