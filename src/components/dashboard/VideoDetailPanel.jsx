@@ -92,10 +92,10 @@ export function VideoDetailPanel({
         </button>
 
         <ScrollArea className="flex-1">
-          <div className="max-w-3xl mx-auto p-6 space-y-5">
+          <div className="max-w-2xl mx-auto p-5 space-y-4">
 
-            {/* תמונה */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 max-w-[680px] mx-auto">
+            {/* תמונה — קטנה, ממורכזת */}
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 max-w-[480px] mx-auto">
               <img
                 src={video.thumbnail}
                 alt={video.title}
@@ -115,52 +115,57 @@ export function VideoDetailPanel({
 
             {/* כותרת + שמירה */}
             <div className="flex items-start gap-2 flex-row-reverse">
-              <h2 className="flex-1 text-right text-lg font-bold leading-snug text-gray-900">
+              <h2 className="flex-1 text-right text-xl font-bold leading-snug text-gray-900">
                 {video.title}
               </h2>
               <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
             </div>
 
-            {/* מנטור + תאריך + צפיות + אורך */}
-            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2.5">
-              <div className="flex items-center gap-3 flex-row-reverse">
-                {mentorName && (
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shrink-0">
+            {/* שורת מטא — מנטור · תאריך · צפיות · אורך · תגיות */}
+            <div className="flex items-center gap-x-3 gap-y-1.5 flex-row-reverse flex-wrap">
+              {mentorName && (
+                <div className="flex items-center gap-1.5 flex-row-reverse">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
                     {mentorName.charAt(0).toUpperCase()}
                   </div>
-                )}
-                <div className="flex-1 text-right">
-                  {mentorName && <p className="text-sm font-semibold text-gray-900">{mentorName}</p>}
-                  <div className="flex items-center gap-3 flex-row-reverse flex-wrap">
-                    <p className="text-xs text-gray-600">{publishDate}</p>
-                    {viewCountFormatted && (
-                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-row-reverse">
-                        <Eye className="h-3 w-3" />{viewCountFormatted}
-                      </p>
-                    )}
-                    {video.duration && (
-                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-row-reverse">
-                        <Clock className="h-3 w-3" />{video.duration}
-                      </p>
-                    )}
-                  </div>
+                  <span className="text-sm font-semibold text-gray-800">{mentorName}</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 flex-row-reverse">
-                <CategoryBadge category={video.category} />
-                <StatusBadge status={video.status} />
-                <LearningStatusBadge status={video.learningStatus} />
-              </div>
+              )}
+              {publishDate && <span className="text-xs text-gray-500">{publishDate}</span>}
+              {viewCountFormatted && (
+                <span className="text-xs text-gray-500 flex items-center gap-1 flex-row-reverse">
+                  <Eye className="h-3 w-3" />{viewCountFormatted}
+                </span>
+              )}
+              {video.duration && (
+                <span className="text-xs text-gray-500 flex items-center gap-1 flex-row-reverse">
+                  <Clock className="h-3 w-3" />{video.duration}
+                </span>
+              )}
+              <CategoryBadge category={video.category} />
+              <StatusBadge status={video.status} />
             </div>
 
-            {/* סטטוס למידה */}
-            <div className="flex items-center gap-3 flex-row-reverse bg-white rounded-xl border border-gray-100 px-4 py-3">
-              <span className="text-sm font-medium text-gray-700 shrink-0">סטטוס למידה:</span>
+            {/* תקציר החלטה — shortSummary קצר, placeholder אם אין */}
+            <div className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 text-right">
+              {video.shortSummary ? (
+                <>
+                  <p className="text-[11px] font-semibold text-gray-400 mb-1 uppercase tracking-wide">מה תלמד כאן</p>
+                  <p className="text-sm text-gray-800 leading-6 line-clamp-3">{video.shortSummary}</p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 text-center py-0.5">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
+              )}
+            </div>
+
+            {/* סטטוס למידה + badge — שורה קומפקטית */}
+            <div className="flex items-center gap-3 flex-row-reverse">
+              <span className="text-xs font-medium text-gray-500 shrink-0">סטטוס למידה:</span>
               <Select
                 value={video.learningStatus || "not_started"}
                 onValueChange={(val) => onLearningStatusChange?.(video, val)}
               >
-                <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 flex-1 max-w-[160px]" dir="rtl">
+                <SelectTrigger className="h-7 text-xs bg-white border-gray-200 w-[145px]" dir="rtl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
@@ -169,6 +174,7 @@ export function VideoDetailPanel({
                   ))}
                 </SelectContent>
               </Select>
+              <LearningStatusBadge status={video.learningStatus} />
             </div>
 
             {/* נושאים */}
@@ -192,13 +198,13 @@ export function VideoDetailPanel({
               </div>
             )}
 
-            {/* טאבים */}
+            {/* טאבים — משניים, מתחת לאזור ההחלטה */}
             <Tabs defaultValue="summary" className="w-full" dir="rtl">
-              <TabsList className="h-9 flex w-fit mx-auto">
-                <TabsTrigger value="summary" className="text-xs px-4">סיכום</TabsTrigger>
-                <TabsTrigger value="keypoints" className="text-xs px-4">נקודות מפתח</TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs px-4">הערות</TabsTrigger>
-                <TabsTrigger value="chapters" className="text-xs px-4">פרקי הסרטון</TabsTrigger>
+              <TabsList className="h-8 flex w-fit mx-auto">
+                <TabsTrigger value="summary" className="text-xs px-3">סיכום</TabsTrigger>
+                <TabsTrigger value="keypoints" className="text-xs px-3">נקודות מפתח</TabsTrigger>
+                <TabsTrigger value="notes" className="text-xs px-3">הערות</TabsTrigger>
+                <TabsTrigger value="chapters" className="text-xs px-3">פרקי הסרטון</TabsTrigger>
               </TabsList>
 
               <TabsContent value="summary" className="mt-4 space-y-5 min-h-[220px]">
