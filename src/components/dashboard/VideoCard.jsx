@@ -103,23 +103,21 @@ export function VideoCard({
           )}
         </div>
 
-        {/* "נותח" badge — top right, only when analyzed and no notes */}
-        {video.status === "done" && !hasNoteData && (
-          <div className="absolute top-2 right-2">
-            <span className="flex items-center gap-1 text-[10px] font-bold bg-indigo-600 text-white rounded-full px-2 py-0.5 shadow">
-              <Sparkles className="h-2.5 w-2.5" />
-              נותח
-            </span>
-          </div>
-        )}
-
-        {/* "יש הערות" badge — top right */}
-        {hasNoteData && (
-          <div className="absolute top-2 right-2">
-            <span className="flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white rounded-full px-2 py-0.5 shadow">
-              <StickyNote className="h-2.5 w-2.5" />
-              יש הערות
-            </span>
+        {/* badges — top right: "נותח" ו-"יש הערות" יכולים להופיע יחד */}
+        {(video.status === "done" || hasNoteData) && (
+          <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+            {video.status === "done" && (
+              <span className="flex items-center gap-1 text-[10px] font-bold bg-indigo-600 text-white rounded-full px-2 py-0.5 shadow">
+                <Sparkles className="h-2.5 w-2.5" />
+                נותח
+              </span>
+            )}
+            {hasNoteData && (
+              <span className="flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white rounded-full px-2 py-0.5 shadow">
+                <StickyNote className="h-2.5 w-2.5" />
+                יש הערות
+              </span>
+            )}
           </div>
         )}
 

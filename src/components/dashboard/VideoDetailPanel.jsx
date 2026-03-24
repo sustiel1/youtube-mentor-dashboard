@@ -100,19 +100,6 @@ export function VideoDetailPanel({
           <X className="h-4 w-4 text-gray-600" />
         </button>
 
-        {/* Note indicator — מופיע בצד שמאל רק אם קיימת הערה */}
-        {hasNote && (
-          <button
-            onClick={() => setActiveTab("notes")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-1.5 py-3 rounded-r-xl shadow-md transition-all duration-200 animate-in fade-in slide-in-from-left-2"
-            title="יש הערה — לחץ לצפייה"
-          >
-            <StickyNote className="h-4 w-4" />
-            <span className="text-[10px] font-semibold leading-tight [writing-mode:vertical-rl] rotate-180">
-              יש הערה
-            </span>
-          </button>
-        )}
 
         <ScrollArea className="flex-1">
           <div className="max-w-2xl mx-auto p-5 space-y-3">
