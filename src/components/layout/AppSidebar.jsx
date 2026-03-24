@@ -36,15 +36,35 @@ const TOPIC_COLOR_CLASS = {
   amber:   { chip: "bg-amber-100 text-amber-700",   accent: "text-amber-600"  },
 };
 
-// Returns mentors belonging to a main topic (via topicIds — including sub-topics)
+// Common English category → Hebrew topic aliases
+const CATEGORY_ALIASES = {
+  markets: ["שוק", "שוק ההון", "השקעות"],
+  ai:      ["ai", "בינה", "בינה מלאכותית"],
+  dev:     ["dev", "פיתוח", "פיתוח תוכנה"],
+  food:    ["food", "אוכל"],
+};
+
+// Returns mentors belonging to a main topic (via topicIds or category fallback)
 function getMentorsForTopic(mainTopicId, allTopics, allMentors) {
+  const mainTopic = allTopics.find((t) => t.id === mainTopicId);
   const relevantIds = new Set([mainTopicId]);
   allTopics.forEach((t) => {
     if (t.parentId === mainTopicId) relevantIds.add(t.id);
   });
-  return allMentors.filter(
-    (m) => m.active && m.topicIds?.some((tid) => relevantIds.has(tid))
-  );
+  return allMentors.filter((m) => {
+    if (!m.active) return false;
+    // Primary: topicIds match
+    if (m.topicIds?.some((tid) => relevantIds.has(tid))) return true;
+    // Fallback: category string vs topic name (for Base44 mentors without topicIds)
+    if (mainTopic && m.category) {
+      const cat       = (m.category || "").toLowerCase().trim();
+      const topicName = (mainTopic.name || "").toLowerCase().trim();
+      if (cat === topicName || topicName.includes(cat) || cat.includes(topicName)) return true;
+      const aliases = CATEGORY_ALIASES[cat] || [];
+      if (aliases.some((a) => topicName.includes(a))) return true;
+    }
+    return false;
+  });
 }
 
 export function AppSidebar({
@@ -242,7 +262,13 @@ export function AppSidebar({
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-gray-100">
+      <div className="px-3 py-4 border-t border-gray-100 space-y-1">
+        <NavButton
+          icon={UserPlus}
+          label="מנטור חדש"
+          isActive={false}
+          onClick={() => setAddMentorOpen(true)}
+        />
         <NavButton
           icon={Settings}
           label="ניהול"
