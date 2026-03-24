@@ -92,10 +92,10 @@ export function VideoDetailPanel({
         </button>
 
         <ScrollArea className="flex-1">
-          <div className="max-w-2xl mx-auto p-5 space-y-4">
+          <div className="max-w-2xl mx-auto p-5 space-y-3">
 
             {/* תמונה — קטנה, ממורכזת */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 max-w-[480px] mx-auto">
+            <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 max-w-[300px] mx-auto">
               <img
                 src={video.thumbnail}
                 alt={video.title}
