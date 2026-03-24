@@ -4,6 +4,7 @@ import { he } from "date-fns/locale";
 import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote } from "lucide-react";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { useUpdateSummary } from "@/hooks/useVideos";
+import { useNotesByVideo } from "@/hooks/useNotes";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,12 +37,10 @@ export function VideoDetailPanel({
   const [activeTab, setActiveTab] = useState("summary");
   const updateSummary = useUpdateSummary();
 
-  // בודק אם קיימת הערה לסרטון
-  const hasNote = !!(
-    (Array.isArray(video.notes) && video.notes.length > 0) ||
-    (typeof video.note === "string" && video.note.trim().length > 0) ||
-    (typeof video.notes === "string" && video.notes.trim().length > 0)
-  );
+  // הערות מה-entity הנפרד — הקוורי כבר קיים ב-NoteEditor, אז זה cached
+  const { data: videoNotes = [] } = useNotesByVideo(video?.id);
+  const hasNote = videoNotes.length > 0;
+  const notePreview = hasNote ? videoNotes[0].content : null;
 
   if (!video) return null;
 
@@ -144,6 +143,19 @@ export function VideoDetailPanel({
               </h2>
               <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
             </div>
+
+            {/* preview הערה — מוצג מתחת לכותרת אם קיים */}
+            {notePreview && (
+              <button
+                onClick={() => setActiveTab("notes")}
+                className="w-full flex items-start gap-2 flex-row-reverse bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-right hover:bg-amber-100 transition-colors"
+              >
+                <StickyNote className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 leading-relaxed line-clamp-2">
+                  {notePreview}
+                </p>
+              </button>
+            )}
 
             {/* שורת מטא — מנטור · תאריך · צפיות · אורך · תגיות */}
             <div className="flex items-center gap-x-3 gap-y-1.5 flex-row-reverse flex-wrap">
