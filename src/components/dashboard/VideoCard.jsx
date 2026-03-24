@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import { useState } from "react";
 import { Eye, StickyNote, Trash2, Sparkles } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
@@ -8,7 +8,6 @@ import { LearningStatusBadge } from "./LearningStatusBadge";
 import { SaveButton } from "./SaveButton";
 import { cn } from "@/lib/utils";
 
-// Colored right border per learning status (RTL — right side is the "start" side)
 const STATUS_BORDER = {
   learned: "border-r-emerald-400",
   completed: "border-r-emerald-500",
@@ -17,19 +16,16 @@ const STATUS_BORDER = {
   not_started: "border-r-gray-200",
 };
 
-// ─── Helpers ─────────────────────────────────────────────
-
 function formatViewCount(n) {
   if (!n) return null;
   if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `${+(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000) return `${+(n / 1_000).toFixed(1)}K`;
   return String(n);
 }
 
 function formatDuration(dur) {
   if (!dur) return null;
-  if (typeof dur === "string") return dur; // כבר מפורמט ("12:40")
-  // מספר שניות → mm:ss / h:mm:ss
+  if (typeof dur === "string") return dur;
   const s = Math.round(dur);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -38,16 +34,12 @@ function formatDuration(dur) {
   return `${m}:${sec}`;
 }
 
-// Fallback: אם אין שדה duration — מגזרים אומדן מה-timestamp האחרון של videoTopics
-// (מוסיפים ~3 דקות לקטע האחרון כדי לכסות את הסיום)
 function estimateDurationFromTopics(videoTopics) {
   if (!videoTopics?.length) return null;
   const lastSec = videoTopics[videoTopics.length - 1]?.timestampSeconds;
   if (!lastSec) return null;
   return formatDuration(lastSec + 180);
 }
-
-// ─── Component ───────────────────────────────────────────
 
 export function VideoCard({
   video,
@@ -56,36 +48,22 @@ export function VideoCard({
   onSaveToggle,
   onClick,
   onDelete,
-  hasNotes = false,      // האם יש הערות אישיות לסרטון זה
-  noteSnippet = null,    // תוכן ההערה הראשונה (קטע קצר)
+  hasNotes = false,
+  noteSnippet = null,
 }) {
   const [noteExpanded, setNoteExpanded] = useState(false);
-
   const publishDate = video.publishedAt
     ? format(new Date(video.publishedAt), "d MMM yyyy", { locale: he })
     : "";
 
-  // גזירת טקסט ההערה מהשדות האפשריים
-  const noteText =
-    noteSnippet ||
-    (typeof video.note === "string" && video.note.trim()) ||
-    (typeof video.notes === "string" && video.notes.trim()) ||
-    (Array.isArray(video.notes) &&
-      video.notes.map((n) => (typeof n === "string" ? n : n?.content)).find((s) => s?.trim())) ||
-    null;
-
-  const NOTE_PREVIEW = 80;
-  const noteIsLong = noteText && noteText.length > NOTE_PREVIEW;
-
-  // Resolve topic objects from topicIds
   const videoTopics = (video.topicIds || [])
     .map((id) => topics.find((t) => t.id === id))
     .filter(Boolean);
 
-  const viewCountStr     = formatViewCount(video.viewCount);
-  const exactDuration    = formatDuration(video.duration);
+  const viewCountStr = formatViewCount(video.viewCount);
+  const exactDuration = formatDuration(video.duration);
   const estimatedDuration = !exactDuration ? estimateDurationFromTopics(video.videoTopics) : null;
-  const durationStr      = exactDuration || estimatedDuration;
+  const durationStr = exactDuration || estimatedDuration;
   const isDurationEstimated = !exactDuration && !!estimatedDuration;
 
   return (
@@ -96,7 +74,7 @@ export function VideoCard({
         STATUS_BORDER[video.learningStatus] ?? "border-r-gray-200"
       )}
     >
-      {/* ── Thumbnail ─────────────────────────────────── */}
+      {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden">
         <img
           src={video.thumbnail}
@@ -108,12 +86,9 @@ export function VideoCard({
           }}
         />
 
-        {/* Save button — פיזית שמאל עליון */}
+        {/* Save + Delete — top left */}
         <div className="absolute top-2 left-2 flex items-center gap-1">
-          <SaveButton
-            isSaved={video.isSaved}
-            onClick={() => onSaveToggle?.(video)}
-          />
+          <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} />
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(video); }}
@@ -125,7 +100,17 @@ export function VideoCard({
           )}
         </div>
 
-        {/* "יש הערות" badge — פיזית ימין עליון (צד ראשי ב-RTL) */}
+        {/* "נותח" badge — top right, only when analyzed and no notes */}
+        {video.status === "done" && !hasNotes && (
+          <div className="absolute top-2 right-2">
+            <span className="flex items-center gap-1 text-[10px] font-bold bg-indigo-600 text-white rounded-full px-2 py-0.5 shadow">
+              <Sparkles className="h-2.5 w-2.5" />
+              נותח
+            </span>
+          </div>
+        )}
+
+        {/* "יש הערות" badge — top right */}
         {hasNotes && (
           <div className="absolute top-2 right-2">
             <span className="flex items-center gap-1 text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 shadow">
@@ -135,17 +120,7 @@ export function VideoCard({
           </div>
         )}
 
-        {/* "נותח" badge — פיזית ימין תחתון כשיש סיכום AI */}
-        {video.shortSummary && (
-          <div className="absolute bottom-1.5 right-1.5">
-            <span className="flex items-center gap-1 text-[10px] font-semibold bg-indigo-600/85 text-white rounded px-1.5 py-0.5 backdrop-blur-sm">
-              <Sparkles className="h-2.5 w-2.5" />
-              נותח
-            </span>
-          </div>
-        )}
-
-        {/* Duration overlay — פיזית שמאל תחתון (כמו YouTube) */}
+        {/* Duration overlay — bottom left */}
         {durationStr && (
           <div className="absolute bottom-1.5 left-1.5">
             <span
@@ -158,35 +133,12 @@ export function VideoCard({
         )}
       </div>
 
-      {/* ── Content ───────────────────────────────────── */}
+      {/* Content */}
       <div className="p-4">
-
-        {/* כותרת */}
         <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1.5 leading-snug">
           {video.title}
         </h3>
 
-        {/* הערה אדומה מתחת לכותרת */}
-        {noteText && (
-          <div className="mb-2 flex items-start gap-1">
-            <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-red-500 leading-relaxed">
-              {noteExpanded || !noteIsLong
-                ? noteText
-                : noteText.slice(0, NOTE_PREVIEW) + "..."}
-              {noteIsLong && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setNoteExpanded((v) => !v); }}
-                  className="font-semibold text-red-400 hover:text-red-600 mr-1 underline underline-offset-2"
-                >
-                  {noteExpanded ? "פחות" : "עוד"}
-                </button>
-              )}
-            </p>
-          </div>
-        )}
-
-        {/* סטטוס למידה */}
         <div className="mb-2">
           <LearningStatusBadge status={video.learningStatus} />
         </div>
@@ -209,8 +161,28 @@ export function VideoCard({
           )}
         </div>
 
-        {/* סיכום AI — או תגי נושאים עמומים */}
-        {video.shortSummary ? (
+        {/* הערה / סיכום AI / נושאים */}
+        {noteSnippet ? (
+          <div
+            className="mb-3 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-1.5">
+              <StickyNote className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+              <p className={cn("text-xs text-amber-800 leading-relaxed", !noteExpanded && "line-clamp-2")}>
+                {noteSnippet}
+              </p>
+            </div>
+            {noteSnippet.length > 80 && (
+              <button
+                className="text-[10px] text-amber-600 font-semibold mt-1 hover:underline"
+                onClick={() => setNoteExpanded((v) => !v)}
+              >
+                {noteExpanded ? "פחות" : "עוד"}
+              </button>
+            )}
+          </div>
+        ) : video.shortSummary ? (
           <p className="text-xs text-gray-600 font-medium line-clamp-2 mb-3 leading-relaxed">
             {video.shortSummary.replace(/\[MOCK\]/gi, "").replace(/^הסרטון\s*/u, "").trim()}
           </p>
