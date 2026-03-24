@@ -52,7 +52,7 @@ export function VideoDetailPanel({
       const code = err?.code;
       setAnalyzeError(
         code === "QUOTA_ZERO"              ? "ה-API Key אין לו quota פעיל. ניתן להפעיל GEMINI_MOCK=true לבדיקה." :
-        code === "GEMINI_API_KEY_MISSING"  ? "מפתח ה-API חסר — הוסף GEMINI_API_KEY לקובץ .env" :
+        code === "GEMINI_API_KEY_MISSING"  ? "מפתח ה-API חסר — הוסף GEMINI_API_KEY ב-Base44 → Environment Variables" :
         code === "RATE_LIMIT"             ? "הגעת למגבלת הבקשות — נסה שוב בעוד כמה שניות" :
                                             "הניתוח נכשל — נסה שוב"
       );
@@ -124,11 +124,13 @@ export function VideoDetailPanel({
             {/* מנטור + תאריך + צפיות + אורך */}
             <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2.5">
               <div className="flex items-center gap-3 flex-row-reverse">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shrink-0">
-                  {mentorName?.charAt(0)?.toUpperCase() || "?"}
-                </div>
+                {mentorName && (
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shrink-0">
+                    {mentorName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 text-right">
-                  <p className="text-sm font-semibold text-gray-900">{mentorName}</p>
+                  {mentorName && <p className="text-sm font-semibold text-gray-900">{mentorName}</p>}
                   <div className="flex items-center gap-3 flex-row-reverse flex-wrap">
                     <p className="text-xs text-gray-500">{publishDate}</p>
                     {viewCountFormatted && (
@@ -200,46 +202,70 @@ export function VideoDetailPanel({
               </TabsList>
 
               <TabsContent value="summary" className="mt-4 space-y-4">
-                {video.shortSummary ? (
-                  <>
-                    <div className="text-right">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום קצר</h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">{video.shortSummary}</p>
-                    </div>
-                    {video.fullSummary && (
-                      <div className="text-right">
-                        <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום מלא</h4>
-                        <p className="text-sm text-gray-600 leading-relaxed">{video.fullSummary}</p>
+                {(() => {
+                  const hasData = video.shortSummary || video.fullSummary || (video.keyPoints && video.keyPoints.length > 0);
+                  if (hasData) {
+                    return (
+                      <>
+                        {video.shortSummary && (
+                          <div className="text-right">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום קצר</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">{video.shortSummary}</p>
+                          </div>
+                        )}
+                        {video.fullSummary && (
+                          <div className="text-right">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-1.5">סיכום מלא</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">{video.fullSummary}</p>
+                          </div>
+                        )}
+                        {!video.shortSummary && !video.fullSummary && video.keyPoints?.length > 0 && (
+                          <div className="text-right">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">נקודות מפתח</h4>
+                            <ul className="space-y-2">
+                              {video.keyPoints.map((point, i) => (
+                                <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700">
+                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                  <span className="leading-relaxed">{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all">
+                          {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                          {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
+                        </button>
+                        {analyzeError && (
+                          <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
+                        )}
+                      </>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col items-center gap-4 py-10 text-center">
+                      <div className="p-3 bg-indigo-50 rounded-xl"><Sparkles className="h-6 w-6 text-indigo-500" /></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">הסרטון טרם נותח</p>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">ניתוח AI יפיק סיכום, נקודות מפתח ותגיות</p>
                       </div>
-                    )}
-                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all">
-                      {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
-                    </button>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center gap-4 py-10 text-center">
-                    <div className="p-3 bg-indigo-50 rounded-xl"><Sparkles className="h-6 w-6 text-indigo-500" /></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">הסרטון טרם נותח</p>
-                      <p className="text-xs text-gray-400 mt-1 leading-relaxed">ניתוח AI יפיק סיכום, נקודות מפתח ותגיות</p>
+                      <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm">
+                        {isAnalyzing ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        {isAnalyzing ? "מנתח..." : "נתח עם AI"}
+                      </button>
+                      {analyzeError && (
+                        <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
+                      )}
                     </div>
-                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm">
-                      {isAnalyzing ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      {isAnalyzing ? "מנתח..." : "נתח עם AI"}
-                    </button>
-                    {analyzeError && (
-                      <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
-                    )}
-                  </div>
-                )}
+                  );
+                })()}
               </TabsContent>
 
-              <TabsContent value="keypoints" className="mt-4 space-y-4">
+              <TabsContent value="keypoints" className="mt-4 space-y-4" dir="rtl">
                 {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-2.5 text-right">
                     {video.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700 text-right">
+                      <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700">
                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                         <span className="leading-relaxed">{point}</span>
                       </li>
