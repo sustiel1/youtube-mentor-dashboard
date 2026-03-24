@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
+import { Bot, TrendingUp, Code, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
 import { getTopicConfig } from "@/components/layout/AppSidebar";
+import { getTopicByCategory } from "@/config/topicConfig";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
@@ -11,12 +12,6 @@ import { getAllChannels, CHANNEL_CONFIG } from "@/config/channelConfig";
 import { fetchChannelRSS, filterNewVideos } from "@/services/rssIngestion";
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
-
-const CATEGORY_CONFIG = {
-  AI: { label: "בינה מלאכותית", icon: Bot, color: "text-violet-600 bg-violet-50" },
-  Markets: { label: "שוק ההון", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50" },
-  Dev: { label: "פיתוח", icon: Code, color: "text-blue-600 bg-blue-50" },
-};
 
 const CATEGORIES = [
   { id: "AI", name: "בינה מלאכותית ואוטומציה", description: "AI, אוטומציה, כלים טכנולוגיים", icon: Bot, color: "text-violet-600 bg-violet-50" },
@@ -931,8 +926,8 @@ function RssTab({ videos }) {
           </thead>
           <tbody>
             {channels.map((ch, i) => {
-              const catCfg = CATEGORY_CONFIG[ch.category];
-              const CatIcon = catCfg?.icon;
+              const catCfg = getTopicByCategory(ch.category);
+              const CatIcon = catCfg?.Icon;
               const status = statuses[ch.mentorId];
               const hasPreview = status?.preview?.length > 0;
 
@@ -950,7 +945,7 @@ function RssTab({ videos }) {
                   {/* Category */}
                   <td className="px-4 py-3">
                     {catCfg && (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.color}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.bg} ${catCfg.text}`}>
                         {CatIcon && <CatIcon className="h-3 w-3" />}
                         {catCfg.label}
                       </span>

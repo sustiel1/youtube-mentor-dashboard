@@ -1,46 +1,37 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   House, LayoutGrid, Bookmark, BookOpen,
-  Settings, UserPlus, BookPlus, ChevronDown,
+  Settings, UserPlus, BookPlus, ChevronDown, GripVertical,
   Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
 } from "lucide-react";
+import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
 
-// Map topic.icon string → Lucide component (exported for use in Admin)
+// Map topic.icon string → Lucide component (fallback for topics using the icon field)
 export const TOPIC_ICON_MAP = {
   Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
 };
 
-// Per-topic icon + color config by topic name (takes priority over topic.icon field)
-export const TOPIC_ICON_CONFIG = {
-  "מוזיקה":              { Icon: Music4,          bg: "bg-purple-100", text: "text-purple-600" },
-  "מנופים":              { Icon: Construction,     bg: "bg-orange-100", text: "text-orange-600" },
-  "סוכר":                { Icon: Candy,            bg: "bg-pink-100",   text: "text-pink-600"   },
-  "בריאות":              { Icon: HeartPulse,       bg: "bg-red-100",    text: "text-red-600"    },
-  "פוליטיקה":            { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
-  "פוליטיקה ותוכן ישר":  { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
-  "פוליטיקה ותוכן":      { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600"   },
-  "אוכל ובישול":         { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700" },
-  "אוכל":                { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700" },
-  "אוטומציה":            { Icon: Workflow,         bg: "bg-indigo-100", text: "text-indigo-600" },
-  "בינה מלאכותית":       { Icon: Bot,              bg: "bg-violet-100", text: "text-violet-600" },
-  "שוק ההון":            { Icon: ChartCandlestick, bg: "bg-green-100",  text: "text-green-600"  },
-};
-
-// Flexible lookup: exact match first, then partial (handles "(AI)", "ישראלי", etc.)
-export function getTopicConfig(name) {
-  if (!name) return null;
-  if (TOPIC_ICON_CONFIG[name]) return TOPIC_ICON_CONFIG[name];
-  const lower = name.toLowerCase();
-  for (const [key, cfg] of Object.entries(TOPIC_ICON_CONFIG)) {
-    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) return cfg;
-  }
-  return null;
-}
+// Re-export for backward compat — Admin.jsx and others import getTopicConfig from here
+export { TOPIC_CONFIG_BY_NAME as TOPIC_ICON_CONFIG };
+export const getTopicConfig = getTopicByName;
 
 import { cn } from "@/lib/utils";
 import { AddMentorDialog } from "@/components/mentors/AddMentorDialog";
 import { AddTopicDialog } from "@/components/topics/AddTopicDialog";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
+
+// ── localStorage helpers for topic order (shared with Admin.jsx) ──────────
+const ORDER_KEY = "ym_topic_order";
+function loadOrder()       { try { return JSON.parse(localStorage.getItem(ORDER_KEY)); } catch { return null; } }
+function saveOrder(ids)    { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); }
+function applyStoredOrder(topics) {
+  const stored = loadOrder();
+  if (!stored || !stored.length) return topics;
+  const map     = Object.fromEntries(topics.map((t) => [t.id, t]));
+  const sorted  = stored.map((id) => map[id]).filter(Boolean);
+  const newOnes = topics.filter((t) => !stored.includes(t.id));
+  return [...sorted, ...newOnes];
+}
 
 // Map color string → Tailwind classes
 const TOPIC_COLOR_CLASS = {
@@ -100,10 +91,78 @@ export function AppSidebar({
   const [addMentorOpen, setAddMentorOpen]     = useState(false);
   const [addTopicOpen, setAddTopicOpen]       = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+  const [draggingId, setDraggingId]           = useState(null);
+
+  // Ordered list of main topics (persisted in localStorage)
+  const [orderedTopics, setOrderedTopics] = useState(() =>
+    applyStoredOrder(topics.filter((t) => t.isMainCategory || !t.parentId))
+  );
+
+  // Sync orderedTopics when topics prop changes (e.g. after a mutation)
+  useEffect(() => {
+    const main = topics.filter((t) => t.isMainCategory || !t.parentId);
+    setOrderedTopics((prev) => {
+      const map     = Object.fromEntries(main.map((t) => [t.id, t]));
+      const updated = prev.map((t) => map[t.id]).filter(Boolean);
+      const added   = main.filter((t) => !prev.some((p) => p.id === t.id));
+      return [...updated, ...added];
+    });
+  }, [topics]);
+
+  // Drag-and-drop refs
+  const dragId     = useRef(null);
+  const lastOverId = useRef(null);
+
+  function handleDragStart(e, id) {
+    dragId.current   = id;
+    lastOverId.current = null;
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragOver(e, id) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (lastOverId.current === id) return; // skip if same target
+    lastOverId.current = id;
+    if (!dragId.current || dragId.current === id) return;
+    // Live reorder preview
+    setOrderedTopics((prev) => {
+      const from = prev.findIndex((t) => t.id === dragId.current);
+      const to   = prev.findIndex((t) => t.id === id);
+      if (from === -1 || to === -1 || from === to) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
+
+  function handleDrop(e, id) {
+    e.preventDefault();
+    // Save the final order to localStorage
+    setOrderedTopics((prev) => {
+      saveOrder(prev.map((t) => t.id));
+      return prev;
+    });
+    setDraggingId(null);
+    dragId.current     = null;
+    lastOverId.current = null;
+  }
+
+  function handleDragEnd() {
+    // Fired if drop happened outside a valid target — persist current order
+    setOrderedTopics((prev) => {
+      saveOrder(prev.map((t) => t.id));
+      return prev;
+    });
+    setDraggingId(null);
+    dragId.current     = null;
+    lastOverId.current = null;
+  }
 
   const activeMentor  = filters?.mentor || "all";
   const activeMentors = mentors.filter((m) => m.active);
-  const mainTopics    = topics.filter((t) => t.isMainCategory || !t.parentId);
 
   const isHome =
     currentPage === "Dashboard" &&
@@ -196,7 +255,7 @@ export function AppSidebar({
           </div>
 
           <div className="space-y-0.5">
-            {mainTopics.map((topic) => {
+            {orderedTopics.map((topic) => {
               const cfg          = getTopicConfig(topic.name);
               const TopicIcon    = cfg?.Icon || TOPIC_ICON_MAP[topic.icon] || null;
               const colors       = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
@@ -205,14 +264,26 @@ export function AppSidebar({
               const isTopicActive =
                 (currentPage === "TopicPage" || currentPage === "TopicLearningPage") &&
                 pageParams?.topicId === topic.id;
+              const isDragging = draggingId === topic.id;
 
               return (
-                <div key={topic.id}>
+                <div
+                  key={topic.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, topic.id)}
+                  onDragOver={(e)  => handleDragOver(e, topic.id)}
+                  onDrop={(e)      => handleDrop(e, topic.id)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "transition-opacity",
+                    isDragging && "opacity-40"
+                  )}
+                >
                   {/* Topic row */}
                   <button
                     onClick={() => toggleTopic(topic.id)}
                     className={cn(
-                      "w-full flex flex-row-reverse items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
+                      "w-full flex flex-row-reverse items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-grab active:cursor-grabbing",
                       isTopicActive
                         ? "bg-gray-100 text-gray-900 font-semibold"
                         : "text-gray-600 hover:bg-gray-50"
@@ -232,6 +303,7 @@ export function AppSidebar({
                       "h-3.5 w-3.5 text-gray-400 transition-transform duration-200 shrink-0",
                       isExpanded && "rotate-180"
                     )} />
+                    <GripVertical className="h-3.5 w-3.5 text-gray-300 shrink-0" />
                   </button>
 
                   {/* Mentors list (collapsed by default) */}

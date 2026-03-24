@@ -1,36 +1,64 @@
-// ─── Topic Config ─────────────────────────────────────────────────────────────
-// Mapping: topicId → { emoji, bg, text, border }
-// All topic IDs match mockData.js TOPICS array (t1–t13).
+// ─── Centralized Topic Config ──────────────────────────────────────────────
+// Single source of truth for all topic/category styling across the app.
+// Used by: AppSidebar, CategoryBadge, Admin (RSS tab), and anywhere else.
 
-export const TOPIC_CONFIG = {
-  // ── בינה מלאכותית ─────────────────────────────────
-  t1:  { emoji: "🤖", bg: "bg-violet-100",  text: "text-violet-800",  border: "border-violet-200"  }, // בינה מלאכותית
+import {
+  Music4, Construction, Candy, HeartPulse, Landmark,
+  ChefHat, Workflow, Bot, ChartCandlestick, Code, Hash,
+} from "lucide-react";
 
-  // ── שוק ההון ──────────────────────────────────────
-  t2:  { emoji: "📊", bg: "bg-blue-100",    text: "text-blue-800",    border: "border-blue-200"    }, // שוק ההון
-  t3:  { emoji: "💰", bg: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-200" }, // השקעות
-  t4:  { emoji: "📈", bg: "bg-orange-100",  text: "text-orange-800",  border: "border-orange-200"  }, // מסחר
-  t5:  { emoji: "📉", bg: "bg-indigo-100",  text: "text-indigo-800",  border: "border-indigo-200"  }, // ניתוח טכני
-  t6:  { emoji: "📑", bg: "bg-slate-100",   text: "text-slate-700",   border: "border-slate-200"   }, // ניתוח פונדמנטלי
-  t7:  { emoji: "🪙", bg: "bg-green-100",   text: "text-green-800",   border: "border-green-200"   }, // מניות
-
-  // ── אוטומציה וכלים ────────────────────────────────
-  t8:  { emoji: "⚙️", bg: "bg-cyan-100",    text: "text-cyan-800",    border: "border-cyan-200"    }, // אוטומציה
-  t9:  { emoji: "💻", bg: "bg-sky-100",     text: "text-sky-800",     border: "border-sky-200"     }, // פיתוח תוכנה
-  t10: { emoji: "📢", bg: "bg-pink-100",    text: "text-pink-800",    border: "border-pink-200"    }, // שיווק דיגיטלי
-  t11: { emoji: "🎙️", bg: "bg-yellow-100",  text: "text-yellow-800",  border: "border-yellow-200"  }, // פודקאסטים
-  t12: { emoji: "🔧", bg: "bg-amber-100",   text: "text-amber-800",   border: "border-amber-200"   }, // כלים וטכנולוגיות
-  t13: { emoji: "🏗️", bg: "bg-fuchsia-100", text: "text-fuchsia-800", border: "border-fuchsia-200" }, // בניית אפליקציות
+// ── Name-based map (primary source of truth) ──────────────────────────────
+// Keys are Hebrew topic names. Partial matching is supported via getTopicByName().
+export const TOPIC_CONFIG_BY_NAME = {
+  "מוזיקה":             { Icon: Music4,          bg: "bg-purple-100", text: "text-purple-600", label: "מוזיקה"          },
+  "מנופים":             { Icon: Construction,     bg: "bg-orange-100", text: "text-orange-600", label: "מנופים"          },
+  "סוכר":               { Icon: Candy,            bg: "bg-pink-100",   text: "text-pink-600",   label: "סוכר"            },
+  "בריאות":             { Icon: HeartPulse,       bg: "bg-red-100",    text: "text-red-600",    label: "בריאות"          },
+  "פוליטיקה":           { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה"        },
+  "פוליטיקה ותוכן ישר": { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה ותוכן" },
+  "פוליטיקה ותוכן":     { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה ותוכן" },
+  "אוכל ובישול":        { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700", label: "אוכל ובישול"     },
+  "אוכל":               { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700", label: "אוכל"            },
+  "אוטומציה":           { Icon: Workflow,         bg: "bg-indigo-100", text: "text-indigo-600", label: "אוטומציה"        },
+  "בינה מלאכותית":      { Icon: Bot,              bg: "bg-violet-100", text: "text-violet-600", label: "בינה מלאכותית"  },
+  "שוק ההון":           { Icon: ChartCandlestick, bg: "bg-green-100",  text: "text-green-600",  label: "שוק ההון"        },
+  "פיתוח":              { Icon: Code,             bg: "bg-sky-100",    text: "text-sky-600",    label: "פיתוח"           },
 };
 
-// Fallback for unknown/future topic IDs
-const DEFAULT_CONFIG = {
-  emoji: "🏷️",
-  bg: "bg-gray-100",
-  text: "text-gray-700",
-  border: "border-gray-200",
+// ── Category code → Hebrew name (for mentor.category field) ───────────────
+const CATEGORY_TO_NAME = {
+  AI:       "בינה מלאכותית",
+  Markets:  "שוק ההון",
+  Food:     "אוכל ובישול",
+  Health:   "בריאות",
+  Music:    "מוזיקה",
+  Politics: "פוליטיקה ותוכן",
+  Dev:      "פיתוח",
 };
 
-export function getTopicConfig(topicId) {
-  return TOPIC_CONFIG[topicId] ?? DEFAULT_CONFIG;
+// ── Fallback ───────────────────────────────────────────────────────────────
+export const DEFAULT_TOPIC_CONFIG = {
+  Icon:  Hash,
+  bg:    "bg-gray-100",
+  text:  "text-gray-600",
+  label: "אחר",
+};
+
+// ── Lookup by topic name (partial match supported) ─────────────────────────
+// Handles names like "בינה מלאכותית (AI)" or "פוליטיקה ותוכן ישראלי"
+export function getTopicByName(name) {
+  if (!name) return null;
+  if (TOPIC_CONFIG_BY_NAME[name]) return TOPIC_CONFIG_BY_NAME[name];
+  const lower = name.toLowerCase();
+  for (const [key, cfg] of Object.entries(TOPIC_CONFIG_BY_NAME)) {
+    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) return cfg;
+  }
+  return null;
+}
+
+// ── Lookup by category code (AI, Markets, Food, etc.) ─────────────────────
+export function getTopicByCategory(categoryCode) {
+  const name = CATEGORY_TO_NAME[categoryCode];
+  if (!name) return DEFAULT_TOPIC_CONFIG;
+  return TOPIC_CONFIG_BY_NAME[name] ?? DEFAULT_TOPIC_CONFIG;
 }
