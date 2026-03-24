@@ -29,6 +29,7 @@ export function VideoDetailPanel({
   onSaveToggle,
   onLearningStatusChange,
   onRemoveTopic,
+  onAnalyzeDone,
 }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState(null);
@@ -48,6 +49,7 @@ export function VideoDetailPanel({
         keyPoints:   video.keyPoints || [],
       });
       updateSummary.mutate({ id: video.id, ...result });
+      onAnalyzeDone?.({ ...result, status: "done" });
     } catch (err) {
       const code = err?.code;
       setAnalyzeError(

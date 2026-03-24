@@ -375,6 +375,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
         onSaveToggle={handleSaveToggle}
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
+        onAnalyzeDone={(result) => setSelectedVideo((prev) => ({ ...prev, ...result }))}
       />
     </div>
   );

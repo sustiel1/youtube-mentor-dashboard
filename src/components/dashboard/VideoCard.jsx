@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Eye, StickyNote, Trash2 } from "lucide-react";
+import { Eye, StickyNote, Trash2, Sparkles } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { LearningStatusBadge } from "./LearningStatusBadge";
@@ -116,6 +116,16 @@ export function VideoCard({
             <span className="flex items-center gap-1 text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 shadow">
               <StickyNote className="h-2.5 w-2.5" />
               יש הערות
+            </span>
+          </div>
+        )}
+
+        {/* "נותח" badge — פיזית ימין תחתון כשיש סיכום AI */}
+        {video.shortSummary && (
+          <div className="absolute bottom-1.5 right-1.5">
+            <span className="flex items-center gap-1 text-[10px] font-semibold bg-indigo-600/85 text-white rounded px-1.5 py-0.5 backdrop-blur-sm">
+              <Sparkles className="h-2.5 w-2.5" />
+              נותח
             </span>
           </div>
         )}
