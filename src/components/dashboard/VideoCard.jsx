@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { Eye, StickyNote, Trash2, Sparkles } from "lucide-react";
@@ -58,9 +59,23 @@ export function VideoCard({
   hasNotes = false,      // האם יש הערות אישיות לסרטון זה
   noteSnippet = null,    // תוכן ההערה הראשונה (קטע קצר)
 }) {
+  const [noteExpanded, setNoteExpanded] = useState(false);
+
   const publishDate = video.publishedAt
     ? format(new Date(video.publishedAt), "d MMM yyyy", { locale: he })
     : "";
+
+  // גזירת טקסט ההערה מהשדות האפשריים
+  const noteText =
+    noteSnippet ||
+    (typeof video.note === "string" && video.note.trim()) ||
+    (typeof video.notes === "string" && video.notes.trim()) ||
+    (Array.isArray(video.notes) &&
+      video.notes.map((n) => (typeof n === "string" ? n : n?.content)).find((s) => s?.trim())) ||
+    null;
+
+  const NOTE_PREVIEW = 80;
+  const noteIsLong = noteText && noteText.length > NOTE_PREVIEW;
 
   // Resolve topic objects from topicIds
   const videoTopics = (video.topicIds || [])
@@ -151,6 +166,26 @@ export function VideoCard({
           {video.title}
         </h3>
 
+        {/* הערה אדומה מתחת לכותרת */}
+        {noteText && (
+          <div className="mb-2 flex items-start gap-1">
+            <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-red-500 leading-relaxed">
+              {noteExpanded || !noteIsLong
+                ? noteText
+                : noteText.slice(0, NOTE_PREVIEW) + "..."}
+              {noteIsLong && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setNoteExpanded((v) => !v); }}
+                  className="font-semibold text-red-400 hover:text-red-600 mr-1 underline underline-offset-2"
+                >
+                  {noteExpanded ? "פחות" : "עוד"}
+                </button>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* סטטוס למידה */}
         <div className="mb-2">
           <LearningStatusBadge status={video.learningStatus} />
@@ -174,13 +209,8 @@ export function VideoCard({
           )}
         </div>
 
-        {/* הערה אישית (עדיפות) — או סיכום AI — או תגי נושאים עמומים */}
-        {noteSnippet ? (
-          <div className="flex items-start gap-1.5 mb-3 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
-            <StickyNote className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800 line-clamp-2 leading-relaxed">{noteSnippet}</p>
-          </div>
-        ) : video.shortSummary ? (
+        {/* סיכום AI — או תגי נושאים עמומים */}
+        {video.shortSummary ? (
           <p className="text-xs text-gray-600 font-medium line-clamp-2 mb-3 leading-relaxed">
             {video.shortSummary.replace(/\[MOCK\]/gi, "").replace(/^הסרטון\s*/u, "").trim()}
           </p>
