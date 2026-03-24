@@ -144,14 +144,14 @@ export function VideoDetailPanel({
               <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
             </div>
 
-            {/* preview הערה — מוצג מתחת לכותרת אם קיים */}
+            {/* preview הערה — שורת טקסט אדומה מתחת לכותרת */}
             {notePreview && (
               <button
                 onClick={() => setActiveTab("notes")}
-                className="w-full flex items-start gap-2 flex-row-reverse bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-right hover:bg-amber-100 transition-colors"
+                className="flex items-start gap-1.5 flex-row-reverse text-right hover:opacity-70 transition-opacity"
               >
-                <StickyNote className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-800 leading-relaxed line-clamp-2">
+                <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-500 line-clamp-2 leading-relaxed">
                   {notePreview}
                 </p>
               </button>
