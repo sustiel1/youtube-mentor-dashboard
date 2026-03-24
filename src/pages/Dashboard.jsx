@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RefreshCw, X, GraduationCap, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -96,6 +96,13 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const updateLearningStatus = useUpdateLearningStatus();
   const assignTopics = useAssignTopics();
   const deleteVideo = useDeleteVideo();
+
+  // Sync selectedVideo with fresh data after AI analysis / any mutation
+  useEffect(() => {
+    if (!selectedVideo || videos.length === 0) return;
+    const fresh = videos.find((v) => v.id === selectedVideo.id);
+    if (fresh) setSelectedVideo(fresh);
+  }, [videos]);
 
   // Apply sidebar filters (search, mentor, category)
   const filteredVideos = useMemo(() => applyFilters(videos, filters), [videos, filters]);
