@@ -140,7 +140,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const selectedMentorName = useMemo(() => {
     if (!selectedVideo) return "";
     const mentor = mentors.find((m) => m.id === selectedVideo.mentorId);
-    return mentor?.name ?? "לא ידוע";
+    return mentor?.name ?? "";
   }, [selectedVideo, mentors]);
 
   const getMentorName = (mentorId) =>

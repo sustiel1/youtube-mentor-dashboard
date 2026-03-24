@@ -146,12 +146,22 @@ export function VideoCard({
           <LearningStatusBadge status={video.learningStatus} />
         </div>
 
-        {/* מנטור */}
-        <div className="flex items-center gap-2 mb-2.5">
-          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
-            {mentorName?.charAt(0) || "?"}
+        {/* מנטור + צפיות */}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            {mentorName && (
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                {mentorName.charAt(0)}
+              </div>
+            )}
+            {mentorName && <span className="text-xs text-gray-500 truncate">{mentorName}</span>}
           </div>
-          <span className="text-xs text-gray-500 truncate">{mentorName}</span>
+          {viewCountStr && (
+            <span className="text-xs text-gray-400 flex items-center gap-0.5 shrink-0">
+              <Eye className="h-3 w-3" />
+              {viewCountStr}
+            </span>
+          )}
         </div>
 
         {/* הערה אישית (עדיפות) — או סיכום AI — או תגי נושאים עמומים */}
@@ -179,12 +189,6 @@ export function VideoCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             <CategoryBadge category={video.category} />
             <StatusBadge status={video.status} />
-            {viewCountStr && (
-              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                <Eye className="h-2.5 w-2.5" />
-                {viewCountStr}
-              </span>
-            )}
           </div>
           <span className="text-xs text-gray-400">{publishDate}</span>
         </div>
