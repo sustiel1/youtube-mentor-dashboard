@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote } from "lucide-react";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -33,7 +33,15 @@ export function VideoDetailPanel({
 }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState(null);
+  const [activeTab, setActiveTab] = useState("summary");
   const updateSummary = useUpdateSummary();
+
+  // בודק אם קיימת הערה לסרטון
+  const hasNote = !!(
+    (Array.isArray(video.notes) && video.notes.length > 0) ||
+    (typeof video.note === "string" && video.note.trim().length > 0) ||
+    (typeof video.notes === "string" && video.notes.trim().length > 0)
+  );
 
   if (!video) return null;
 
@@ -92,6 +100,20 @@ export function VideoDetailPanel({
         >
           <X className="h-4 w-4 text-gray-600" />
         </button>
+
+        {/* Note indicator — מופיע בצד שמאל רק אם קיימת הערה */}
+        {hasNote && (
+          <button
+            onClick={() => setActiveTab("notes")}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-1.5 py-3 rounded-r-xl shadow-md transition-all duration-200 animate-in fade-in slide-in-from-left-2"
+            title="יש הערה — לחץ לצפייה"
+          >
+            <StickyNote className="h-4 w-4" />
+            <span className="text-[10px] font-semibold leading-tight [writing-mode:vertical-rl] rotate-180">
+              יש הערה
+            </span>
+          </button>
+        )}
 
         <ScrollArea className="flex-1">
           <div className="max-w-2xl mx-auto p-5 space-y-3">
@@ -201,7 +223,7 @@ export function VideoDetailPanel({
             )}
 
             {/* טאבים — משניים, מתחת לאזור ההחלטה */}
-            <Tabs defaultValue="summary" className="w-full" dir="rtl">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
               <TabsList className="h-8 flex w-fit mx-auto">
                 <TabsTrigger value="summary" className="text-xs px-3">סיכום</TabsTrigger>
                 <TabsTrigger value="keypoints" className="text-xs px-3">נקודות מפתח</TabsTrigger>
