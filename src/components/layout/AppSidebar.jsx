@@ -297,81 +297,79 @@ export function AppSidebar({
                     isDragging && "opacity-40"
                   )}
                 >
-                  {/* Topic row */}
+                  {/* Topic row — plain flex in RTL flows right→left naturally */}
                   <div className={cn(
-                    "group flex flex-row-reverse items-center gap-1 px-2 py-1.5 rounded-lg text-sm transition-colors",
+                    "group flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm transition-colors",
                     isTopicActive
                       ? "bg-gray-100 text-gray-900 font-semibold"
                       : "text-gray-600 hover:bg-gray-50"
                   )}>
-                    {/* Icon + Name — clickable to toggle expand */}
+                    {/* 1. Topic icon — always visible, rightmost */}
+                    <span className={cn(
+                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                      cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
+                    )}>
+                      {TopicIcon
+                        ? <TopicIcon className="h-3.5 w-3.5" />
+                        : <Hash className="h-3.5 w-3.5" />
+                      }
+                    </span>
+
+                    {/* 2. Edit/Delete buttons (between icon and name, visible on hover) */}
+                    {deletingId === topic.id ? (
+                      /* Inline delete confirm */
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          onClick={() => handleDelete(topic.id)}
+                          title="אישור מחיקה"
+                          className="p-1 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(null)}
+                          title="ביטול"
+                          className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      /* Edit / Delete — visible on hover */
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button
+                          onClick={() => setEditingTopic(topic)}
+                          title="ערוך נושא"
+                          className="p-1 rounded text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(topic.id)}
+                          title="מחק נושא"
+                          className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 3. Topic name — fills remaining space, click to toggle */}
                     <button
                       onClick={() => toggleTopic(topic.id)}
-                      className="flex flex-row-reverse items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing"
+                      className="flex-1 text-right truncate text-sm min-w-0 cursor-grab active:cursor-grabbing"
                     >
-                      <span className={cn(
-                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                        cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
-                      )}>
-                        {TopicIcon
-                          ? <TopicIcon className="h-3.5 w-3.5" />
-                          : <Hash className="h-3.5 w-3.5" />
-                        }
-                      </span>
-                      <span className="flex-1 text-right truncate text-sm">{topic.name}</span>
+                      {topic.name}
                     </button>
 
-                    {/* Controls — right side (visual left in RTL) */}
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {deletingId === topic.id ? (
-                        /* Inline delete confirm */
-                        <>
-                          <button
-                            onClick={() => handleDelete(topic.id)}
-                            title="אישור מחיקה"
-                            className="p-1 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Check className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => setDeletingId(null)}
-                            title="ביטול"
-                            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </>
-                      ) : (
-                        /* Edit / Delete — visible on hover */
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => setEditingTopic(topic)}
-                            title="ערוך נושא"
-                            className="p-1 rounded text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => setDeletingId(topic.id)}
-                            title="מחק נושא"
-                            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Chevron toggle */}
-                      <button onClick={() => toggleTopic(topic.id)}>
-                        <ChevronDown className={cn(
-                          "h-3.5 w-3.5 text-gray-400 transition-transform duration-200",
-                          isExpanded && "rotate-180"
-                        )} />
-                      </button>
-
-                      {/* Drag handle */}
-                      <GripVertical className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                    </div>
+                    {/* 4. Chevron + grip — leftmost */}
+                    <button onClick={() => toggleTopic(topic.id)}>
+                      <ChevronDown className={cn(
+                        "h-3.5 w-3.5 text-gray-400 transition-transform duration-200 shrink-0",
+                        isExpanded && "rotate-180"
+                      )} />
+                    </button>
+                    <GripVertical className="h-3.5 w-3.5 text-gray-300 shrink-0" />
                   </div>
 
                   {/* Mentors list (collapsed by default) */}
