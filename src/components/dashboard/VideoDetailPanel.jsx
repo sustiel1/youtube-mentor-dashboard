@@ -130,29 +130,38 @@ export function VideoDetailPanel({
                 <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
               </div>
 
-              {/* Metadata as chips */}
-              <div className="flex flex-wrap gap-2 flex-row-reverse">
+              {/* Metadata row — right to left: date | views | duration | mentor | badges */}
+              <div className="flex flex-wrap items-center gap-2" dir="rtl">
+                {publishDate && (
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                    <Calendar className="h-3 w-3 text-gray-400" />{publishDate}
+                  </span>
+                )}
+                {publishDate && (viewCountFormatted || video.duration) && (
+                  <span className="text-gray-300 text-xs">·</span>
+                )}
+                {viewCountFormatted && (
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                    <Eye className="h-3 w-3 text-gray-400" />{viewCountFormatted}
+                  </span>
+                )}
+                {viewCountFormatted && video.duration && (
+                  <span className="text-gray-300 text-xs">·</span>
+                )}
+                {video.duration && (
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                    <Clock className="h-3 w-3 text-gray-400" />{video.duration}
+                  </span>
+                )}
+                {(publishDate || viewCountFormatted || video.duration) && mentorName && (
+                  <span className="text-gray-300 text-xs">·</span>
+                )}
                 {mentorName && (
-                  <span className="inline-flex items-center gap-1.5 flex-row-reverse bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
                     <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[9px] font-bold shrink-0">
                       {mentorName.charAt(0).toUpperCase()}
                     </span>
                     {mentorName}
-                  </span>
-                )}
-                {publishDate && (
-                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
-                    <Calendar className="h-3 w-3" />{publishDate}
-                  </span>
-                )}
-                {viewCountFormatted && (
-                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
-                    <Eye className="h-3 w-3" />{viewCountFormatted}
-                  </span>
-                )}
-                {video.duration && (
-                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
-                    <Clock className="h-3 w-3" />{video.duration}
                   </span>
                 )}
                 <CategoryBadge category={video.category} />
@@ -183,24 +192,54 @@ export function VideoDetailPanel({
               )}
             </div>
 
-            {/* ── סטטוס למידה ── */}
-            <div className="flex items-center gap-3 flex-row-reverse">
-              <span className="text-xs font-medium text-gray-500 shrink-0">סטטוס למידה:</span>
-              <Select
-                value={video.learningStatus || "not_started"}
-                onValueChange={(val) => onLearningStatusChange?.(video, val)}
-              >
-                <SelectTrigger className="h-7 text-xs bg-white border-gray-200 w-[145px]" dir="rtl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  {LEARNING_STATUSES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <LearningStatusBadge status={video.learningStatus} />
-            </div>
+            {/* ── Progress bar + סטטוס למידה ── */}
+            {(() => {
+              const pctMap = { not_started: 0, in_progress: 40, learned: 80, completed: 100 };
+              const pct    = pctMap[video.learningStatus] ?? 0;
+              return (
+                <div className="space-y-3">
+                  {/* Status row */}
+                  <div className="flex items-center justify-between">
+                    <Select
+                      value={video.learningStatus || "not_started"}
+                      onValueChange={(val) => onLearningStatusChange?.(video, val)}
+                    >
+                      <SelectTrigger className="h-7 text-xs bg-white border-gray-200 w-[145px]" dir="rtl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        {LEARNING_STATUSES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">סטטוס למידה</span>
+                      <LearningStatusBadge status={video.learningStatus} />
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="relative h-2.5 bg-gray-200 rounded-full overflow-visible" dir="ltr">
+                    {/* Filled track */}
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
+                      }}
+                    />
+                    {/* Dot indicator */}
+                    {pct > 0 && (
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full bg-indigo-600 border-[3px] border-white shadow-md transition-all duration-500"
+                        style={{ left: `calc(${pct}% - 9px)` }}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* נושאים */}
             {videoTopics.length > 0 && (
@@ -248,7 +287,7 @@ export function VideoDetailPanel({
                   value="chapters"
                   className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
                 >
-                  פרקים
+                  פרקי הסרטון
                 </TabsTrigger>
               </TabsList>
 
