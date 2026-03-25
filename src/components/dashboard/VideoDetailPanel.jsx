@@ -197,6 +197,15 @@ export function VideoDetailPanel({
                     {mentorName}
                   </span>
                 )}
+                <a
+                  href="https://notebooklm.google.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm hover:bg-gray-50 transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                  NotebookLM
+                </a>
                 <CategoryBadge category={video.category} />
                 <StatusBadge status={video.status} />
               </div>
