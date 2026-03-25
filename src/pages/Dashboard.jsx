@@ -387,6 +387,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
               filters={filters}
               onFiltersChange={setFilters}
               mentors={mentors.filter((m) => m.active)}
+              topics={topics}
             />
 
             {/* ── Selection toolbar ── */}

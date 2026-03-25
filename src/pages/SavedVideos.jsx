@@ -94,6 +94,7 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
               filters={filters}
               onFiltersChange={setFilters}
               mentors={mentors.filter((m) => m.active)}
+              topics={topics}
             />
 
             {savedVideos.length === 0 ? (
