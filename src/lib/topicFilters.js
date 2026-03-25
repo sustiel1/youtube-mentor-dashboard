@@ -72,6 +72,31 @@ export function getEffectiveMainTopicId(filters = {}, topics = []) {
   return "all";
 }
 
+export function normalizeDashboardFilters(filters = {}, topics = []) {
+  const nextFilters = { ...filters };
+  const effectiveMainTopicId = getEffectiveMainTopicId(nextFilters, topics);
+
+  nextFilters.category = effectiveMainTopicId;
+
+  if (!nextFilters.topicId) {
+    nextFilters.topicId = "all";
+  }
+
+  if (!nextFilters.mentor) {
+    nextFilters.mentor = "all";
+  }
+
+  if (nextFilters.category === "all" && nextFilters.topicId !== "all") {
+    nextFilters.category = getMainTopicIdForTopic(nextFilters.topicId, topics);
+  }
+
+  if (nextFilters.category !== "all" && nextFilters.topicId === "all") {
+    nextFilters.topicId = nextFilters.category;
+  }
+
+  return nextFilters;
+}
+
 export function mentorBelongsToTopicFamily(mentor, rootTopicId, topics = []) {
   if (!mentor || !rootTopicId || rootTopicId === "all") return false;
 
