@@ -2,9 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import {
   House, LayoutGrid, Bookmark, BookOpen,
   Settings, UserPlus, BookPlus, ChevronDown, GripVertical,
+  Pencil, Trash2, Check, X,
   Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
 } from "lucide-react";
 import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
+import { useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 // Map topic.icon string → Lucide component (fallback for topics using the icon field)
 export const TOPIC_ICON_MAP = {
@@ -92,6 +97,19 @@ export function AppSidebar({
   const [addTopicOpen, setAddTopicOpen]       = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [draggingId, setDraggingId]           = useState(null);
+  const [editingTopic, setEditingTopic]       = useState(null); // topic object being edited
+  const [deletingId, setDeletingId]           = useState(null); // topic id awaiting confirm
+
+  const deleteTopic = useDeleteTopic();
+
+  function handleDelete(id) {
+    deleteTopic.mutate(id, {
+      onSuccess: () => {
+        setDeletingId(null);
+        setOrderedTopics((prev) => prev.filter((t) => t.id !== id));
+      },
+    });
+  }
 
   // Ordered list of main topics (persisted in localStorage)
   const [orderedTopics, setOrderedTopics] = useState(() =>
@@ -280,31 +298,81 @@ export function AppSidebar({
                   )}
                 >
                   {/* Topic row */}
-                  <button
-                    onClick={() => toggleTopic(topic.id)}
-                    className={cn(
-                      "w-full flex flex-row-reverse items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-grab active:cursor-grabbing",
-                      isTopicActive
-                        ? "bg-gray-100 text-gray-900 font-semibold"
-                        : "text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <span className={cn(
-                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                      cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
-                    )}>
-                      {TopicIcon
-                        ? <TopicIcon className="h-3.5 w-3.5" />
-                        : <Hash className="h-3.5 w-3.5" />
-                      }
-                    </span>
-                    <span className="flex-1 text-right truncate text-sm">{topic.name}</span>
-                    <ChevronDown className={cn(
-                      "h-3.5 w-3.5 text-gray-400 transition-transform duration-200 shrink-0",
-                      isExpanded && "rotate-180"
-                    )} />
-                    <GripVertical className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                  </button>
+                  <div className={cn(
+                    "group flex flex-row-reverse items-center gap-1 px-2 py-1.5 rounded-lg text-sm transition-colors",
+                    isTopicActive
+                      ? "bg-gray-100 text-gray-900 font-semibold"
+                      : "text-gray-600 hover:bg-gray-50"
+                  )}>
+                    {/* Icon + Name — clickable to toggle expand */}
+                    <button
+                      onClick={() => toggleTopic(topic.id)}
+                      className="flex flex-row-reverse items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing"
+                    >
+                      <span className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                        cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
+                      )}>
+                        {TopicIcon
+                          ? <TopicIcon className="h-3.5 w-3.5" />
+                          : <Hash className="h-3.5 w-3.5" />
+                        }
+                      </span>
+                      <span className="flex-1 text-right truncate text-sm">{topic.name}</span>
+                    </button>
+
+                    {/* Controls — right side (visual left in RTL) */}
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {deletingId === topic.id ? (
+                        /* Inline delete confirm */
+                        <>
+                          <button
+                            onClick={() => handleDelete(topic.id)}
+                            title="אישור מחיקה"
+                            className="p-1 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingId(null)}
+                            title="ביטול"
+                            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        /* Edit / Delete — visible on hover */
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setEditingTopic(topic)}
+                            title="ערוך נושא"
+                            className="p-1 rounded text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingId(topic.id)}
+                            title="מחק נושא"
+                            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Chevron toggle */}
+                      <button onClick={() => toggleTopic(topic.id)}>
+                        <ChevronDown className={cn(
+                          "h-3.5 w-3.5 text-gray-400 transition-transform duration-200",
+                          isExpanded && "rotate-180"
+                        )} />
+                      </button>
+
+                      {/* Drag handle */}
+                      <GripVertical className="h-3.5 w-3.5 text-gray-300 shrink-0" />
+                    </div>
+                  </div>
 
                   {/* Mentors list (collapsed by default) */}
                   {isExpanded && (
@@ -375,7 +443,73 @@ export function AppSidebar({
       <AddMentorDialog   open={addMentorOpen}   onOpenChange={setAddMentorOpen}   />
       <AddTopicDialog    open={addTopicOpen}    onOpenChange={setAddTopicOpen}    />
       <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
+
+      {/* Edit topic dialog */}
+      <EditTopicDialog
+        topic={editingTopic}
+        onClose={() => setEditingTopic(null)}
+      />
     </aside>
+  );
+}
+
+// ── Edit Topic Dialog ─────────────────────────────────────────────────────
+function EditTopicDialog({ topic, onClose }) {
+  const [name, setName]   = useState("");
+  const updateTopic       = useUpdateTopic();
+
+  // Sync name when topic changes
+  useEffect(() => { setName(topic?.name || ""); }, [topic]);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    try {
+      await updateTopic.mutateAsync({ id: topic.id, name: name.trim() });
+      onClose();
+    } catch (err) {
+      console.error("[EditTopicDialog]", err);
+    }
+  };
+
+  return (
+    <Dialog open={!!topic} onOpenChange={onClose}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-base font-semibold text-gray-900">
+            עריכת נושא
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">שם הנושא</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              autoFocus
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition"
+            />
+          </div>
+          <div className="flex gap-2 justify-start pt-1">
+            <button
+              onClick={handleSave}
+              disabled={updateTopic.isPending || !name.trim()}
+              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {updateTopic.isPending ? "שומר..." : "שמור"}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={updateTopic.isPending}
+              className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
