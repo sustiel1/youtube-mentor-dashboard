@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
+import { videoBelongsToTopicFamily } from "@/lib/topicFilters";
 
 // Map KPI filterKey → video status value
 const KPI_STATUS_MAP = {
@@ -67,11 +68,11 @@ function DashboardSkeleton() {
   );
 }
 
-function applyFilters(videos, filters) {
+function applyFilters(videos, filters, topics) {
   return videos.filter((video) => {
     if (filters.search && !video.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.mentor !== "all" && video.mentorId !== filters.mentor) return false;
-    if (filters.category !== "all" && video.category !== filters.category) return false;
+    if (filters.category !== "all" && !videoBelongsToTopicFamily(video, filters.category, topics)) return false;
     if (filters.topicId && filters.topicId !== "all" && !video.topicIds?.includes(filters.topicId)) return false;
     return true;
   });
@@ -113,7 +114,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   }, [videos]);
 
   // Apply sidebar filters (search, mentor, category)
-  const filteredVideos = useMemo(() => applyFilters(videos, filters), [videos, filters]);
+  const filteredVideos = useMemo(() => applyFilters(videos, filters, topics), [videos, filters, topics]);
 
   // Apply KPI status filter + learning status filter on top of sidebar filters
   const displayedVideos = useMemo(() => {

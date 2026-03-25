@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
+import { videoBelongsToTopicFamily } from "@/lib/topicFilters";
 
 export default function SavedVideos({ filters = { search: "", mentor: "all", category: "all" }, setFilters }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -28,10 +29,10 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
       .filter((v) => {
         if (filters.search && !v.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
         if (filters.mentor !== "all" && v.mentorId !== filters.mentor) return false;
-        if (filters.category !== "all" && v.category !== filters.category) return false;
+        if (filters.category !== "all" && !videoBelongsToTopicFamily(v, filters.category, topics)) return false;
         return true;
       });
-  }, [videos, filters]);
+  }, [videos, filters, topics]);
 
   const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "";
 
