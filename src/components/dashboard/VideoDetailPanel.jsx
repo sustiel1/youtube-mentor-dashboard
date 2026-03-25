@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, PlayCircle } from "lucide-react";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
@@ -37,7 +37,6 @@ export function VideoDetailPanel({
   const [activeTab, setActiveTab] = useState("summary");
   const updateSummary = useUpdateSummary();
 
-  // הערות מה-entity הנפרד — הקוורי כבר קיים ב-NoteEditor, אז זה cached
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
   const hasNote = videoNotes.length > 0;
   const notePreview = hasNote ? videoNotes[0].content : null;
@@ -60,10 +59,10 @@ export function VideoDetailPanel({
     } catch (err) {
       const code = err?.code;
       setAnalyzeError(
-        code === "QUOTA_ZERO"              ? "ה-API Key אין לו quota פעיל. ניתן להפעיל GEMINI_MOCK=true לבדיקה." :
-        code === "GEMINI_API_KEY_MISSING"  ? "מפתח ה-API חסר — הוסף GEMINI_API_KEY ב-Base44 → Environment Variables" :
-        code === "RATE_LIMIT"             ? "הגעת למגבלת הבקשות — נסה שוב בעוד כמה שניות" :
-                                            "הניתוח נכשל — נסה שוב"
+        code === "QUOTA_ZERO"             ? "ה-API Key אין לו quota פעיל. ניתן להפעיל GEMINI_MOCK=true לבדיקה." :
+        code === "GEMINI_API_KEY_MISSING" ? "מפתח ה-API חסר — הוסף GEMINI_API_KEY ב-Base44 → Environment Variables" :
+        code === "RATE_LIMIT"            ? "הגעת למגבלת הבקשות — נסה שוב בעוד כמה שניות" :
+                                           "הניתוח נכשל — נסה שוב"
       );
     } finally {
       setIsAnalyzing(false);
@@ -78,7 +77,7 @@ export function VideoDetailPanel({
     const n = video.viewCount;
     if (!n) return null;
     if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M צפיות`;
-    if (n >= 1_000) return `${+(n / 1_000).toFixed(1)}K צפיות`;
+    if (n >= 1_000)     return `${+(n / 1_000).toFixed(1)}K צפיות`;
     return `${n} צפיות`;
   })();
 
@@ -95,17 +94,16 @@ export function VideoDetailPanel({
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute top-3 left-3 z-50 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="absolute top-3 left-3 z-50 p-1.5 rounded-full bg-white/80 hover:bg-gray-100 shadow-sm transition-colors"
         >
           <X className="h-4 w-4 text-gray-600" />
         </button>
 
-
         <ScrollArea className="flex-1">
-          <div className="max-w-2xl mx-auto p-5 space-y-3">
+          <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
 
-            {/* תמונה — קטנה, ממורכזת */}
-            <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 max-w-[300px] mx-auto">
+            {/* ── Thumbnail ── */}
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-100 shadow-md">
               <img
                 src={video.thumbnail}
                 alt={video.title}
@@ -117,71 +115,75 @@ export function VideoDetailPanel({
                 rel="noopener noreferrer"
                 className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity"
               >
-                <div className="bg-white/90 rounded-full p-3">
+                <div className="bg-white/90 rounded-full p-3 shadow-lg">
                   <ExternalLink className="h-5 w-5 text-gray-800" />
                 </div>
               </a>
             </div>
 
-            {/* כותרת + שמירה */}
-            <div className="flex items-start gap-2 flex-row-reverse">
-              <h2 className="flex-1 text-right text-xl font-bold leading-snug text-gray-900">
-                {video.title}
-              </h2>
-              <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
+            {/* ── 3. כותרת — hierarchy חזקה יותר ── */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 flex-row-reverse">
+                <h2 className="flex-1 text-right text-2xl font-bold leading-snug text-gray-900 tracking-tight">
+                  {video.title}
+                </h2>
+                <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
+              </div>
+
+              {/* Metadata as chips */}
+              <div className="flex flex-wrap gap-2 flex-row-reverse">
+                {mentorName && (
+                  <span className="inline-flex items-center gap-1.5 flex-row-reverse bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                    <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[9px] font-bold shrink-0">
+                      {mentorName.charAt(0).toUpperCase()}
+                    </span>
+                    {mentorName}
+                  </span>
+                )}
+                {publishDate && (
+                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
+                    <Calendar className="h-3 w-3" />{publishDate}
+                  </span>
+                )}
+                {viewCountFormatted && (
+                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
+                    <Eye className="h-3 w-3" />{viewCountFormatted}
+                  </span>
+                )}
+                {video.duration && (
+                  <span className="inline-flex items-center gap-1 flex-row-reverse bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">
+                    <Clock className="h-3 w-3" />{video.duration}
+                  </span>
+                )}
+                <CategoryBadge category={video.category} />
+                <StatusBadge status={video.status} />
+              </div>
             </div>
 
-            {/* preview הערה — שורת טקסט אדומה מתחת לכותרת */}
+            {/* Note preview */}
             {notePreview && (
               <button
                 onClick={() => setActiveTab("notes")}
-                className="flex items-start gap-1.5 flex-row-reverse text-right hover:opacity-70 transition-opacity"
+                className="flex items-start gap-1.5 flex-row-reverse text-right hover:opacity-70 transition-opacity w-full"
               >
                 <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-red-500 line-clamp-2 leading-relaxed">
-                  {notePreview}
-                </p>
+                <p className="text-xs text-red-500 line-clamp-2 leading-relaxed">{notePreview}</p>
               </button>
             )}
 
-            {/* שורת מטא — מנטור · תאריך · צפיות · אורך · תגיות */}
-            <div className="flex items-center gap-x-3 gap-y-1.5 flex-row-reverse flex-wrap">
-              {mentorName && (
-                <div className="flex items-center gap-1.5 flex-row-reverse">
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
-                    {mentorName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-semibold text-gray-800">{mentorName}</span>
-                </div>
-              )}
-              {publishDate && <span className="text-xs text-gray-500">{publishDate}</span>}
-              {viewCountFormatted && (
-                <span className="text-xs text-gray-500 flex items-center gap-1 flex-row-reverse">
-                  <Eye className="h-3 w-3" />{viewCountFormatted}
-                </span>
-              )}
-              {video.duration && (
-                <span className="text-xs text-gray-500 flex items-center gap-1 flex-row-reverse">
-                  <Clock className="h-3 w-3" />{video.duration}
-                </span>
-              )}
-              <CategoryBadge category={video.category} />
-              <StatusBadge status={video.status} />
-            </div>
-
-            {/* תקציר החלטה — shortSummary קצר, placeholder אם אין */}
-            <div className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 text-right">
+            {/* ── 4. תקציר — white card with shadow ── */}
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 text-right">
               {video.shortSummary ? (
                 <>
-                  <p className="text-[11px] font-semibold text-gray-400 mb-1 uppercase tracking-wide">מה תלמד כאן</p>
-                  <p className="text-sm text-gray-800 leading-6 line-clamp-3">{video.shortSummary}</p>
+                  <p className="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-widest">מה תלמד כאן</p>
+                  <p className="text-sm text-gray-800 leading-7 line-clamp-3">{video.shortSummary}</p>
                 </>
               ) : (
-                <p className="text-xs text-gray-400 text-center py-0.5">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
+                <p className="text-xs text-gray-400 text-center py-1">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
               )}
             </div>
 
-            {/* סטטוס למידה + badge — שורה קומפקטית */}
+            {/* ── סטטוס למידה ── */}
             <div className="flex items-center gap-3 flex-row-reverse">
               <span className="text-xs font-medium text-gray-500 shrink-0">סטטוס למידה:</span>
               <Select
@@ -204,33 +206,54 @@ export function VideoDetailPanel({
             {videoTopics.length > 0 && (
               <div className="flex flex-wrap gap-1.5 flex-row-reverse">
                 {videoTopics.map((topic) => (
-                  <span key={topic.id} className="inline-flex items-center gap-1 text-[11px] text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">
+                  <span key={topic.id} className="inline-flex items-center gap-1 text-[11px] text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
                     #{topic.name}
                     {onRemoveTopic && (
-                      <button onClick={() => onRemoveTopic(video, topic.id)} className="hover:text-gray-600 leading-none">×</button>
+                      <button onClick={() => onRemoveTopic(video, topic.id)} className="hover:text-gray-700 leading-none">×</button>
                     )}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* שגיאה */}
+            {/* Error */}
             {video.status === "error" && video.errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-right">
                 <p className="text-sm text-red-700">{video.errorMessage}</p>
               </div>
             )}
 
-            {/* טאבים — משניים, מתחת לאזור ההחלטה */}
+            {/* ── 2. טאבים — segmented control pills ── */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-              <TabsList className="h-8 flex w-fit mx-auto">
-                <TabsTrigger value="summary" className="text-xs px-3">סיכום</TabsTrigger>
-                <TabsTrigger value="keypoints" className="text-xs px-3">נקודות מפתח</TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs px-3">הערות</TabsTrigger>
-                <TabsTrigger value="chapters" className="text-xs px-3">פרקי הסרטון</TabsTrigger>
+              <TabsList className="w-full bg-gray-100 rounded-2xl p-1 h-auto grid grid-cols-4 gap-0.5">
+                <TabsTrigger
+                  value="summary"
+                  className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
+                >
+                  סיכום
+                </TabsTrigger>
+                <TabsTrigger
+                  value="keypoints"
+                  className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
+                >
+                  נקודות מפתח
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
+                >
+                  הערות
+                </TabsTrigger>
+                <TabsTrigger
+                  value="chapters"
+                  className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
+                >
+                  פרקים
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="summary" className="mt-4 space-y-5 min-h-[220px]">
+              {/* ── Summary tab ── */}
+              <TabsContent value="summary" className="mt-5 space-y-5 min-h-[220px]">
                 {(() => {
                   const hasData = video.shortSummary || video.fullSummary || (video.keyPoints && video.keyPoints.length > 0);
                   if (hasData) {
@@ -239,105 +262,136 @@ export function VideoDetailPanel({
                         {video.shortSummary && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום קצר</h4>
-                            <p className="text-sm text-gray-800 leading-7">{video.shortSummary}</p>
+                            <p className="text-sm text-gray-700 leading-7">{video.shortSummary}</p>
                           </div>
                         )}
                         {video.fullSummary && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום מלא</h4>
-                            <p className="text-sm text-gray-800 leading-7">{video.fullSummary}</p>
+                            <p className="text-sm text-gray-700 leading-7">{video.fullSummary}</p>
                           </div>
                         )}
                         {!video.shortSummary && !video.fullSummary && video.keyPoints?.length > 0 && (
                           <div className="text-right">
-                            <h4 className="text-sm font-semibold text-gray-800 mb-2">נקודות מפתח</h4>
-                            <ul className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-3">נקודות מפתח</h4>
+                            <ul className="space-y-2.5">
                               {video.keyPoints.map((point, i) => (
                                 <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700">
-                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                                   <span className="leading-relaxed">{point}</span>
                                 </li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all">
+                        <button
+                          onClick={handleAnalyze}
+                          disabled={isAnalyzing}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-500 text-xs font-medium rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
+                        >
                           {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                           {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
                         </button>
                         {analyzeError && (
-                          <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
+                          <div className="w-full rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
                         )}
                       </>
                     );
                   }
                   return (
                     <div className="flex flex-col items-center gap-4 py-10 text-center">
-                      <div className="p-3 bg-indigo-50 rounded-xl"><Sparkles className="h-6 w-6 text-indigo-500" /></div>
+                      <div className="p-3 bg-indigo-50 rounded-2xl">
+                        <Sparkles className="h-6 w-6 text-indigo-500" />
+                      </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">הסרטון טרם נותח</p>
+                        <p className="text-sm font-semibold text-gray-700">הסרטון טרם נותח</p>
                         <p className="text-xs text-gray-400 mt-1 leading-relaxed">ניתוח AI יפיק סיכום, נקודות מפתח ותגיות</p>
                       </div>
-                      <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm">
+                      <button
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm"
+                      >
                         {isAnalyzing ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Sparkles className="h-4 w-4" />}
                         {isAnalyzing ? "מנתח..." : "נתח עם AI"}
                       </button>
                       {analyzeError && (
-                        <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
+                        <div className="w-full rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
                       )}
                     </div>
                   );
                 })()}
               </TabsContent>
 
-              <TabsContent value="keypoints" className="mt-4 space-y-4 min-h-[220px]" dir="rtl">
+              {/* ── Key Points tab ── */}
+              <TabsContent value="keypoints" className="mt-5 space-y-4 min-h-[220px]" dir="rtl">
                 {video.keyPoints && video.keyPoints.length > 0 ? (
                   <ul className="space-y-3 text-right">
                     {video.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-3 flex-row-reverse text-sm text-gray-800">
-                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
-                        <span className="leading-7">{point}</span>
+                      <li key={i} className="flex items-start gap-3 flex-row-reverse">
+                        {/* numbered chip */}
+                        <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {i + 1}
+                        </span>
+                        <span className="text-sm text-gray-800 leading-7">{point}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-500 text-right py-6">אין נקודות מפתח זמינות</p>
+                  <p className="text-sm text-gray-400 text-right py-6">אין נקודות מפתח זמינות</p>
                 )}
                 {video.tags && video.tags.length > 0 && (
-                  <div className="text-right">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">תגיות</h4>
+                  <div className="text-right pt-2">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">תגיות</h4>
                     <div className="flex flex-wrap gap-2 flex-row-reverse">
                       {video.tags.map((tag, i) => (
-                        <span key={i} className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">{tag}</span>
+                        <span key={i} className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-600">{tag}</span>
                       ))}
                     </div>
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="notes" className="mt-4 min-h-[220px]">
+              {/* ── Notes tab ── */}
+              <TabsContent value="notes" className="mt-5 min-h-[220px]">
                 <NoteEditor videoId={video.id} />
               </TabsContent>
 
-              <TabsContent value="chapters" className="mt-4 min-h-[220px]" dir="rtl">
+              {/* ── 1. Chapters tab — cards ── */}
+              <TabsContent value="chapters" className="mt-5 min-h-[220px]" dir="rtl">
                 {video.videoTopics?.length > 0 ? (
-                  <ul className="space-y-1">
+                  <ul className="space-y-2">
                     {video.videoTopics.map((chapter, i) => {
+                      const tsLabel = chapter.timestampLabel ||
+                        `${Math.floor(chapter.timestampSeconds / 60)}:${String(chapter.timestampSeconds % 60).padStart(2, "0")}`;
                       const url = video.url
-                        ? `${video.url}${video.url.includes('?') ? '&' : '?'}t=${chapter.timestampSeconds}s`
+                        ? `${video.url}${video.url.includes("?") ? "&" : "?"}t=${chapter.timestampSeconds}s`
                         : null;
                       return (
                         <li key={i}>
                           <a
-                            href={url || '#'}
-                            target={url ? '_blank' : undefined}
+                            href={url || "#"}
+                            target={url ? "_blank" : undefined}
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 flex-row-reverse px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                            className="flex items-start gap-3 flex-row-reverse bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:border-indigo-200 hover:shadow-sm transition-all group"
                           >
-                            <span className="text-xs font-mono text-indigo-500 shrink-0 group-hover:text-indigo-700">
-                              {chapter.timestampLabel || `${Math.floor(chapter.timestampSeconds / 60)}:${String(chapter.timestampSeconds % 60).padStart(2, '0')}`}
+                            {/* Play icon */}
+                            <PlayCircle className="h-4 w-4 text-gray-300 group-hover:text-indigo-500 shrink-0 mt-0.5 transition-colors" />
+
+                            {/* Chapter info */}
+                            <div className="flex-1 text-right min-w-0">
+                              <p className="text-sm font-medium text-gray-800 leading-snug group-hover:text-indigo-700 transition-colors">
+                                {chapter.title}
+                              </p>
+                              {chapter.description && (
+                                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{chapter.description}</p>
+                              )}
+                            </div>
+
+                            {/* Timestamp chip */}
+                            <span className="inline-flex items-center bg-indigo-50 text-indigo-600 text-xs font-mono font-medium px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-100 transition-colors">
+                              {tsLabel}
                             </span>
-                            <span className="flex-1 text-sm text-gray-700 text-right leading-snug">{chapter.title}</span>
                           </a>
                         </li>
                       );
@@ -345,8 +399,8 @@ export function VideoDetailPanel({
                   </ul>
                 ) : (
                   <div className="py-10 text-center">
-                    <p className="text-sm text-gray-400">עדיין לא נוצרה חלוקה לפי נושאים</p>
-                    <p className="text-xs text-gray-400 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
+                    <p className="text-sm text-gray-400">עדיין לא נוצרה חלוקה לפרקים</p>
+                    <p className="text-xs text-gray-300 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
                   </div>
                 )}
               </TabsContent>
