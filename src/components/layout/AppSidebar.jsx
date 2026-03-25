@@ -25,18 +25,13 @@ import { cn } from "@/lib/utils";
 import { AddMentorDialog } from "@/components/mentors/AddMentorDialog";
 import { AddTopicDialog } from "@/components/topics/AddTopicDialog";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
+import { filterMentorsByTopicFamily, getOrderedMainTopics } from "@/lib/topicFilters";
 
 // ── localStorage helpers for topic order (shared with Admin.jsx) ──────────
 const ORDER_KEY = "ym_topic_order";
-function loadOrder()       { try { return JSON.parse(localStorage.getItem(ORDER_KEY)); } catch { return null; } }
 function saveOrder(ids)    { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); }
 function applyStoredOrder(topics) {
-  const stored = loadOrder();
-  if (!stored || !stored.length) return topics;
-  const map     = Object.fromEntries(topics.map((t) => [t.id, t]));
-  const sorted  = stored.map((id) => map[id]).filter(Boolean);
-  const newOnes = topics.filter((t) => !stored.includes(t.id));
-  return [...sorted, ...newOnes];
+  return getOrderedMainTopics(topics);
 }
 
 // Map color string → Tailwind classes
@@ -287,7 +282,7 @@ export function AppSidebar({
               const TopicIcon    = cfg?.Icon || TOPIC_ICON_MAP[topic.icon] || null;
               const colors       = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
               const isExpanded   = expandedTopicId === topic.id;
-              const topicMentors = getMentorsForTopic(topic.id, topics, activeMentors);
+              const topicMentors = filterMentorsByTopicFamily(activeMentors, topic.id, topics);
               const isTopicActive =
                 (currentPage === "TopicPage" || currentPage === "TopicLearningPage") &&
                 pageParams?.topicId === topic.id;

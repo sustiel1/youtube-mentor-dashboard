@@ -8,14 +8,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { filterMentorsByTopicFamily, getMainTopics } from "@/lib/topicFilters";
+import {
+  filterMentorsByTopicFamily,
+  getEffectiveMainTopicId,
+  getOrderedMainTopics,
+} from "@/lib/topicFilters";
 
 export function FilterBar({ filters, onFiltersChange, mentors, topics = [] }) {
   const handleChange = (key, value) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
-  const mainTopics = useMemo(() => getMainTopics(topics), [topics]);
+  const mainTopics = useMemo(() => getOrderedMainTopics(topics), [topics]);
+
+  const selectedMainTopicId = useMemo(
+    () => getEffectiveMainTopicId(filters, topics),
+    [filters, topics]
+  );
 
   const categoryOptions = useMemo(
     () => mainTopics.map((topic) => ({ label: topic.name, value: topic.id })),
@@ -23,8 +32,8 @@ export function FilterBar({ filters, onFiltersChange, mentors, topics = [] }) {
   );
 
   const visibleMentors = useMemo(
-    () => filterMentorsByTopicFamily(mentors, filters.category, topics),
-    [filters.category, mentors, topics]
+    () => filterMentorsByTopicFamily(mentors, selectedMainTopicId, topics),
+    [selectedMainTopicId, mentors, topics]
   );
 
   useEffect(() => {
@@ -69,8 +78,10 @@ export function FilterBar({ filters, onFiltersChange, mentors, topics = [] }) {
       </Select>
 
       <Select
-        value={filters.category}
-        onValueChange={(val) => handleChange("category", val)}
+        value={selectedMainTopicId}
+        onValueChange={(val) =>
+          onFiltersChange({ ...filters, category: val, topicId: "all" })
+        }
       >
         <SelectTrigger className="w-[140px] bg-white">
           <SelectValue placeholder="כל הקטגוריות" />
