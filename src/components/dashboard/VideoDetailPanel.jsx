@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, PlayCircle } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, PlayCircle, Link2 } from "lucide-react";
+import { toast } from "sonner";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
@@ -98,6 +99,24 @@ export function VideoDetailPanel({
     .map((id) => topics.find((t) => t.id === id))
     .filter(Boolean);
 
+  const handleCopyLink = async () => {
+    const fallbackUrl =
+      typeof window !== "undefined" ? window.location.href : "";
+    const urlToCopy = video.url || fallbackUrl;
+
+    if (!urlToCopy) {
+      toast.error("לא נמצא קישור להעתקה");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(urlToCopy);
+      toast.success("הקישור הועתק");
+    } catch {
+      toast.error("לא ניתן היה להעתיק את הקישור");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -163,6 +182,13 @@ export function VideoDetailPanel({
                     {relativeDate}
                   </span>
                 )}
+                <button
+                  onClick={handleCopyLink}
+                  className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm hover:bg-gray-50 transition-colors"
+                >
+                  <Link2 className="h-3.5 w-3.5 text-gray-400" />
+                  העתק קישור
+                </button>
                 {mentorName && mentorName !== "לא ידוע" && (
                   <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1.5 rounded-xl">
                     <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[9px] font-bold shrink-0">
