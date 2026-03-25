@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, UserRound, Youtube, Rss, Globe } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Loader2, UserRound, Youtube, Rss, Globe, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -7,16 +7,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAddMentorWithSource } from "@/hooks/useMentors";
+import { useTopics } from "@/hooks/useTopics";
+import { getTopicByName, DEFAULT_TOPIC_CONFIG } from "@/config/topicConfig";
 
-// Detect source type from URL
+// ── localStorage topic order (shared with sidebar & admin) ────────────────
+const ORDER_KEY = "ym_topic_order";
+function applyStoredOrder(topics) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ORDER_KEY));
+    if (!stored?.length) return topics;
+    const map     = Object.fromEntries(topics.map((t) => [t.id, t]));
+    const sorted  = stored.map((id) => map[id]).filter(Boolean);
+    const newOnes = topics.filter((t) => !stored.includes(t.id));
+    return [...sorted, ...newOnes];
+  } catch {
+    return topics;
+  }
+}
+
+// ── Source type detection ──────────────────────────────────────────────────
 function detectSourceType(url) {
   try {
     const lower = url.toLowerCase();
@@ -28,7 +38,6 @@ function detectSourceType(url) {
   }
 }
 
-// Minimal URL validation
 function isValidUrl(url) {
   try {
     const u = new URL(url);
@@ -39,29 +48,38 @@ function isValidUrl(url) {
 }
 
 const SOURCE_TYPE_CONFIG = {
-  youtube: { label: "YouTube", icon: Youtube, color: "text-red-500 bg-red-50" },
+  youtube: { label: "YouTube",  icon: Youtube, color: "text-red-500 bg-red-50"    },
   rss:     { label: "RSS Feed", icon: Rss,     color: "text-orange-500 bg-orange-50" },
-  site:    { label: "אתר",      icon: Globe,   color: "text-blue-500 bg-blue-50" },
+  site:    { label: "אתר",      icon: Globe,   color: "text-blue-500 bg-blue-50"   },
 };
 
+// ── Initial form state ─────────────────────────────────────────────────────
 const EMPTY_FORM = {
-  name: "",
-  category: "",
-  topic: "",
-  sourceUrl: "",
-  description: "",
-  avatarUrl: "",
-  active: true,
+  name:        "",
+  topicId:     "",   // ID of selected topic from the DB
+  sourceUrl:   "",
+  topic:       "",   // free-text "תחום" (sub-topic / domain)
+  description: "",   // הערות
+  avatarUrl:   "",
+  active:      true,
 };
 
+// ── Component ──────────────────────────────────────────────────────────────
 export function AddMentorDialog({ open, onOpenChange }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm]     = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
-  const addMentor = useAddMentorWithSource();
+  const addMentor           = useAddMentorWithSource();
+  const { data: allTopics = [] } = useTopics();
 
-  const detectedType = form.sourceUrl ? detectSourceType(form.sourceUrl) : null;
-  const sourceConfig = detectedType ? SOURCE_TYPE_CONFIG[detectedType] : null;
+  // Only main topics, in sidebar order
+  const mainTopics = useMemo(() => {
+    const main = allTopics.filter((t) => t.isMainCategory || !t.parentId);
+    return applyStoredOrder(main);
+  }, [allTopics]);
+
+  const detectedType  = form.sourceUrl ? detectSourceType(form.sourceUrl) : null;
+  const sourceConfig  = detectedType ? SOURCE_TYPE_CONFIG[detectedType] : null;
 
   const set = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -70,8 +88,8 @@ export function AddMentorDialog({ open, onOpenChange }) {
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = "שדה חובה";
-    if (!form.category) errs.category = "שדה חובה";
+    if (!form.name.trim())    errs.name    = "שדה חובה";
+    if (!form.topicId)        errs.topicId = "יש לבחור נושא";
     if (!form.sourceUrl.trim()) {
       errs.sourceUrl = "שדה חובה";
     } else if (!isValidUrl(form.sourceUrl.trim())) {
@@ -82,21 +100,18 @@ export function AddMentorDialog({ open, onOpenChange }) {
 
   const handleSubmit = async () => {
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     try {
       await addMentor.mutateAsync({
         mentorData: {
-          name: form.name.trim(),
-          category: form.category,
-          topic: form.topic.trim() || null,
-          avatarUrl: form.avatarUrl.trim() || null,
-          active: form.active,
+          name:        form.name.trim(),
+          topicIds:    form.topicId ? [form.topicId] : [],
+          topic:       form.topic.trim()       || null,
+          avatarUrl:   form.avatarUrl.trim()   || null,
+          active:      form.active,
           description: form.description.trim() || null,
         },
-        sourceUrl: form.sourceUrl.trim(),
+        sourceUrl:  form.sourceUrl.trim(),
         sourceType: detectSourceType(form.sourceUrl.trim()),
       });
       toast.success(`המנטור "${form.name.trim()}" נוסף בהצלחה`);
@@ -140,7 +155,7 @@ export function AddMentorDialog({ open, onOpenChange }) {
         {/* ── Form body ── */}
         <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
 
-          {/* שם המנטור */}
+          {/* 1. שם המנטור */}
           <Field label="שם המנטור" required error={errors.name}>
             <input
               type="text"
@@ -151,26 +166,42 @@ export function AddMentorDialog({ open, onOpenChange }) {
             />
           </Field>
 
-          {/* קטגוריה */}
-          <Field label="קטגוריה" required error={errors.category}>
-            <Select value={form.category} onValueChange={(v) => set("category", v)}>
-              <SelectTrigger className={errors.category ? "border-red-300 focus:ring-red-200" : "border-gray-200 text-sm"}>
-                <SelectValue placeholder="בחר קטגוריה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AI">🤖 AI ובינה מלאכותית</SelectItem>
-                <SelectItem value="Markets">📈 שוק ההון</SelectItem>
-                <SelectItem value="Food">🍳 אוכל ובישול</SelectItem>
-                <SelectItem value="Health">🏥 בריאות</SelectItem>
-                <SelectItem value="Music">🎶 מוזיקה</SelectItem>
-                <SelectItem value="Politics">🏛️ פוליטיקה ותוכן</SelectItem>
-                <SelectItem value="Other">📌 אחר</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* 2. נושא — topic picker */}
+          <Field label="נושא" required error={errors.topicId}>
+            <div className="grid grid-cols-2 gap-1.5">
+              {mainTopics.map((topic) => {
+                const cfg      = getTopicByName(topic.name) || DEFAULT_TOPIC_CONFIG;
+                const Icon     = cfg.Icon;
+                const selected = form.topicId === topic.id;
+                return (
+                  <button
+                    key={topic.id}
+                    type="button"
+                    onClick={() => set("topicId", selected ? "" : topic.id)}
+                    className={[
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-right transition-all",
+                      selected
+                        ? "border-indigo-400 bg-indigo-50 text-indigo-700 font-medium"
+                        : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                    ].join(" ")}
+                  >
+                    {/* Icon chip */}
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${cfg.bg} ${cfg.text}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex-1 truncate">{topic.name}</span>
+                    {selected && <Check className="h-3.5 w-3.5 text-indigo-500 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+            {mainTopics.length === 0 && (
+              <p className="text-xs text-gray-400 py-2 text-center">טוען נושאים...</p>
+            )}
           </Field>
 
-          {/* קישור למקור */}
-          <Field label="קישור למקור" required error={errors.sourceUrl}>
+          {/* 3. קישור למקור */}
+          <Field label="קישור למנטור" required error={errors.sourceUrl}>
             <div className="space-y-1.5">
               <input
                 type="url"
@@ -191,8 +222,8 @@ export function AddMentorDialog({ open, onOpenChange }) {
 
           <hr className="border-gray-100" />
 
-          {/* נושא / תחום */}
-          <Field label="נושא / תחום" hint="אופציונלי">
+          {/* 4. תחום (אופציונלי) */}
+          <Field label="תחום" hint="אופציונלי">
             <input
               type="text"
               placeholder="לדוגמה: Prompt Engineering, ניתוח טכני"
@@ -202,8 +233,8 @@ export function AddMentorDialog({ open, onOpenChange }) {
             />
           </Field>
 
-          {/* תיאור */}
-          <Field label="תיאור קצר" hint="אופציונלי">
+          {/* 5. הערות (אופציונלי) */}
+          <Field label="הערות" hint="אופציונלי">
             <textarea
               placeholder="כמה מילים על המנטור ותחום ההתמחות שלו..."
               value={form.description}
@@ -213,8 +244,8 @@ export function AddMentorDialog({ open, onOpenChange }) {
             />
           </Field>
 
-          {/* Avatar */}
-          <Field label="תמונה (avatar)" hint="אופציונלי">
+          {/* 6. קישור לתמונה (avatar) */}
+          <Field label="קישור לתמונה (avatar)" hint="אופציונלי">
             <div className="flex items-center gap-3">
               {form.avatarUrl ? (
                 <img
@@ -275,7 +306,8 @@ export function AddMentorDialog({ open, onOpenChange }) {
   );
 }
 
-// Base input classes
+// ── Helpers ────────────────────────────────────────────────────────────────
+
 function fieldCls(error) {
   return [
     "w-full rounded-lg border px-3 py-2 text-sm text-gray-800 bg-white",
@@ -285,7 +317,6 @@ function fieldCls(error) {
   ].join(" ");
 }
 
-// Field wrapper
 function Field({ label, required, hint, error, children }) {
   return (
     <div className="space-y-1.5">
