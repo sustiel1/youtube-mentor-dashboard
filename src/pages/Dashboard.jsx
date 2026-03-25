@@ -72,6 +72,7 @@ function applyFilters(videos, filters) {
     if (filters.search && !video.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.mentor !== "all" && video.mentorId !== filters.mentor) return false;
     if (filters.category !== "all" && video.category !== filters.category) return false;
+    if (filters.topicId && filters.topicId !== "all" && !video.topicIds?.includes(filters.topicId)) return false;
     return true;
   });
 }
@@ -218,7 +219,16 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                   <X className="h-3 w-3" />
                 </button>
               )}
-              {filteredVideos.length !== videos.length && !activeDashboardFilter && (
+              {filters.topicId && filters.topicId !== "all" && (
+                <button
+                  onClick={() => setFilters((prev) => ({ ...prev, topicId: "all" }))}
+                  className="flex items-center gap-1.5 text-xs text-violet-600 bg-violet-50 rounded-full px-3 py-1 hover:bg-violet-100 transition-colors"
+                >
+                  <span>נושא: {topics.find((t) => t.id === filters.topicId)?.name || "..."}</span>
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+              {filteredVideos.length !== videos.length && !activeDashboardFilter && !filters.topicId?.length && (
                 <span className="text-xs text-indigo-600 bg-indigo-50 rounded-full px-3 py-1">
                   {filteredVideos.length} לאחר סינון
                 </span>

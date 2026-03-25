@@ -313,16 +313,20 @@ export function AppSidebar({
                       ? "bg-gray-100 text-gray-900 font-semibold"
                       : "text-gray-600 hover:bg-gray-50"
                   )}>
-                    {/* 1. Topic icon — always visible, rightmost */}
-                    <span className={cn(
-                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                      cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
-                    )}>
+                    {/* 1. Topic icon — click → all videos for this topic */}
+                    <button
+                      onClick={() => navigateWithFilter("topicId", topic.id)}
+                      title={`כל הסרטונים של "${topic.name}"`}
+                      className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-75",
+                        cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
+                      )}
+                    >
                       {TopicIcon
                         ? <TopicIcon className="h-3.5 w-3.5" />
                         : <Hash className="h-3.5 w-3.5" />
                       }
-                    </span>
+                    </button>
 
                     {/* 2. Edit/Delete buttons (between icon and name, visible on hover) */}
                     {deletingId === topic.id ? (
@@ -416,9 +420,9 @@ export function AppSidebar({
                               {initial}
                             </span>
 
-                            {/* Name — clickable */}
+                            {/* Name — clickable → MentorPage */}
                             <button
-                              onClick={() => navigateWithFilter("mentor", mentor.id)}
+                              onClick={() => navigateTo("MentorPage", { mentorId: mentor.id })}
                               className="flex-1 text-right truncate"
                             >
                               {mentor.name}

@@ -9,7 +9,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useVideos } from '@/hooks/useVideos';
 import { PAGES } from './pages.config';
 
-const DEFAULT_FILTERS = { search: "", mentor: "all", category: "all" };
+const DEFAULT_FILTERS = { search: "", mentor: "all", category: "all", topicId: "all" };
 
 function AppLayout() {
   const [currentPage, setCurrentPage] = useState("Dashboard");
