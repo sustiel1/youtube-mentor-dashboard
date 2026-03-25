@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
 import { useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import { useDeleteMentor } from "@/hooks/useMentors";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -100,7 +101,15 @@ export function AppSidebar({
   const [editingTopic, setEditingTopic]       = useState(null); // topic object being edited
   const [deletingId, setDeletingId]           = useState(null); // topic id awaiting confirm
 
-  const deleteTopic = useDeleteTopic();
+  const deleteTopic  = useDeleteTopic();
+  const deleteMentor = useDeleteMentor();
+  const [deletingMentorId, setDeletingMentorId] = useState(null);
+
+  function handleDeleteMentor(id) {
+    deleteMentor.mutate(id, {
+      onSuccess: () => setDeletingMentorId(null),
+    });
+  }
 
   function handleDelete(id) {
     deleteTopic.mutate(id, {
@@ -391,22 +400,58 @@ export function AppSidebar({
                         const initial = mentor.name?.[0]?.toUpperCase() || "?";
                         const isMentorActive =
                           currentPage === "Dashboard" && activeMentor === mentor.id;
+                        const isConfirming = deletingMentorId === mentor.id;
                         return (
-                          <button
+                          <div
                             key={mentor.id}
-                            onClick={() => navigateWithFilter("mentor", mentor.id)}
                             className={cn(
-                              "w-full flex flex-row-reverse items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors",
+                              "group flex flex-row-reverse items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors",
                               isMentorActive
                                 ? "bg-gray-100 text-gray-900 font-semibold"
                                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                             )}
                           >
+                            {/* Avatar initial */}
                             <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
                               {initial}
                             </span>
-                            <span className="flex-1 text-right truncate">{mentor.name}</span>
-                          </button>
+
+                            {/* Name — clickable */}
+                            <button
+                              onClick={() => navigateWithFilter("mentor", mentor.id)}
+                              className="flex-1 text-right truncate"
+                            >
+                              {mentor.name}
+                            </button>
+
+                            {/* Delete confirm / delete button */}
+                            {isConfirming ? (
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <button
+                                  onClick={() => handleDeleteMentor(mentor.id)}
+                                  title="אישור מחיקה"
+                                  className="p-0.5 rounded text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => setDeletingMentorId(null)}
+                                  title="ביטול"
+                                  className="p-0.5 rounded text-gray-400 hover:bg-gray-100 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDeletingMentorId(mentor.id)}
+                                title="מחק מנטור"
+                                className="p-0.5 rounded opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
                         );
                       }) : (
                         <p className="text-xs text-gray-400 px-2 py-1 text-right">אין מנטורים</p>
