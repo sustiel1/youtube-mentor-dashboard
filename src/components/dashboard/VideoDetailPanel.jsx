@@ -69,9 +69,22 @@ export function VideoDetailPanel({
     }
   };
 
-  const publishDate = video.publishedAt
-    ? format(new Date(video.publishedAt), "d MMMM yyyy", { locale: he })
-    : "";
+  // תאריך יחסי — "לפני X שעות/ימים", ועבור ישנים: תאריך מלא
+  const relativeDate = (() => {
+    if (!video.publishedAt) return null;
+    try {
+      const date    = new Date(video.publishedAt);
+      const diffMs  = Date.now() - date.getTime();
+      const hours   = diffMs / (1000 * 60 * 60);
+      const days    = diffMs / (1000 * 60 * 60 * 24);
+      if (hours  <  1) return "לפני פחות משעה";
+      if (hours  < 24) return `לפני ${Math.floor(hours)} שעות`;
+      if (days   <  2) return "אתמול";
+      if (days   <  7) return `לפני ${Math.floor(days)} ימים`;
+      if (days   < 30) return `לפני ${Math.floor(days / 7)} שבועות`;
+      return format(date, "d MMMM yyyy", { locale: he });
+    } catch { return null; }
+  })();
 
   const viewCountFormatted = (() => {
     const n = video.viewCount;
@@ -130,34 +143,28 @@ export function VideoDetailPanel({
                 <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
               </div>
 
-              {/* Metadata row — right to left: date | views | duration | mentor | badges */}
+              {/* Metadata chips — white cards with border */}
               <div className="flex flex-wrap items-center gap-2" dir="rtl">
-                {publishDate && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
-                    <Calendar className="h-3 w-3 text-gray-400" />{publishDate}
+                {video.duration && (
+                  <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm">
+                    <Clock className="h-3.5 w-3.5 text-gray-400" />
+                    {video.duration}
                   </span>
-                )}
-                {publishDate && (viewCountFormatted || video.duration) && (
-                  <span className="text-gray-300 text-xs">·</span>
                 )}
                 {viewCountFormatted && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
-                    <Eye className="h-3 w-3 text-gray-400" />{viewCountFormatted}
+                  <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm">
+                    <Eye className="h-3.5 w-3.5 text-gray-400" />
+                    {viewCountFormatted}
                   </span>
                 )}
-                {viewCountFormatted && video.duration && (
-                  <span className="text-gray-300 text-xs">·</span>
-                )}
-                {video.duration && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
-                    <Clock className="h-3 w-3 text-gray-400" />{video.duration}
+                {relativeDate && (
+                  <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm">
+                    <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                    {relativeDate}
                   </span>
                 )}
-                {(publishDate || viewCountFormatted || video.duration) && mentorName && (
-                  <span className="text-gray-300 text-xs">·</span>
-                )}
-                {mentorName && (
-                  <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                {mentorName && mentorName !== "לא ידוע" && (
+                  <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1.5 rounded-xl">
                     <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[9px] font-bold shrink-0">
                       {mentorName.charAt(0).toUpperCase()}
                     </span>
