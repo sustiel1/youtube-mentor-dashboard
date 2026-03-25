@@ -108,7 +108,7 @@ export default function TopicPage({ topicId, navigateTo }) {
   if (!topic) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <p className="text-sm text-gray-400">נושא לא נמצא</p>
+        <p className="text-sm text-gray-500">נושא לא נמצא</p>
       </div>
     );
   }
@@ -145,7 +145,7 @@ export default function TopicPage({ topicId, navigateTo }) {
             </div>
             <div className="text-right">
               <h1 className="text-lg font-bold text-gray-900">{topic.name}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-gray-600 mt-0.5">
                 {enrichedMentors.length} מנטורים
               </p>
             </div>
@@ -220,7 +220,7 @@ export default function TopicPage({ topicId, navigateTo }) {
                     <div className="flex-1 min-w-0 text-right">
                       <h3 className="font-bold text-gray-900 truncate">{mentor.name}</h3>
                       {mentor.description && (
-                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+                        <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">
                           {mentor.description}
                         </p>
                       )}
@@ -229,7 +229,7 @@ export default function TopicPage({ topicId, navigateTo }) {
 
                   {/* Stats row */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
                       <Play className="h-3 w-3" />
                       {mentor.videoCount} סרטונים
                     </span>

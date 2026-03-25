@@ -60,7 +60,7 @@ export default function LearningHub({ navigateTo }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400 text-sm">טוען...</p>
+        <p className="text-gray-500 text-sm">טוען...</p>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export default function LearningHub({ navigateTo }) {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">מרכז הלמידה</h1>
         </div>
-        <p className="text-sm text-gray-500 mt-1 mr-12">
+        <p className="text-sm text-gray-600 mt-1 mr-12">
           בחר נושא כדי לראות את המנטורים שלו
         </p>
       </div>
@@ -85,7 +85,7 @@ export default function LearningHub({ navigateTo }) {
       {mainCategories.length === 0 && (
         <div className="text-center py-24 bg-white rounded-2xl border border-gray-200">
           <GraduationCap className="h-14 w-14 text-gray-200 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">אין נושאים עדיין</p>
+          <p className="text-gray-700 font-medium">אין נושאים עדיין</p>
         </div>
       )}
 
@@ -109,13 +109,13 @@ export default function LearningHub({ navigateTo }) {
                 <div className="flex-1 text-right">
                   <h3 className="text-lg font-bold text-gray-900">{topic.name}</h3>
                   {topic.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{topic.description}</p>
+                    <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{topic.description}</p>
                   )}
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                 <span className="flex items-center gap-1 text-xs">
                   <Users className="h-3.5 w-3.5" />
                   מנטורים

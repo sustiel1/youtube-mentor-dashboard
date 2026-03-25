@@ -54,7 +54,7 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek }) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-sm text-gray-400">טוען הערות...</div>;
+    return <div className="text-center py-8 text-sm text-gray-500">טוען הערות...</div>;
   }
 
   return (
@@ -69,7 +69,7 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek }) {
           placeholder="הוסף הערה..."
           rows={2}
           dir="rtl"
-          className="flex-1 resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-right"
+          className="flex-1 resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-right"
         />
         <button
           onClick={handleSubmit}
@@ -131,7 +131,7 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek }) {
 
       {/* ── Notes list ── */}
       {notes.length === 0 ? (
-        <div className="py-8 text-sm text-gray-400 text-right">
+        <div className="py-8 text-sm text-gray-500 text-right">
           אין הערות עדיין — הוסף את ההערה הראשונה
         </div>
       ) : (
@@ -162,11 +162,11 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek }) {
                 </div>
               )}
 
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed text-right">
+              <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed text-right">
                 {note.content}
               </p>
               <div className="flex items-center justify-between mt-2 flex-row-reverse">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   {format(new Date(note.createdAt), "d MMM yyyy, HH:mm", { locale: he })}
                 </span>
                 <button

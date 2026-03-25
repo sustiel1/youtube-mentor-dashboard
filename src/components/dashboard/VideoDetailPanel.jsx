@@ -133,7 +133,7 @@ export function VideoDetailPanel({
               {/* Metadata row — right to left: date | views | duration | mentor | badges */}
               <div className="flex flex-wrap items-center gap-2" dir="rtl">
                 {publishDate && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
                     <Calendar className="h-3 w-3 text-gray-400" />{publishDate}
                   </span>
                 )}
@@ -141,7 +141,7 @@ export function VideoDetailPanel({
                   <span className="text-gray-300 text-xs">·</span>
                 )}
                 {viewCountFormatted && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
                     <Eye className="h-3 w-3 text-gray-400" />{viewCountFormatted}
                   </span>
                 )}
@@ -149,7 +149,7 @@ export function VideoDetailPanel({
                   <span className="text-gray-300 text-xs">·</span>
                 )}
                 {video.duration && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-600">
                     <Clock className="h-3 w-3 text-gray-400" />{video.duration}
                   </span>
                 )}
@@ -184,11 +184,11 @@ export function VideoDetailPanel({
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 text-right">
               {video.shortSummary ? (
                 <>
-                  <p className="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-widest">מה תלמד כאן</p>
+                  <p className="text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-widest">מה תלמד כאן</p>
                   <p className="text-sm text-gray-800 leading-7 line-clamp-3">{video.shortSummary}</p>
                 </>
               ) : (
-                <p className="text-xs text-gray-400 text-center py-1">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
+                <p className="text-xs text-gray-500 text-center py-1">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
               )}
             </div>
 
@@ -214,7 +214,7 @@ export function VideoDetailPanel({
                       </SelectContent>
                     </Select>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">סטטוס למידה</span>
+                      <span className="text-xs text-gray-500">סטטוס למידה</span>
                       <LearningStatusBadge status={video.learningStatus} />
                     </div>
                   </div>
@@ -301,13 +301,13 @@ export function VideoDetailPanel({
                         {video.shortSummary && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום קצר</h4>
-                            <p className="text-sm text-gray-700 leading-7">{video.shortSummary}</p>
+                            <p className="text-sm text-gray-800 leading-7">{video.shortSummary}</p>
                           </div>
                         )}
                         {video.fullSummary && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום מלא</h4>
-                            <p className="text-sm text-gray-700 leading-7">{video.fullSummary}</p>
+                            <p className="text-sm text-gray-800 leading-7">{video.fullSummary}</p>
                           </div>
                         )}
                         {!video.shortSummary && !video.fullSummary && video.keyPoints?.length > 0 && (
@@ -315,7 +315,7 @@ export function VideoDetailPanel({
                             <h4 className="text-sm font-semibold text-gray-800 mb-3">נקודות מפתח</h4>
                             <ul className="space-y-2.5">
                               {video.keyPoints.map((point, i) => (
-                                <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-700">
+                                <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-800">
                                   <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                                   <span className="leading-relaxed">{point}</span>
                                 </li>
@@ -326,7 +326,7 @@ export function VideoDetailPanel({
                         <button
                           onClick={handleAnalyze}
                           disabled={isAnalyzing}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-500 text-xs font-medium rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
                         >
                           {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                           {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
@@ -343,8 +343,8 @@ export function VideoDetailPanel({
                         <Sparkles className="h-6 w-6 text-indigo-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-700">הסרטון טרם נותח</p>
-                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">ניתוח AI יפיק סיכום, נקודות מפתח ותגיות</p>
+                        <p className="text-sm font-semibold text-gray-800">הסרטון טרם נותח</p>
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">ניתוח AI יפיק סיכום, נקודות מפתח ותגיות</p>
                       </div>
                       <button
                         onClick={handleAnalyze}
@@ -377,14 +377,14 @@ export function VideoDetailPanel({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-400 text-right py-6">אין נקודות מפתח זמינות</p>
+                  <p className="text-sm text-gray-500 text-right py-6">אין נקודות מפתח זמינות</p>
                 )}
                 {video.tags && video.tags.length > 0 && (
                   <div className="text-right pt-2">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">תגיות</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">תגיות</h4>
                     <div className="flex flex-wrap gap-2 flex-row-reverse">
                       {video.tags.map((tag, i) => (
-                        <span key={i} className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-600">{tag}</span>
+                        <span key={i} className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-700">{tag}</span>
                       ))}
                     </div>
                   </div>
@@ -423,7 +423,7 @@ export function VideoDetailPanel({
                                 {chapter.title}
                               </p>
                               {chapter.description && (
-                                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{chapter.description}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{chapter.description}</p>
                               )}
                             </div>
 
@@ -438,8 +438,8 @@ export function VideoDetailPanel({
                   </ul>
                 ) : (
                   <div className="py-10 text-center">
-                    <p className="text-sm text-gray-400">עדיין לא נוצרה חלוקה לפרקים</p>
-                    <p className="text-xs text-gray-300 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
+                    <p className="text-sm text-gray-500">עדיין לא נוצרה חלוקה לפרקים</p>
+                    <p className="text-xs text-gray-400 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
                   </div>
                 )}
               </TabsContent>
