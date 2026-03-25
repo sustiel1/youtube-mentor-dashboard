@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { RefreshCw, X, GraduationCap, Play } from "lucide-react";
+import { RefreshCw, X, GraduationCap, Play, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { KpiCards } from "@/components/dashboard/KpiCards";
@@ -82,6 +82,13 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeDashboardFilter, setActiveDashboardFilter] = useState(null);
   const [learningStatusFilter, setLearningStatusFilter] = useState(null);
+
+  // ── Bulk / delete-all state ──────────────────────────────
+  const [selectedIds, setSelectedIds]             = useState(new Set());
+  const [selectionMode, setSelectionMode]         = useState(false);
+  const [deleteBulkConfirm, setDeleteBulkConfirm] = useState(false);
+  const [deleteAllConfirm, setDeleteAllConfirm]   = useState(false);
+  const [isDeleting, setIsDeleting]               = useState(false);
 
   const {
     data: videos = [],
@@ -191,6 +198,65 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
     toast.success("הנתונים עודכנו");
   };
 
+  // ── Selection helpers ────────────────────────────────────
+  const toggleSelectVideo = (videoId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(videoId)) next.delete(videoId); else next.add(videoId);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIds(
+      selectedIds.size === displayedVideos.length
+        ? new Set()
+        : new Set(displayedVideos.map((v) => v.id))
+    );
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setDeleteBulkConfirm(false);
+    setDeleteAllConfirm(false);
+  };
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size;
+    setIsDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await deleteVideo.mutateAsync(id);
+      }
+      toast.success(`נמחקו ${count} סרטונים בהצלחה`);
+      exitSelectionMode();
+    } catch {
+      toast.error("שגיאה במחיקה — נסה שוב");
+    } finally {
+      setIsDeleting(false);
+      setDeleteBulkConfirm(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    const ids = displayedVideos.map((v) => v.id);
+    const count = ids.length;
+    setIsDeleting(true);
+    try {
+      for (const id of ids) {
+        await deleteVideo.mutateAsync(id);
+      }
+      toast.success(`נמחקו ${count} סרטונים בהצלחה`);
+      exitSelectionMode();
+    } catch {
+      toast.error("שגיאה במחיקה — נסה שוב");
+    } finally {
+      setIsDeleting(false);
+      setDeleteAllConfirm(false);
+    }
+  };
+
   // Toggle KPI filter — click same → clear, click different → switch
   const handleKpiFilterClick = (filterKey) => {
     setActiveDashboardFilter((prev) => (prev === filterKey ? null : filterKey));
@@ -239,14 +305,25 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                 </span>
               )}
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-              רענון
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setDeleteAllConfirm(true)}
+                disabled={displayedVideos.length === 0 || isDeleting}
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-30"
+                title="מחק את כל הסרטונים המוצגים"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                מחק הכל
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                רענון
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -312,6 +389,88 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
               mentors={mentors.filter((m) => m.active)}
             />
 
+            {/* ── Selection toolbar ── */}
+            <div className="flex items-center gap-2 mb-3 flex-row-reverse" dir="rtl">
+              <button
+                onClick={() => { setSelectionMode((p) => !p); if (selectionMode) exitSelectionMode(); }}
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-lg border transition-colors",
+                  selectionMode
+                    ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                {selectionMode ? "בטל בחירה" : "בחר סרטונים"}
+              </button>
+              {selectionMode && (
+                <>
+                  <button
+                    onClick={handleSelectAll}
+                    className="text-xs px-3 py-1.5 rounded-lg border bg-white border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    {selectedIds.size === displayedVideos.length ? "בטל הכל" : "בחר הכל"}
+                  </button>
+                  {selectedIds.size > 0 && (
+                    <button
+                      onClick={() => setDeleteBulkConfirm(true)}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      מחק נבחרים ({selectedIds.size})
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* ── Confirm: bulk delete ── */}
+            {deleteBulkConfirm && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-4" dir="rtl">
+                <p className="text-sm text-red-700 font-medium">
+                  האם למחוק {selectedIds.size} סרטונים? פעולה זו אינה הפיכה.
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={isDeleting}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isDeleting ? "מוחק..." : "כן, מחק"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteBulkConfirm(false)}
+                    className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Confirm: delete all ── */}
+            {deleteAllConfirm && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-4" dir="rtl">
+                <p className="text-sm text-red-700 font-medium">
+                  ⚠️ פעולה זו תמחק את כל {displayedVideos.length} הסרטונים המוצגים ולא ניתן לשחזר.
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleDeleteAll}
+                    disabled={isDeleting}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isDeleting ? "מוחק..." : "כן, מחק הכל"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteAllConfirm(false)}
+                    className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Learning status filter chips */}
             <div className="flex items-center gap-2 mb-5 flex-row-reverse justify-end" dir="rtl">
               <span className="text-xs text-gray-500 font-medium shrink-0">סטטוס למידה:</span>
@@ -365,9 +524,11 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                     video={video}
                     mentorName={getMentorName(video.mentorId)}
                     topics={topics}
-                    onClick={handleVideoClick}
-                    onSaveToggle={handleSaveToggle}
-                    onDelete={handleDeleteVideo}
+                    onClick={selectionMode ? () => toggleSelectVideo(video.id) : handleVideoClick}
+                    onSaveToggle={selectionMode ? undefined : handleSaveToggle}
+                    onDelete={selectionMode ? undefined : handleDeleteVideo}
+                    isSelected={selectedIds.has(video.id)}
+                    onSelect={selectionMode ? toggleSelectVideo : undefined}
                   />
                 ))}
               </div>

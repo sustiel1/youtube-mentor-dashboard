@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Eye, StickyNote, Trash2, Sparkles } from "lucide-react";
+import { Eye, StickyNote, Trash2, Sparkles, Check } from "lucide-react";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { StatusBadge } from "./StatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
@@ -48,6 +48,8 @@ export function VideoCard({
   onSaveToggle,
   onClick,
   onDelete,
+  isSelected = false,
+  onSelect,
 }) {
   const { data: cardNotes = [] } = useNotesByVideo(video.id);
   const firstNote = cardNotes[0]?.content ?? null;
@@ -72,7 +74,8 @@ export function VideoCard({
       onClick={() => onClick?.(video)}
       className={cn(
         "bg-white rounded-xl border border-gray-100 border-r-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden group",
-        STATUS_BORDER[video.learningStatus] ?? "border-r-gray-200"
+        STATUS_BORDER[video.learningStatus] ?? "border-r-gray-200",
+        isSelected && "ring-2 ring-indigo-500 ring-offset-1"
       )}
     >
       {/* Thumbnail */}
@@ -87,19 +90,34 @@ export function VideoCard({
           }}
         />
 
-        {/* Save + Delete — top left */}
-        <div className="absolute top-2 left-2 flex items-center gap-1">
-          <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} />
-          {onDelete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(video); }}
-              className="p-1 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
-              title="מחק סרטון"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
-          )}
-        </div>
+        {/* Checkbox (selection mode) — top left */}
+        {onSelect ? (
+          <div
+            onClick={(e) => { e.stopPropagation(); onSelect(video.id); }}
+            className={cn(
+              "absolute top-2 left-2 z-20 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all shadow-sm",
+              isSelected
+                ? "bg-indigo-600 border-indigo-600"
+                : "bg-white/80 border-white hover:border-indigo-400"
+            )}
+          >
+            {isSelected && <Check className="h-3 w-3 text-white" />}
+          </div>
+        ) : (
+          /* Save + Delete — top left (normal mode) */
+          <div className="absolute top-2 left-2 flex items-center gap-1">
+            <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} />
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(video); }}
+                className="p-1 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+                title="מחק סרטון"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* badges — top right: "נותח" ו-"יש הערות" יכולים להופיע יחד */}
         {(video.status === "done" || hasNoteData) && (
