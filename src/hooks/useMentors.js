@@ -1,19 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Mentor, Source } from '@/api/entities';
-import { MENTORS } from '@/data/mockData';
 
 // Fetch all mentors
 export function useMentors() {
   return useQuery({
     queryKey: ['mentors'],
     queryFn: async () => {
-      try {
-        const data = await Mentor.list();
-        return data ?? [];
-      } catch (error) {
-        console.warn('[useMentors] Base44 unavailable — using mock data:', error.message);
-        return MENTORS;
-      }
+      const data = await Mentor.list();
+      return data ?? [];
     },
   });
 }
@@ -23,12 +17,8 @@ export function useActiveMentors() {
   return useQuery({
     queryKey: ['mentors', 'active'],
     queryFn: async () => {
-      try {
-        const data = await Mentor.filter({ active: true });
-        return data ?? [];
-      } catch {
-        return MENTORS.filter((m) => m.active);
-      }
+      const data = await Mentor.filter({ active: true });
+      return data ?? [];
     },
   });
 }
