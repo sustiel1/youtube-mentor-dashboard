@@ -26,7 +26,7 @@ export const TOPIC_CONFIG_BY_NAME = {
 };
 
 // ── Category code → Hebrew name (for mentor.category field) ───────────────
-const CATEGORY_TO_NAME = {
+export const CATEGORY_TO_NAME = {
   AI:       "בינה מלאכותית",
   Markets:  "שוק ההון",
   Food:     "אוכל ובישול",
@@ -61,4 +61,16 @@ export function getTopicByCategory(categoryCode) {
   const name = CATEGORY_TO_NAME[categoryCode];
   if (!name) return DEFAULT_TOPIC_CONFIG;
   return TOPIC_CONFIG_BY_NAME[name] ?? DEFAULT_TOPIC_CONFIG;
+}
+
+// ── Reverse: topic name → category code ───────────────────────────────────
+export function getCategoryCodeForTopicName(topicName) {
+  if (!topicName) return null;
+  const lower = topicName.toLowerCase();
+  for (const [code, name] of Object.entries(CATEGORY_TO_NAME)) {
+    if (lower === name.toLowerCase() || lower.includes(name.toLowerCase()) || name.toLowerCase().includes(lower)) {
+      return code;
+    }
+  }
+  return null;
 }

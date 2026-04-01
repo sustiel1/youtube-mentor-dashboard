@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
-import { videoBelongsToTopicFamily } from "@/lib/topicFilters";
+import { videoBelongsToTopicFamily, mentorBelongsToTopicFamily } from "@/lib/topicFilters";
+import { getCategoryCodeForTopicName } from "@/config/topicConfig";
 
 // Map KPI filterKey → video status value
 const KPI_STATUS_MAP = {
@@ -68,12 +69,42 @@ function DashboardSkeleton() {
   );
 }
 
-function applyFilters(videos, filters, topics) {
+function applyFilters(videos, filters, topics, mentors = []) {
   return videos.filter((video) => {
     if (filters.search && !video.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.mentor !== "all" && video.mentorId !== filters.mentor) return false;
-    if (filters.category !== "all" && !videoBelongsToTopicFamily(video, filters.category, topics)) return false;
-    if (filters.topicId && filters.topicId !== "all" && !video.topicIds?.includes(filters.topicId)) return false;
+    if (filters.category !== "all") {
+      const rootTopic = topics.find((t) => t.id === filters.category);
+      // Derive the English category code from topic name (e.g. "שוק ההון" → "Markets")
+      const catCode = getCategoryCodeForTopicName(rootTopic?.name);
+      // 1. video.topicIds match
+      const byTopicIds = videoBelongsToTopicFamily(video, filters.category, topics);
+      // 2. video.category === English code (exact match, no Hebrew string comparison)
+      const byVideoCategory = catCode && video.category === catCode;
+      if (!byTopicIds && !byVideoCategory) {
+        // 3. fallback: mentor's topicIds or category
+        const mentor = mentors.find((m) => m.id === video.mentorId);
+        const byMentor = mentor && (
+          mentorBelongsToTopicFamily(mentor, filters.category, topics) ||
+          (catCode && mentor.category === catCode)
+        );
+        if (!byMentor) return false;
+      }
+    }
+    if (filters.topicId && filters.topicId !== "all") {
+      const topicNode = topics.find((t) => t.id === filters.topicId);
+      const catCode = getCategoryCodeForTopicName(topicNode?.name);
+      const byVideoTopicIds = videoBelongsToTopicFamily(video, filters.topicId, topics);
+      const byVideoCategory = catCode && video.category === catCode;
+      if (!byVideoTopicIds && !byVideoCategory) {
+        const mentor = mentors.find((m) => m.id === video.mentorId);
+        const byMentor = mentor && (
+          mentorBelongsToTopicFamily(mentor, filters.topicId, topics) ||
+          (catCode && mentor.category === catCode)
+        );
+        if (!byMentor) return false;
+      }
+    }
     return true;
   });
 }
@@ -114,7 +145,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   }, [videos]);
 
   // Apply sidebar filters (search, mentor, category)
-  const filteredVideos = useMemo(() => applyFilters(videos, filters, topics), [videos, filters, topics]);
+  const filteredVideos = useMemo(() => applyFilters(videos, filters, topics, mentors), [videos, filters, topics, mentors]);
 
   // Apply KPI status filter + learning status filter on top of sidebar filters
   const displayedVideos = useMemo(() => {

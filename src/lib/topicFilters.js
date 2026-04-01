@@ -1,3 +1,5 @@
+import { CATEGORY_TO_NAME } from "@/config/topicConfig";
+
 const ORDER_KEY = "ym_topic_order";
 
 export function getMainTopics(topics = []) {
@@ -90,21 +92,31 @@ export function normalizeDashboardFilters(filters = {}, topics = []) {
     nextFilters.category = getMainTopicIdForTopic(nextFilters.topicId, topics);
   }
 
-  if (nextFilters.category !== "all" && nextFilters.topicId === "all") {
-    nextFilters.topicId = nextFilters.category;
-  }
-
   return nextFilters;
+}
+
+// Returns true if a mentor.category code (e.g. "Markets") matches a topic name (e.g. "שוק ההון")
+export function categoryMatchesTopicName(mentorCategory, topicName) {
+  if (!mentorCategory || !topicName) return false;
+  const mappedName = CATEGORY_TO_NAME[mentorCategory];
+  if (!mappedName) return false;
+  const a = mappedName.toLowerCase();
+  const b = topicName.toLowerCase();
+  return a === b || b.includes(a) || a.includes(b);
 }
 
 export function mentorBelongsToTopicFamily(mentor, rootTopicId, topics = []) {
   if (!mentor || !rootTopicId || rootTopicId === "all") return false;
 
   const mentorTopicIds = mentor.topicIds || [];
-  if (mentorTopicIds.length === 0) return false;
-
   const relevantIds = getTopicFamilyIds(rootTopicId, topics);
-  return mentorTopicIds.some((topicId) => relevantIds.has(topicId));
+
+  // Primary: topicIds match
+  if (mentorTopicIds.some((tid) => relevantIds.has(tid))) return true;
+
+  // Fallback: match mentor.category string against root topic name
+  const rootTopic = topics.find((t) => t.id === rootTopicId);
+  return categoryMatchesTopicName(mentor.category, rootTopic?.name);
 }
 
 export function filterMentorsByTopicFamily(mentors = [], rootTopicId, topics = []) {

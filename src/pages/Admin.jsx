@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Bot, TrendingUp, Code, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
 import { getTopicConfig } from "@/components/layout/AppSidebar";
-import { getTopicByCategory } from "@/config/topicConfig";
+import { getTopicByCategory, getCategoryCodeForTopicName } from "@/config/topicConfig";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSources } from "@/hooks/useSources";
@@ -213,6 +213,7 @@ function EditMentorDialog({ mentor, mainTopics, onClose }) {
     name:     mentor.name || "",
     active:   mentor.active ?? true,
     topicIds: mentor.topicIds || [],
+    category: mentor.category || "",
   });
 
   function toggleTopic(tid) {
@@ -244,6 +245,42 @@ function EditMentorDialog({ mentor, mainTopics, onClose }) {
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
             />
+          </div>
+
+          {/* Category — derived from actual topics in DB */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">קטגוריה ראשית</label>
+            <select
+              value={form.category}
+              onChange={(e) => {
+                const newCode = e.target.value;
+                // Find the topic that matches the old and new category codes
+                const prevTopic = mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === form.category);
+                const nextTopic = mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === newCode);
+                setForm((p) => {
+                  // Remove old category's topic ID (if it was auto-added), add new one
+                  const withoutPrev = prevTopic
+                    ? p.topicIds.filter((id) => id !== prevTopic.id)
+                    : p.topicIds;
+                  const withNext = nextTopic && !withoutPrev.includes(nextTopic.id)
+                    ? [...withoutPrev, nextTopic.id]
+                    : withoutPrev;
+                  return { ...p, category: newCode, topicIds: withNext };
+                });
+              }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+            >
+              <option value="">— ללא קטגוריה —</option>
+              {mainTopics.map((topic) => {
+                const code = getCategoryCodeForTopicName(topic.name);
+                if (!code) return null;
+                return (
+                  <option key={topic.id} value={code}>
+                    {topic.name}
+                  </option>
+                );
+              })}
+            </select>
           </div>
 
           {/* Active toggle */}
