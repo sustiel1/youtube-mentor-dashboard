@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronsUp } from "lucide-react";
-import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG } from "@/config/topicConfig";
+import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG, getCategoryCodeForTopicName } from "@/config/topicConfig";
 import { useMentors, useUpdateMentor, useDeleteMentor } from "@/hooks/useMentors";
 import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
 import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
@@ -549,6 +549,9 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   const updateSource = useUpdateSource();
   const createSource = useCreateSource();
   const deleteMentor = useDeleteMentor();
+  const updateMentor = useUpdateMentor();
+  const mainTopics = topics.filter((t) => !t.parentId);
+  const [editingTopicFor, setEditingTopicFor] = useState(null);
 
   const setChannelStatus = useCallback((mentorId, update) => {
     setStatuses((prev) => ({ ...prev, [mentorId]: { ...prev[mentorId], ...update } }));
@@ -687,6 +690,17 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     } catch (err) {
       setChannelStatus(mentorId, { state: "error", error: "שגיאה בשמירה — " + err.message });
     }
+  }
+
+  async function handleTopicChange(mentorId, topicId) {
+    const topic = mainTopics.find((t) => t.id === topicId);
+    const categoryCode = getCategoryCodeForTopicName(topic?.name) ?? null;
+    await updateMentor.mutateAsync({
+      id: mentorId,
+      topicIds: topicId ? [topicId] : [],
+      ...(categoryCode && { category: categoryCode }),
+    });
+    setEditingTopicFor(null);
   }
 
   async function handleDeleteMentor(mentorId) {
@@ -841,11 +855,37 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    {catCfg && (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.color}`}>
-                        {CatIcon && <CatIcon className="h-3 w-3" />}
-                        {catCfg.label}
-                      </span>
+                    {editingTopicFor === ch.mentorId ? (
+                      <select
+                        autoFocus
+                        onBlur={() => setEditingTopicFor(null)}
+                        onChange={(e) => handleTopicChange(ch.mentorId, e.target.value)}
+                        defaultValue={mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === ch.category)?.id ?? ""}
+                        className="text-xs border border-indigo-300 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="">— ללא נושא —</option>
+                        {mainTopics.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="flex items-center gap-1 group">
+                        {catCfg ? (
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.color}`}>
+                            {CatIcon && <CatIcon className="h-3 w-3" />}
+                            {catCfg.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                        <button
+                          onClick={() => setEditingTopicFor(ch.mentorId)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-600 rounded transition-all"
+                          title="שנה נושא"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3">
