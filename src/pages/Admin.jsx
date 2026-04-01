@@ -876,15 +876,22 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                             {catCfg.label}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <button
+                            onClick={() => setEditingTopicFor(ch.mentorId)}
+                            className="text-xs text-indigo-500 hover:text-indigo-700 hover:underline"
+                          >
+                            + בחר נושא
+                          </button>
                         )}
-                        <button
-                          onClick={() => setEditingTopicFor(ch.mentorId)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-600 rounded transition-all"
-                          title="שנה נושא"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </button>
+                        {catCfg && (
+                          <button
+                            onClick={() => setEditingTopicFor(ch.mentorId)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-600 rounded transition-all"
+                            title="שנה נושא"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
