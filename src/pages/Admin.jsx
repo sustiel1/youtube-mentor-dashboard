@@ -855,45 +855,17 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    {editingTopicFor === ch.mentorId ? (
-                      <select
-                        autoFocus
-                        onBlur={() => setEditingTopicFor(null)}
-                        onChange={(e) => handleTopicChange(ch.mentorId, e.target.value)}
-                        defaultValue={mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === ch.category)?.id ?? ""}
-                        className="text-xs border border-indigo-300 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
-                      >
-                        <option value="">— ללא נושא —</option>
-                        {mainTopics.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="flex items-center gap-1 group">
-                        {catCfg ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.color}`}>
-                            {CatIcon && <CatIcon className="h-3 w-3" />}
-                            {catCfg.label}
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => setEditingTopicFor(ch.mentorId)}
-                            className="text-xs text-indigo-500 hover:text-indigo-700 hover:underline"
-                          >
-                            + בחר נושא
-                          </button>
-                        )}
-                        {catCfg && (
-                          <button
-                            onClick={() => setEditingTopicFor(ch.mentorId)}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-600 rounded transition-all"
-                            title="שנה נושא"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <select
+                      value={mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === ch.category)?.id ?? ""}
+                      onChange={(e) => handleTopicChange(ch.mentorId, e.target.value)}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-300 cursor-pointer"
+                      dir="rtl"
+                    >
+                      <option value="">— בחר נושא —</option>
+                      {mainTopics.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-4 py-3">
                     {ch.isConfigured ? (
