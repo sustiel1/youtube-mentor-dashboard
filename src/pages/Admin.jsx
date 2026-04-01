@@ -4,12 +4,16 @@ import { getTopicConfig } from "@/components/layout/AppSidebar";
 import { getTopicByCategory, getCategoryCodeForTopicName } from "@/config/topicConfig";
 import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useSources } from "@/hooks/useSources";
+import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
 import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAllChannels, CHANNEL_CONFIG } from "@/config/channelConfig";
-import { fetchChannelRSS, filterNewVideos } from "@/services/rssIngestion";
+import {
+  fetchChannelRSSFromSource,
+  extractChannelIdFromUrl,
+  extractHandleFromUrl,
+  filterNewVideos,
+} from "@/services/rssIngestion";
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
 
@@ -796,10 +800,26 @@ function ChannelStatus({ status, channelId }) {
   return null;
 }
 
-function RssTab({ videos }) {
-  const [channels, setChannels] = useState(getAllChannels);
+function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
+  // Build channel list from real DB data (Mentor + Source entities)
+  const channels = (mentors ?? []).map((mentor) => {
+    const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
+    const channelId = extractChannelIdFromUrl(source?.sourceUrl);
+    return {
+      mentorId:     mentor.id,
+      name:         mentor.name,
+      category:     mentor.category,
+      channelId:    channelId ?? null,
+      isConfigured: !!channelId,
+      sourceId:     source?.id ?? null,
+      sourceUrl:    source?.sourceUrl ?? null,
+    };
+  });
+
   const configuredCount = channels.filter((c) => c.isConfigured).length;
   const createVideo = useCreateVideo();
+  const updateSource = useUpdateSource();
+  const createSource = useCreateSource();
 
   // { [mentorId]: { state, saved, skipped, error, preview } }
   const [statuses, setStatuses] = useState({});
@@ -810,18 +830,29 @@ function RssTab({ videos }) {
     setStatuses((prev) => ({ ...prev, [mentorId]: { ...prev[mentorId], ...update } }));
   }, []);
 
-  // ── Resolve a single channel handle → channelId via Vite dev server ──────
+  // ── Resolve a single channel handle → channelId, then persist to Source entity ──
   async function handleResolve(mentorId) {
-    const ch = CHANNEL_CONFIG[mentorId];
-    const handle = ch.handle || ch.name;
+    const ch = channels.find((c) => c.mentorId === mentorId);
+    // Derive handle: from @handle in sourceUrl, or fall back to mentor name
+    const handle = extractHandleFromUrl(ch?.sourceUrl) ?? ch?.name ?? mentorId;
     setResolving((prev) => ({ ...prev, [mentorId]: "loading" }));
     try {
       const res = await fetch(`/api/resolve-channel?handle=${encodeURIComponent('@' + handle.replace(/^@/, ''))}`);
       const data = await res.json();
       if (data.channelId) {
-        // Update the live config object (runtime only — persists in channelConfig.js manually)
-        CHANNEL_CONFIG[mentorId].channelId = data.channelId;
-        setChannels(getAllChannels());
+        const channelUrl = `https://www.youtube.com/channel/${data.channelId}`;
+        if (ch?.sourceId) {
+          // Update existing Source record
+          await updateSource.mutateAsync({ id: ch.sourceId, sourceUrl: channelUrl });
+        } else {
+          // Create a new Source record for this mentor
+          await createSource.mutateAsync({
+            mentorId,
+            sourceType: "youtube",
+            sourceUrl: channelUrl,
+            active: true,
+          });
+        }
         setResolving((prev) => ({ ...prev, [mentorId]: "success" }));
       } else {
         setResolving((prev) => ({ ...prev, [mentorId]: "notfound" }));
@@ -839,11 +870,13 @@ function RssTab({ videos }) {
     }
   }
 
-  // Fetch preview only (no save)
+  // Fetch preview only (no save) — uses real DB data
   async function handlePreview(mentorId) {
     setChannelStatus(mentorId, { state: "loading", preview: null });
     try {
-      const incoming = await fetchChannelRSS(mentorId);
+      const mentor = mentors.find((m) => m.id === mentorId);
+      const source = sources.find((s) => s.mentorId === mentorId && s.sourceType === "youtube");
+      const incoming = await fetchChannelRSSFromSource(mentor, source, topics);
       const toSave = filterNewVideos(incoming, videos);
       setChannelStatus(mentorId, { state: "success", saved: 0, skipped: incoming.length - toSave.length, preview: toSave });
     } catch (err) {
@@ -942,7 +975,7 @@ function RssTab({ videos }) {
           <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
           <div className="text-xs text-amber-700">
             <p className="font-medium mb-0.5">{channels.length - configuredCount} ערוצים ממתינים ל-Channel ID</p>
-            <p>ערוך <code className="bg-amber-100 px-1 rounded">src/config/channelConfig.js</code> והוסף את ה-Channel ID של כל ערוץ כדי לאפשר משיכת סרטונים.</p>
+            <p>לחץ <strong>זהה</strong> בשורת הערוץ לזיהוי אוטומטי, או הוסף ב-Source entity: <code className="bg-amber-100 px-1 rounded">youtube.com/channel/UCxxxxxx</code>.</p>
             <p className="mt-1 text-amber-600">כיצד למצוא Channel ID: כנס לדף הערוץ ← View Page Source ← חפש "channelId"</p>
           </div>
         </div>
@@ -992,7 +1025,7 @@ function RssTab({ videos }) {
                   <td className="px-4 py-3">
                     {ch.isConfigured ? (
                       <span className="font-mono text-xs text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                        {CHANNEL_CONFIG[ch.mentorId].channelId?.slice(0, 12)}…
+                        {ch.channelId?.slice(0, 12)}…
                       </span>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
@@ -1031,7 +1064,7 @@ function RssTab({ videos }) {
                   </td>
                   {/* Ingestion status */}
                   <td className="px-4 py-3">
-                    <ChannelStatus status={status} channelId={CHANNEL_CONFIG[ch.mentorId]?.channelId} />
+                    <ChannelStatus status={status} channelId={ch.channelId} />
                     {hasPreview && (
                       <p className="text-xs text-indigo-600 mt-0.5">{status.preview.length} סרטונים חדשים מוכנים לייבוא</p>
                     )}
@@ -1135,7 +1168,7 @@ export default function Admin() {
           </TabsList>
 
           <TabsContent value="rss">
-            <RssTab videos={videos} />
+            <RssTab videos={videos} mentors={mentors} sources={sources} topics={topics} />
           </TabsContent>
           <TabsContent value="mentors">
             <MentorsTab mentors={mentors} topics={topics} />

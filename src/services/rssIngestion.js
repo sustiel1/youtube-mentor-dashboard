@@ -1,12 +1,14 @@
 // ─── RSS Ingestion Service ─────────────────────────────────────────────────────
 // מושך סרטונים מ-YouTube RSS feeds ויוצר רשומות Video
 //
-// Flow:
-//   fetchChannelRSS(mentorId) → raw XML from /api/rss proxy
-//   parseYouTubeXML(xml)      → array of raw entries
-//   buildVideoRecord(entry, cfg) → Video object ready for Base44
+// Flow (DB-driven, preferred):
+//   fetchChannelRSSFromSource(mentor, source, topics) → uses real DB entities
+//
+// Flow (legacy, channelConfig-based):
+//   fetchChannelRSS(mentorId) → looks up CHANNEL_CONFIG by hardcoded ID
 
 import { CHANNEL_CONFIG } from "@/config/channelConfig";
+import { CATEGORY_TO_NAME } from "@/config/topicConfig";
 import { base44 } from "@/api/base44Client";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -202,4 +204,90 @@ export async function ingestChannels({ mentorIds, existingVideos = [], saveVideo
   }
 
   return results;
+}
+
+// ── DB-driven helpers ─────────────────────────────────────────────────────────
+
+// Extract YouTube channel ID from a sourceUrl.
+// Handles: https://www.youtube.com/channel/UCxxxxxx  or bare "UCxxxxxx"
+export function extractChannelIdFromUrl(url) {
+  if (!url) return null;
+  if (url.startsWith("UC") && url.length === 24) return url;
+  const m = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+  return m ? m[1] : null;
+}
+
+// Extract YouTube @handle from a sourceUrl.
+// Handles: https://www.youtube.com/@handle
+export function extractHandleFromUrl(url) {
+  if (!url) return null;
+  const m = url.match(/\/@([^/?]+)/);
+  return m ? m[1] : null;
+}
+
+// Derive topicIds for a mentor using real DB topics.
+// Uses mentor.topicIds if already set; otherwise maps mentor.category → Topic by name.
+export function getTopicIdsForMentor(mentor, topics = []) {
+  if (mentor.topicIds?.length) return mentor.topicIds;
+  if (!mentor.category) return [];
+  const topicName = CATEGORY_TO_NAME[mentor.category];
+  if (!topicName) return [];
+  const matched = topics.find(
+    (t) => t.name && (
+      t.name === topicName ||
+      t.name.toLowerCase().includes(topicName.toLowerCase()) ||
+      topicName.toLowerCase().includes(t.name.toLowerCase())
+    )
+  );
+  return matched ? [matched.id] : [];
+}
+
+// ── DB-driven fetch (preferred over fetchChannelRSS) ──────────────────────────
+// Uses real Mentor.id, real Source.sourceUrl, real Topic IDs from DB.
+// source.sourceUrl should be:
+//   - https://www.youtube.com/channel/UCxxxxxx  (has channelId → fetch directly)
+//   - https://www.youtube.com/@handle           (needs resolve → then save channel URL)
+export async function fetchChannelRSSFromSource(mentor, source, topics = [], limit = RSS_FETCH_LIMIT) {
+  const channelId = extractChannelIdFromUrl(source?.sourceUrl);
+
+  if (!channelId) {
+    throw new Error(
+      `Channel ID חסר עבור "${mentor.name}" — פתור את ה-handle תחילה`
+    );
+  }
+
+  validateChannelId(channelId, mentor.name);
+
+  const xml = await fetchRssXml(channelId, mentor.name);
+  if (!xml.includes("<feed")) {
+    throw new Error(`תגובה לא תקינה מ-YouTube עבור "${mentor.name}"`);
+  }
+
+  const entries = parseYouTubeXML(xml, limit);
+  const topicIds = getTopicIdsForMentor(mentor, topics);
+
+  console.info(`[RSS DB] ${mentor.name}: ${entries.length} סרטונים, topicIds=${JSON.stringify(topicIds)}`);
+
+  return entries.map((e) => ({
+    mentorId:       mentor.id,
+    sourceId:       source?.id ?? null,
+    title:          e.title,
+    url:            `https://www.youtube.com/watch?v=${e.videoId}`,
+    thumbnail:      e.thumbnail,
+    publishedAt:    e.published ?? new Date().toISOString(),
+    category:       mentor.category ?? null,
+    transcript:     null,
+    shortSummary:   null,
+    fullSummary:    null,
+    keyPoints:      null,
+    tags:           null,
+    status:         "new",
+    errorMessage:   null,
+    isSaved:        false,
+    learningStatus: "not_started",
+    topicIds,
+    subCategory:    "",
+    _videoId:       e.videoId,
+    _channelName:   e.channelName ?? mentor.name,
+  }));
 }

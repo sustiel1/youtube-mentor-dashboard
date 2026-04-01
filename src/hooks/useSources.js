@@ -44,6 +44,17 @@ export function useCreateSource() {
   });
 }
 
+// Mutation: update a source (e.g. save resolved channelId to sourceUrl)
+export function useUpdateSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }) => Source.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
+}
+
 // Mutation: update last checked timestamp
 export function useMarkSourceChecked() {
   const queryClient = useQueryClient();
