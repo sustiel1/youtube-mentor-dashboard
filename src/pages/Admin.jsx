@@ -1,11 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
-import { Bot, TrendingUp, Code, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUp } from "lucide-react";
-import { getTopicConfig } from "@/components/layout/AppSidebar";
-import { getTopicByCategory, getCategoryCodeForTopicName } from "@/config/topicConfig";
-import { useMentors, useDeleteMentor, useUpdateMentor } from "@/hooks/useMentors";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
+import { useState, useCallback } from "react";
+import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronsUp } from "lucide-react";
+import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG } from "@/config/topicConfig";
+import { useMentors, useUpdateMentor, useDeleteMentor } from "@/hooks/useMentors";
 import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,11 +15,6 @@ import {
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
 
-const CATEGORIES = [
-  { id: "AI", name: "בינה מלאכותית ואוטומציה", description: "AI, אוטומציה, כלים טכנולוגיים", icon: Bot, color: "text-violet-600 bg-violet-50" },
-  { id: "Markets", name: "שוק ההון", description: "מסחר, השקעות, ניתוח טכני", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50" },
-  { id: "Dev", name: "פיתוח תוכנה", description: "פיתוח, בניית אפליקציות", icon: Code, color: "text-blue-600 bg-blue-50" },
-];
 
 const SOURCE_TYPE_ICON = {
   youtube: Youtube,
@@ -30,311 +23,164 @@ const SOURCE_TYPE_ICON = {
 };
 
 // ────────────────────────────────────────────
-// ניהול מנטורים — מחולק לפי נושאים
+// ניהול מנטורים
 // ────────────────────────────────────────────
+function EditMentorDialog({ mentor, topics, onClose }) {
+  const [form, setForm] = useState({ name: mentor.name, active: mentor.active ?? true, topicIds: mentor.topicIds || [] });
+  const updateMentor = useUpdateMentor();
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const toggleTopic = (id) => set("topicIds", form.topicIds.includes(id) ? form.topicIds.filter((t) => t !== id) : [...form.topicIds, id]);
 
-// Returns the main topic (parentId === null) for a mentor, or null if none
-function getMainTopicForMentor(mentor, topics) {
-  const mainTopics = topics.filter((t) => !t.parentId);
-  for (const tid of (mentor.topicIds || [])) {
-    const t = topics.find((x) => x.id === tid);
-    if (!t) continue;
-    if (!t.parentId) return t; // it's already a main topic
-    const parent = mainTopics.find((x) => x.id === t.parentId);
-    if (parent) return parent;
-  }
-  return null;
+  const handleSave = async () => {
+    await updateMentor.mutateAsync({ id: mentor.id, name: form.name, active: form.active, topicIds: form.topicIds });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-80 space-y-4" onClick={(e) => e.stopPropagation()} dir="rtl">
+        <h3 className="text-base font-semibold text-gray-900">עריכת מנטור</h3>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">שם</label>
+          <input value={form.name} onChange={(e) => set("name", e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.active} onChange={(e) => set("active", e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-indigo-600" />
+          <span className="text-sm text-gray-700">פעיל</span>
+        </label>
+        {topics.length > 0 && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-600">נושאים</label>
+            <div className="flex flex-wrap gap-1.5">
+              {topics.map((t) => (
+                <button key={t.id} onClick={() => toggleTopic(t.id)}
+                  className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                    form.topicIds.includes(t.id) ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                  }`}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 pt-1">
+          <button onClick={handleSave} disabled={updateMentor.isPending}
+            className="flex-1 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            {updateMentor.isPending ? "שומר..." : "שמור"}
+          </button>
+          <button onClick={onClose} className="flex-1 py-1.5 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">ביטול</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const SECTION_COLORS = {
-  violet: { header: "bg-violet-50 border-violet-100", badge: "bg-violet-100 text-violet-700" },
-  cyan:   { header: "bg-cyan-50 border-cyan-100",     badge: "bg-cyan-100 text-cyan-700"   },
-  blue:   { header: "bg-blue-50 border-blue-100",     badge: "bg-blue-100 text-blue-700"   },
-  amber:  { header: "bg-amber-50 border-amber-100",   badge: "bg-amber-100 text-amber-700" },
-  gray:   { header: "bg-gray-50 border-gray-100",     badge: "bg-gray-100 text-gray-500"   },
-};
+function MentorRow({ mentor, topics }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteMentor = useDeleteMentor();
+  const cat = CATEGORY_CONFIG[mentor.category];
+  const Icon = cat?.icon;
+
+  return (
+    <>
+      <tr className="border-b border-gray-50 hover:bg-gray-50/50">
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold shrink-0">
+              {mentor.name?.[0]?.toUpperCase()}
+            </span>
+            <span className="font-medium text-gray-800 text-sm">{mentor.name}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3">
+          {cat ? (
+            <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}>
+              {Icon && <Icon className="h-3 w-3" />}{cat.label}
+            </span>
+          ) : mentor.category ? (
+            <span className="text-xs text-gray-500">{mentor.category}</span>
+          ) : null}
+        </td>
+        <td className="px-4 py-3">
+          <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
+            mentor.active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+          }`}>
+            {mentor.active ? "פעיל" : "מושבת"}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center justify-end gap-1">
+            {confirmDelete ? (
+              <>
+                <span className="text-xs text-red-600 ml-1">למחוק?</span>
+                <button onClick={() => deleteMentor.mutate(mentor.id)}
+                  className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700">כן</button>
+                <button onClick={() => setConfirmDelete(false)}
+                  className="text-xs px-2 py-0.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50">לא</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setEditing(true)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setConfirmDelete(true)}
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+      {editing && <EditMentorDialog mentor={mentor} topics={topics} onClose={() => setEditing(false)} />}
+    </>
+  );
+}
+
+function MentorGroup({ label, mentors, topics }) {
+  if (!mentors.length) return null;
+  return (
+    <div className="mb-5">
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1.5">{label} ({mentors.length})</h3>
+      <div className="border border-gray-100 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <tbody>
+            {mentors.map((m) => <MentorRow key={m.id} mentor={m} topics={topics} />)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function MentorsTab({ mentors, topics }) {
-  const [editingMentor, setEditingMentor] = useState(null);
-  const [deletingId, setDeletingId]       = useState(null);
-  const deleteMentor = useDeleteMentor();
-
   const mainTopics = topics.filter((t) => !t.parentId);
 
-  // Group mentors by their resolved main topic
-  const assigned = new Set();
-  const groups = mainTopics
-    .map((topic) => {
-      const ms = mentors.filter((m) => getMainTopicForMentor(m, topics)?.id === topic.id);
-      ms.forEach((m) => assigned.add(m.id));
-      return { topic, mentors: ms };
-    })
-    .filter((g) => g.mentors.length > 0);
+  // Group mentors by topic
+  const groups = mainTopics.map((topic) => ({
+    label: topic.name,
+    mentors: mentors.filter((m) => m.topicIds?.includes(topic.id) || (
+      // fallback: category match
+      !m.topicIds?.length && m.category &&
+      (topic.name.includes(m.category) || m.category.toLowerCase() === topic.name.toLowerCase())
+    )),
+  }));
 
-  const unassigned = mentors.filter((m) => !assigned.has(m.id));
-
-  // First click → show confirm; second click → delete
-  function handleDelete(id) {
-    if (deletingId === id) {
-      deleteMentor.mutate(id);
-      setDeletingId(null);
-    } else {
-      setDeletingId(id);
-    }
-  }
+  const assignedIds = new Set(groups.flatMap((g) => g.mentors.map((m) => m.id)));
+  const unassigned = mentors.filter((m) => !assignedIds.has(m.id));
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-800">מנטורים ({mentors.length})</h2>
       </div>
-
-      <div className="space-y-4">
-        {groups.map(({ topic, mentors: gMentors }) => (
-          <MentorSection
-            key={topic.id}
-            title={topic.name}
-            color={topic.color}
-            mentors={gMentors}
-            deletingId={deletingId}
-            onEdit={setEditingMentor}
-            onDelete={handleDelete}
-            onCancelDelete={() => setDeletingId(null)}
-          />
-        ))}
-
-        {unassigned.length > 0 && (
-          <MentorSection
-            key="unassigned"
-            title="לא משויך"
-            color="gray"
-            mentors={unassigned}
-            deletingId={deletingId}
-            onEdit={setEditingMentor}
-            onDelete={handleDelete}
-            onCancelDelete={() => setDeletingId(null)}
-          />
-        )}
-      </div>
-
-      {editingMentor && (
-        <EditMentorDialog
-          mentor={editingMentor}
-          mainTopics={mainTopics}
-          onClose={() => setEditingMentor(null)}
-        />
-      )}
+      {groups.map((g) => <MentorGroup key={g.label} label={g.label} mentors={g.mentors} topics={mainTopics} />)}
+      <MentorGroup label="לא משויך" mentors={unassigned} topics={mainTopics} />
     </div>
-  );
-}
-
-function MentorSection({ title, color, mentors, deletingId, onEdit, onDelete, onCancelDelete }) {
-  const colors = SECTION_COLORS[color] || SECTION_COLORS.gray;
-  return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
-      <div className={`flex items-center justify-between px-4 py-2.5 border-b ${colors.header}`}>
-        <span className="text-sm font-semibold text-gray-700">{title}</span>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${colors.badge}`}>
-          {mentors.length}
-        </span>
-      </div>
-      <table className="w-full text-sm">
-        <tbody>
-          {mentors.map((mentor, i) => (
-            <tr
-              key={mentor.id}
-              className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
-            >
-              {/* Name + description */}
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold shrink-0">
-                    {mentor.name?.[0]?.toUpperCase()}
-                  </span>
-                  <div>
-                    <p className="font-medium text-gray-800">{mentor.name}</p>
-                    {mentor.description && (
-                      <p className="text-xs text-gray-400 truncate max-w-[220px]">{mentor.description}</p>
-                    )}
-                  </div>
-                </div>
-              </td>
-              {/* Active status */}
-              <td className="px-4 py-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  mentor.active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
-                }`}>
-                  {mentor.active ? "פעיל" : "מושבת"}
-                </span>
-              </td>
-              {/* Actions */}
-              <td className="px-4 py-3">
-                {deletingId === mentor.id ? (
-                  <div className="flex items-center justify-end gap-1.5">
-                    <span className="text-xs text-red-600">למחוק?</span>
-                    <button
-                      onClick={() => onDelete(mentor.id)}
-                      className="text-xs px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      מחק
-                    </button>
-                    <button
-                      onClick={onCancelDelete}
-                      className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                      בטל
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => onEdit(mentor)}
-                      className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(mentor.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Dialog לעריכת מנטור קיים
-function EditMentorDialog({ mentor, mainTopics, onClose }) {
-  const updateMentor = useUpdateMentor();
-  const [form, setForm] = useState({
-    name:     mentor.name || "",
-    active:   mentor.active ?? true,
-    topicIds: mentor.topicIds || [],
-    category: mentor.category || "",
-  });
-
-  function toggleTopic(tid) {
-    setForm((prev) => ({
-      ...prev,
-      topicIds: prev.topicIds.includes(tid)
-        ? prev.topicIds.filter((id) => id !== tid)
-        : [...prev.topicIds, tid],
-    }));
-  }
-
-  function handleSave() {
-    updateMentor.mutate({ id: mentor.id, ...form }, { onSuccess: onClose });
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent dir="rtl" className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>עריכת מנטור</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 mt-2">
-          {/* Name */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">שם</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
-
-          {/* Category — derived from actual topics in DB */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">קטגוריה ראשית</label>
-            <select
-              value={form.category}
-              onChange={(e) => {
-                const newCode = e.target.value;
-                // Find the topic that matches the old and new category codes
-                const prevTopic = mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === form.category);
-                const nextTopic = mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === newCode);
-                setForm((p) => {
-                  // Remove old category's topic ID (if it was auto-added), add new one
-                  const withoutPrev = prevTopic
-                    ? p.topicIds.filter((id) => id !== prevTopic.id)
-                    : p.topicIds;
-                  const withNext = nextTopic && !withoutPrev.includes(nextTopic.id)
-                    ? [...withoutPrev, nextTopic.id]
-                    : withoutPrev;
-                  return { ...p, category: newCode, topicIds: withNext };
-                });
-              }}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-            >
-              <option value="">— ללא קטגוריה —</option>
-              {mainTopics.map((topic) => {
-                const code = getCategoryCodeForTopicName(topic.name);
-                if (!code) return null;
-                return (
-                  <option key={topic.id} value={code}>
-                    {topic.name}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {/* Active toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-700">מנטור פעיל</span>
-          </label>
-
-          {/* Topic assignment */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">שיוך לנושאים</p>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-              {mainTopics.map((topic) => (
-                <label key={topic.id} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.topicIds.includes(topic.id)}
-                    onChange={() => toggleTopic(topic.id)}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-gray-700">{topic.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer buttons */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              בטל
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={updateMentor.isPending}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
-              {updateMentor.isPending ? "שומר..." : "שמור"}
-            </button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -342,6 +188,7 @@ function EditMentorDialog({ mentor, mainTopics, onClose }) {
 // ניהול קטגוריות
 // ────────────────────────────────────────────
 function CategoriesTab({ mentors }) {
+  const CATEGORIES = Object.entries(CATEGORY_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -467,283 +314,162 @@ const TOPIC_COLOR_MAP = {
   emerald: "bg-emerald-100 text-emerald-700",
   rose: "bg-rose-100 text-rose-700",
   amber: "bg-amber-100 text-amber-700",
+  blue: "bg-blue-100 text-blue-700",
 };
 
-// Emoji map by topic name
-// LocalStorage helpers for topic order (client-side persistence)
-const ORDER_KEY = "ym_topic_order";
-function loadOrder() { try { return JSON.parse(localStorage.getItem(ORDER_KEY)); } catch { return null; } }
-function saveOrder(ids) { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); }
-function applyStoredOrder(topics) {
-  const stored = loadOrder();
-  if (!stored || !stored.length) return topics;
-  const map = Object.fromEntries(topics.map((t) => [t.id, t]));
-  const sorted = stored.map((id) => map[id]).filter(Boolean);
-  const newOnes = topics.filter((t) => !stored.includes(t.id));
-  return [...sorted, ...newOnes];
-}
+const TOPIC_ICONS = Object.keys(TOPIC_ICON_MAP);
 
-// Topic row with up/down/top ordering buttons (no external DnD library)
-function TopicRow({ topic, videoCount, isFirst, isLast, deletingId, onEdit, onDelete, onCancelDelete, onMoveToTop, onMoveUp, onMoveDown }) {
-  const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
-  const cfg = getTopicConfig(topic.name);
-
-  return (
-    <tr className="border-b border-gray-50 last:border-0 bg-white">
-      {/* Order buttons */}
-      <td className="pl-3 pr-1 py-3 w-16">
-        <div className="flex items-center gap-0.5">
-          <button onClick={() => onMoveToTop(topic.id)} disabled={isFirst} title="לראש הרשימה"
-            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-20 transition-colors">
-            <ChevronsUp className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => onMoveUp(topic.id)} disabled={isFirst} title="למעלה"
-            className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-colors">
-            <ChevronUp className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => onMoveDown(topic.id)} disabled={isLast} title="למטה"
-            className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-colors">
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </td>
-      {/* Name + icon */}
-      <td className="px-3 py-3">
-        <div className="flex items-center gap-2">
-          <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : colorClass}`}>
-            {cfg
-              ? <cfg.Icon className="h-3.5 w-3.5" />
-              : <Hash className="h-3.5 w-3.5" />
-            }
-          </span>
-          <div>
-            <span className="font-medium text-gray-800">{topic.name}</span>
-            {!topic.parentId && (
-              <span className="mr-1.5 text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">ראשי</span>
-            )}
-          </div>
-        </div>
-      </td>
-      {/* Description */}
-      <td className="px-3 py-3 max-w-[200px]">
-        <span className="text-xs text-gray-500 line-clamp-2">{topic.description}</span>
-      </td>
-      {/* Videos count */}
-      <td className="px-3 py-3">
-        <span className="text-sm font-medium text-gray-700">{videoCount}</span>
-      </td>
-      {/* Actions */}
-      <td className="px-3 py-3">
-        {deletingId === topic.id ? (
-          <div className="flex items-center justify-end gap-1.5">
-            <span className="text-xs text-red-600">למחוק?</span>
-            <button onClick={() => onDelete(topic.id)} className="text-xs px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">מחק</button>
-            <button onClick={onCancelDelete} className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition-colors">בטל</button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-end gap-0.5">
-            <button onClick={() => onEdit(topic)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={() => onDelete(topic.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-// Dialog לעריכת נושא
 function EditTopicDialog({ topic, onClose }) {
+  const [form, setForm] = useState({ name: topic.name, description: topic.description || "", icon: topic.icon || "", color: topic.color || "violet" });
   const updateTopic = useUpdateTopic();
-  const [form, setForm] = useState({
-    name:           topic.name || "",
-    description:    topic.description || "",
-    color:          topic.color || "violet",
-    isMainCategory: topic.isMainCategory ?? false,
-  });
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-  const colorOptions = ["violet", "cyan", "blue", "emerald", "rose", "amber", "orange"];
-
-  function handleSave() {
-    updateTopic.mutate({ id: topic.id, ...form }, { onSuccess: onClose });
-  }
+  const handleSave = async () => {
+    await updateTopic.mutateAsync({ id: topic.id, ...form });
+    onClose();
+  };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent dir="rtl" className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>עריכת נושא</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">שם</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">תיאור</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              rows={2}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">צבע</label>
-            <div className="flex gap-2 flex-wrap">
-              {colorOptions.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setForm((p) => ({ ...p, color: c }))}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border-2 ${
-                    form.color === c ? "border-indigo-500" : "border-transparent"
-                  } ${TOPIC_COLOR_MAP[c] || TOPIC_COLOR_MAP.violet}`}
-                >
-                  {c}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-80 space-y-4" onClick={(e) => e.stopPropagation()} dir="rtl">
+        <h3 className="text-base font-semibold text-gray-900">עריכת נושא</h3>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">שם</label>
+          <input value={form.name} onChange={(e) => set("name", e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">תיאור</label>
+          <input value={form.description} onChange={(e) => set("description", e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">איקון</label>
+          <div className="flex flex-wrap gap-1.5">
+            {TOPIC_ICONS.map((name) => {
+              const Icon = TOPIC_ICON_MAP[name];
+              return (
+                <button key={name} onClick={() => set("icon", name)} title={name}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                    form.icon === name ? "bg-indigo-100 ring-2 ring-indigo-400" : "hover:bg-gray-100"
+                  }`}>
+                  <Icon className="h-4 w-4 text-gray-600" />
                 </button>
-              ))}
-            </div>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isMainCategory}
-              onChange={(e) => setForm((p) => ({ ...p, isMainCategory: e.target.checked }))}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-700">קטגוריה ראשית</span>
-          </label>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">בטל</button>
-            <button onClick={handleSave} disabled={updateTopic.isPending} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-              {updateTopic.isPending ? "שומר..." : "שמור"}
-            </button>
+              );
+            })}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        <div className="flex gap-2 pt-1">
+          <button onClick={handleSave} disabled={updateTopic.isPending}
+            className="flex-1 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            {updateTopic.isPending ? "שומר..." : "שמור"}
+          </button>
+          <button onClick={onClose} className="flex-1 py-1.5 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">ביטול</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function TopicsTab({ topics, videos }) {
-  const [orderedTopics, setOrderedTopics] = useState(() => applyStoredOrder(topics));
-  const [editingTopic, setEditingTopic]   = useState(null);
-  const [deletingId, setDeletingId]       = useState(null);
+  const [orderedTopics, setOrderedTopics] = useState(topics);
+  const [editingTopic, setEditingTopic] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const updateTopic = useUpdateTopic();
   const deleteTopic = useDeleteTopic();
 
-  // Sync when topics change from server (new topic added, etc.)
-  useEffect(() => {
-    setOrderedTopics((prev) => {
-      const prevIds = prev.map((t) => t.id);
-      const newMap = Object.fromEntries(topics.map((t) => [t.id, t]));
-      const updated = prev.map((t) => newMap[t.id] || t);
-      const added = topics.filter((t) => !prevIds.includes(t.id));
-      return [...updated, ...added];
-    });
-  }, [topics]);
+  // Sync when topics prop changes (initial load)
+  if (orderedTopics.length === 0 && topics.length > 0) setOrderedTopics(topics);
 
-  function handleMoveUp(id) {
-    setOrderedTopics((prev) => {
-      const i = prev.findIndex((t) => t.id === id);
-      if (i <= 0) return prev;
-      const next = [...prev];
-      [next[i - 1], next[i]] = [next[i], next[i - 1]];
-      saveOrder(next.map((t) => t.id));
-      return next;
-    });
-  }
+  const getVideoCount = (topicId) => videos.filter((v) => (v.topicIds || []).includes(topicId)).length;
 
-  function handleMoveDown(id) {
-    setOrderedTopics((prev) => {
-      const i = prev.findIndex((t) => t.id === id);
-      if (i >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[i], next[i + 1]] = [next[i + 1], next[i]];
-      saveOrder(next.map((t) => t.id));
-      return next;
-    });
-  }
+  const handleMoveToTop = (topic) => {
+    const items = [topic, ...orderedTopics.filter((t) => t.id !== topic.id)];
+    setOrderedTopics(items);
+    items.forEach((t, i) => updateTopic.mutate({ id: t.id, sortOrder: i }));
+  };
 
-  function handleMoveToTop(id) {
-    setOrderedTopics((prev) => {
-      const i = prev.findIndex((t) => t.id === id);
-      if (i <= 0) return prev;
-      const next = [prev[i], ...prev.slice(0, i), ...prev.slice(i + 1)];
-      saveOrder(next.map((t) => t.id));
-      return next;
-    });
-  }
-
-  function handleDelete(id) {
-    if (deletingId === id) {
-      deleteTopic.mutate(id);
-      setDeletingId(null);
-    } else {
-      setDeletingId(id);
-    }
-  }
-
-  const getVideoCount = (topicId) =>
-    videos.filter((v) => (v.topicIds || []).includes(topicId)).length;
+  const displayTopics = orderedTopics.length ? orderedTopics : topics;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-base font-semibold text-gray-800">נושאים ({orderedTopics.length})</h2>
-          <p className="text-xs text-gray-400 mt-0.5">השתמש בחצים לשינוי סדר — הסדר נשמר בדפדפן</p>
-        </div>
+        <h2 className="text-base font-semibold text-gray-800">נושאים ({displayTopics.length})</h2>
+        <p className="text-xs text-gray-400">גרור לשינוי סדר</p>
       </div>
 
-      {orderedTopics.length === 0 ? (
+      {displayTopics.length === 0 ? (
         <div className="border border-dashed border-gray-200 rounded-xl p-10 text-center">
           <p className="text-sm text-gray-400">אין נושאים מוגדרים</p>
-          <p className="text-xs text-gray-300 mt-1">הוסף נושא כדי לארגן סרטונים</p>
         </div>
       ) : (
         <div className="border border-gray-100 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-right">
-                <th className="w-16 px-2 py-3" />
-                <th className="px-3 py-3 text-gray-500 font-medium">נושא</th>
-                <th className="px-3 py-3 text-gray-500 font-medium">תיאור</th>
-                <th className="px-3 py-3 text-gray-500 font-medium">סרטונים</th>
-                <th className="px-3 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {orderedTopics.map((topic, i) => (
-                <TopicRow
-                  key={topic.id}
-                  topic={topic}
-                  videoCount={getVideoCount(topic.id)}
-                  isFirst={i === 0}
-                  isLast={i === orderedTopics.length - 1}
-                  deletingId={deletingId}
-                  onEdit={setEditingTopic}
-                  onDelete={handleDelete}
-                  onCancelDelete={() => setDeletingId(null)}
-                  onMoveToTop={handleMoveToTop}
-                  onMoveUp={handleMoveUp}
-                  onMoveDown={handleMoveDown}
-                />
-              ))}
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="text-right px-4 py-3 text-gray-500 font-medium">נושא</th>
+                      <th className="text-right px-4 py-3 text-gray-500 font-medium">תיאור</th>
+                      <th className="text-right px-4 py-3 text-gray-500 font-medium">סרטונים</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+          <tbody>
+              {displayTopics.map((topic, i) => {
+                 const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
+                 const topicCfg = getTopicConfig(topic.name);
+                 const isConfirmDelete = confirmDeleteId === topic.id;
+                return (
+                  <tr key={topic.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`p-1 rounded ${colorClass}`}>
+                          {(() => { const I = TOPIC_ICON_MAP[topic.icon]; return I ? <I className="h-3.5 w-3.5" /> : <Hash className="h-3.5 w-3.5" />; })()}
+                        </span>
+                        <span className="font-medium text-gray-800">{topic.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-500">{topic.description}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-gray-700">{getVideoCount(topic.id)}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {isConfirmDelete ? (
+                          <>
+                            <span className="text-xs text-red-600">למחוק?</span>
+                            <button onClick={() => { deleteTopic.mutate(topic.id); setConfirmDeleteId(null); }}
+                              className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700">כן</button>
+                            <button onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs px-2 py-0.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50">לא</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleMoveToTop(topic)} title="העבר לראש"
+                              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                              <ChevronsUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => setEditingTopic(topic)}
+                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => setConfirmDeleteId(topic.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-
-      {editingTopic && (
-        <EditTopicDialog topic={editingTopic} onClose={() => setEditingTopic(null)} />
-      )}
+      {editingTopic && <EditTopicDialog topic={editingTopic} onClose={() => setEditingTopic(null)} />}
     </div>
   );
 }
@@ -752,7 +478,6 @@ function TopicsTab({ topics, videos }) {
 // RSS Ingestion Tab
 // ────────────────────────────────────────────
 
-// Status badge per channel
 function ChannelStatus({ status, channelId }) {
   if (!status) return null;
 
@@ -773,7 +498,6 @@ function ChannelStatus({ status, channelId }) {
     );
 
   if (status.state === "error") {
-    // Extract URL from error message if present
     const urlMatch = status.error?.match(/URL: (https?:\/\/\S+)/);
     const rssUrl = urlMatch?.[1] ?? (channelId ? `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}` : null);
     return (
@@ -783,13 +507,8 @@ function ChannelStatus({ status, channelId }) {
           <span className="line-clamp-2">{status.error?.split('\nURL:')[0]}</span>
         </span>
         {rssUrl && (
-          <a
-            href={rssUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-500 hover:underline block truncate"
-            title={rssUrl}
-          >
+          <a href={rssUrl} target="_blank" rel="noopener noreferrer"
+            className="text-xs text-blue-500 hover:underline block truncate" title={rssUrl}>
             בדוק URL ידנית ↗
           </a>
         )}
@@ -802,7 +521,7 @@ function ChannelStatus({ status, channelId }) {
 
 function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   // Build channel list from real DB data (Mentor + Source entities)
-  const channels = (mentors ?? []).map((mentor) => {
+  const channels = mentors.map((mentor) => {
     const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
     const channelId = extractChannelIdFromUrl(source?.sourceUrl);
     return {
@@ -816,19 +535,62 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     };
   });
 
+  const [statuses, setStatuses] = useState({});
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [resolving, setResolving] = useState({});
+  const [refreshingStats, setRefreshingStats] = useState(false);
+  const [refreshResult, setRefreshResult] = useState(null);
+
   const configuredCount = channels.filter((c) => c.isConfigured).length;
   const createVideo = useCreateVideo();
   const updateSource = useUpdateSource();
   const createSource = useCreateSource();
 
-  // { [mentorId]: { state, saved, skipped, error, preview } }
-  const [statuses, setStatuses] = useState({});
-  const [globalLoading, setGlobalLoading] = useState(false);
-  const [resolving, setResolving] = useState({}); // { [mentorId]: true/false }
-
   const setChannelStatus = useCallback((mentorId, update) => {
     setStatuses((prev) => ({ ...prev, [mentorId]: { ...prev[mentorId], ...update } }));
   }, []);
+
+  function extractVideoId(url) {
+    if (!url) return null;
+    const match = url.match(/(?:v=|youtu\.be\/)([\w-]{11})/);
+    return match?.[1] ?? null;
+  }
+
+  async function handleRefreshStats() {
+    const missing = videos.filter((v) => !v.viewCount || !v.duration);
+    if (!missing.length) {
+      setRefreshResult({ updated: 0, total: 0 });
+      return;
+    }
+    setRefreshingStats(true);
+    setRefreshResult(null);
+    try {
+      const mapped = missing
+        .map((v) => ({ base44Id: v.id, youtubeId: extractVideoId(v.url) }))
+        .filter((v) => v.youtubeId);
+
+      const youtubeIds = mapped.map((v) => v.youtubeId);
+      const res = await base44.functions.invoke('fetchVideoStats', { videoIds: youtubeIds });
+      const statsData = res?.data ?? res;
+
+      let updated = 0;
+      for (const { base44Id, youtubeId } of mapped) {
+        const s = statsData?.[youtubeId];
+        if (s?.duration || s?.viewCount) {
+          await Video.update(base44Id, {
+            ...(s.duration  && { duration: s.duration }),
+            ...(s.viewCount && { viewCount: s.viewCount }),
+          });
+          updated++;
+        }
+      }
+      setRefreshResult({ updated, total: missing.length });
+    } catch (e) {
+      setRefreshResult({ error: e.message });
+    } finally {
+      setRefreshingStats(false);
+    }
+  }
 
   // ── Resolve a single channel handle → channelId, then persist to Source entity ──
   async function handleResolve(mentorId) {
@@ -842,10 +604,8 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
       if (data.channelId) {
         const channelUrl = `https://www.youtube.com/channel/${data.channelId}`;
         if (ch?.sourceId) {
-          // Update existing Source record
           await updateSource.mutateAsync({ id: ch.sourceId, sourceUrl: channelUrl });
         } else {
-          // Create a new Source record for this mentor
           await createSource.mutateAsync({
             mentorId,
             sourceType: "youtube",
@@ -862,7 +622,6 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     }
   }
 
-  // ── Resolve all unconfigured channels ─────────────────────────────────────
   async function handleResolveAll() {
     const unconfigured = channels.filter((c) => !c.isConfigured);
     for (const ch of unconfigured) {
@@ -884,14 +643,13 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     }
   }
 
-  // Save previewed videos to Base44, then enrich with duration + viewCount
   async function handleImport(mentorId) {
     const preview = statuses[mentorId]?.preview;
     if (!preview?.length) return;
     setChannelStatus(mentorId, { state: "loading" });
     try {
       let saved = 0;
-      const savedMap = []; // [{ base44Id, youtubeId }]
+      const savedMap = [];
 
       for (const record of preview) {
         const { _videoId, _channelName, ...videoData } = record;
@@ -902,11 +660,11 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
         saved++;
       }
 
-      // Enrich with duration + viewCount from YouTube API
       if (savedMap.length > 0) {
         try {
           const youtubeIds = savedMap.map((v) => v.youtubeId);
-          const stats = await base44.functions.fetchVideoStats({ videoIds: youtubeIds });
+          const res = await base44.functions.invoke('fetchVideoStats', { videoIds: youtubeIds });
+          const stats = res?.data ?? res;
           for (const { base44Id, youtubeId } of savedMap) {
             const s = stats?.[youtubeId];
             if (s?.duration || s?.viewCount) {
@@ -927,7 +685,6 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     }
   }
 
-  // Fetch all configured channels
   async function handleFetchAll() {
     const configured = channels.filter((c) => c.isConfigured);
     if (!configured.length) return;
@@ -949,6 +706,20 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Refresh Stats button */}
+          <button
+            onClick={handleRefreshStats}
+            disabled={refreshingStats}
+            className="flex items-center gap-1.5 text-sm border border-emerald-300 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-50 disabled:opacity-50 transition-colors"
+          >
+            {refreshingStats ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            רענן סטטיסטיקות
+          </button>
+
           {configuredCount < channels.length && (
             <button
               onClick={handleResolveAll}
@@ -968,6 +739,19 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           </button>
         </div>
       </div>
+
+      {/* Refresh Stats result */}
+      {refreshResult && (
+        <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm ${
+          refreshResult.error ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+        }`}>
+          {refreshResult.error ? (
+            <><XCircle className="h-4 w-4 shrink-0" /> שגיאה: {refreshResult.error}</>
+          ) : (
+            <><CheckCircle2 className="h-4 w-4 shrink-0" /> עודכנו {refreshResult.updated} מתוך {refreshResult.total} סרטונים חסרי סטטיסטיקות</>
+          )}
+        </div>
+      )}
 
       {/* Missing channel IDs notice */}
       {configuredCount < channels.length && (
@@ -996,14 +780,13 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           </thead>
           <tbody>
             {channels.map((ch, i) => {
-              const catCfg = getTopicByCategory(ch.category);
-              const CatIcon = catCfg?.Icon;
+              const catCfg = CATEGORY_CONFIG[ch.category];
+              const CatIcon = catCfg?.icon;
               const status = statuses[ch.mentorId];
               const hasPreview = status?.preview?.length > 0;
 
               return (
                 <tr key={ch.mentorId} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
-                  {/* Name */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold shrink-0">
@@ -1012,16 +795,14 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       <span className="font-medium text-gray-800 text-right">{ch.name}</span>
                     </div>
                   </td>
-                  {/* Category */}
                   <td className="px-4 py-3">
                     {catCfg && (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.bg} ${catCfg.text}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${catCfg.color}`}>
                         {CatIcon && <CatIcon className="h-3 w-3" />}
                         {catCfg.label}
                       </span>
                     )}
                   </td>
-                  {/* Channel ID status */}
                   <td className="px-4 py-3">
                     {ch.isConfigured ? (
                       <span className="font-mono text-xs text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
@@ -1031,7 +812,6 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  {/* Resolve button */}
                   <td className="px-4 py-3">
                     {ch.isConfigured ? (
                       <span className="flex items-center gap-1 text-xs text-emerald-600">
@@ -1062,14 +842,12 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       </button>
                     )}
                   </td>
-                  {/* Ingestion status */}
                   <td className="px-4 py-3">
                     <ChannelStatus status={status} channelId={ch.channelId} />
                     {hasPreview && (
                       <p className="text-xs text-indigo-600 mt-0.5">{status.preview.length} סרטונים חדשים מוכנים לייבוא</p>
                     )}
                   </td>
-                  {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
                       {hasPreview && (
@@ -1121,12 +899,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                     <p className="text-sm font-medium text-gray-800 truncate">{video.title}</p>
                     <p className="text-xs text-gray-400">{video._channelName} · {video.publishedAt?.slice(0, 10)}</p>
                   </div>
-                  <a
-                    href={video.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0"
-                  >
+                  <a href={video.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
                     <Youtube className="h-4 w-4 text-gray-300 hover:text-red-500 transition-colors" />
                   </a>
                 </div>

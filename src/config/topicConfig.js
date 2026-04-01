@@ -63,6 +63,26 @@ export function getTopicByCategory(categoryCode) {
   return TOPIC_CONFIG_BY_NAME[name] ?? DEFAULT_TOPIC_CONFIG;
 }
 
+// ── Icon name → Lucide component (for Topics UI) ──────────────────────────
+export const TOPIC_ICON_MAP = {
+  Music4, Construction, Candy, HeartPulse, Landmark,
+  ChefHat, Workflow, Bot, ChartCandlestick, Code, Hash,
+};
+
+// ── Category code → display config (icon, label, color, name, description) ─
+export const CATEGORY_CONFIG = {
+  AI:       { icon: Bot,              label: "בינה מלאכותית", color: "bg-violet-100 text-violet-700", name: "בינה מלאכותית", description: "AI, אוטומציה, כלים טכנולוגיים" },
+  Markets:  { icon: ChartCandlestick, label: "שוק ההון",      color: "bg-green-100 text-green-700",   name: "שוק ההון",      description: "מסחר, השקעות, ניתוח טכני"     },
+  Food:     { icon: ChefHat,          label: "אוכל ובישול",   color: "bg-yellow-100 text-yellow-700", name: "אוכל ובישול",   description: "מתכונים, בישול, אוכל"          },
+  Health:   { icon: HeartPulse,       label: "בריאות",        color: "bg-red-100 text-red-700",       name: "בריאות",        description: "בריאות, כושר, תזונה"           },
+  Music:    { icon: Music4,           label: "מוזיקה",        color: "bg-purple-100 text-purple-700", name: "מוזיקה",        description: "מוזיקה, כלי נגינה"             },
+  Politics: { icon: Landmark,         label: "פוליטיקה",      color: "bg-blue-100 text-blue-700",     name: "פוליטיקה",      description: "פוליטיקה ותוכן"                },
+  Dev:      { icon: Code,             label: "פיתוח",         color: "bg-sky-100 text-sky-700",       name: "פיתוח",         description: "פיתוח תוכנה, בניית אפליקציות" },
+};
+
+// ── Alias: getTopicConfig = getTopicByName ─────────────────────────────────
+export { getTopicByName as getTopicConfig };
+
 // ── Reverse: topic name → category code ───────────────────────────────────
 export function getCategoryCodeForTopicName(topicName) {
   if (!topicName) return null;
