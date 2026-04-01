@@ -540,11 +540,15 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   const [resolving, setResolving] = useState({});
   const [refreshingStats, setRefreshingStats] = useState(false);
   const [refreshResult, setRefreshResult] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const configuredCount = channels.filter((c) => c.isConfigured).length;
   const createVideo = useCreateVideo();
   const updateSource = useUpdateSource();
   const createSource = useCreateSource();
+  const deleteMentor = useDeleteMentor();
 
   const setChannelStatus = useCallback((mentorId, update) => {
     setStatuses((prev) => ({ ...prev, [mentorId]: { ...prev[mentorId], ...update } }));
@@ -685,6 +689,20 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     }
   }
 
+  async function handleDeleteMentor(mentorId) {
+    await deleteMentor.mutateAsync(mentorId);
+    setConfirmDeleteId(null);
+  }
+
+  async function handleDeleteAll() {
+    setDeletingAll(true);
+    for (const ch of channels) {
+      await deleteMentor.mutateAsync(ch.mentorId);
+    }
+    setDeletingAll(false);
+    setConfirmDeleteAll(false);
+  }
+
   async function handleFetchAll() {
     const configured = channels.filter((c) => c.isConfigured);
     if (!configured.length) return;
@@ -737,6 +755,33 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
             <RefreshCw className={`h-3.5 w-3.5 ${globalLoading ? "animate-spin" : ""}`} />
             משוך את כולם
           </button>
+          {confirmDeleteAll ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-red-600">למחוק את כל {channels.length} המנטורים?</span>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deletingAll}
+                className="text-xs px-2.5 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deletingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : "כן, מחק"}
+              </button>
+              <button
+                onClick={() => setConfirmDeleteAll(false)}
+                className="text-xs px-2.5 py-1.5 border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              disabled={channels.length === 0}
+              className="flex items-center gap-1.5 text-sm border border-red-200 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-40 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              מחק את כולם
+            </button>
+          )}
         </div>
       </div>
 
@@ -850,24 +895,47 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
-                      {hasPreview && (
-                        <button
-                          onClick={() => handleImport(ch.mentorId)}
-                          disabled={status?.state === "loading"}
-                          className="text-xs px-2.5 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                        >
-                          שמור ({status.preview.length})
-                        </button>
+                      {confirmDeleteId === ch.mentorId ? (
+                        <>
+                          <span className="text-xs text-red-600">למחוק?</span>
+                          <button
+                            onClick={() => handleDeleteMentor(ch.mentorId)}
+                            className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                          >כן</button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-xs px-2 py-0.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50"
+                          >לא</button>
+                        </>
+                      ) : (
+                        <>
+                          {hasPreview && (
+                            <button
+                              onClick={() => handleImport(ch.mentorId)}
+                              disabled={status?.state === "loading"}
+                              className="text-xs px-2.5 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            >
+                              שמור ({status.preview.length})
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handlePreview(ch.mentorId)}
+                            disabled={!ch.isConfigured || status?.state === "loading"}
+                            className="text-xs px-2.5 py-1 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {status?.state === "loading" ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : "בדוק"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(ch.mentorId)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="מחק מנטור"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => handlePreview(ch.mentorId)}
-                        disabled={!ch.isConfigured || status?.state === "loading"}
-                        className="text-xs px-2.5 py-1 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {status?.state === "loading" ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : "בדוק"}
-                      </button>
                     </div>
                   </td>
                 </tr>
