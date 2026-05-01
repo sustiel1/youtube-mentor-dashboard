@@ -250,6 +250,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     logLevel: 'error',
+    server: {
+      port: 5175,
+    },
     plugins: [
       makeRssProxyPlugin(),
       makeChannelResolverPlugin(),
