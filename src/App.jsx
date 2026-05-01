@@ -61,7 +61,7 @@ function AppLayout() {
   ).length;
 
   return (
-    <div dir="rtl" className="flex h-screen overflow-hidden bg-[#F8F9FB]">
+    <div data-testid="app-layout" dir="rtl" className="flex h-screen overflow-hidden bg-[#F8F9FB]">
       <AppSidebar
         currentPage={currentPage}
         pageParams={pageParams}

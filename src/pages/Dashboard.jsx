@@ -299,7 +299,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   }
 
   return (
-    <div className="min-h-screen">
+    <div data-testid="page-dashboard" className="min-h-screen">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">

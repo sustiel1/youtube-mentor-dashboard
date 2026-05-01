@@ -235,6 +235,7 @@ export function AppSidebar({
             label="כל הסרטונים"
             isActive={currentPage === "Dashboard" && (filters?.category || "all") === "all" && activeMentor === "all"}
             onClick={() => navigateTo("Dashboard")}
+            testId="nav-dashboard"
           />
           <NavButton
             icon={Bookmark}
@@ -479,6 +480,7 @@ export function AppSidebar({
           label="ניהול"
           isActive={currentPage === "Admin"}
           onClick={() => navigateTo("Admin")}
+          testId="nav-admin"
         />
       </div>
 
@@ -555,10 +557,11 @@ function EditTopicDialog({ topic, onClose }) {
   );
 }
 
-function NavButton({ icon: Icon, label, badge, isActive, onClick, iconFilled }) {
+function NavButton({ icon: Icon, label, badge, isActive, onClick, iconFilled, testId }) {
   return (
     <button
       onClick={onClick}
+      data-testid={testId}
       className={cn(
         "w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
         isActive

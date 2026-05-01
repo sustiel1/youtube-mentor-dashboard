@@ -1008,7 +1008,7 @@ export default function Admin() {
   const { data: videos = [] } = useVideos();
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
+    <div data-testid="page-admin" className="min-h-screen bg-[#F8F9FB]">
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900">ניהול</h1>
