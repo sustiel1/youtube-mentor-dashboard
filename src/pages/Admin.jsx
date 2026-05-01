@@ -523,7 +523,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   // Build channel list from real DB data (Mentor + Source entities)
   const channels = mentors.map((mentor) => {
     const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
-    const channelId = extractChannelIdFromUrl(source?.sourceUrl);
+    const channelId = extractChannelIdFromUrl(source?.sourceUrl) || mentor.youtubeChannelId || null;
     return {
       mentorId:     mentor.id,
       name:         mentor.name,
@@ -873,7 +873,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                         {ch.channelId?.slice(0, 12)}…
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400">—</span>
+                      <span className="text-xs text-amber-500">חסר Channel ID</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
