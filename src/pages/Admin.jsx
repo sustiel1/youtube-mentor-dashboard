@@ -937,6 +937,16 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                               שמור ({status.preview.length})
                             </button>
                           )}
+                          {!ch.isConfigured && (
+                            <a
+                              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ch.name)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs px-2.5 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                              חפש ביוטיוב
+                            </a>
+                          )}
                           <button
                             onClick={() => handlePreview(ch.mentorId)}
                             disabled={!ch.isConfigured || status?.state === "loading"}
