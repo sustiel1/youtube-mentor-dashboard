@@ -1,25 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Mentor, Source } from '@/api/entities';
+import { MENTORS } from '@/data/mockData';
 
-// Fetch all mentors
+// Local mode — returns mock data directly, no Base44 call
 export function useMentors() {
   return useQuery({
     queryKey: ['mentors'],
-    queryFn: async () => {
-      const data = await Mentor.list();
-      return data ?? [];
-    },
+    queryFn: async () => MENTORS,
   });
 }
 
-// Fetch only active mentors
+// Local mode — returns active mentors from mock data directly
 export function useActiveMentors() {
   return useQuery({
     queryKey: ['mentors', 'active'],
-    queryFn: async () => {
-      const data = await Mentor.filter({ active: true });
-      return data ?? [];
-    },
+    queryFn: async () => MENTORS.filter((m) => m.active),
   });
 }
 

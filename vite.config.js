@@ -251,7 +251,8 @@ export default defineConfig(({ mode }) => {
   return {
     logLevel: 'error',
     server: {
-      port: 5175,
+      port: 5184,
+      strictPort: true,
     },
     plugins: [
       makeRssProxyPlugin(),
