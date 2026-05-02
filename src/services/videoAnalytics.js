@@ -107,8 +107,8 @@ function generateSummary(video, tags) {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function analyzeVideo(video) {
-  if (video.analyzedAt) return video; // already analyzed — skip
+export function analyzeVideo(video, { force = false } = {}) {
+  if (video.analyzedAt && !force) return video;
 
   const tags         = extractTags(video);
   const qualityScore = computeQualityScore(video, tags);

@@ -105,6 +105,16 @@ export function updateStoredVideo(id, updates) {
   return updated;
 }
 
+// Force re-analyze every stored video (useful after improving the analyzer).
+// Returns the number of videos that were re-analyzed.
+export function reanalyzeVideos() {
+  const videos = loadVideos();
+  if (!videos.length) return 0;
+  const reanalyzed = videos.map((v) => analyzeVideo(v, { force: true }));
+  saveVideos(reanalyzed);
+  return reanalyzed.length;
+}
+
 export function getVideoCount() {
   return loadVideos().length;
 }

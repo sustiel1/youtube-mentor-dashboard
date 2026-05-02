@@ -13,7 +13,7 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { videoBelongsToTopicFamily, mentorBelongsToTopicFamily } from "@/lib/topicFilters";
 import { getCategoryCodeForTopicName } from "@/config/topicConfig";
-import { loadVideos } from "@/services/videoStorage";
+import { loadVideos, reanalyzeVideos } from "@/services/videoStorage";
 import { getDashboardStats } from "@/services/videoAnalytics";
 
 // Map KPI filterKey → video status value
@@ -115,18 +115,45 @@ function applyFilters(videos, filters, topics, mentors = []) {
 // Shows KPI stats + top videos from localStorage (auto-sync data).
 // Reads local videos once on mount; updates when mentors load.
 function SmartDashboard({ mentors }) {
-  const localVideos = useMemo(() => loadVideos(), []);
+  const [localVideos, setLocalVideos] = useState(() => loadVideos());
+  const [reanalyzing, setReanalyzing]       = useState(false);
+  const [reanalyzeResult, setReanalyzeResult] = useState(null);
+
   const stats = useMemo(() => getDashboardStats(localVideos, mentors), [localVideos, mentors]);
+
+  async function handleReanalyze() {
+    setReanalyzing(true);
+    setReanalyzeResult(null);
+    try {
+      const count = reanalyzeVideos();
+      setLocalVideos(loadVideos());
+      setReanalyzeResult(count);
+    } finally {
+      setReanalyzing(false);
+    }
+  }
 
   if (!localVideos.length || !stats) return null;
 
   return (
     <div className="mt-4 mb-2 space-y-3" dir="rtl">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-semibold text-gray-700">ניתוח מקומי</span>
         <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
           {localVideos.length} סרטונים ב-localStorage
         </span>
+        <button
+          onClick={handleReanalyze}
+          disabled={reanalyzing}
+          className="mr-auto text-xs px-3 py-1 rounded-lg border border-violet-200 text-violet-600 bg-white hover:bg-violet-50 disabled:opacity-50 transition-colors"
+        >
+          {reanalyzing ? 'מנתח...' : 'נתח מחדש סרטונים'}
+        </button>
+        {reanalyzeResult !== null && (
+          <span className="text-xs text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-0.5 border border-emerald-100">
+            נותחו מחדש {reanalyzeResult} סרטונים
+          </span>
+        )}
       </div>
 
       {/* KPI row */}

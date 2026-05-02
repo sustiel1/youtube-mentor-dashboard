@@ -1,54 +1,56 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Topic } from '@/api/entities';
-import { TOPICS } from '@/data/mockData';
+import {
+  loadTopics,
+  addTopic,
+  deleteTopic,
+  updateTopic,
+} from '@/services/topicStorage';
 
-// Fetch all topics
+// Returns all topics: mockData TOPICS + user-added from localStorage
 export function useTopics() {
   return useQuery({
     queryKey: ['topics'],
-    queryFn: async () => {
-      try {
-        const data = await Topic.list();
-        return data ?? [];
-      } catch (error) {
-        console.warn('[useTopics] Base44 unavailable — using mock data:', error.message);
-        return TOPICS;
-      }
-    },
+    queryFn:  async () => loadTopics(),
   });
 }
 
-// Mutation: create a topic
+// Mutation: add a new user topic
 export function useCreateTopic() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (topicData) =>
-      Topic.create({
-        ...topicData,
-        createdAt: new Date().toISOString(),
-      }),
+    mutationFn: (data) => {
+      const result = addTopic(data);
+      if (result.error) throw new Error(result.error);
+      return result.topic;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['topics'] });
     },
   });
 }
 
-// Mutation: update a topic
+// Mutation: update a topic (only user-added topics; mockData topics succeed silently)
 export function useUpdateTopic() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }) => Topic.update(id, data),
+    mutationFn: ({ id, ...data }) => {
+      const result = updateTopic(id, data);
+      if (result?.error) throw new Error(result.error);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['topics'] });
     },
   });
 }
 
-// Mutation: delete a topic
+// Mutation: delete a user-added topic (throws for mockData topics)
 export function useDeleteTopic() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => Topic.delete(id),
+    mutationFn: (id) => {
+      const result = deleteTopic(id);
+      if (result?.error) throw new Error(result.error);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['topics'] });
     },

@@ -1,20 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Mentor, Source } from '@/api/entities';
 import { MENTORS } from '@/data/mockData';
+import {
+  hideMentor,
+  restoreMentor,
+  getHiddenMentorIds,
+  filterVisibleMentors,
+} from '@/services/mentorStorage';
 
-// Local mode — returns mock data directly, no Base44 call
+// Local mode — returns mock data minus hidden mentors
 export function useMentors() {
   return useQuery({
     queryKey: ['mentors'],
-    queryFn: async () => MENTORS,
+    queryFn: async () => filterVisibleMentors(MENTORS),
   });
 }
 
-// Local mode — returns active mentors from mock data directly
+// Local mode — returns active visible mentors
 export function useActiveMentors() {
   return useQuery({
     queryKey: ['mentors', 'active'],
-    queryFn: async () => MENTORS.filter((m) => m.active),
+    queryFn: async () => filterVisibleMentors(MENTORS).filter((m) => m.active),
+  });
+}
+
+// Returns the full objects of currently hidden mentors
+export function useHiddenMentors() {
+  return useQuery({
+    queryKey: ['mentors', 'hidden'],
+    queryFn: async () => {
+      const hiddenIds = new Set(getHiddenMentorIds());
+      return MENTORS.filter((m) => hiddenIds.has(m.id));
+    },
   });
 }
 
@@ -75,11 +92,22 @@ export function useUpdateMentor() {
   });
 }
 
-// Mutation: delete a mentor
+// Mutation: soft-delete a mentor (hide in localStorage, not removed from mock data)
 export function useDeleteMentor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => Mentor.delete(id),
+    mutationFn: async (id) => hideMentor(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentors'] });
+    },
+  });
+}
+
+// Mutation: restore a previously hidden mentor
+export function useRestoreMentor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => restoreMentor(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentors'] });
     },

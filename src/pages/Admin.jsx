@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronsUp } from "lucide-react";
 import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG, getCategoryCodeForTopicName } from "@/config/topicConfig";
-import { useMentors, useUpdateMentor, useDeleteMentor } from "@/hooks/useMentors";
-import { useTopics, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import { useMentors, useUpdateMentor, useDeleteMentor, useHiddenMentors, useRestoreMentor } from "@/hooks/useMentors";
+import { useTopics, useCreateTopic, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
+import { isUserTopic } from "@/services/topicStorage";
 import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -161,6 +162,8 @@ function MentorGroup({ label, mentors, topics }) {
 
 function MentorsTab({ mentors, topics }) {
   const mainTopics = topics.filter((t) => !t.parentId);
+  const { data: hiddenMentors = [] } = useHiddenMentors();
+  const restoreMentor = useRestoreMentor();
 
   // Group mentors by topic
   const groups = mainTopics.map((topic) => ({
@@ -182,6 +185,37 @@ function MentorsTab({ mentors, topics }) {
       </div>
       {groups.map((g) => <MentorGroup key={g.label} label={g.label} mentors={g.mentors} topics={mainTopics} />)}
       <MentorGroup label="לא משויך" mentors={unassigned} topics={mainTopics} />
+
+      {/* Hidden mentors — restore section */}
+      {hiddenMentors.length > 0 && (
+        <div className="mt-6" dir="rtl">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1.5">
+            מוסתרים ({hiddenMentors.length})
+          </h3>
+          <div className="border border-dashed border-gray-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody>
+                {hiddenMentors.map((m) => (
+                  <tr key={m.id} className="border-b border-gray-50 last:border-0">
+                    <td className="px-4 py-2.5">
+                      <span className="text-sm text-gray-400 line-through">{m.name}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-left">
+                      <button
+                        onClick={() => restoreMentor.mutate(m.id)}
+                        disabled={restoreMentor.isPending}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors"
+                      >
+                        שחזר
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -373,17 +407,37 @@ function EditTopicDialog({ topic, onClose }) {
   );
 }
 
-function TopicsTab({ topics, videos }) {
+const TOPIC_COLOR_OPTIONS = ["blue", "violet", "cyan", "emerald", "amber", "rose", "orange"];
+const TOPIC_COLOR_BG = {
+  blue:    "bg-blue-400",
+  violet:  "bg-violet-400",
+  cyan:    "bg-cyan-400",
+  emerald: "bg-emerald-400",
+  amber:   "bg-amber-400",
+  rose:    "bg-rose-400",
+  orange:  "bg-orange-400",
+};
+
+function TopicsTab({ topics, videos, mentors = [] }) {
   const [orderedTopics, setOrderedTopics] = useState(topics);
-  const [editingTopic, setEditingTopic] = useState(null);
+  const [editingTopic, setEditingTopic]   = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [addingNew, setAddingNew]         = useState(false);
+  const [newName, setNewName]             = useState("");
+  const [newColor, setNewColor]           = useState("blue");
+  const [newError, setNewError]           = useState("");
+
   const updateTopic = useUpdateTopic();
   const deleteTopic = useDeleteTopic();
+  const createTopic = useCreateTopic();
 
-  // Sync when topics prop changes (initial load)
-  if (orderedTopics.length === 0 && topics.length > 0) setOrderedTopics(topics);
+  // Sync orderedTopics whenever the topics prop changes (initial load + after mutations)
+  useEffect(() => {
+    if (topics.length > 0) setOrderedTopics(topics);
+  }, [topics]);
 
-  const getVideoCount = (topicId) => videos.filter((v) => (v.topicIds || []).includes(topicId)).length;
+  const getVideoCount  = (topicId) => videos.filter((v) => (v.topicIds || []).includes(topicId)).length;
+  const getMentorCount = (topicId) => mentors.filter((m) => (m.topicIds || []).includes(topicId)).length;
 
   const handleMoveToTop = (topic) => {
     const items = [topic, ...orderedTopics.filter((t) => t.id !== topic.id)];
@@ -391,14 +445,79 @@ function TopicsTab({ topics, videos }) {
     items.forEach((t, i) => updateTopic.mutate({ id: t.id, sortOrder: i }));
   };
 
-  const displayTopics = orderedTopics.length ? orderedTopics : topics;
+  const handleAddTopic = async () => {
+    setNewError("");
+    try {
+      await createTopic.mutateAsync({ name: newName, color: newColor });
+      setNewName("");
+      setNewColor("blue");
+      setAddingNew(false);
+    } catch (err) {
+      setNewError(err.message);
+    }
+  };
 
+  const handleDeleteTopic = (topicId) => {
+    deleteTopic.mutate(topicId, {
+      onSuccess: () => setConfirmDeleteId(null),
+      onError:   (err) => { alert(err.message); setConfirmDeleteId(null); },
+    });
+  };
+
+  const displayTopics = orderedTopics.length ? orderedTopics : topics;
   return (
-    <div>
+    <div dir="rtl">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-800">נושאים ({displayTopics.length})</h2>
-        <p className="text-xs text-gray-400">גרור לשינוי סדר</p>
+        <button
+          onClick={() => { setAddingNew((p) => !p); setNewName(""); setNewError(""); }}
+          className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        >
+          {addingNew ? "ביטול" : "+ הוסף נושא"}
+        </button>
       </div>
+
+      {/* Add new topic form */}
+      {addingNew && (
+        <div className="mb-4 border border-indigo-100 bg-indigo-50/30 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium text-gray-700">נושא חדש</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              value={newName}
+              onChange={(e) => { setNewName(e.target.value); setNewError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleAddTopic()}
+              placeholder="שם הנושא..."
+              className="flex-1 min-w-40 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+            <div className="flex gap-1.5">
+              {TOPIC_COLOR_OPTIONS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setNewColor(c)}
+                  title={c}
+                  className={`w-5 h-5 rounded-full border-2 transition-all ${TOPIC_COLOR_BG[c]} ${newColor === c ? "border-gray-700 scale-110" : "border-transparent opacity-60 hover:opacity-100"}`}
+                />
+              ))}
+            </div>
+          </div>
+          {newError && <p className="text-xs text-red-500">{newError}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={handleAddTopic}
+              disabled={!newName.trim() || createTopic.isPending}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {createTopic.isPending ? "שומר..." : "הוסף"}
+            </button>
+            <button
+              onClick={() => { setAddingNew(false); setNewName(""); setNewError(""); }}
+              className="px-3 py-1.5 border border-gray-200 text-gray-600 text-xs rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      )}
 
       {displayTopics.length === 0 ? (
         <div className="border border-dashed border-gray-200 rounded-xl p-10 text-center">
@@ -410,16 +529,18 @@ function TopicsTab({ topics, videos }) {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-right px-4 py-3 text-gray-500 font-medium">נושא</th>
-                      <th className="text-right px-4 py-3 text-gray-500 font-medium">תיאור</th>
-                      <th className="text-right px-4 py-3 text-gray-500 font-medium">סרטונים</th>
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-          <tbody>
+                <th className="text-right px-4 py-3 text-gray-500 font-medium">תיאור</th>
+                <th className="text-right px-4 py-3 text-gray-500 font-medium">מנטורים</th>
+                <th className="text-right px-4 py-3 text-gray-500 font-medium">סרטונים</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
               {displayTopics.map((topic, i) => {
-                 const colorClass = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
-                 const topicCfg = getTopicConfig(topic.name);
-                 const isConfirmDelete = confirmDeleteId === topic.id;
+                const colorClass     = TOPIC_COLOR_MAP[topic.color] || TOPIC_COLOR_MAP.violet;
+                const isConfirmDelete = confirmDeleteId === topic.id;
+                const canDelete      = isUserTopic(topic.id);
+                const mentorCount    = getMentorCount(topic.id);
                 return (
                   <tr key={topic.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
                     <td className="px-4 py-3">
@@ -428,10 +549,16 @@ function TopicsTab({ topics, videos }) {
                           {(() => { const I = TOPIC_ICON_MAP[topic.icon]; return I ? <I className="h-3.5 w-3.5" /> : <Hash className="h-3.5 w-3.5" />; })()}
                         </span>
                         <span className="font-medium text-gray-800">{topic.name}</span>
+                        {canDelete && (
+                          <span className="text-xs text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded">מותאם</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-500">{topic.description}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-gray-700">{mentorCount || "—"}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-medium text-gray-700">{getVideoCount(topic.id)}</span>
@@ -441,25 +568,52 @@ function TopicsTab({ topics, videos }) {
                         {isConfirmDelete ? (
                           <>
                             <span className="text-xs text-red-600">למחוק?</span>
-                            <button onClick={() => { deleteTopic.mutate(topic.id); setConfirmDeleteId(null); }}
-                              className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700">כן</button>
-                            <button onClick={() => setConfirmDeleteId(null)}
-                              className="text-xs px-2 py-0.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50">לא</button>
+                            <button
+                              onClick={() => handleDeleteTopic(topic.id)}
+                              className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              כן
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs px-2 py-0.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50"
+                            >
+                              לא
+                            </button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => handleMoveToTop(topic)} title="העבר לראש"
-                              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                            <button
+                              onClick={() => handleMoveToTop(topic)}
+                              title="העבר לראש"
+                              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                            >
                               <ChevronsUp className="h-3.5 w-3.5" />
                             </button>
-                            <button onClick={() => setEditingTopic(topic)}
-                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                            <button
+                              onClick={() => setEditingTopic(topic)}
+                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                            >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
-                            <button onClick={() => setConfirmDeleteId(topic.id)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {canDelete ? (
+                              <button
+                                onClick={() => {
+                                  if (mentorCount > 0) {
+                                    alert(`לא ניתן למחוק — ${mentorCount} מנטורים משתמשים בנושא זה`);
+                                    return;
+                                  }
+                                  setConfirmDeleteId(topic.id);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <span className="p-1.5 text-gray-200" title="נושא מובנה — לא ניתן למחוק">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
@@ -1125,7 +1279,7 @@ export default function Admin() {
             <MentorsTab mentors={mentors} topics={topics} />
           </TabsContent>
           <TabsContent value="topics">
-            <TopicsTab topics={topics} videos={videos} />
+            <TopicsTab topics={topics} videos={videos} mentors={mentors} />
           </TabsContent>
           <TabsContent value="categories">
             <CategoriesTab mentors={mentors} />
