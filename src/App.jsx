@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClientInstance } from '@/lib/query-client';
@@ -9,6 +9,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useVideos } from '@/hooks/useVideos';
 import { PAGES } from './pages.config';
 import { normalizeDashboardFilters } from '@/lib/topicFilters';
+import { shouldAutoSync, runAutoSync } from '@/services/autoRssSync';
 
 const DEFAULT_FILTERS = { search: "", mentor: "all", category: "all", topicId: "all" };
 
@@ -21,6 +22,20 @@ function AppLayout() {
   const { data: topics = [] } = useTopics();
   const { data: categories = [] } = useCategories();
   const { data: videos = [] } = useVideos();
+
+  // Trigger auto-sync once per session, only after mentors load and only if ≥ 8h have passed
+  const autoSyncDone = useRef(false);
+  useEffect(() => {
+    if (!mentors.length || autoSyncDone.current) return;
+    autoSyncDone.current = true;
+    if (!shouldAutoSync()) {
+      console.info('[App] autoRssSync: סנכרון בוצע בפחות מ-8 שעות — מדלג');
+      return;
+    }
+    runAutoSync(mentors).catch((err) => {
+      console.warn('[App] autoRssSync error:', err.message);
+    });
+  }, [mentors]);
 
   const PageComponent = PAGES[currentPage] || PAGES["Dashboard"];
   const normalizedDefaultFilters = useMemo(

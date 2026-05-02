@@ -12,7 +12,8 @@ import {
   extractHandleFromUrl,
   filterNewVideos,
 } from "@/services/rssIngestion";
-import { getVideoCount } from "@/services/videoStorage";
+import { loadVideos, upsertVideos, getVideoCount } from "@/services/videoStorage";
+import { getLastSyncAt, getLastSyncResult } from "@/services/autoRssSync";
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
 
@@ -520,6 +521,17 @@ function ChannelStatus({ status, channelId }) {
   return null;
 }
 
+function formatRelativeTime(date) {
+  if (!date) return '';
+  const diff = Date.now() - new Date(date).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'עכשיו';
+  if (minutes < 60) return `לפני ${minutes} דקות`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `לפני ${hours} שעות`;
+  return `לפני ${Math.floor(hours / 24)} ימים`;
+}
+
 function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   // Build channel list from real DB data (Mentor + Source entities)
   const [storedCount, setStoredCount] = useState(() => getVideoCount());
@@ -545,6 +557,12 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [fetchingFor, setFetchingFor] = useState({});
+  const [fetchResultFor, setFetchResultFor] = useState({});
+  const [syncInfo] = useState(() => ({
+    lastAt: getLastSyncAt(),
+    result: getLastSyncResult(),
+  }));
 
   const configuredCount = channels.filter((c) => c.isConfigured).length;
   const createVideo = useCreateVideo();
@@ -720,6 +738,34 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     setConfirmDeleteAll(false);
   }
 
+  async function handleFetchNew(mentorId) {
+    const mentor = mentors.find((m) => m.id === mentorId);
+    const source = sources.find((s) => s.mentorId === mentorId && s.sourceType === "youtube");
+    if (!mentor) return;
+
+    setFetchingFor((prev) => ({ ...prev, [mentorId]: true }));
+    setFetchResultFor((prev) => ({ ...prev, [mentorId]: null }));
+
+    try {
+      const fetched = await fetchChannelRSSFromSource(mentor, source, topics);
+      const toSave = fetched.map(({ _videoId, _channelName, ...rest }) => rest);
+      const added = upsertVideos(toSave);
+
+      console.info(
+        `[RssTab] ${mentor.name}: ${fetched.length} ב-RSS, ` +
+        `${fetched.length - added.length} קיימים, ${added.length} חדשים`
+      );
+
+      setFetchResultFor((prev) => ({ ...prev, [mentorId]: { added: added.length } }));
+      if (added.length > 0) setStoredCount(getVideoCount());
+    } catch (err) {
+      console.warn(`[RssTab] ${mentor.name}: שגיאה — ${err.message}`);
+      setFetchResultFor((prev) => ({ ...prev, [mentorId]: { error: err.message } }));
+    } finally {
+      setFetchingFor((prev) => ({ ...prev, [mentorId]: false }));
+    }
+  }
+
   async function handleFetchAll() {
     const configured = channels.filter((c) => c.isConfigured);
     if (!configured.length) return;
@@ -742,6 +788,14 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
               <span className="mr-2 text-indigo-500">· {storedCount} סרטונים שמורים</span>
             )}
           </p>
+          {syncInfo.lastAt && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              סנכרון אחרון: {formatRelativeTime(syncInfo.lastAt)}
+              {syncInfo.result?.addedCount > 0 && (
+                <span className="mr-1 text-emerald-600"> · נוספו {syncInfo.result.addedCount} חדשים</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Refresh Stats button */}
@@ -917,6 +971,15 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                     {hasPreview && (
                       <p className="text-xs text-indigo-600 mt-0.5">{status.preview.length} סרטונים חדשים מוכנים לייבוא</p>
                     )}
+                    {fetchResultFor[ch.mentorId] && (
+                      <p className={`text-xs mt-0.5 ${fetchResultFor[ch.mentorId].error ? 'text-red-500' : 'text-emerald-600'}`}>
+                        {fetchResultFor[ch.mentorId].error
+                          ? `שגיאה: ${fetchResultFor[ch.mentorId].error.split('\n')[0]}`
+                          : fetchResultFor[ch.mentorId].added === 0
+                            ? 'אין סרטונים חדשים'
+                            : `נוספו ${fetchResultFor[ch.mentorId].added} חדשים ל-localStorage`}
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
@@ -952,6 +1015,18 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                             >
                               חפש ביוטיוב
                             </a>
+                          )}
+                          {ch.isConfigured && (
+                            <button
+                              onClick={() => handleFetchNew(ch.mentorId)}
+                              disabled={!!fetchingFor[ch.mentorId]}
+                              className="text-xs px-2.5 py-1 border border-violet-200 text-violet-600 rounded-lg hover:bg-violet-50 disabled:opacity-50 transition-colors"
+                              title="משוך סרטונים חדשים ושמור ב-localStorage"
+                            >
+                              {fetchingFor[ch.mentorId] ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : "משוך חדשים"}
+                            </button>
                           )}
                           <button
                             onClick={() => handlePreview(ch.mentorId)}
