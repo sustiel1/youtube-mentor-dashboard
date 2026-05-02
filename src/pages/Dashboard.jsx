@@ -13,6 +13,8 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { videoBelongsToTopicFamily, mentorBelongsToTopicFamily } from "@/lib/topicFilters";
 import { getCategoryCodeForTopicName } from "@/config/topicConfig";
+import { loadVideos } from "@/services/videoStorage";
+import { getDashboardStats } from "@/services/videoAnalytics";
 
 // Map KPI filterKey → video status value
 const KPI_STATUS_MAP = {
@@ -107,6 +109,130 @@ function applyFilters(videos, filters, topics, mentors = []) {
     }
     return true;
   });
+}
+
+// ── Smart Dashboard ───────────────────────────────────────────────────────────
+// Shows KPI stats + top videos from localStorage (auto-sync data).
+// Reads local videos once on mount; updates when mentors load.
+function SmartDashboard({ mentors }) {
+  const localVideos = useMemo(() => loadVideos(), []);
+  const stats = useMemo(() => getDashboardStats(localVideos, mentors), [localVideos, mentors]);
+
+  if (!localVideos.length || !stats) return null;
+
+  return (
+    <div className="mt-4 mb-2 space-y-3" dir="rtl">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-700">ניתוח מקומי</span>
+        <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+          {localVideos.length} סרטונים ב-localStorage
+        </span>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+          <p className="text-xs text-gray-400 mb-1">היום</p>
+          <p className="text-2xl font-bold text-indigo-600">{stats.newToday}</p>
+          <p className="text-xs text-gray-500 mt-0.5">סרטונים חדשים</p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+          <p className="text-xs text-gray-400 mb-1">סה״כ שמורים</p>
+          <p className="text-2xl font-bold text-emerald-600">{stats.totalSaved}</p>
+          <p className="text-xs text-gray-500 mt-0.5">ב-30 הימים האחרונים</p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+          <p className="text-xs text-gray-400 mb-1">מנטור פעיל</p>
+          <p className="text-base font-bold text-violet-600 truncate leading-tight mt-0.5">{stats.topMentor.name}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{stats.topMentor.count} סרטונים</p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+          <p className="text-xs text-gray-400 mb-1">ממוצע איכות</p>
+          <p className="text-2xl font-bold text-amber-600">{stats.avgQuality}</p>
+          <p className="text-xs text-gray-500 mt-0.5">מתוך 10</p>
+        </div>
+      </div>
+
+      {/* Tag distribution */}
+      {Object.keys(stats.tagCounts).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(stats.tagCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([tag, count]) => (
+              <span key={tag} className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100">
+                {tag} · {count}
+              </span>
+            ))}
+        </div>
+      )}
+
+      {/* Top videos by quality score */}
+      {stats.topVideos.length > 0 && (
+        <div className="border border-gray-100 rounded-xl overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-600">סרטונים הכי איכותיים</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-50 text-right">
+                  <th className="px-4 py-2 text-xs font-medium text-gray-400">כותרת</th>
+                  <th className="px-4 py-2 text-xs font-medium text-gray-400">מנטור</th>
+                  <th className="px-4 py-2 text-xs font-medium text-gray-400">תגיות</th>
+                  <th className="px-4 py-2 text-xs font-medium text-gray-400">איכות</th>
+                  <th className="px-4 py-2 text-xs font-medium text-gray-400">תאריך</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.topVideos.map((video, i) => {
+                  const mentor = mentors.find((m) => m.id === video.mentorId);
+                  const score  = video.qualityScore || 0;
+                  const scoreColor =
+                    score >= 8 ? 'text-emerald-600 font-bold' :
+                    score >= 6 ? 'text-amber-600 font-semibold' :
+                                 'text-gray-500';
+                  return (
+                    <tr key={video.id} className={`border-b border-gray-50 hover:bg-gray-50/50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}>
+                      <td className="px-4 py-2 max-w-[220px]">
+                        <a
+                          href={video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-gray-800 hover:text-indigo-600 transition-colors truncate block"
+                          title={video.title}
+                        >
+                          {video.title}
+                        </a>
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-500">{mentor?.name || '—'}</span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex flex-wrap gap-1">
+                          {(video.aiTags || []).slice(0, 2).map((tag) => (
+                            <span key={tag} className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`text-sm ${scoreColor}`}>{score}</span>
+                        <span className="text-xs text-gray-300">/10</span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-400">{video.publishedAt?.slice(0, 10) || '—'}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard({ filters = { search: "", mentor: "all", category: "all" }, setFilters, navigateTo }) {
@@ -370,6 +496,8 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
               activeFilter={activeDashboardFilter}
               onFilterClick={handleKpiFilterClick}
             />
+
+            <SmartDashboard mentors={mentors} />
 
             {/* Learning Hub Hero — full bar clickable */}
             <div

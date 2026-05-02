@@ -11,6 +11,8 @@
 //   upsertVideos(newVideos)    → merge in new, skip duplicates, stamp fetchedAt
 //   getVideoCount()            → count after cleanup
 
+import { analyzeVideo } from './videoAnalytics';
+
 const STORAGE_KEY = "yt_mentor_videos_v2";
 const DEFAULT_TTL_DAYS = 30;
 
@@ -18,14 +20,23 @@ function extractVideoId(url) {
   return url?.match(/[?&]v=([^&]+)/)?.[1] ?? null;
 }
 
-// Load all videos from localStorage, auto-removing expired ones on read
+// Load all videos from localStorage, auto-removing expired ones on read.
+// One-time migration: analyze any videos that don't yet have analyzedAt.
 export function loadVideos() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all = raw ? JSON.parse(raw) : [];
-    const clean = cleanupOldVideos(all);
-    if (clean.length !== all.length) saveVideos(clean);
-    return clean;
+    let videos = cleanupOldVideos(all);
+
+    let changed = videos.length !== all.length;
+
+    if (videos.some((v) => !v.analyzedAt)) {
+      videos = videos.map(analyzeVideo);
+      changed = true;
+    }
+
+    if (changed) saveVideos(videos);
+    return videos;
   } catch {
     return [];
   }
@@ -73,7 +84,8 @@ export function upsertVideos(newVideos) {
       ...v,
       fetchedAt: v.fetchedAt ?? now,
       id: v.id ?? `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    }));
+    }))
+    .map(analyzeVideo);
 
   if (toAdd.length > 0) {
     saveVideos([...existing, ...toAdd]);
