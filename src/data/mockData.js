@@ -41,7 +41,7 @@ export const MENTORS = [
     category: "Markets",
     topicIds: ["t2", "t7", "t3"],
     avatarUrl: "",
-    youtubeChannelId: "UCSxjNbPriyBh9RNl_QNSAtw",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -51,7 +51,7 @@ export const MENTORS = [
     category: "Markets",
     topicIds: ["t5", "t2"],
     avatarUrl: "",
-    youtubeChannelId: "UCrQmXSenNhePSOiCTdnhwRg",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -61,7 +61,7 @@ export const MENTORS = [
     category: "Markets",
     topicIds: ["t4", "t2"],
     avatarUrl: "",
-    youtubeChannelId: "UCSB4SNRWhbemGAJ4wfeKj2Q",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -71,7 +71,7 @@ export const MENTORS = [
     category: "Markets",
     topicIds: ["t4", "t7"],
     avatarUrl: "",
-    youtubeChannelId: "UCmD96zZeKnYof2jO1ON6acA",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -113,7 +113,7 @@ export const MENTORS = [
     category: "AI",
     topicIds: ["t1", "t8"],
     avatarUrl: "",
-    youtubeChannelId: "UC5_2We-HeVdEeHcIyfmMHOg",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -133,7 +133,7 @@ export const MENTORS = [
     category: "AI",
     topicIds: ["t1", "t12"],
     avatarUrl: "",
-    youtubeChannelId: "UC1wxmi_g3IRHVglOisWc3Eg",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -143,7 +143,7 @@ export const MENTORS = [
     category: "AI",
     topicIds: ["t1"],
     avatarUrl: "",
-    youtubeChannelId: "UCfnihhol5a4Qc2EciLf5kOQ",
+    youtubeChannelId: "",
     active: true,
   },
   {
@@ -163,7 +163,7 @@ export const MENTORS = [
     category: "AI",
     topicIds: ["t1", "t3", "t8"],
     avatarUrl: "",
-    youtubeChannelId: "UC5mbDtf-uS0UViQ9z0Q1k0A",
+    youtubeChannelId: "",
     active: true,
   },
 
@@ -185,7 +185,7 @@ export const MENTORS = [
     category: "Dev",
     topicIds: ["t9", "t12"],
     avatarUrl: "",
-    youtubeChannelId: "UCxPN-JU3DsKwDgn5sTetNUQ",
+    youtubeChannelId: "",
     active: true,
   },
 ];

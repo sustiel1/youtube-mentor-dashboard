@@ -248,12 +248,13 @@ export function getTopicIdsForMentor(mentor, topics = []) {
 //   - https://www.youtube.com/channel/UCxxxxxx  (has channelId → fetch directly)
 //   - https://www.youtube.com/@handle           (needs resolve → then save channel URL)
 export async function fetchChannelRSSFromSource(mentor, source, topics = [], limit = RSS_FETCH_LIMIT) {
-  const channelId = extractChannelIdFromUrl(source?.sourceUrl);
+  const channelId =
+    extractChannelIdFromUrl(source?.sourceUrl) ||
+    mentor.youtubeChannelId ||
+    null;
 
   if (!channelId) {
-    throw new Error(
-      `Channel ID חסר עבור "${mentor.name}" — פתור את ה-handle תחילה`
-    );
+    throw new Error(`Channel ID חסר עבור "${mentor.name}"`);
   }
 
   validateChannelId(channelId, mentor.name);
