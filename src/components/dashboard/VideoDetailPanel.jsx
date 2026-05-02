@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, PlayCircle, Link2 } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeVideoWithAI } from "@/api/functions";
+import { analyzeVideo } from "@/services/videoAnalytics";
+import { buildTimestampUrl } from "@/services/youtubeMetadata";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -37,6 +39,12 @@ export function VideoDetailPanel({
   const [analyzeError, setAnalyzeError] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const updateSummary = useUpdateSummary();
+
+  // Enrich video with local AI analysis (instant, no API call) if not already done
+  const enrichedVideo = useMemo(
+    () => (video?.aiSummaryShort ? video : analyzeVideo(video || {})),
+    [video]
+  );
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
   const hasNote = videoNotes.length > 0;
@@ -224,10 +232,10 @@ export function VideoDetailPanel({
 
             {/* ── 4. תקציר — white card with shadow ── */}
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 text-right">
-              {video.shortSummary ? (
+              {(video.shortSummary || enrichedVideo.aiSummaryShort) ? (
                 <>
                   <p className="text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-widest">מה תלמד כאן</p>
-                  <p className="text-sm text-gray-800 leading-7 line-clamp-3">{video.shortSummary}</p>
+                  <p className="text-sm text-gray-800 leading-7 line-clamp-3">{(video.shortSummary || enrichedVideo.aiSummaryShort).replace(/\[MOCK\]\s*/g, '')}</p>
                 </>
               ) : (
                 <p className="text-xs text-gray-500 text-center py-1">הסרטון טרם נותח — פתח את טאב הסיכום כדי לנתח עם AI</p>
@@ -306,7 +314,7 @@ export function VideoDetailPanel({
 
             {/* ── 2. טאבים — segmented control pills ── */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-              <TabsList className="w-full bg-gray-100 rounded-2xl p-1 h-auto grid grid-cols-4 gap-0.5">
+              <TabsList className="w-full bg-gray-100 rounded-2xl p-1 h-auto grid grid-cols-3 gap-0.5">
                 <TabsTrigger
                   value="summary"
                   className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
@@ -325,34 +333,31 @@ export function VideoDetailPanel({
                 >
                   הערות
                 </TabsTrigger>
-                <TabsTrigger
-                  value="chapters"
-                  className="text-xs rounded-xl py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-gray-900 text-gray-500 transition-all"
-                >
-                  פרקי הסרטון
-                </TabsTrigger>
               </TabsList>
 
               {/* ── Summary tab ── */}
               <TabsContent value="summary" className="mt-5 space-y-5 min-h-[220px]">
                 {(() => {
-                  const hasData = video.shortSummary || video.fullSummary || (video.keyPoints && video.keyPoints.length > 0);
+                  const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
+                  const summaryLong  = (video.fullSummary  || enrichedVideo.aiSummaryLong)?.replace(/\[MOCK\]\s*/g, '');
+                  const chapters     = video.aiChapters   || enrichedVideo.aiChapters;
+                  const hasData = summaryShort || summaryLong || video.keyPoints?.length > 0 || chapters?.length > 0;
                   if (hasData) {
                     return (
                       <>
-                        {video.shortSummary && (
+                        {summaryShort && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום קצר</h4>
-                            <p className="text-sm text-gray-800 leading-7">{video.shortSummary}</p>
+                            <p className="text-sm text-gray-800 leading-7">{summaryShort}</p>
                           </div>
                         )}
-                        {video.fullSummary && (
+                        {summaryLong && (
                           <div className="text-right">
                             <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום מלא</h4>
-                            <p className="text-sm text-gray-800 leading-7">{video.fullSummary}</p>
+                            <p className="text-sm text-gray-800 leading-7 whitespace-pre-line">{summaryLong}</p>
                           </div>
                         )}
-                        {!video.shortSummary && !video.fullSummary && video.keyPoints?.length > 0 && (
+                        {!summaryShort && !summaryLong && video.keyPoints?.length > 0 && (
                           <div className="text-right">
                             <h4 className="text-sm font-semibold text-gray-800 mb-3">נקודות מפתח</h4>
                             <ul className="space-y-2.5">
@@ -365,6 +370,79 @@ export function VideoDetailPanel({
                             </ul>
                           </div>
                         )}
+
+                        {/* Chapters */}
+                        <div className="text-right">
+                          <div className="flex items-center justify-between flex-row-reverse mb-3">
+                            <h4 className="text-sm font-bold text-gray-900">פרקי הסרטון</h4>
+                            <span className="text-[10px] text-gray-400 leading-snug text-left max-w-[180px]">
+                              ניווט לפרק זמין רק כשיש timestamps אמיתיים
+                            </span>
+                          </div>
+                          {chapters?.length > 0 ? (
+                            <ul className="space-y-2">
+                              {chapters.map((chapter, i) => {
+                                const hasTs   = chapter.startSeconds != null;
+                                const chapUrl = hasTs
+                                  ? buildTimestampUrl(video.url, chapter.startSeconds)
+                                  : null;
+
+                                const chapterContent = (
+                                  <>
+                                    <div className="flex items-start gap-3 flex-row-reverse">
+                                      <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                        {i + 1}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-800">{chapter.title}</p>
+                                        {chapter.description && (
+                                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{chapter.description}</p>
+                                        )}
+                                      </div>
+                                      {hasTs && (
+                                        <span className="inline-flex items-center bg-indigo-50 text-indigo-600 text-xs font-mono font-medium px-2 py-0.5 rounded-full shrink-0">
+                                          {chapter.timestamp}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {hasTs ? (
+                                      <p className="text-xs text-indigo-500 mt-1.5 text-right">פתח ביוטיוב בזמן הזה ←</p>
+                                    ) : (
+                                      <p
+                                        className="text-xs text-gray-400 mt-1.5 text-right cursor-help"
+                                        title="כדי לפתוח פרק ביוטיוב צריך timestamp אמיתי מתוך תיאור הסרטון"
+                                      >
+                                        אין זמן זמין — לא ניתן לפתוח בפרק
+                                      </p>
+                                    )}
+                                  </>
+                                );
+
+                                return (
+                                  <li key={i}>
+                                    {chapUrl ? (
+                                      <a
+                                        href={chapUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
+                                      >
+                                        {chapterContent}
+                                      </a>
+                                    ) : (
+                                      <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 opacity-60 cursor-not-allowed">
+                                        {chapterContent}
+                                      </div>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-400">עדיין לא נוצרו פרקים</p>
+                          )}
+                        </div>
+
                         <button
                           onClick={handleAnalyze}
                           disabled={isAnalyzing}
@@ -436,54 +514,6 @@ export function VideoDetailPanel({
               {/* ── Notes tab ── */}
               <TabsContent value="notes" className="mt-5 min-h-[220px]">
                 <NoteEditor videoId={video.id} />
-              </TabsContent>
-
-              {/* ── 1. Chapters tab — cards ── */}
-              <TabsContent value="chapters" className="mt-5 min-h-[220px]" dir="rtl">
-                {video.videoTopics?.length > 0 ? (
-                  <ul className="space-y-2">
-                    {video.videoTopics.map((chapter, i) => {
-                      const tsLabel = chapter.timestampLabel ||
-                        `${Math.floor(chapter.timestampSeconds / 60)}:${String(chapter.timestampSeconds % 60).padStart(2, "0")}`;
-                      const url = video.url
-                        ? `${video.url}${video.url.includes("?") ? "&" : "?"}t=${chapter.timestampSeconds}s`
-                        : null;
-                      return (
-                        <li key={i}>
-                          <a
-                            href={url || "#"}
-                            target={url ? "_blank" : undefined}
-                            rel="noopener noreferrer"
-                            className="flex items-start gap-3 flex-row-reverse bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:border-indigo-200 hover:shadow-sm transition-all group"
-                          >
-                            {/* Play icon */}
-                            <PlayCircle className="h-4 w-4 text-gray-300 group-hover:text-indigo-500 shrink-0 mt-0.5 transition-colors" />
-
-                            {/* Chapter info */}
-                            <div className="flex-1 text-right min-w-0">
-                              <p className="text-sm font-medium text-gray-800 leading-snug group-hover:text-indigo-700 transition-colors">
-                                {chapter.title}
-                              </p>
-                              {chapter.description && (
-                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{chapter.description}</p>
-                              )}
-                            </div>
-
-                            {/* Timestamp chip */}
-                            <span className="inline-flex items-center bg-indigo-50 text-indigo-600 text-xs font-mono font-medium px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-100 transition-colors">
-                              {tsLabel}
-                            </span>
-                          </a>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="py-10 text-center">
-                    <p className="text-sm text-gray-500">עדיין לא נוצרה חלוקה לפרקים</p>
-                    <p className="text-xs text-gray-400 mt-1">ניתן להוסיף פרקים דרך ניתוח AI בעתיד</p>
-                  </div>
-                )}
               </TabsContent>
             </Tabs>
 

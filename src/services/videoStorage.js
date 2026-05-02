@@ -35,6 +35,17 @@ export function loadVideos() {
       changed = true;
     }
 
+    // Strip [MOCK] prefix from legacy AI summary fields
+    if (videos.some(v => [v.aiSummary, v.aiSummaryShort, v.aiSummaryLong].some(s => s?.includes('[MOCK]')))) {
+      videos = videos.map(v => ({
+        ...v,
+        ...(v.aiSummary?.includes('[MOCK]')      && { aiSummary:      v.aiSummary.replace(/\[MOCK\]\s*/g, '') }),
+        ...(v.aiSummaryShort?.includes('[MOCK]') && { aiSummaryShort: v.aiSummaryShort.replace(/\[MOCK\]\s*/g, '') }),
+        ...(v.aiSummaryLong?.includes('[MOCK]')  && { aiSummaryLong:  v.aiSummaryLong.replace(/\[MOCK\]\s*/g, '') }),
+      }));
+      changed = true;
+    }
+
     if (changed) saveVideos(videos);
     return videos;
   } catch {
