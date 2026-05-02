@@ -11,7 +11,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5184',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -23,7 +23,7 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
-    port: 5173,
+    port: 5184,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },
