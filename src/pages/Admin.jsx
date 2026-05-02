@@ -12,6 +12,7 @@ import {
   extractHandleFromUrl,
   filterNewVideos,
 } from "@/services/rssIngestion";
+import { getVideoCount } from "@/services/videoStorage";
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
 
@@ -521,6 +522,7 @@ function ChannelStatus({ status, channelId }) {
 
 function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   // Build channel list from real DB data (Mentor + Source entities)
+  const [storedCount, setStoredCount] = useState(() => getVideoCount());
   const channels = mentors.map((mentor) => {
     const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
     const channelId = extractChannelIdFromUrl(source?.sourceUrl) || mentor.youtubeChannelId || null;
@@ -687,6 +689,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
       }
 
       setChannelStatus(mentorId, { state: "success", saved, skipped: statuses[mentorId]?.skipped ?? 0, preview: null });
+      setStoredCount(getVideoCount());
     } catch (err) {
       setChannelStatus(mentorId, { state: "error", error: "שגיאה בשמירה — " + err.message });
     }
@@ -735,6 +738,9 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           <h2 className="text-base font-semibold text-gray-800">משיכת RSS מיוטיוב</h2>
           <p className="text-xs text-gray-400 mt-0.5">
             {configuredCount} מתוך {channels.length} ערוצים מוגדרים עם Channel ID
+            {storedCount > 0 && (
+              <span className="mr-2 text-indigo-500">· {storedCount} סרטונים שמורים</span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
