@@ -290,11 +290,26 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const assignTopics = useAssignTopics();
   const deleteVideo = useDeleteVideo();
 
-  // Sync selectedVideo with fresh data after AI analysis / any mutation
+  // Sync selectedVideo with list refetch — keep client-patched aiChapters if server list omits them
   useEffect(() => {
-    if (!selectedVideo || videos.length === 0) return;
-    const fresh = videos.find((v) => v.id === selectedVideo.id);
-    if (fresh) setSelectedVideo(fresh);
+    setSelectedVideo((prev) => {
+      if (!prev || videos.length === 0) return prev;
+      const fresh = videos.find((v) => v.id === prev.id);
+      if (!fresh) return prev;
+      const keepChapters =
+        Array.isArray(prev.aiChapters) &&
+        prev.aiChapters.length > 0 &&
+        (!Array.isArray(fresh.aiChapters) || fresh.aiChapters.length === 0);
+      const keepDesc =
+        typeof prev.description === "string" &&
+        prev.description.length > 0 &&
+        (!fresh.description || String(fresh.description).length === 0);
+      return {
+        ...fresh,
+        ...(keepChapters ? { aiChapters: prev.aiChapters } : {}),
+        ...(keepDesc ? { description: prev.description } : {}),
+      };
+    });
   }, [videos]);
 
   // Apply sidebar filters (search, mentor, category)
@@ -735,6 +750,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
         onAnalyzeDone={(result) => setSelectedVideo((prev) => ({ ...prev, ...result }))}
+        onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
       />
     </div>
   );

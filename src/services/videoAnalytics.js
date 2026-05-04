@@ -1,6 +1,8 @@
 // ─── Video Analytics Service ─────────────────────────────────────────────────
-// Local AI analysis for videos: tags, quality score, summaries, chapters.
-// No external API — computed from title, description, and category.
+// Local analysis for videos: tags, quality score, summaries, chapters.
+// Real description timestamps: UI (youtubeApi + youtubeChapterCache).
+// Transcript-based chapters: generateChaptersFromTranscript() — filled only when
+// the user runs "Analyze with AI" and a transcript is available (youtubeTranscript).
 //
 // API:
 //   analyzeVideo(video, {force})     → video with aiTags, qualityScore, aiSummaryShort, aiSummaryLong, aiChapters, analyzedAt
@@ -8,6 +10,38 @@
 //   getDashboardStats(videos, mentors) → KPI stats + topVideos for SmartDashboard
 
 import { extractTimestampsFromDescription } from './youtubeMetadata';
+
+/** Parse a video duration string to seconds. Handles ISO 8601 (PT1H10M25S), MM:SS, H:MM:SS, plain number. */
+function parseDurationToSeconds(duration) {
+  if (!duration) return 0;
+  const s = String(duration);
+  if (/^\d+:\d{2}(:\d{2})?$/.test(s)) {
+    const parts = s.split(':').map(Number);
+    return parts.length === 3
+      ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+      : parts[0] * 60 + parts[1];
+  }
+  const iso = s.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (iso) return (Number(iso[1] || 0) * 3600) + (Number(iso[2] || 0) * 60) + Number(iso[3] || 0);
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+/**
+ * Structural chapter outline — timestamps estimated from video duration.
+ * Each chapter gets startSeconds = index * (durationSec / total) when durationSec > 0.
+ */
+function estimatedChapters(list, durationSec = 0) {
+  const total = list.length;
+  return list.map((c, idx) => {
+    const secs = durationSec > 0 ? Math.round(idx * durationSec / total) : null;
+    return {
+      ...c,
+      timeSource: 'estimated',
+      ...(secs !== null ? { startSeconds: secs, timestamp: formatMmSsFromSeconds(secs) } : {}),
+    };
+  });
+}
 
 // ── Tag detection rules ───────────────────────────────────────────────────────
 const TAG_RULES = [
@@ -164,74 +198,131 @@ function generateSummaryLong(video, tags) {
 }
 
 function generateChapters(video, tags) {
-  // Real timestamps from description take priority over AI-generated fallbacks
-  const parsed = extractTimestampsFromDescription(video.description);
+  // Real timestamps from the YouTube description (RSS / stored field) — only source for startSeconds
+  const desc = typeof video.description === 'string' ? video.description : '';
+  const parsed = extractTimestampsFromDescription(desc);
   if (parsed.length > 0) return parsed;
 
+  // Estimated timestamps: divide video duration evenly across chapters
+  const durationSec = parseDurationToSeconds(video.duration);
   const t = (video.title || '').toLowerCase();
 
   if (tags.includes('Trading') || tags.includes('Markets')) {
     if (t.includes('strategy') || t.includes('אסטרטגי') || t.includes('שיטה')) {
-      return [
+      return estimatedChapters([
         { title: 'הבסיס התיאורטי',    description: 'הרקע והמושגים שצריך להבין לפני שמתחילים' },
         { title: 'הגדרת האסטרטגיה',  description: 'הכללים המדויקים — מה לחפש ומתי לפעול' },
         { title: 'ניהול סיכונים',     description: 'הגנה על ההון: stop loss, גודל פוזיציה, יחס R:R' },
         { title: 'יישום בפועל',       description: 'דוגמאות חיות מהשוק עם ניתוח עסקאות אמיתיות' },
         { title: 'שגיאות נפוצות',     description: 'מה להימנע — הטעויות הכי יקרות בשיטה זו' },
-      ];
+      ], durationSec);
     }
     if (t.includes('technical') || t.includes('גרף') || t.includes('chart') || t.includes('ניתוח')) {
-      return [
+      return estimatedChapters([
         { title: 'קריאת הגרף',             description: 'כיצד לפרש תנועות מחיר ומגמות' },
         { title: 'אינדיקטורים מרכזיים',    description: 'הכלים הטכניים החשובים ומה הם מראים' },
         { title: 'זיהוי תבניות',           description: 'תבניות מחיר נפוצות ומה כל אחת מסמלת' },
         { title: 'נקודות כניסה ויציאה',    description: 'מתי בדיוק לפתוח ולסגור פוזיציה' },
-      ];
+      ], durationSec);
     }
-    return [
-      { title: 'ניתוח השוק',    description: 'מה קורה בשוק כרגע ולמה זה חשוב' },
+    return estimatedChapters([
+      { title: 'ניתוח השוק',      description: 'מה קורה בשוק כרגע ולמה זה חשוב' },
       { title: 'זיהוי הזדמנויות', description: 'אינדיקציות לעסקאות פוטנציאליות' },
-      { title: 'ניהול סיכונים', description: 'הגנה על ההשקעה וניהול פוזיציות' },
-      { title: 'תוכנית פעולה', description: 'צעדים מעשיים ליישום מיידי' },
-      { title: 'סיכום ומסקנות', description: 'הנקודות הכי חשובות לזכור' },
-    ];
+      { title: 'ניהול סיכונים',   description: 'הגנה על ההשקעה וניהול פוזיציות' },
+      { title: 'תוכנית פעולה',   description: 'צעדים מעשיים ליישום מיידי' },
+      { title: 'סיכום ומסקנות',  description: 'הנקודות הכי חשובות לזכור' },
+    ], durationSec);
   }
 
   if (tags.includes('AI')) {
-    return [
+    return estimatedChapters([
       { title: 'מבוא לכלי ה-AI',      description: 'מה הכלי עושה ולמה הוא שימושי לך' },
       { title: 'הגדרה ראשונית',       description: 'כיצד להתחיל — שלב אחר שלב' },
       { title: 'Prompt Engineering',  description: 'כיצד לנסח בקשות שמניבות תוצאות מדויקות' },
       { title: 'שימושים מתקדמים',    description: 'טכניקות שמרחיבות את יכולות הכלי' },
       { title: 'יישומים מעשיים',     description: 'דוגמאות מהחיים האמיתיים שניתן לאמץ מיד' },
-    ];
+    ], durationSec);
   }
 
   if (tags.includes('Automation')) {
-    return [
-      { title: 'הגדרת הבעיה',        description: 'מה האוטומציה מחליפה ומה היא חוסכת' },
-      { title: 'ארכיטקטורת הפתרון', description: 'כיצד הזרימה עובדת מקצה לקצה' },
-      { title: 'בניית ה-Workflow',   description: 'שלב אחר שלב עם צילומי מסך' },
+    return estimatedChapters([
+      { title: 'הגדרת הבעיה',          description: 'מה האוטומציה מחליפה ומה היא חוסכת' },
+      { title: 'ארכיטקטורת הפתרון',   description: 'כיצד הזרימה עובדת מקצה לקצה' },
+      { title: 'בניית ה-Workflow',     description: 'שלב אחר שלב עם צילומי מסך' },
       { title: 'בדיקה ואיתור שגיאות', description: 'כיצד לוודא שהכל עובד ולטפל בכשלים' },
-    ];
+    ], durationSec);
   }
 
   if (tags.includes('Dev')) {
-    return [
-      { title: 'הגדרת הבעיה',           description: 'מה מנסים לפתור ומדוע זה חשוב' },
-      { title: 'ארכיטקטורה ועיצוב',     description: 'כיצד לבנות את הפתרון נכון מהבסיס' },
-      { title: 'מימוש',                  description: 'כתיבת הקוד בפועל — ההדגשים הקריטיים' },
-      { title: 'בדיקות',                 description: 'ווידוא שהקוד עובד כצפוי בתנאי ייצור' },
-      { title: 'Deployment ואופטימיזציה', description: 'הוצאה לפועל ושיפורי ביצועים' },
-    ];
+    return estimatedChapters([
+      { title: 'הגדרת הבעיה',              description: 'מה מנסים לפתור ומדוע זה חשוב' },
+      { title: 'ארכיטקטורה ועיצוב',        description: 'כיצד לבנות את הפתרון נכון מהבסיס' },
+      { title: 'מימוש',                     description: 'כתיבת הקוד בפועל — ההדגשים הקריטיים' },
+      { title: 'בדיקות',                    description: 'ווידוא שהקוד עובד כצפוי בתנאי ייצור' },
+      { title: 'Deployment ואופטימיזציה',  description: 'הוצאה לפועל ושיפורי ביצועים' },
+    ], durationSec);
   }
 
-  return [
-    { title: 'הקדמה',        description: 'הצגת הנושא והמטרה המרכזית' },
-    { title: 'תוכן מרכזי',  description: 'הרעיונות והמושגים העיקריים' },
-    { title: 'יישום מעשי',  description: 'כיצד ליישם את הנלמד בפועל' },
-    { title: 'סיכום',        description: 'נקודות מפתח לזכור' },
-  ];
+  return estimatedChapters([
+    { title: 'הקדמה',       description: 'הצגת הנושא והמטרה המרכזית' },
+    { title: 'תוכן מרכזי', description: 'הרעיונות והמושגים העיקריים' },
+    { title: 'יישום מעשי', description: 'כיצד ליישם את הנלמד בפועל' },
+    { title: 'סיכום',       description: 'נקודות מפתח לזכור' },
+  ], durationSec);
+}
+
+function formatMmSsFromSeconds(totalSeconds) {
+  const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function makeTranscriptChunkTitle(blob, idx, videoTitle) {
+  const words = blob.split(/\s+/).filter(Boolean);
+  let t = words.slice(0, 8).join(' ');
+  if (t.length < 4) {
+    t = videoTitle ? `חלק ${idx + 1} — ${String(videoTitle).slice(0, 40)}` : `חלק ${idx + 1}`;
+  }
+  if (t.length > 56) t = `${t.slice(0, 53)}…`;
+  return t;
+}
+
+/**
+ * Build 4–6 navigable chapters from parsed timed transcript lines (local heuristic).
+ * Returns null when transcript is too short — caller should keep existing chapter logic.
+ *
+ * @param {{ lines: { start: number, text: string }[] }} transcript — output of parseTranscript()
+ * @param {object} video
+ * @returns {{ title: string, description: string, timestamp: string, startSeconds: number, timeSource: "transcript-ai" }[] | null}
+ */
+export function generateChaptersFromTranscript(transcript, video) {
+  const lines = transcript?.lines;
+  if (!Array.isArray(lines) || lines.length < 10) return null;
+
+  const fullText = lines.map((l) => l.text).join(' ');
+  if (fullText.length < 400) return null;
+
+  const nTarget = Math.min(6, Math.max(4, Math.round(lines.length / 40)));
+  const chunk = Math.ceil(lines.length / nTarget);
+  const chapters = [];
+
+  for (let i = 0; i < nTarget; i++) {
+    const slice = lines.slice(i * chunk, (i + 1) * chunk);
+    if (!slice.length) continue;
+    const start = slice[0].start;
+    const blob = slice.map((l) => l.text).join(' ').replace(/\s+/g, ' ').trim();
+    if (!blob) continue;
+    chapters.push({
+      title:        makeTranscriptChunkTitle(blob, i, video?.title),
+      description:  blob.length > 220 ? `${blob.slice(0, 217)}…` : blob,
+      timestamp:    formatMmSsFromSeconds(start),
+      startSeconds: Math.max(0, Math.floor(Number(start) || 0)),
+      timeSource:   'transcript-ai',
+    });
+  }
+
+  return chapters.length >= 2 ? chapters : null;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

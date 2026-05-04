@@ -212,6 +212,7 @@ export default function LearningQueue() {
         onSaveToggle={handleSaveToggle}
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
+        onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
       />
     </div>
   );

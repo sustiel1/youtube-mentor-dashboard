@@ -1,11 +1,21 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
-import { analyzeVideo } from "@/services/videoAnalytics";
-import { buildTimestampUrl } from "@/services/youtubeMetadata";
+import { analyzeVideo, generateChaptersFromTranscript } from "@/services/videoAnalytics";
+import { fetchTranscript, parseTranscript } from "@/services/youtubeTranscript";
+import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
+import { fetchVideoDescription } from "@/services/youtubeApi";
+import {
+  getCachedVideoMetadata,
+  setCachedVideoMetadata,
+  shouldFetchVideoMetadata,
+} from "@/services/youtubeChapterCache";
+import { updateStoredVideo } from "@/services/videoStorage";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -23,6 +33,24 @@ import { CategoryBadge } from "./CategoryBadge";
 import { LearningStatusBadge, LEARNING_STATUSES } from "./LearningStatusBadge";
 import { SaveButton } from "./SaveButton";
 import { NoteEditor } from "./NoteEditor";
+import ChapterItem from "./ChapterItem";
+
+function getWatchUrl(video) {
+  if (!video) return "";
+  const raw = video.url || video.link || video.videoUrl;
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
+/** startSeconds may arrive as string from JSON/localStorage */
+function resolveChapterStartSeconds(chapter) {
+  const s = chapter?.startSeconds;
+  if (typeof s === "number" && Number.isFinite(s) && s >= 0) return s;
+  if (typeof s === "string" && s.trim() !== "") {
+    const n = Number(s);
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return null;
+}
 
 export function VideoDetailPanel({
   video,
@@ -34,17 +62,111 @@ export function VideoDetailPanel({
   onLearningStatusChange,
   onRemoveTopic,
   onAnalyzeDone,
+  onVideoPatch,
 }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
+  const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
+  const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
   const updateSummary = useUpdateSummary();
+  const queryClient = useQueryClient();
 
   // Enrich video with local AI analysis (instant, no API call) if not already done
   const enrichedVideo = useMemo(
     () => (video?.aiSummaryShort ? video : analyzeVideo(video || {})),
     [video]
   );
+
+  const baseChapters = useMemo(() => {
+    const v = video || {};
+    const enriched = v?.aiSummaryShort ? v : analyzeVideo(v);
+    const descForChapters = typeof v.description === "string" ? v.description : "";
+    const chaptersFromDesc = extractTimestampsFromDescription(descForChapters);
+    if (chaptersFromDesc.length > 0) return chaptersFromDesc;
+    return v.aiChapters || enriched.aiChapters;
+  }, [video]);
+
+  useEffect(() => {
+    setYoutubeChaptersHint(null);
+  }, [video?.id]);
+
+  const handleFetchYoutubeChapters = async () => {
+    setYoutubeChaptersHint(null);
+    const watchUrl = getWatchUrl(video);
+    const videoId = getVideoIdFromUrl(watchUrl);
+    if (!videoId) {
+      toast.error("לא ניתן לזהות מזהה סרטון מהקישור — ודא שיש url / link / videoUrl בפורמט watch או youtu.be");
+      return;
+    }
+
+    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    if (!apiKey?.trim()) {
+      setYoutubeChaptersHint("no_api_key");
+      return;
+    }
+
+    setIsYoutubeChaptersFetch(true);
+    try {
+      let descText = "";
+      let chaptersResult = [];
+
+      if (!shouldFetchVideoMetadata(videoId)) {
+        const cached = getCachedVideoMetadata(videoId);
+        descText = cached?.description ?? "";
+        chaptersResult = Array.isArray(cached?.chapters) ? cached.chapters : [];
+      } else {
+        const fetched = await fetchVideoDescription(videoId);
+        if (fetched == null) {
+          setYoutubeChaptersHint("fetch_failed");
+          return;
+        }
+        descText = fetched;
+        chaptersResult = extractTimestampsFromDescription(descText);
+        setCachedVideoMetadata(videoId, { description: descText, chapters: chaptersResult });
+      }
+
+      if (!chaptersResult.length) {
+        setYoutubeChaptersHint("no_timestamps");
+        return;
+      }
+
+      const aiChapters = chaptersResult.map((c) => {
+        const sec = resolveChapterStartSeconds(c);
+        return {
+          ...c,
+          ...(sec != null ? { startSeconds: sec } : {}),
+          timeSource: c.timeSource || "real",
+        };
+      });
+      const mergedDesc =
+        descText ||
+        (typeof video.description === "string" ? video.description : "") ||
+        "";
+      const updates = { aiChapters, ...(mergedDesc ? { description: mergedDesc } : {}) };
+
+      const localSaved = updateStoredVideo(video.id, updates);
+      if (localSaved) {
+        onVideoPatch?.(localSaved);
+        toast.success("פרקים עם timestamps אמיתיים נשמרו");
+        return;
+      }
+
+      try {
+        await Video.update(video.id, updates);
+        queryClient.invalidateQueries({ queryKey: ["videos"] });
+        onVideoPatch?.({ ...video, ...updates });
+        toast.success("פרקים עם timestamps אמיתיים נשמרו");
+      } catch {
+        toast.error("לא ניתן לשמור את הפרקים בשרת");
+      }
+    } catch {
+      setYoutubeChaptersHint("fetch_failed");
+    } finally {
+      setIsYoutubeChaptersFetch(false);
+    }
+  };
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
   const hasNote = videoNotes.length > 0;
@@ -57,14 +179,58 @@ export function VideoDetailPanel({
     setIsAnalyzing(true);
     setAnalyzeError(null);
     try {
+      const watchUrl = getWatchUrl(video);
+      const ytId = getVideoIdFromUrl(watchUrl);
+
+      let transcriptRaw = null;
+      let parsed = null;
+      if (typeof video.transcript === "string" && video.transcript.trim().length > 40) {
+        transcriptRaw = video.transcript.trim();
+        parsed = parseTranscript(transcriptRaw);
+      } else if (ytId) {
+        transcriptRaw = await fetchTranscript(ytId);
+        if (transcriptRaw) parsed = parseTranscript(transcriptRaw);
+      }
+
+      const fromTranscript =
+        parsed?.lines?.length ? generateChaptersFromTranscript(parsed, video) : null;
+
       const result = await analyzeVideoWithAI({
         videoId:     video.id,
         title:       video.title,
         description: video.fullSummary || video.shortSummary || "",
         keyPoints:   video.keyPoints || [],
       });
-      updateSummary.mutate({ id: video.id, ...result });
-      onAnalyzeDone?.({ ...result, status: "done" });
+
+      const transcriptToStore =
+        transcriptRaw && transcriptRaw.length > 0
+          ? transcriptRaw.slice(0, 80_000)
+          : undefined;
+
+      const patch = {
+        id: video.id,
+        ...result,
+        ...(fromTranscript?.length
+          ? {
+              aiChapters: fromTranscript,
+              ...(transcriptToStore ? { transcript: transcriptToStore } : {}),
+            }
+          : {}),
+      };
+      const saved = await updateSummary.mutateAsync(patch);
+
+      onVideoPatch?.(saved || { ...video, ...patch });
+      onAnalyzeDone?.({
+        ...result,
+        status: "done",
+        ...(fromTranscript?.length ? { aiChapters: fromTranscript } : {}),
+      });
+
+      const triedTranscript =
+        (typeof video.transcript === "string" && video.transcript.trim().length > 40) || !!ytId;
+      if (triedTranscript && !fromTranscript?.length) {
+        toast.info("לא נמצא תמלול, הפרקים נוצרו ללא ניווט מדויק");
+      }
     } catch (err) {
       const code = err?.code;
       setAnalyzeError(
@@ -75,6 +241,41 @@ export function VideoDetailPanel({
       );
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Re-analyze locally using new estimatedChapters logic — no AI/API call required
+  const handleReanalyzeLocal = async () => {
+    setIsReanalyzing(true);
+    try {
+      const reanalyzed = analyzeVideo(video, { force: true });
+      const updates = {
+        aiChapters:     reanalyzed.aiChapters,
+        aiSummaryShort: reanalyzed.aiSummaryShort,
+        aiSummaryLong:  reanalyzed.aiSummaryLong,
+        aiTags:         reanalyzed.aiTags,
+        analyzedAt:     reanalyzed.analyzedAt,
+      };
+
+      const localSaved = updateStoredVideo(video.id, updates);
+      if (localSaved) {
+        onVideoPatch?.(localSaved);
+        const hasClickable = reanalyzed.aiChapters?.some((c) => Number.isFinite(c.startSeconds));
+        toast.success(hasClickable ? "פרקים עודכנו — ניווט משוער זמין" : "ניתוח עודכן — חסר משך סרטון לחישוב זמנים");
+        return;
+      }
+
+      try {
+        await Video.update(video.id, updates);
+        queryClient.invalidateQueries({ queryKey: ["videos"] });
+        onVideoPatch?.({ ...video, ...updates });
+        const hasClickable = reanalyzed.aiChapters?.some((c) => Number.isFinite(c.startSeconds));
+        toast.success(hasClickable ? "פרקים עודכנו — ניווט משוער זמין" : "ניתוח עודכן — חסר משך סרטון לחישוב זמנים");
+      } catch {
+        toast.error("לא ניתן לשמור — נסה שוב");
+      }
+    } finally {
+      setIsReanalyzing(false);
     }
   };
 
@@ -110,7 +311,7 @@ export function VideoDetailPanel({
   const handleCopyLink = async () => {
     const fallbackUrl =
       typeof window !== "undefined" ? window.location.href : "";
-    const urlToCopy = video.url || fallbackUrl;
+    const urlToCopy = getWatchUrl(video) || fallbackUrl;
 
     if (!urlToCopy) {
       toast.error("לא נמצא קישור להעתקה");
@@ -150,10 +351,13 @@ export function VideoDetailPanel({
                 className="w-full h-full object-cover"
               />
               <a
-                href={video.url}
+                href={getWatchUrl(video) || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  if (!getWatchUrl(video)) e.preventDefault();
+                }}
               >
                 <div className="bg-white/90 rounded-full p-3 shadow-lg">
                   <ExternalLink className="h-5 w-5 text-gray-800" />
@@ -337,10 +541,36 @@ export function VideoDetailPanel({
 
               {/* ── Summary tab ── */}
               <TabsContent value="summary" className="mt-5 space-y-5 min-h-[220px]">
+                <div className="rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-3 space-y-2 text-right">
+                  <button
+                    type="button"
+                    onClick={handleFetchYoutubeChapters}
+                    disabled={isYoutubeChaptersFetch}
+                    className="w-full sm:w-auto text-xs font-medium px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    {isYoutubeChaptersFetch ? "טוען מתיאור יוטיוב…" : "נסה להביא פרקים מיוטיוב"}
+                  </button>
+                  {youtubeChaptersHint === "no_api_key" && (
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      צריך להגדיר YouTube API Key כדי להביא timestamps אמיתיים (בקובץ .env.local — לא ב-git)
+                    </p>
+                  )}
+                  {youtubeChaptersHint === "no_timestamps" && (
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      לא נמצאו timestamps בתיאור הסרטון
+                    </p>
+                  )}
+                  {youtubeChaptersHint === "fetch_failed" && (
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      לא ניתן להביא את התיאור כרגע — נסה שוב מאוחר יותר
+                    </p>
+                  )}
+                </div>
                 {(() => {
                   const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
                   const summaryLong  = (video.fullSummary  || enrichedVideo.aiSummaryLong)?.replace(/\[MOCK\]\s*/g, '');
-                  const chapters     = video.aiChapters   || enrichedVideo.aiChapters;
+                  const chapters = baseChapters;
+                  const watchUrl = getWatchUrl(video);
                   const hasData = summaryShort || summaryLong || video.keyPoints?.length > 0 || chapters?.length > 0;
                   if (hasData) {
                     return (
@@ -372,85 +602,90 @@ export function VideoDetailPanel({
                         )}
 
                         {/* Chapters */}
-                        <div className="text-right">
-                          <div className="flex items-center justify-between flex-row-reverse mb-3">
-                            <h4 className="text-sm font-bold text-gray-900">פרקי הסרטון</h4>
-                            <span className="text-[10px] text-gray-400 leading-snug text-left max-w-[180px]">
-                              ניווט לפרק זמין רק כשיש timestamps אמיתיים
-                            </span>
-                          </div>
-                          {chapters?.length > 0 ? (
-                            <ul className="space-y-2">
-                              {chapters.map((chapter, i) => {
-                                const hasTs   = chapter.startSeconds != null;
-                                const chapUrl = hasTs
-                                  ? buildTimestampUrl(video.url, chapter.startSeconds)
-                                  : null;
+                        {(() => {
+                          const hasOldChapters = chapters?.some(
+                            (c) => c.timeSource === "estimated" && !Number.isFinite(c.startSeconds)
+                          );
+                          const allClickable = chapters?.length > 0 && chapters.every(
+                            (c) => Number.isFinite(c.startSeconds)
+                          );
+                          return (
+                            <div className="text-right">
+                              <div className="flex items-center justify-between flex-row-reverse mb-3">
+                                <div className="flex items-center gap-2 flex-row-reverse">
+                                  <h4 className="text-sm font-bold text-gray-900">פרקי הסרטון</h4>
+                                  {allClickable && (
+                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+                                      ניווט זמין
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-gray-400 leading-snug text-left max-w-[200px]">
+                                  כחול = אמיתי · כתום = משוער · אפור = חסר משך
+                                </span>
+                              </div>
 
-                                const chapterContent = (
-                                  <>
-                                    <div className="flex items-start gap-3 flex-row-reverse">
-                                      <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                                        {i + 1}
-                                      </span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-800">{chapter.title}</p>
-                                        {chapter.description && (
-                                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{chapter.description}</p>
-                                        )}
-                                      </div>
-                                      {hasTs && (
-                                        <span className="inline-flex items-center bg-indigo-50 text-indigo-600 text-xs font-mono font-medium px-2 py-0.5 rounded-full shrink-0">
-                                          {chapter.timestamp}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {hasTs ? (
-                                      <p className="text-xs text-indigo-500 mt-1.5 text-right">פתח ביוטיוב בזמן הזה ←</p>
-                                    ) : (
-                                      <p
-                                        className="text-xs text-gray-400 mt-1.5 text-right cursor-help"
-                                        title="כדי לפתוח פרק ביוטיוב צריך timestamp אמיתי מתוך תיאור הסרטון"
-                                      >
-                                        אין זמן זמין — לא ניתן לפתוח בפרק
-                                      </p>
-                                    )}
-                                  </>
-                                );
+                              {/* Old chapters banner */}
+                              {hasOldChapters && !isReanalyzing && (
+                                <div className="flex items-center justify-between gap-2 px-3 py-2 mb-3 rounded-lg bg-amber-50 border border-amber-200" dir="rtl">
+                                  <span className="text-xs text-amber-700">פרקים ישנים — ניווט לא זמין</span>
+                                  <button
+                                    onClick={handleReanalyzeLocal}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors font-medium shrink-0"
+                                  >
+                                    עדכן ניווט
+                                  </button>
+                                </div>
+                              )}
 
-                                return (
-                                  <li key={i}>
-                                    {chapUrl ? (
-                                      <a
-                                        href={chapUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
-                                      >
-                                        {chapterContent}
-                                      </a>
-                                    ) : (
-                                      <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 opacity-60 cursor-not-allowed">
-                                        {chapterContent}
-                                      </div>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-400">עדיין לא נוצרו פרקים</p>
-                          )}
+                              {/* Chapter list or loading */}
+                              {isReanalyzing ? (
+                                <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+                                  <div className="h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+                                  <span className="text-xs">מעדכן פרקים...</span>
+                                </div>
+                              ) : chapters?.length > 0 ? (
+                                <div className="chapters-list">
+                                  {chapters.map((chapter, index) => (
+                                    <ChapterItem
+                                      key={
+                                        chapter.startSeconds != null
+                                          ? `${String(chapter.startSeconds)}-${chapter.title || index}`
+                                          : `ch-${index}-${chapter.title || ""}`
+                                      }
+                                      section={chapter}
+                                      playerRef={undefined}
+                                      videoUrl={watchUrl}
+                                    />
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-400">עדיין לא נוצרו פרקים</p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleReanalyzeLocal}
+                            disabled={isReanalyzing || isAnalyzing}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 border border-amber-200 text-amber-700 text-xs font-medium rounded-xl hover:bg-amber-50 disabled:opacity-50 transition-all"
+                            title="עדכן פרקים עם לוגיקת הניווט החדשה — ללא קריאת AI"
+                          >
+                            {isReanalyzing ? <div className="h-3.5 w-3.5 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" /> : "⟳"}
+                            {isReanalyzing ? "מעדכן..." : "עדכן ניווט"}
+                          </button>
+                          <button
+                            onClick={handleAnalyze}
+                            disabled={isAnalyzing || isReanalyzing}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
+                          >
+                            {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                            {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
+                          </button>
                         </div>
-
-                        <button
-                          onClick={handleAnalyze}
-                          disabled={isAnalyzing}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
-                        >
-                          {isAnalyzing ? <div className="h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                          {isAnalyzing ? "מנתח..." : "נתח מחדש עם AI"}
-                        </button>
                         {analyzeError && (
                           <div className="w-full rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700 text-right leading-relaxed">{analyzeError}</div>
                         )}

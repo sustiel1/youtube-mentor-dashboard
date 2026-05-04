@@ -136,6 +136,47 @@ function makeChannelResolverPlugin() {
 // GEMINI_API_KEY is loaded via loadEnv — NEVER bundled or sent to the browser.
 // In production, Base44 backend function handles Gemini (/backend/analyze-video.function.js).
 // ─────────────────────────────────────────────────────────────────────────────
+// ─── YouTube timedtext proxy (dev only) ──────────────────────────────────────
+// GET /api/youtube-transcript?v=VIDEO_ID  →  raw srv3 XML (used for AI chapters)
+// ─────────────────────────────────────────────────────────────────────────────
+function makeYoutubeTranscriptPlugin() {
+  return {
+    name: 'youtube-transcript-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/youtube-transcript', async (req, res) => {
+        const urlObj = new URL(req.url, 'http://localhost');
+        const v = urlObj.searchParams.get('v');
+        if (!v) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'MISSING_V', message: 'v query param required' }));
+          return;
+        }
+
+        const langs = ['iw', 'he', 'en', 'a.en'];
+        const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+        for (const lang of langs) {
+          const u = `https://www.youtube.com/api/timedtext?v=${encodeURIComponent(v)}&lang=${encodeURIComponent(lang)}&fmt=srv3`;
+          try {
+            const r = await fetch(u, { headers: { 'User-Agent': ua, 'Accept-Language': 'en-US,en;q=0.9,he;q=0.8' } });
+            const text = await r.text();
+            if (r.ok && text && text.length > 40 && !/caption(s)? unavailable/i.test(text)) {
+              res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+              res.end(JSON.stringify({ body: text, lang }));
+              return;
+            }
+          } catch {
+            // try next language
+          }
+        }
+
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: 'No captions for this video' }));
+      });
+    },
+  };
+}
+
 function makeGeminiPlugin(env) {
   return {
     name: 'gemini-proxy',
@@ -257,6 +298,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       makeRssProxyPlugin(),
       makeChannelResolverPlugin(),
+      makeYoutubeTranscriptPlugin(),
       makeGeminiPlugin(env),
       base44({
         legacySDKImports: false,

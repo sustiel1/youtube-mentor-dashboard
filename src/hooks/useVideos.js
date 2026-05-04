@@ -72,11 +72,14 @@ export function useUpdateTranscript() {
 export function useUpdateSummary() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, shortSummary, fullSummary, keyPoints, tags, videoTopics }) => {
+    mutationFn: async ({ id, shortSummary, fullSummary, keyPoints, tags, videoTopics, aiChapters, transcript }) => {
+      const patch = { shortSummary, fullSummary, keyPoints, tags, videoTopics, status: 'done' };
+      if (aiChapters != null) patch.aiChapters = aiChapters;
+      if (transcript != null) patch.transcript = transcript;
       try {
-        return await Video.update(id, { shortSummary, fullSummary, keyPoints, tags, videoTopics, status: 'done' });
+        return await Video.update(id, patch);
       } catch {
-        const updated = updateLocalVideo(id, { shortSummary, fullSummary, keyPoints, tags, videoTopics, status: 'done' });
+        const updated = updateLocalVideo(id, patch);
         if (!updated) throw new Error('סרטון לא נמצא ב-localStorage');
         return updated;
       }

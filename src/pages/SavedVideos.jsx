@@ -133,6 +133,7 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
         onSaveToggle={handleSaveToggle}
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
+        onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
       />
     </div>
   );

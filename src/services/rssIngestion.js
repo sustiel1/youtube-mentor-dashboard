@@ -30,6 +30,21 @@ function validateChannelId(channelId, channelName) {
 // ── XML Parser ────────────────────────────────────────────────────────────────
 // YouTube RSS namespace: http://www.youtube.com/xml/schemas/2015
 const YT_NS = "http://www.youtube.com/xml/schemas/2015";
+const MEDIA_NS = "http://search.yahoo.com/mrss/";
+const ATOM_NS = "http://www.w3.org/2005/Atom";
+
+/** Plain-text description from feed entry (for chapter timestamps). May be truncated in RSS. */
+function getEntryDescription(entry) {
+  const fromMedia = entry.getElementsByTagNameNS(MEDIA_NS, "description")[0]?.textContent?.trim();
+  if (fromMedia) return fromMedia;
+  const group = entry.getElementsByTagNameNS(MEDIA_NS, "group")[0];
+  if (group) {
+    const g = group.getElementsByTagNameNS(MEDIA_NS, "description")[0]?.textContent?.trim();
+    if (g) return g;
+  }
+  const summary = entry.getElementsByTagNameNS(ATOM_NS, "summary")[0]?.textContent?.trim();
+  return summary || null;
+}
 
 function parseYouTubeXML(xmlText, limit = RSS_FETCH_LIMIT) {
   const parser = new DOMParser();
@@ -54,7 +69,9 @@ function parseYouTubeXML(xmlText, limit = RSS_FETCH_LIMIT) {
         ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
         : null;
 
-      return { videoId, title, published, channelName, thumbnail };
+      const description = getEntryDescription(entry);
+
+      return { videoId, title, published, channelName, thumbnail, description };
     })
     .filter((e) => e.videoId && e.title); // skip malformed entries
 }
@@ -80,6 +97,7 @@ function buildVideoRecord(entry, mentorId, channelCfg) {
     learningStatus: "not_started",
     topicIds: channelCfg.topicIds ?? [],
     subCategory: channelCfg.subCategory ?? "",
+    description: entry.description ?? null,
     // ── YouTube Data API v3 fields (not available from RSS) ──────────────────
     // TODO: after fetching https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={entry.videoId}&key={API_KEY}
     //   duration:  item.contentDetails.duration  → convert ISO 8601 (PT4M13S) to seconds or "mm:ss" string
@@ -288,6 +306,7 @@ export async function fetchChannelRSSFromSource(mentor, source, topics = [], lim
     learningStatus: "not_started",
     topicIds,
     subCategory:    "",
+    description:    e.description ?? null,
     _videoId:       e.videoId,
     _channelName:   e.channelName ?? mentor.name,
   }));

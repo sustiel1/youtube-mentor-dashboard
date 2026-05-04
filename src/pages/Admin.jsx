@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronsUp } from "lucide-react";
 import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG, getCategoryCodeForTopicName } from "@/config/topicConfig";
 import { useMentors, useUpdateMentor, useDeleteMentor, useHiddenMentors, useRestoreMentor } from "@/hooks/useMentors";
@@ -13,7 +13,8 @@ import {
   extractHandleFromUrl,
   filterNewVideos,
 } from "@/services/rssIngestion";
-import { loadVideos, upsertVideos, getVideoCount } from "@/services/videoStorage";
+import { checkChannelRssFeed } from "@/services/rssFeedHealth";
+import { loadVideos, upsertVideos, getVideoCount, clearAllVideos } from "@/services/videoStorage";
 import { getLastSyncAt, getLastSyncResult } from "@/services/autoRssSync";
 import { base44 } from "@/api/base44Client";
 import { Video } from "@/api/entities";
@@ -689,9 +690,15 @@ function formatRelativeTime(date) {
 function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   // Build channel list from real DB data (Mentor + Source entities)
   const [storedCount, setStoredCount] = useState(() => getVideoCount());
-  const channels = mentors.map((mentor) => {
+  /** Mentors whose RSS check failed — treat as missing Channel ID in UI until re-validated */
+  const [rssLocalBlocked, setRssLocalBlocked] = useState({});
+  const [rssValidationRows, setRssValidationRows] = useState([]);
+  const [validatingRss, setValidatingRss] = useState(false);
+
+  const channels = useMemo(() => mentors.map((mentor) => {
     const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
-    const channelId = extractChannelIdFromUrl(source?.sourceUrl) || mentor.youtubeChannelId || null;
+    let channelId = extractChannelIdFromUrl(source?.sourceUrl) || mentor.youtubeChannelId || null;
+    if (rssLocalBlocked[mentor.id]) channelId = null;
     return {
       mentorId:     mentor.id,
       name:         mentor.name,
@@ -701,7 +708,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
       sourceId:     source?.id ?? null,
       sourceUrl:    source?.sourceUrl ?? null,
     };
-  });
+  }), [mentors, sources, rssLocalBlocked]);
 
   const [statuses, setStatuses] = useState({});
   const [globalLoading, setGlobalLoading] = useState(false);
@@ -717,13 +724,69 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     lastAt: getLastSyncAt(),
     result: getLastSyncResult(),
   }));
+  const [clearVideosToast, setClearVideosToast] = useState(false);
 
   const configuredCount = channels.filter((c) => c.isConfigured).length;
+
   const createVideo = useCreateVideo();
   const updateSource = useUpdateSource();
   const createSource = useCreateSource();
   const deleteMentor = useDeleteMentor();
   const updateMentor = useUpdateMentor();
+
+  async function handleValidateAllRss() {
+    setValidatingRss(true);
+    setRssValidationRows([]);
+    const rows = [];
+
+    for (const mentor of mentors) {
+      const source = sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube");
+      const rawId = extractChannelIdFromUrl(source?.sourceUrl) || mentor.youtubeChannelId || null;
+      if (!rawId) {
+        rows.push({
+          mentorId: mentor.id,
+          name:     mentor.name,
+          channelId: "—",
+          rssStatus: "אין Channel ID",
+          action:   "—",
+        });
+        continue;
+      }
+
+      const result = await checkChannelRssFeed(rawId);
+      if (result.ok) {
+        setRssLocalBlocked((prev) => {
+          const next = { ...prev };
+          delete next[mentor.id];
+          return next;
+        });
+        rows.push({
+          mentorId: mentor.id,
+          name:     mentor.name,
+          channelId: rawId,
+          rssStatus: `תקין (${result.status})`,
+          action:   "—",
+        });
+      } else {
+        rows.push({
+          mentorId: mentor.id,
+          name:     mentor.name,
+          channelId: rawId,
+          rssStatus: `כשל: ${result.detail || "לא ידוע"} (HTTP ${result.status || "—"})`,
+          action:   "איפוס youtubeChannelId",
+        });
+        try {
+          await updateMentor.mutateAsync({ id: mentor.id, youtubeChannelId: "" });
+        } catch {
+          // mock / offline — still block in UI
+        }
+        setRssLocalBlocked((prev) => ({ ...prev, [mentor.id]: true }));
+      }
+    }
+
+    setRssValidationRows(rows);
+    setValidatingRss(false);
+  }
   const mainTopics = topics.filter((t) => !t.parentId);
   const [editingTopicFor, setEditingTopicFor] = useState(null);
 
@@ -892,6 +955,15 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
     setConfirmDeleteAll(false);
   }
 
+  function handleClearVideos() {
+    const ok = window.confirm('האם למחוק את כל הסרטונים השמורים? הפעולה לא תמחק מנטורים או נושאים.');
+    if (!ok) return;
+    clearAllVideos();
+    setStoredCount(0);
+    setClearVideosToast(true);
+    setTimeout(() => setClearVideosToast(false), 3500);
+  }
+
   async function handleFetchNew(mentorId) {
     const mentor = mentors.find((m) => m.id === mentorId);
     const source = sources.find((s) => s.mentorId === mentorId && s.sourceType === "youtube");
@@ -976,12 +1048,34 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
             </button>
           )}
           <button
+            type="button"
+            onClick={handleValidateAllRss}
+            disabled={validatingRss || mentors.length === 0}
+            className="flex items-center gap-1.5 text-sm border border-sky-300 text-sky-700 px-3 py-1.5 rounded-lg hover:bg-sky-50 disabled:opacity-50 transition-colors"
+            title="בודק מול https://www.youtube.com/feeds/videos.xml?channel_id=…"
+          >
+            {validatingRss ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Rss className="h-3.5 w-3.5" />
+            )}
+            בדוק תקינות RSS
+          </button>
+          <button
             onClick={handleFetchAll}
             disabled={globalLoading || configuredCount === 0}
             className="flex items-center gap-1.5 text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${globalLoading ? "animate-spin" : ""}`} />
             משוך את כולם
+          </button>
+          <button
+            onClick={handleClearVideos}
+            disabled={storedCount === 0}
+            className="flex items-center gap-1.5 text-sm border border-orange-200 text-orange-600 px-3 py-1.5 rounded-lg hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            מחק סרטונים
           </button>
           {confirmDeleteAll ? (
             <div className="flex items-center gap-1.5">
@@ -1023,6 +1117,14 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           ) : (
             <><CheckCircle2 className="h-4 w-4 shrink-0" /> עודכנו {refreshResult.updated} מתוך {refreshResult.total} סרטונים חסרי סטטיסטיקות</>
           )}
+        </div>
+      )}
+
+      {/* Clear videos toast */}
+      {clearVideosToast && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          כל הסרטונים נמחקו — כעת ניתן למשוך מחדש
         </div>
       )}
 
@@ -1095,6 +1197,11 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       <span className="flex items-center gap-1 text-xs text-emerald-600">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         מוכן
+                      </span>
+                    ) : rssLocalBlocked[ch.mentorId] ? (
+                      <span className="flex items-center gap-1 text-xs text-amber-700">
+                        <XCircle className="h-3.5 w-3.5 shrink-0" />
+                        RSS לא תקף
                       </span>
                     ) : resolving[ch.mentorId] === "loading" ? (
                       <span className="flex items-center gap-1 text-xs text-amber-600">
@@ -1208,6 +1315,52 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           </tbody>
         </table>
       </div>
+
+      {/* RSS validation report */}
+      {rssValidationRows.length > 0 && (
+        <div className="mt-6 border border-sky-100 rounded-xl overflow-hidden">
+          <div className="bg-sky-50 px-4 py-2.5 border-b border-sky-100">
+            <p className="text-xs font-semibold text-sky-800">תוצאות בדיקת RSS (mentor | channelId | סטטוס | פעולה)</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-right">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs">
+                  <th className="px-3 py-2 font-medium">מנטור</th>
+                  <th className="px-3 py-2 font-medium">Channel ID</th>
+                  <th className="px-3 py-2 font-medium">סטטוס RSS</th>
+                  <th className="px-3 py-2 font-medium">פעולה</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rssValidationRows.map((row) => (
+                  <tr key={row.mentorId} className="border-b border-gray-50">
+                    <td className="px-3 py-2 font-medium text-gray-800">{row.name}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-gray-600 break-all max-w-[200px]">
+                      {row.channelId === "—" ? (
+                        "—"
+                      ) : (
+                        <a
+                          href={`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(row.channelId)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {row.channelId}
+                        </a>
+                      )}
+                    </td>
+                    <td className={`px-3 py-2 text-xs ${row.rssStatus.startsWith("תקין") ? "text-emerald-700" : "text-red-600"}`}>
+                      {row.rssStatus}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-600">{row.action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Preview panel */}
       {Object.values(statuses).some((s) => s?.preview?.length) && (
