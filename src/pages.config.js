@@ -7,6 +7,11 @@ import TopicsPage from './pages/TopicsPage';
 import LearningHub from './pages/LearningHub';
 import TopicLearningPage from './pages/TopicLearningPage';
 import MentorPage from './pages/MentorPage';
+import KnowledgeLibrary from './pages/KnowledgeLibrary';
+import KnowledgeSearch from './pages/KnowledgeSearch';
+import TopicKnowledgePage from './pages/TopicKnowledgePage';
+import Workspace from './pages/Workspace';
+import CloudBackups from './pages/CloudBackups';
 
 export const PAGES = {
     "Dashboard": Dashboard,
@@ -18,6 +23,11 @@ export const PAGES = {
     "LearningHub": LearningHub,
     "TopicLearningPage": TopicLearningPage,
     "MentorPage": MentorPage,
+    "KnowledgeLibrary": KnowledgeLibrary,
+    "KnowledgeSearch": KnowledgeSearch,
+    "TopicKnowledgePage": TopicKnowledgePage,
+    "Workspace": Workspace,
+    "CloudBackups": CloudBackups,
 }
 
 export const pagesConfig = {

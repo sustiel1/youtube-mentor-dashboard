@@ -63,8 +63,24 @@ export function extractTimestampsFromDescription(description) {
     });
   }
 
-  return chapters.length >= 2 ? chapters : [];
+  if (chapters.length < 2) return [];
+
+  return chapters
+    .sort((a, b) => a.startSeconds - b.startSeconds)
+    .map((chapter, index, arr) => {
+      const next = arr[index + 1];
+      return {
+        ...chapter,
+        summary: '',
+        description: '',
+        source: 'description_timestamp',
+        chapterSource: 'description_timestamp',
+        endSeconds: next ? next.startSeconds : null,
+      };
+    });
 }
+
+export const extractChaptersFromDescription = extractTimestampsFromDescription;
 
 /**
  * Extract a YouTube video ID from various URL formats.
@@ -102,5 +118,5 @@ export function getVideoIdFromUrl(url) {
 export function buildTimestampUrl(videoUrl, seconds) {
   if (!videoUrl || seconds == null) return videoUrl ?? null;
   const sep = videoUrl.includes('?') ? '&' : '?';
-  return `${videoUrl}${sep}t=${seconds}s`;
+  return `${videoUrl}${sep}t=${Math.max(0, Math.floor(Number(seconds) || 0))}`;
 }

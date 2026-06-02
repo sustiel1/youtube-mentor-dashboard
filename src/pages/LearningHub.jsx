@@ -6,6 +6,7 @@ import {
   Cpu, Brain, TrendingUp, Layers,
   Bot, Code, Globe, Lightbulb, BookOpen,
   Hash, GraduationCap, Users,
+  X,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -71,6 +72,14 @@ export default function LearningHub({ navigateTo }) {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
+          <button
+            type="button"
+            onClick={() => navigateTo?.("Dashboard")}
+            className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            title="סגור"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
             <GraduationCap className="h-5 w-5 text-indigo-600" />
           </div>

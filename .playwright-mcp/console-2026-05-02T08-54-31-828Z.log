@@ -1,0 +1,191 @@
+[     121ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5184/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=a9ccdb68:21608
+[     216ms] [INFO] [App] autoRssSync: סנכרון בוצע בפחות מ-8 שעות — מדלג @ http://localhost:5184/src/App.jsx?t=1777712056516:44
+[     417ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/User/me:0
+[     418ms] [ERROR] [Base44 SDK Error] 401: Authentication required to view users @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     418ms] [ERROR] Error data: {
+  "message": "Authentication required to view users",
+  "detail": "You must be logged in to perform this operation.",
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     777ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55201a221de5bd3f4f081%22%7D:0
+[     778ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     778ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     781ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dc1efd4e64f6914d2d%22%7D:0
+[     782ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     782ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     788ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551eec81f8166c63b12c1%22%7D:0
+[     789ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     789ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     790ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202fcc10c1c22b4c7a5%22%7D:0
+[     791ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     791ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     821ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dde6972985542890cc%22%7D:0
+[     822ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     822ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     956ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd34c7432b309e0b98%22%7D:0
+[     958ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     958ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1036ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ee5e2c6762249f99a7%22%7D:0
+[    1037ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1038ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1046ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd14f40d7c4c0837f3%22%7D:0
+[    1046ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1046ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1057ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551deac60b0104708bb51%22%7D:0
+[    1058ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1058ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1058ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202b057ffcffb91bbcf%22%7D:0
+[    1059ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1059ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1081ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f552026a50f4fddcaf3d26%22%7D:0
+[    1081ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1081ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1219ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55203f277ddc71ae696a8%22%7D:0
+[    1219ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1219ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1309ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef25b41d504725d19b%22%7D:0
+[    1310ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1310ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1328ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef484bf1fa43e1c684%22%7D:0
+[    1328ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1328ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1329ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed210b7f42730f32150%22%7D:0
+[    1329ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1329ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1331ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef34c7432b309e0ba0%22%7D:0
+[    1331ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1331ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1338ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed20bb5e1012fa2b749%22%7D:0
+[    1339ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1339ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1490ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed2c1b7fae10fdebe9b%22%7D:0
+[    1491ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1491ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1591ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3534564bc2d4f3b20%22%7D:0
+[    1591ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1591ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1608ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3727da8a9fdf63bd8%22%7D:0
+[    1609ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1609ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596

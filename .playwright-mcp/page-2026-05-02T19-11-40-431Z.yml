@@ -1,0 +1,636 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+              - generic [ref=e53]: Search or jump to...
+              - img [ref=e55]
+            - link "Sign in" [ref=e59] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsustiel1%2Fyoutube-mentor-dashboard%2Factions
+            - link "Sign up" [ref=e60] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Factions%2Findex&source=header-repo&source_repo=sustiel1%2Fyoutube-mentor-dashboard
+            - button "Appearance settings" [ref=e63] [cursor=pointer]:
+              - img
+  - main [ref=e67]:
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e71]:
+          - img [ref=e72]
+          - link "sustiel1" [ref=e75] [cursor=pointer]:
+            - /url: /sustiel1
+          - generic [ref=e76]: /
+          - strong [ref=e77]:
+            - link "youtube-mentor-dashboard" [ref=e78] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard
+          - generic [ref=e79]: Public
+        - generic [ref=e80]:
+          - list:
+            - listitem [ref=e81]:
+              - link "You must be signed in to change notification settings" [ref=e82] [cursor=pointer]:
+                - /url: /login?return_to=%2Fsustiel1%2Fyoutube-mentor-dashboard
+                - img [ref=e83]
+                - text: Notifications
+            - listitem [ref=e85]:
+              - link "Fork 0" [ref=e86] [cursor=pointer]:
+                - /url: /login?return_to=%2Fsustiel1%2Fyoutube-mentor-dashboard
+                - img [ref=e87]
+                - text: Fork
+                - generic "0" [ref=e89]
+            - listitem [ref=e90]:
+              - link "You must be signed in to star a repository" [ref=e92] [cursor=pointer]:
+                - /url: /login?return_to=%2Fsustiel1%2Fyoutube-mentor-dashboard
+                - img [ref=e93]
+                - text: Star
+                - generic "0 users starred this repository" [ref=e95]: "0"
+      - navigation "Repository" [ref=e96]:
+        - list [ref=e97]:
+          - listitem [ref=e98]:
+            - link "Code" [ref=e99] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard
+              - img [ref=e100]
+              - generic [ref=e102]: Code
+          - listitem [ref=e103]:
+            - link "Issues" [ref=e104] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/issues
+              - img [ref=e105]
+              - generic [ref=e108]: Issues
+          - listitem [ref=e109]:
+            - link "Pull requests" [ref=e110] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/pulls
+              - img [ref=e111]
+              - generic [ref=e113]: Pull requests
+          - listitem [ref=e114]:
+            - link "Actions" [ref=e115] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/actions
+              - img [ref=e116]
+              - generic [ref=e118]: Actions
+          - listitem [ref=e119]:
+            - link "Projects" [ref=e120] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/projects
+              - img [ref=e121]
+              - generic [ref=e123]: Projects
+          - listitem [ref=e124]:
+            - link "Security and quality" [ref=e125] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/security
+              - img [ref=e126]
+              - generic [ref=e128]: Security and quality
+          - listitem [ref=e129]:
+            - link "Insights" [ref=e130] [cursor=pointer]:
+              - /url: /sustiel1/youtube-mentor-dashboard/pulse
+              - img [ref=e131]
+              - generic [ref=e133]: Insights
+    - generic [ref=e135]:
+      - 'heading "Actions: sustiel1/youtube-mentor-dashboard" [level=1] [ref=e136]'
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - heading "Actions" [level=2] [ref=e142]
+          - navigation "Actions Workflows" [ref=e146]:
+            - list [ref=e148]:
+              - listitem [ref=e149]:
+                - link "All workflows" [ref=e150] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/actions
+                  - generic [ref=e151]: All workflows
+              - listitem [ref=e152]
+              - listitem [ref=e153]:
+                - list "Workflows" [ref=e157]:
+                  - listitem [ref=e158]:
+                    - link "E2E Tests" [ref=e159] [cursor=pointer]:
+                      - /url: /sustiel1/youtube-mentor-dashboard/actions/workflows/e2e.yml
+                      - generic [ref=e160]: E2E Tests
+              - listitem [ref=e161]
+              - listitem [ref=e162]:
+                - generic [ref=e165]:
+                  - heading "Management" [level=3] [ref=e167]
+                  - list "Management" [ref=e168]:
+                    - listitem [ref=e169]:
+                      - link "Caches" [ref=e170] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/actions/caches
+                        - generic:
+                          - img
+                        - generic [ref=e171]: Caches
+                    - listitem [ref=e172]:
+                      - link "Deployments" [ref=e173] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/deployments
+                        - generic:
+                          - img
+                        - generic [ref=e174]: Deployments
+                        - generic:
+                          - img
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - generic [ref=e179]:
+              - heading "All workflows" [level=2] [ref=e181]:
+                - generic [ref=e183]: All workflows
+              - search [ref=e187]:
+                - combobox "Filter workflow runs" [ref=e188]
+                - img
+            - generic [ref=e189]: Showing runs from all workflows
+          - generic [ref=e190]:
+            - generic [ref=e191]:
+              - strong [ref=e194]: 16 workflow runs
+              - generic [ref=e195]:
+                - button "Workflow" [ref=e199] [cursor=pointer]:
+                  - generic [ref=e201]: Workflow
+                  - generic:
+                    - img
+                - button "Event" [ref=e205] [cursor=pointer]:
+                  - generic [ref=e207]: Event
+                  - generic:
+                    - img
+                - button "Status" [ref=e211] [cursor=pointer]:
+                  - generic [ref=e213]: Status
+                  - generic:
+                    - img
+                - button "Branch" [ref=e217] [cursor=pointer]:
+                  - generic [ref=e219]: Branch
+                  - generic:
+                    - img
+                - button "Actor" [ref=e223] [cursor=pointer]:
+                  - generic [ref=e225]: Actor
+                  - generic:
+                    - img
+            - generic [ref=e226]:
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - 'link "currently running: Run 16 of E2E Tests. feat: add YouTube timestamp metadata utilities" [ref=e230] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25259640183
+                    - img "currently running:" [ref=e233]
+                    - generic [ref=e237]: "feat: add YouTube timestamp metadata utilities"
+                  - generic [ref=e238]:
+                    - text: "E2E Tests #16:"
+                    - generic [ref=e239]:
+                      - text: Commit
+                      - link "5e56154" [ref=e240] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/5e56154b7ee1436783e536e41f0d036cff544c35
+                      - text: pushed by
+                      - link "sustiel1" [ref=e241] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e243] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e245]:
+                  - generic [ref=e246]:
+                    - generic [ref=e247]:
+                      - img [ref=e249]
+                      - generic "May 2, 2026, 10:11 PM GMT+3" [ref=e251]: now
+                    - generic [ref=e252]:
+                      - img [ref=e253]
+                      - text: In progress
+                  - group [ref=e256]:
+                    - generic "Show options" [ref=e257] [cursor=pointer]:
+                      - img "Show options" [ref=e258]
+              - generic [ref=e261]:
+                - generic [ref=e262]:
+                  - 'link "completed successfully: Run 15 of E2E Tests. feat: add local topics management and mentor restore flow" [ref=e263] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25257398605
+                    - img "completed successfully:" [ref=e265]
+                    - generic [ref=e267]: "feat: add local topics management and mentor restore flow"
+                  - generic [ref=e268]:
+                    - text: "E2E Tests #15:"
+                    - generic [ref=e269]:
+                      - text: Commit
+                      - link "6332837" [ref=e270] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/63328376e235127e86d2a1a34301a352c5c4da78
+                      - text: pushed by
+                      - link "sustiel1" [ref=e271] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e273] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e275]:
+                  - generic [ref=e276]:
+                    - generic [ref=e277]:
+                      - img [ref=e279]
+                      - generic "May 2, 2026, 8:16 PM GMT+3" [ref=e281]: Today at 8:16 PM
+                    - generic [ref=e282]:
+                      - img "Run duration" [ref=e283]
+                      - text: 57s
+                  - group [ref=e286]:
+                    - generic "Show options" [ref=e287] [cursor=pointer]:
+                      - img "Show options" [ref=e288]
+              - generic [ref=e291]:
+                - generic [ref=e292]:
+                  - 'link "completed successfully: Run 14 of E2E Tests. feat: add AI video analysis and smart dashboard insights" [ref=e293] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25248156630
+                    - img "completed successfully:" [ref=e295]
+                    - generic [ref=e297]: "feat: add AI video analysis and smart dashboard insights"
+                  - generic [ref=e298]:
+                    - text: "E2E Tests #14:"
+                    - generic [ref=e299]:
+                      - text: Commit
+                      - link "c0140db" [ref=e300] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/c0140db0434dc0c1a91408863437a59b7d64e765
+                      - text: pushed by
+                      - link "sustiel1" [ref=e301] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e303] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e305]:
+                  - generic [ref=e306]:
+                    - generic [ref=e307]:
+                      - img [ref=e309]
+                      - generic "May 2, 2026, 11:43 AM GMT+3" [ref=e311]: Today at 11:43 AM
+                    - generic [ref=e312]:
+                      - img "Run duration" [ref=e313]
+                      - text: 1m 0s
+                  - group [ref=e316]:
+                    - generic "Show options" [ref=e317] [cursor=pointer]:
+                      - img "Show options" [ref=e318]
+              - generic [ref=e321]:
+                - generic [ref=e322]:
+                  - 'link "completed successfully: Run 13 of E2E Tests. feat: add auto RSS sync and manual per-mentor fetch" [ref=e323] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25245521969
+                    - img "completed successfully:" [ref=e325]
+                    - generic [ref=e327]: "feat: add auto RSS sync and manual per-mentor fetch"
+                  - generic [ref=e328]:
+                    - text: "E2E Tests #13:"
+                    - generic [ref=e329]:
+                      - text: Commit
+                      - link "9536427" [ref=e330] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/95364278295c7fb2eeae8b79f35124f7c195a534
+                      - text: pushed by
+                      - link "sustiel1" [ref=e331] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e333] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e335]:
+                  - generic [ref=e336]:
+                    - generic [ref=e337]:
+                      - img [ref=e339]
+                      - generic "May 2, 2026, 9:11 AM GMT+3" [ref=e341]: Today at 9:11 AM
+                    - generic [ref=e342]:
+                      - img "Run duration" [ref=e343]
+                      - text: 1m 10s
+                  - group [ref=e346]:
+                    - generic "Show options" [ref=e347] [cursor=pointer]:
+                      - img "Show options" [ref=e348]
+              - generic [ref=e351]:
+                - generic [ref=e352]:
+                  - 'link "completed successfully: Run 12 of E2E Tests. fix: align Playwright config with Vite dev server port" [ref=e353] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25245161231
+                    - img "completed successfully:" [ref=e355]
+                    - generic [ref=e357]: "fix: align Playwright config with Vite dev server port"
+                  - generic [ref=e358]:
+                    - text: "E2E Tests #12:"
+                    - generic [ref=e359]:
+                      - text: Commit
+                      - link "0e830d0" [ref=e360] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/0e830d063ce720eb80ec7447f4386424074b32b6
+                      - text: pushed by
+                      - link "sustiel1" [ref=e361] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e363] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e365]:
+                  - generic [ref=e366]:
+                    - generic [ref=e367]:
+                      - img [ref=e369]
+                      - generic "May 2, 2026, 8:50 AM GMT+3" [ref=e371]: Today at 8:50 AM
+                    - generic [ref=e372]:
+                      - img "Run duration" [ref=e373]
+                      - text: 51s
+                  - group [ref=e376]:
+                    - generic "Show options" [ref=e377] [cursor=pointer]:
+                      - img "Show options" [ref=e378]
+              - generic [ref=e381]:
+                - generic [ref=e382]:
+                  - 'link "failed: Run 11 of E2E Tests. feat: add 30-day local video retention" [ref=e383] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25244952168
+                    - img "failed:" [ref=e385]
+                    - generic [ref=e387]: "feat: add 30-day local video retention"
+                  - generic [ref=e388]:
+                    - text: "E2E Tests #11:"
+                    - generic [ref=e389]:
+                      - text: Commit
+                      - link "a15f5b9" [ref=e390] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/a15f5b9b643cec32cd2a525856daee257be2baa9
+                      - text: pushed by
+                      - link "sustiel1" [ref=e391] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e393] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e395]:
+                  - generic [ref=e396]:
+                    - generic [ref=e397]:
+                      - img [ref=e399]
+                      - generic "May 2, 2026, 8:38 AM GMT+3" [ref=e401]: Today at 8:38 AM
+                    - generic [ref=e402]:
+                      - img "Run duration" [ref=e403]
+                      - text: 1m 55s
+                  - group [ref=e406]:
+                    - generic "Show options" [ref=e407] [cursor=pointer]:
+                      - img "Show options" [ref=e408]
+              - generic [ref=e411]:
+                - generic [ref=e412]:
+                  - 'link "failed: Run 10 of E2E Tests. data: add RSS-verified YouTube channel IDs" [ref=e413] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25240226897
+                    - img "failed:" [ref=e415]
+                    - generic [ref=e417]: "data: add RSS-verified YouTube channel IDs"
+                  - generic [ref=e418]:
+                    - text: "E2E Tests #10:"
+                    - generic [ref=e419]:
+                      - text: Commit
+                      - link "61a3f2b" [ref=e420] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/61a3f2b2f202c90c4ea79d71f4525c3c2ee07ba4
+                      - text: pushed by
+                      - link "sustiel1" [ref=e421] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e423] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e425]:
+                  - generic [ref=e426]:
+                    - generic [ref=e427]:
+                      - img [ref=e429]
+                      - generic "May 2, 2026, 4:21 AM GMT+3" [ref=e431]: Today at 4:21 AM
+                    - generic [ref=e432]:
+                      - img "Run duration" [ref=e433]
+                      - text: 1m 45s
+                  - group [ref=e436]:
+                    - generic "Show options" [ref=e437] [cursor=pointer]:
+                      - img "Show options" [ref=e438]
+              - generic [ref=e441]:
+                - generic [ref=e442]:
+                  - 'link "failed: Run 9 of E2E Tests. fix: use verified RSS channel IDs and limit mentor feeds" [ref=e443] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25239939284
+                    - img "failed:" [ref=e445]
+                    - generic [ref=e447]: "fix: use verified RSS channel IDs and limit mentor feeds"
+                  - generic [ref=e448]:
+                    - text: "E2E Tests #9:"
+                    - generic [ref=e449]:
+                      - text: Commit
+                      - link "f738ce7" [ref=e450] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/f738ce7d5a4b0baf73abe76d0dc28dfc9dec8380
+                      - text: pushed by
+                      - link "sustiel1" [ref=e451] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e453] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e455]:
+                  - generic [ref=e456]:
+                    - generic [ref=e457]:
+                      - img [ref=e459]
+                      - generic "May 2, 2026, 4:08 AM GMT+3" [ref=e461]: Today at 4:08 AM
+                    - generic [ref=e462]:
+                      - img "Run duration" [ref=e463]
+                      - text: 1m 55s
+                  - group [ref=e466]:
+                    - generic "Show options" [ref=e467] [cursor=pointer]:
+                      - img "Show options" [ref=e468]
+              - generic [ref=e471]:
+                - generic [ref=e472]:
+                  - 'link "failed: Run 8 of E2E Tests. data: add verified YouTube channel IDs for mentors" [ref=e473] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25239332056
+                    - img "failed:" [ref=e475]
+                    - generic [ref=e477]: "data: add verified YouTube channel IDs for mentors"
+                  - generic [ref=e478]:
+                    - text: "E2E Tests #8:"
+                    - generic [ref=e479]:
+                      - text: Commit
+                      - link "5519583" [ref=e480] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/5519583d3e777d15eda0e8600d91efbfd7e6ab22
+                      - text: pushed by
+                      - link "sustiel1" [ref=e481] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e483] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e485]:
+                  - generic [ref=e486]:
+                    - generic [ref=e487]:
+                      - img [ref=e489]
+                      - generic "May 2, 2026, 3:40 AM GMT+3" [ref=e491]: Today at 3:40 AM
+                    - generic [ref=e492]:
+                      - img "Run duration" [ref=e493]
+                      - text: 2m 0s
+                  - group [ref=e496]:
+                    - generic "Show options" [ref=e497] [cursor=pointer]:
+                      - img "Show options" [ref=e498]
+              - generic [ref=e501]:
+                - generic [ref=e502]:
+                  - 'link "failed: Run 7 of E2E Tests. feat: add YouTube search shortcut for missing channel IDs" [ref=e503] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25237970016
+                    - img "failed:" [ref=e505]
+                    - generic [ref=e507]: "feat: add YouTube search shortcut for missing channel IDs"
+                  - generic [ref=e508]:
+                    - text: "E2E Tests #7:"
+                    - generic [ref=e509]:
+                      - text: Commit
+                      - link "3ce12ae" [ref=e510] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/3ce12aed8f3e69ac66fd3e799d926f7b9e57697b
+                      - text: pushed by
+                      - link "sustiel1" [ref=e511] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e513] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e515]:
+                  - generic [ref=e516]:
+                    - generic [ref=e517]:
+                      - img [ref=e519]
+                      - generic "May 2, 2026, 2:43 AM GMT+3" [ref=e521]: May 2, 2:43 AM GMT+3
+                    - generic [ref=e522]:
+                      - img "Run duration" [ref=e523]
+                      - text: 2m 5s
+                  - group [ref=e526]:
+                    - generic "Show options" [ref=e527] [cursor=pointer]:
+                      - img "Show options" [ref=e528]
+              - generic [ref=e531]:
+                - generic [ref=e532]:
+                  - 'link "failed: Run 6 of E2E Tests. fix: clarify missing YouTube channel IDs in admin RSS" [ref=e533] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25237832721
+                    - img "failed:" [ref=e535]
+                    - generic [ref=e537]: "fix: clarify missing YouTube channel IDs in admin RSS"
+                  - generic [ref=e538]:
+                    - text: "E2E Tests #6:"
+                    - generic [ref=e539]:
+                      - text: Commit
+                      - link "cf5f3f7" [ref=e540] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/cf5f3f7925624cb8604ab72b4c9a7e31b074bdf0
+                      - text: pushed by
+                      - link "sustiel1" [ref=e541] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e543] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e545]:
+                  - generic [ref=e546]:
+                    - generic [ref=e547]:
+                      - img [ref=e549]
+                      - generic "May 2, 2026, 2:38 AM GMT+3" [ref=e551]: May 2, 2:38 AM GMT+3
+                    - generic [ref=e552]:
+                      - img "Run duration" [ref=e553]
+                      - text: 1m 51s
+                  - group [ref=e556]:
+                    - generic "Show options" [ref=e557] [cursor=pointer]:
+                      - img "Show options" [ref=e558]
+              - generic [ref=e561]:
+                - generic [ref=e562]:
+                  - 'link "failed: Run 5 of E2E Tests. chore: use local mentor data and set dev port to 5184" [ref=e563] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25237522468
+                    - img "failed:" [ref=e565]
+                    - generic [ref=e567]: "chore: use local mentor data and set dev port to 5184"
+                  - generic [ref=e568]:
+                    - text: "E2E Tests #5:"
+                    - generic [ref=e569]:
+                      - text: Commit
+                      - link "4c6097a" [ref=e570] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/4c6097a006e66f7f430f5b4d219fccae004d9827
+                      - text: pushed by
+                      - link "sustiel1" [ref=e571] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e573] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e575]:
+                  - generic [ref=e576]:
+                    - generic [ref=e577]:
+                      - img [ref=e579]
+                      - generic "May 2, 2026, 2:26 AM GMT+3" [ref=e581]: May 2, 2:26 AM GMT+3
+                    - generic [ref=e582]:
+                      - img "Run duration" [ref=e583]
+                      - text: 1m 59s
+                  - group [ref=e586]:
+                    - generic "Show options" [ref=e587] [cursor=pointer]:
+                      - img "Show options" [ref=e588]
+              - generic [ref=e591]:
+                - generic [ref=e592]:
+                  - 'link "failed: Run 4 of E2E Tests. chore: set Vite dev server port to 5175" [ref=e593] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25235340533
+                    - img "failed:" [ref=e595]
+                    - generic [ref=e597]: "chore: set Vite dev server port to 5175"
+                  - generic [ref=e598]:
+                    - text: "E2E Tests #4:"
+                    - generic [ref=e599]:
+                      - text: Commit
+                      - link "63173b5" [ref=e600] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/63173b514be2d6dfc2ee8b4039bdd12026bde979
+                      - text: pushed by
+                      - link "sustiel1" [ref=e601] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e603] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e605]:
+                  - generic [ref=e606]:
+                    - generic [ref=e607]:
+                      - img [ref=e609]
+                      - generic "May 2, 2026, 1:10 AM GMT+3" [ref=e611]: May 2, 1:10 AM GMT+3
+                    - generic [ref=e612]:
+                      - img "Run duration" [ref=e613]
+                      - text: 1m 51s
+                  - group [ref=e616]:
+                    - generic "Show options" [ref=e617] [cursor=pointer]:
+                      - img "Show options" [ref=e618]
+              - generic [ref=e621]:
+                - generic [ref=e622]:
+                  - 'link "completed successfully: Run 3 of E2E Tests. docs: add professional README with setup, CI, and roadmap" [ref=e623] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25235126830
+                    - img "completed successfully:" [ref=e625]
+                    - generic [ref=e627]: "docs: add professional README with setup, CI, and roadmap"
+                  - generic [ref=e628]:
+                    - text: "E2E Tests #3:"
+                    - generic [ref=e629]:
+                      - text: Commit
+                      - link "b69ac4e" [ref=e630] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/b69ac4e9cbbb3d64c6e9c897babd56bcbadc518f
+                      - text: pushed by
+                      - link "sustiel1" [ref=e631] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e633] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e635]:
+                  - generic [ref=e636]:
+                    - generic [ref=e637]:
+                      - img [ref=e639]
+                      - generic "May 2, 2026, 1:03 AM GMT+3" [ref=e641]: May 2, 1:03 AM GMT+3
+                    - generic [ref=e642]:
+                      - img "Run duration" [ref=e643]
+                      - text: 53s
+                  - group [ref=e646]:
+                    - generic "Show options" [ref=e647] [cursor=pointer]:
+                      - img "Show options" [ref=e648]
+              - generic [ref=e651]:
+                - generic [ref=e652]:
+                  - 'link "completed successfully: Run 2 of E2E Tests. ci: improve Playwright E2E workflow" [ref=e653] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25234901135
+                    - img "completed successfully:" [ref=e655]
+                    - generic [ref=e657]: "ci: improve Playwright E2E workflow"
+                  - generic [ref=e658]:
+                    - text: "E2E Tests #2:"
+                    - generic [ref=e659]:
+                      - text: Commit
+                      - link "7d89478" [ref=e660] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/7d894781d4b98c1ab2761932460a04da636fd4a4
+                      - text: pushed by
+                      - link "sustiel1" [ref=e661] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e663] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e665]:
+                  - generic [ref=e666]:
+                    - generic [ref=e667]:
+                      - img [ref=e669]
+                      - generic "May 2, 2026, 12:56 AM GMT+3" [ref=e671]: May 2, 12:56 AM GMT+3
+                    - generic [ref=e672]:
+                      - img "Run duration" [ref=e673]
+                      - text: 52s
+                  - group [ref=e676]:
+                    - generic "Show options" [ref=e677] [cursor=pointer]:
+                      - img "Show options" [ref=e678]
+              - generic [ref=e681]:
+                - generic [ref=e682]:
+                  - 'link "completed successfully: Run 1 of E2E Tests. feat: integrate Playwright E2E setup and update dashboard/admin UI" [ref=e683] [cursor=pointer]':
+                    - /url: /sustiel1/youtube-mentor-dashboard/actions/runs/25234756036
+                    - img "completed successfully:" [ref=e685]
+                    - generic [ref=e687]: "feat: integrate Playwright E2E setup and update dashboard/admin UI"
+                  - generic [ref=e688]:
+                    - text: "E2E Tests #1:"
+                    - generic [ref=e689]:
+                      - text: Commit
+                      - link "de4aff6" [ref=e690] [cursor=pointer]:
+                        - /url: /sustiel1/youtube-mentor-dashboard/commit/de4aff60ad45633daed782cf337c0c4e82d76df8
+                      - text: pushed by
+                      - link "sustiel1" [ref=e691] [cursor=pointer]:
+                        - /url: /sustiel1
+                - link "main" [ref=e693] [cursor=pointer]:
+                  - /url: /sustiel1/youtube-mentor-dashboard/tree/refs/heads/main
+                - generic [ref=e695]:
+                  - generic [ref=e696]:
+                    - generic [ref=e697]:
+                      - img [ref=e699]
+                      - generic "May 2, 2026, 12:52 AM GMT+3" [ref=e701]: May 2, 12:52 AM GMT+3
+                    - generic [ref=e702]:
+                      - img "Run duration" [ref=e703]
+                      - text: 59s
+                  - group [ref=e706]:
+                    - generic "Show options" [ref=e707] [cursor=pointer]:
+                      - img "Show options" [ref=e708]

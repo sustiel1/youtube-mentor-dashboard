@@ -1,0 +1,283 @@
+[     224ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[     316ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[     445ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779424459855:48
+[   39393ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[   39393ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[   39393ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[   39393ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[   39393ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[   39396ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[   39406ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:1100
+[   39445ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[   39538ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[   39538ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[   39538ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[   39538ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[   39538ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[   39539ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[   39549ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:1100
+[   39559ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[   39720ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[  156297ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[  156319ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[  169165ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[  169185ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779424459855:6351
+[ 1269262ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1269262ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1269262ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1269262ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1269262ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1269265ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:6351
+[ 1269280ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:1100
+[ 1269283ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:6351
+[ 1269295ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1269295ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1269295ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1269296ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1269296ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1269296ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:6351
+[ 1269308ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:1100
+[ 1269310ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425743482:6351
+[ 1276262ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1276262ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1276262ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1276262ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1276262ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1276264ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425750147:6351
+[ 1276273ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425750147:1100
+[ 1276275ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1276276ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1276276ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1276276ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1276276ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1276277ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425750147:6351
+[ 1276283ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425750147:1100
+[ 1276286ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425750147:6351
+[ 1298801ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1298802ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1298802ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1298802ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1298802ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1298804ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425772727:6295
+[ 1298818ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425772727:1044
+[ 1298822ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1298822ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1298823ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1298823ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1298823ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1298824ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425772727:6295
+[ 1298833ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425772727:1044
+[ 1298836ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425772727:6295
+[ 1304735ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1304735ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1304735ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1304736ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1304736ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1304737ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425778702:6290
+[ 1304747ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425778702:1044
+[ 1304749ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1304749ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1304749ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1304749ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1304749ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1304750ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425778702:6290
+[ 1304763ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425778702:1044
+[ 1304766ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425778702:6290
+[ 1311416ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1311416ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1311416ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1311417ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1311417ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1311418ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425785477:6290
+[ 1311427ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425785477:1044
+[ 1311429ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 1311429ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 1311429ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 1311429ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 1311430ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 1311430ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425785477:6290
+[ 1311439ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425785477:1044
+[ 1311442ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779425785477:6290
+[ 1961672ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[ 2596588ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2596588ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2596589ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2596589ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2596589ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2596591ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:6290
+[ 2596600ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:1044
+[ 2596602ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:6290
+[ 2596608ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2596608ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2596608ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2596608ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2596608ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2596609ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:6290
+[ 2596617ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:1044
+[ 2596619ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427070568:6290
+[ 2799361ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2799361ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2799361ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2799361ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2799361ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2799363ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273655:6290
+[ 2799376ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273655:1044
+[ 2799380ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2799380ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2799380ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2799380ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2799380ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2799381ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273655:6290
+[ 2799389ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273655:1044
+[ 2799557ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273655:6290
+[ 2799774ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2799775ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2799775ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2799775ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2799775ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2799776ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273800:6290
+[ 2799785ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273800:1044
+[ 2799787ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 2799787ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 2799787ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 2799788ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 2799788ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 2799789ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273800:6290
+[ 2799796ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273800:1044
+[ 2799798ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779427273800:6290
+[ 4088415ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4088416ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4088416ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4088416ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4088416ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4088418ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:6290
+[ 4088431ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:1044
+[ 4088434ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:6290
+[ 4088444ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4088445ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4088445ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4088445ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4088445ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4088447ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:6290
+[ 4088458ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:1044
+[ 4088469ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428562654:6290
+[ 4094428ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4094428ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4094428ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4094428ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4094428ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4094430ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428568707:6290
+[ 4094443ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428568707:1044
+[ 4094445ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4094445ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4094446ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4094446ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4094446ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4094447ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428568707:6290
+[ 4094455ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428568707:1044
+[ 4094457ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428568707:6290
+[ 4097396ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4097396ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4097396ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4097396ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4097396ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4097399ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428571685:6290
+[ 4097413ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428571685:1044
+[ 4097416ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4097416ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4097416ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4097416ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4097416ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4097417ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428571685:6290
+[ 4097425ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428571685:1044
+[ 4097428ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428571685:6290
+[ 4101387ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4101388ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4101388ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4101388ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4101388ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4101390ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428575683:6290
+[ 4101402ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428575683:1044
+[ 4101405ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4101405ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4101405ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4101405ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4101405ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4101406ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428575683:6290
+[ 4101414ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428575683:1044
+[ 4101417ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428575683:6290
+[ 4106899ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4106899ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4106899ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4106899ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4106899ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4106901ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428581194:6290
+[ 4106913ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428581194:1044
+[ 4106916ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4106916ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4106916ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4106916ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4106916ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4106917ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428581194:6290
+[ 4106924ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428581194:1044
+[ 4106926ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428581194:6290
+[ 4113751ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4113751ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4113751ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4113751ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4113751ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4113753ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428588027:6290
+[ 4113765ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428588027:1044
+[ 4113767ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4113767ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4113767ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4113767ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4113768ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4113769ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428588027:6290
+[ 4113778ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428588027:1044
+[ 4113782ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428588027:6290
+[ 4119031ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4119031ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4119031ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4119031ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4119031ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4119033ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428593323:6290
+[ 4119047ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428593323:1044
+[ 4119050ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4119050ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4119050ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4119050ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4119050ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4119052ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428593323:6290
+[ 4119061ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428593323:1044
+[ 4119064ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428593323:6290
+[ 4139639ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4139639ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4139640ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4139640ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4139640ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4139641ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428613567:6290
+[ 4139651ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428613567:1044
+[ 4139653ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4139653ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4139653ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4139654ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4139654ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4139655ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428613567:6290
+[ 4139663ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428613567:1044
+[ 4139665ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428613567:6290
+[ 4190677ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4190677ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4190677ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4190677ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4190677ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4190679ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428664959:6290
+[ 4190690ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428664959:1044
+[ 4190696ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[ 4190696ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[ 4190696ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[ 4190696ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[ 4190696ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[ 4190697ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428664959:6290
+[ 4190706ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428664959:1044
+[ 4190709ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779428664959:6290

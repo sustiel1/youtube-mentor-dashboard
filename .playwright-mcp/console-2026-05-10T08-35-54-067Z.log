@@ -1,0 +1,637 @@
+[     228ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=b40c77c2:21608
+[     292ms] [WARNING] [useVideos] local-first — using mock data @ http://localhost:5174/src/hooks/useVideos.js:33
+[     371ms] [LOG] [rss] fetching {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:146
+[     502ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/favicon.ico:0
+[     505ms] [LOG] [rss] success (proxy) {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:178
+[     507ms] [LOG] [rss] success {mentorName: Micha.Stocks, videosCount: 5, topicIds: Array(3)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    1417ms] [LOG] [rss] fetching {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    1560ms] [LOG] [rss] success (proxy) {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    1560ms] [LOG] [rss] success {mentorName: בורסה גרף, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    2457ms] [LOG] [rss] fetching {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    2593ms] [LOG] [rss] success (proxy) {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    2594ms] [LOG] [rss] success {mentorName: The Hasidic Trader, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    3444ms] [LOG] [rss] fetching {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    3600ms] [LOG] [rss] success (proxy) {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    3601ms] [LOG] [rss] success {mentorName: Oliver Velez Trading, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    4417ms] [LOG] [rss] fetching {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSyPOk83lhOXoGcT2vUNhdw} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    4584ms] [LOG] [rss] success (proxy) {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    4585ms] [LOG] [rss] success {mentorName: Dor Amir Trading, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    5457ms] [LOG] [rss] fetching {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCNVcbJ6pxGEWGuoGopK83sQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    5578ms] [LOG] [rss] success (proxy) {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    5579ms] [LOG] [rss] success {mentorName: Eyal Shani, videosCount: 4, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    6463ms] [LOG] [rss] fetching {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC32oVb-nfyRBNlWzUw3dC5Q} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    6588ms] [LOG] [rss] success (proxy) {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    6589ms] [LOG] [rss] success {mentorName: Wysetrade, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    7605ms] [LOG] [rss] fetching {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC5_2We-HeVdEeHcIyfmMHOg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    7742ms] [LOG] [rss] success (proxy) {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    7742ms] [LOG] [rss] success {mentorName: Ed Hill AI Automation, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    8806ms] [LOG] [rss] fetching {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCFkwdS-osDYKdz4TCe7XIXA} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    8895ms] [LOG] [rss] success (proxy) {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    8896ms] [LOG] [rss] success {mentorName: Automation-Tribe, videosCount: 0, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[    8897ms] [LOG] [rss] fetching {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCCQfwUJOOBLF5R9xbFeIFcg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[    9195ms] [LOG] [rss] success (proxy) {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg} @ http://localhost:5174/src/services/rssIngestion.js:178
+[    9196ms] [LOG] [rss] success {mentorName: AI Andy, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[   10018ms] [LOG] [rss] fetching {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCfnihhol5a4Qc2EciLf5kOQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[   10206ms] [LOG] [rss] success (proxy) {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ} @ http://localhost:5174/src/services/rssIngestion.js:178
+[   10208ms] [LOG] [rss] success {mentorName: Aimprove - אימפרוב, videosCount: 5, topicIds: Array(1)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[   10947ms] [LOG] [rss] fetching {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCGFogLEUR_nuiT83pt8zVWQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[   11117ms] [LOG] [rss] success (proxy) {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ} @ http://localhost:5174/src/services/rssIngestion.js:178
+[   11119ms] [LOG] [rss] success {mentorName: Eden Bibas, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[   12111ms] [LOG] [rss] fetching {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC9wNu-y7T3vZMq5SA441i8g} @ http://localhost:5174/src/services/rssIngestion.js:146
+[   12205ms] [LOG] [rss] success (proxy) {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g} @ http://localhost:5174/src/services/rssIngestion.js:178
+[   12205ms] [LOG] [rss] success {mentorName: Base44 Community, videosCount: 0, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[   12206ms] [LOG] [rss] fetching {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCxPN-JU3DsKwDgn5sTetNUQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[   12541ms] [LOG] [rss] success (proxy) {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ} @ http://localhost:5174/src/services/rssIngestion.js:178
+[   12543ms] [LOG] [rss] success {mentorName: Ran Bar Zik, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:328
+[   13503ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[   16096ms] [LOG] [chapter-source] videoId local_1778402155483_4pcbo @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16097ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16097ms] [LOG] [chapter-source] description chapters 9 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16097ms] [LOG] [chapter-source] duration fallback 875 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16097ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16097ms] [LOG] [chapter-source] videoId local_1778402158483_u5cp5 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16097ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16097ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16097ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16097ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16097ms] [LOG] [chapter-source] videoId local_1778402158483_0s1jq @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16097ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16097ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16097ms] [LOG] [chapter-source] duration fallback 10047 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16097ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16097ms] [LOG] [chapter-source] videoId local_1778402156523_gj5ub @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16098ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16098ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16098ms] [LOG] [chapter-source] duration fallback 320 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16098ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16098ms] [LOG] [chapter-source] videoId local_1778402155483_lui0z @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16098ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16098ms] [LOG] [chapter-source] description chapters 9 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16098ms] [LOG] [chapter-source] duration fallback 1434 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16098ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16098ms] [LOG] [chapter-source] videoId local_1778402155483_2xded @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16098ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16098ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16098ms] [LOG] [chapter-source] duration fallback 143 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16098ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16098ms] [LOG] [chapter-source] videoId local_1778402155483_p4opg @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16098ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16098ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16098ms] [LOG] [chapter-source] duration fallback 2970 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16098ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16098ms] [LOG] [chapter-source] videoId local_1778402156523_imivb @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16098ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16098ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16098ms] [LOG] [chapter-source] duration fallback 633 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16099ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16099ms] [LOG] [chapter-source] videoId local_1778402155483_0b2ba @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16099ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16099ms] [LOG] [chapter-source] description chapters 10 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16099ms] [LOG] [chapter-source] duration fallback 854 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16099ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16099ms] [LOG] [chapter-source] videoId local_1778402158483_u1dzw @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16099ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16099ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16099ms] [LOG] [chapter-source] duration fallback 484 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16099ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16099ms] [LOG] [chapter-source] videoId local_1778402158483_u6iym @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16099ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16099ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16099ms] [LOG] [chapter-source] duration fallback 19592 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16099ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16100ms] [LOG] [chapter-source] videoId local_1778402158483_r5o0m @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16100ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16100ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16100ms] [LOG] [chapter-source] duration fallback 58 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16100ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16100ms] [LOG] [chapter-source] videoId local_1778402156523_w047w @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16100ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16100ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16100ms] [LOG] [chapter-source] duration fallback 552 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16100ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16100ms] [LOG] [chapter-source] videoId local_1778402156523_4uaff @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16100ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16100ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16100ms] [LOG] [chapter-source] duration fallback 110 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16100ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16100ms] [LOG] [chapter-source] videoId local_1778402166177_5cxmt @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16100ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16100ms] [LOG] [chapter-source] description chapters 12 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16100ms] [LOG] [chapter-source] duration fallback 2421 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16101ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16101ms] [LOG] [chapter-source] videoId local_1778402156523_yq69n @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16101ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16101ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16101ms] [LOG] [chapter-source] duration fallback 2208 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16101ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16101ms] [LOG] [chapter-source] videoId local_1778402165013_1024t @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16101ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16101ms] [LOG] [chapter-source] description chapters 28 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16101ms] [LOG] [chapter-source] duration fallback 1560 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16101ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16101ms] [LOG] [chapter-source] videoId local_1778402165013_i78f8 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16101ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16101ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16101ms] [LOG] [chapter-source] duration fallback 1779 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16101ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16101ms] [LOG] [chapter-source] videoId local_1778402165013_rw7xy @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16101ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16101ms] [LOG] [chapter-source] description chapters 18 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16101ms] [LOG] [chapter-source] duration fallback 1323 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16101ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16102ms] [LOG] [chapter-source] videoId local_1778402165013_346rn @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16102ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16102ms] [LOG] [chapter-source] description chapters 26 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16102ms] [LOG] [chapter-source] duration fallback 2117 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16102ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16102ms] [LOG] [chapter-source] videoId local_1778402165013_7oqqa @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16102ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16102ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16102ms] [LOG] [chapter-source] duration fallback 1260 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16102ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16102ms] [LOG] [chapter-source] videoId local_1778402161671_79x1u @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16102ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16102ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16102ms] [LOG] [chapter-source] duration fallback 901 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16102ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16102ms] [LOG] [chapter-source] videoId local_1778402166177_edlzw @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16102ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16102ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16102ms] [LOG] [chapter-source] duration fallback 4362 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16102ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16102ms] [LOG] [chapter-source] videoId local_1778402162872_f7e8v @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16103ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16103ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16103ms] [LOG] [chapter-source] duration fallback 42 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16103ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16103ms] [LOG] [chapter-source] videoId local_1778402162872_4u4de @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16103ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16103ms] [LOG] [chapter-source] description chapters 6 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16103ms] [LOG] [chapter-source] duration fallback 705 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16103ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16103ms] [LOG] [chapter-source] videoId local_1778402162872_m9qga @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16103ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16103ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16103ms] [LOG] [chapter-source] duration fallback 286 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16103ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16103ms] [LOG] [chapter-source] videoId local_1778402162872_hiktv @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16103ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16103ms] [LOG] [chapter-source] description chapters 4 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16104ms] [LOG] [chapter-source] duration fallback 464 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16104ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16104ms] [LOG] [chapter-source] videoId local_1778402159524_kmx39 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16104ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16104ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16104ms] [LOG] [chapter-source] duration fallback 2437 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16104ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16104ms] [LOG] [chapter-source] videoId local_1778402159524_tusd5 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16104ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16104ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16104ms] [LOG] [chapter-source] duration fallback 2889 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16104ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16104ms] [LOG] [chapter-source] videoId local_1778402159524_0n441 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16104ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16104ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16104ms] [LOG] [chapter-source] duration fallback 526 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16104ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16104ms] [LOG] [chapter-source] videoId local_1778402159524_0uk5f @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16104ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16104ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16104ms] [LOG] [chapter-source] duration fallback 1572 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16104ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16104ms] [LOG] [chapter-source] videoId local_1778402159524_1wjge @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16105ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16105ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16105ms] [LOG] [chapter-source] duration fallback 1052 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16105ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16105ms] [LOG] [chapter-source] videoId local_1778402162872_yrysg @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16105ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16105ms] [LOG] [chapter-source] description chapters 5 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16105ms] [LOG] [chapter-source] duration fallback 648 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16105ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:871
+[   16105ms] [LOG] [chapter-source] videoId local_1778402166177_18qwg @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16105ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16105ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16105ms] [LOG] [chapter-source] duration fallback 6037 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16105ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16105ms] [LOG] [chapter-source] videoId local_1778402166177_ddd9o @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16105ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16105ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16105ms] [LOG] [chapter-source] duration fallback 3376 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16105ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16105ms] [LOG] [chapter-source] videoId local_1778402166177_2or8v @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16105ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16105ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16105ms] [LOG] [chapter-source] duration fallback 5571 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16106ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16106ms] [LOG] [chapter-source] videoId local_1778402157510_t1dww @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16106ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16106ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16106ms] [LOG] [chapter-source] duration fallback 270 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16106ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16106ms] [LOG] [chapter-source] videoId local_1778402157510_ph7m0 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16106ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16106ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16106ms] [LOG] [chapter-source] duration fallback 2596 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16106ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16106ms] [LOG] [chapter-source] videoId local_1778402161671_0nkzv @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16106ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16106ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16106ms] [LOG] [chapter-source] duration fallback 718 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16106ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16106ms] [LOG] [chapter-source] videoId local_1778402157510_wvtgx @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16106ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16107ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16107ms] [LOG] [chapter-source] duration fallback 1218 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16107ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16107ms] [LOG] [chapter-source] videoId local_1778402167569_mq69c @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16107ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16107ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16107ms] [LOG] [chapter-source] duration fallback 1196 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16107ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16107ms] [LOG] [chapter-source] videoId local_1778402167569_xhxkt @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16107ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16107ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16107ms] [LOG] [chapter-source] duration fallback 777 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16107ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16107ms] [LOG] [chapter-source] videoId local_1778402167569_muvhs @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16107ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16107ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16107ms] [LOG] [chapter-source] duration fallback 1352 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16108ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16108ms] [LOG] [chapter-source] videoId local_1778402161671_i5b3p @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16108ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16108ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16108ms] [LOG] [chapter-source] duration fallback 1022 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16108ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16108ms] [LOG] [chapter-source] videoId local_1778402161671_yqqxx @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16108ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16108ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16108ms] [LOG] [chapter-source] duration fallback 795 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16108ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16108ms] [LOG] [chapter-source] videoId local_1778402167569_ec61x @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16108ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16108ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16108ms] [LOG] [chapter-source] duration fallback 465 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16108ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16108ms] [LOG] [chapter-source] videoId local_1778402167569_ndmvx @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16108ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16108ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16108ms] [LOG] [chapter-source] duration fallback 423 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16109ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16109ms] [LOG] [chapter-source] videoId local_1778402161671_6gq4g @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16109ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16109ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16109ms] [LOG] [chapter-source] duration fallback 865 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16109ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16109ms] [LOG] [chapter-source] videoId local_1778402157510_k2rp2 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16109ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16109ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16109ms] [LOG] [chapter-source] duration fallback 2434 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16109ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16109ms] [LOG] [chapter-source] videoId local_1778402157510_eid8y @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16109ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16109ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16109ms] [LOG] [chapter-source] duration fallback 809 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16109ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16109ms] [LOG] [chapter-source] videoId local_1778402164084_p8jk3 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16109ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16110ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16110ms] [LOG] [chapter-source] duration fallback 292 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16110ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16110ms] [LOG] [chapter-source] videoId local_1778402164084_qvsi8 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16110ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16110ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16110ms] [LOG] [chapter-source] duration fallback 280 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16110ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16110ms] [LOG] [chapter-source] videoId local_1778402164084_x8l2n @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16110ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16110ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16110ms] [LOG] [chapter-source] duration fallback 60 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16110ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16110ms] [LOG] [chapter-source] videoId local_1778402164084_9bnx9 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16110ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16110ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16110ms] [LOG] [chapter-source] duration fallback 49 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16110ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16110ms] [LOG] [chapter-source] videoId local_1778402164084_tdqwu @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16110ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16110ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16111ms] [LOG] [chapter-source] duration fallback 59 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16111ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16111ms] [LOG] [chapter-source] videoId local_1778402160529_42j6l @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16111ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16111ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16111ms] [LOG] [chapter-source] duration fallback 27 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16111ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16111ms] [LOG] [chapter-source] videoId local_1778402160529_z5acv @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16111ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16111ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16111ms] [LOG] [chapter-source] duration fallback 62 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16111ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16111ms] [LOG] [chapter-source] videoId local_1778402160529_48mja @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16111ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16111ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16111ms] [LOG] [chapter-source] duration fallback 157 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16112ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[   16112ms] [LOG] [chapter-source] videoId local_1778402160529_ry7z8 @ http://localhost:5174/src/services/videoAnalytics.js:852
+[   16112ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:853
+[   16112ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:854
+[   16112ms] [LOG] [chapter-source] duration fallback 357 @ http://localhost:5174/src/services/videoAnalytics.js:855
+[   16112ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:885
+[  263878ms] [LOG] [chapter-source] videoId local_1778402155483_4pcbo @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263878ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263878ms] [LOG] [chapter-source] description chapters 9 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263878ms] [LOG] [chapter-source] duration fallback 875 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263878ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263879ms] [LOG] [chapter-source] videoId local_1778402158483_u5cp5 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263879ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263879ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263879ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263879ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263879ms] [LOG] [chapter-source] videoId local_1778402158483_0s1jq @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263879ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263879ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263879ms] [LOG] [chapter-source] duration fallback 10047 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263879ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263879ms] [LOG] [chapter-source] videoId local_1778402156523_gj5ub @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263879ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263879ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263879ms] [LOG] [chapter-source] duration fallback 320 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263879ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263879ms] [LOG] [chapter-source] videoId local_1778402155483_lui0z @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263880ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263880ms] [LOG] [chapter-source] description chapters 9 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263880ms] [LOG] [chapter-source] duration fallback 1434 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263880ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263880ms] [LOG] [chapter-source] videoId local_1778402155483_2xded @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263880ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263880ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263880ms] [LOG] [chapter-source] duration fallback 143 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263880ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263880ms] [LOG] [chapter-source] videoId local_1778402155483_p4opg @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263880ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263880ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263880ms] [LOG] [chapter-source] duration fallback 2970 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263880ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263880ms] [LOG] [chapter-source] videoId local_1778402156523_imivb @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263881ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263881ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263881ms] [LOG] [chapter-source] duration fallback 633 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263881ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263881ms] [LOG] [chapter-source] videoId local_1778402155483_0b2ba @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263881ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263881ms] [LOG] [chapter-source] description chapters 10 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263881ms] [LOG] [chapter-source] duration fallback 854 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263881ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263881ms] [LOG] [chapter-source] videoId local_1778402158483_u1dzw @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263882ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263882ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263882ms] [LOG] [chapter-source] duration fallback 484 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263882ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263882ms] [LOG] [chapter-source] videoId local_1778402158483_u6iym @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263882ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263883ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263883ms] [LOG] [chapter-source] duration fallback 19592 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263883ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263883ms] [LOG] [chapter-source] videoId local_1778402158483_r5o0m @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263883ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263883ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263883ms] [LOG] [chapter-source] duration fallback 58 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263883ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263883ms] [LOG] [chapter-source] videoId local_1778402156523_w047w @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263883ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263883ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263884ms] [LOG] [chapter-source] duration fallback 552 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263884ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263884ms] [LOG] [chapter-source] videoId local_1778402156523_4uaff @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263884ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263884ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263884ms] [LOG] [chapter-source] duration fallback 110 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263884ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263885ms] [LOG] [chapter-source] videoId local_1778402166177_5cxmt @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263885ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263885ms] [LOG] [chapter-source] description chapters 12 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263885ms] [LOG] [chapter-source] duration fallback 2421 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263885ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263885ms] [LOG] [chapter-source] videoId local_1778402156523_yq69n @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263885ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263886ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263886ms] [LOG] [chapter-source] duration fallback 2208 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263886ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263886ms] [LOG] [chapter-source] videoId local_1778402165013_1024t @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263886ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263886ms] [LOG] [chapter-source] description chapters 28 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263886ms] [LOG] [chapter-source] duration fallback 1560 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263886ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263886ms] [LOG] [chapter-source] videoId local_1778402165013_i78f8 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263887ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263887ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263887ms] [LOG] [chapter-source] duration fallback 1779 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263887ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263887ms] [LOG] [chapter-source] videoId local_1778402165013_rw7xy @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263887ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263887ms] [LOG] [chapter-source] description chapters 18 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263887ms] [LOG] [chapter-source] duration fallback 1323 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263887ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263888ms] [LOG] [chapter-source] videoId local_1778402165013_346rn @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263888ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263888ms] [LOG] [chapter-source] description chapters 26 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263888ms] [LOG] [chapter-source] duration fallback 2117 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263888ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263888ms] [LOG] [chapter-source] videoId local_1778402165013_7oqqa @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263888ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263888ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263888ms] [LOG] [chapter-source] duration fallback 1260 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263888ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263888ms] [LOG] [chapter-source] videoId local_1778402161671_79x1u @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263888ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263889ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263889ms] [LOG] [chapter-source] duration fallback 901 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263889ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263889ms] [LOG] [chapter-source] videoId local_1778402166177_edlzw @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263889ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263889ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263889ms] [LOG] [chapter-source] duration fallback 4362 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263889ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263889ms] [LOG] [chapter-source] videoId local_1778402162872_f7e8v @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263889ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263889ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263890ms] [LOG] [chapter-source] duration fallback 42 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263890ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263890ms] [LOG] [chapter-source] videoId local_1778402162872_4u4de @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263890ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263890ms] [LOG] [chapter-source] description chapters 6 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263890ms] [LOG] [chapter-source] duration fallback 705 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263890ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263890ms] [LOG] [chapter-source] videoId local_1778402162872_m9qga @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263890ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263890ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263890ms] [LOG] [chapter-source] duration fallback 286 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263890ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263890ms] [LOG] [chapter-source] videoId local_1778402162872_hiktv @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263891ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263891ms] [LOG] [chapter-source] description chapters 4 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263891ms] [LOG] [chapter-source] duration fallback 464 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263891ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263891ms] [LOG] [chapter-source] videoId local_1778402159524_kmx39 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263891ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263891ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263891ms] [LOG] [chapter-source] duration fallback 2437 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263891ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263891ms] [LOG] [chapter-source] videoId local_1778402159524_tusd5 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263891ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263891ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263891ms] [LOG] [chapter-source] duration fallback 2889 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263891ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263891ms] [LOG] [chapter-source] videoId local_1778402159524_0n441 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263891ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263891ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263891ms] [LOG] [chapter-source] duration fallback 526 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263891ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263892ms] [LOG] [chapter-source] videoId local_1778402159524_0uk5f @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263892ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263892ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263892ms] [LOG] [chapter-source] duration fallback 1572 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263892ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263892ms] [LOG] [chapter-source] videoId local_1778402159524_1wjge @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263892ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263892ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263892ms] [LOG] [chapter-source] duration fallback 1052 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263893ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263893ms] [LOG] [chapter-source] videoId local_1778402162872_yrysg @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263893ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263893ms] [LOG] [chapter-source] description chapters 5 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263893ms] [LOG] [chapter-source] duration fallback 648 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263893ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:871
+[  263893ms] [LOG] [chapter-source] videoId local_1778402166177_18qwg @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263893ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263893ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263893ms] [LOG] [chapter-source] duration fallback 6037 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263893ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263893ms] [LOG] [chapter-source] videoId local_1778402166177_ddd9o @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263893ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263893ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263893ms] [LOG] [chapter-source] duration fallback 3376 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263893ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263893ms] [LOG] [chapter-source] videoId local_1778402166177_2or8v @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263893ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263893ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263894ms] [LOG] [chapter-source] duration fallback 5571 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263894ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263894ms] [LOG] [chapter-source] videoId local_1778402157510_t1dww @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263894ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263894ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263894ms] [LOG] [chapter-source] duration fallback 270 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263894ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263894ms] [LOG] [chapter-source] videoId local_1778402157510_ph7m0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263894ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263894ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263894ms] [LOG] [chapter-source] duration fallback 2596 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263894ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263894ms] [LOG] [chapter-source] videoId local_1778402161671_0nkzv @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263894ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263894ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263894ms] [LOG] [chapter-source] duration fallback 718 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263894ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263894ms] [LOG] [chapter-source] videoId local_1778402157510_wvtgx @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263894ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263894ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263895ms] [LOG] [chapter-source] duration fallback 1218 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263895ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263895ms] [LOG] [chapter-source] videoId local_1778402167569_mq69c @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263895ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263895ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263895ms] [LOG] [chapter-source] duration fallback 1196 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263895ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263895ms] [LOG] [chapter-source] videoId local_1778402167569_xhxkt @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263895ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263895ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263895ms] [LOG] [chapter-source] duration fallback 777 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263895ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263895ms] [LOG] [chapter-source] videoId local_1778402167569_muvhs @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263895ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263895ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263895ms] [LOG] [chapter-source] duration fallback 1352 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263895ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263895ms] [LOG] [chapter-source] videoId local_1778402161671_i5b3p @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263895ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263895ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263896ms] [LOG] [chapter-source] duration fallback 1022 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263896ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263896ms] [LOG] [chapter-source] videoId local_1778402161671_yqqxx @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263896ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263896ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263896ms] [LOG] [chapter-source] duration fallback 795 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263896ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263896ms] [LOG] [chapter-source] videoId local_1778402167569_ec61x @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263896ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263896ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263896ms] [LOG] [chapter-source] duration fallback 465 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263896ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263896ms] [LOG] [chapter-source] videoId local_1778402167569_ndmvx @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263896ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263896ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263896ms] [LOG] [chapter-source] duration fallback 423 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263896ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263896ms] [LOG] [chapter-source] videoId local_1778402161671_6gq4g @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263896ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263896ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263897ms] [LOG] [chapter-source] duration fallback 865 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263897ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263897ms] [LOG] [chapter-source] videoId local_1778402157510_k2rp2 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263897ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263897ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263897ms] [LOG] [chapter-source] duration fallback 2434 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263897ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263897ms] [LOG] [chapter-source] videoId local_1778402157510_eid8y @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263897ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263897ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263897ms] [LOG] [chapter-source] duration fallback 809 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263897ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263897ms] [LOG] [chapter-source] videoId local_1778402164084_p8jk3 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263897ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263898ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263898ms] [LOG] [chapter-source] duration fallback 292 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263898ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263898ms] [LOG] [chapter-source] videoId local_1778402164084_qvsi8 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263898ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263898ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263898ms] [LOG] [chapter-source] duration fallback 280 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263898ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263898ms] [LOG] [chapter-source] videoId local_1778402164084_x8l2n @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263898ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263899ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263899ms] [LOG] [chapter-source] duration fallback 60 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263899ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263899ms] [LOG] [chapter-source] videoId local_1778402164084_9bnx9 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263899ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263899ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263899ms] [LOG] [chapter-source] duration fallback 49 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263899ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263900ms] [LOG] [chapter-source] videoId local_1778402164084_tdqwu @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263900ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263900ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263900ms] [LOG] [chapter-source] duration fallback 59 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263900ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263900ms] [LOG] [chapter-source] videoId local_1778402160529_42j6l @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263900ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263900ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263900ms] [LOG] [chapter-source] duration fallback 27 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263900ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263900ms] [LOG] [chapter-source] videoId local_1778402160529_z5acv @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263900ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263900ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263900ms] [LOG] [chapter-source] duration fallback 62 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263900ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263901ms] [LOG] [chapter-source] videoId local_1778402160529_48mja @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263901ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263901ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263901ms] [LOG] [chapter-source] duration fallback 157 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263901ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263901ms] [LOG] [chapter-source] videoId local_1778402160529_ry7z8 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:852
+[  263901ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:853
+[  263901ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:854
+[  263901ms] [LOG] [chapter-source] duration fallback 357 @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:855
+[  263901ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js?t=1778402417722:885
+[  263908ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23

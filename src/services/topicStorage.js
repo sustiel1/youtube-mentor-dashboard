@@ -17,14 +17,8 @@ import { TOPICS } from "@/data/mockData";
 
 const STORAGE_KEY = "yt_topic_user_v1";
 
-// Default topics to seed on first use — only those NOT already in mockData TOPICS
-export const DEFAULT_TOPICS = [
-  { id: "ls_daytrading", name: "מסחר יומי",          color: "cyan"   },
-  { id: "ls_dev",        name: "פיתוח",              color: "blue"   },
-  { id: "ls_react",      name: "React",              color: "blue"   },
-  { id: "ls_base44",     name: "Base44",             color: "blue"   },
-  { id: "ls_prompt",     name: "Prompt Engineering", color: "violet" },
-];
+// Default topics to seed on first use — full taxonomy now lives in mockData.js TOPICS
+export const DEFAULT_TOPICS = [];
 
 // Normalize a simple topic into the full shape the app expects
 function normalize(t) {
@@ -34,8 +28,8 @@ function normalize(t) {
     color:          t.color  || "blue",
     icon:           t.icon   || "Hash",
     description:    t.description || "",
-    isMainCategory: true,
-    parentId:       null,
+    parentId:       t.parentId ?? null,
+    isMainCategory: t.isMainCategory ?? !(t.parentId),
     createdAt:      t.createdAt || new Date().toISOString(),
   };
 }
@@ -88,7 +82,7 @@ export function isUserTopic(id) {
 }
 
 // Add a new user topic. Returns { topic } on success or { error } on failure.
-export function addTopic({ name, color = "blue" }) {
+export function addTopic({ name, color = "blue", parentId = null }) {
   const trimmed = name?.trim();
   if (!trimmed) return { error: "יש להזין שם לנושא" };
 
@@ -102,7 +96,13 @@ export function addTopic({ name, color = "blue" }) {
     .replace(/^_|_$/g, "")
     .slice(0, 30);
   const id    = `ls_${slug}_${Date.now()}`;
-  const topic = normalize({ id, name: trimmed, color });
+  const topic = normalize({
+    id,
+    name: trimmed,
+    color,
+    parentId: parentId || null,
+    isMainCategory: !parentId,
+  });
 
   writeUserTopics([...getUserTopics(), topic]);
   return { topic };

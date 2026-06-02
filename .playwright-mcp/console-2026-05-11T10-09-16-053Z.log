@@ -1,0 +1,3 @@
+[     158ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[     242ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[     389ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778494145900:49

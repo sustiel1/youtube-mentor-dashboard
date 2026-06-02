@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Bookmark } from "lucide-react";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
@@ -9,7 +9,32 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { videoBelongsToTopicFamily } from "@/lib/topicFilters";
 
-export default function SavedVideos({ filters = { search: "", mentor: "all", category: "all" }, setFilters }) {
+function mergeSelectedVideoState(fresh, prev) {
+  if (!fresh) return prev;
+  if (!prev) return fresh;
+
+  const keepIfMissing = (key, predicate = (value) => value != null && value !== "") =>
+    predicate(prev[key]) && !predicate(fresh[key]) ? { [key]: prev[key] } : {};
+
+  return {
+    ...fresh,
+    ...keepIfMissing("aiChapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("chapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("descriptionChapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("description"),
+    ...keepIfMissing("duration"),
+    ...keepIfMissing("chapterSource"),
+    ...keepIfMissing("analysisQuality"),
+    ...keepIfMissing("shortSummary"),
+    ...keepIfMissing("fullSummary"),
+    ...keepIfMissing("keyPoints", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("transcriptStatus"),
+    ...keepIfMissing("transcriptError"),
+    ...keepIfMissing("viewCount", (value) => Number.isFinite(value) && value > 0),
+  };
+}
+
+export default function SavedVideos({ filters = { search: "", mentor: "all", category: "all" }, setFilters, isDark, toggleTheme }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -22,6 +47,15 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
   const assignTopics = useAssignTopics();
 
   const isLoading = videosLoading || mentorsLoading;
+
+  useEffect(() => {
+    setSelectedVideo((prev) => {
+      if (!prev || videos.length === 0) return prev;
+      const fresh = videos.find((v) => v.id === prev.id);
+      if (!fresh) return prev;
+      return mergeSelectedVideoState(fresh, prev);
+    });
+  }, [videos]);
 
   const savedVideos = useMemo(() => {
     return videos
@@ -107,8 +141,7 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {savedVideos.map((video) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 [&>*]:h-full [&>*]:min-h-0">
                   <VideoCard
                     key={video.id}
                     video={video}
@@ -127,6 +160,7 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
       <VideoDetailPanel
         video={selectedVideo}
         mentorName={selectedMentorName}
+        mentors={mentors.filter((m) => m.active !== false)}
         open={panelOpen}
         onOpenChange={setPanelOpen}
         topics={topics}
@@ -134,6 +168,8 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
         onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
       />
     </div>
   );

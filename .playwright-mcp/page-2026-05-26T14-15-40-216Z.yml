@@ -1,0 +1,1232 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e4757] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - paragraph [ref=e16]: ניהול תוכן
+          - button "כל הסרטונים" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - generic [ref=e23]: כל הסרטונים
+          - button "שמורים" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e27]: שמורים
+          - button "תור למידה" [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+            - generic [ref=e31]: תור למידה
+          - button "גיבויי ענן" [active] [ref=e32] [cursor=pointer]:
+            - img [ref=e33]
+            - generic [ref=e35]: גיבויי ענן
+        - generic [ref=e36]:
+          - paragraph [ref=e37]: מרחב הידע
+          - button "ספריית ידע" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+            - generic [ref=e41]: ספריית ידע
+          - button "חיפוש ידע" [ref=e42] [cursor=pointer]:
+            - img [ref=e43]
+            - generic [ref=e46]: חיפוש ידע
+          - button "Workspace" [ref=e47] [cursor=pointer]:
+            - img [ref=e48]
+            - generic [ref=e51]: Workspace
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - button "הברינים שלי" [ref=e54] [cursor=pointer]
+            - button "נושא חדש" [ref=e55] [cursor=pointer]:
+              - img [ref=e56]
+              - text: נושא חדש
+          - generic [ref=e58]:
+            - generic [ref=e60]:
+              - 'button "פתח ידע: טכנולוגיה ו-AI" [ref=e61] [cursor=pointer]':
+                - img [ref=e62]
+              - generic [ref=e65]:
+                - button "ערוך נושא" [ref=e66] [cursor=pointer]:
+                  - img [ref=e67]
+                - button "מחק נושא" [ref=e70] [cursor=pointer]:
+                  - img [ref=e71]
+              - button "טכנולוגיה ו-AI" [ref=e74]
+              - button [ref=e75] [cursor=pointer]:
+                - img [ref=e76]
+              - img [ref=e78]
+            - generic [ref=e86]:
+              - 'button "פתח ידע: שוק ההון" [ref=e87] [cursor=pointer]':
+                - img [ref=e88]
+              - generic [ref=e92]:
+                - button "ערוך נושא" [ref=e93] [cursor=pointer]:
+                  - img [ref=e94]
+                - button "מחק נושא" [ref=e97] [cursor=pointer]:
+                  - img [ref=e98]
+              - button "שוק ההון" [ref=e101]
+              - button [ref=e102] [cursor=pointer]:
+                - img [ref=e103]
+              - img [ref=e105]
+            - generic [ref=e113]:
+              - 'button "פתח ידע: פוליטיקה" [ref=e114] [cursor=pointer]':
+                - img [ref=e115]
+              - generic [ref=e117]:
+                - button "ערוך נושא" [ref=e118] [cursor=pointer]:
+                  - img [ref=e119]
+                - button "מחק נושא" [ref=e122] [cursor=pointer]:
+                  - img [ref=e123]
+              - button "פוליטיקה" [ref=e126]
+              - button [ref=e127] [cursor=pointer]:
+                - img [ref=e128]
+              - img [ref=e130]
+            - generic [ref=e138]:
+              - 'button "פתח ידע: בריאות ותזונה" [ref=e139] [cursor=pointer]':
+                - img [ref=e140]
+              - generic [ref=e143]:
+                - button "ערוך נושא" [ref=e144] [cursor=pointer]:
+                  - img [ref=e145]
+                - button "מחק נושא" [ref=e148] [cursor=pointer]:
+                  - img [ref=e149]
+              - button "בריאות ותזונה" [ref=e152]
+              - button [ref=e153] [cursor=pointer]:
+                - img [ref=e154]
+              - img [ref=e156]
+            - generic [ref=e164]:
+              - 'button "פתח ידע: ידע אישי" [ref=e165] [cursor=pointer]':
+                - img [ref=e166]
+              - generic [ref=e169]:
+                - button "ערוך נושא" [ref=e170] [cursor=pointer]:
+                  - img [ref=e171]
+                - button "מחק נושא" [ref=e174] [cursor=pointer]:
+                  - img [ref=e175]
+              - button "ידע אישי" [ref=e178]
+              - button [ref=e179] [cursor=pointer]:
+                - img [ref=e180]
+              - img [ref=e182]
+            - generic [ref=e190]:
+              - 'button "פתח ידע: מסחר יומי" [ref=e191] [cursor=pointer]':
+                - img [ref=e192]
+              - generic [ref=e195]:
+                - button "ערוך נושא" [ref=e196] [cursor=pointer]:
+                  - img [ref=e197]
+                - button "מחק נושא" [ref=e200] [cursor=pointer]:
+                  - img [ref=e201]
+              - button "מסחר יומי" [ref=e204]
+              - button [ref=e205] [cursor=pointer]:
+                - img [ref=e206]
+              - img [ref=e208]
+            - generic [ref=e216]:
+              - 'button "פתח ידע: פיתוח" [ref=e217] [cursor=pointer]':
+                - img [ref=e218]
+              - generic [ref=e221]:
+                - button "ערוך נושא" [ref=e222] [cursor=pointer]:
+                  - img [ref=e223]
+                - button "מחק נושא" [ref=e226] [cursor=pointer]:
+                  - img [ref=e227]
+              - button "פיתוח" [ref=e230]
+              - button [ref=e231] [cursor=pointer]:
+                - img [ref=e232]
+              - img [ref=e234]
+      - generic [ref=e241]:
+        - button "🧠 שמור למוח" [ref=e242] [cursor=pointer]:
+          - img [ref=e243]
+          - generic [ref=e245]: 🧠 שמור למוח
+        - button "מנטור חדש" [ref=e246] [cursor=pointer]:
+          - img [ref=e247]
+          - generic [ref=e250]: מנטור חדש
+        - button "אוסף ערוצים חדש" [ref=e251] [cursor=pointer]:
+          - img [ref=e252]
+          - generic [ref=e256]: אוסף ערוצים חדש
+        - button "ניהול" [ref=e257] [cursor=pointer]:
+          - img [ref=e258]
+          - generic [ref=e261]: ניהול
+    - main [ref=e262]:
+      - generic [ref=e4758]:
+        - generic [ref=e4759]:
+          - generic [ref=e4760]:
+            - heading "גיבויי ענן" [level=1] [ref=e4761]:
+              - img [ref=e4762]
+              - text: גיבויי ענן
+            - paragraph [ref=e4764]: 62 מנותחים · 0 מגובים · 62 מקומי בלבד
+          - generic [ref=e4765]:
+            - generic [ref=e4766]:
+              - img [ref=e4767]
+              - text: Drive לא מחובר
+            - button "סרוק Drive" [disabled] [ref=e4769]:
+              - img [ref=e4770]
+              - text: סרוק Drive
+        - generic [ref=e4775]:
+          - generic [ref=e4776]:
+            - button "הכל (62)" [ref=e4777] [cursor=pointer]
+            - button "מגובה (0)" [ref=e4778] [cursor=pointer]
+            - button "מקומי (62)" [ref=e4779] [cursor=pointer]
+            - button "בעיות" [ref=e4780] [cursor=pointer]
+          - generic [ref=e4781]:
+            - img [ref=e4782]
+            - textbox "חיפוש לפי כותרת, קטגוריה, ערוץ..." [ref=e4785]
+        - table [ref=e4787]:
+          - rowgroup [ref=e4788]:
+            - row "כותרת קטגוריה סטטוס תאריך גיבוי נתיב Drive פעולות" [ref=e4789]:
+              - columnheader [ref=e4790]:
+                - button [ref=e4791] [cursor=pointer]:
+                  - img [ref=e4792]
+              - columnheader [ref=e4794]
+              - columnheader "כותרת" [ref=e4795]
+              - columnheader "קטגוריה" [ref=e4796]
+              - columnheader "סטטוס" [ref=e4797]
+              - columnheader "תאריך גיבוי" [ref=e4798]
+              - columnheader "נתיב Drive" [ref=e4799]
+              - columnheader "פעולות" [ref=e4800]
+          - rowgroup [ref=e4801]:
+            - row "🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈 Markets מקומי בלבד ⚠ — —" [ref=e4802]:
+              - cell [ref=e4803]:
+                - button [ref=e4804] [cursor=pointer]:
+                  - img [ref=e4805]
+              - cell [ref=e4807]
+              - cell "🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈" [ref=e4808]:
+                - generic "🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈" [ref=e4809]
+              - cell "Markets" [ref=e4810]
+              - cell "מקומי בלבד ⚠" [ref=e4811]:
+                - generic [ref=e4812]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4813]
+              - cell "—" [ref=e4814]:
+                - generic [ref=e4815]: —
+              - cell [ref=e4816]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4818]:
+                  - img [ref=e4819]
+            - row "מבזק לייב פתיחה לתאריך 11.5.26 Markets מקומי בלבד ⚠ — —" [ref=e4822]:
+              - cell [ref=e4823]:
+                - button [ref=e4824] [cursor=pointer]:
+                  - img [ref=e4825]
+              - cell [ref=e4827]
+              - cell "מבזק לייב פתיחה לתאריך 11.5.26" [ref=e4828]:
+                - generic "מבזק לייב פתיחה לתאריך 11.5.26" [ref=e4829]
+              - cell "Markets" [ref=e4830]
+              - cell "מקומי בלבד ⚠" [ref=e4831]:
+                - generic [ref=e4832]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4833]
+              - cell "—" [ref=e4834]:
+                - generic [ref=e4835]: —
+              - cell [ref=e4836]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4838]:
+                  - img [ref=e4839]
+            - row "You Have NO IDEA How Easy Trading Is Today Markets מקומי בלבד ⚠ — —" [ref=e4842]:
+              - cell [ref=e4843]:
+                - button [ref=e4844] [cursor=pointer]:
+                  - img [ref=e4845]
+              - cell [ref=e4847]
+              - cell "You Have NO IDEA How Easy Trading Is Today" [ref=e4848]:
+                - generic "You Have NO IDEA How Easy Trading Is Today" [ref=e4849]
+              - cell "Markets" [ref=e4850]
+              - cell "מקומי בלבד ⚠" [ref=e4851]:
+                - generic [ref=e4852]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4853]
+              - cell "—" [ref=e4854]:
+                - generic [ref=e4855]: —
+              - cell [ref=e4856]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4858]:
+                  - img [ref=e4859]
+            - row "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים? Micha.Stocks Markets מקומי בלבד — —" [ref=e4862]:
+              - cell [ref=e4863]:
+                - button [ref=e4864] [cursor=pointer]:
+                  - img [ref=e4865]
+              - cell [ref=e4867]
+              - cell "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים? Micha.Stocks" [ref=e4868]:
+                - generic "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [ref=e4869]
+                - generic [ref=e4870]: Micha.Stocks
+              - cell "Markets" [ref=e4871]
+              - cell "מקומי בלבד" [ref=e4872]:
+                - generic [ref=e4873]: מקומי בלבד
+              - cell "—" [ref=e4874]
+              - cell "—" [ref=e4875]:
+                - generic [ref=e4876]: —
+              - cell [ref=e4877]:
+                - button "גיבוי לענן" [disabled] [ref=e4879]:
+                  - img [ref=e4880]
+            - row "Open House - Watch and Trade the Open Live with Oliver Velez Markets מקומי בלבד ⚠ — —" [ref=e4883]:
+              - cell [ref=e4884]:
+                - button [ref=e4885] [cursor=pointer]:
+                  - img [ref=e4886]
+              - cell [ref=e4888]
+              - cell "Open House - Watch and Trade the Open Live with Oliver Velez" [ref=e4889]:
+                - generic "Open House - Watch and Trade the Open Live with Oliver Velez" [ref=e4890]
+              - cell "Markets" [ref=e4891]
+              - cell "מקומי בלבד ⚠" [ref=e4892]:
+                - generic [ref=e4893]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4894]
+              - cell "—" [ref=e4895]:
+                - generic [ref=e4896]: —
+              - cell [ref=e4897]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4899]:
+                  - img [ref=e4900]
+            - row "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE Markets מקומי בלבד ⚠ — —" [ref=e4903]:
+              - cell [ref=e4904]:
+                - button [ref=e4905] [cursor=pointer]:
+                  - img [ref=e4906]
+              - cell [ref=e4908]
+              - cell "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE" [ref=e4909]:
+                - generic "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE" [ref=e4910]
+              - cell "Markets" [ref=e4911]
+              - cell "מקומי בלבד ⚠" [ref=e4912]:
+                - generic [ref=e4913]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4914]
+              - cell "—" [ref=e4915]:
+                - generic [ref=e4916]: —
+              - cell [ref=e4917]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4919]:
+                  - img [ref=e4920]
+            - row "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר? Markets מקומי בלבד ⚠ — —" [ref=e4923]:
+              - cell [ref=e4924]:
+                - button [ref=e4925] [cursor=pointer]:
+                  - img [ref=e4926]
+              - cell [ref=e4928]
+              - cell "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר?" [ref=e4929]:
+                - generic "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר?" [ref=e4930]
+              - cell "Markets" [ref=e4931]
+              - cell "מקומי בלבד ⚠" [ref=e4932]:
+                - generic [ref=e4933]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4934]
+              - cell "—" [ref=e4935]:
+                - generic [ref=e4936]: —
+              - cell [ref=e4937]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4939]:
+                  - img [ref=e4940]
+            - row "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴 Markets מקומי בלבד ⚠ — —" [ref=e4943]:
+              - cell [ref=e4944]:
+                - button [ref=e4945] [cursor=pointer]:
+                  - img [ref=e4946]
+              - cell [ref=e4948]
+              - cell "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴" [ref=e4949]:
+                - generic "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴" [ref=e4950]
+              - cell "Markets" [ref=e4951]
+              - cell "מקומי בלבד ⚠" [ref=e4952]:
+                - generic [ref=e4953]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4954]
+              - cell "—" [ref=e4955]:
+                - generic [ref=e4956]: —
+              - cell [ref=e4957]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4959]:
+                  - img [ref=e4960]
+            - row "הסיפור של מניית IREN Markets מקומי בלבד ⚠ — —" [ref=e4963]:
+              - cell [ref=e4964]:
+                - button [ref=e4965] [cursor=pointer]:
+                  - img [ref=e4966]
+              - cell [ref=e4968]
+              - cell "הסיפור של מניית IREN" [ref=e4969]:
+                - generic "הסיפור של מניית IREN" [ref=e4970]
+              - cell "Markets" [ref=e4971]
+              - cell "מקומי בלבד ⚠" [ref=e4972]:
+                - generic [ref=e4973]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4974]
+              - cell "—" [ref=e4975]:
+                - generic [ref=e4976]: —
+              - cell [ref=e4977]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4979]:
+                  - img [ref=e4980]
+            - row "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק' Markets מקומי בלבד ⚠ — —" [ref=e4983]:
+              - cell [ref=e4984]:
+                - button [ref=e4985] [cursor=pointer]:
+                  - img [ref=e4986]
+              - cell [ref=e4988]
+              - cell "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'" [ref=e4989]:
+                - generic "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'" [ref=e4990]
+              - cell "Markets" [ref=e4991]
+              - cell "מקומי בלבד ⚠" [ref=e4992]:
+                - generic [ref=e4993]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e4994]
+              - cell "—" [ref=e4995]:
+                - generic [ref=e4996]: —
+              - cell [ref=e4997]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e4999]:
+                  - img [ref=e5000]
+            - row "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן Markets מקומי בלבד ⚠ — —" [ref=e5003]:
+              - cell [ref=e5004]:
+                - button [ref=e5005] [cursor=pointer]:
+                  - img [ref=e5006]
+              - cell [ref=e5008]
+              - cell "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן" [ref=e5009]:
+                - generic "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן" [ref=e5010]
+              - cell "Markets" [ref=e5011]
+              - cell "מקומי בלבד ⚠" [ref=e5012]:
+                - generic [ref=e5013]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5014]
+              - cell "—" [ref=e5015]:
+                - generic [ref=e5016]: —
+              - cell [ref=e5017]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5019]:
+                  - img [ref=e5020]
+            - row "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד Markets מקומי בלבד ⚠ — —" [ref=e5023]:
+              - cell [ref=e5024]:
+                - button [ref=e5025] [cursor=pointer]:
+                  - img [ref=e5026]
+              - cell [ref=e5028]
+              - cell "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד" [ref=e5029]:
+                - generic "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד" [ref=e5030]
+              - cell "Markets" [ref=e5031]
+              - cell "מקומי בלבד ⚠" [ref=e5032]:
+                - generic [ref=e5033]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5034]
+              - cell "—" [ref=e5035]:
+                - generic [ref=e5036]: —
+              - cell [ref=e5037]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5039]:
+                  - img [ref=e5040]
+            - row "The Phase That Creates Millionaire Traders Markets מקומי בלבד ⚠ — —" [ref=e5043]:
+              - cell [ref=e5044]:
+                - button [ref=e5045] [cursor=pointer]:
+                  - img [ref=e5046]
+              - cell [ref=e5048]
+              - cell "The Phase That Creates Millionaire Traders" [ref=e5049]:
+                - generic "The Phase That Creates Millionaire Traders" [ref=e5050]
+              - cell "Markets" [ref=e5051]
+              - cell "מקומי בלבד ⚠" [ref=e5052]:
+                - generic [ref=e5053]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5054]
+              - cell "—" [ref=e5055]:
+                - generic [ref=e5056]: —
+              - cell [ref=e5057]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5059]:
+                  - img [ref=e5060]
+            - row "5 Hours That Can Change Your Trading Forever Markets מקומי בלבד ⚠ — —" [ref=e5063]:
+              - cell [ref=e5064]:
+                - button [ref=e5065] [cursor=pointer]:
+                  - img [ref=e5066]
+              - cell [ref=e5068]
+              - cell "5 Hours That Can Change Your Trading Forever" [ref=e5069]:
+                - generic "5 Hours That Can Change Your Trading Forever" [ref=e5070]
+              - cell "Markets" [ref=e5071]
+              - cell "מקומי בלבד ⚠" [ref=e5072]:
+                - generic [ref=e5073]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5074]
+              - cell "—" [ref=e5075]:
+                - generic [ref=e5076]: —
+              - cell [ref=e5077]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5079]:
+                  - img [ref=e5080]
+            - row "Believe in yourself Markets מקומי בלבד ⚠ — —" [ref=e5083]:
+              - cell [ref=e5084]:
+                - button [ref=e5085] [cursor=pointer]:
+                  - img [ref=e5086]
+              - cell [ref=e5088]
+              - cell "Believe in yourself" [ref=e5089]:
+                - generic "Believe in yourself" [ref=e5090]
+              - cell "Markets" [ref=e5091]
+              - cell "מקומי בלבד ⚠" [ref=e5092]:
+                - generic [ref=e5093]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5094]
+              - cell "—" [ref=e5095]:
+                - generic [ref=e5096]: —
+              - cell [ref=e5097]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5099]:
+                  - img [ref=e5100]
+            - row "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90 Markets מקומי בלבד ⚠ — —" [ref=e5103]:
+              - cell [ref=e5104]:
+                - button [ref=e5105] [cursor=pointer]:
+                  - img [ref=e5106]
+              - cell [ref=e5108]
+              - cell "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90" [ref=e5109]:
+                - generic "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90" [ref=e5110]
+              - cell "Markets" [ref=e5111]
+              - cell "מקומי בלבד ⚠" [ref=e5112]:
+                - generic [ref=e5113]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5114]
+              - cell "—" [ref=e5115]:
+                - generic [ref=e5116]: —
+              - cell [ref=e5117]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5119]:
+                  - img [ref=e5120]
+            - row "אנליזת מבוססת AI איך משתמשים בזה Markets מקומי בלבד ⚠ — —" [ref=e5123]:
+              - cell [ref=e5124]:
+                - button [ref=e5125] [cursor=pointer]:
+                  - img [ref=e5126]
+              - cell [ref=e5128]
+              - cell "אנליזת מבוססת AI איך משתמשים בזה" [ref=e5129]:
+                - generic "אנליזת מבוססת AI איך משתמשים בזה" [ref=e5130]
+              - cell "Markets" [ref=e5131]
+              - cell "מקומי בלבד ⚠" [ref=e5132]:
+                - generic [ref=e5133]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5134]
+              - cell "—" [ref=e5135]:
+                - generic [ref=e5136]: —
+              - cell [ref=e5137]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5139]:
+                  - img [ref=e5140]
+            - row "צ׳אט GPT כמו שמעולם לא פגשתם! AI מקומי בלבד ⚠ — —" [ref=e5143]:
+              - cell [ref=e5144]:
+                - button [ref=e5145] [cursor=pointer]:
+                  - img [ref=e5146]
+              - cell [ref=e5148]
+              - cell "צ׳אט GPT כמו שמעולם לא פגשתם!" [ref=e5149]:
+                - generic "צ׳אט GPT כמו שמעולם לא פגשתם!" [ref=e5150]
+              - cell "AI" [ref=e5151]
+              - cell "מקומי בלבד ⚠" [ref=e5152]:
+                - generic [ref=e5153]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5154]
+              - cell "—" [ref=e5155]:
+                - generic [ref=e5156]: —
+              - cell [ref=e5157]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5159]:
+                  - img [ref=e5160]
+            - row "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד? Markets מקומי בלבד ⚠ — —" [ref=e5163]:
+              - cell [ref=e5164]:
+                - button [ref=e5165] [cursor=pointer]:
+                  - img [ref=e5166]
+              - cell [ref=e5168]
+              - cell "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?" [ref=e5169]:
+                - generic "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?" [ref=e5170]
+              - cell "Markets" [ref=e5171]
+              - cell "מקומי בלבד ⚠" [ref=e5172]:
+                - generic [ref=e5173]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5174]
+              - cell "—" [ref=e5175]:
+                - generic [ref=e5176]: —
+              - cell [ref=e5177]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5179]:
+                  - img [ref=e5180]
+            - row "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79 AI מקומי בלבד ⚠ — —" [ref=e5183]:
+              - cell [ref=e5184]:
+                - button [ref=e5185] [cursor=pointer]:
+                  - img [ref=e5186]
+              - cell [ref=e5188]
+              - cell "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79" [ref=e5189]:
+                - generic "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79" [ref=e5190]
+              - cell "AI" [ref=e5191]
+              - cell "מקומי בלבד ⚠" [ref=e5192]:
+                - generic [ref=e5193]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5194]
+              - cell "—" [ref=e5195]:
+                - generic [ref=e5196]: —
+              - cell [ref=e5197]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5199]:
+                  - img [ref=e5200]
+            - row "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77 AI מקומי בלבד ⚠ — —" [ref=e5203]:
+              - cell [ref=e5204]:
+                - button [ref=e5205] [cursor=pointer]:
+                  - img [ref=e5206]
+              - cell [ref=e5208]
+              - cell "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77" [ref=e5209]:
+                - generic "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77" [ref=e5210]
+              - cell "AI" [ref=e5211]
+              - cell "מקומי בלבד ⚠" [ref=e5212]:
+                - generic [ref=e5213]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5214]
+              - cell "—" [ref=e5215]:
+                - generic [ref=e5216]: —
+              - cell [ref=e5217]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5219]:
+                  - img [ref=e5220]
+            - row "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78 AI מקומי בלבד ⚠ — —" [ref=e5223]:
+              - cell [ref=e5224]:
+                - button [ref=e5225] [cursor=pointer]:
+                  - img [ref=e5226]
+              - cell [ref=e5228]
+              - cell "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78" [ref=e5229]:
+                - generic "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78" [ref=e5230]
+              - cell "AI" [ref=e5231]
+              - cell "מקומי בלבד ⚠" [ref=e5232]:
+                - generic [ref=e5233]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5234]
+              - cell "—" [ref=e5235]:
+                - generic [ref=e5236]: —
+              - cell [ref=e5237]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5239]:
+                  - img [ref=e5240]
+            - row "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74 AI מקומי בלבד ⚠ — —" [ref=e5243]:
+              - cell [ref=e5244]:
+                - button [ref=e5245] [cursor=pointer]:
+                  - img [ref=e5246]
+              - cell [ref=e5248]
+              - cell "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74" [ref=e5249]:
+                - generic "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74" [ref=e5250]
+              - cell "AI" [ref=e5251]
+              - cell "מקומי בלבד ⚠" [ref=e5252]:
+                - generic [ref=e5253]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5254]
+              - cell "—" [ref=e5255]:
+                - generic [ref=e5256]: —
+              - cell [ref=e5257]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5259]:
+                  - img [ref=e5260]
+            - row "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75 AI מקומי בלבד ⚠ — —" [ref=e5263]:
+              - cell [ref=e5264]:
+                - button [ref=e5265] [cursor=pointer]:
+                  - img [ref=e5266]
+              - cell [ref=e5268]
+              - cell "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75" [ref=e5269]:
+                - generic "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75" [ref=e5270]
+              - cell "AI" [ref=e5271]
+              - cell "מקומי בלבד ⚠" [ref=e5272]:
+                - generic [ref=e5273]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5274]
+              - cell "—" [ref=e5275]:
+                - generic [ref=e5276]: —
+              - cell [ref=e5277]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5279]:
+                  - img [ref=e5280]
+            - row "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....) Markets מקומי בלבד ⚠ — —" [ref=e5283]:
+              - cell [ref=e5284]:
+                - button [ref=e5285] [cursor=pointer]:
+                  - img [ref=e5286]
+              - cell [ref=e5288]
+              - cell "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)" [ref=e5289]:
+                - generic "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)" [ref=e5290]
+              - cell "Markets" [ref=e5291]
+              - cell "מקומי בלבד ⚠" [ref=e5292]:
+                - generic [ref=e5293]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5294]
+              - cell "—" [ref=e5295]:
+                - generic [ref=e5296]: —
+              - cell [ref=e5297]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5299]:
+                  - img [ref=e5300]
+            - row "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר AI מקומי בלבד ⚠ — —" [ref=e5303]:
+              - cell [ref=e5304]:
+                - button [ref=e5305] [cursor=pointer]:
+                  - img [ref=e5306]
+              - cell [ref=e5308]
+              - cell "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר" [ref=e5309]:
+                - generic "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר" [ref=e5310]
+              - cell "AI" [ref=e5311]
+              - cell "מקומי בלבד ⚠" [ref=e5312]:
+                - generic [ref=e5313]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5314]
+              - cell "—" [ref=e5315]:
+                - generic [ref=e5316]: —
+              - cell [ref=e5317]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5319]:
+                  - img [ref=e5320]
+            - 'row "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits AI מקומי בלבד ⚠ — —" [ref=e5323]':
+              - cell [ref=e5324]:
+                - button [ref=e5325] [cursor=pointer]:
+                  - img [ref=e5326]
+              - cell [ref=e5328]
+              - 'cell "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits" [ref=e5329]':
+                - 'generic "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits" [ref=e5330]'
+              - cell "AI" [ref=e5331]
+              - cell "מקומי בלבד ⚠" [ref=e5332]:
+                - generic [ref=e5333]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5334]
+              - cell "—" [ref=e5335]:
+                - generic [ref=e5336]: —
+              - cell [ref=e5337]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5339]:
+                  - img [ref=e5340]
+            - row "The FASTEST way to build apps with Claude Code (Opus 4.6) AI מקומי בלבד ⚠ — —" [ref=e5343]:
+              - cell [ref=e5344]:
+                - button [ref=e5345] [cursor=pointer]:
+                  - img [ref=e5346]
+              - cell [ref=e5348]
+              - cell "The FASTEST way to build apps with Claude Code (Opus 4.6)" [ref=e5349]:
+                - generic "The FASTEST way to build apps with Claude Code (Opus 4.6)" [ref=e5350]
+              - cell "AI" [ref=e5351]
+              - cell "מקומי בלבד ⚠" [ref=e5352]:
+                - generic [ref=e5353]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5354]
+              - cell "—" [ref=e5355]:
+                - generic [ref=e5356]: —
+              - cell [ref=e5357]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5359]:
+                  - img [ref=e5360]
+            - row "Anthropic's NEWEST Feature Just Made Claude Code 10x Better AI מקומי בלבד ⚠ — —" [ref=e5363]:
+              - cell [ref=e5364]:
+                - button [ref=e5365] [cursor=pointer]:
+                  - img [ref=e5366]
+              - cell [ref=e5368]
+              - cell "Anthropic's NEWEST Feature Just Made Claude Code 10x Better" [ref=e5369]:
+                - generic "Anthropic's NEWEST Feature Just Made Claude Code 10x Better" [ref=e5370]
+              - cell "AI" [ref=e5371]
+              - cell "מקומי בלבד ⚠" [ref=e5372]:
+                - generic [ref=e5373]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5374]
+              - cell "—" [ref=e5375]:
+                - generic [ref=e5376]: —
+              - cell [ref=e5377]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5379]:
+                  - img [ref=e5380]
+            - row "Claude Code + Nano Banana 2 = Apple-Level Websites AI מקומי בלבד ⚠ — —" [ref=e5383]:
+              - cell [ref=e5384]:
+                - button [ref=e5385] [cursor=pointer]:
+                  - img [ref=e5386]
+              - cell [ref=e5388]
+              - cell "Claude Code + Nano Banana 2 = Apple-Level Websites" [ref=e5389]:
+                - generic "Claude Code + Nano Banana 2 = Apple-Level Websites" [ref=e5390]
+              - cell "AI" [ref=e5391]
+              - cell "מקומי בלבד ⚠" [ref=e5392]:
+                - generic [ref=e5393]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5394]
+              - cell "—" [ref=e5395]:
+                - generic [ref=e5396]: —
+              - cell [ref=e5397]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5399]:
+                  - img [ref=e5400]
+            - row "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28 Markets מקומי בלבד ⚠ — —" [ref=e5403]:
+              - cell [ref=e5404]:
+                - button [ref=e5405] [cursor=pointer]:
+                  - img [ref=e5406]
+              - cell [ref=e5408]
+              - cell "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28" [ref=e5409]:
+                - generic "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28" [ref=e5410]
+              - cell "Markets" [ref=e5411]
+              - cell "מקומי בלבד ⚠" [ref=e5412]:
+                - generic [ref=e5413]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5414]
+              - cell "—" [ref=e5415]:
+                - generic [ref=e5416]: —
+              - cell [ref=e5417]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5419]:
+                  - img [ref=e5420]
+            - 'row "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27 Markets מקומי בלבד ⚠ — —" [ref=e5423]':
+              - cell [ref=e5424]:
+                - button [ref=e5425] [cursor=pointer]:
+                  - img [ref=e5426]
+              - cell [ref=e5428]
+              - 'cell "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27" [ref=e5429]':
+                - 'generic "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27" [ref=e5430]'
+              - cell "Markets" [ref=e5431]
+              - cell "מקומי בלבד ⚠" [ref=e5432]:
+                - generic [ref=e5433]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5434]
+              - cell "—" [ref=e5435]:
+                - generic [ref=e5436]: —
+              - cell [ref=e5437]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5439]:
+                  - img [ref=e5440]
+            - 'row "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26 Markets מקומי בלבד ⚠ — —" [ref=e5443]':
+              - cell [ref=e5444]:
+                - button [ref=e5445] [cursor=pointer]:
+                  - img [ref=e5446]
+              - cell [ref=e5448]
+              - 'cell "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26" [ref=e5449]':
+                - 'generic "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26" [ref=e5450]'
+              - cell "Markets" [ref=e5451]
+              - cell "מקומי בלבד ⚠" [ref=e5452]:
+                - generic [ref=e5453]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5454]
+              - cell "—" [ref=e5455]:
+                - generic [ref=e5456]: —
+              - cell [ref=e5457]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5459]:
+                  - img [ref=e5460]
+            - row "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25 Markets מקומי בלבד ⚠ — —" [ref=e5463]:
+              - cell [ref=e5464]:
+                - button [ref=e5465] [cursor=pointer]:
+                  - img [ref=e5466]
+              - cell [ref=e5468]
+              - cell "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25" [ref=e5469]:
+                - generic "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25" [ref=e5470]
+              - cell "Markets" [ref=e5471]
+              - cell "מקומי בלבד ⚠" [ref=e5472]:
+                - generic [ref=e5473]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5474]
+              - cell "—" [ref=e5475]:
+                - generic [ref=e5476]: —
+              - cell [ref=e5477]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5479]:
+                  - img [ref=e5480]
+            - row "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24 Markets מקומי בלבד ⚠ — —" [ref=e5483]:
+              - cell [ref=e5484]:
+                - button [ref=e5485] [cursor=pointer]:
+                  - img [ref=e5486]
+              - cell [ref=e5488]
+              - cell "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24" [ref=e5489]:
+                - generic "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24" [ref=e5490]
+              - cell "Markets" [ref=e5491]
+              - cell "מקומי בלבד ⚠" [ref=e5492]:
+                - generic [ref=e5493]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5494]
+              - cell "—" [ref=e5495]:
+                - generic [ref=e5496]: —
+              - cell [ref=e5497]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5499]:
+                  - img [ref=e5500]
+            - row "Stop Making Ugly Websites with Claude Code AI מקומי בלבד ⚠ — —" [ref=e5503]:
+              - cell [ref=e5504]:
+                - button [ref=e5505] [cursor=pointer]:
+                  - img [ref=e5506]
+              - cell [ref=e5508]
+              - cell "Stop Making Ugly Websites with Claude Code" [ref=e5509]:
+                - generic "Stop Making Ugly Websites with Claude Code" [ref=e5510]
+              - cell "AI" [ref=e5511]
+              - cell "מקומי בלבד ⚠" [ref=e5512]:
+                - generic [ref=e5513]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5514]
+              - cell "—" [ref=e5515]:
+                - generic [ref=e5516]: —
+              - cell [ref=e5517]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5519]:
+                  - img [ref=e5520]
+            - row "מפגש 3 - הקסמים של קלוד קוד AI מקומי בלבד ⚠ — —" [ref=e5523]:
+              - cell [ref=e5524]:
+                - button [ref=e5525] [cursor=pointer]:
+                  - img [ref=e5526]
+              - cell [ref=e5528]
+              - cell "מפגש 3 - הקסמים של קלוד קוד" [ref=e5529]:
+                - generic "מפגש 3 - הקסמים של קלוד קוד" [ref=e5530]
+              - cell "AI" [ref=e5531]
+              - cell "מקומי בלבד ⚠" [ref=e5532]:
+                - generic [ref=e5533]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5534]
+              - cell "—" [ref=e5535]:
+                - generic [ref=e5536]: —
+              - cell [ref=e5537]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5539]:
+                  - img [ref=e5540]
+            - row "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה! AI מקומי בלבד ⚠ — —" [ref=e5543]:
+              - cell [ref=e5544]:
+                - button [ref=e5545] [cursor=pointer]:
+                  - img [ref=e5546]
+              - cell [ref=e5548]
+              - cell "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!" [ref=e5549]:
+                - generic "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!" [ref=e5550]
+              - cell "AI" [ref=e5551]
+              - cell "מקומי בלבד ⚠" [ref=e5552]:
+                - generic [ref=e5553]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5554]
+              - cell "—" [ref=e5555]:
+                - generic [ref=e5556]: —
+              - cell [ref=e5557]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5559]:
+                  - img [ref=e5560]
+            - row "מפגש 2 - התקנת סקילים + בניית מצגות AI מקומי בלבד ⚠ — —" [ref=e5563]:
+              - cell [ref=e5564]:
+                - button [ref=e5565] [cursor=pointer]:
+                  - img [ref=e5566]
+              - cell [ref=e5568]
+              - cell "מפגש 2 - התקנת סקילים + בניית מצגות" [ref=e5569]:
+                - generic "מפגש 2 - התקנת סקילים + בניית מצגות" [ref=e5570]
+              - cell "AI" [ref=e5571]
+              - cell "מקומי בלבד ⚠" [ref=e5572]:
+                - generic [ref=e5573]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5574]
+              - cell "—" [ref=e5575]:
+                - generic [ref=e5576]: —
+              - cell [ref=e5577]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5579]:
+                  - img [ref=e5580]
+            - row "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות Markets מקומי בלבד ⚠ — —" [ref=e5583]:
+              - cell [ref=e5584]:
+                - button [ref=e5585] [cursor=pointer]:
+                  - img [ref=e5586]
+              - cell [ref=e5588]
+              - cell "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות" [ref=e5589]:
+                - generic "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות" [ref=e5590]
+              - cell "Markets" [ref=e5591]
+              - cell "מקומי בלבד ⚠" [ref=e5592]:
+                - generic [ref=e5593]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5594]
+              - cell "—" [ref=e5595]:
+                - generic [ref=e5596]: —
+              - cell [ref=e5597]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5599]:
+                  - img [ref=e5600]
+            - 'row "שאלות ותשובות במסחר #1 Markets מקומי בלבד ⚠ — —" [ref=e5603]':
+              - cell [ref=e5604]:
+                - button [ref=e5605] [cursor=pointer]:
+                  - img [ref=e5606]
+              - cell [ref=e5608]
+              - 'cell "שאלות ותשובות במסחר #1" [ref=e5609]':
+                - 'generic "שאלות ותשובות במסחר #1" [ref=e5610]'
+              - cell "Markets" [ref=e5611]
+              - cell "מקומי בלבד ⚠" [ref=e5612]:
+                - generic [ref=e5613]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5614]
+              - cell "—" [ref=e5615]:
+                - generic [ref=e5616]: —
+              - cell [ref=e5617]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5619]:
+                  - img [ref=e5620]
+            - row "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....) Markets מקומי בלבד ⚠ — —" [ref=e5623]:
+              - cell [ref=e5624]:
+                - button [ref=e5625] [cursor=pointer]:
+                  - img [ref=e5626]
+              - cell [ref=e5628]
+              - cell "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)" [ref=e5629]:
+                - generic "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)" [ref=e5630]
+              - cell "Markets" [ref=e5631]
+              - cell "מקומי בלבד ⚠" [ref=e5632]:
+                - generic [ref=e5633]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5634]
+              - cell "—" [ref=e5635]:
+                - generic [ref=e5636]: —
+              - cell [ref=e5637]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5639]:
+                  - img [ref=e5640]
+            - row "היומן לא משקר 1 Markets מקומי בלבד ⚠ — —" [ref=e5643]:
+              - cell [ref=e5644]:
+                - button [ref=e5645] [cursor=pointer]:
+                  - img [ref=e5646]
+              - cell [ref=e5648]
+              - cell "היומן לא משקר 1" [ref=e5649]:
+                - generic "היומן לא משקר 1" [ref=e5650]
+              - cell "Markets" [ref=e5651]
+              - cell "מקומי בלבד ⚠" [ref=e5652]:
+                - generic [ref=e5653]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5654]
+              - cell "—" [ref=e5655]:
+                - generic [ref=e5656]: —
+              - cell [ref=e5657]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5659]:
+                  - img [ref=e5660]
+            - row "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook? Dev מקומי בלבד ⚠ — —" [ref=e5663]:
+              - cell [ref=e5664]:
+                - button [ref=e5665] [cursor=pointer]:
+                  - img [ref=e5666]
+              - cell [ref=e5668]
+              - cell "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?" [ref=e5669]:
+                - generic "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?" [ref=e5670]
+              - cell "Dev" [ref=e5671]
+              - cell "מקומי בלבד ⚠" [ref=e5672]:
+                - generic [ref=e5673]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5674]
+              - cell "—" [ref=e5675]:
+                - generic [ref=e5676]: —
+              - cell [ref=e5677]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5679]:
+                  - img [ref=e5680]
+            - row "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט? Dev מקומי בלבד ⚠ — —" [ref=e5683]:
+              - cell [ref=e5684]:
+                - button [ref=e5685] [cursor=pointer]:
+                  - img [ref=e5686]
+              - cell [ref=e5688]
+              - cell "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?" [ref=e5689]:
+                - generic "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?" [ref=e5690]
+              - cell "Dev" [ref=e5691]
+              - cell "מקומי בלבד ⚠" [ref=e5692]:
+                - generic [ref=e5693]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5694]
+              - cell "—" [ref=e5695]:
+                - generic [ref=e5696]: —
+              - cell [ref=e5697]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5699]:
+                  - img [ref=e5700]
+            - row "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP Dev מקומי בלבד ⚠ — —" [ref=e5703]:
+              - cell [ref=e5704]:
+                - button [ref=e5705] [cursor=pointer]:
+                  - img [ref=e5706]
+              - cell [ref=e5708]
+              - cell "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP" [ref=e5709]:
+                - generic "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP" [ref=e5710]
+              - cell "Dev" [ref=e5711]
+              - cell "מקומי בלבד ⚠" [ref=e5712]:
+                - generic [ref=e5713]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5714]
+              - cell "—" [ref=e5715]:
+                - generic [ref=e5716]: —
+              - cell [ref=e5717]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5719]:
+                  - img [ref=e5720]
+            - row "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE) Markets מקומי בלבד ⚠ — —" [ref=e5723]:
+              - cell [ref=e5724]:
+                - button [ref=e5725] [cursor=pointer]:
+                  - img [ref=e5726]
+              - cell [ref=e5728]
+              - cell "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)" [ref=e5729]:
+                - generic "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)" [ref=e5730]
+              - cell "Markets" [ref=e5731]
+              - cell "מקומי בלבד ⚠" [ref=e5732]:
+                - generic [ref=e5733]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5734]
+              - cell "—" [ref=e5735]:
+                - generic [ref=e5736]: —
+              - cell [ref=e5737]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5739]:
+                  - img [ref=e5740]
+            - row "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..) Markets מקומי בלבד ⚠ — —" [ref=e5743]:
+              - cell [ref=e5744]:
+                - button [ref=e5745] [cursor=pointer]:
+                  - img [ref=e5746]
+              - cell [ref=e5748]
+              - cell "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)" [ref=e5749]:
+                - generic "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)" [ref=e5750]
+              - cell "Markets" [ref=e5751]
+              - cell "מקומי בלבד ⚠" [ref=e5752]:
+                - generic [ref=e5753]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5754]
+              - cell "—" [ref=e5755]:
+                - generic [ref=e5756]: —
+              - cell [ref=e5757]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5759]:
+                  - img [ref=e5760]
+            - row "SDR התקנה והפעלה ראשונית SD 480p Dev מקומי בלבד ⚠ — —" [ref=e5763]:
+              - cell [ref=e5764]:
+                - button [ref=e5765] [cursor=pointer]:
+                  - img [ref=e5766]
+              - cell [ref=e5768]
+              - cell "SDR התקנה והפעלה ראשונית SD 480p" [ref=e5769]:
+                - generic "SDR התקנה והפעלה ראשונית SD 480p" [ref=e5770]
+              - cell "Dev" [ref=e5771]
+              - cell "מקומי בלבד ⚠" [ref=e5772]:
+                - generic [ref=e5773]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5774]
+              - cell "—" [ref=e5775]:
+                - generic [ref=e5776]: —
+              - cell [ref=e5777]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5779]:
+                  - img [ref=e5780]
+            - row "רן בר זיק בשש בכאן 27 10 Dev מקומי בלבד ⚠ — —" [ref=e5783]:
+              - cell [ref=e5784]:
+                - button [ref=e5785] [cursor=pointer]:
+                  - img [ref=e5786]
+              - cell [ref=e5788]
+              - cell "רן בר זיק בשש בכאן 27 10" [ref=e5789]:
+                - generic "רן בר זיק בשש בכאן 27 10" [ref=e5790]
+              - cell "Dev" [ref=e5791]
+              - cell "מקומי בלבד ⚠" [ref=e5792]:
+                - generic [ref=e5793]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5794]
+              - cell "—" [ref=e5795]:
+                - generic [ref=e5796]: —
+              - cell [ref=e5797]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5799]:
+                  - img [ref=e5800]
+            - 'row "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever) Markets מקומי בלבד ⚠ — —" [ref=e5803]':
+              - cell [ref=e5804]:
+                - button [ref=e5805] [cursor=pointer]:
+                  - img [ref=e5806]
+              - cell [ref=e5808]
+              - 'cell "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)" [ref=e5809]':
+                - 'generic "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)" [ref=e5810]'
+              - cell "Markets" [ref=e5811]
+              - cell "מקומי בלבד ⚠" [ref=e5812]:
+                - generic [ref=e5813]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5814]
+              - cell "—" [ref=e5815]:
+                - generic [ref=e5816]: —
+              - cell [ref=e5817]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5819]:
+                  - img [ref=e5820]
+            - row "NY Session - Futures Trading 28.4.25 Markets מקומי בלבד ⚠ — —" [ref=e5823]:
+              - cell [ref=e5824]:
+                - button [ref=e5825] [cursor=pointer]:
+                  - img [ref=e5826]
+              - cell [ref=e5828]
+              - cell "NY Session - Futures Trading 28.4.25" [ref=e5829]:
+                - generic "NY Session - Futures Trading 28.4.25" [ref=e5830]
+              - cell "Markets" [ref=e5831]
+              - cell "מקומי בלבד ⚠" [ref=e5832]:
+                - generic [ref=e5833]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5834]
+              - cell "—" [ref=e5835]:
+                - generic [ref=e5836]: —
+              - cell [ref=e5837]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5839]:
+                  - img [ref=e5840]
+            - row "חכם במסחר Markets מקומי בלבד ⚠ — —" [ref=e5843]:
+              - cell [ref=e5844]:
+                - button [ref=e5845] [cursor=pointer]:
+                  - img [ref=e5846]
+              - cell [ref=e5848]
+              - cell "חכם במסחר" [ref=e5849]:
+                - generic "חכם במסחר" [ref=e5850]
+              - cell "Markets" [ref=e5851]
+              - cell "מקומי בלבד ⚠" [ref=e5852]:
+                - generic [ref=e5853]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5854]
+              - cell "—" [ref=e5855]:
+                - generic [ref=e5856]: —
+              - cell [ref=e5857]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5859]:
+                  - img [ref=e5860]
+            - row "Mr beast vs AI - Who will win ?? AI מקומי בלבד ⚠ — —" [ref=e5863]:
+              - cell [ref=e5864]:
+                - button [ref=e5865] [cursor=pointer]:
+                  - img [ref=e5866]
+              - cell [ref=e5868]
+              - cell "Mr beast vs AI - Who will win ??" [ref=e5869]:
+                - generic "Mr beast vs AI - Who will win ??" [ref=e5870]
+              - cell "AI" [ref=e5871]
+              - cell "מקומי בלבד ⚠" [ref=e5872]:
+                - generic [ref=e5873]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5874]
+              - cell "—" [ref=e5875]:
+                - generic [ref=e5876]: —
+              - cell [ref=e5877]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5879]:
+                  - img [ref=e5880]
+            - row "AI got High on weed and this happened..... AI מקומי בלבד ⚠ — —" [ref=e5883]:
+              - cell [ref=e5884]:
+                - button [ref=e5885] [cursor=pointer]:
+                  - img [ref=e5886]
+              - cell [ref=e5888]
+              - cell "AI got High on weed and this happened....." [ref=e5889]:
+                - generic "AI got High on weed and this happened....." [ref=e5890]
+              - cell "AI" [ref=e5891]
+              - cell "מקומי בלבד ⚠" [ref=e5892]:
+                - generic [ref=e5893]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5894]
+              - cell "—" [ref=e5895]:
+                - generic [ref=e5896]: —
+              - cell [ref=e5897]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5899]:
+                  - img [ref=e5900]
+            - 'row "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity AI מקומי בלבד ⚠ — —" [ref=e5903]':
+              - cell [ref=e5904]:
+                - button [ref=e5905] [cursor=pointer]:
+                  - img [ref=e5906]
+              - cell [ref=e5908]
+              - 'cell "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity" [ref=e5909]':
+                - 'generic "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity" [ref=e5910]'
+              - cell "AI" [ref=e5911]
+              - cell "מקומי בלבד ⚠" [ref=e5912]:
+                - generic [ref=e5913]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5914]
+              - cell "—" [ref=e5915]:
+                - generic [ref=e5916]: —
+              - cell [ref=e5917]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5919]:
+                  - img [ref=e5920]
+            - 'row "AI calculates humanities future #shorts #ai #future #fyp AI מקומי בלבד ⚠ — —" [ref=e5923]':
+              - cell [ref=e5924]:
+                - button [ref=e5925] [cursor=pointer]:
+                  - img [ref=e5926]
+              - cell [ref=e5928]
+              - 'cell "AI calculates humanities future #shorts #ai #future #fyp" [ref=e5929]':
+                - 'generic "AI calculates humanities future #shorts #ai #future #fyp" [ref=e5930]'
+              - cell "AI" [ref=e5931]
+              - cell "מקומי בלבד ⚠" [ref=e5932]:
+                - generic [ref=e5933]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5934]
+              - cell "—" [ref=e5935]:
+                - generic [ref=e5936]: —
+              - cell [ref=e5937]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5939]:
+                  - img [ref=e5940]
+            - 'row "What this AI knows about time travel!! #shorts #ai #fyp #timetravel AI מקומי בלבד ⚠ — —" [ref=e5943]':
+              - cell [ref=e5944]:
+                - button [ref=e5945] [cursor=pointer]:
+                  - img [ref=e5946]
+              - cell [ref=e5948]
+              - 'cell "What this AI knows about time travel!! #shorts #ai #fyp #timetravel" [ref=e5949]':
+                - 'generic "What this AI knows about time travel!! #shorts #ai #fyp #timetravel" [ref=e5950]'
+              - cell "AI" [ref=e5951]
+              - cell "מקומי בלבד ⚠" [ref=e5952]:
+                - generic [ref=e5953]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5954]
+              - cell "—" [ref=e5955]:
+                - generic [ref=e5956]: —
+              - cell [ref=e5957]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5959]:
+                  - img [ref=e5960]
+            - row "Daniela seven weeks old Markets מקומי בלבד ⚠ — —" [ref=e5963]:
+              - cell [ref=e5964]:
+                - button [ref=e5965] [cursor=pointer]:
+                  - img [ref=e5966]
+              - cell [ref=e5968]
+              - cell "Daniela seven weeks old" [ref=e5969]:
+                - generic "Daniela seven weeks old" [ref=e5970]
+              - cell "Markets" [ref=e5971]
+              - cell "מקומי בלבד ⚠" [ref=e5972]:
+                - generic [ref=e5973]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5974]
+              - cell "—" [ref=e5975]:
+                - generic [ref=e5976]: —
+              - cell [ref=e5977]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5979]:
+                  - img [ref=e5980]
+            - row "Daniela one week old Markets מקומי בלבד ⚠ — —" [ref=e5983]:
+              - cell [ref=e5984]:
+                - button [ref=e5985] [cursor=pointer]:
+                  - img [ref=e5986]
+              - cell [ref=e5988]
+              - cell "Daniela one week old" [ref=e5989]:
+                - generic "Daniela one week old" [ref=e5990]
+              - cell "Markets" [ref=e5991]
+              - cell "מקומי בלבד ⚠" [ref=e5992]:
+                - generic [ref=e5993]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e5994]
+              - cell "—" [ref=e5995]:
+                - generic [ref=e5996]: —
+              - cell [ref=e5997]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e5999]:
+                  - img [ref=e6000]
+            - row "Helpdesk Markets מקומי בלבד ⚠ — —" [ref=e6003]:
+              - cell [ref=e6004]:
+                - button [ref=e6005] [cursor=pointer]:
+                  - img [ref=e6006]
+              - cell [ref=e6008]
+              - cell "Helpdesk" [ref=e6009]:
+                - generic "Helpdesk" [ref=e6010]
+              - cell "Markets" [ref=e6011]
+              - cell "מקומי בלבד ⚠" [ref=e6012]:
+                - generic [ref=e6013]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e6014]
+              - cell "—" [ref=e6015]:
+                - generic [ref=e6016]: —
+              - cell [ref=e6017]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e6019]:
+                  - img [ref=e6020]
+            - row "OTD2006 Markets מקומי בלבד ⚠ — —" [ref=e6023]:
+              - cell [ref=e6024]:
+                - button [ref=e6025] [cursor=pointer]:
+                  - img [ref=e6026]
+              - cell [ref=e6028]
+              - cell "OTD2006" [ref=e6029]:
+                - generic "OTD2006" [ref=e6030]
+              - cell "Markets" [ref=e6031]
+              - cell "מקומי בלבד ⚠" [ref=e6032]:
+                - generic [ref=e6033]: מקומי בלבד
+                - text: ⚠
+              - cell "—" [ref=e6034]
+              - cell "—" [ref=e6035]:
+                - generic [ref=e6036]: —
+              - cell [ref=e6037]:
+                - button "אין ניתוח מקומי" [disabled] [ref=e6039]:
+                  - img [ref=e6040]
+        - paragraph [ref=e6043]: מציג 62 מתוך 62 סרטונים מנותחים
+  - region "Notifications alt+T"

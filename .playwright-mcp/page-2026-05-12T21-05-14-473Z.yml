@@ -1,0 +1,406 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - button:
+            - generic:
+              - img
+            - generic:
+              - paragraph: YouTube Mentor
+              - paragraph: מסך ראשי
+        - navigation:
+          - generic:
+            - paragraph: ניהול תוכן
+            - button:
+              - img
+              - generic: כל הסרטונים
+            - button:
+              - img
+              - generic: שמורים
+            - button:
+              - img
+              - generic: תור למידה
+          - generic:
+            - paragraph: מרחב הידע
+            - button:
+              - img
+              - generic: ספריית ידע
+            - button:
+              - img
+              - generic: חיפוש ידע
+            - button:
+              - img
+              - generic: Workspace
+          - generic:
+            - generic:
+              - button: הברינים שלי
+              - button:
+                - img
+                - text: נושא חדש
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בינה מלאכותית
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: שוק ההון
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח תוכנה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: מסחר יומי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: React
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Base44
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Prompt Engineering
+                  - button:
+                    - img
+                  - img
+        - generic:
+          - button:
+            - img
+            - generic: 🧠 שמור למוח
+          - button:
+            - img
+            - generic: מנטור חדש
+          - button:
+            - img
+            - generic: ניהול
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - generic: "מסנן: עברו סיכום"
+                    - img
+                  - generic: 0 סרטונים
+                - generic:
+                  - button:
+                    - img
+                    - text: סריקה ידנית
+                  - button:
+                    - img
+                    - generic: מצב כהה
+                  - button [disabled]:
+                    - img
+                    - text: מחק הכל
+                  - button:
+                    - img
+                    - text: רענון
+          - main:
+            - generic:
+              - generic:
+                - button:
+                  - paragraph: היום
+                  - paragraph: "60"
+                  - paragraph: סרטונים חדשים
+                - button:
+                  - paragraph: סרטונים חדשים
+                  - paragraph: "59"
+                  - paragraph: טרם נותחו
+                - button:
+                  - paragraph: עברו סיכום
+                  - paragraph: "0"
+                  - paragraph: נותחו בהצלחה
+                - button:
+                  - paragraph: סה״כ שמורים
+                  - paragraph: "60"
+                  - paragraph: ב-30 הימים האחרונים
+                - button:
+                  - paragraph: 📌 לצמיתות
+                  - paragraph: "0"
+                  - paragraph: שמורים לצמיתות
+            - generic:
+              - button:
+                - img
+                - generic: הוסף סרטון
+              - generic:
+                - generic:
+                  - img
+                  - textbox:
+                    - /placeholder: חיפוש לפי כותרת...
+                - combobox:
+                  - generic: כל המנטורים
+                  - img
+                - combobox:
+                  - generic: כל הקטגוריות
+                  - img
+              - button:
+                - generic:
+                  - img
+                - generic: מרכז הלמידה
+                - generic: 0% · 0
+                - generic:
+                  - img
+                  - text: התחל
+              - button: בחר סרטונים
+            - generic: אין סרטונים להציג
+    - region "Notifications alt+T"
+  - dialog "QA — סרטון בדיקה עם ידע אטומי" [ref=e2384]:
+    - generic [ref=e2385]:
+      - heading "QA — סרטון בדיקה עם ידע אטומי" [level=2]
+      - paragraph: צפייה בפרטי הסרטון, סיכום, פרקים, נקודות מפתח והערות.
+    - button [ref=e2386] [cursor=pointer]:
+      - img [ref=e2387]
+    - button "מצב כהה" [ref=e2390] [cursor=pointer]:
+      - img [ref=e2391]
+      - generic [ref=e2393]: מצב כהה
+    - generic [ref=e2397]:
+      - generic [ref=e2398]:
+        - generic [ref=e2399]:
+          - generic [ref=e2402]: פרטי וידאו
+          - generic [ref=e2403]:
+            - generic [ref=e2404]:
+              - generic [ref=e2405]: ערוץ
+              - generic "Test Channel" [ref=e2407]
+            - generic [ref=e2408]:
+              - generic [ref=e2409]: תת כותרת
+              - generic "סיכום קצר לבדיקה של הממשק" [ref=e2410]
+        - generic [ref=e2411]:
+          - generic [ref=e2412]:
+            - generic [ref=e2413]: ניתוח AI
+            - generic [ref=e2415]:
+              - generic [ref=e2417]: "איכות:"
+              - generic [ref=e2418]: לא נותח
+              - img [ref=e2419]
+          - generic [ref=e2422]:
+            - generic [ref=e2423]: טרם נשמר ניתוח AI
+            - generic [ref=e2424]: בחר מודל לניתוח
+        - generic [ref=e2425]:
+          - generic [ref=e2426]:
+            - generic [ref=e2427]: סטטוס תמלול
+            - generic [ref=e2428]: אין תמלול usable
+          - generic [ref=e2430]:
+            - generic [ref=e2431]: אין תמלול זמין — אפשר להדביק תמלול ידני או לנסות למשוך תמלול מ-YouTube
+            - generic [ref=e2432]:
+              - button "הדבק תמלול ידני" [ref=e2433] [cursor=pointer]:
+                - img [ref=e2434]
+                - text: הדבק תמלול ידני
+              - button "נסה תמלול YouTube" [ref=e2437] [cursor=pointer]
+        - generic [ref=e2438]:
+          - generic [ref=e2439]:
+            - generic [ref=e2440]: סטטוס למידה
+            - link "פתח YouTube" [ref=e2441] [cursor=pointer]:
+              - /url: https://youtube.com/watch?v=QAtest001
+              - img [ref=e2442]
+              - text: פתח YouTube
+          - generic [ref=e2446]:
+            - generic [ref=e2448]:
+              - generic [ref=e2449]:
+                - textbox "הוסף הערה..." [ref=e2450]
+                - generic [ref=e2451]:
+                  - button "שמור הערה (Enter)" [disabled] [ref=e2452]:
+                    - img [ref=e2453]
+                  - button "העלה תמונה" [ref=e2456] [cursor=pointer]:
+                    - img [ref=e2457]
+              - paragraph [ref=e2461]:
+                - img [ref=e2462]
+                - text: אפשר להדביק צילום מסך עם Ctrl+V
+            - generic [ref=e2466]:
+              - button "העתק קישור" [ref=e2467] [cursor=pointer]:
+                - img [ref=e2468]
+                - text: העתק קישור
+              - link "NotebookLM" [ref=e2471] [cursor=pointer]:
+                - /url: https://notebooklm.google.com/
+                - img [ref=e2472]
+                - text: NotebookLM
+              - button "לצמיתות" [ref=e2476] [cursor=pointer]:
+                - img [ref=e2477]
+                - text: לצמיתות
+            - generic [ref=e2479]:
+              - generic [ref=e2480]:
+                - generic [ref=e2481]: Workspace
+                - generic [ref=e2482]: Not saved yet
+              - button "פתח ב-Workspace" [ref=e2483] [cursor=pointer]:
+                - img [ref=e2484]
+                - text: פתח ב-Workspace
+              - generic [ref=e2487]:
+                - button "General ✦" [ref=e2490] [cursor=pointer]:
+                  - generic [ref=e2491]: General ✦
+                  - img [ref=e2492]
+                - generic [ref=e2494]:
+                  - generic "General/Learnings/L-qa.md" [ref=e2495]:
+                    - img [ref=e2496]
+                    - generic [ref=e2498]: General/Learnings/L-qa.md
+                  - button "העתק" [ref=e2499] [cursor=pointer]:
+                    - img [ref=e2500]
+                    - text: העתק
+                  - button ".md" [ref=e2503] [cursor=pointer]:
+                    - img [ref=e2504]
+                    - text: .md
+      - generic [ref=e2507]:
+        - complementary [ref=e2508]:
+          - generic [ref=e2509]:
+            - generic [ref=e2510]: פעולות AI
+            - generic [ref=e2511]:
+              - button "נתח עם קלוד" [ref=e2512] [cursor=pointer]:
+                - img [ref=e2513]
+                - text: נתח עם קלוד
+              - button "נתח עם Gemini" [ref=e2515] [cursor=pointer]:
+                - img [ref=e2516]
+                - text: נתח עם Gemini
+              - button "נתח עם llama3.2" [ref=e2518] [cursor=pointer]:
+                - img [ref=e2519]
+                - text: נתח עם llama3.2
+              - button "בדוק llama3.2" [ref=e2521] [cursor=pointer]:
+                - img [ref=e2522]
+                - text: בדוק llama3.2
+              - generic [ref=e2524]: "המודל llama3.2 לא מותקן. הרץ: ollama pull llama3.2"
+              - generic [ref=e2525]:
+                - generic [ref=e2526]:
+                  - generic [ref=e2527]: סטטוס Ollama מקומי
+                  - generic [ref=e2528]:
+                    - img [ref=e2529]
+                    - text: דורש בדיקה
+                - generic [ref=e2531]:
+                  - generic [ref=e2532]:
+                    - generic [ref=e2533]: המודל llama3.2 לא מותקן
+                    - generic [ref=e2534]:
+                      - generic [ref=e2535]: ollama pull llama3.2
+                      - button "העתק" [ref=e2536] [cursor=pointer]:
+                        - img [ref=e2537]
+                        - text: העתק
+                  - button "בדיקת תגובה מהמודל" [ref=e2540] [cursor=pointer]:
+                    - img [ref=e2541]
+                    - text: בדיקת תגובה מהמודל
+        - generic [ref=e2544]:
+          - generic [ref=e2546]:
+            - heading "QA — סרטון בדיקה עם ידע אטומי" [level=2] [ref=e2547]
+            - button "שמור" [ref=e2548] [cursor=pointer]:
+              - img [ref=e2549]
+          - generic [ref=e2552]:
+            - img "QA — סרטון בדיקה עם ידע אטומי" [ref=e2553]
+            - link [ref=e2554] [cursor=pointer]:
+              - /url: https://youtube.com/watch?v=QAtest001
+              - img [ref=e2556]
+          - generic [ref=e2560]:
+            - tablist [ref=e2562]:
+              - tab "סיכום" [active] [selected] [ref=e2563] [cursor=pointer]
+              - tab "ידע שימושי" [ref=e2564] [cursor=pointer]
+              - tab "פרקים" [ref=e2565] [cursor=pointer]
+              - tab "הערות" [ref=e2566] [cursor=pointer]
+              - tab "שמור למוח" [ref=e2567] [cursor=pointer]
+            - tabpanel "סיכום" [ref=e2597]:
+              - generic [ref=e2599]:
+                - heading "סיכום קצר" [level=4] [ref=e2600]
+                - paragraph [ref=e2601]: סיכום קצר לבדיקה של הממשק
+              - generic [ref=e2602]:
+                - heading "סיכום מלא" [level=4] [ref=e2603]
+                - paragraph [ref=e2604]: סיכום מלא לבדיקה. הסרטון מסביר מספר נקודות חשובות בנושא המסחר בשוק ההון.
+              - generic [ref=e2605]:
+                - heading "נקודות מפתח" [level=4] [ref=e2606]
+                - list [ref=e2607]:
+                  - listitem [ref=e2608]:
+                    - generic [ref=e2610]: "נקודה 1: פסיכולוגיה חשובה לא פחות מהטכניקה"
+              - generic [ref=e2611]:
+                - generic [ref=e2612]:
+                  - generic [ref=e2613]:
+                    - heading "פרקי הסרטון" [level=4] [ref=e2614]
+                    - generic [ref=e2615]: מבוסס תמלול
+                    - generic [ref=e2616]: ניווט זמין
+                  - generic [ref=e2617]: ניווט לפי timestamp כאשר זמין
+                - generic [ref=e2618]:
+                  - button "פתיחה וסקירה מבוא לנושא 0:00" [ref=e2619] [cursor=pointer]:
+                    - generic [ref=e2620]:
+                      - generic [ref=e2621]:
+                        - generic [ref=e2622]: פתיחה וסקירה
+                        - generic [ref=e2623]: מבוא לנושא
+                      - generic [ref=e2624]: 0:00
+                  - button "ניתוח Volume כיצד לקרוא Volume 2:00" [ref=e2625] [cursor=pointer]:
+                    - generic [ref=e2626]:
+                      - generic [ref=e2627]:
+                        - generic [ref=e2628]: ניתוח Volume
+                        - generic [ref=e2629]: כיצד לקרוא Volume
+                      - generic [ref=e2630]: 2:00
+    - button "סגור" [ref=e2592] [cursor=pointer]:
+      - img [ref=e2593]
+      - generic [ref=e2596]: סגור

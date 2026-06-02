@@ -1,0 +1,7 @@
+[     147ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[     225ms] [INFO] [useVideos] local-first — 96 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[     343ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779568841594:48
+[  472342ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[  474122ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[  474208ms] [INFO] [useVideos] local-first — 96 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  474302ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:48

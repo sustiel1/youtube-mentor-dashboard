@@ -1,0 +1,281 @@
+[     149ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[     212ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[     278ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778494145900:49
+[ 2337025ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[ 2337042ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[13648673ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[13649392ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[13649685ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778494145900:49
+[13649781ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[13649781ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JkJg7Xv0cdE/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BhDllZgpBW8/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/FsYuFonZvO4/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/bK2fIxi3Jic/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/rJHO_YKbqDc/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/xiJ-zby58C8/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/MTOXbSdCO78/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/GkGPa8MrAVQ/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/42n4hit8QcA/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/958YOSahyNw/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/s-Y1QCSck1w/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/YUDj_14s7_M/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BrdXQphx48o/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/K18rRr5YsOM/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w1RJ0x_6CUo/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PEOAj9w4bCI/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/I_msgqMsplg/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/6-GYJWvTkak/hqdefault.jpg:0
+[13649782ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lHXtPkhElw4/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ViilNVorlQo/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/md-ie6D_AZc/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/AoGWOB7VchI/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8N_cx2BEeY0/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mxjk0KuEQEo/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/vbtUczknubo/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lFIbFLGcB5U/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/NNv80mMzFDs/hqdefault.jpg:0
+[13649783ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/_fqr8ZtGNsc/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JgABZY58m2Q/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/azhWSShMSI8/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/R64vgkpVo9w/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/4nyq318epjQ/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/3fYDBEWkL1s/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JMae4CU7D8Q/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/a0ENfAXKa-Y/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/Svomq4WGRqk/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w8JlCAn-tS0/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o1a4h8QHWWA/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/DV0CokdUMRE/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/As6Sr3OzhzE/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/TcoSQ1374J0/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VOw6R1j67i0/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/HFNgmi5jAic/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VTMRNNRbQ40/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8qzFObhqMVk/hqdefault.jpg:0
+[13649784ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hrujf6qaTPM/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/amAO41AZWx0/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ZaJfrlOYnXc/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/un4_fc9x_bc/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/CdOiURGDXHs/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/9bLgYFndOfo/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ocmHaK0Ic74/hqdefault.jpg:0
+[13649785ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mDWkyiHE1DA/hqdefault.jpg:0
+[14028901ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[14115027ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[16446426ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[16448305ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[16448425ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[16448520ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx:49
+[16452084ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[16453675ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[16453754ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[16453880ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx:49
+[16460522ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[16462078ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[16462137ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[16462252ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx:49
+[18266816ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[18266831ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[20465657ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[20465922ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778510732771:23
+[20466289ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778510762181:49
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BrdXQphx48o/hqdefault.jpg:0
+[20466330ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/R64vgkpVo9w/hqdefault.jpg:0
+[20525415ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778510732771:23
+[20704017ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[20705951ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[20706115ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[20706264ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx:49
+[21380950ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[24003136ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[24003154ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[24383755ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[24384058ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778515636544:23
+[24384400ms] [LOG] [rss] fetching {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384441ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[24384441ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[24384441ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[24384441ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[24384441ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BhDllZgpBW8/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/42n4hit8QcA/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JkJg7Xv0cdE/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/FsYuFonZvO4/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/bK2fIxi3Jic/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/rJHO_YKbqDc/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/GkGPa8MrAVQ/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/MTOXbSdCO78/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/xiJ-zby58C8/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/YUDj_14s7_M/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/s-Y1QCSck1w/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/K18rRr5YsOM/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/958YOSahyNw/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PEOAj9w4bCI/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/I_msgqMsplg/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w1RJ0x_6CUo/hqdefault.jpg:0
+[24384442ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/6-GYJWvTkak/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lHXtPkhElw4/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/md-ie6D_AZc/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ViilNVorlQo/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/AoGWOB7VchI/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8N_cx2BEeY0/hqdefault.jpg:0
+[24384443ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mxjk0KuEQEo/hqdefault.jpg:0
+[24384444ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/vbtUczknubo/hqdefault.jpg:0
+[24384444ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lFIbFLGcB5U/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/NNv80mMzFDs/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/_fqr8ZtGNsc/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/R64vgkpVo9w/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/azhWSShMSI8/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JgABZY58m2Q/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JMae4CU7D8Q/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/3fYDBEWkL1s/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/4nyq318epjQ/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/a0ENfAXKa-Y/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w8JlCAn-tS0/hqdefault.jpg:0
+[24384445ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/Svomq4WGRqk/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/As6Sr3OzhzE/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/DV0CokdUMRE/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o1a4h8QHWWA/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VOw6R1j67i0/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/TcoSQ1374J0/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/HFNgmi5jAic/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VTMRNNRbQ40/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8qzFObhqMVk/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hrujf6qaTPM/hqdefault.jpg:0
+[24384446ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/un4_fc9x_bc/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ZaJfrlOYnXc/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/amAO41AZWx0/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/CdOiURGDXHs/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/9bLgYFndOfo/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ocmHaK0Ic74/hqdefault.jpg:0
+[24384450ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mDWkyiHE1DA/hqdefault.jpg:0
+[24384653ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCSxjNbPriyBh9RNl_QNSAtw:0
+[24384675ms] [ERROR] [rss] failed {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384676ms] [LOG] [rss] fetching {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384694ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCrQmXSenNhePSOiCTdnhwRg:0
+[24384694ms] [ERROR] [rss] failed {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384695ms] [LOG] [rss] fetching {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384713ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCSB4SNRWhbemGAJ4wfeKj2Q:0
+[24384714ms] [ERROR] [rss] failed {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384714ms] [LOG] [rss] fetching {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384726ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCmD96zZeKnYof2jO1ON6acA:0
+[24384726ms] [ERROR] [rss] failed {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384727ms] [LOG] [rss] fetching {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSyPOk83lhOXoGcT2vUNhdw} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384740ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCSyPOk83lhOXoGcT2vUNhdw:0
+[24384740ms] [ERROR] [rss] failed {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384741ms] [LOG] [rss] fetching {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCNVcbJ6pxGEWGuoGopK83sQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384755ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCNVcbJ6pxGEWGuoGopK83sQ:0
+[24384755ms] [ERROR] [rss] failed {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384755ms] [LOG] [rss] fetching {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC32oVb-nfyRBNlWzUw3dC5Q} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384768ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UC32oVb-nfyRBNlWzUw3dC5Q:0
+[24384769ms] [ERROR] [rss] failed {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384769ms] [LOG] [rss] fetching {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC5_2We-HeVdEeHcIyfmMHOg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384782ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UC5_2We-HeVdEeHcIyfmMHOg:0
+[24384783ms] [ERROR] [rss] failed {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384783ms] [LOG] [rss] fetching {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCFkwdS-osDYKdz4TCe7XIXA} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384796ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCFkwdS-osDYKdz4TCe7XIXA:0
+[24384796ms] [ERROR] [rss] failed {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384797ms] [LOG] [rss] fetching {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCCQfwUJOOBLF5R9xbFeIFcg} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384809ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCCQfwUJOOBLF5R9xbFeIFcg:0
+[24384810ms] [ERROR] [rss] failed {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384810ms] [LOG] [rss] fetching {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCfnihhol5a4Qc2EciLf5kOQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384825ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCfnihhol5a4Qc2EciLf5kOQ:0
+[24384826ms] [ERROR] [rss] failed {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384826ms] [LOG] [rss] fetching {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCGFogLEUR_nuiT83pt8zVWQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384840ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCGFogLEUR_nuiT83pt8zVWQ:0
+[24384840ms] [ERROR] [rss] failed {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384841ms] [LOG] [rss] fetching {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC9wNu-y7T3vZMq5SA441i8g} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384853ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UC9wNu-y7T3vZMq5SA441i8g:0
+[24384853ms] [ERROR] [rss] failed {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384853ms] [LOG] [rss] fetching {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCxPN-JU3DsKwDgn5sTetNUQ} @ http://localhost:5174/src/services/rssIngestion.js:146
+[24384867ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/api/rss?channelId=UCxPN-JU3DsKwDgn5sTetNUQ:0
+[24384867ms] [ERROR] [rss] failed {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ, status: 500, error: YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.} @ http://localhost:5174/src/services/rssIngestion.js:173
+[24384870ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778515636544:23
+[28521154ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[28521169ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[32672021ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[32672178ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778515636544:23
+[32672321ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778522011773:49
+[32672353ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[32672353ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BrdXQphx48o/hqdefault.jpg:0
+[32672353ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[32672353ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BhDllZgpBW8/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/42n4hit8QcA/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JkJg7Xv0cdE/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/FsYuFonZvO4/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/bK2fIxi3Jic/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/rJHO_YKbqDc/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/xiJ-zby58C8/hqdefault.jpg:0
+[32672371ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/GkGPa8MrAVQ/hqdefault.jpg:0
+[32672372ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/MTOXbSdCO78/hqdefault.jpg:0
+[32672372ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/YUDj_14s7_M/hqdefault.jpg:0
+[32672372ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/s-Y1QCSck1w/hqdefault.jpg:0
+[32672372ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/958YOSahyNw/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/K18rRr5YsOM/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PEOAj9w4bCI/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/I_msgqMsplg/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w1RJ0x_6CUo/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/6-GYJWvTkak/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lHXtPkhElw4/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/md-ie6D_AZc/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ViilNVorlQo/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/AoGWOB7VchI/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8N_cx2BEeY0/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mxjk0KuEQEo/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/vbtUczknubo/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/NNv80mMzFDs/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lFIbFLGcB5U/hqdefault.jpg:0
+[32672373ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/_fqr8ZtGNsc/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/R64vgkpVo9w/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JgABZY58m2Q/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/azhWSShMSI8/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JMae4CU7D8Q/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/3fYDBEWkL1s/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/4nyq318epjQ/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w8JlCAn-tS0/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/a0ENfAXKa-Y/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/Svomq4WGRqk/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/As6Sr3OzhzE/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/DV0CokdUMRE/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o1a4h8QHWWA/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VOw6R1j67i0/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/TcoSQ1374J0/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/HFNgmi5jAic/hqdefault.jpg:0
+[32672374ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VTMRNNRbQ40/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8qzFObhqMVk/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hrujf6qaTPM/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/un4_fc9x_bc/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ZaJfrlOYnXc/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/amAO41AZWx0/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/CdOiURGDXHs/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/9bLgYFndOfo/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ocmHaK0Ic74/hqdefault.jpg:0
+[32672375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mDWkyiHE1DA/hqdefault.jpg:0
+[32980914ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778515636544:23
+[34506922ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js?t=1778515636544:23

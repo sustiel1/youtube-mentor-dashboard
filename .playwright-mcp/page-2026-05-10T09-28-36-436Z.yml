@@ -1,0 +1,150 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e2365] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+          - button "ספריית ידע" [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+            - generic [ref=e34]: ספריית ידע
+          - button "חיפוש ידע" [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+            - generic [ref=e39]: חיפוש ידע
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - button "נושאים" [ref=e42] [cursor=pointer]
+            - button "הוסף" [ref=e43] [cursor=pointer]:
+              - img [ref=e44]
+              - text: הוסף
+          - generic [ref=e46]:
+            - generic [ref=e48]:
+              - button "כל הסרטונים של \"בינה מלאכותית\"" [ref=e49] [cursor=pointer]:
+                - img [ref=e50]
+              - generic [ref=e53]:
+                - button "ערוך נושא" [ref=e54] [cursor=pointer]:
+                  - img [ref=e55]
+                - button "מחק נושא" [ref=e58] [cursor=pointer]:
+                  - img [ref=e59]
+              - button "בינה מלאכותית" [ref=e62]
+              - button [ref=e63] [cursor=pointer]:
+                - img [ref=e64]
+              - img [ref=e66]
+            - generic [ref=e74]:
+              - button "כל הסרטונים של \"שוק ההון\"" [ref=e75] [cursor=pointer]:
+                - img [ref=e76]
+              - generic [ref=e80]:
+                - button "ערוך נושא" [ref=e81] [cursor=pointer]:
+                  - img [ref=e82]
+                - button "מחק נושא" [ref=e85] [cursor=pointer]:
+                  - img [ref=e86]
+              - button "שוק ההון" [ref=e89]
+              - button [ref=e90] [cursor=pointer]:
+                - img [ref=e91]
+              - img [ref=e93]
+            - generic [ref=e101]:
+              - button "כל הסרטונים של \"פיתוח תוכנה\"" [ref=e102] [cursor=pointer]:
+                - img [ref=e103]
+              - generic [ref=e106]:
+                - button "ערוך נושא" [ref=e107] [cursor=pointer]:
+                  - img [ref=e108]
+                - button "מחק נושא" [ref=e111] [cursor=pointer]:
+                  - img [ref=e112]
+              - button "פיתוח תוכנה" [ref=e115]
+              - button [ref=e116] [cursor=pointer]:
+                - img [ref=e117]
+              - img [ref=e119]
+            - generic [ref=e127]:
+              - button "כל הסרטונים של \"מסחר יומי\"" [ref=e128] [cursor=pointer]:
+                - img [ref=e129]
+              - generic [ref=e132]:
+                - button "ערוך נושא" [ref=e133] [cursor=pointer]:
+                  - img [ref=e134]
+                - button "מחק נושא" [ref=e137] [cursor=pointer]:
+                  - img [ref=e138]
+              - button "מסחר יומי" [ref=e141]
+              - button [ref=e142] [cursor=pointer]:
+                - img [ref=e143]
+              - img [ref=e145]
+            - generic [ref=e153]:
+              - button "כל הסרטונים של \"פיתוח\"" [ref=e154] [cursor=pointer]:
+                - img [ref=e155]
+              - generic [ref=e158]:
+                - button "ערוך נושא" [ref=e159] [cursor=pointer]:
+                  - img [ref=e160]
+                - button "מחק נושא" [ref=e163] [cursor=pointer]:
+                  - img [ref=e164]
+              - button "פיתוח" [ref=e167]
+              - button [ref=e168] [cursor=pointer]:
+                - img [ref=e169]
+              - img [ref=e171]
+            - generic [ref=e179]:
+              - button "כל הסרטונים של \"React\"" [ref=e180] [cursor=pointer]:
+                - img [ref=e181]
+              - generic [ref=e184]:
+                - button "ערוך נושא" [ref=e185] [cursor=pointer]:
+                  - img [ref=e186]
+                - button "מחק נושא" [ref=e189] [cursor=pointer]:
+                  - img [ref=e190]
+              - button "React" [ref=e193]
+              - button [ref=e194] [cursor=pointer]:
+                - img [ref=e195]
+              - img [ref=e197]
+            - generic [ref=e205]:
+              - button "כל הסרטונים של \"Base44\"" [ref=e206] [cursor=pointer]:
+                - img [ref=e207]
+              - generic [ref=e210]:
+                - button "ערוך נושא" [ref=e211] [cursor=pointer]:
+                  - img [ref=e212]
+                - button "מחק נושא" [ref=e215] [cursor=pointer]:
+                  - img [ref=e216]
+              - button "Base44" [ref=e219]
+              - button [ref=e220] [cursor=pointer]:
+                - img [ref=e221]
+              - img [ref=e223]
+            - generic [ref=e231]:
+              - button "כל הסרטונים של \"Prompt Engineering\"" [ref=e232] [cursor=pointer]:
+                - img [ref=e233]
+              - generic [ref=e236]:
+                - button "ערוך נושא" [ref=e237] [cursor=pointer]:
+                  - img [ref=e238]
+                - button "מחק נושא" [ref=e241] [cursor=pointer]:
+                  - img [ref=e242]
+              - button "Prompt Engineering" [ref=e245]
+              - button [ref=e246] [cursor=pointer]:
+                - img [ref=e247]
+              - img [ref=e249]
+      - generic [ref=e256]:
+        - button "מנטור חדש" [ref=e257] [cursor=pointer]:
+          - img [ref=e258]
+          - generic [ref=e261]: מנטור חדש
+        - button "ניהול" [ref=e262] [cursor=pointer]:
+          - img [ref=e263]
+          - generic [ref=e266]: ניהול
+    - main [ref=e267]:
+      - generic [ref=e2366]:
+        - generic [ref=e2367]:
+          - img [ref=e2368]
+          - generic [ref=e2371]:
+            - heading "חיפוש ידע" [level=1] [ref=e2372]
+            - paragraph [ref=e2373]: 2/59 סרטונים אינדוקסו · 19 פרקי ידע
+        - generic [ref=e2375]:
+          - img
+          - textbox "חפש פרקים, נושאים, מנטורים, אסטרטגיות..." [active] [ref=e2376]
+        - generic [ref=e2378]:
+          - img [ref=e2380]
+          - paragraph [ref=e2383]: חיפוש פרקי ידע
+          - paragraph [ref=e2384]: 19 פרקי ידע מוכנים מתוך 2 סרטונים. חפש לפי נושא, מנטור, אסטרטגיה, טיקר ועוד.
+  - region "Notifications alt+T"

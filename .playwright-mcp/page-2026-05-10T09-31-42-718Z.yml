@@ -1,0 +1,375 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - button:
+            - generic:
+              - img
+            - generic:
+              - paragraph: YouTube Mentor
+              - paragraph: Learning Hub
+        - navigation:
+          - generic:
+            - button:
+              - img
+              - generic: כל הסרטונים
+            - button:
+              - img
+              - generic: שמורים
+            - button:
+              - img
+              - generic: תור למידה
+            - button:
+              - img
+              - generic: ספריית ידע
+            - button:
+              - img
+              - generic: חיפוש ידע
+          - generic:
+            - generic:
+              - button: נושאים
+              - button:
+                - img
+                - text: הוסף
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בינה מלאכותית
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: שוק ההון
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח תוכנה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: מסחר יומי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: React
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Base44
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Prompt Engineering
+                  - button:
+                    - img
+                  - img
+        - generic:
+          - button:
+            - img
+            - generic: מנטור חדש
+          - button:
+            - img
+            - generic: ניהול
+      - main:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - heading [level=1]: חיפוש ידע
+              - paragraph: 2/59 סרטונים אינדוקסו · 19 פרקי ידע
+          - generic:
+            - generic:
+              - img
+              - textbox:
+                - /placeholder: חפש פרקים, נושאים, מנטורים, אסטרטגיות...
+                - text: פתיחה
+              - button: ✕
+            - paragraph: 2 תוצאות
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: "פתיחה: השבוע הפרבולי בשוק"
+                - generic:
+                  - generic: ⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?
+                  - generic: ·
+                  - generic: Micha.Stocks
+                  - generic: ·
+                  - generic: 0:00
+                  - generic: ·
+                  - generic: תיאור
+                  - generic: גבוה
+              - generic:
+                - paragraph: "פתיחה: התקיפה האמריקאית באיראן"
+                - generic:
+                  - generic: 🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד
+                  - generic: ·
+                  - generic: Micha.Stocks
+                  - generic: ·
+                  - generic: 0:00
+                  - generic: ·
+                  - generic: תיאור
+                  - generic: בינוני
+    - region "Notifications alt+T"
+  - dialog "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [ref=e2499]:
+    - generic [ref=e2500]:
+      - heading "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [level=2]
+      - paragraph: צפייה בפרטי הסרטון, סיכום, פרקים, נקודות מפתח והערות.
+    - button [active] [ref=e2501] [cursor=pointer]:
+      - img [ref=e2502]
+    - button "מצב כהה" [ref=e2505] [cursor=pointer]:
+      - img [ref=e2506]
+      - generic [ref=e2508]: מצב כהה
+    - generic [ref=e2512]:
+      - generic [ref=e2513]:
+        - generic [ref=e2514]:
+          - generic [ref=e2516]:
+            - generic [ref=e2517]: פרטי וידאו
+            - generic [ref=e2518]: 10 מאי 2026
+          - generic [ref=e2519]:
+            - generic [ref=e2520]:
+              - generic [ref=e2521]: משך
+              - generic [ref=e2522]: 14:35
+            - generic [ref=e2523]:
+              - generic [ref=e2524]: צפיות
+              - generic [ref=e2525]: 10.8K
+          - generic [ref=e2526]:
+            - generic [ref=e2527]: Micha.Stocks
+            - generic [ref=e2528]: Markets
+        - generic [ref=e2529]:
+          - generic [ref=e2530]:
+            - generic [ref=e2531]: ניתוח AI
+            - generic [ref=e2533]:
+              - generic [ref=e2535]: "איכות:"
+              - generic [ref=e2536]: לא נותח
+              - img [ref=e2537]
+          - generic [ref=e2540]:
+            - generic [ref=e2541]: טרם נשמר ניתוח AI
+            - generic [ref=e2542]: בחר מודל לניתוח
+        - generic [ref=e2543]:
+          - generic [ref=e2544]:
+            - generic [ref=e2545]: סטטוס תמלול
+            - generic [ref=e2546]: אין תמלול usable
+          - generic [ref=e2549]: אין תמלול זמין — השתמש בכפתורי "פעולות תמלול" להוספה
+        - generic [ref=e2550]:
+          - generic [ref=e2551]:
+            - generic [ref=e2552]: סטטוס למידה
+            - link "פתח YouTube" [ref=e2553] [cursor=pointer]:
+              - /url: https://www.youtube.com/watch?v=PGWtY5GI6L8
+              - img [ref=e2554]
+              - text: פתח YouTube
+          - generic [ref=e2558]:
+            - generic [ref=e2560]:
+              - generic [ref=e2561]:
+                - textbox "הוסף הערה..." [ref=e2562]
+                - generic [ref=e2563]:
+                  - button "שמור הערה (Enter)" [disabled] [ref=e2564]:
+                    - img [ref=e2565]
+                  - button "העלה תמונה" [ref=e2568] [cursor=pointer]:
+                    - img [ref=e2569]
+              - paragraph [ref=e2573]:
+                - img [ref=e2574]
+                - text: אפשר להדביק צילום מסך עם Ctrl+V
+            - generic [ref=e2578]:
+              - button "העתק קישור" [ref=e2579] [cursor=pointer]:
+                - img [ref=e2580]
+                - text: העתק קישור
+              - link "NotebookLM" [ref=e2583] [cursor=pointer]:
+                - /url: https://notebooklm.google.com/
+                - img [ref=e2584]
+                - text: NotebookLM
+              - button "לצמיתות" [ref=e2588] [cursor=pointer]:
+                - img [ref=e2589]
+                - text: לצמיתות
+            - generic [ref=e2592]:
+              - generic [ref=e2593]:
+                - generic [ref=e2594]:
+                  - button "Learning" [ref=e2595] [cursor=pointer]
+                  - button "Session" [ref=e2596] [cursor=pointer]
+                  - button "Daily" [ref=e2597] [cursor=pointer]
+                  - button "Weekly" [ref=e2598] [cursor=pointer]
+                - button "Stock Market ✦" [ref=e2600] [cursor=pointer]:
+                  - generic [ref=e2601]: Stock Market ✦
+                  - img [ref=e2602]
+              - generic [ref=e2604]:
+                - generic "Stock Market/Learnings/L--6.md" [ref=e2605]:
+                  - img [ref=e2606]
+                  - generic [ref=e2608]: Stock Market/Learnings/L--6.md
+                - button "העתק" [ref=e2609] [cursor=pointer]:
+                  - img [ref=e2610]
+                  - text: העתק
+                - button ".md" [ref=e2613] [cursor=pointer]:
+                  - img [ref=e2614]
+                  - text: .md
+      - generic [ref=e2617]:
+        - complementary [ref=e2618]:
+          - generic [ref=e2619]:
+            - generic [ref=e2620]: פעולות AI
+            - generic [ref=e2621]:
+              - button "נתח עם קלוד" [ref=e2622] [cursor=pointer]:
+                - img [ref=e2623]
+                - text: נתח עם קלוד
+              - button "נתח עם Gemini" [ref=e2625] [cursor=pointer]:
+                - img [ref=e2626]
+                - text: נתח עם Gemini
+              - button "נתח עם llama3.2" [ref=e2628] [cursor=pointer]:
+                - img [ref=e2629]
+                - text: נתח עם llama3.2
+              - button "בדוק llama3.2" [ref=e2631] [cursor=pointer]:
+                - img [ref=e2632]
+                - text: בדוק llama3.2
+              - generic [ref=e2634]: "המודל llama3.2 לא מותקן. הרץ: ollama pull llama3.2"
+              - generic [ref=e2635]:
+                - generic [ref=e2636]:
+                  - generic [ref=e2637]: סטטוס Ollama מקומי
+                  - generic [ref=e2638]:
+                    - img [ref=e2639]
+                    - text: דורש בדיקה
+                - generic [ref=e2641]:
+                  - generic [ref=e2642]:
+                    - generic [ref=e2643]: המודל llama3.2 לא מותקן
+                    - generic [ref=e2644]:
+                      - generic [ref=e2645]: ollama pull llama3.2
+                      - button "העתק" [ref=e2646] [cursor=pointer]:
+                        - img [ref=e2647]
+                        - text: העתק
+                  - button "בדיקת תגובה מהמודל" [ref=e2650] [cursor=pointer]:
+                    - img [ref=e2651]
+                    - text: בדיקת תגובה מהמודל
+          - generic [ref=e2653]:
+            - generic [ref=e2654]: פעולות תמלול
+            - generic [ref=e2655]:
+              - button "הדבק תמלול ידני" [ref=e2656] [cursor=pointer]:
+                - img [ref=e2657]
+                - text: הדבק תמלול ידני
+              - button "נסה תמלול YouTube" [ref=e2660] [cursor=pointer]
+        - generic [ref=e2662]:
+          - generic [ref=e2664]:
+            - heading "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [level=2] [ref=e2665]
+            - button "שמור" [ref=e2666] [cursor=pointer]:
+              - img [ref=e2667]
+          - generic [ref=e2670]:
+            - img "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [ref=e2671]
+            - link [ref=e2672] [cursor=pointer]:
+              - /url: https://www.youtube.com/watch?v=PGWtY5GI6L8
+              - img [ref=e2674]
+          - generic [ref=e2678]:
+            - tablist [ref=e2679]:
+              - tab "סיכום" [ref=e2680] [cursor=pointer]
+              - tab "נקודות מפתח" [ref=e2681] [cursor=pointer]
+              - tab "פרקים" [selected] [ref=e2682] [cursor=pointer]
+              - tab "הערות" [ref=e2683] [cursor=pointer]
+            - tabpanel "פרקים" [ref=e2684]:
+              - generic [ref=e2685]:
+                - generic [ref=e2686]:
+                  - generic [ref=e2687]:
+                    - heading "פרקי הסרטון" [level=4] [ref=e2688]
+                    - generic [ref=e2689]: מבוסס תמלול
+                  - generic [ref=e2690]: לחץ על הזמן כדי לנווט
+                - generic [ref=e2691]:
+                  - button "מבוא לאסטרטגיית RSI הסבר מעמיק על אינדיקטור ה-RSI ואיך משתמשים בו לזיהוי קניית יתר ומכירת יתר 00:00" [ref=e2692] [cursor=pointer]:
+                    - generic [ref=e2693]:
+                      - generic [ref=e2694]:
+                        - generic [ref=e2695]: מבוא לאסטרטגיית RSI
+                        - generic [ref=e2696]: הסבר מעמיק על אינדיקטור ה-RSI ואיך משתמשים בו לזיהוי קניית יתר ומכירת יתר
+                      - generic [ref=e2697]: 00:00
+                  - button "הגדרת רמות 70 ו-30 למה רמות 70 ו-30 הן קריטיות לזיהוי היפוכי מגמה בשוק ההון 03:00" [ref=e2698] [cursor=pointer]:
+                    - generic [ref=e2699]:
+                      - generic [ref=e2700]:
+                        - generic [ref=e2701]: הגדרת רמות 70 ו-30
+                        - generic [ref=e2702]: למה רמות 70 ו-30 הן קריטיות לזיהוי היפוכי מגמה בשוק ההון
+                      - generic [ref=e2703]: 03:00
+                  - button "דוגמאות מעשיות בגרף ניתוח עשרה גרפים עם RSI שמראים כניסות ויציאות מדויקות 07:00" [ref=e2704] [cursor=pointer]:
+                    - generic [ref=e2705]:
+                      - generic [ref=e2706]:
+                        - generic [ref=e2707]: דוגמאות מעשיות בגרף
+                        - generic [ref=e2708]: ניתוח עשרה גרפים עם RSI שמראים כניסות ויציאות מדויקות
+                      - generic [ref=e2709]: 07:00
+                  - button "שילוב RSI עם MACD כיצד לשלב שני אינדיקטורים לאישוש אות מסחר חזק יותר 11:40" [ref=e2710] [cursor=pointer]:
+                    - generic [ref=e2711]:
+                      - generic [ref=e2712]:
+                        - generic [ref=e2713]: שילוב RSI עם MACD
+                        - generic [ref=e2714]: כיצד לשלב שני אינדיקטורים לאישוש אות מסחר חזק יותר
+                      - generic [ref=e2715]: 11:40
+                  - button "ניהול סיכונים עם RSI קביעת סטופ לוס וטייק פרופיט לפי רמות RSI 15:50" [ref=e2716] [cursor=pointer]:
+                    - generic [ref=e2717]:
+                      - generic [ref=e2718]:
+                        - generic [ref=e2719]: ניהול סיכונים עם RSI
+                        - generic [ref=e2720]: קביעת סטופ לוס וטייק פרופיט לפי רמות RSI
+                      - generic [ref=e2721]: 15:50
+    - button "סגור" [ref=e2722] [cursor=pointer]:
+      - img [ref=e2723]
+      - generic [ref=e2726]: סגור

@@ -1,0 +1,44 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor מסך ראשי" [ref=e6] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: מסך ראשי
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+        - generic [ref=e32]:
+          - button "נושאים" [ref=e33] [cursor=pointer]
+          - button "הוסף" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+            - text: הוסף
+      - generic [ref=e37]:
+        - button "מנטור חדש" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e42]: מנטור חדש
+        - button "ניהול" [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+          - generic [ref=e47]: ניהול
+    - main [ref=e48]:
+      - generic [ref=e49]:
+        - generic [ref=e52]:
+          - generic [ref=e54]: 0 סרטונים
+          - generic [ref=e55]:
+            - button "מחק הכל" [disabled] [ref=e56]:
+              - img [ref=e57]
+              - text: מחק הכל
+            - button "רענון" [disabled] [ref=e60]:
+              - img [ref=e61]
+              - text: רענון
+        - main [ref=e66]
+  - region "Notifications alt+T"

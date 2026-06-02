@@ -1,12 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTopics } from "@/hooks/useTopics";
 import { useMentors } from "@/hooks/useMentors";
 import { useVideos } from "@/hooks/useVideos";
+import { useSources } from "@/hooks/useSources";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { formatTopicLabel } from "@/lib/topicFilters";
+import { refreshMentorLastNDays } from "@/services/mentorRefresh";
+import { toast } from "sonner";
 import {
   Cpu, Brain, TrendingUp, Layers, Bot, Code,
   Globe, Lightbulb, BookOpen, Hash,
-  ChevronRight, Home, Users, Play,
+  ChevronRight, Home, Users, Play, RefreshCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -38,6 +43,9 @@ export default function TopicPage({ topicId, navigateTo }) {
   const { data: topics = [],  isLoading: topicsLoading  } = useTopics();
   const { data: mentors = [], isLoading: mentorsLoading } = useMentors();
   const { data: videos = [],  isLoading: videosLoading  } = useVideos();
+  const { data: sources = [] } = useSources();
+  const queryClient = useQueryClient();
+  const [refreshingMentorId, setRefreshingMentorId] = useState(null);
 
   const isLoading = topicsLoading || mentorsLoading || videosLoading;
 
@@ -56,6 +64,11 @@ export default function TopicPage({ topicId, navigateTo }) {
   const topicMentors = useMemo(
     () => mentors.filter((m) => (m.topicIds || []).some((tid) => relevantTopicIds.includes(tid))),
     [mentors, relevantTopicIds]
+  );
+
+  const topicVideos = useMemo(
+    () => videos.filter((video) => (video.topicIds || []).some((tid) => relevantTopicIds.includes(tid))),
+    [videos, relevantTopicIds]
   );
 
   // העשרה: הוספת כמות סרטונים ונלמדו לכל מנטור
@@ -85,10 +98,45 @@ export default function TopicPage({ topicId, navigateTo }) {
           learnedCount,
           latestVideo,
           thumbnailUrl,
+          topicLabel: formatTopicLabel(mentor.topicIds?.[0], topics),
         };
       }),
-    [topicMentors, videos]
+    [topicMentors, videos, topics]
   );
+
+  const handleRefreshMentor = async (mentor) => {
+    if (!mentor?.id) return;
+    if (refreshingMentorId) return;
+    setRefreshingMentorId(mentor.id);
+    try {
+      const source =
+        sources.find((s) => s.mentorId === mentor.id && s.sourceType === "youtube") ||
+        sources.find((s) => s.mentorId === mentor.id) ||
+        null;
+      const sourceUrl = source?.sourceUrl || null;
+
+      const result = await refreshMentorLastNDays({
+        mentor,
+        sourceUrl,
+        topics,
+        days: 30,
+        limit: 15,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+
+      if (result.addedCount > 0) {
+        toast.success(`נוספו ${result.addedCount} סרטונים חדשים`);
+      } else {
+        toast.message("לא נמצאו סרטונים חדשים");
+      }
+    } catch (err) {
+      const msg = String(err?.message || "").trim();
+      toast.error(msg || "שגיאה בסריקת הערוץ");
+    } finally {
+      setRefreshingMentorId(null);
+    }
+  };
 
   // ─── Loading ──────────────────────────────────────────
 
@@ -146,7 +194,7 @@ export default function TopicPage({ topicId, navigateTo }) {
             <div className="text-right">
               <h1 className="text-lg font-bold text-gray-900">{topic.name}</h1>
               <p className="text-sm text-gray-600 mt-0.5">
-                {enrichedMentors.length} מנטורים
+                {enrichedMentors.length} מנטורים · {topicVideos.length} סרטונים
               </p>
             </div>
           </div>
@@ -157,7 +205,45 @@ export default function TopicPage({ topicId, navigateTo }) {
       {/* ═══ MENTORS GRID ═══ */}
       <main className="px-6 py-6">
 
-        {enrichedMentors.length === 0 ? (
+        {topicVideos.length > 0 && (
+          <section className="mb-8">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm text-gray-500">{topicVideos.length} סרטונים</span>
+              <h2 className="text-lg font-bold text-gray-900">סרטונים בנושא</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {topicVideos.map((video) => (
+                <button
+                  key={video.id}
+                  type="button"
+                  onClick={() => navigateTo?.("Dashboard", { openVideoId: video.id, openVideoMeta: video })}
+                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-right transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="aspect-video overflow-hidden bg-gray-100">
+                    {video.thumbnail ? (
+                      <img
+                        src={video.thumbnail}
+                        alt={video.title}
+                        className="h-full w-full object-cover"
+                        onError={(e) => { e.target.style.display = "none"; }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Play className="h-8 w-8 text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2 p-4">
+                    <h3 className="line-clamp-2 font-bold text-gray-900">{video.title}</h3>
+                    <p className="truncate text-sm text-gray-500">{video.channelTitle || "ערוץ לא ידוע"}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {enrichedMentors.length === 0 && topicVideos.length === 0 ? (
           <div className="text-center py-24 bg-white rounded-2xl border border-gray-200">
             <Users className="h-14 w-14 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-600 font-medium">אין מנטורים בנושא זה</p>
@@ -186,7 +272,7 @@ export default function TopicPage({ topicId, navigateTo }) {
                       {/* כותרת הסרטון האחרון */}
                       {mentor.latestVideo?.title && (
                         <div className="absolute bottom-0 right-0 left-0 px-3 pb-2.5">
-                          <p className="text-[11px] text-white/80 line-clamp-2 leading-snug">
+                          <p className="text-[11px] text-white line-clamp-2 leading-snug">
                             {mentor.latestVideo.title}
                           </p>
                         </div>
@@ -219,6 +305,11 @@ export default function TopicPage({ topicId, navigateTo }) {
                     </div>
                     <div className="flex-1 min-w-0 text-right">
                       <h3 className="font-bold text-gray-900 truncate">{mentor.name}</h3>
+                      {mentor.topicLabel && mentor.topicLabel.includes(" · ") && (
+                        <p className="text-[11px] text-gray-500 mt-0.5 truncate" title={mentor.topicLabel}>
+                          {mentor.topicLabel}
+                        </p>
+                      )}
                       {mentor.description && (
                         <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">
                           {mentor.description}
@@ -242,9 +333,29 @@ export default function TopicPage({ topicId, navigateTo }) {
 
                   {/* CTA */}
                   <div className="pt-3 border-t border-gray-100">
-                    <span className="text-sm font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
-                      צפה בסרטונים ←
-                    </span>
+                    <div className="flex items-center justify-between gap-2 flex-row-reverse">
+                      <span className="text-sm font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                        צפה בסרטונים ←
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRefreshMentor(mentor);
+                        }}
+                        disabled={refreshingMentorId === mentor.id}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                          refreshingMentorId === mentor.id
+                            ? "border-slate-200 bg-slate-100 text-slate-500"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        )}
+                        title="משוך סרטונים אחרונים מהערוץ (30 ימים)"
+                      >
+                        <RefreshCw className={cn("h-3 w-3", refreshingMentorId === mentor.id && "animate-spin")} />
+                        משוך 30 ימים
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

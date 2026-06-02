@@ -1,0 +1,6 @@
+[    2164ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[    2247ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[    2247ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[    2258ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[    2418ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:54
+[    2808ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/favicon.ico:0

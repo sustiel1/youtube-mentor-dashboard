@@ -5,14 +5,14 @@ import {
   CheckCircle, Bookmark, BookmarkCheck, ExternalLink, ChevronRight, ChevronLeft,
   FolderOpen, Paperclip, FileText, Bot, Sparkles, Copy, Check,
   Play, Home, Trash2, Plus, X, Link, ZoomIn, Image as ImageIcon,
-  Cpu, Brain, Soup, TrendingUp, Layers,
+  Cpu, Brain, Soup, TrendingUp, Layers, Zap,
   UtensilsCrossed, Code, Music, Dumbbell,
   Globe, Lightbulb, BookOpen, Hash, Eye, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,12 @@ import {
   useVideos, useSaveVideo, useUpdateLearningStatus, useUpdatePresentations, useUpdateSummary,
 } from "@/hooks/useVideos";
 import { analyzeVideoWithAI } from "@/api/functions";
+import {
+  analyzeVideo,
+  chaptersFromAiAnalysisResult,
+  chaptersToVideoTopics,
+  outlineWithEstimatedTimes,
+} from "@/services/videoAnalytics";
 import { getAiAnalysis, saveAiAnalysis, clearAiAnalysis } from "@/lib/aiAnalysisStore";
 import { useTopics } from "@/hooks/useTopics";
 import { useMentors } from "@/hooks/useMentors";
@@ -62,6 +68,34 @@ function extractYouTubeId(url) {
 function cleanText(text) {
   if (!text) return text;
   return text.replace(/\[MOCK\]/gi, "").replace(/\[mock\]/gi, "").trim();
+}
+
+// Parses 5-10 reusable bullet points from brainSummary markdown sections.
+// Falls back to keyInsights → keyPoints when brainSummary is absent.
+const BRAIN_HIGHLIGHT_SECTIONS = ['Reusable Insights', 'Principles', 'Rules', 'Reusable Actions', 'Key Concepts'];
+function extractBrainHighlights(brainSummary, keyInsights = [], keyPoints = []) {
+  if (brainSummary && typeof brainSummary === 'string') {
+    const bullets = [];
+    let inSection = false;
+    for (const line of brainSummary.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('## ')) {
+        inSection = BRAIN_HIGHLIGHT_SECTIONS.some((s) => trimmed.includes(s));
+        continue;
+      }
+      if (inSection && (trimmed.startsWith('- ') || trimmed.startsWith('* '))) {
+        const text = trimmed.slice(2).trim().replace(/\*\*/g, '');
+        if (text && text !== '...' && !text.includes('[מלא ידנית]')) bullets.push(text);
+      }
+      if (bullets.length >= 10) break;
+    }
+    if (bullets.length >= 2) return bullets;
+  }
+  const combined = [
+    ...(Array.isArray(keyInsights) ? keyInsights : []),
+    ...(Array.isArray(keyPoints) ? keyPoints : []),
+  ];
+  return combined.slice(0, 10);
 }
 
 // מנסה לחלץ timestamp מתחילת מחרוזת — "4:35 כותרת" → { seconds:275, label:"4:35", body:"כותרת" }
@@ -146,12 +180,15 @@ function NotebookDialog({ open, onClose, video, topic, mentorName }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg" dir="rtl">
+      <DialogContent className="max-w-lg" dir="rtl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Bot className="h-4 w-4 text-violet-600" />
             ייצוא ל-NotebookLM
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            ייצוא תוכן הסרטון בפורמט קריא לשימוש ב-NotebookLM.
+          </DialogDescription>
         </DialogHeader>
         <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-4 leading-relaxed max-h-64 overflow-y-auto border border-gray-200 space-y-1.5 font-sans">
           <p><span className="font-semibold text-gray-700">כותרת:</span> {video.title}</p>
@@ -250,12 +287,15 @@ function AddPresentationDialog({ open, onClose, onAdd }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm" dir="rtl">
+      <DialogContent className="max-w-sm" dir="rtl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Paperclip className="h-4 w-4 text-indigo-600" />
             הוסף חומר נלווה
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            טופס להוספת מצגת, קובץ, תמונה או קישור נלווה לסרטון.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3 pt-1">
           <div>
@@ -329,9 +369,12 @@ function ImageLightboxDialog({ image, onClose }) {
   if (!image) return null;
   return (
     <Dialog open={!!image} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-3" dir="rtl">
+      <DialogContent className="max-w-3xl p-3" dir="rtl" aria-describedby={undefined}>
         <DialogHeader className="px-2 pb-2">
           <DialogTitle className="text-sm font-medium text-gray-700">{image.title}</DialogTitle>
+          <DialogDescription className="sr-only">
+            תצוגה מוגדלת של תמונה או צילום מסך ששויך לסרטון.
+          </DialogDescription>
         </DialogHeader>
         <img
           src={image.url}
@@ -472,6 +515,21 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
     : null;
   const hasAiAnalysis = !!aiOverride;
 
+  const displayVideoTopics = useMemo(() => {
+    if (!effectiveVideo) return [];
+    if (Array.isArray(effectiveVideo.videoTopics) && effectiveVideo.videoTopics.length > 0) {
+      return effectiveVideo.videoTopics;
+    }
+    if (Array.isArray(effectiveVideo.aiChapters) && effectiveVideo.aiChapters.length > 0) {
+      return chaptersToVideoTopics(effectiveVideo.aiChapters);
+    }
+    return [];
+  }, [effectiveVideo]);
+
+  const brainHighlights = effectiveVideo
+    ? extractBrainHighlights(effectiveVideo.brainSummary, effectiveVideo.keyInsights, effectiveVideo.keyPoints)
+    : [];
+
   // ─── Handlers ──────────────────────────────────────────
 
   const handleMarkLearned = () => {
@@ -570,13 +628,44 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
         title:       selectedVideo.title,
         description: selectedVideo.fullSummary || selectedVideo.shortSummary || "",
         keyPoints:   selectedVideo.keyPoints || [],
+        transcript: typeof selectedVideo.transcript === "string" ? selectedVideo.transcript : "",
+        transcriptSegments: Array.isArray(selectedVideo.transcriptSegments) ? selectedVideo.transcriptSegments : [],
+        durationSeconds: Number.isFinite(Number(selectedVideo.durationSeconds))
+          ? Number(selectedVideo.durationSeconds)
+          : null,
+        category: selectedVideo.category || null,
+        chapterHints: Array.isArray(selectedVideo.chapters) ? selectedVideo.chapters : [],
       });
-      // Save to localStorage — persists across refreshes for all video types
-      saveAiAnalysis(selectedVideo.id, result);
-      // Update UI immediately
-      setAiOverride(result);
-      // Best-effort: persist to backend/localStorage video store
-      updateSummary.mutate({ id: selectedVideo.id, ...result });
+
+      const {
+        aiChapters: _a,
+        chapters: _c,
+        sections: _s,
+        ...resultClean
+      } = result && typeof result === "object" ? result : {};
+
+      const mergedForChapters = { ...selectedVideo, ...resultClean };
+      const fromAi = chaptersFromAiAnalysisResult(resultClean);
+      const estimated =
+        analyzeVideo(mergedForChapters, { force: true }).aiChapters ?? [];
+      let aiChaptersToSave = fromAi?.length
+        ? outlineWithEstimatedTimes(fromAi, mergedForChapters)
+        : estimated;
+      if (!Array.isArray(aiChaptersToSave) || aiChaptersToSave.length === 0) {
+        aiChaptersToSave = estimated;
+      }
+
+      const videoTopics = chaptersToVideoTopics(aiChaptersToSave);
+      const payload = { ...resultClean, aiChapters: aiChaptersToSave, videoTopics };
+      saveAiAnalysis(selectedVideo.id, payload);
+      setAiOverride(payload);
+      updateSummary.mutate({
+        id: selectedVideo.id,
+        ...resultClean,
+        aiChapters: aiChaptersToSave,
+        videoTopics,
+        _fullVideo: selectedVideo,
+      });
       toast.success("הניתוח הושלם ✓");
     } catch (err) {
       const code = err?.code;
@@ -1251,11 +1340,11 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
 
                     {/* Summary — 4-card grid */}
                     <TabsContent value="summary" className="mt-4">
-                      {effectiveVideo.shortSummary || effectiveVideo.fullSummary || effectiveVideo.keyPoints?.length > 0 || effectiveVideo.videoTopics?.length > 0 ? (
+                      {effectiveVideo.shortSummary || effectiveVideo.fullSummary || effectiveVideo.keyPoints?.length > 0 || displayVideoTopics.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                           {/* Card 0: פרקים בסרטון — FIRST in grid */}
-                          {effectiveVideo.videoTopics?.length > 0 && (
+                          {displayVideoTopics.length > 0 && (
                             <div className="md:col-span-2 bg-white rounded-xl border border-cyan-100 shadow-sm p-4">
                               <div className="flex items-center gap-2 mb-3 flex-row-reverse">
                                 <div className="p-1.5 bg-cyan-50 rounded-lg shrink-0">
@@ -1263,11 +1352,11 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
                                 </div>
                                 <h3 className="text-sm font-semibold text-gray-800 flex-1 text-right">פרקים בסרטון</h3>
                                 <span className="text-xs text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full font-medium">
-                                  {effectiveVideo.videoTopics.length} פרקים
+                                  {displayVideoTopics.length} פרקים
                                 </span>
                               </div>
                               <div className="space-y-1">
-                                {effectiveVideo.videoTopics.map((vt, i) => (
+                                {displayVideoTopics.map((vt, i) => (
                                   <div
                                     key={i}
                                     onClick={() => {
@@ -1387,7 +1476,39 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
                             </div>
                           )}
 
-                          {/* Card 4: פעולות */}
+                          {/* Card 4: תובנות מרכזיות */}
+                          {brainHighlights.length > 0 && (
+                            <div className="md:col-span-2 bg-white rounded-xl border border-amber-100 shadow-sm p-4" dir="rtl">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Zap className="h-4 w-4 text-amber-500 shrink-0" />
+                                <h3 className="text-sm font-bold text-gray-900 flex-1 min-w-0">תובנות מרכזיות</h3>
+                                <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium shrink-0">{brainHighlights.length}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {brainHighlights.map((point, i) => (
+                                  <div key={i} className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5 shadow-sm" dir="rtl">
+                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" aria-hidden />
+                                    <span className="min-w-0 flex-1 text-sm leading-relaxed text-gray-800">{point}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Card 5: Brain Summary — full Obsidian markdown */}
+                          {effectiveVideo.brainSummary && (
+                            <div className="bg-white rounded-xl border border-violet-100 shadow-sm p-4">
+                              <div className="flex items-center gap-2 mb-3 flex-row-reverse">
+                                <div className="p-1.5 bg-violet-50 rounded-lg shrink-0">
+                                  <Brain className="h-4 w-4 text-violet-600" />
+                                </div>
+                                <h3 className="text-sm font-semibold text-gray-800 flex-1 text-right">Brain Summary</h3>
+                              </div>
+                              <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap text-right font-sans">{effectiveVideo.brainSummary}</pre>
+                            </div>
+                          )}
+
+                          {/* Card 6: פעולות */}
                           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                             <div className="flex items-center gap-2 mb-3 flex-row-reverse">
                               <div className="p-1.5 bg-violet-50 rounded-lg shrink-0">

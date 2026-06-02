@@ -1,0 +1,26 @@
+[     179ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d8fecc39:21608
+[     250ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[     344ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778487049606:45
+[ 2222281ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[ 2222293ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[ 3838456ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d8fecc39:21608
+[ 3838654ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[ 3839036ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778489450826:45
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/42n4hit8QcA/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JkJg7Xv0cdE/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/MTOXbSdCO78/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/vbtUczknubo/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/NNv80mMzFDs/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o1a4h8QHWWA/hqdefault.jpg:0
+[ 3839153ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VOw6R1j67i0/hqdefault.jpg:0
+[ 4687008ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778492635197:0
+[ 4687014ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881

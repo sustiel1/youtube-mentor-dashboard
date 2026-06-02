@@ -24,7 +24,7 @@ function writeAll(obj) {
 
 /**
  * @param {string} videoId
- * @returns {{ description: string, chapters: object[], lastFetchedAt: string } | null}
+ * @returns {{ description: string, chapters: object[], duration?: string, viewCount?: number, lastFetchedAt: string } | null}
  */
 export function getCachedVideoMetadata(videoId) {
   if (!videoId) return null;
@@ -35,7 +35,7 @@ export function getCachedVideoMetadata(videoId) {
 
 /**
  * @param {string} videoId
- * @param {{ description: string, chapters: object[] }} data
+ * @param {{ description: string, chapters: object[], duration?: string, viewCount?: number }} data
  */
 export function setCachedVideoMetadata(videoId, data) {
   if (!videoId) return;
@@ -43,6 +43,8 @@ export function setCachedVideoMetadata(videoId, data) {
   all[videoId] = {
     description:   data.description ?? '',
     chapters:      Array.isArray(data.chapters) ? data.chapters : [],
+    ...(data.duration ? { duration: data.duration } : {}),
+    ...(Number.isFinite(data.viewCount) ? { viewCount: data.viewCount } : {}),
     lastFetchedAt: new Date().toISOString(),
   };
   writeAll(all);
@@ -56,6 +58,7 @@ export function shouldFetchVideoMetadata(videoId) {
   if (!videoId) return true;
   const e = getCachedVideoMetadata(videoId);
   if (!e?.lastFetchedAt) return true;
+  if (!e.duration) return true;
   const age = Date.now() - new Date(e.lastFetchedAt).getTime();
   return age > TTL_MS;
 }

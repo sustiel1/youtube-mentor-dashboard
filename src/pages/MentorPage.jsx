@@ -176,7 +176,7 @@ export default function MentorPage({ pageParams, navigateTo }) {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 [&>*]:h-full [&>*]:min-h-0">
             {mentorVideos.map((video) => (
               <VideoCard
                 key={video.id}

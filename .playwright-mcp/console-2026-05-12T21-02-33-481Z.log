@@ -1,0 +1,46 @@
+[     291ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[     370ms] [WARNING] [useVideos] local-first — using mock data @ http://localhost:5173/src/hooks/useVideos.js:33
+[     500ms] [LOG] [rss] fetching {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5173/src/services/rssIngestion.js:152
+[     657ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
+[     661ms] [LOG] [rss] success (proxy) {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5173/src/services/rssIngestion.js:184
+[     663ms] [LOG] [rss] success {mentorName: Micha.Stocks, videosCount: 5, topicIds: Array(3)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    1544ms] [LOG] [rss] fetching {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    1965ms] [LOG] [rss] success (proxy) {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    1966ms] [LOG] [rss] success {mentorName: בורסה גרף, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    2810ms] [LOG] [rss] fetching {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    2995ms] [LOG] [rss] success (proxy) {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    2997ms] [LOG] [rss] success {mentorName: The Hasidic Trader, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    3900ms] [LOG] [rss] fetching {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    4040ms] [LOG] [rss] success (proxy) {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    4041ms] [LOG] [rss] success {mentorName: Oliver Velez Trading, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    4914ms] [LOG] [rss] fetching {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSyPOk83lhOXoGcT2vUNhdw} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    5092ms] [LOG] [rss] success (proxy) {channelName: Dor Amir Trading, channelId: UCSyPOk83lhOXoGcT2vUNhdw} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    5093ms] [LOG] [rss] success {mentorName: Dor Amir Trading, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    5886ms] [LOG] [rss] fetching {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCNVcbJ6pxGEWGuoGopK83sQ} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    6031ms] [LOG] [rss] success (proxy) {channelName: Eyal Shani, channelId: UCNVcbJ6pxGEWGuoGopK83sQ} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    6031ms] [LOG] [rss] success {mentorName: Eyal Shani, videosCount: 4, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    6985ms] [LOG] [rss] fetching {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC32oVb-nfyRBNlWzUw3dC5Q} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    7127ms] [LOG] [rss] success (proxy) {channelName: Wysetrade, channelId: UC32oVb-nfyRBNlWzUw3dC5Q} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    7128ms] [LOG] [rss] success {mentorName: Wysetrade, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    7962ms] [LOG] [rss] fetching {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC5_2We-HeVdEeHcIyfmMHOg} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    8138ms] [LOG] [rss] success (proxy) {channelName: Ed Hill AI Automation, channelId: UC5_2We-HeVdEeHcIyfmMHOg} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    8139ms] [LOG] [rss] success {mentorName: Ed Hill AI Automation, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    9036ms] [LOG] [rss] fetching {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCFkwdS-osDYKdz4TCe7XIXA} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    9126ms] [LOG] [rss] success (proxy) {channelName: Automation-Tribe, channelId: UCFkwdS-osDYKdz4TCe7XIXA} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    9126ms] [LOG] [rss] success {mentorName: Automation-Tribe, videosCount: 0, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[    9127ms] [LOG] [rss] fetching {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCCQfwUJOOBLF5R9xbFeIFcg} @ http://localhost:5173/src/services/rssIngestion.js:152
+[    9505ms] [LOG] [rss] success (proxy) {channelName: AI Andy, channelId: UCCQfwUJOOBLF5R9xbFeIFcg} @ http://localhost:5173/src/services/rssIngestion.js:184
+[    9505ms] [LOG] [rss] success {mentorName: AI Andy, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[   10357ms] [LOG] [rss] fetching {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCfnihhol5a4Qc2EciLf5kOQ} @ http://localhost:5173/src/services/rssIngestion.js:152
+[   10495ms] [LOG] [rss] success (proxy) {channelName: Aimprove - אימפרוב, channelId: UCfnihhol5a4Qc2EciLf5kOQ} @ http://localhost:5173/src/services/rssIngestion.js:184
+[   10497ms] [LOG] [rss] success {mentorName: Aimprove - אימפרוב, videosCount: 5, topicIds: Array(1)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[   11274ms] [LOG] [rss] fetching {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCGFogLEUR_nuiT83pt8zVWQ} @ http://localhost:5173/src/services/rssIngestion.js:152
+[   11440ms] [LOG] [rss] success (proxy) {channelName: Eden Bibas, channelId: UCGFogLEUR_nuiT83pt8zVWQ} @ http://localhost:5173/src/services/rssIngestion.js:184
+[   11441ms] [LOG] [rss] success {mentorName: Eden Bibas, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[   12337ms] [LOG] [rss] fetching {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UC9wNu-y7T3vZMq5SA441i8g} @ http://localhost:5173/src/services/rssIngestion.js:152
+[   12429ms] [LOG] [rss] success (proxy) {channelName: Base44 Community, channelId: UC9wNu-y7T3vZMq5SA441i8g} @ http://localhost:5173/src/services/rssIngestion.js:184
+[   12430ms] [LOG] [rss] success {mentorName: Base44 Community, videosCount: 0, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[   12430ms] [LOG] [rss] fetching {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCxPN-JU3DsKwDgn5sTetNUQ} @ http://localhost:5173/src/services/rssIngestion.js:152
+[   12771ms] [LOG] [rss] success (proxy) {channelName: Ran Bar Zik, channelId: UCxPN-JU3DsKwDgn5sTetNUQ} @ http://localhost:5173/src/services/rssIngestion.js:184
+[   12772ms] [LOG] [rss] success {mentorName: Ran Bar Zik, videosCount: 5, topicIds: Array(2)} @ http://localhost:5173/src/services/rssIngestion.js:318
+[   13601ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5173/src/hooks/useVideos.js:23

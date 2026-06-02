@@ -1,0 +1,11 @@
+[    1180ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3c02ecb9:21608
+[    1245ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[    1324ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[    1486ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778493415958:45
+[    2650ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=fd551efe:21608
+[    2746ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[    2939ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778493415958:45
+[  324844ms] [INFO] [useVideos] local-first — 62 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:23
+[  329592ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5174/src/App.jsx?t=1778493753294:49
+[  712087ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778494135864:0
+[  712095ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881

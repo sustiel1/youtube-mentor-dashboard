@@ -1,0 +1,21 @@
+[     133ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5175/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=b40c77c2:21608
+[     198ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[     263ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5175/src/App.jsx?t=1778404990066:45
+[  919172ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[  955530ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 1000262ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 1741274ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 1781065ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 2397646ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 2435011ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 3209147ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5175/@vite/client:963
+[ 3209152ms] [ERROR] WebSocket connection to 'ws://localhost:5175/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5175/@vite/client:1034
+[ 4187380ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5175/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=b40c77c2:21608
+[ 4187689ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[ 4187879ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5175/src/App.jsx?t=1778408003880:45
+[ 5111090ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5175/@vite/client:963
+[ 5111092ms] [ERROR] WebSocket connection to 'ws://localhost:5175/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5175/@vite/client:1034
+[15536580ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[15537509ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5175/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=b40c77c2:21608
+[15537635ms] [INFO] [useVideos] local-first — 59 videos from storage @ http://localhost:5175/src/hooks/useVideos.js:23
+[15537778ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5175/src/App.jsx?t=1778408003880:45

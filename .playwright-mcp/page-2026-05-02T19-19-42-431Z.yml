@@ -1,0 +1,644 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e1002] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - button "נושאים" [ref=e33] [cursor=pointer]
+            - button "הוסף" [ref=e34] [cursor=pointer]:
+              - img [ref=e35]
+              - text: הוסף
+          - generic [ref=e37]:
+            - generic [ref=e39]:
+              - button "כל הסרטונים של \"בינה מלאכותית\"" [ref=e40] [cursor=pointer]:
+                - img [ref=e41]
+              - generic [ref=e44]:
+                - button "ערוך נושא" [ref=e45] [cursor=pointer]:
+                  - img [ref=e46]
+                - button "מחק נושא" [ref=e49] [cursor=pointer]:
+                  - img [ref=e50]
+              - button "בינה מלאכותית" [ref=e53]
+              - button [ref=e54] [cursor=pointer]:
+                - img [ref=e55]
+              - img [ref=e57]
+            - generic [ref=e65]:
+              - button "כל הסרטונים של \"שוק ההון\"" [ref=e66] [cursor=pointer]:
+                - img [ref=e67]
+              - generic [ref=e71]:
+                - button "ערוך נושא" [ref=e72] [cursor=pointer]:
+                  - img [ref=e73]
+                - button "מחק נושא" [ref=e76] [cursor=pointer]:
+                  - img [ref=e77]
+              - button "שוק ההון" [ref=e80]
+              - button [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+              - img [ref=e84]
+            - generic [ref=e92]:
+              - button "כל הסרטונים של \"פיתוח תוכנה\"" [ref=e93] [cursor=pointer]:
+                - img [ref=e94]
+              - generic [ref=e97]:
+                - button "ערוך נושא" [ref=e98] [cursor=pointer]:
+                  - img [ref=e99]
+                - button "מחק נושא" [ref=e102] [cursor=pointer]:
+                  - img [ref=e103]
+              - button "פיתוח תוכנה" [ref=e106]
+              - button [ref=e107] [cursor=pointer]:
+                - img [ref=e108]
+              - img [ref=e110]
+            - generic [ref=e118]:
+              - button "כל הסרטונים של \"מסחר יומי\"" [ref=e119] [cursor=pointer]:
+                - img [ref=e120]
+              - generic [ref=e123]:
+                - button "ערוך נושא" [ref=e124] [cursor=pointer]:
+                  - img [ref=e125]
+                - button "מחק נושא" [ref=e128] [cursor=pointer]:
+                  - img [ref=e129]
+              - button "מסחר יומי" [ref=e132]
+              - button [ref=e133] [cursor=pointer]:
+                - img [ref=e134]
+              - img [ref=e136]
+            - generic [ref=e144]:
+              - button "כל הסרטונים של \"פיתוח\"" [ref=e145] [cursor=pointer]:
+                - img [ref=e146]
+              - generic [ref=e149]:
+                - button "ערוך נושא" [ref=e150] [cursor=pointer]:
+                  - img [ref=e151]
+                - button "מחק נושא" [ref=e154] [cursor=pointer]:
+                  - img [ref=e155]
+              - button "פיתוח" [ref=e158]
+              - button [ref=e159] [cursor=pointer]:
+                - img [ref=e160]
+              - img [ref=e162]
+            - generic [ref=e170]:
+              - button "כל הסרטונים של \"React\"" [ref=e171] [cursor=pointer]:
+                - img [ref=e172]
+              - generic [ref=e175]:
+                - button "ערוך נושא" [ref=e176] [cursor=pointer]:
+                  - img [ref=e177]
+                - button "מחק נושא" [ref=e180] [cursor=pointer]:
+                  - img [ref=e181]
+              - button "React" [ref=e184]
+              - button [ref=e185] [cursor=pointer]:
+                - img [ref=e186]
+              - img [ref=e188]
+            - generic [ref=e196]:
+              - button "כל הסרטונים של \"Base44\"" [ref=e197] [cursor=pointer]:
+                - img [ref=e198]
+              - generic [ref=e201]:
+                - button "ערוך נושא" [ref=e202] [cursor=pointer]:
+                  - img [ref=e203]
+                - button "מחק נושא" [ref=e206] [cursor=pointer]:
+                  - img [ref=e207]
+              - button "Base44" [ref=e210]
+              - button [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+              - img [ref=e214]
+            - generic [ref=e222]:
+              - button "כל הסרטונים של \"Prompt Engineering\"" [ref=e223] [cursor=pointer]:
+                - img [ref=e224]
+              - generic [ref=e227]:
+                - button "ערוך נושא" [ref=e228] [cursor=pointer]:
+                  - img [ref=e229]
+                - button "מחק נושא" [ref=e232] [cursor=pointer]:
+                  - img [ref=e233]
+              - button "Prompt Engineering" [ref=e236]
+              - button [ref=e237] [cursor=pointer]:
+                - img [ref=e238]
+              - img [ref=e240]
+            - generic [ref=e248]:
+              - button "כל הסרטונים של \"בדיקה אוטומטית\"" [ref=e249] [cursor=pointer]:
+                - img [ref=e250]
+              - generic [ref=e253]:
+                - button "ערוך נושא" [ref=e254] [cursor=pointer]:
+                  - img [ref=e255]
+                - button "מחק נושא" [ref=e258] [cursor=pointer]:
+                  - img [ref=e259]
+              - button "בדיקה אוטומטית" [ref=e262]
+              - button [ref=e263] [cursor=pointer]:
+                - img [ref=e264]
+              - img [ref=e266]
+            - generic [ref=e274]:
+              - button "כל הסרטונים של \"נושא בזמן אמת\"" [ref=e275] [cursor=pointer]:
+                - img [ref=e276]
+              - generic [ref=e279]:
+                - button "ערוך נושא" [ref=e280] [cursor=pointer]:
+                  - img [ref=e281]
+                - button "מחק נושא" [ref=e284] [cursor=pointer]:
+                  - img [ref=e285]
+              - button "נושא בזמן אמת" [ref=e288]
+              - button [ref=e289] [cursor=pointer]:
+                - img [ref=e290]
+              - img [ref=e292]
+      - generic [ref=e299]:
+        - button "מנטור חדש" [ref=e300] [cursor=pointer]:
+          - img [ref=e301]
+          - generic [ref=e304]: מנטור חדש
+        - button "ניהול" [ref=e305] [cursor=pointer]:
+          - img [ref=e306]
+          - generic [ref=e309]: ניהול
+    - main [ref=e310]:
+      - generic [ref=e1004]:
+        - generic [ref=e1005]:
+          - heading "ניהול" [level=1] [ref=e1006]
+          - paragraph [ref=e1007]: ניהול מנטורים, קטגוריות, נושאים ומקורות
+        - generic [ref=e1008]:
+          - tablist [ref=e1009]:
+            - tab "משיכת RSS" [selected] [ref=e1010] [cursor=pointer]:
+              - img [ref=e1011]
+              - text: משיכת RSS
+            - tab "ערוצים" [ref=e1015] [cursor=pointer]
+            - tab "נושאים" [ref=e1016] [cursor=pointer]
+            - tab "קטגוריות" [ref=e1017] [cursor=pointer]
+            - tab "מקורות" [ref=e1018] [cursor=pointer]
+          - tabpanel "משיכת RSS" [active] [ref=e1019]:
+            - generic [ref=e1020]:
+              - generic [ref=e1021]:
+                - generic [ref=e1022]:
+                  - heading "משיכת RSS מיוטיוב" [level=2] [ref=e1023]
+                  - paragraph [ref=e1024]: 13 מתוך 14 ערוצים מוגדרים עם Channel ID
+                  - paragraph [ref=e1025]: "סנכרון אחרון: לפני 2 שעות"
+                - generic [ref=e1026]:
+                  - button "רענן סטטיסטיקות" [ref=e1027] [cursor=pointer]:
+                    - img [ref=e1028]
+                    - text: רענן סטטיסטיקות
+                  - button "זהה Channel IDs" [ref=e1033] [cursor=pointer]:
+                    - img [ref=e1034]
+                    - text: זהה Channel IDs
+                  - button "משוך את כולם" [ref=e1037] [cursor=pointer]:
+                    - img [ref=e1038]
+                    - text: משוך את כולם
+                  - button "מחק סרטונים" [disabled] [ref=e1043]:
+                    - img [ref=e1044]
+                    - text: מחק סרטונים
+                  - button "מחק את כולם" [ref=e1047] [cursor=pointer]:
+                    - img [ref=e1048]
+                    - text: מחק את כולם
+              - generic [ref=e1051]:
+                - img [ref=e1052]
+                - generic [ref=e1054]:
+                  - paragraph [ref=e1055]: 1 ערוצים ממתינים ל-Channel ID
+                  - paragraph [ref=e1056]:
+                    - text: לחץ
+                    - strong [ref=e1057]: זהה
+                    - text: "בשורת הערוץ לזיהוי אוטומטי, או הוסף ב-Source entity:"
+                    - code [ref=e1058]: youtube.com/channel/UCxxxxxx
+                    - text: .
+                  - paragraph [ref=e1059]: "כיצד למצוא Channel ID: כנס לדף הערוץ ← View Page Source ← חפש \"channelId\""
+              - table [ref=e1061]:
+                - rowgroup [ref=e1062]:
+                  - row "ערוץ קטגוריה Channel ID זיהוי סטטוס RSS" [ref=e1063]:
+                    - columnheader "ערוץ" [ref=e1064]
+                    - columnheader "קטגוריה" [ref=e1065]
+                    - columnheader "Channel ID" [ref=e1066]
+                    - columnheader "זיהוי" [ref=e1067]
+                    - columnheader "סטטוס RSS" [ref=e1068]
+                    - columnheader [ref=e1069]
+                - rowgroup [ref=e1070]:
+                  - row "M Micha.Stocks שוק ההון UCSxjNbPriyB… מוכן משוך חדשים בדוק" [ref=e1071]:
+                    - cell "M Micha.Stocks" [ref=e1072]:
+                      - generic [ref=e1073]:
+                        - generic [ref=e1074]: M
+                        - generic [ref=e1075]: Micha.Stocks
+                    - cell "שוק ההון" [ref=e1076]:
+                      - combobox [ref=e1077] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCSxjNbPriyB…" [ref=e1078]:
+                      - generic [ref=e1079]: UCSxjNbPriyB…
+                    - cell "מוכן" [ref=e1080]:
+                      - generic [ref=e1081]:
+                        - img [ref=e1082]
+                        - text: מוכן
+                    - cell [ref=e1085]
+                    - cell "משוך חדשים בדוק" [ref=e1086]:
+                      - generic [ref=e1087]:
+                        - button "משוך חדשים" [ref=e1088] [cursor=pointer]
+                        - button "בדוק" [ref=e1089] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1090] [cursor=pointer]:
+                          - img [ref=e1091]
+                  - row "ב בורסה גרף שוק ההון UCrQmXSenNhe… מוכן משוך חדשים בדוק" [ref=e1094]:
+                    - cell "ב בורסה גרף" [ref=e1095]:
+                      - generic [ref=e1096]:
+                        - generic [ref=e1097]: ב
+                        - generic [ref=e1098]: בורסה גרף
+                    - cell "שוק ההון" [ref=e1099]:
+                      - combobox [ref=e1100] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCrQmXSenNhe…" [ref=e1101]:
+                      - generic [ref=e1102]: UCrQmXSenNhe…
+                    - cell "מוכן" [ref=e1103]:
+                      - generic [ref=e1104]:
+                        - img [ref=e1105]
+                        - text: מוכן
+                    - cell [ref=e1108]
+                    - cell "משוך חדשים בדוק" [ref=e1109]:
+                      - generic [ref=e1110]:
+                        - button "משוך חדשים" [ref=e1111] [cursor=pointer]
+                        - button "בדוק" [ref=e1112] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1113] [cursor=pointer]:
+                          - img [ref=e1114]
+                  - row "T The Hasidic Trader שוק ההון UCSB4SNRWhbe… מוכן משוך חדשים בדוק" [ref=e1117]:
+                    - cell "T The Hasidic Trader" [ref=e1118]:
+                      - generic [ref=e1119]:
+                        - generic [ref=e1120]: T
+                        - generic [ref=e1121]: The Hasidic Trader
+                    - cell "שוק ההון" [ref=e1122]:
+                      - combobox [ref=e1123] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCSB4SNRWhbe…" [ref=e1124]:
+                      - generic [ref=e1125]: UCSB4SNRWhbe…
+                    - cell "מוכן" [ref=e1126]:
+                      - generic [ref=e1127]:
+                        - img [ref=e1128]
+                        - text: מוכן
+                    - cell [ref=e1131]
+                    - cell "משוך חדשים בדוק" [ref=e1132]:
+                      - generic [ref=e1133]:
+                        - button "משוך חדשים" [ref=e1134] [cursor=pointer]
+                        - button "בדוק" [ref=e1135] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1136] [cursor=pointer]:
+                          - img [ref=e1137]
+                  - row "O Oliver Velez Trading שוק ההון UCmD96zZeKnY… מוכן משוך חדשים בדוק" [ref=e1140]:
+                    - cell "O Oliver Velez Trading" [ref=e1141]:
+                      - generic [ref=e1142]:
+                        - generic [ref=e1143]: O
+                        - generic [ref=e1144]: Oliver Velez Trading
+                    - cell "שוק ההון" [ref=e1145]:
+                      - combobox [ref=e1146] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCmD96zZeKnY…" [ref=e1147]:
+                      - generic [ref=e1148]: UCmD96zZeKnY…
+                    - cell "מוכן" [ref=e1149]:
+                      - generic [ref=e1150]:
+                        - img [ref=e1151]
+                        - text: מוכן
+                    - cell [ref=e1154]
+                    - cell "משוך חדשים בדוק" [ref=e1155]:
+                      - generic [ref=e1156]:
+                        - button "משוך חדשים" [ref=e1157] [cursor=pointer]
+                        - button "בדוק" [ref=e1158] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1159] [cursor=pointer]:
+                          - img [ref=e1160]
+                  - row "D Dor Amir Trading שוק ההון UCSyPOk83lhO… מוכן משוך חדשים בדוק" [ref=e1163]:
+                    - cell "D Dor Amir Trading" [ref=e1164]:
+                      - generic [ref=e1165]:
+                        - generic [ref=e1166]: D
+                        - generic [ref=e1167]: Dor Amir Trading
+                    - cell "שוק ההון" [ref=e1168]:
+                      - combobox [ref=e1169] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCSyPOk83lhO…" [ref=e1170]:
+                      - generic [ref=e1171]: UCSyPOk83lhO…
+                    - cell "מוכן" [ref=e1172]:
+                      - generic [ref=e1173]:
+                        - img [ref=e1174]
+                        - text: מוכן
+                    - cell [ref=e1177]
+                    - cell "משוך חדשים בדוק" [ref=e1178]:
+                      - generic [ref=e1179]:
+                        - button "משוך חדשים" [ref=e1180] [cursor=pointer]
+                        - button "בדוק" [ref=e1181] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1182] [cursor=pointer]:
+                          - img [ref=e1183]
+                  - row "E Eyal Shani שוק ההון UCNVcbJ6pxGE… מוכן משוך חדשים בדוק" [ref=e1186]:
+                    - cell "E Eyal Shani" [ref=e1187]:
+                      - generic [ref=e1188]:
+                        - generic [ref=e1189]: E
+                        - generic [ref=e1190]: Eyal Shani
+                    - cell "שוק ההון" [ref=e1191]:
+                      - combobox [ref=e1192] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCNVcbJ6pxGE…" [ref=e1193]:
+                      - generic [ref=e1194]: UCNVcbJ6pxGE…
+                    - cell "מוכן" [ref=e1195]:
+                      - generic [ref=e1196]:
+                        - img [ref=e1197]
+                        - text: מוכן
+                    - cell [ref=e1200]
+                    - cell "משוך חדשים בדוק" [ref=e1201]:
+                      - generic [ref=e1202]:
+                        - button "משוך חדשים" [ref=e1203] [cursor=pointer]
+                        - button "בדוק" [ref=e1204] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1205] [cursor=pointer]:
+                          - img [ref=e1206]
+                  - row "W Wysetrade שוק ההון UC32oVb-nfyR… מוכן משוך חדשים בדוק" [ref=e1209]:
+                    - cell "W Wysetrade" [ref=e1210]:
+                      - generic [ref=e1211]:
+                        - generic [ref=e1212]: W
+                        - generic [ref=e1213]: Wysetrade
+                    - cell "שוק ההון" [ref=e1214]:
+                      - combobox [ref=e1215] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון" [selected]
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UC32oVb-nfyR…" [ref=e1216]:
+                      - generic [ref=e1217]: UC32oVb-nfyR…
+                    - cell "מוכן" [ref=e1218]:
+                      - generic [ref=e1219]:
+                        - img [ref=e1220]
+                        - text: מוכן
+                    - cell [ref=e1223]
+                    - cell "משוך חדשים בדוק" [ref=e1224]:
+                      - generic [ref=e1225]:
+                        - button "משוך חדשים" [ref=e1226] [cursor=pointer]
+                        - button "בדוק" [ref=e1227] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1228] [cursor=pointer]:
+                          - img [ref=e1229]
+                  - row "E Ed Hill AI Automation בינה מלאכותית UC5_2We-HeVd… מוכן משוך חדשים בדוק" [ref=e1232]:
+                    - cell "E Ed Hill AI Automation" [ref=e1233]:
+                      - generic [ref=e1234]:
+                        - generic [ref=e1235]: E
+                        - generic [ref=e1236]: Ed Hill AI Automation
+                    - cell "בינה מלאכותית" [ref=e1237]:
+                      - combobox [ref=e1238] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UC5_2We-HeVd…" [ref=e1239]:
+                      - generic [ref=e1240]: UC5_2We-HeVd…
+                    - cell "מוכן" [ref=e1241]:
+                      - generic [ref=e1242]:
+                        - img [ref=e1243]
+                        - text: מוכן
+                    - cell [ref=e1246]
+                    - cell "משוך חדשים בדוק" [ref=e1247]:
+                      - generic [ref=e1248]:
+                        - button "משוך חדשים" [ref=e1249] [cursor=pointer]
+                        - button "בדוק" [ref=e1250] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1251] [cursor=pointer]:
+                          - img [ref=e1252]
+                  - row "A Automation-Tribe בינה מלאכותית UCFkwdS-osDY… מוכן משוך חדשים בדוק" [ref=e1255]:
+                    - cell "A Automation-Tribe" [ref=e1256]:
+                      - generic [ref=e1257]:
+                        - generic [ref=e1258]: A
+                        - generic [ref=e1259]: Automation-Tribe
+                    - cell "בינה מלאכותית" [ref=e1260]:
+                      - combobox [ref=e1261] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCFkwdS-osDY…" [ref=e1262]:
+                      - generic [ref=e1263]: UCFkwdS-osDY…
+                    - cell "מוכן" [ref=e1264]:
+                      - generic [ref=e1265]:
+                        - img [ref=e1266]
+                        - text: מוכן
+                    - cell [ref=e1269]
+                    - cell "משוך חדשים בדוק" [ref=e1270]:
+                      - generic [ref=e1271]:
+                        - button "משוך חדשים" [ref=e1272] [cursor=pointer]
+                        - button "בדוק" [ref=e1273] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1274] [cursor=pointer]:
+                          - img [ref=e1275]
+                  - row "A AI Andy בינה מלאכותית UCCQfwUJOOBL… מוכן משוך חדשים בדוק" [ref=e1278]:
+                    - cell "A AI Andy" [ref=e1279]:
+                      - generic [ref=e1280]:
+                        - generic [ref=e1281]: A
+                        - generic [ref=e1282]: AI Andy
+                    - cell "בינה מלאכותית" [ref=e1283]:
+                      - combobox [ref=e1284] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCCQfwUJOOBL…" [ref=e1285]:
+                      - generic [ref=e1286]: UCCQfwUJOOBL…
+                    - cell "מוכן" [ref=e1287]:
+                      - generic [ref=e1288]:
+                        - img [ref=e1289]
+                        - text: מוכן
+                    - cell [ref=e1292]
+                    - cell "משוך חדשים בדוק" [ref=e1293]:
+                      - generic [ref=e1294]:
+                        - button "משוך חדשים" [ref=e1295] [cursor=pointer]
+                        - button "בדוק" [ref=e1296] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1297] [cursor=pointer]:
+                          - img [ref=e1298]
+                  - row "A Aimprove - אימפרוב בינה מלאכותית UCfnihhol5a4… מוכן משוך חדשים בדוק" [ref=e1301]:
+                    - cell "A Aimprove - אימפרוב" [ref=e1302]:
+                      - generic [ref=e1303]:
+                        - generic [ref=e1304]: A
+                        - generic [ref=e1305]: Aimprove - אימפרוב
+                    - cell "בינה מלאכותית" [ref=e1306]:
+                      - combobox [ref=e1307] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCfnihhol5a4…" [ref=e1308]:
+                      - generic [ref=e1309]: UCfnihhol5a4…
+                    - cell "מוכן" [ref=e1310]:
+                      - generic [ref=e1311]:
+                        - img [ref=e1312]
+                        - text: מוכן
+                    - cell [ref=e1315]
+                    - cell "משוך חדשים בדוק" [ref=e1316]:
+                      - generic [ref=e1317]:
+                        - button "משוך חדשים" [ref=e1318] [cursor=pointer]
+                        - button "בדוק" [ref=e1319] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1320] [cursor=pointer]:
+                          - img [ref=e1321]
+                  - row "E Eden Bibas בינה מלאכותית UCGFogLEUR_n… מוכן משוך חדשים בדוק" [ref=e1324]:
+                    - cell "E Eden Bibas" [ref=e1325]:
+                      - generic [ref=e1326]:
+                        - generic [ref=e1327]: E
+                        - generic [ref=e1328]: Eden Bibas
+                    - cell "בינה מלאכותית" [ref=e1329]:
+                      - combobox [ref=e1330] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCGFogLEUR_n…" [ref=e1331]:
+                      - generic [ref=e1332]: UCGFogLEUR_n…
+                    - cell "מוכן" [ref=e1333]:
+                      - generic [ref=e1334]:
+                        - img [ref=e1335]
+                        - text: מוכן
+                    - cell [ref=e1338]
+                    - cell "משוך חדשים בדוק" [ref=e1339]:
+                      - generic [ref=e1340]:
+                        - button "משוך חדשים" [ref=e1341] [cursor=pointer]
+                        - button "בדוק" [ref=e1342] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1343] [cursor=pointer]:
+                          - img [ref=e1344]
+                  - row "A AI Pathways בינה מלאכותית חסר Channel ID זהה חפש ביוטיוב בדוק" [ref=e1347]:
+                    - cell "A AI Pathways" [ref=e1348]:
+                      - generic [ref=e1349]:
+                        - generic [ref=e1350]: A
+                        - generic [ref=e1351]: AI Pathways
+                    - cell "בינה מלאכותית" [ref=e1352]:
+                      - combobox [ref=e1353] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית" [selected]
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה"
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "חסר Channel ID" [ref=e1354]
+                    - cell "זהה" [ref=e1355]:
+                      - button "זהה" [ref=e1356] [cursor=pointer]
+                    - cell [ref=e1357]
+                    - cell "חפש ביוטיוב בדוק" [ref=e1358]:
+                      - generic [ref=e1359]:
+                        - link "חפש ביוטיוב" [ref=e1360] [cursor=pointer]:
+                          - /url: https://www.youtube.com/results?search_query=AI%20Pathways
+                        - button "בדוק" [disabled] [ref=e1361]
+                        - button "מחק מנטור" [ref=e1362] [cursor=pointer]:
+                          - img [ref=e1363]
+                  - row "R Ran Bar Zik פיתוח תוכנה UCxPN-JU3DsK… מוכן משוך חדשים בדוק" [ref=e1366]:
+                    - cell "R Ran Bar Zik" [ref=e1367]:
+                      - generic [ref=e1368]:
+                        - generic [ref=e1369]: R
+                        - generic [ref=e1370]: Ran Bar Zik
+                    - cell "פיתוח תוכנה" [ref=e1371]:
+                      - combobox [ref=e1372] [cursor=pointer]:
+                        - option "— בחר נושא —"
+                        - option "בינה מלאכותית"
+                        - option "שוק ההון"
+                        - option "פיתוח תוכנה" [selected]
+                        - option "מסחר יומי"
+                        - option "פיתוח"
+                        - option "React"
+                        - option "Base44"
+                        - option "Prompt Engineering"
+                        - option "בדיקה אוטומטית"
+                        - option "נושא בזמן אמת"
+                    - cell "UCxPN-JU3DsK…" [ref=e1373]:
+                      - generic [ref=e1374]: UCxPN-JU3DsK…
+                    - cell "מוכן" [ref=e1375]:
+                      - generic [ref=e1376]:
+                        - img [ref=e1377]
+                        - text: מוכן
+                    - cell [ref=e1380]
+                    - cell "משוך חדשים בדוק" [ref=e1381]:
+                      - generic [ref=e1382]:
+                        - button "משוך חדשים" [ref=e1383] [cursor=pointer]
+                        - button "בדוק" [ref=e1384] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1385] [cursor=pointer]:
+                          - img [ref=e1386]
+  - region "Notifications alt+T"

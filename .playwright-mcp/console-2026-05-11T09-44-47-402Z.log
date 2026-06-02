@@ -1,0 +1,1504 @@
+[     170ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778492635197:0
+[  471310ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[  471315ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/@vite/client:1034
+[  471316ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/hooks/useNotes.js?t=1778493155756:0
+[  471318ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/components/dashboard/StatusBadge.jsx?t=1778493155646:0
+[  479260ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:21608
+[  479517ms] [INFO] [autoRssSync] מתחיל sync עבור 14 מנטורים @ http://localhost:5174/src/services/autoRssSync.js:62
+[  479519ms] [WARNING] [RSS] Micha.Stocks: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  479599ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/User/me:0
+[  479600ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  479600ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  479638ms] [INFO] [RSS] Micha.Stocks: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  479641ms] [INFO] [RSS DB] Micha.Stocks: 5 סרטונים, topicIds=["t2","t7","t3"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  479648ms] [INFO] [autoRssSync] Micha.Stocks: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  479648ms] [WARNING] [RSS] בורסה גרף: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  479682ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Video?sort=-publishedAt:0
+[  479683ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  479683ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  479689ms] [INFO] [useVideos] Base44 unavailable — using 62 local videos @ http://localhost:5174/src/hooks/useVideos.js:19
+[  479841ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Category:0
+[  479841ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  479841ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  479841ms] [WARNING] [useCategories] Base44 unavailable — using mock data: App not found @ http://localhost:5174/src/hooks/useCategories.js:12
+[  479913ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/analytics/track/batch:0
+[  479914ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  479915ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480086ms] [INFO] [RSS] בורסה גרף: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  480088ms] [INFO] [RSS DB] בורסה גרף: 5 סרטונים, topicIds=["t5","t2"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  480089ms] [INFO] [autoRssSync] בורסה גרף: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  480090ms] [WARNING] [RSS] The Hasidic Trader: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  480126ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778486855433_gafsw%22%7D:0
+[  480127ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480127ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480127ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778486855433_0axpf%22%7D:0
+[  480128ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480128ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480129ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402155483_4pcbo%22%7D:0
+[  480129ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480129ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480130ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778486858369_dzpop%22%7D:0
+[  480130ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480130ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480141ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402158483_u5cp5%22%7D:0
+[  480142ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480142ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480345ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402158483_0s1jq%22%7D:0
+[  480346ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480346ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480411ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402155483_2xded%22%7D:0
+[  480413ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480413ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480414ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402155483_lui0z%22%7D:0
+[  480414ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480414ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480420ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402155483_p4opg%22%7D:0
+[  480420ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480421ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480428ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402156523_gj5ub%22%7D:0
+[  480429ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480429ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480449ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402156523_imivb%22%7D:0
+[  480450ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480450ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480601ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402155483_0b2ba%22%7D:0
+[  480602ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480602ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480678ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402158483_u1dzw%22%7D:0
+[  480679ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480679ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480679ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402158483_r5o0m%22%7D:0
+[  480679ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480680ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480711ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402156523_4uaff%22%7D:0
+[  480712ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480712ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480738ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402156523_w047w%22%7D:0
+[  480739ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480739ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480808ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402158483_u6iym%22%7D:0
+[  480809ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480809ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480851ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402166177_5cxmt%22%7D:0
+[  480853ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480853ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480935ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402165013_1024t%22%7D:0
+[  480936ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480936ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480937ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402156523_yq69n%22%7D:0
+[  480938ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480938ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  480978ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402165013_i78f8%22%7D:0
+[  480979ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  480979ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481008ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402165013_rw7xy%22%7D:0
+[  481008ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481008ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481062ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402165013_346rn%22%7D:0
+[  481063ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481063ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481101ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402165013_7oqqa%22%7D:0
+[  481102ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481103ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481197ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402166177_edlzw%22%7D:0
+[  481199ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481199ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481237ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402162872_f7e8v%22%7D:0
+[  481238ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481239ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481256ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402161671_79x1u%22%7D:0
+[  481256ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481256ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481257ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402162872_4u4de%22%7D:0
+[  481258ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481258ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481365ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402162872_m9qga%22%7D:0
+[  481366ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481366ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481389ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402162872_hiktv%22%7D:0
+[  481390ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481390ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481453ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402159524_kmx39%22%7D:0
+[  481453ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481453ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481512ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402159524_0uk5f%22%7D:0
+[  481512ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481512ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481524ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402159524_0n441%22%7D:0
+[  481524ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481524ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481539ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402159524_tusd5%22%7D:0
+[  481539ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481539ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481614ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402159524_1wjge%22%7D:0
+[  481615ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481615ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481653ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402162872_yrysg%22%7D:0
+[  481654ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481654ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481716ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402166177_18qwg%22%7D:0
+[  481717ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481717ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481770ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402166177_ddd9o%22%7D:0
+[  481771ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481771ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481789ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402166177_2or8v%22%7D:0
+[  481789ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481789ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481794ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402157510_t1dww%22%7D:0
+[  481794ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481794ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481877ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402157510_ph7m0%22%7D:0
+[  481877ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481877ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481911ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402161671_0nkzv%22%7D:0
+[  481912ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481912ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  481989ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402157510_wvtgx%22%7D:0
+[  481990ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  481990ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482046ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402167569_xhxkt%22%7D:0
+[  482047ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482047ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482063ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402167569_muvhs%22%7D:0
+[  482063ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482063ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482064ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402167569_mq69c%22%7D:0
+[  482065ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482065ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482127ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402161671_i5b3p%22%7D:0
+[  482127ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482128ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482157ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402161671_yqqxx%22%7D:0
+[  482157ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482157ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482232ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402167569_ec61x%22%7D:0
+[  482233ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482233ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482297ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402167569_ndmvx%22%7D:0
+[  482299ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482299ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482328ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402157510_k2rp2%22%7D:0
+[  482328ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482328ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482334ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402161671_6gq4g%22%7D:0
+[  482334ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482334ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482385ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402157510_eid8y%22%7D:0
+[  482386ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482386ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482405ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402164084_p8jk3%22%7D:0
+[  482406ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482406ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482479ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402164084_qvsi8%22%7D:0
+[  482479ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482479ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482586ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402164084_x8l2n%22%7D:0
+[  482586ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482586ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482587ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402164084_9bnx9%22%7D:0
+[  482587ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482587ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482629ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402164084_tdqwu%22%7D:0
+[  482630ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482630ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482630ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402160529_42j6l%22%7D:0
+[  482631ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482631ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482661ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402160529_z5acv%22%7D:0
+[  482661ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482662ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482725ms] [INFO] [RSS] The Hasidic Trader: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  482727ms] [INFO] [RSS DB] The Hasidic Trader: 5 סרטונים, topicIds=["t4","t2"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  482728ms] [INFO] [autoRssSync] The Hasidic Trader: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  482728ms] [WARNING] [RSS] Oliver Velez Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  482739ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402160529_48mja%22%7D:0
+[  482739ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482739ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  482858ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/entities/Note?q=%7B%22videoId%22:%22local_1778402160529_ry7z8%22%7D:0
+[  482858ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  482858ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  483049ms] [INFO] [RSS] Oliver Velez Trading: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  483052ms] [INFO] [RSS DB] Oliver Velez Trading: 5 סרטונים, topicIds=["t4","t7"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  483053ms] [INFO] [autoRssSync] Oliver Velez Trading: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  483053ms] [WARNING] [RSS] Dor Amir Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  483228ms] [INFO] [RSS] Dor Amir Trading: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  483230ms] [INFO] [RSS DB] Dor Amir Trading: 5 סרטונים, topicIds=["t4","t2"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  483231ms] [INFO] [autoRssSync] Dor Amir Trading: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  483231ms] [WARNING] [RSS] Eyal Shani: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  483464ms] [INFO] [RSS] Eyal Shani: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  483465ms] [INFO] [RSS DB] Eyal Shani: 4 סרטונים, topicIds=["t2","t4"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  483466ms] [INFO] [autoRssSync] Eyal Shani: 4 ב-RSS, 4 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  483466ms] [WARNING] [RSS] Wysetrade: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  483638ms] [INFO] [RSS] Wysetrade: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  483639ms] [INFO] [RSS DB] Wysetrade: 5 סרטונים, topicIds=["t5","t4"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  483640ms] [INFO] [autoRssSync] Wysetrade: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  483640ms] [WARNING] [RSS] Ed Hill AI Automation: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  483889ms] [INFO] [RSS] Ed Hill AI Automation: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  483890ms] [INFO] [RSS DB] Ed Hill AI Automation: 5 סרטונים, topicIds=["t1","t8"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  483891ms] [INFO] [autoRssSync] Ed Hill AI Automation: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  483891ms] [WARNING] [RSS] Automation-Tribe: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  484000ms] [INFO] [RSS] Automation-Tribe: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  484000ms] [INFO] [RSS DB] Automation-Tribe: 0 סרטונים, topicIds=["t8","t12"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  484001ms] [INFO] [autoRssSync] Automation-Tribe: 0 ב-RSS, 0 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  484001ms] [WARNING] [RSS] AI Andy: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  484331ms] [INFO] [RSS] AI Andy: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  484333ms] [INFO] [RSS DB] AI Andy: 5 סרטונים, topicIds=["t1","t12"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  484334ms] [INFO] [autoRssSync] AI Andy: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  484334ms] [WARNING] [RSS] Aimprove - אימפרוב: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  484479ms] [INFO] [RSS] Aimprove - אימפרוב: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  484483ms] [INFO] [RSS DB] Aimprove - אימפרוב: 5 סרטונים, topicIds=["t1"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  484484ms] [INFO] [autoRssSync] Aimprove - אימפרוב: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  484484ms] [WARNING] [RSS] Eden Bibas: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  484748ms] [INFO] [RSS] Eden Bibas: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  484750ms] [INFO] [RSS DB] Eden Bibas: 5 סרטונים, topicIds=["t1","t12"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  484751ms] [INFO] [autoRssSync] Eden Bibas: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  484751ms] [WARNING] [RSS] Base44 Community: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  484865ms] [INFO] [RSS] Base44 Community: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  484866ms] [INFO] [RSS DB] Base44 Community: 0 סרטונים, topicIds=["t13","t9"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  484868ms] [INFO] [autoRssSync] Base44 Community: 0 ב-RSS, 0 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  484868ms] [WARNING] [RSS] Ran Bar Zik: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5174/src/services/rssIngestion.js:122
+[  485159ms] [INFO] [RSS] Ran Bar Zik: fetched via dev proxy @ http://localhost:5174/src/services/rssIngestion.js:138
+[  485161ms] [INFO] [RSS DB] Ran Bar Zik: 5 סרטונים, topicIds=["t9","t12"] @ http://localhost:5174/src/services/rssIngestion.js:287
+[  485162ms] [INFO] [autoRssSync] Ran Bar Zik: 5 ב-RSS, 5 קיימים, 0 חדשים @ http://localhost:5174/src/services/autoRssSync.js:77
+[  485162ms] [INFO] [autoRssSync] הסתיים — 0 סרטונים חדשים נוספו @ http://localhost:5174/src/services/autoRssSync.js:92
+[  539582ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/api/apps/your_base44_app_id/analytics/track/batch:0
+[  539582ms] [ERROR] [Base44 SDK Error] 404: App not found @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3132
+[  539583ms] [ERROR] Error data: {
+  "error_type": "HTTPException",
+  "message": "App not found",
+  "detail": "App not found",
+  "traceback": "",
+  "request_id": null
+} @ http://localhost:5174/node_modules/.vite/deps/@base44_sdk.js?v=35ef5c09:3135
+[  572635ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258340:0
+[  572636ms] [ERROR] [vite] Failed to reload /src/App.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  572715ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/pages/MentorPage.jsx?t=1778493258206:0
+[  572715ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/pages/TopicPage.jsx?t=1778493258206:0
+[  572715ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:5174/src/pages/LearningQueue.jsx?t=1778493258206:0
+[  572716ms] [ERROR] [vite] Failed to reload /src/pages/MentorPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  572716ms] [ERROR] [vite] Failed to reload /src/pages/TopicPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  572716ms] [ERROR] [vite] Failed to reload /src/pages/LearningQueue.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  573586ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258206:0
+[  573586ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575009ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=6928733a:21608
+[  575010ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  575010ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575011ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  575011ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575037ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575038ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575039ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575040ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575041ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575041ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575044ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258206:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  575049ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  575113ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575113ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575114ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575114ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575114ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575115ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575115ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258206:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  575115ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=c95a4039:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  575147ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258219:0
+[  575147ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575836ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  575836ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575869ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  575869ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575895ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575895ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575896ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575896ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575896ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575896ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  575897ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258219:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  575897ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  575911ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  575911ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575965ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258220:0
+[  575965ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  575999ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575999ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  575999ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576000ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576000ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576000ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576000ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258219:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576001ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576018ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576018ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576019ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576019ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576019ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576020ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576020ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258219:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576020ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576081ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576081ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576085ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  576085ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576119ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258249:0
+[  576119ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576137ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576138ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576138ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576139ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576139ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576139ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576140ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258249:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576141ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576165ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576166ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576166ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576166ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576166ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576166ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576167ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258249:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576167ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576247ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576247ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576247ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576247ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576247ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576247ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576248ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258249:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576248ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576295ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576295ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576295ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576295ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576296ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576296ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576296ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258249:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576296ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576308ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258251:0
+[  576309ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576339ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576339ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576339ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576340ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576340ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576340ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576341ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258251:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576341ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576384ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258291:0
+[  576384ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576414ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576415ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576415ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576416ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576416ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576417ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576417ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258251:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576418ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576419ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576419ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576456ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576456ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576461ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576461ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576462ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576462ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576463ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576463ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576463ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258293:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576464ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576524ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576525ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576534ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  576534ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576570ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576571ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576571ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576572ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576573ms] [ERROR] Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. @ http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:135
+[  576573ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3705:24)
+    at invokeGuardedCallback (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:3739:39)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19818:15)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+[  576573ms] [ERROR] The above error occurred in the <QueryClientProvider> component:
+
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1778493258294:157:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14079
+[  576573ms] TypeError: Cannot read properties of null (reading 'useEffect')
+    at Object.useEffect (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=6928733a:1078:29)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=6928733a:3196:9)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19251:20)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19190:13)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:19169:15)
+    at recoverFromConcurrentError (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=3d78c8da:18786:28)
+[  576667ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258294:0
+[  576668ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576687ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576687ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576691ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersToVideoTopics' @ http://localhost:5174/@vite/client:881
+[  576691ms] [ERROR] [vite] Failed to reload /src/pages/Admin.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576741ms] [ERROR] [vite] SyntaxError: The requested module '/src/services/videoAnalytics.js' does not provide an export named 'chaptersFromAiAnalysisResult' @ http://localhost:5174/@vite/client:881
+[  576741ms] [ERROR] [vite] Failed to reload /src/pages/TopicLearningPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  576796ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1778493258295:0
+[  576796ms] [ERROR] [vite] Failed to reload /src/components/dashboard/VideoDetailPanel.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:881
+[  577202ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:0
+[  578633ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:0

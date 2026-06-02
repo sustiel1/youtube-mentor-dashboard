@@ -1,0 +1,403 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "מדריך" [ref=e9] [cursor=pointer]:
+          - generic [ref=e12]:
+            - img
+        - generic [ref=e13]:
+          - link "דף הבית של YouTube" [ref=e14] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e19]:
+              - img
+          - generic [ref=e20]: IL
+        - button "לדילוג על הניווט" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: לדילוג על הניווט
+      - generic [ref=e29]:
+        - search [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - combobox "חיפוש" [expanded] [ref=e34]
+              - button [ref=e37] [cursor=pointer]
+            - button "Search" [ref=e38] [cursor=pointer]:
+              - generic [ref=e41]:
+                - img
+        - generic [ref=e43]:
+          - button "חיפוש באמצעות הקול" [ref=e45] [cursor=pointer]:
+            - generic [ref=e49]:
+              - img
+          - tooltip "tooltip"
+      - generic [ref=e54]:
+        - button "הגדרות" [ref=e59] [cursor=pointer]:
+          - generic [ref=e62]:
+            - img
+        - link "כניסה" [ref=e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26hl%3Diw%26next%3Dhttps%253A%252F%252Fwww.youtube.com%252F%2540DorAmirTrading&hl=he&ec=65620
+          - generic [ref=e69]:
+            - img
+          - generic [ref=e70]: כניסה
+  - navigation [ref=e74]:
+    - generic [ref=e75]:
+      - link "דף הבית" [ref=e77] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e80]:
+          - img
+        - generic [ref=e81]: דף הבית
+      - link "Shorts" [ref=e83] [cursor=pointer]:
+        - /url: /shorts/
+        - generic [ref=e86]:
+          - img
+        - generic [ref=e87]: Shorts
+      - link "מינויים" [ref=e89] [cursor=pointer]:
+        - /url: /feed/subscriptions
+        - generic [ref=e92]:
+          - img
+        - generic [ref=e93]: מינויים
+      - link "הדף שלי" [ref=e95] [cursor=pointer]:
+        - /url: /feed/you
+        - generic [ref=e98]:
+          - img
+        - generic [ref=e99]: הדף שלי
+  - generic [ref=e100]:
+    - main [ref=e101]:
+      - generic [ref=e108]:
+        - generic [ref=e124]:
+          - heading "Dor Amir Trading" [level=1] [ref=e126]
+          - generic [ref=e127]:
+            - group [ref=e128]:
+              - generic [ref=e129]: "@DorAmirTrading"
+            - generic [ref=e130]: •
+            - group [ref=e131]:
+              - generic "‏‫‏3.29 אלף‬‏ ‏מנויים‏" [ref=e132]: ‏‫3.29K‏‬‏ ‏מנויים‏
+              - generic [ref=e133]: •
+              - generic [ref=e134]: ‫377‬ סרטונים
+          - generic [ref=e136] [cursor=pointer]:
+            - generic [ref=e137]: ברוכים הבאים לערוץ שלי
+            - button "תיאור. ברוכים הבאים לערוץ שלי…כדי לראות עוד טקסט, אפשר ללחוץ." [ref=e138]:
+              - generic [ref=e139]: …עוד
+          - generic [ref=e140]:
+            - link "instagram.com/doramir_7" [ref=e143] [cursor=pointer]:
+              - /url: https://www.youtube.com/redirect?event=channel_header&redir_token=QUFFLUhqbXdOQ1NteVF3TzBFdXhmSUZSQ3k4c3hETnVaZ3xBQ3Jtc0trZGVKRGExNENLejdONm1KTTNWTUZsSUJfTHE3OEF0Y09QRWNEY0hMZi1fM0VEbDMtVElmT2kxV0ZmeVVGRW54RGtIbTN2NmZiNXBFM1RncF81QlgyOG5NUTlrVDVJS21Ya0hjMjBiTXRGRkNxM3hzZw&q=https%3A%2F%2Fwww.instagram.com%2Fdoramir_7%2F
+            - button "ו-3 קישורים נוספים" [ref=e146] [cursor=pointer]
+          - button "הרשמה למינוי" [ref=e150] [cursor=pointer]:
+            - generic [ref=e151]: הרשמה למינוי
+        - tablist [ref=e158]:
+          - tablist [ref=e162]:
+            - tab "דף הבית" [selected] [ref=e163] [cursor=pointer]:
+              - generic [ref=e164]: דף הבית
+            - tab "סרטונים" [ref=e165] [cursor=pointer]:
+              - generic [ref=e166]: סרטונים
+            - tab "Shorts" [ref=e167] [cursor=pointer]:
+              - generic [ref=e168]: Shorts
+            - tab "בשידור חי" [ref=e169] [cursor=pointer]:
+              - generic [ref=e170]: בשידור חי
+            - tab "קורסים" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]: קורסים
+            - tab "פלייליסטים" [ref=e173] [cursor=pointer]:
+              - generic [ref=e174]: פלייליסטים
+            - button "חיפוש" [ref=e178] [cursor=pointer]:
+              - generic [ref=e181]:
+                - img
+          - button [ref=e184] [cursor=pointer]:
+            - generic [ref=e185]:
+              - img
+      - generic [ref=e190]:
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - generic [ref=e198]:
+              - img
+            - heading "Shorts" [level=2] [ref=e200]:
+              - generic [ref=e202]: Shorts
+            - button "פעולות נוספות" [ref=e206] [cursor=pointer]:
+              - generic [ref=e209]:
+                - img
+          - generic [ref=e211]:
+            - generic [ref=e214]:
+              - generic [ref=e216]:
+                - link [ref=e217] [cursor=pointer]:
+                  - /url: /shorts/L9Trdut9veo
+                - generic [ref=e221] [cursor=pointer]:
+                  - 'link "תנודה בשווקים וחוסר ריכוז | 11.02.26 #daytrading #trading #trader" [ref=e222]':
+                    - /url: /shorts/L9Trdut9veo
+                  - generic [ref=e223]: ‫330‬ צפיות
+                - button "פעולות נוספות" [ref=e225] [cursor=pointer]:
+                  - generic [ref=e229]:
+                    - img
+              - generic [ref=e234]:
+                - link [ref=e235] [cursor=pointer]:
+                  - /url: /shorts/zXt0yPL5tcg
+                - generic [ref=e239] [cursor=pointer]:
+                  - 'link "טרייד שלקחנו על AAPL #trading #bitcoin #qqq #trader" [ref=e240]':
+                    - /url: /shorts/zXt0yPL5tcg
+                  - generic [ref=e241]: ‫611‬ צפיות
+                - button "פעולות נוספות" [ref=e243] [cursor=pointer]:
+                  - generic [ref=e247]:
+                    - img
+              - generic [ref=e252]:
+                - link [ref=e253] [cursor=pointer]:
+                  - /url: /shorts/xJQfzCsNqHI
+                - generic [ref=e257] [cursor=pointer]:
+                  - 'link "QQQ 5.5 יחידות סיכון #trading #daytrading #bitcoin #nq #trader #חופשכלכלי #qqq" [ref=e258]':
+                    - /url: /shorts/xJQfzCsNqHI
+                  - generic [ref=e259]: ‫634‬ צפיות
+                - button "פעולות נוספות" [ref=e261] [cursor=pointer]:
+                  - generic [ref=e265]:
+                    - img
+              - generic [ref=e270]:
+                - link [ref=e271] [cursor=pointer]:
+                  - /url: /shorts/ppgKuFAqCEc
+                - generic [ref=e275] [cursor=pointer]:
+                  - 'link "יש אנשים שקוראים לו QQQ / TQQQ / NQ - לא כל כך משנה #trader #trading #qqq #nq #tqqq" [ref=e276]':
+                    - /url: /shorts/ppgKuFAqCEc
+                  - generic [ref=e277]: ‫834‬ צפיות
+                - button "פעולות נוספות" [ref=e279] [cursor=pointer]:
+                  - generic [ref=e283]:
+                    - img
+              - generic [ref=e288]:
+                - link [ref=e289] [cursor=pointer]:
+                  - /url: /shorts/96iAsdkA-WQ
+                - generic [ref=e293] [cursor=pointer]:
+                  - 'link "נאסדק #nq #qqq #future #daytrader #daytrading #חוזיםעתידיים" [ref=e294]':
+                    - /url: /shorts/96iAsdkA-WQ
+                  - generic [ref=e295]: ‫511‬ צפיות
+                - button "פעולות נוספות" [ref=e297] [cursor=pointer]:
+                  - generic [ref=e301]:
+                    - img
+              - generic [ref=e306]:
+                - link [ref=e307] [cursor=pointer]:
+                  - /url: /shorts/FTsDpMRqbhU
+                - generic [ref=e311] [cursor=pointer]:
+                  - 'link "טרייד שלקחנו בלייב על אמזון #trading #trader#מסחריומי #לייבמסחר" [ref=e312]':
+                    - /url: /shorts/FTsDpMRqbhU
+                  - generic [ref=e313]: ‫597‬ צפיות
+                - button "פעולות נוספות" [ref=e315] [cursor=pointer]:
+                  - generic [ref=e319]:
+                    - img
+            - button "הבא" [ref=e325] [cursor=pointer]:
+              - generic [ref=e329]:
+                - img
+        - generic [ref=e336]:
+          - heading "סרטונים" [level=2] [ref=e339]:
+            - link "סרטונים" [ref=e342] [cursor=pointer]:
+              - /url: /@DorAmirTrading/videos?view=0&sort=dd&shelf_id=3
+              - generic [ref=e343]: סרטונים
+          - generic [ref=e345]:
+            - generic [ref=e348]:
+              - generic [ref=e350] [cursor=pointer]:
+                - link [ref=e351]:
+                  - /url: /watch?v=AoGWOB7VchI
+                  - generic [ref=e358]: 40:37
+                - generic [ref=e360]:
+                  - generic [ref=e361]:
+                    - heading "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28 40 דקות" [level=3] [ref=e362]:
+                      - link "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28 40 דקות" [ref=e363]:
+                        - /url: /watch?v=AoGWOB7VchI
+                        - text: סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28
+                    - group [ref=e366]:
+                      - generic [ref=e367]: ‫106‬ צפיות
+                      - generic [ref=e368]: •
+                      - generic [ref=e369]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e372]:
+                    - generic [ref=e376]:
+                      - img
+              - generic [ref=e381] [cursor=pointer]:
+                - link [ref=e382]:
+                  - /url: /watch?v=8N_cx2BEeY0
+                  - generic [ref=e389]: 48:10
+                - generic [ref=e391]:
+                  - generic [ref=e392]:
+                    - 'heading "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27 48 דקות" [level=3] [ref=e393]':
+                      - 'link "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27 48 דקות" [ref=e394]':
+                        - /url: /watch?v=8N_cx2BEeY0
+                        - text: "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27"
+                    - group [ref=e397]:
+                      - generic [ref=e398]: ‫129‬ צפיות
+                      - generic [ref=e399]: •
+                      - generic [ref=e400]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e403]:
+                    - generic [ref=e407]:
+                      - img
+              - generic [ref=e412] [cursor=pointer]:
+                - link [ref=e413]:
+                  - /url: /watch?v=mxjk0KuEQEo
+                  - generic [ref=e420]: 8:47
+                - generic [ref=e422]:
+                  - generic [ref=e423]:
+                    - 'heading "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26 8 דקות, 47 שניות" [level=3] [ref=e424]':
+                      - 'link "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26 8 דקות, 47 שניות" [ref=e425]':
+                        - /url: /watch?v=mxjk0KuEQEo
+                        - text: "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26"
+                    - group [ref=e428]:
+                      - generic [ref=e429]: ‫78‬ צפיות
+                      - generic [ref=e430]: •
+                      - generic [ref=e431]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e434]:
+                    - generic [ref=e438]:
+                      - img
+              - generic [ref=e443] [cursor=pointer]:
+                - link [ref=e444]:
+                  - /url: /watch?v=vbtUczknubo
+                  - generic [ref=e451]: 26:13
+                - generic [ref=e453]:
+                  - generic [ref=e454]:
+                    - heading "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25 26 דקות" [level=3] [ref=e455]:
+                      - link "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25 26 דקות" [ref=e456]:
+                        - /url: /watch?v=vbtUczknubo
+                        - text: איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25
+                    - group [ref=e459]:
+                      - generic [ref=e460]: ‫89‬ צפיות
+                      - generic [ref=e461]: •
+                      - generic [ref=e462]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e465]:
+                    - generic [ref=e469]:
+                      - img
+              - generic [ref=e474] [cursor=pointer]:
+                - link [ref=e475]:
+                  - /url: /watch?v=lFIbFLGcB5U
+                  - generic [ref=e482]: 17:32
+                - generic [ref=e484]:
+                  - generic [ref=e485]:
+                    - heading "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24 17 דקות" [level=3] [ref=e486]:
+                      - link "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24 17 דקות" [ref=e487]:
+                        - /url: /watch?v=lFIbFLGcB5U
+                        - text: התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24
+                    - group [ref=e490]:
+                      - generic [ref=e491]: ‫58‬ צפיות
+                      - generic [ref=e492]: •
+                      - generic [ref=e493]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e496]:
+                    - generic [ref=e500]:
+                      - img
+              - generic [ref=e505] [cursor=pointer]:
+                - link [ref=e506]:
+                  - /url: /watch?v=FZTlm0d4478
+                  - generic [ref=e513]: 33:47
+                - generic [ref=e515]:
+                  - generic [ref=e516]:
+                    - 'heading "מסחר סווינג (Swing): לעשות כסף בלי להיות דבוק למסך | קורס מסחר בחינם - שיעור 23 33 דקות" [level=3] [ref=e517]':
+                      - 'link "מסחר סווינג (Swing): לעשות כסף בלי להיות דבוק למסך | קורס מסחר בחינם - שיעור 23 33 דקות" [ref=e518]':
+                        - /url: /watch?v=FZTlm0d4478
+                        - text: "מסחר סווינג (Swing): לעשות כסף בלי להיות דבוק למסך | קורס מסחר בחינם - שיעור 23"
+                    - group [ref=e521]:
+                      - generic [ref=e522]: ‫119‬ צפיות
+                      - generic [ref=e523]: •
+                      - generic [ref=e524]: לפני חודש (1)
+                  - button "פעולות נוספות" [ref=e527]:
+                    - generic [ref=e531]:
+                      - img
+            - button "הבא" [ref=e537] [cursor=pointer]:
+              - generic [ref=e541]:
+                - img
+        - generic [ref=e548]:
+          - heading "סרטונים פופולריים" [level=2] [ref=e551]:
+            - link "סרטונים פופולריים" [ref=e554] [cursor=pointer]:
+              - /url: /@DorAmirTrading/videos?view=0&sort=p&shelf_id=6
+              - generic [ref=e555]: סרטונים פופולריים
+          - generic [ref=e557]:
+            - generic [ref=e560]:
+              - generic [ref=e562] [cursor=pointer]:
+                - link [ref=e563]:
+                  - /url: /watch?v=lx8bCsfbuWg
+                  - generic [ref=e570]: 31:19
+                - generic [ref=e572]:
+                  - generic [ref=e573]:
+                    - heading "אל תסחרו מבלי לדעת את זה! - שיעור מניפולציות! 31 דקות" [level=3] [ref=e574]:
+                      - link "אל תסחרו מבלי לדעת את זה! - שיעור מניפולציות! 31 דקות" [ref=e575]:
+                        - /url: /watch?v=lx8bCsfbuWg
+                        - text: אל תסחרו מבלי לדעת את זה! - שיעור מניפולציות!
+                    - group [ref=e578]:
+                      - generic [ref=e579]: ‫40K‏‬ צפיות
+                      - generic [ref=e580]: •
+                      - generic [ref=e581]: לפני שנה
+                  - button "פעולות נוספות" [ref=e584]:
+                    - generic [ref=e588]:
+                      - img
+              - generic [ref=e593] [cursor=pointer]:
+                - link [ref=e594]:
+                  - /url: /watch?v=QsbpOCJzm10
+                  - generic [ref=e601]: 44:50
+                - generic [ref=e603]:
+                  - generic [ref=e604]:
+                    - 'heading "מסחר, דת ומה שביניהם - פודקאסט תכל''ס מסחר: פרק 2 44 דקות" [level=3] [ref=e605]':
+                      - 'link "מסחר, דת ומה שביניהם - פודקאסט תכל''ס מסחר: פרק 2 44 דקות" [ref=e606]':
+                        - /url: /watch?v=QsbpOCJzm10
+                        - text: "מסחר, דת ומה שביניהם - פודקאסט תכל'ס מסחר: פרק 2"
+                    - group [ref=e609]:
+                      - generic [ref=e610]: ‫4.2K‏‬ צפיות
+                      - generic [ref=e611]: •
+                      - generic [ref=e612]: לפני 11 חודשים
+                  - button "פעולות נוספות" [ref=e615]:
+                    - generic [ref=e619]:
+                      - img
+              - generic [ref=e624] [cursor=pointer]:
+                - link [ref=e625]:
+                  - /url: /watch?v=x_lSp5QYu-s
+                  - generic [ref=e632]: 1:39:12
+                - generic [ref=e634]:
+                  - generic [ref=e635]:
+                    - 'heading "הפסדים, פחדים וחרדות בדרך לנצחונות ואמונה - איפה הכל מתחיל? - פודקאסט תכל''ס מסחר: פרק 4 תמיר דמרי 1 שעה, 39 דקות" [level=3] [ref=e636]':
+                      - 'link "הפסדים, פחדים וחרדות בדרך לנצחונות ואמונה - איפה הכל מתחיל? - פודקאסט תכל''ס מסחר: פרק 4 תמיר דמרי 1 שעה, 39 דקות" [ref=e637]':
+                        - /url: /watch?v=x_lSp5QYu-s
+                        - text: "הפסדים, פחדים וחרדות בדרך לנצחונות ואמונה - איפה הכל מתחיל? - פודקאסט תכל'ס מסחר: פרק 4 תמיר דמרי"
+                    - group [ref=e640]:
+                      - generic [ref=e641]: ‫4.1K‏‬ צפיות
+                      - generic [ref=e642]: •
+                      - generic [ref=e643]: לפני 5 חודשים
+                  - button "פעולות נוספות" [ref=e646]:
+                    - generic [ref=e650]:
+                      - img
+              - generic [ref=e655] [cursor=pointer]:
+                - link [ref=e656]:
+                  - /url: /watch?v=7yNAC7pbMUA
+                  - generic [ref=e663]: 55:06
+                - generic [ref=e665]:
+                  - generic [ref=e666]:
+                    - heading "למה מוכרים לכם קורסים בשוק ההון? כל האמת בפרצוף עם דור עמיר 55 דקות" [level=3] [ref=e667]:
+                      - link "למה מוכרים לכם קורסים בשוק ההון? כל האמת בפרצוף עם דור עמיר 55 דקות" [ref=e668]:
+                        - /url: /watch?v=7yNAC7pbMUA
+                        - text: למה מוכרים לכם קורסים בשוק ההון? כל האמת בפרצוף עם דור עמיר
+                    - group [ref=e671]:
+                      - generic [ref=e672]: ‫2.8K‏‬ צפיות
+                      - generic [ref=e673]: •
+                      - generic [ref=e674]: לפני שנתיים
+                  - button "פעולות נוספות" [ref=e677]:
+                    - generic [ref=e681]:
+                      - img
+              - generic [ref=e686] [cursor=pointer]:
+                - link [ref=e687]:
+                  - /url: /watch?v=d40H6RMSL0w&pp=0gcJCd4KAYcqIYzv
+                  - generic [ref=e694]: 57:35
+                - generic [ref=e696]:
+                  - generic [ref=e697]:
+                    - heading "הדברים שלא ידעתם עליי! | ינון, מסחר, אמונה, אושר ואפילו מכות בבית הכנסת? 57 דקות" [level=3] [ref=e698]:
+                      - link "הדברים שלא ידעתם עליי! | ינון, מסחר, אמונה, אושר ואפילו מכות בבית הכנסת? 57 דקות" [ref=e699]:
+                        - /url: /watch?v=d40H6RMSL0w&pp=0gcJCd4KAYcqIYzv
+                        - text: הדברים שלא ידעתם עליי! | ינון, מסחר, אמונה, אושר ואפילו מכות בבית הכנסת?
+                    - group [ref=e702]:
+                      - generic [ref=e703]: ‫2.1K‏‬ צפיות
+                      - generic [ref=e704]: •
+                      - generic [ref=e705]: לפני שנה
+                  - button "פעולות נוספות" [ref=e708]:
+                    - generic [ref=e712]:
+                      - img
+              - generic [ref=e717] [cursor=pointer]:
+                - link [ref=e718]:
+                  - /url: /watch?v=SXGoQKWY1ME
+                  - generic [ref=e725]: 38:25
+                - generic [ref=e727]:
+                  - generic [ref=e728]:
+                    - 'heading "הקשר בין מסחר לתואר - פודקאסט תכל''ס מסחר: פרק 1 38 דקות" [level=3] [ref=e729]':
+                      - 'link "הקשר בין מסחר לתואר - פודקאסט תכל''ס מסחר: פרק 1 38 דקות" [ref=e730]':
+                        - /url: /watch?v=SXGoQKWY1ME
+                        - text: "הקשר בין מסחר לתואר - פודקאסט תכל'ס מסחר: פרק 1"
+                    - group [ref=e733]:
+                      - generic [ref=e734]: ‫1.9K‏‬ צפיות
+                      - generic [ref=e735]: •
+                      - generic [ref=e736]: לפני שנה
+                  - button "פעולות נוספות" [ref=e739]:
+                    - generic [ref=e743]:
+                      - img
+            - button "הבא" [ref=e749] [cursor=pointer]:
+              - generic [ref=e753]:
+                - img
+    - text: •

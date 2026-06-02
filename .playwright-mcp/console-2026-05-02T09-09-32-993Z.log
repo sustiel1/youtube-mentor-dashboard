@@ -1,0 +1,376 @@
+[     119ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5184/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=a9ccdb68:21608
+[     200ms] [INFO] [App] autoRssSync: סנכרון בוצע בפחות מ-8 שעות — מדלג @ http://localhost:5184/src/App.jsx?t=1777712959634:44
+[     412ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/User/me:0
+[     413ms] [ERROR] [Base44 SDK Error] 401: Authentication required to view users @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     413ms] [ERROR] Error data: {
+  "message": "Authentication required to view users",
+  "detail": "You must be logged in to perform this operation.",
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     789ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dc1efd4e64f6914d2d%22%7D:0
+[     791ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     791ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     791ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202fcc10c1c22b4c7a5%22%7D:0
+[     794ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     794ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     797ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55201a221de5bd3f4f081%22%7D:0
+[     798ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     798ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     800ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dde6972985542890cc%22%7D:0
+[     801ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     801ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     827ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551eec81f8166c63b12c1%22%7D:0
+[     828ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     828ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     971ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd34c7432b309e0b98%22%7D:0
+[     974ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     974ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1064ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202b057ffcffb91bbcf%22%7D:0
+[    1066ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1066ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1066ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd14f40d7c4c0837f3%22%7D:0
+[    1068ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1068ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1073ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ee5e2c6762249f99a7%22%7D:0
+[    1074ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1074ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1082ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551deac60b0104708bb51%22%7D:0
+[    1083ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1083ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1244ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55203f277ddc71ae696a8%22%7D:0
+[    1245ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1245ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1332ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef484bf1fa43e1c684%22%7D:0
+[    1333ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1333ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1334ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef25b41d504725d19b%22%7D:0
+[    1336ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1336ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1336ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed210b7f42730f32150%22%7D:0
+[    1336ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1336ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1355ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef34c7432b309e0ba0%22%7D:0
+[    1356ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1356ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1523ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed20bb5e1012fa2b749%22%7D:0
+[    1523ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1523ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1544ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f552026a50f4fddcaf3d26%22%7D:0
+[    1545ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1545ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1599ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3727da8a9fdf63bd8%22%7D:0
+[    1599ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1599ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1606ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed2c1b7fae10fdebe9b%22%7D:0
+[    1607ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1607ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1616ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f5bd634c1a1ef0afa0f84b%22%7D:0
+[    1617ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1617ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1632ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3534564bc2d4f3b20%22%7D:0
+[    1632ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1632ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1778ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f5bd6353c90924656d3846%22%7D:0
+[    1778ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1778ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1861ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f5bd63dfda261f54a2afbf%22%7D:0
+[    1861ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1861ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1863ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f5bd63ce5e5d6e50100bd3%22%7D:0
+[    1863ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1863ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    6553ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Source:0
+[    6554ms] [ERROR] [Base44 SDK Error] 404: Entity schema Source not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    6554ms] [ERROR] Error data: {
+  "message": "Entity schema Source not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    6555ms] [WARNING] [useSources] Base44 unavailable: Entity schema Source not found in app @ http://localhost:5184/src/hooks/useSources.js:12
+[  759671ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5184/@vite/client:963
+[  759674ms] [ERROR] WebSocket connection to 'ws://localhost:5184/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5184/@vite/client:1034
+[28281406ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/analytics/track/batch:0
+[28281498ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28281800ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5184/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=a9ccdb68:21608
+[28282090ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/User/me:0
+[28282099ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282122ms] [INFO] [autoRssSync] מתחיל sync עבור 13 מנטורים @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:62
+[28282122ms] [WARNING] [RSS] Micha.Stocks: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282141ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Video?sort=-publishedAt:0
+[28282142ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282142ms] [WARNING] [useVideos] Base44 unavailable — using mock data @ http://localhost:5184/src/hooks/useVideos.js?t=1777711752822:24
+[28282143ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Category:0
+[28282143ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282143ms] [WARNING] [useCategories] Base44 unavailable — using mock data: Request failed with status code 500 @ http://localhost:5184/src/hooks/useCategories.js:12
+[28282147ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/analytics/track/batch:0
+[28282148ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/7c3aed/ffffff?text=Ed+Hill+AI:0
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/1d4ed8/ffffff?text=%D7%91%D7%95%D7%A8%D7%A1%D7%94+%D7%92%D7%A8%D7%A3:0
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/0e7490/ffffff?text=Micha.Stocks:0
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/0f766e/ffffff?text=Automation+Tribe:0
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/6d28d9/ffffff?text=AI+Andy:0
+[28282375ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/4c1d95/ffffff?text=Aimprove:0
+[28282384ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCSxjNbPriyBh9RNl_QNSAtw:0
+[28282456ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/155e75/ffffff?text=Hasidic+Trader:0
+[28282457ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/5b21b6/ffffff?text=Eden+Bibas:0
+[28282457ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/065f46/ffffff?text=Oliver+Velez:0
+[28282458ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/312e81/ffffff?text=AI+Pathways:0
+[28282524ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/0c4a6e/ffffff?text=Dor+Amir:0
+[28282524ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/0369a1/ffffff?text=Eyal+Shani:0
+[28282525ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/7e22ce/ffffff?text=Base44:0
+[28282525ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/1e3a5f/ffffff?text=Ran+Bar+Zik:0
+[28282526ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://placehold.co/480x270/134e4a/ffffff?text=Wysetrade:0
+[28282586ms] [WARNING] [autoRssSync] Micha.Stocks: נכשל — שגיאת RSS עבור "Micha.Stocks": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282587ms] [WARNING] [RSS] בורסה גרף: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282588ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m1_1%22%7D:0
+[28282589ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282589ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m1_2%22%7D:0
+[28282590ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282590ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m2_1%22%7D:0
+[28282590ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282591ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m2_2%22%7D:0
+[28282591ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282591ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m3_1%22%7D:0
+[28282592ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282592ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m3_2%22%7D:0
+[28282592ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282593ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m4_1%22%7D:0
+[28282593ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282593ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m4_2%22%7D:0
+[28282593ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282593ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m5_1%22%7D:0
+[28282594ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282594ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m6_1%22%7D:0
+[28282594ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282594ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m6_2%22%7D:0
+[28282594ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282595ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m7_1%22%7D:0
+[28282595ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282595ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m8_1%22%7D:0
+[28282595ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282595ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m9_1%22%7D:0
+[28282596ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282596ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m9_2%22%7D:0
+[28282596ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282596ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m10_1%22%7D:0
+[28282596ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282597ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m11_1%22%7D:0
+[28282597ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282597ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m12_1%22%7D:0
+[28282597ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282597ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m12_2%22%7D:0
+[28282598ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282598ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m13_1%22%7D:0
+[28282598ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282598ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m14_1%22%7D:0
+[28282599ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282599ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m14_2%22%7D:0
+[28282599ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282599ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m15_1%22%7D:0
+[28282599ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282600ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%22v_m15_2%22%7D:0
+[28282600ms] [ERROR] [Base44 SDK Error] 500: Request failed with status code 500 @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28282753ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCrQmXSenNhePSOiCTdnhwRg:0
+[28282754ms] [WARNING] [autoRssSync] בורסה גרף: נכשל — שגיאת RSS עבור "בורסה גרף": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282755ms] [WARNING] [RSS] The Hasidic Trader: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282785ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCSB4SNRWhbemGAJ4wfeKj2Q:0
+[28282786ms] [WARNING] [autoRssSync] The Hasidic Trader: נכשל — שגיאת RSS עבור "The Hasidic Trader": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282786ms] [WARNING] [RSS] Oliver Velez Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282797ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCmD96zZeKnYof2jO1ON6acA:0
+[28282800ms] [WARNING] [autoRssSync] Oliver Velez Trading: נכשל — שגיאת RSS עבור "Oliver Velez Trading": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282800ms] [WARNING] [RSS] Dor Amir Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282814ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCSyPOk83lhOXoGcT2vUNhdw:0
+[28282817ms] [WARNING] [autoRssSync] Dor Amir Trading: נכשל — שגיאת RSS עבור "Dor Amir Trading": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282818ms] [WARNING] [RSS] Eyal Shani: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282831ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCNVcbJ6pxGEWGuoGopK83sQ:0
+[28282838ms] [WARNING] [autoRssSync] Eyal Shani: נכשל — שגיאת RSS עבור "Eyal Shani": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282839ms] [WARNING] [RSS] Wysetrade: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282968ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UC32oVb-nfyRBNlWzUw3dC5Q:0
+[28282969ms] [WARNING] [autoRssSync] Wysetrade: נכשל — שגיאת RSS עבור "Wysetrade": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282970ms] [WARNING] [RSS] Ed Hill AI Automation: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282985ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UC5_2We-HeVdEeHcIyfmMHOg:0
+[28282987ms] [WARNING] [autoRssSync] Ed Hill AI Automation: נכשל — שגיאת RSS עבור "Ed Hill AI Automation": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28282987ms] [WARNING] [RSS] Automation-Tribe: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28282999ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCFkwdS-osDYKdz4TCe7XIXA:0
+[28283000ms] [WARNING] [autoRssSync] Automation-Tribe: נכשל — שגיאת RSS עבור "Automation-Tribe": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28283000ms] [WARNING] [RSS] AI Andy: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28283016ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCCQfwUJOOBLF5R9xbFeIFcg:0
+[28283016ms] [WARNING] [autoRssSync] AI Andy: נכשל — שגיאת RSS עבור "AI Andy": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28283017ms] [WARNING] [RSS] Aimprove - אימפרוב: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28283027ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCfnihhol5a4Qc2EciLf5kOQ:0
+[28283027ms] [WARNING] [autoRssSync] Aimprove - אימפרוב: נכשל — שגיאת RSS עבור "Aimprove - אימפרוב": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28283027ms] [WARNING] [RSS] Eden Bibas: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28283039ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCGFogLEUR_nuiT83pt8zVWQ:0
+[28283042ms] [WARNING] [autoRssSync] Eden Bibas: נכשל — שגיאת RSS עבור "Eden Bibas": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28283043ms] [WARNING] [RSS] Ran Bar Zik: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[28283054ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5184/api/rss?channelId=UCxPN-JU3DsKwDgn5sTetNUQ:0
+[28283055ms] [WARNING] [autoRssSync] Ran Bar Zik: נכשל — שגיאת RSS עבור "Ran Bar Zik": fetch failed @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:84
+[28283056ms] [INFO] [autoRssSync] הסתיים — 0 סרטונים חדשים נוספו @ http://localhost:5184/src/services/autoRssSync.js?t=1777711752822:92
+[28306654ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Source:0
+[28306655ms] [ERROR] [Base44 SDK Error] 404: Entity schema Source not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28306655ms] [ERROR] Error data: {
+  "message": "Entity schema Source not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[28306655ms] [WARNING] [useSources] Base44 unavailable: Entity schema Source not found in app @ http://localhost:5184/src/hooks/useSources.js:12
+[28427584ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Source:0
+[28427585ms] [ERROR] [Base44 SDK Error] 404: Entity schema Source not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[28427585ms] [ERROR] Error data: {
+  "message": "Entity schema Source not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[28427585ms] [WARNING] [useSources] Base44 unavailable: Entity schema Source not found in app @ http://localhost:5184/src/hooks/useSources.js:12

@@ -1,0 +1,4 @@
+[    1639ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5184/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=b40c77c2:21608
+[    1702ms] [INFO] [useVideos] local-first — 64 videos from storage @ http://localhost:5184/src/hooks/useVideos.js:23
+[    1792ms] [INFO] [App] channelScan: סריקה בוצעה בפחות מ-8 שעות — מדלג @ http://localhost:5184/src/App.jsx:45
+[    2063ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/favicon.ico:0

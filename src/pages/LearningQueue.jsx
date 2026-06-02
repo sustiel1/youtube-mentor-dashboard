@@ -42,7 +42,7 @@ const SECTIONS = [
   },
 ];
 
-export default function LearningQueue() {
+export default function LearningQueue({ isDark, toggleTheme }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState({ completed: true });
@@ -206,6 +206,7 @@ export default function LearningQueue() {
       <VideoDetailPanel
         video={selectedVideo}
         mentorName={selectedMentorName}
+        mentors={mentors.filter((m) => m.active !== false)}
         open={panelOpen}
         onOpenChange={setPanelOpen}
         topics={topics}
@@ -213,6 +214,8 @@ export default function LearningQueue() {
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
         onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
       />
     </div>
   );

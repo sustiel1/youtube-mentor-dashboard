@@ -1,0 +1,400 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e605] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+        - generic [ref=e32]:
+          - button "נושאים" [ref=e33] [cursor=pointer]
+          - button "הוסף" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+            - text: הוסף
+      - generic [ref=e37]:
+        - button "מנטור חדש" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e42]: מנטור חדש
+        - button "ניהול" [active] [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+          - generic [ref=e47]: ניהול
+    - main [ref=e48]:
+      - generic [ref=e607]:
+        - generic [ref=e608]:
+          - heading "ניהול" [level=1] [ref=e609]
+          - paragraph [ref=e610]: ניהול מנטורים, קטגוריות, נושאים ומקורות
+        - generic [ref=e611]:
+          - tablist [ref=e612]:
+            - tab "משיכת RSS" [selected] [ref=e613] [cursor=pointer]:
+              - img [ref=e614]
+              - text: משיכת RSS
+            - tab "ערוצים" [ref=e618] [cursor=pointer]
+            - tab "נושאים" [ref=e619] [cursor=pointer]
+            - tab "קטגוריות" [ref=e620] [cursor=pointer]
+            - tab "מקורות" [ref=e621] [cursor=pointer]
+          - tabpanel "משיכת RSS" [ref=e622]:
+            - generic [ref=e623]:
+              - generic [ref=e624]:
+                - generic [ref=e625]:
+                  - heading "משיכת RSS מיוטיוב" [level=2] [ref=e626]
+                  - paragraph [ref=e627]: 14 מתוך 15 ערוצים מוגדרים עם Channel ID
+                  - paragraph [ref=e628]: "סנכרון אחרון: לפני 2 שעות"
+                - generic [ref=e629]:
+                  - button "רענן סטטיסטיקות" [ref=e630] [cursor=pointer]:
+                    - img [ref=e631]
+                    - text: רענן סטטיסטיקות
+                  - button "זהה Channel IDs" [ref=e636] [cursor=pointer]:
+                    - img [ref=e637]
+                    - text: זהה Channel IDs
+                  - button "משוך את כולם" [ref=e640] [cursor=pointer]:
+                    - img [ref=e641]
+                    - text: משוך את כולם
+                  - button "מחק את כולם" [ref=e646] [cursor=pointer]:
+                    - img [ref=e647]
+                    - text: מחק את כולם
+              - generic [ref=e650]:
+                - img [ref=e651]
+                - generic [ref=e653]:
+                  - paragraph [ref=e654]: 1 ערוצים ממתינים ל-Channel ID
+                  - paragraph [ref=e655]:
+                    - text: לחץ
+                    - strong [ref=e656]: זהה
+                    - text: "בשורת הערוץ לזיהוי אוטומטי, או הוסף ב-Source entity:"
+                    - code [ref=e657]: youtube.com/channel/UCxxxxxx
+                    - text: .
+                  - paragraph [ref=e658]: "כיצד למצוא Channel ID: כנס לדף הערוץ ← View Page Source ← חפש \"channelId\""
+              - table [ref=e660]:
+                - rowgroup [ref=e661]:
+                  - row "ערוץ קטגוריה Channel ID זיהוי סטטוס RSS" [ref=e662]:
+                    - columnheader "ערוץ" [ref=e663]
+                    - columnheader "קטגוריה" [ref=e664]
+                    - columnheader "Channel ID" [ref=e665]
+                    - columnheader "זיהוי" [ref=e666]
+                    - columnheader "סטטוס RSS" [ref=e667]
+                    - columnheader [ref=e668]
+                - rowgroup [ref=e669]:
+                  - row "M Micha.Stocks — בחר נושא — UCSxjNbPriyB… מוכן משוך חדשים בדוק" [ref=e670]:
+                    - cell "M Micha.Stocks" [ref=e671]:
+                      - generic [ref=e672]:
+                        - generic [ref=e673]: M
+                        - generic [ref=e674]: Micha.Stocks
+                    - cell "— בחר נושא —" [ref=e675]:
+                      - combobox [ref=e676] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCSxjNbPriyB…" [ref=e677]:
+                      - generic [ref=e678]: UCSxjNbPriyB…
+                    - cell "מוכן" [ref=e679]:
+                      - generic [ref=e680]:
+                        - img [ref=e681]
+                        - text: מוכן
+                    - cell [ref=e684]
+                    - cell "משוך חדשים בדוק" [ref=e685]:
+                      - generic [ref=e686]:
+                        - button "משוך חדשים" [ref=e687] [cursor=pointer]
+                        - button "בדוק" [ref=e688] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e689] [cursor=pointer]:
+                          - img [ref=e690]
+                  - row "ב בורסה גרף — בחר נושא — UCrQmXSenNhe… מוכן משוך חדשים בדוק" [ref=e693]:
+                    - cell "ב בורסה גרף" [ref=e694]:
+                      - generic [ref=e695]:
+                        - generic [ref=e696]: ב
+                        - generic [ref=e697]: בורסה גרף
+                    - cell "— בחר נושא —" [ref=e698]:
+                      - combobox [ref=e699] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCrQmXSenNhe…" [ref=e700]:
+                      - generic [ref=e701]: UCrQmXSenNhe…
+                    - cell "מוכן" [ref=e702]:
+                      - generic [ref=e703]:
+                        - img [ref=e704]
+                        - text: מוכן
+                    - cell [ref=e707]
+                    - cell "משוך חדשים בדוק" [ref=e708]:
+                      - generic [ref=e709]:
+                        - button "משוך חדשים" [ref=e710] [cursor=pointer]
+                        - button "בדוק" [ref=e711] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e712] [cursor=pointer]:
+                          - img [ref=e713]
+                  - row "T The Hasidic Trader — בחר נושא — UCSB4SNRWhbe… מוכן משוך חדשים בדוק" [ref=e716]:
+                    - cell "T The Hasidic Trader" [ref=e717]:
+                      - generic [ref=e718]:
+                        - generic [ref=e719]: T
+                        - generic [ref=e720]: The Hasidic Trader
+                    - cell "— בחר נושא —" [ref=e721]:
+                      - combobox [ref=e722] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCSB4SNRWhbe…" [ref=e723]:
+                      - generic [ref=e724]: UCSB4SNRWhbe…
+                    - cell "מוכן" [ref=e725]:
+                      - generic [ref=e726]:
+                        - img [ref=e727]
+                        - text: מוכן
+                    - cell [ref=e730]
+                    - cell "משוך חדשים בדוק" [ref=e731]:
+                      - generic [ref=e732]:
+                        - button "משוך חדשים" [ref=e733] [cursor=pointer]
+                        - button "בדוק" [ref=e734] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e735] [cursor=pointer]:
+                          - img [ref=e736]
+                  - row "O Oliver Velez Trading — בחר נושא — UCmD96zZeKnY… מוכן משוך חדשים בדוק" [ref=e739]:
+                    - cell "O Oliver Velez Trading" [ref=e740]:
+                      - generic [ref=e741]:
+                        - generic [ref=e742]: O
+                        - generic [ref=e743]: Oliver Velez Trading
+                    - cell "— בחר נושא —" [ref=e744]:
+                      - combobox [ref=e745] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCmD96zZeKnY…" [ref=e746]:
+                      - generic [ref=e747]: UCmD96zZeKnY…
+                    - cell "מוכן" [ref=e748]:
+                      - generic [ref=e749]:
+                        - img [ref=e750]
+                        - text: מוכן
+                    - cell [ref=e753]
+                    - cell "משוך חדשים בדוק" [ref=e754]:
+                      - generic [ref=e755]:
+                        - button "משוך חדשים" [ref=e756] [cursor=pointer]
+                        - button "בדוק" [ref=e757] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e758] [cursor=pointer]:
+                          - img [ref=e759]
+                  - row "D Dor Amir Trading — בחר נושא — UCSyPOk83lhO… מוכן משוך חדשים בדוק" [ref=e762]:
+                    - cell "D Dor Amir Trading" [ref=e763]:
+                      - generic [ref=e764]:
+                        - generic [ref=e765]: D
+                        - generic [ref=e766]: Dor Amir Trading
+                    - cell "— בחר נושא —" [ref=e767]:
+                      - combobox [ref=e768] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCSyPOk83lhO…" [ref=e769]:
+                      - generic [ref=e770]: UCSyPOk83lhO…
+                    - cell "מוכן" [ref=e771]:
+                      - generic [ref=e772]:
+                        - img [ref=e773]
+                        - text: מוכן
+                    - cell [ref=e776]
+                    - cell "משוך חדשים בדוק" [ref=e777]:
+                      - generic [ref=e778]:
+                        - button "משוך חדשים" [ref=e779] [cursor=pointer]
+                        - button "בדוק" [ref=e780] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e781] [cursor=pointer]:
+                          - img [ref=e782]
+                  - row "E Eyal Shani — בחר נושא — UCNVcbJ6pxGE… מוכן משוך חדשים בדוק" [ref=e785]:
+                    - cell "E Eyal Shani" [ref=e786]:
+                      - generic [ref=e787]:
+                        - generic [ref=e788]: E
+                        - generic [ref=e789]: Eyal Shani
+                    - cell "— בחר נושא —" [ref=e790]:
+                      - combobox [ref=e791] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCNVcbJ6pxGE…" [ref=e792]:
+                      - generic [ref=e793]: UCNVcbJ6pxGE…
+                    - cell "מוכן" [ref=e794]:
+                      - generic [ref=e795]:
+                        - img [ref=e796]
+                        - text: מוכן
+                    - cell [ref=e799]
+                    - cell "משוך חדשים בדוק" [ref=e800]:
+                      - generic [ref=e801]:
+                        - button "משוך חדשים" [ref=e802] [cursor=pointer]
+                        - button "בדוק" [ref=e803] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e804] [cursor=pointer]:
+                          - img [ref=e805]
+                  - row "W Wysetrade — בחר נושא — UC32oVb-nfyR… מוכן משוך חדשים בדוק" [ref=e808]:
+                    - cell "W Wysetrade" [ref=e809]:
+                      - generic [ref=e810]:
+                        - generic [ref=e811]: W
+                        - generic [ref=e812]: Wysetrade
+                    - cell "— בחר נושא —" [ref=e813]:
+                      - combobox [ref=e814] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UC32oVb-nfyR…" [ref=e815]:
+                      - generic [ref=e816]: UC32oVb-nfyR…
+                    - cell "מוכן" [ref=e817]:
+                      - generic [ref=e818]:
+                        - img [ref=e819]
+                        - text: מוכן
+                    - cell [ref=e822]
+                    - cell "משוך חדשים בדוק" [ref=e823]:
+                      - generic [ref=e824]:
+                        - button "משוך חדשים" [ref=e825] [cursor=pointer]
+                        - button "בדוק" [ref=e826] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e827] [cursor=pointer]:
+                          - img [ref=e828]
+                  - row "E Ed Hill AI Automation — בחר נושא — UC5_2We-HeVd… מוכן משוך חדשים בדוק" [ref=e831]:
+                    - cell "E Ed Hill AI Automation" [ref=e832]:
+                      - generic [ref=e833]:
+                        - generic [ref=e834]: E
+                        - generic [ref=e835]: Ed Hill AI Automation
+                    - cell "— בחר נושא —" [ref=e836]:
+                      - combobox [ref=e837] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UC5_2We-HeVd…" [ref=e838]:
+                      - generic [ref=e839]: UC5_2We-HeVd…
+                    - cell "מוכן" [ref=e840]:
+                      - generic [ref=e841]:
+                        - img [ref=e842]
+                        - text: מוכן
+                    - cell [ref=e845]
+                    - cell "משוך חדשים בדוק" [ref=e846]:
+                      - generic [ref=e847]:
+                        - button "משוך חדשים" [ref=e848] [cursor=pointer]
+                        - button "בדוק" [ref=e849] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e850] [cursor=pointer]:
+                          - img [ref=e851]
+                  - row "A Automation-Tribe — בחר נושא — UCFkwdS-osDY… מוכן משוך חדשים בדוק" [ref=e854]:
+                    - cell "A Automation-Tribe" [ref=e855]:
+                      - generic [ref=e856]:
+                        - generic [ref=e857]: A
+                        - generic [ref=e858]: Automation-Tribe
+                    - cell "— בחר נושא —" [ref=e859]:
+                      - combobox [ref=e860] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCFkwdS-osDY…" [ref=e861]:
+                      - generic [ref=e862]: UCFkwdS-osDY…
+                    - cell "מוכן" [ref=e863]:
+                      - generic [ref=e864]:
+                        - img [ref=e865]
+                        - text: מוכן
+                    - cell [ref=e868]
+                    - cell "משוך חדשים בדוק" [ref=e869]:
+                      - generic [ref=e870]:
+                        - button "משוך חדשים" [ref=e871] [cursor=pointer]
+                        - button "בדוק" [ref=e872] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e873] [cursor=pointer]:
+                          - img [ref=e874]
+                  - row "A AI Andy — בחר נושא — UCCQfwUJOOBL… מוכן משוך חדשים בדוק" [ref=e877]:
+                    - cell "A AI Andy" [ref=e878]:
+                      - generic [ref=e879]:
+                        - generic [ref=e880]: A
+                        - generic [ref=e881]: AI Andy
+                    - cell "— בחר נושא —" [ref=e882]:
+                      - combobox [ref=e883] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCCQfwUJOOBL…" [ref=e884]:
+                      - generic [ref=e885]: UCCQfwUJOOBL…
+                    - cell "מוכן" [ref=e886]:
+                      - generic [ref=e887]:
+                        - img [ref=e888]
+                        - text: מוכן
+                    - cell [ref=e891]
+                    - cell "משוך חדשים בדוק" [ref=e892]:
+                      - generic [ref=e893]:
+                        - button "משוך חדשים" [ref=e894] [cursor=pointer]
+                        - button "בדוק" [ref=e895] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e896] [cursor=pointer]:
+                          - img [ref=e897]
+                  - row "A Aimprove - אימפרוב — בחר נושא — UCfnihhol5a4… מוכן משוך חדשים בדוק" [ref=e900]:
+                    - cell "A Aimprove - אימפרוב" [ref=e901]:
+                      - generic [ref=e902]:
+                        - generic [ref=e903]: A
+                        - generic [ref=e904]: Aimprove - אימפרוב
+                    - cell "— בחר נושא —" [ref=e905]:
+                      - combobox [ref=e906] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCfnihhol5a4…" [ref=e907]:
+                      - generic [ref=e908]: UCfnihhol5a4…
+                    - cell "מוכן" [ref=e909]:
+                      - generic [ref=e910]:
+                        - img [ref=e911]
+                        - text: מוכן
+                    - cell [ref=e914]
+                    - cell "משוך חדשים בדוק" [ref=e915]:
+                      - generic [ref=e916]:
+                        - button "משוך חדשים" [ref=e917] [cursor=pointer]
+                        - button "בדוק" [ref=e918] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e919] [cursor=pointer]:
+                          - img [ref=e920]
+                  - row "E Eden Bibas — בחר נושא — UCGFogLEUR_n… מוכן משוך חדשים בדוק" [ref=e923]:
+                    - cell "E Eden Bibas" [ref=e924]:
+                      - generic [ref=e925]:
+                        - generic [ref=e926]: E
+                        - generic [ref=e927]: Eden Bibas
+                    - cell "— בחר נושא —" [ref=e928]:
+                      - combobox [ref=e929] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCGFogLEUR_n…" [ref=e930]:
+                      - generic [ref=e931]: UCGFogLEUR_n…
+                    - cell "מוכן" [ref=e932]:
+                      - generic [ref=e933]:
+                        - img [ref=e934]
+                        - text: מוכן
+                    - cell [ref=e937]
+                    - cell "משוך חדשים בדוק" [ref=e938]:
+                      - generic [ref=e939]:
+                        - button "משוך חדשים" [ref=e940] [cursor=pointer]
+                        - button "בדוק" [ref=e941] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e942] [cursor=pointer]:
+                          - img [ref=e943]
+                  - row "A AI Pathways — בחר נושא — חסר Channel ID זהה חפש ביוטיוב בדוק" [ref=e946]:
+                    - cell "A AI Pathways" [ref=e947]:
+                      - generic [ref=e948]:
+                        - generic [ref=e949]: A
+                        - generic [ref=e950]: AI Pathways
+                    - cell "— בחר נושא —" [ref=e951]:
+                      - combobox [ref=e952] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "חסר Channel ID" [ref=e953]
+                    - cell "זהה" [ref=e954]:
+                      - button "זהה" [ref=e955] [cursor=pointer]
+                    - cell [ref=e956]
+                    - cell "חפש ביוטיוב בדוק" [ref=e957]:
+                      - generic [ref=e958]:
+                        - link "חפש ביוטיוב" [ref=e959] [cursor=pointer]:
+                          - /url: https://www.youtube.com/results?search_query=AI%20Pathways
+                        - button "בדוק" [disabled] [ref=e960]
+                        - button "מחק מנטור" [ref=e961] [cursor=pointer]:
+                          - img [ref=e962]
+                  - row "B Base44 Community — בחר נושא — UC9wNu-y7T3v… מוכן משוך חדשים בדוק" [ref=e965]:
+                    - cell "B Base44 Community" [ref=e966]:
+                      - generic [ref=e967]:
+                        - generic [ref=e968]: B
+                        - generic [ref=e969]: Base44 Community
+                    - cell "— בחר נושא —" [ref=e970]:
+                      - combobox [ref=e971] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UC9wNu-y7T3v…" [ref=e972]:
+                      - generic [ref=e973]: UC9wNu-y7T3v…
+                    - cell "מוכן" [ref=e974]:
+                      - generic [ref=e975]:
+                        - img [ref=e976]
+                        - text: מוכן
+                    - cell [ref=e979]
+                    - cell "משוך חדשים בדוק" [ref=e980]:
+                      - generic [ref=e981]:
+                        - button "משוך חדשים" [ref=e982] [cursor=pointer]
+                        - button "בדוק" [ref=e983] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e984] [cursor=pointer]:
+                          - img [ref=e985]
+                  - row "R Ran Bar Zik — בחר נושא — UCxPN-JU3DsK… מוכן משוך חדשים בדוק" [ref=e988]:
+                    - cell "R Ran Bar Zik" [ref=e989]:
+                      - generic [ref=e990]:
+                        - generic [ref=e991]: R
+                        - generic [ref=e992]: Ran Bar Zik
+                    - cell "— בחר נושא —" [ref=e993]:
+                      - combobox [ref=e994] [cursor=pointer]:
+                        - option "— בחר נושא —" [selected]
+                    - cell "UCxPN-JU3DsK…" [ref=e995]:
+                      - generic [ref=e996]: UCxPN-JU3DsK…
+                    - cell "מוכן" [ref=e997]:
+                      - generic [ref=e998]:
+                        - img [ref=e999]
+                        - text: מוכן
+                    - cell [ref=e1002]
+                    - cell "משוך חדשים בדוק" [ref=e1003]:
+                      - generic [ref=e1004]:
+                        - button "משוך חדשים" [ref=e1005] [cursor=pointer]
+                        - button "בדוק" [ref=e1006] [cursor=pointer]
+                        - button "מחק מנטור" [ref=e1007] [cursor=pointer]:
+                          - img [ref=e1008]
+  - region "Notifications alt+T"

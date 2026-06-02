@@ -1,0 +1,2147 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor מסך ראשי" [ref=e6] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: מסך ראשי
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - paragraph [ref=e16]: ניהול תוכן
+          - button "כל הסרטונים" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - generic [ref=e23]: כל הסרטונים
+          - button "שמורים" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e27]: שמורים
+          - button "תור למידה" [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+            - generic [ref=e31]: תור למידה
+        - generic [ref=e32]:
+          - paragraph [ref=e33]: מרחב הידע
+          - button "ספריית ידע" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+            - generic [ref=e37]: ספריית ידע
+          - button "חיפוש ידע" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+            - generic [ref=e42]: חיפוש ידע
+          - button "Workspace" [ref=e43] [cursor=pointer]:
+            - img [ref=e44]
+            - generic [ref=e47]: Workspace
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - button "הברינים שלי" [ref=e50] [cursor=pointer]
+            - button "נושא חדש" [ref=e51] [cursor=pointer]:
+              - img [ref=e52]
+              - text: נושא חדש
+          - generic [ref=e54]:
+            - generic [ref=e56]:
+              - 'button "פתח ידע: בינה מלאכותית" [ref=e57] [cursor=pointer]':
+                - img [ref=e58]
+              - generic [ref=e61]:
+                - button "ערוך נושא" [ref=e62] [cursor=pointer]:
+                  - img [ref=e63]
+                - button "מחק נושא" [ref=e66] [cursor=pointer]:
+                  - img [ref=e67]
+              - button "בינה מלאכותית" [ref=e70]
+              - button [ref=e71] [cursor=pointer]:
+                - img [ref=e72]
+              - img [ref=e74]
+            - generic [ref=e82]:
+              - 'button "פתח ידע: שוק ההון" [ref=e83] [cursor=pointer]':
+                - img [ref=e84]
+              - generic [ref=e88]:
+                - button "ערוך נושא" [ref=e89] [cursor=pointer]:
+                  - img [ref=e90]
+                - button "מחק נושא" [ref=e93] [cursor=pointer]:
+                  - img [ref=e94]
+              - button "שוק ההון" [ref=e97]
+              - button [ref=e98] [cursor=pointer]:
+                - img [ref=e99]
+              - img [ref=e101]
+            - generic [ref=e109]:
+              - 'button "פתח ידע: פיתוח תוכנה" [ref=e110] [cursor=pointer]':
+                - img [ref=e111]
+              - generic [ref=e114]:
+                - button "ערוך נושא" [ref=e115] [cursor=pointer]:
+                  - img [ref=e116]
+                - button "מחק נושא" [ref=e119] [cursor=pointer]:
+                  - img [ref=e120]
+              - button "פיתוח תוכנה" [ref=e123]
+              - button [ref=e124] [cursor=pointer]:
+                - img [ref=e125]
+              - img [ref=e127]
+            - generic [ref=e135]:
+              - 'button "פתח ידע: מסחר יומי" [ref=e136] [cursor=pointer]':
+                - img [ref=e137]
+              - generic [ref=e140]:
+                - button "ערוך נושא" [ref=e141] [cursor=pointer]:
+                  - img [ref=e142]
+                - button "מחק נושא" [ref=e145] [cursor=pointer]:
+                  - img [ref=e146]
+              - button "מסחר יומי" [ref=e149]
+              - button [ref=e150] [cursor=pointer]:
+                - img [ref=e151]
+              - img [ref=e153]
+            - generic [ref=e161]:
+              - 'button "פתח ידע: פיתוח" [ref=e162] [cursor=pointer]':
+                - img [ref=e163]
+              - generic [ref=e166]:
+                - button "ערוך נושא" [ref=e167] [cursor=pointer]:
+                  - img [ref=e168]
+                - button "מחק נושא" [ref=e171] [cursor=pointer]:
+                  - img [ref=e172]
+              - button "פיתוח" [ref=e175]
+              - button [ref=e176] [cursor=pointer]:
+                - img [ref=e177]
+              - img [ref=e179]
+            - generic [ref=e187]:
+              - 'button "פתח ידע: React" [ref=e188] [cursor=pointer]':
+                - img [ref=e189]
+              - generic [ref=e192]:
+                - button "ערוך נושא" [ref=e193] [cursor=pointer]:
+                  - img [ref=e194]
+                - button "מחק נושא" [ref=e197] [cursor=pointer]:
+                  - img [ref=e198]
+              - button "React" [ref=e201]
+              - button [ref=e202] [cursor=pointer]:
+                - img [ref=e203]
+              - img [ref=e205]
+            - generic [ref=e213]:
+              - 'button "פתח ידע: Base44" [ref=e214] [cursor=pointer]':
+                - img [ref=e215]
+              - generic [ref=e218]:
+                - button "ערוך נושא" [ref=e219] [cursor=pointer]:
+                  - img [ref=e220]
+                - button "מחק נושא" [ref=e223] [cursor=pointer]:
+                  - img [ref=e224]
+              - button "Base44" [ref=e227]
+              - button [ref=e228] [cursor=pointer]:
+                - img [ref=e229]
+              - img [ref=e231]
+            - generic [ref=e239]:
+              - 'button "פתח ידע: Prompt Engineering" [ref=e240] [cursor=pointer]':
+                - img [ref=e241]
+              - generic [ref=e244]:
+                - button "ערוך נושא" [ref=e245] [cursor=pointer]:
+                  - img [ref=e246]
+                - button "מחק נושא" [ref=e249] [cursor=pointer]:
+                  - img [ref=e250]
+              - button "Prompt Engineering" [ref=e253]
+              - button [ref=e254] [cursor=pointer]:
+                - img [ref=e255]
+              - img [ref=e257]
+      - generic [ref=e264]:
+        - button "🧠 שמור למוח" [ref=e265] [cursor=pointer]:
+          - img [ref=e266]
+          - generic [ref=e268]: 🧠 שמור למוח
+        - button "מנטור חדש" [ref=e269] [cursor=pointer]:
+          - img [ref=e270]
+          - generic [ref=e273]: מנטור חדש
+        - button "אוסף ערוצים חדש" [ref=e274] [cursor=pointer]:
+          - img [ref=e275]
+          - generic [ref=e279]: אוסף ערוצים חדש
+        - button "ניהול" [ref=e280] [cursor=pointer]:
+          - img [ref=e281]
+          - generic [ref=e284]: ניהול
+    - main [ref=e285]:
+      - generic [ref=e286]:
+        - generic [ref=e290]:
+          - button "סריקה ידנית" [ref=e291] [cursor=pointer]:
+            - img [ref=e292]
+            - text: סריקה ידנית
+          - button "מצב כהה" [ref=e297] [cursor=pointer]:
+            - img [ref=e298]
+            - generic [ref=e300]: מצב כהה
+          - button "מחק הכל" [ref=e301] [cursor=pointer]:
+            - img [ref=e302]
+            - text: מחק הכל
+          - generic [ref=e306]:
+            - generic "0.36 MB בשימוש מתוך ~5 MB" [ref=e307]
+            - generic [ref=e309]: 0.36MB
+            - button "פירוט" [ref=e310] [cursor=pointer]
+            - button "נקה" [ref=e311] [cursor=pointer]
+          - button "רענון" [ref=e312] [cursor=pointer]:
+            - img [ref=e313]
+            - text: רענון
+        - main [ref=e318]:
+          - generic [ref=e320]:
+            - button "היום 10 סרטונים חדשים" [ref=e321] [cursor=pointer]:
+              - paragraph [ref=e322]: היום
+              - paragraph [ref=e323]: "10"
+              - paragraph [ref=e324]: סרטונים חדשים
+            - button "סרטונים חדשים 72 טרם נותחו" [ref=e325] [cursor=pointer]:
+              - paragraph [ref=e326]: סרטונים חדשים
+              - paragraph [ref=e327]: "72"
+              - paragraph [ref=e328]: טרם נותחו
+            - button "עברו סיכום 0 נותחו בהצלחה" [ref=e329] [cursor=pointer]:
+              - paragraph [ref=e330]: עברו סיכום
+              - paragraph [ref=e331]: "0"
+              - paragraph [ref=e332]: נותחו בהצלחה
+            - button "סה״כ שמורים 72 ב-30 הימים האחרונים" [ref=e333] [cursor=pointer]:
+              - paragraph [ref=e334]: סה״כ שמורים
+              - paragraph [ref=e335]: "72"
+              - paragraph [ref=e336]: ב-30 הימים האחרונים
+            - button "📌 לצמיתות 0 שמורים לצמיתות" [ref=e337] [cursor=pointer]:
+              - paragraph [ref=e338]: 📌 לצמיתות
+              - paragraph [ref=e339]: "0"
+              - paragraph [ref=e340]: שמורים לצמיתות
+          - generic [ref=e341]:
+            - button "הוסף סרטון" [ref=e342] [cursor=pointer]:
+              - img [ref=e343]
+              - generic [ref=e344]: הוסף סרטון
+            - generic [ref=e345]:
+              - generic [ref=e346]:
+                - img [ref=e347]
+                - textbox "חיפוש לפי כותרת..." [ref=e350]
+              - combobox [ref=e351] [cursor=pointer]:
+                - generic: כל המנטורים
+                - img [ref=e352]
+              - combobox [ref=e354] [cursor=pointer]:
+                - generic: כל הקטגוריות
+                - img [ref=e355]
+            - button "מרכז הלמידה 0% · 0 התחל" [ref=e357] [cursor=pointer]:
+              - img [ref=e359]
+              - generic [ref=e362]: מרכז הלמידה
+              - generic [ref=e363]: 0% · 0
+              - generic [ref=e364]:
+                - img [ref=e365]
+                - text: התחל
+            - button "בחר סרטונים" [ref=e367] [cursor=pointer]
+          - generic [ref=e368]:
+            - generic [ref=e369] [cursor=pointer]:
+              - generic [ref=e370]:
+                - img "חקיקת קריפטו היסטורית עברה — אז למה הביטקוין עוד לא שיא? 🚨" [ref=e371]
+                - generic [ref=e372]:
+                  - button "שמור" [ref=e373]:
+                    - img [ref=e374]
+                  - button "שמור לצמיתות" [ref=e376]:
+                    - img [ref=e377]
+                  - button "מחק סרטון" [ref=e379]:
+                    - img [ref=e380]
+                - generic [ref=e383]: 15:30
+              - generic [ref=e384]:
+                - heading "חקיקת קריפטו היסטורית עברה — אז למה הביטקוין עוד לא שיא? 🚨" [level=3] [ref=e386]
+                - generic [ref=e388]:
+                  - generic [ref=e389]: M
+                  - generic [ref=e390]: Micha.Stocks
+                - generic [ref=e391]:
+                  - generic [ref=e393]: 15 מאי 2026
+                  - generic [ref=e394]:
+                    - generic [ref=e395]: ·
+                    - generic [ref=e396]: 5.9K צפיות
+                - generic [ref=e397]:
+                  - paragraph [ref=e398]: "נושא: שוק ההון"
+                  - paragraph [ref=e399]: "תת נושא: מניות"
+                - generic [ref=e400]:
+                  - generic [ref=e401]: שוק ההון
+                  - generic [ref=e402]: חדש לצפייה
+            - generic [ref=e403] [cursor=pointer]:
+              - generic [ref=e404]:
+                - 'img "Live Talk With Oliver: Unlock Real Consistency" [ref=e405]'
+                - generic [ref=e406]:
+                  - button "שמור" [ref=e407]:
+                    - img [ref=e408]
+                  - button "שמור לצמיתות" [ref=e410]:
+                    - img [ref=e411]
+                  - button "מחק סרטון" [ref=e413]:
+                    - img [ref=e414]
+                - generic [ref=e417]: 1:47:20
+              - generic [ref=e418]:
+                - 'heading "Live Talk With Oliver: Unlock Real Consistency" [level=3] [ref=e420]'
+                - generic [ref=e422]:
+                  - generic [ref=e423]: O
+                  - generic [ref=e424]: Oliver Velez Trading
+                - generic [ref=e425]:
+                  - generic [ref=e427]: 15 מאי 2026
+                  - generic [ref=e428]:
+                    - generic [ref=e429]: ·
+                    - generic [ref=e430]: 5.2K צפיות
+                - generic [ref=e431]:
+                  - paragraph [ref=e432]: "נושא: Markets"
+                  - paragraph [ref=e433]: "תת נושא: כללי"
+                - generic [ref=e434]:
+                  - generic [ref=e435]: שוק ההון
+                  - generic [ref=e436]: חדש לצפייה
+            - generic [ref=e437] [cursor=pointer]:
+              - generic [ref=e438]:
+                - img "לייט נייט דיווחים אחרונים להשבוע" [ref=e439]
+                - generic [ref=e440]:
+                  - button "שמור" [ref=e441]:
+                    - img [ref=e442]
+                  - button "שמור לצמיתות" [ref=e444]:
+                    - img [ref=e445]
+                  - button "מחק סרטון" [ref=e447]:
+                    - img [ref=e448]
+                - generic [ref=e451]: 23:25
+              - generic [ref=e452]:
+                - heading "לייט נייט דיווחים אחרונים להשבוע" [level=3] [ref=e454]
+                - generic [ref=e456]:
+                  - generic [ref=e457]: M
+                  - generic [ref=e458]: Micha.Stocks
+                - generic [ref=e459]:
+                  - generic [ref=e461]: 14 מאי 2026
+                  - generic [ref=e462]:
+                    - generic [ref=e463]: ·
+                    - generic [ref=e464]: 8.4K צפיות
+                - generic [ref=e465]:
+                  - paragraph [ref=e466]: "נושא: שוק ההון"
+                  - paragraph [ref=e467]: "תת נושא: מניות"
+                - generic [ref=e468]:
+                  - generic [ref=e469]: שוק ההון
+                  - generic [ref=e470]: חדש לצפייה
+            - generic [ref=e471] [cursor=pointer]:
+              - generic [ref=e472]:
+                - img "מבזק לייב פתיחה לתאריך 14.5.26" [ref=e473]
+                - generic [ref=e474]:
+                  - button "שמור" [ref=e475]:
+                    - img [ref=e476]
+                  - button "שמור לצמיתות" [ref=e478]:
+                    - img [ref=e479]
+                  - button "מחק סרטון" [ref=e481]:
+                    - img [ref=e482]
+                - generic [ref=e485]: 18:54
+              - generic [ref=e486]:
+                - heading "מבזק לייב פתיחה לתאריך 14.5.26" [level=3] [ref=e488]
+                - generic [ref=e490]:
+                  - generic [ref=e491]: M
+                  - generic [ref=e492]: Micha.Stocks
+                - generic [ref=e493]:
+                  - generic [ref=e495]: 14 מאי 2026
+                  - generic [ref=e496]:
+                    - generic [ref=e497]: ·
+                    - generic [ref=e498]: 13.1K צפיות
+                - generic [ref=e499]:
+                  - paragraph [ref=e500]: "נושא: שוק ההון"
+                  - paragraph [ref=e501]: "תת נושא: מניות"
+                - generic [ref=e502]:
+                  - generic [ref=e503]: שוק ההון
+                  - generic [ref=e504]: חדש לצפייה
+            - generic [ref=e505] [cursor=pointer]:
+              - generic [ref=e506]:
+                - 'img "🟠 סריברס: פי 20 אנשים רוצים אותה — ואני לא קונה. הנה למה" [ref=e507]'
+                - generic [ref=e508]:
+                  - button "שמור" [ref=e509]:
+                    - img [ref=e510]
+                  - button "שמור לצמיתות" [ref=e512]:
+                    - img [ref=e513]
+                  - button "מחק סרטון" [ref=e515]:
+                    - img [ref=e516]
+                - generic [ref=e519]: 13:41
+              - generic [ref=e520]:
+                - 'heading "🟠 סריברס: פי 20 אנשים רוצים אותה — ואני לא קונה. הנה למה" [level=3] [ref=e522]'
+                - generic [ref=e524]:
+                  - generic [ref=e525]: M
+                  - generic [ref=e526]: Micha.Stocks
+                - generic [ref=e527]:
+                  - generic [ref=e529]: 14 מאי 2026
+                  - generic [ref=e530]:
+                    - generic [ref=e531]: ·
+                    - generic [ref=e532]: 19.3K צפיות
+                - generic [ref=e533]:
+                  - paragraph [ref=e534]: "נושא: שוק ההון"
+                  - paragraph [ref=e535]: "תת נושא: מניות"
+                - generic [ref=e536]:
+                  - generic [ref=e537]: שוק ההון
+                  - generic [ref=e538]: חדש לצפייה
+            - generic [ref=e539] [cursor=pointer]:
+              - generic [ref=e540]:
+                - img "The 5-Minute Pre-Open Routine" [ref=e541]
+                - generic [ref=e542]:
+                  - button "שמור" [ref=e543]:
+                    - img [ref=e544]
+                  - button "שמור לצמיתות" [ref=e546]:
+                    - img [ref=e547]
+                  - button "מחק סרטון" [ref=e549]:
+                    - img [ref=e550]
+                - generic [ref=e553]: 17:05
+              - generic [ref=e554]:
+                - heading "The 5-Minute Pre-Open Routine" [level=3] [ref=e556]
+                - generic [ref=e558]:
+                  - generic [ref=e559]: O
+                  - generic [ref=e560]: Oliver Velez Trading
+                - generic [ref=e561]:
+                  - generic [ref=e563]: 14 מאי 2026
+                  - generic [ref=e564]:
+                    - generic [ref=e565]: ·
+                    - generic [ref=e566]: 7.3K צפיות
+                - generic [ref=e567]:
+                  - paragraph [ref=e568]: "נושא: Markets"
+                  - paragraph [ref=e569]: "תת נושא: כללי"
+                - generic [ref=e570]:
+                  - generic [ref=e571]: שוק ההון
+                  - generic [ref=e572]: חדש לצפייה
+            - generic [ref=e573] [cursor=pointer]:
+              - generic [ref=e574]:
+                - img "לייט נייט - דיווחים של סיסקו יוסאר ועוד" [ref=e575]
+                - generic [ref=e576]:
+                  - button "שמור" [ref=e577]:
+                    - img [ref=e578]
+                  - button "שמור לצמיתות" [ref=e580]:
+                    - img [ref=e581]
+                  - button "מחק סרטון" [ref=e583]:
+                    - img [ref=e584]
+                - generic [ref=e587]: 27:41
+              - generic [ref=e588]:
+                - heading "לייט נייט - דיווחים של סיסקו יוסאר ועוד" [level=3] [ref=e590]
+                - generic [ref=e592]:
+                  - generic [ref=e593]: M
+                  - generic [ref=e594]: Micha.Stocks
+                - generic [ref=e595]:
+                  - generic [ref=e597]: 13 מאי 2026
+                  - generic [ref=e598]:
+                    - generic [ref=e599]: ·
+                    - generic [ref=e600]: 10.6K צפיות
+                - generic [ref=e601]:
+                  - paragraph [ref=e602]: "נושא: שוק ההון"
+                  - paragraph [ref=e603]: "תת נושא: מניות"
+                - generic [ref=e604]:
+                  - generic [ref=e605]: שוק ההון
+                  - generic [ref=e606]: חדש לצפייה
+            - generic [ref=e607] [cursor=pointer]:
+              - generic [ref=e608]:
+                - img "Trading Was My Lifeboat—It Can Be Yours Too" [ref=e609]
+                - generic [ref=e610]:
+                  - button "שמור" [ref=e611]:
+                    - img [ref=e612]
+                  - button "שמור לצמיתות" [ref=e614]:
+                    - img [ref=e615]
+                  - button "מחק סרטון" [ref=e617]:
+                    - img [ref=e618]
+                - generic [ref=e621]: 13:42
+              - generic [ref=e622]:
+                - heading "Trading Was My Lifeboat—It Can Be Yours Too" [level=3] [ref=e624]
+                - generic [ref=e626]:
+                  - generic [ref=e627]: O
+                  - generic [ref=e628]: Oliver Velez Trading
+                - generic [ref=e629]:
+                  - generic [ref=e631]: 13 מאי 2026
+                  - generic [ref=e632]:
+                    - generic [ref=e633]: ·
+                    - generic [ref=e634]: 4.6K צפיות
+                - generic [ref=e635]:
+                  - paragraph [ref=e636]: "נושא: Markets"
+                  - paragraph [ref=e637]: "תת נושא: כללי"
+                - generic [ref=e638]:
+                  - generic [ref=e639]: שוק ההון
+                  - generic [ref=e640]: חדש לצפייה
+            - generic [ref=e641] [cursor=pointer]:
+              - generic [ref=e642]:
+                - img "כמה המניה עלתה או ירדה או איך היא עשתה את זה, על מה חשוב להסתכל? טבע, סולאראדג, טאואר, נופר אנרג'י" [ref=e643]
+                - generic [ref=e644]:
+                  - button "שמור" [ref=e645]:
+                    - img [ref=e646]
+                  - button "שמור לצמיתות" [ref=e648]:
+                    - img [ref=e649]
+                  - button "מחק סרטון" [ref=e651]:
+                    - img [ref=e652]
+                - generic [ref=e655]: 7:40
+              - generic [ref=e656]:
+                - heading "כמה המניה עלתה או ירדה או איך היא עשתה את זה, על מה חשוב להסתכל? טבע, סולאראדג, טאואר, נופר אנרג'י" [level=3] [ref=e658]
+                - generic [ref=e660]:
+                  - generic [ref=e661]: ב
+                  - generic [ref=e662]: בורסה גרף
+                - generic [ref=e663]:
+                  - generic [ref=e665]: 12 מאי 2026
+                  - generic [ref=e666]:
+                    - generic [ref=e667]: ·
+                    - generic [ref=e668]: 451 צפיות
+                - generic [ref=e669]:
+                  - paragraph [ref=e670]: "נושא: שוק ההון"
+                  - paragraph [ref=e671]: "תת נושא: ניתוח טכני"
+                - generic [ref=e672]:
+                  - generic [ref=e673]: שוק ההון
+                  - generic [ref=e674]: חדש לצפייה
+            - generic [ref=e675] [cursor=pointer]:
+              - generic [ref=e676]:
+                - img "Trading Is Easier Than Counting to 3" [ref=e677]
+                - generic [ref=e678]:
+                  - button "שמור" [ref=e679]:
+                    - img [ref=e680]
+                  - button "שמור לצמיתות" [ref=e682]:
+                    - img [ref=e683]
+                  - button "מחק סרטון" [ref=e685]:
+                    - img [ref=e686]
+                - generic [ref=e689]: 1:20:44
+              - generic [ref=e690]:
+                - heading "Trading Is Easier Than Counting to 3" [level=3] [ref=e692]
+                - generic [ref=e694]:
+                  - generic [ref=e695]: O
+                  - generic [ref=e696]: Oliver Velez Trading
+                - generic [ref=e697]:
+                  - generic [ref=e699]: 12 מאי 2026
+                  - generic [ref=e700]:
+                    - generic [ref=e701]: ·
+                    - generic [ref=e702]: 14.7K צפיות
+                - generic [ref=e703]:
+                  - paragraph [ref=e704]: "נושא: Markets"
+                  - paragraph [ref=e705]: "תת נושא: כללי"
+                - generic [ref=e706]:
+                  - generic [ref=e707]: שוק ההון
+                  - generic [ref=e708]: חדש לצפייה
+            - generic [ref=e709] [cursor=pointer]:
+              - generic [ref=e710]:
+                - img "🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈" [ref=e711]
+                - generic [ref=e712]:
+                  - button "שמור" [ref=e713]:
+                    - img [ref=e714]
+                  - button "שמור לצמיתות" [ref=e716]:
+                    - img [ref=e717]
+                  - button "מחק סרטון" [ref=e719]:
+                    - img [ref=e720]
+                - generic [ref=e723]: 21:18
+              - generic [ref=e724]:
+                - heading "🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈" [level=3] [ref=e726]
+                - generic [ref=e728]:
+                  - generic [ref=e729]: M
+                  - generic [ref=e730]: Micha.Stocks
+                - generic [ref=e731]:
+                  - generic [ref=e733]: 11 מאי 2026
+                  - generic [ref=e734]:
+                    - generic [ref=e735]: ·
+                    - generic [ref=e736]: 11.6K צפיות
+                - generic [ref=e737]:
+                  - paragraph [ref=e738]: "נושא: שוק ההון"
+                  - paragraph [ref=e739]: "תת נושא: מניות"
+                - generic [ref=e740]:
+                  - generic [ref=e741]: שוק ההון
+                  - generic [ref=e742]: חדש לצפייה
+            - generic [ref=e743] [cursor=pointer]:
+              - generic [ref=e744]:
+                - img "מבזק לייב פתיחה לתאריך 11.5.26" [ref=e745]
+                - generic [ref=e746]:
+                  - button "שמור" [ref=e747]:
+                    - img [ref=e748]
+                  - button "שמור לצמיתות" [ref=e750]:
+                    - img [ref=e751]
+                  - button "מחק סרטון" [ref=e753]:
+                    - img [ref=e754]
+              - generic [ref=e757]:
+                - heading "מבזק לייב פתיחה לתאריך 11.5.26" [level=3] [ref=e759]
+                - generic [ref=e761]:
+                  - generic [ref=e762]: M
+                  - generic [ref=e763]: Micha.Stocks
+                - generic [ref=e766]: 11 מאי 2026
+                - generic [ref=e767]:
+                  - paragraph [ref=e768]: "נושא: שוק ההון"
+                  - paragraph [ref=e769]: "תת נושא: מניות"
+                - generic [ref=e770]:
+                  - generic [ref=e771]: שוק ההון
+                  - generic [ref=e772]: חדש לצפייה
+            - generic [ref=e773] [cursor=pointer]:
+              - generic [ref=e774]:
+                - img "You Have NO IDEA How Easy Trading Is Today" [ref=e775]
+                - generic [ref=e776]:
+                  - button "שמור" [ref=e777]:
+                    - img [ref=e778]
+                  - button "שמור לצמיתות" [ref=e780]:
+                    - img [ref=e781]
+                  - button "מחק סרטון" [ref=e783]:
+                    - img [ref=e784]
+                - generic [ref=e787]: 12:26
+              - generic [ref=e788]:
+                - heading "You Have NO IDEA How Easy Trading Is Today" [level=3] [ref=e790]
+                - generic [ref=e792]:
+                  - generic [ref=e793]: O
+                  - generic [ref=e794]: Oliver Velez Trading
+                - generic [ref=e795]:
+                  - generic [ref=e797]: 11 מאי 2026
+                  - generic [ref=e798]:
+                    - generic [ref=e799]: ·
+                    - generic [ref=e800]: 3.3K צפיות
+                - generic [ref=e801]:
+                  - paragraph [ref=e802]: "נושא: Markets"
+                  - paragraph [ref=e803]: "תת נושא: כללי"
+                - generic [ref=e804]:
+                  - generic [ref=e805]: שוק ההון
+                  - generic [ref=e806]: חדש לצפייה
+            - generic [ref=e807] [cursor=pointer]:
+              - generic [ref=e808]:
+                - img "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [ref=e809]
+                - generic [ref=e810]:
+                  - button "שמור" [ref=e811]:
+                    - img [ref=e812]
+                  - button "שמור לצמיתות" [ref=e814]:
+                    - img [ref=e815]
+                  - button "מחק סרטון" [ref=e817]:
+                    - img [ref=e818]
+                - generic [ref=e821]: 14:35
+              - generic [ref=e822]:
+                - heading "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?" [level=3] [ref=e824]
+                - generic [ref=e826]:
+                  - generic [ref=e827]: M
+                  - generic [ref=e828]: Micha.Stocks
+                - generic [ref=e829]:
+                  - generic [ref=e831]: 10 מאי 2026
+                  - generic [ref=e832]:
+                    - generic [ref=e833]: ·
+                    - generic [ref=e834]: 10.5K צפיות
+                - generic [ref=e835]:
+                  - paragraph [ref=e836]: "נושא: שוק ההון"
+                  - paragraph [ref=e837]: "תת נושא: מניות"
+                - generic [ref=e838]:
+                  - generic [ref=e839]: שוק ההון
+                  - generic [ref=e840]: חדש לצפייה
+            - generic [ref=e841] [cursor=pointer]:
+              - generic [ref=e842]:
+                - img "Open House - Watch and Trade the Open Live with Oliver Velez" [ref=e843]
+                - generic [ref=e844]:
+                  - button "שמור" [ref=e845]:
+                    - img [ref=e846]
+                  - button "שמור לצמיתות" [ref=e848]:
+                    - img [ref=e849]
+                  - button "מחק סרטון" [ref=e851]:
+                    - img [ref=e852]
+              - generic [ref=e855]:
+                - heading "Open House - Watch and Trade the Open Live with Oliver Velez" [level=3] [ref=e857]
+                - generic [ref=e859]:
+                  - generic [ref=e860]: O
+                  - generic [ref=e861]: Oliver Velez Trading
+                - generic [ref=e864]: 9 מאי 2026
+                - generic [ref=e865]:
+                  - paragraph [ref=e866]: "נושא: Markets"
+                  - paragraph [ref=e867]: "תת נושא: כללי"
+                - generic [ref=e868]:
+                  - generic [ref=e869]: שוק ההון
+                  - generic [ref=e870]: חדש לצפייה
+            - generic [ref=e871] [cursor=pointer]:
+              - generic [ref=e872]:
+                - img "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE" [ref=e873]
+                - generic [ref=e874]:
+                  - button "שמור" [ref=e875]:
+                    - img [ref=e876]
+                  - button "שמור לצמיתות" [ref=e878]:
+                    - img [ref=e879]
+                  - button "מחק סרטון" [ref=e881]:
+                    - img [ref=e882]
+                - generic [ref=e885]: 2:47:27
+              - generic [ref=e886]:
+                - heading "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE" [level=3] [ref=e888]
+                - generic [ref=e890]:
+                  - generic [ref=e891]: O
+                  - generic [ref=e892]: Oliver Velez Trading
+                - generic [ref=e893]:
+                  - generic [ref=e895]: 9 מאי 2026
+                  - generic [ref=e896]:
+                    - generic [ref=e897]: ·
+                    - generic [ref=e898]: 16.2K צפיות
+                - generic [ref=e899]:
+                  - paragraph [ref=e900]: "נושא: Markets"
+                  - paragraph [ref=e901]: "תת נושא: כללי"
+                - generic [ref=e902]:
+                  - generic [ref=e903]: שוק ההון
+                  - generic [ref=e904]: חדש לצפייה
+            - generic [ref=e905] [cursor=pointer]:
+              - generic [ref=e906]:
+                - img "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר?" [ref=e907]
+                - generic [ref=e908]:
+                  - button "שמור" [ref=e909]:
+                    - img [ref=e910]
+                  - button "שמור לצמיתות" [ref=e912]:
+                    - img [ref=e913]
+                  - button "מחק סרטון" [ref=e915]:
+                    - img [ref=e916]
+                - generic [ref=e919]: 5:20
+              - generic [ref=e920]:
+                - heading "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר?" [level=3] [ref=e922]
+                - generic [ref=e924]:
+                  - generic [ref=e925]: ב
+                  - generic [ref=e926]: בורסה גרף
+                - generic [ref=e927]:
+                  - generic [ref=e929]: 9 מאי 2026
+                  - generic [ref=e930]:
+                    - generic [ref=e931]: ·
+                    - generic [ref=e932]: 893 צפיות
+                - generic [ref=e933]:
+                  - paragraph [ref=e934]: "נושא: שוק ההון"
+                  - paragraph [ref=e935]: "תת נושא: ניתוח טכני"
+                - generic [ref=e936]:
+                  - generic [ref=e937]: שוק ההון
+                  - generic [ref=e938]: חדש לצפייה
+            - generic [ref=e939] [cursor=pointer]:
+              - generic [ref=e940]:
+                - img "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴" [ref=e941]
+                - generic [ref=e942]:
+                  - button "שמור" [ref=e943]:
+                    - img [ref=e944]
+                  - button "שמור לצמיתות" [ref=e946]:
+                    - img [ref=e947]
+                  - button "מחק סרטון" [ref=e949]:
+                    - img [ref=e950]
+                - generic [ref=e953]: 23:54
+              - generic [ref=e954]:
+                - heading "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴" [level=3] [ref=e956]
+                - generic [ref=e958]:
+                  - generic [ref=e959]: M
+                  - generic [ref=e960]: Micha.Stocks
+                - generic [ref=e961]:
+                  - generic [ref=e963]: 9 מאי 2026
+                  - generic [ref=e964]:
+                    - generic [ref=e965]: ·
+                    - generic [ref=e966]: 27.6K צפיות
+                - generic [ref=e967]:
+                  - paragraph [ref=e968]: "נושא: שוק ההון"
+                  - paragraph [ref=e969]: "תת נושא: מניות"
+                - generic [ref=e970]:
+                  - generic [ref=e971]: שוק ההון
+                  - generic [ref=e972]: חדש לצפייה
+            - generic [ref=e973] [cursor=pointer]:
+              - generic [ref=e974]:
+                - img "הסיפור של מניית IREN" [ref=e975]
+                - generic [ref=e976]:
+                  - button "שמור" [ref=e977]:
+                    - img [ref=e978]
+                  - button "שמור לצמיתות" [ref=e980]:
+                    - img [ref=e981]
+                  - button "מחק סרטון" [ref=e983]:
+                    - img [ref=e984]
+                - generic [ref=e987]: 2:23
+              - generic [ref=e988]:
+                - heading "הסיפור של מניית IREN" [level=3] [ref=e990]
+                - generic [ref=e992]:
+                  - generic [ref=e993]: M
+                  - generic [ref=e994]: Micha.Stocks
+                - generic [ref=e995]:
+                  - generic [ref=e997]: 8 מאי 2026
+                  - generic [ref=e998]:
+                    - generic [ref=e999]: ·
+                    - generic [ref=e1000]: 5.8K צפיות
+                - generic [ref=e1001]:
+                  - paragraph [ref=e1002]: "נושא: שוק ההון"
+                  - paragraph [ref=e1003]: "תת נושא: מניות"
+                - generic [ref=e1004]:
+                  - generic [ref=e1005]: שוק ההון
+                  - generic [ref=e1006]: חדש לצפייה
+            - generic [ref=e1007] [cursor=pointer]:
+              - generic [ref=e1008]:
+                - img "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'" [ref=e1009]
+                - generic [ref=e1010]:
+                  - button "שמור" [ref=e1011]:
+                    - img [ref=e1012]
+                  - button "שמור לצמיתות" [ref=e1014]:
+                    - img [ref=e1015]
+                  - button "מחק סרטון" [ref=e1017]:
+                    - img [ref=e1018]
+                - generic [ref=e1021]: 49:30
+              - generic [ref=e1022]:
+                - heading "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'" [level=3] [ref=e1024]
+                - generic [ref=e1026]:
+                  - generic [ref=e1027]: M
+                  - generic [ref=e1028]: Micha.Stocks
+                - generic [ref=e1029]:
+                  - generic [ref=e1031]: 8 מאי 2026
+                  - generic [ref=e1032]:
+                    - generic [ref=e1033]: ·
+                    - generic [ref=e1034]: 14.6K צפיות
+                - generic [ref=e1035]:
+                  - paragraph [ref=e1036]: "נושא: שוק ההון"
+                  - paragraph [ref=e1037]: "תת נושא: מניות"
+                - generic [ref=e1038]:
+                  - generic [ref=e1039]: שוק ההון
+                  - generic [ref=e1040]: חדש לצפייה
+            - generic [ref=e1041] [cursor=pointer]:
+              - generic [ref=e1042]:
+                - img "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן" [ref=e1043]
+                - generic [ref=e1044]:
+                  - button "שמור" [ref=e1045]:
+                    - img [ref=e1046]
+                  - button "שמור לצמיתות" [ref=e1048]:
+                    - img [ref=e1049]
+                  - button "מחק סרטון" [ref=e1051]:
+                    - img [ref=e1052]
+                - generic [ref=e1055]: 10:33
+              - generic [ref=e1056]:
+                - heading "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן" [level=3] [ref=e1058]
+                - generic [ref=e1060]:
+                  - generic [ref=e1061]: ב
+                  - generic [ref=e1062]: בורסה גרף
+                - generic [ref=e1063]:
+                  - generic [ref=e1065]: 8 מאי 2026
+                  - generic [ref=e1066]:
+                    - generic [ref=e1067]: ·
+                    - generic [ref=e1068]: 457 צפיות
+                - generic [ref=e1069]:
+                  - paragraph [ref=e1070]: "נושא: שוק ההון"
+                  - paragraph [ref=e1071]: "תת נושא: ניתוח טכני"
+                - generic [ref=e1072]:
+                  - generic [ref=e1073]: שוק ההון
+                  - generic [ref=e1074]: חדש לצפייה
+            - generic [ref=e1075] [cursor=pointer]:
+              - generic [ref=e1076]:
+                - img "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד" [ref=e1077]
+                - generic [ref=e1078]:
+                  - button "שמור" [ref=e1079]:
+                    - img [ref=e1080]
+                  - button "שמור לצמיתות" [ref=e1082]:
+                    - img [ref=e1083]
+                  - button "מחק סרטון" [ref=e1085]:
+                    - img [ref=e1086]
+                - generic [ref=e1089]: 14:14
+              - generic [ref=e1090]:
+                - heading "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד" [level=3] [ref=e1092]
+                - generic [ref=e1094]:
+                  - generic [ref=e1095]: M
+                  - generic [ref=e1096]: Micha.Stocks
+                - generic [ref=e1097]:
+                  - generic [ref=e1099]: 8 מאי 2026
+                  - generic [ref=e1100]:
+                    - generic [ref=e1101]: ·
+                    - generic [ref=e1102]: 19.5K צפיות
+                - generic [ref=e1103]:
+                  - paragraph [ref=e1104]: "נושא: שוק ההון"
+                  - paragraph [ref=e1105]: "תת נושא: מניות"
+                - generic [ref=e1106]:
+                  - generic [ref=e1107]: שוק ההון
+                  - generic [ref=e1108]: חדש לצפייה
+            - generic [ref=e1109] [cursor=pointer]:
+              - generic [ref=e1110]:
+                - img "The Phase That Creates Millionaire Traders" [ref=e1111]
+                - generic [ref=e1112]:
+                  - button "שמור" [ref=e1113]:
+                    - img [ref=e1114]
+                  - button "שמור לצמיתות" [ref=e1116]:
+                    - img [ref=e1117]
+                  - button "מחק סרטון" [ref=e1119]:
+                    - img [ref=e1120]
+                - generic [ref=e1123]: 8:04
+              - generic [ref=e1124]:
+                - heading "The Phase That Creates Millionaire Traders" [level=3] [ref=e1126]
+                - generic [ref=e1128]:
+                  - generic [ref=e1129]: O
+                  - generic [ref=e1130]: Oliver Velez Trading
+                - generic [ref=e1131]:
+                  - generic [ref=e1133]: 8 מאי 2026
+                  - generic [ref=e1134]:
+                    - generic [ref=e1135]: ·
+                    - generic [ref=e1136]: 4.2K צפיות
+                - generic [ref=e1137]:
+                  - paragraph [ref=e1138]: "נושא: Markets"
+                  - paragraph [ref=e1139]: "תת נושא: כללי"
+                - generic [ref=e1140]:
+                  - generic [ref=e1141]: שוק ההון
+                  - generic [ref=e1142]: חדש לצפייה
+            - generic [ref=e1143] [cursor=pointer]:
+              - generic [ref=e1144]:
+                - img "5 Hours That Can Change Your Trading Forever" [ref=e1145]
+                - generic [ref=e1146]:
+                  - button "שמור" [ref=e1147]:
+                    - img [ref=e1148]
+                  - button "שמור לצמיתות" [ref=e1150]:
+                    - img [ref=e1151]
+                  - button "מחק סרטון" [ref=e1153]:
+                    - img [ref=e1154]
+                - generic [ref=e1157]: 5:26:32
+              - generic [ref=e1158]:
+                - heading "5 Hours That Can Change Your Trading Forever" [level=3] [ref=e1160]
+                - generic [ref=e1162]:
+                  - generic [ref=e1163]: O
+                  - generic [ref=e1164]: Oliver Velez Trading
+                - generic [ref=e1165]:
+                  - generic [ref=e1167]: 7 מאי 2026
+                  - generic [ref=e1168]:
+                    - generic [ref=e1169]: ·
+                    - generic [ref=e1170]: 11.9K צפיות
+                - generic [ref=e1171]:
+                  - paragraph [ref=e1172]: "נושא: Markets"
+                  - paragraph [ref=e1173]: "תת נושא: כללי"
+                - generic [ref=e1174]:
+                  - generic [ref=e1175]: שוק ההון
+                  - generic [ref=e1176]: חדש לצפייה
+            - generic [ref=e1177] [cursor=pointer]:
+              - generic [ref=e1178]:
+                - img "Believe in yourself" [ref=e1179]
+                - generic [ref=e1180]:
+                  - button "שמור" [ref=e1181]:
+                    - img [ref=e1182]
+                  - button "שמור לצמיתות" [ref=e1184]:
+                    - img [ref=e1185]
+                  - button "מחק סרטון" [ref=e1187]:
+                    - img [ref=e1188]
+                - generic [ref=e1191]: 0:58
+              - generic [ref=e1192]:
+                - heading "Believe in yourself" [level=3] [ref=e1194]
+                - generic [ref=e1196]:
+                  - generic [ref=e1197]: O
+                  - generic [ref=e1198]: Oliver Velez Trading
+                - generic [ref=e1199]:
+                  - generic [ref=e1201]: 6 מאי 2026
+                  - generic [ref=e1202]:
+                    - generic [ref=e1203]: ·
+                    - generic [ref=e1204]: 3.7K צפיות
+                - generic [ref=e1205]:
+                  - paragraph [ref=e1206]: "נושא: Markets"
+                  - paragraph [ref=e1207]: "תת נושא: כללי"
+                - generic [ref=e1208]:
+                  - generic [ref=e1209]: שוק ההון
+                  - generic [ref=e1210]: חדש לצפייה
+            - generic [ref=e1211] [cursor=pointer]:
+              - generic [ref=e1212]:
+                - img "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90" [ref=e1213]
+                - generic [ref=e1214]:
+                  - button "שמור" [ref=e1215]:
+                    - img [ref=e1216]
+                  - button "שמור לצמיתות" [ref=e1218]:
+                    - img [ref=e1219]
+                  - button "מחק סרטון" [ref=e1221]:
+                    - img [ref=e1222]
+                - generic [ref=e1225]: 9:12
+              - generic [ref=e1226]:
+                - heading "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90" [level=3] [ref=e1228]
+                - generic [ref=e1230]:
+                  - generic [ref=e1231]: ב
+                  - generic [ref=e1232]: בורסה גרף
+                - generic [ref=e1233]:
+                  - generic [ref=e1235]: 1 מאי 2026
+                  - generic [ref=e1236]:
+                    - generic [ref=e1237]: ·
+                    - generic [ref=e1238]: 970 צפיות
+                - generic [ref=e1239]:
+                  - paragraph [ref=e1240]: "נושא: שוק ההון"
+                  - paragraph [ref=e1241]: "תת נושא: ניתוח טכני"
+                - generic [ref=e1242]:
+                  - generic [ref=e1243]: שוק ההון
+                  - generic [ref=e1244]: חדש לצפייה
+            - generic [ref=e1245] [cursor=pointer]:
+              - generic [ref=e1246]:
+                - img "אנליזת מבוססת AI איך משתמשים בזה" [ref=e1247]
+                - generic [ref=e1248]:
+                  - button "שמור" [ref=e1249]:
+                    - img [ref=e1250]
+                  - button "שמור לצמיתות" [ref=e1252]:
+                    - img [ref=e1253]
+                  - button "מחק סרטון" [ref=e1255]:
+                    - img [ref=e1256]
+                - generic [ref=e1259]: 1:50
+              - generic [ref=e1260]:
+                - heading "אנליזת מבוססת AI איך משתמשים בזה" [level=3] [ref=e1262]
+                - generic [ref=e1264]:
+                  - generic [ref=e1265]: ב
+                  - generic [ref=e1266]: בורסה גרף
+                - generic [ref=e1267]:
+                  - generic [ref=e1269]: 30 אפר׳ 2026
+                  - generic [ref=e1270]:
+                    - generic [ref=e1271]: ·
+                    - generic [ref=e1272]: 325 צפיות
+                - generic [ref=e1273]:
+                  - paragraph [ref=e1274]: "נושא: שוק ההון"
+                  - paragraph [ref=e1275]: "תת נושא: ניתוח טכני"
+                - generic [ref=e1276]:
+                  - generic [ref=e1277]: שוק ההון
+                  - generic [ref=e1278]: חדש לצפייה
+            - generic [ref=e1279] [cursor=pointer]:
+              - generic [ref=e1280]:
+                - img "צ׳אט GPT כמו שמעולם לא פגשתם!" [ref=e1281]
+                - generic [ref=e1282]:
+                  - button "שמור" [ref=e1283]:
+                    - img [ref=e1284]
+                  - button "שמור לצמיתות" [ref=e1286]:
+                    - img [ref=e1287]
+                  - button "מחק סרטון" [ref=e1289]:
+                    - img [ref=e1290]
+                - generic [ref=e1293]: 40:21
+              - generic [ref=e1294]:
+                - heading "צ׳אט GPT כמו שמעולם לא פגשתם!" [level=3] [ref=e1296]
+                - generic [ref=e1298]:
+                  - generic [ref=e1299]: E
+                  - generic [ref=e1300]: Eden Bibas
+                - generic [ref=e1301]:
+                  - generic [ref=e1303]: 28 אפר׳ 2026
+                  - generic [ref=e1304]:
+                    - generic [ref=e1305]: ·
+                    - generic [ref=e1306]: 4K צפיות
+                - generic [ref=e1307]:
+                  - paragraph [ref=e1308]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1309]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e1310]:
+                  - generic [ref=e1311]: בינה מלאכותית
+                  - generic [ref=e1312]: חדש לצפייה
+            - generic [ref=e1313] [cursor=pointer]:
+              - generic [ref=e1314]:
+                - img "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?" [ref=e1315]
+                - generic [ref=e1316]:
+                  - button "שמור" [ref=e1317]:
+                    - img [ref=e1318]
+                  - button "שמור לצמיתות" [ref=e1320]:
+                    - img [ref=e1321]
+                  - button "מחק סרטון" [ref=e1323]:
+                    - img [ref=e1324]
+                - generic [ref=e1327]: 36:48
+              - generic [ref=e1328]:
+                - heading "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?" [level=3] [ref=e1330]
+                - generic [ref=e1332]:
+                  - generic [ref=e1333]: ב
+                  - generic [ref=e1334]: בורסה גרף
+                - generic [ref=e1335]:
+                  - generic [ref=e1337]: 27 אפר׳ 2026
+                  - generic [ref=e1338]:
+                    - generic [ref=e1339]: ·
+                    - generic [ref=e1340]: 934 צפיות
+                - generic [ref=e1341]:
+                  - paragraph [ref=e1342]: "נושא: שוק ההון"
+                  - paragraph [ref=e1343]: "תת נושא: ניתוח טכני"
+                - generic [ref=e1344]:
+                  - generic [ref=e1345]: שוק ההון
+                  - generic [ref=e1346]: חדש לצפייה
+            - generic [ref=e1347] [cursor=pointer]:
+              - generic [ref=e1348]:
+                - img "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79" [ref=e1349]
+                - generic [ref=e1350]:
+                  - button "שמור" [ref=e1351]:
+                    - img [ref=e1352]
+                  - button "שמור לצמיתות" [ref=e1354]:
+                    - img [ref=e1355]
+                  - button "מחק סרטון" [ref=e1357]:
+                    - img [ref=e1358]
+                - generic [ref=e1361]: 26:00
+              - generic [ref=e1362]:
+                - heading "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79" [level=3] [ref=e1364]
+                - generic [ref=e1366]:
+                  - generic [ref=e1367]: A
+                  - generic [ref=e1368]: Aimprove - אימפרוב
+                - generic [ref=e1369]:
+                  - generic [ref=e1371]: 27 אפר׳ 2026
+                  - generic [ref=e1372]:
+                    - generic [ref=e1373]: ·
+                    - generic [ref=e1374]: 371 צפיות
+                - generic [ref=e1375]:
+                  - paragraph [ref=e1376]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1377]: "תת נושא: כללי"
+                - generic [ref=e1378]:
+                  - generic [ref=e1379]: בינה מלאכותית
+                  - generic [ref=e1380]: חדש לצפייה
+            - generic [ref=e1381] [cursor=pointer]:
+              - generic [ref=e1382]:
+                - img "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77" [ref=e1383]
+                - generic [ref=e1384]:
+                  - button "שמור" [ref=e1385]:
+                    - img [ref=e1386]
+                  - button "שמור לצמיתות" [ref=e1388]:
+                    - img [ref=e1389]
+                  - button "מחק סרטון" [ref=e1391]:
+                    - img [ref=e1392]
+                - generic [ref=e1395]: 29:39
+              - generic [ref=e1396]:
+                - heading "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77" [level=3] [ref=e1398]
+                - generic [ref=e1400]:
+                  - generic [ref=e1401]: A
+                  - generic [ref=e1402]: Aimprove - אימפרוב
+                - generic [ref=e1403]:
+                  - generic [ref=e1405]: 22 אפר׳ 2026
+                  - generic [ref=e1406]:
+                    - generic [ref=e1407]: ·
+                    - generic [ref=e1408]: 303 צפיות
+                - generic [ref=e1409]:
+                  - paragraph [ref=e1410]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1411]: "תת נושא: כללי"
+                - generic [ref=e1412]:
+                  - generic [ref=e1413]: בינה מלאכותית
+                  - generic [ref=e1414]: חדש לצפייה
+            - generic [ref=e1415] [cursor=pointer]:
+              - generic [ref=e1416]:
+                - img "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78" [ref=e1417]
+                - generic [ref=e1418]:
+                  - button "שמור" [ref=e1419]:
+                    - img [ref=e1420]
+                  - button "שמור לצמיתות" [ref=e1422]:
+                    - img [ref=e1423]
+                  - button "מחק סרטון" [ref=e1425]:
+                    - img [ref=e1426]
+                - generic [ref=e1429]: 22:03
+              - generic [ref=e1430]:
+                - heading "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78" [level=3] [ref=e1432]
+                - generic [ref=e1434]:
+                  - generic [ref=e1435]: A
+                  - generic [ref=e1436]: Aimprove - אימפרוב
+                - generic [ref=e1437]:
+                  - generic [ref=e1439]: 22 אפר׳ 2026
+                  - generic [ref=e1440]:
+                    - generic [ref=e1441]: ·
+                    - generic [ref=e1442]: 238 צפיות
+                - generic [ref=e1443]:
+                  - paragraph [ref=e1444]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1445]: "תת נושא: כללי"
+                - generic [ref=e1446]:
+                  - generic [ref=e1447]: בינה מלאכותית
+                  - generic [ref=e1448]: חדש לצפייה
+            - generic [ref=e1449] [cursor=pointer]:
+              - generic [ref=e1450]:
+                - img "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74" [ref=e1451]
+                - generic [ref=e1452]:
+                  - button "שמור" [ref=e1453]:
+                    - img [ref=e1454]
+                  - button "שמור לצמיתות" [ref=e1456]:
+                    - img [ref=e1457]
+                  - button "מחק סרטון" [ref=e1459]:
+                    - img [ref=e1460]
+                - generic [ref=e1463]: 35:17
+              - generic [ref=e1464]:
+                - heading "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74" [level=3] [ref=e1466]
+                - generic [ref=e1468]:
+                  - generic [ref=e1469]: A
+                  - generic [ref=e1470]: Aimprove - אימפרוב
+                - generic [ref=e1471]:
+                  - generic [ref=e1473]: 14 אפר׳ 2026
+                  - generic [ref=e1474]:
+                    - generic [ref=e1475]: ·
+                    - generic [ref=e1476]: 192 צפיות
+                - generic [ref=e1477]:
+                  - paragraph [ref=e1478]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1479]: "תת נושא: כללי"
+                - generic [ref=e1480]:
+                  - generic [ref=e1481]: בינה מלאכותית
+                  - generic [ref=e1482]: חדש לצפייה
+            - generic [ref=e1483] [cursor=pointer]:
+              - generic [ref=e1484]:
+                - img "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75" [ref=e1485]
+                - generic [ref=e1486]:
+                  - button "שמור" [ref=e1487]:
+                    - img [ref=e1488]
+                  - button "שמור לצמיתות" [ref=e1490]:
+                    - img [ref=e1491]
+                  - button "מחק סרטון" [ref=e1493]:
+                    - img [ref=e1494]
+                - generic [ref=e1497]: 21:00
+              - generic [ref=e1498]:
+                - heading "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75" [level=3] [ref=e1500]
+                - generic [ref=e1502]:
+                  - generic [ref=e1503]: A
+                  - generic [ref=e1504]: Aimprove - אימפרוב
+                - generic [ref=e1505]:
+                  - generic [ref=e1507]: 14 אפר׳ 2026
+                  - generic [ref=e1508]:
+                    - generic [ref=e1509]: ·
+                    - generic [ref=e1510]: 141 צפיות
+                - generic [ref=e1511]:
+                  - paragraph [ref=e1512]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1513]: "תת נושא: כללי"
+                - generic [ref=e1514]:
+                  - generic [ref=e1515]: בינה מלאכותית
+                  - generic [ref=e1516]: חדש לצפייה
+            - generic [ref=e1517] [cursor=pointer]:
+              - generic [ref=e1518]:
+                - img "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)" [ref=e1519]
+                - generic [ref=e1520]:
+                  - button "שמור" [ref=e1521]:
+                    - img [ref=e1522]
+                  - button "שמור לצמיתות" [ref=e1524]:
+                    - img [ref=e1525]
+                  - button "מחק סרטון" [ref=e1527]:
+                    - img [ref=e1528]
+                - generic [ref=e1531]: 15:01
+              - generic [ref=e1532]:
+                - heading "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)" [level=3] [ref=e1534]
+                - generic [ref=e1536]:
+                  - generic [ref=e1537]: W
+                  - generic [ref=e1538]: Wysetrade
+                - generic [ref=e1539]:
+                  - generic [ref=e1541]: 9 אפר׳ 2026
+                  - generic [ref=e1542]:
+                    - generic [ref=e1543]: ·
+                    - generic [ref=e1544]: 20K צפיות
+                - generic [ref=e1545]:
+                  - paragraph [ref=e1546]: "נושא: Markets"
+                  - paragraph [ref=e1547]: "תת נושא: כללי"
+                - generic [ref=e1548]:
+                  - generic [ref=e1549]: שוק ההון
+                  - generic [ref=e1550]: חדש לצפייה
+            - generic [ref=e1551] [cursor=pointer]:
+              - generic [ref=e1552]:
+                - img "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר" [ref=e1553]
+                - generic [ref=e1554]:
+                  - button "שמור" [ref=e1555]:
+                    - img [ref=e1556]
+                  - button "שמור לצמיתות" [ref=e1558]:
+                    - img [ref=e1559]
+                  - button "מחק סרטון" [ref=e1561]:
+                    - img [ref=e1562]
+                - generic [ref=e1565]: 1:12:42
+              - generic [ref=e1566]:
+                - heading "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר" [level=3] [ref=e1568]
+                - generic [ref=e1570]:
+                  - generic [ref=e1571]: E
+                  - generic [ref=e1572]: Eden Bibas
+                - generic [ref=e1573]:
+                  - generic [ref=e1575]: 6 אפר׳ 2026
+                  - generic [ref=e1576]:
+                    - generic [ref=e1577]: ·
+                    - generic [ref=e1578]: 5.5K צפיות
+                - generic [ref=e1579]:
+                  - paragraph [ref=e1580]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1581]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e1582]:
+                  - generic [ref=e1583]: בינה מלאכותית
+                  - generic [ref=e1584]: חדש לצפייה
+            - generic [ref=e1585] [cursor=pointer]:
+              - generic [ref=e1586]:
+                - 'img "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits" [ref=e1587]'
+                - generic [ref=e1588]:
+                  - button "שמור" [ref=e1589]:
+                    - img [ref=e1590]
+                  - button "שמור לצמיתות" [ref=e1592]:
+                    - img [ref=e1593]
+                  - button "מחק סרטון" [ref=e1595]:
+                    - img [ref=e1596]
+                - generic [ref=e1599]: 0:42
+              - generic [ref=e1600]:
+                - 'heading "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits" [level=3] [ref=e1602]'
+                - generic [ref=e1604]:
+                  - generic [ref=e1605]: E
+                  - generic [ref=e1606]: Ed Hill AI Automation
+                - generic [ref=e1607]:
+                  - generic [ref=e1609]: 4 אפר׳ 2026
+                  - generic [ref=e1610]:
+                    - generic [ref=e1611]: ·
+                    - generic [ref=e1612]: 19.3K צפיות
+                - generic [ref=e1613]:
+                  - paragraph [ref=e1614]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1615]: "תת נושא: אוטומציה"
+                - generic [ref=e1616]:
+                  - generic [ref=e1617]: בינה מלאכותית
+                  - generic [ref=e1618]: חדש לצפייה
+            - generic [ref=e1619] [cursor=pointer]:
+              - generic [ref=e1620]:
+                - img "The FASTEST way to build apps with Claude Code (Opus 4.6)" [ref=e1621]
+                - generic [ref=e1622]:
+                  - button "שמור" [ref=e1623]:
+                    - img [ref=e1624]
+                  - button "שמור לצמיתות" [ref=e1626]:
+                    - img [ref=e1627]
+                  - button "מחק סרטון" [ref=e1629]:
+                    - img [ref=e1630]
+                - generic [ref=e1633]: 11:45
+              - generic [ref=e1634]:
+                - heading "The FASTEST way to build apps with Claude Code (Opus 4.6)" [level=3] [ref=e1636]
+                - generic [ref=e1638]:
+                  - generic [ref=e1639]: E
+                  - generic [ref=e1640]: Ed Hill AI Automation
+                - generic [ref=e1641]:
+                  - generic [ref=e1643]: 2 אפר׳ 2026
+                  - generic [ref=e1644]:
+                    - generic [ref=e1645]: ·
+                    - generic [ref=e1646]: 10.4K צפיות
+                - generic [ref=e1647]:
+                  - paragraph [ref=e1648]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1649]: "תת נושא: אוטומציה"
+                - generic [ref=e1650]:
+                  - generic [ref=e1651]: בינה מלאכותית
+                  - generic [ref=e1652]: חדש לצפייה
+            - generic [ref=e1653] [cursor=pointer]:
+              - generic [ref=e1654]:
+                - img "Anthropic's NEWEST Feature Just Made Claude Code 10x Better" [ref=e1655]
+                - generic [ref=e1656]:
+                  - button "שמור" [ref=e1657]:
+                    - img [ref=e1658]
+                  - button "שמור לצמיתות" [ref=e1660]:
+                    - img [ref=e1661]
+                  - button "מחק סרטון" [ref=e1663]:
+                    - img [ref=e1664]
+                - generic [ref=e1667]: 4:46
+              - generic [ref=e1668]:
+                - heading "Anthropic's NEWEST Feature Just Made Claude Code 10x Better" [level=3] [ref=e1670]
+                - generic [ref=e1672]:
+                  - generic [ref=e1673]: E
+                  - generic [ref=e1674]: Ed Hill AI Automation
+                - generic [ref=e1675]:
+                  - generic [ref=e1677]: 27 מרץ 2026
+                  - generic [ref=e1678]:
+                    - generic [ref=e1679]: ·
+                    - generic [ref=e1680]: 2K צפיות
+                - generic [ref=e1681]:
+                  - paragraph [ref=e1682]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1683]: "תת נושא: אוטומציה"
+                - generic [ref=e1684]:
+                  - generic [ref=e1685]: בינה מלאכותית
+                  - generic [ref=e1686]: חדש לצפייה
+            - generic [ref=e1687] [cursor=pointer]:
+              - generic [ref=e1688]:
+                - img "Claude Code + Nano Banana 2 = Apple-Level Websites" [ref=e1689]
+                - generic [ref=e1690]:
+                  - button "שמור" [ref=e1691]:
+                    - img [ref=e1692]
+                  - button "שמור לצמיתות" [ref=e1694]:
+                    - img [ref=e1695]
+                  - button "מחק סרטון" [ref=e1697]:
+                    - img [ref=e1698]
+                - generic [ref=e1701]: 7:44
+              - generic [ref=e1702]:
+                - heading "Claude Code + Nano Banana 2 = Apple-Level Websites" [level=3] [ref=e1704]
+                - generic [ref=e1706]:
+                  - generic [ref=e1707]: E
+                  - generic [ref=e1708]: Ed Hill AI Automation
+                - generic [ref=e1709]:
+                  - generic [ref=e1711]: 18 מרץ 2026
+                  - generic [ref=e1712]:
+                    - generic [ref=e1713]: ·
+                    - generic [ref=e1714]: 23.2K צפיות
+                - generic [ref=e1715]:
+                  - paragraph [ref=e1716]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1717]: "תת נושא: אוטומציה"
+                - generic [ref=e1718]:
+                  - generic [ref=e1719]: בינה מלאכותית
+                  - generic [ref=e1720]: חדש לצפייה
+            - generic [ref=e1721] [cursor=pointer]:
+              - generic [ref=e1722]:
+                - img "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28" [ref=e1723]
+                - generic [ref=e1724]:
+                  - button "שמור" [ref=e1725]:
+                    - img [ref=e1726]
+                  - button "שמור לצמיתות" [ref=e1728]:
+                    - img [ref=e1729]
+                  - button "מחק סרטון" [ref=e1731]:
+                    - img [ref=e1732]
+                - generic [ref=e1735]: 40:37
+              - generic [ref=e1736]:
+                - heading "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28" [level=3] [ref=e1738]
+                - generic [ref=e1740]:
+                  - generic [ref=e1741]: D
+                  - generic [ref=e1742]: Dor Amir Trading
+                - generic [ref=e1743]:
+                  - generic [ref=e1745]: 17 מרץ 2026
+                  - generic [ref=e1746]:
+                    - generic [ref=e1747]: ·
+                    - generic [ref=e1748]: 110 צפיות
+                - generic [ref=e1749]:
+                  - paragraph [ref=e1750]: "נושא: שוק ההון"
+                  - paragraph [ref=e1751]: "תת נושא: מסחר"
+                - generic [ref=e1752]:
+                  - generic [ref=e1753]: שוק ההון
+                  - generic [ref=e1754]: חדש לצפייה
+            - generic [ref=e1755] [cursor=pointer]:
+              - generic [ref=e1756]:
+                - 'img "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27" [ref=e1757]'
+                - generic [ref=e1758]:
+                  - button "שמור" [ref=e1759]:
+                    - img [ref=e1760]
+                  - button "שמור לצמיתות" [ref=e1762]:
+                    - img [ref=e1763]
+                  - button "מחק סרטון" [ref=e1765]:
+                    - img [ref=e1766]
+                - generic [ref=e1769]: 48:09
+              - generic [ref=e1770]:
+                - 'heading "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27" [level=3] [ref=e1772]'
+                - generic [ref=e1774]:
+                  - generic [ref=e1775]: D
+                  - generic [ref=e1776]: Dor Amir Trading
+                - generic [ref=e1777]:
+                  - generic [ref=e1779]: 16 מרץ 2026
+                  - generic [ref=e1780]:
+                    - generic [ref=e1781]: ·
+                    - generic [ref=e1782]: 133 צפיות
+                - generic [ref=e1783]:
+                  - paragraph [ref=e1784]: "נושא: שוק ההון"
+                  - paragraph [ref=e1785]: "תת נושא: מסחר"
+                - generic [ref=e1786]:
+                  - generic [ref=e1787]: שוק ההון
+                  - generic [ref=e1788]: חדש לצפייה
+            - generic [ref=e1789] [cursor=pointer]:
+              - generic [ref=e1790]:
+                - 'img "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26" [ref=e1791]'
+                - generic [ref=e1792]:
+                  - button "שמור" [ref=e1793]:
+                    - img [ref=e1794]
+                  - button "שמור לצמיתות" [ref=e1796]:
+                    - img [ref=e1797]
+                  - button "מחק סרטון" [ref=e1799]:
+                    - img [ref=e1800]
+                - generic [ref=e1803]: 8:46
+              - generic [ref=e1804]:
+                - 'heading "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26" [level=3] [ref=e1806]'
+                - generic [ref=e1808]:
+                  - generic [ref=e1809]: D
+                  - generic [ref=e1810]: Dor Amir Trading
+                - generic [ref=e1811]:
+                  - generic [ref=e1813]: 15 מרץ 2026
+                  - generic [ref=e1814]:
+                    - generic [ref=e1815]: ·
+                    - generic [ref=e1816]: 85 צפיות
+                - generic [ref=e1817]:
+                  - paragraph [ref=e1818]: "נושא: שוק ההון"
+                  - paragraph [ref=e1819]: "תת נושא: מסחר"
+                - generic [ref=e1820]:
+                  - generic [ref=e1821]: שוק ההון
+                  - generic [ref=e1822]: חדש לצפייה
+            - generic [ref=e1823] [cursor=pointer]:
+              - generic [ref=e1824]:
+                - img "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25" [ref=e1825]
+                - generic [ref=e1826]:
+                  - button "שמור" [ref=e1827]:
+                    - img [ref=e1828]
+                  - button "שמור לצמיתות" [ref=e1830]:
+                    - img [ref=e1831]
+                  - button "מחק סרטון" [ref=e1833]:
+                    - img [ref=e1834]
+                - generic [ref=e1837]: 26:12
+              - generic [ref=e1838]:
+                - heading "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25" [level=3] [ref=e1840]
+                - generic [ref=e1842]:
+                  - generic [ref=e1843]: D
+                  - generic [ref=e1844]: Dor Amir Trading
+                - generic [ref=e1845]:
+                  - generic [ref=e1847]: 15 מרץ 2026
+                  - generic [ref=e1848]:
+                    - generic [ref=e1849]: ·
+                    - generic [ref=e1850]: 96 צפיות
+                - generic [ref=e1851]:
+                  - paragraph [ref=e1852]: "נושא: שוק ההון"
+                  - paragraph [ref=e1853]: "תת נושא: מסחר"
+                - generic [ref=e1854]:
+                  - generic [ref=e1855]: שוק ההון
+                  - generic [ref=e1856]: חדש לצפייה
+            - generic [ref=e1857] [cursor=pointer]:
+              - generic [ref=e1858]:
+                - img "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24" [ref=e1859]
+                - generic [ref=e1860]:
+                  - button "שמור" [ref=e1861]:
+                    - img [ref=e1862]
+                  - button "שמור לצמיתות" [ref=e1864]:
+                    - img [ref=e1865]
+                  - button "מחק סרטון" [ref=e1867]:
+                    - img [ref=e1868]
+                - generic [ref=e1871]: 17:32
+              - generic [ref=e1872]:
+                - heading "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24" [level=3] [ref=e1874]
+                - generic [ref=e1876]:
+                  - generic [ref=e1877]: D
+                  - generic [ref=e1878]: Dor Amir Trading
+                - generic [ref=e1879]:
+                  - generic [ref=e1881]: 14 מרץ 2026
+                  - generic [ref=e1882]:
+                    - generic [ref=e1883]: ·
+                    - generic [ref=e1884]: 61 צפיות
+                - generic [ref=e1885]:
+                  - paragraph [ref=e1886]: "נושא: שוק ההון"
+                  - paragraph [ref=e1887]: "תת נושא: מסחר"
+                - generic [ref=e1888]:
+                  - generic [ref=e1889]: שוק ההון
+                  - generic [ref=e1890]: חדש לצפייה
+            - generic [ref=e1891] [cursor=pointer]:
+              - generic [ref=e1892]:
+                - img "Stop Making Ugly Websites with Claude Code" [ref=e1893]
+                - generic [ref=e1894]:
+                  - button "שמור" [ref=e1895]:
+                    - img [ref=e1896]
+                  - button "שמור לצמיתות" [ref=e1898]:
+                    - img [ref=e1899]
+                  - button "מחק סרטון" [ref=e1901]:
+                    - img [ref=e1902]
+                - generic [ref=e1905]: 10:48
+              - generic [ref=e1906]:
+                - heading "Stop Making Ugly Websites with Claude Code" [level=3] [ref=e1908]
+                - generic [ref=e1910]:
+                  - generic [ref=e1911]: E
+                  - generic [ref=e1912]: Ed Hill AI Automation
+                - generic [ref=e1913]:
+                  - generic [ref=e1915]: 13 מרץ 2026
+                  - generic [ref=e1916]:
+                    - generic [ref=e1917]: ·
+                    - generic [ref=e1918]: 172K צפיות
+                - generic [ref=e1919]:
+                  - paragraph [ref=e1920]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1921]: "תת נושא: אוטומציה"
+                - generic [ref=e1922]:
+                  - generic [ref=e1923]: בינה מלאכותית
+                  - generic [ref=e1924]: חדש לצפייה
+            - generic [ref=e1925] [cursor=pointer]:
+              - generic [ref=e1926]:
+                - img "מפגש 3 - הקסמים של קלוד קוד" [ref=e1927]
+                - generic [ref=e1928]:
+                  - button "שמור" [ref=e1929]:
+                    - img [ref=e1930]
+                  - button "שמור לצמיתות" [ref=e1932]:
+                    - img [ref=e1933]
+                  - button "מחק סרטון" [ref=e1935]:
+                    - img [ref=e1936]
+                - generic [ref=e1939]: 1:40:37
+              - generic [ref=e1940]:
+                - heading "מפגש 3 - הקסמים של קלוד קוד" [level=3] [ref=e1942]
+                - generic [ref=e1944]:
+                  - generic [ref=e1945]: E
+                  - generic [ref=e1946]: Eden Bibas
+                - generic [ref=e1947]:
+                  - generic [ref=e1949]: 6 מרץ 2026
+                  - generic [ref=e1950]:
+                    - generic [ref=e1951]: ·
+                    - generic [ref=e1952]: 8.2K צפיות
+                - generic [ref=e1953]:
+                  - paragraph [ref=e1954]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1955]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e1956]:
+                  - generic [ref=e1957]: בינה מלאכותית
+                  - generic [ref=e1958]: חדש לצפייה
+            - generic [ref=e1959] [cursor=pointer]:
+              - generic [ref=e1960]:
+                - img "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!" [ref=e1961]
+                - generic [ref=e1962]:
+                  - button "שמור" [ref=e1963]:
+                    - img [ref=e1964]
+                  - button "שמור לצמיתות" [ref=e1966]:
+                    - img [ref=e1967]
+                  - button "מחק סרטון" [ref=e1969]:
+                    - img [ref=e1970]
+                - generic [ref=e1973]: 56:16
+              - generic [ref=e1974]:
+                - heading "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!" [level=3] [ref=e1976]
+                - generic [ref=e1978]:
+                  - generic [ref=e1979]: E
+                  - generic [ref=e1980]: Eden Bibas
+                - generic [ref=e1981]:
+                  - generic [ref=e1983]: 5 מרץ 2026
+                  - generic [ref=e1984]:
+                    - generic [ref=e1985]: ·
+                    - generic [ref=e1986]: 4.8K צפיות
+                - generic [ref=e1987]:
+                  - paragraph [ref=e1988]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e1989]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e1990]:
+                  - generic [ref=e1991]: בינה מלאכותית
+                  - generic [ref=e1992]: חדש לצפייה
+            - generic [ref=e1993] [cursor=pointer]:
+              - generic [ref=e1994]:
+                - img "מפגש 2 - התקנת סקילים + בניית מצגות" [ref=e1995]
+                - generic [ref=e1996]:
+                  - button "שמור" [ref=e1997]:
+                    - img [ref=e1998]
+                  - button "שמור לצמיתות" [ref=e2000]:
+                    - img [ref=e2001]
+                  - button "מחק סרטון" [ref=e2003]:
+                    - img [ref=e2004]
+                - generic [ref=e2007]: 1:32:51
+              - generic [ref=e2008]:
+                - heading "מפגש 2 - התקנת סקילים + בניית מצגות" [level=3] [ref=e2010]
+                - generic [ref=e2012]:
+                  - generic [ref=e2013]: E
+                  - generic [ref=e2014]: Eden Bibas
+                - generic [ref=e2015]:
+                  - generic [ref=e2017]: 5 מרץ 2026
+                  - generic [ref=e2018]:
+                    - generic [ref=e2019]: ·
+                    - generic [ref=e2020]: 7.6K צפיות
+                - generic [ref=e2021]:
+                  - paragraph [ref=e2022]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2023]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2024]:
+                  - generic [ref=e2025]: בינה מלאכותית
+                  - generic [ref=e2026]: חדש לצפייה
+            - generic [ref=e2027] [cursor=pointer]:
+              - generic [ref=e2028]:
+                - img "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות" [ref=e2029]
+                - generic [ref=e2030]:
+                  - button "שמור" [ref=e2031]:
+                    - img [ref=e2032]
+                  - button "שמור לצמיתות" [ref=e2034]:
+                    - img [ref=e2035]
+                  - button "מחק סרטון" [ref=e2037]:
+                    - img [ref=e2038]
+                - generic [ref=e2041]: 4:30
+              - generic [ref=e2042]:
+                - heading "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות" [level=3] [ref=e2044]
+                - generic [ref=e2046]:
+                  - generic [ref=e2047]: T
+                  - generic [ref=e2048]: The Hasidic Trader
+                - generic [ref=e2049]:
+                  - generic [ref=e2051]: 19 פבר׳ 2026
+                  - generic [ref=e2052]:
+                    - generic [ref=e2053]: ·
+                    - generic [ref=e2054]: 81 צפיות
+                - generic [ref=e2055]:
+                  - paragraph [ref=e2056]: "נושא: שוק ההון"
+                  - paragraph [ref=e2057]: "תת נושא: מסחר"
+                - generic [ref=e2058]:
+                  - generic [ref=e2059]: שוק ההון
+                  - generic [ref=e2060]: חדש לצפייה
+            - generic [ref=e2061] [cursor=pointer]:
+              - generic [ref=e2062]:
+                - 'img "שאלות ותשובות במסחר #1" [ref=e2063]'
+                - generic [ref=e2064]:
+                  - button "שמור" [ref=e2065]:
+                    - img [ref=e2066]
+                  - button "שמור לצמיתות" [ref=e2068]:
+                    - img [ref=e2069]
+                  - button "מחק סרטון" [ref=e2071]:
+                    - img [ref=e2072]
+                - generic [ref=e2075]: 43:16
+              - generic [ref=e2076]:
+                - 'heading "שאלות ותשובות במסחר #1" [level=3] [ref=e2078]'
+                - generic [ref=e2080]:
+                  - generic [ref=e2081]: T
+                  - generic [ref=e2082]: The Hasidic Trader
+                - generic [ref=e2083]:
+                  - generic [ref=e2085]: 19 פבר׳ 2026
+                  - generic [ref=e2086]:
+                    - generic [ref=e2087]: ·
+                    - generic [ref=e2088]: 333 צפיות
+                - generic [ref=e2089]:
+                  - paragraph [ref=e2090]: "נושא: שוק ההון"
+                  - paragraph [ref=e2091]: "תת נושא: מסחר"
+                - generic [ref=e2092]:
+                  - generic [ref=e2093]: שוק ההון
+                  - generic [ref=e2094]: חדש לצפייה
+            - generic [ref=e2095] [cursor=pointer]:
+              - generic [ref=e2096]:
+                - img "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)" [ref=e2097]
+                - generic [ref=e2098]:
+                  - button "שמור" [ref=e2099]:
+                    - img [ref=e2100]
+                  - button "שמור לצמיתות" [ref=e2102]:
+                    - img [ref=e2103]
+                  - button "מחק סרטון" [ref=e2105]:
+                    - img [ref=e2106]
+                - generic [ref=e2109]: 11:58
+              - generic [ref=e2110]:
+                - heading "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)" [level=3] [ref=e2112]
+                - generic [ref=e2114]:
+                  - generic [ref=e2115]: W
+                  - generic [ref=e2116]: Wysetrade
+                - generic [ref=e2117]:
+                  - generic [ref=e2119]: 6 פבר׳ 2026
+                  - generic [ref=e2120]:
+                    - generic [ref=e2121]: ·
+                    - generic [ref=e2122]: 35.7K צפיות
+                - generic [ref=e2123]:
+                  - paragraph [ref=e2124]: "נושא: Markets"
+                  - paragraph [ref=e2125]: "תת נושא: כללי"
+                - generic [ref=e2126]:
+                  - generic [ref=e2127]: שוק ההון
+                  - generic [ref=e2128]: חדש לצפייה
+            - generic [ref=e2129] [cursor=pointer]:
+              - generic [ref=e2130]:
+                - img "היומן לא משקר 1" [ref=e2131]
+                - generic [ref=e2132]:
+                  - button "שמור" [ref=e2133]:
+                    - img [ref=e2134]
+                  - button "שמור לצמיתות" [ref=e2136]:
+                    - img [ref=e2137]
+                  - button "מחק סרטון" [ref=e2139]:
+                    - img [ref=e2140]
+                - generic [ref=e2143]: 20:18
+              - generic [ref=e2144]:
+                - heading "היומן לא משקר 1" [level=3] [ref=e2146]
+                - generic [ref=e2148]:
+                  - generic [ref=e2149]: T
+                  - generic [ref=e2150]: The Hasidic Trader
+                - generic [ref=e2151]:
+                  - generic [ref=e2153]: 1 פבר׳ 2026
+                  - generic [ref=e2154]:
+                    - generic [ref=e2155]: ·
+                    - generic [ref=e2156]: 252 צפיות
+                - generic [ref=e2157]:
+                  - paragraph [ref=e2158]: "נושא: שוק ההון"
+                  - paragraph [ref=e2159]: "תת נושא: מסחר"
+                - generic [ref=e2160]:
+                  - generic [ref=e2161]: שוק ההון
+                  - generic [ref=e2162]: חדש לצפייה
+            - generic [ref=e2163] [cursor=pointer]:
+              - generic [ref=e2164]:
+                - img "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?" [ref=e2165]
+                - generic [ref=e2166]:
+                  - button "שמור" [ref=e2167]:
+                    - img [ref=e2168]
+                  - button "שמור לצמיתות" [ref=e2170]:
+                    - img [ref=e2171]
+                  - button "מחק סרטון" [ref=e2173]:
+                    - img [ref=e2174]
+                - generic [ref=e2177]: 19:56
+              - generic [ref=e2178]:
+                - heading "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?" [level=3] [ref=e2180]
+                - generic [ref=e2182]:
+                  - generic [ref=e2183]: R
+                  - generic [ref=e2184]: Ran Bar Zik
+                - generic [ref=e2185]:
+                  - generic [ref=e2187]: 31 ינו׳ 2026
+                  - generic [ref=e2188]:
+                    - generic [ref=e2189]: ·
+                    - generic [ref=e2190]: 1.1K צפיות
+                - generic [ref=e2191]:
+                  - paragraph [ref=e2192]: "נושא: פיתוח תוכנה"
+                  - paragraph [ref=e2193]: "תת נושא: כללי"
+                - generic [ref=e2194]:
+                  - generic [ref=e2195]: פיתוח
+                  - generic [ref=e2196]: חדש לצפייה
+            - generic [ref=e2197] [cursor=pointer]:
+              - generic [ref=e2198]:
+                - img "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?" [ref=e2199]
+                - generic [ref=e2200]:
+                  - button "שמור" [ref=e2201]:
+                    - img [ref=e2202]
+                  - button "שמור לצמיתות" [ref=e2204]:
+                    - img [ref=e2205]
+                  - button "מחק סרטון" [ref=e2207]:
+                    - img [ref=e2208]
+                - generic [ref=e2211]: 12:57
+              - generic [ref=e2212]:
+                - heading "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?" [level=3] [ref=e2214]
+                - generic [ref=e2216]:
+                  - generic [ref=e2217]: R
+                  - generic [ref=e2218]: Ran Bar Zik
+                - generic [ref=e2219]:
+                  - generic [ref=e2221]: 22 דצמ׳ 2025
+                  - generic [ref=e2222]:
+                    - generic [ref=e2223]: ·
+                    - generic [ref=e2224]: 890 צפיות
+                - generic [ref=e2225]:
+                  - paragraph [ref=e2226]: "נושא: פיתוח תוכנה"
+                  - paragraph [ref=e2227]: "תת נושא: כללי"
+                - generic [ref=e2228]:
+                  - generic [ref=e2229]: פיתוח
+                  - generic [ref=e2230]: חדש לצפייה
+            - generic [ref=e2231] [cursor=pointer]:
+              - generic [ref=e2232]:
+                - img "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP" [ref=e2233]
+                - generic [ref=e2234]:
+                  - button "שמור" [ref=e2235]:
+                    - img [ref=e2236]
+                  - button "שמור לצמיתות" [ref=e2238]:
+                    - img [ref=e2239]
+                  - button "מחק סרטון" [ref=e2241]:
+                    - img [ref=e2242]
+                - generic [ref=e2245]: 22:32
+              - generic [ref=e2246]:
+                - heading "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP" [level=3] [ref=e2248]
+                - generic [ref=e2250]:
+                  - generic [ref=e2251]: R
+                  - generic [ref=e2252]: Ran Bar Zik
+                - generic [ref=e2253]:
+                  - generic [ref=e2255]: 14 דצמ׳ 2025
+                  - generic [ref=e2256]:
+                    - generic [ref=e2257]: ·
+                    - generic [ref=e2258]: 360 צפיות
+                - generic [ref=e2259]:
+                  - paragraph [ref=e2260]: "נושא: פיתוח תוכנה"
+                  - paragraph [ref=e2261]: "תת נושא: כללי"
+                - generic [ref=e2262]:
+                  - generic [ref=e2263]: פיתוח
+                  - generic [ref=e2264]: חדש לצפייה
+            - generic [ref=e2265] [cursor=pointer]:
+              - generic [ref=e2266]:
+                - img "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)" [ref=e2267]
+                - generic [ref=e2268]:
+                  - button "שמור" [ref=e2269]:
+                    - img [ref=e2270]
+                  - button "שמור לצמיתות" [ref=e2272]:
+                    - img [ref=e2273]
+                  - button "מחק סרטון" [ref=e2275]:
+                    - img [ref=e2276]
+                - generic [ref=e2279]: 17:02
+              - generic [ref=e2280]:
+                - heading "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)" [level=3] [ref=e2282]
+                - generic [ref=e2284]:
+                  - generic [ref=e2285]: W
+                  - generic [ref=e2286]: Wysetrade
+                - generic [ref=e2287]:
+                  - generic [ref=e2289]: 22 נוב׳ 2025
+                  - generic [ref=e2290]:
+                    - generic [ref=e2291]: ·
+                    - generic [ref=e2292]: 79.1K צפיות
+                - generic [ref=e2293]:
+                  - paragraph [ref=e2294]: "נושא: Markets"
+                  - paragraph [ref=e2295]: "תת נושא: כללי"
+                - generic [ref=e2296]:
+                  - generic [ref=e2297]: שוק ההון
+                  - generic [ref=e2298]: חדש לצפייה
+            - generic [ref=e2299] [cursor=pointer]:
+              - generic [ref=e2300]:
+                - img "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)" [ref=e2301]
+                - generic [ref=e2302]:
+                  - button "שמור" [ref=e2303]:
+                    - img [ref=e2304]
+                  - button "שמור לצמיתות" [ref=e2306]:
+                    - img [ref=e2307]
+                  - button "מחק סרטון" [ref=e2309]:
+                    - img [ref=e2310]
+                - generic [ref=e2313]: 13:15
+              - generic [ref=e2314]:
+                - heading "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)" [level=3] [ref=e2316]
+                - generic [ref=e2318]:
+                  - generic [ref=e2319]: W
+                  - generic [ref=e2320]: Wysetrade
+                - generic [ref=e2321]:
+                  - generic [ref=e2323]: 29 אוק׳ 2025
+                  - generic [ref=e2324]:
+                    - generic [ref=e2325]: ·
+                    - generic [ref=e2326]: 26.2K צפיות
+                - generic [ref=e2327]:
+                  - paragraph [ref=e2328]: "נושא: Markets"
+                  - paragraph [ref=e2329]: "תת נושא: כללי"
+                - generic [ref=e2330]:
+                  - generic [ref=e2331]: שוק ההון
+                  - generic [ref=e2332]: חדש לצפייה
+            - generic [ref=e2333] [cursor=pointer]:
+              - generic [ref=e2334]:
+                - img "SDR התקנה והפעלה ראשונית SD 480p" [ref=e2335]
+                - generic [ref=e2336]:
+                  - button "שמור" [ref=e2337]:
+                    - img [ref=e2338]
+                  - button "שמור לצמיתות" [ref=e2340]:
+                    - img [ref=e2341]
+                  - button "מחק סרטון" [ref=e2343]:
+                    - img [ref=e2344]
+                - generic [ref=e2347]: 7:45
+              - generic [ref=e2348]:
+                - heading "SDR התקנה והפעלה ראשונית SD 480p" [level=3] [ref=e2350]
+                - generic [ref=e2352]:
+                  - generic [ref=e2353]: R
+                  - generic [ref=e2354]: Ran Bar Zik
+                - generic [ref=e2355]:
+                  - generic [ref=e2357]: 21 ספט׳ 2025
+                  - generic [ref=e2358]:
+                    - generic [ref=e2359]: ·
+                    - generic [ref=e2360]: 444 צפיות
+                - generic [ref=e2361]:
+                  - paragraph [ref=e2362]: "נושא: פיתוח תוכנה"
+                  - paragraph [ref=e2363]: "תת נושא: כללי"
+                - generic [ref=e2364]:
+                  - generic [ref=e2365]: פיתוח
+                  - generic [ref=e2366]: חדש לצפייה
+            - generic [ref=e2367] [cursor=pointer]:
+              - generic [ref=e2368]:
+                - img "רן בר זיק בשש בכאן 27 10" [ref=e2369]
+                - generic [ref=e2370]:
+                  - button "שמור" [ref=e2371]:
+                    - img [ref=e2372]
+                  - button "שמור לצמיתות" [ref=e2374]:
+                    - img [ref=e2375]
+                  - button "מחק סרטון" [ref=e2377]:
+                    - img [ref=e2378]
+                - generic [ref=e2381]: 7:03
+              - generic [ref=e2382]:
+                - heading "רן בר זיק בשש בכאן 27 10" [level=3] [ref=e2384]
+                - generic [ref=e2386]:
+                  - generic [ref=e2387]: R
+                  - generic [ref=e2388]: Ran Bar Zik
+                - generic [ref=e2389]:
+                  - generic [ref=e2391]: 28 אוג׳ 2025
+                  - generic [ref=e2392]:
+                    - generic [ref=e2393]: ·
+                    - generic [ref=e2394]: 155 צפיות
+                - generic [ref=e2395]:
+                  - paragraph [ref=e2396]: "נושא: פיתוח תוכנה"
+                  - paragraph [ref=e2397]: "תת נושא: כללי"
+                - generic [ref=e2398]:
+                  - generic [ref=e2399]: פיתוח
+                  - generic [ref=e2400]: חדש לצפייה
+            - generic [ref=e2401] [cursor=pointer]:
+              - generic [ref=e2402]:
+                - 'img "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)" [ref=e2403]'
+                - generic [ref=e2404]:
+                  - button "שמור" [ref=e2405]:
+                    - img [ref=e2406]
+                  - button "שמור לצמיתות" [ref=e2408]:
+                    - img [ref=e2409]
+                  - button "מחק סרטון" [ref=e2411]:
+                    - img [ref=e2412]
+                - generic [ref=e2415]: 14:25
+              - generic [ref=e2416]:
+                - 'heading "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)" [level=3] [ref=e2418]'
+                - generic [ref=e2420]:
+                  - generic [ref=e2421]: W
+                  - generic [ref=e2422]: Wysetrade
+                - generic [ref=e2423]:
+                  - generic [ref=e2425]: 22 אוג׳ 2025
+                  - generic [ref=e2426]:
+                    - generic [ref=e2427]: ·
+                    - generic [ref=e2428]: 46.9K צפיות
+                - generic [ref=e2429]:
+                  - paragraph [ref=e2430]: "נושא: Markets"
+                  - paragraph [ref=e2431]: "תת נושא: כללי"
+                - generic [ref=e2432]:
+                  - generic [ref=e2433]: שוק ההון
+                  - generic [ref=e2434]: חדש לצפייה
+            - generic [ref=e2435] [cursor=pointer]:
+              - generic [ref=e2436]:
+                - img "NY Session - Futures Trading 28.4.25" [ref=e2437]
+                - generic [ref=e2438]:
+                  - button "שמור" [ref=e2439]:
+                    - img [ref=e2440]
+                  - button "שמור לצמיתות" [ref=e2442]:
+                    - img [ref=e2443]
+                  - button "מחק סרטון" [ref=e2445]:
+                    - img [ref=e2446]
+                - generic [ref=e2449]: 40:34
+              - generic [ref=e2450]:
+                - heading "NY Session - Futures Trading 28.4.25" [level=3] [ref=e2452]
+                - generic [ref=e2454]:
+                  - generic [ref=e2455]: T
+                  - generic [ref=e2456]: The Hasidic Trader
+                - generic [ref=e2457]:
+                  - generic [ref=e2459]: 29 אפר׳ 2025
+                  - generic [ref=e2460]:
+                    - generic [ref=e2461]: ·
+                    - generic [ref=e2462]: 266 צפיות
+                - generic [ref=e2463]:
+                  - paragraph [ref=e2464]: "נושא: שוק ההון"
+                  - paragraph [ref=e2465]: "תת נושא: מסחר"
+                - generic [ref=e2466]:
+                  - generic [ref=e2467]: שוק ההון
+                  - generic [ref=e2468]: חדש לצפייה
+            - generic [ref=e2469] [cursor=pointer]:
+              - generic [ref=e2470]:
+                - img "חכם במסחר" [ref=e2471]
+                - generic [ref=e2472]:
+                  - button "שמור" [ref=e2473]:
+                    - img [ref=e2474]
+                  - button "שמור לצמיתות" [ref=e2476]:
+                    - img [ref=e2477]
+                  - button "מחק סרטון" [ref=e2479]:
+                    - img [ref=e2480]
+                - generic [ref=e2483]: 13:29
+              - generic [ref=e2484]:
+                - heading "חכם במסחר" [level=3] [ref=e2486]
+                - generic [ref=e2488]:
+                  - generic [ref=e2489]: T
+                  - generic [ref=e2490]: The Hasidic Trader
+                - generic [ref=e2491]:
+                  - generic [ref=e2493]: 23 מרץ 2025
+                  - generic [ref=e2494]:
+                    - generic [ref=e2495]: ·
+                    - generic [ref=e2496]: 417 צפיות
+                - generic [ref=e2497]:
+                  - paragraph [ref=e2498]: "נושא: שוק ההון"
+                  - paragraph [ref=e2499]: "תת נושא: מסחר"
+                - generic [ref=e2500]:
+                  - generic [ref=e2501]: שוק ההון
+                  - generic [ref=e2502]: חדש לצפייה
+            - generic [ref=e2503] [cursor=pointer]:
+              - generic [ref=e2504]:
+                - img "Mr beast vs AI - Who will win ??" [ref=e2505]
+                - generic [ref=e2506]:
+                  - button "שמור" [ref=e2507]:
+                    - img [ref=e2508]
+                  - button "שמור לצמיתות" [ref=e2510]:
+                    - img [ref=e2511]
+                  - button "מחק סרטון" [ref=e2513]:
+                    - img [ref=e2514]
+                - generic [ref=e2517]: 4:52
+              - generic [ref=e2518]:
+                - heading "Mr beast vs AI - Who will win ??" [level=3] [ref=e2520]
+                - generic [ref=e2522]:
+                  - generic [ref=e2523]: A
+                  - generic [ref=e2524]: AI Andy
+                - generic [ref=e2525]:
+                  - generic [ref=e2527]: 4 יוני 2023
+                  - generic [ref=e2528]:
+                    - generic [ref=e2529]: ·
+                    - generic [ref=e2530]: 120 צפיות
+                - generic [ref=e2531]:
+                  - paragraph [ref=e2532]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2533]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2534]:
+                  - generic [ref=e2535]: בינה מלאכותית
+                  - generic [ref=e2536]: חדש לצפייה
+            - generic [ref=e2537] [cursor=pointer]:
+              - generic [ref=e2538]:
+                - img "AI got High on weed and this happened....." [ref=e2539]
+                - generic [ref=e2540]:
+                  - button "שמור" [ref=e2541]:
+                    - img [ref=e2542]
+                  - button "שמור לצמיתות" [ref=e2544]:
+                    - img [ref=e2545]
+                  - button "מחק סרטון" [ref=e2547]:
+                    - img [ref=e2548]
+                - generic [ref=e2551]: 4:40
+              - generic [ref=e2552]:
+                - heading "AI got High on weed and this happened....." [level=3] [ref=e2554]
+                - generic [ref=e2556]:
+                  - generic [ref=e2557]: A
+                  - generic [ref=e2558]: AI Andy
+                - generic [ref=e2559]:
+                  - generic [ref=e2561]: 8 מאי 2023
+                  - generic [ref=e2562]:
+                    - generic [ref=e2563]: ·
+                    - generic [ref=e2564]: 51 צפיות
+                - generic [ref=e2565]:
+                  - paragraph [ref=e2566]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2567]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2568]:
+                  - generic [ref=e2569]: בינה מלאכותית
+                  - generic [ref=e2570]: חדש לצפייה
+            - generic [ref=e2571] [cursor=pointer]:
+              - generic [ref=e2572]:
+                - 'img "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity" [ref=e2573]'
+                - generic [ref=e2574]:
+                  - button "שמור" [ref=e2575]:
+                    - img [ref=e2576]
+                  - button "שמור לצמיתות" [ref=e2578]:
+                    - img [ref=e2579]
+                  - button "מחק סרטון" [ref=e2581]:
+                    - img [ref=e2582]
+                - generic [ref=e2585]: 1:00
+              - generic [ref=e2586]:
+                - 'heading "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity" [level=3] [ref=e2588]'
+                - generic [ref=e2590]:
+                  - generic [ref=e2591]: A
+                  - generic [ref=e2592]: AI Andy
+                - generic [ref=e2593]:
+                  - generic [ref=e2595]: 18 אפר׳ 2023
+                  - generic [ref=e2596]:
+                    - generic [ref=e2597]: ·
+                    - generic [ref=e2598]: 101 צפיות
+                - generic [ref=e2599]:
+                  - paragraph [ref=e2600]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2601]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2602]:
+                  - generic [ref=e2603]: בינה מלאכותית
+                  - generic [ref=e2604]: חדש לצפייה
+            - generic [ref=e2605] [cursor=pointer]:
+              - generic [ref=e2606]:
+                - 'img "AI calculates humanities future #shorts #ai #future #fyp" [ref=e2607]'
+                - generic [ref=e2608]:
+                  - button "שמור" [ref=e2609]:
+                    - img [ref=e2610]
+                  - button "שמור לצמיתות" [ref=e2612]:
+                    - img [ref=e2613]
+                  - button "מחק סרטון" [ref=e2615]:
+                    - img [ref=e2616]
+                - generic [ref=e2619]: 0:49
+              - generic [ref=e2620]:
+                - 'heading "AI calculates humanities future #shorts #ai #future #fyp" [level=3] [ref=e2622]'
+                - generic [ref=e2624]:
+                  - generic [ref=e2625]: A
+                  - generic [ref=e2626]: AI Andy
+                - generic [ref=e2627]:
+                  - generic [ref=e2629]: 18 אפר׳ 2023
+                  - generic [ref=e2630]:
+                    - generic [ref=e2631]: ·
+                    - generic [ref=e2632]: 252 צפיות
+                - generic [ref=e2633]:
+                  - paragraph [ref=e2634]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2635]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2636]:
+                  - generic [ref=e2637]: בינה מלאכותית
+                  - generic [ref=e2638]: חדש לצפייה
+            - generic [ref=e2639] [cursor=pointer]:
+              - generic [ref=e2640]:
+                - 'img "What this AI knows about time travel!! #shorts #ai #fyp #timetravel" [ref=e2641]'
+                - generic [ref=e2642]:
+                  - button "שמור" [ref=e2643]:
+                    - img [ref=e2644]
+                  - button "שמור לצמיתות" [ref=e2646]:
+                    - img [ref=e2647]
+                  - button "מחק סרטון" [ref=e2649]:
+                    - img [ref=e2650]
+                - generic [ref=e2653]: 0:59
+              - generic [ref=e2654]:
+                - 'heading "What this AI knows about time travel!! #shorts #ai #fyp #timetravel" [level=3] [ref=e2656]'
+                - generic [ref=e2658]:
+                  - generic [ref=e2659]: A
+                  - generic [ref=e2660]: AI Andy
+                - generic [ref=e2661]:
+                  - generic [ref=e2663]: 16 אפר׳ 2023
+                  - generic [ref=e2664]:
+                    - generic [ref=e2665]: ·
+                    - generic [ref=e2666]: 1.6K צפיות
+                - generic [ref=e2667]:
+                  - paragraph [ref=e2668]: "נושא: בינה מלאכותית"
+                  - paragraph [ref=e2669]: "תת נושא: כלים וטכנולוגיות"
+                - generic [ref=e2670]:
+                  - generic [ref=e2671]: בינה מלאכותית
+                  - generic [ref=e2672]: חדש לצפייה
+            - generic [ref=e2673] [cursor=pointer]:
+              - generic [ref=e2674]:
+                - img "Daniela seven weeks old" [ref=e2675]
+                - generic [ref=e2676]:
+                  - button "שמור" [ref=e2677]:
+                    - img [ref=e2678]
+                  - button "שמור לצמיתות" [ref=e2680]:
+                    - img [ref=e2681]
+                  - button "מחק סרטון" [ref=e2683]:
+                    - img [ref=e2684]
+                - generic [ref=e2687]: 0:27
+              - generic [ref=e2688]:
+                - heading "Daniela seven weeks old" [level=3] [ref=e2690]
+                - generic [ref=e2692]:
+                  - generic [ref=e2693]: E
+                  - generic [ref=e2694]: Eyal Shani
+                - generic [ref=e2695]:
+                  - generic [ref=e2697]: 9 פבר׳ 2011
+                  - generic [ref=e2698]:
+                    - generic [ref=e2699]: ·
+                    - generic [ref=e2700]: 21 צפיות
+                - generic [ref=e2701]:
+                  - paragraph [ref=e2702]: "נושא: שוק ההון"
+                  - paragraph [ref=e2703]: "תת נושא: מסחר"
+                - generic [ref=e2704]:
+                  - generic [ref=e2705]: שוק ההון
+                  - generic [ref=e2706]: חדש לצפייה
+            - generic [ref=e2707] [cursor=pointer]:
+              - generic [ref=e2708]:
+                - img "Daniela one week old" [ref=e2709]
+                - generic [ref=e2710]:
+                  - button "שמור" [ref=e2711]:
+                    - img [ref=e2712]
+                  - button "שמור לצמיתות" [ref=e2714]:
+                    - img [ref=e2715]
+                  - button "מחק סרטון" [ref=e2717]:
+                    - img [ref=e2718]
+                - generic [ref=e2721]: 1:02
+              - generic [ref=e2722]:
+                - heading "Daniela one week old" [level=3] [ref=e2724]
+                - generic [ref=e2726]:
+                  - generic [ref=e2727]: E
+                  - generic [ref=e2728]: Eyal Shani
+                - generic [ref=e2729]:
+                  - generic [ref=e2731]: 19 דצמ׳ 2010
+                  - generic [ref=e2732]:
+                    - generic [ref=e2733]: ·
+                    - generic [ref=e2734]: 38 צפיות
+                - generic [ref=e2735]:
+                  - paragraph [ref=e2736]: "נושא: שוק ההון"
+                  - paragraph [ref=e2737]: "תת נושא: מסחר"
+                - generic [ref=e2738]:
+                  - generic [ref=e2739]: שוק ההון
+                  - generic [ref=e2740]: חדש לצפייה
+            - generic [ref=e2741] [cursor=pointer]:
+              - generic [ref=e2742]:
+                - img "Helpdesk" [ref=e2743]
+                - generic [ref=e2744]:
+                  - button "שמור" [ref=e2745]:
+                    - img [ref=e2746]
+                  - button "שמור לצמיתות" [ref=e2748]:
+                    - img [ref=e2749]
+                  - button "מחק סרטון" [ref=e2751]:
+                    - img [ref=e2752]
+                - generic [ref=e2755]: 2:37
+              - generic [ref=e2756]:
+                - heading "Helpdesk" [level=3] [ref=e2758]
+                - generic [ref=e2760]:
+                  - generic [ref=e2761]: E
+                  - generic [ref=e2762]: Eyal Shani
+                - generic [ref=e2763]:
+                  - generic [ref=e2765]: 4 יוני 2007
+                  - generic [ref=e2766]:
+                    - generic [ref=e2767]: ·
+                    - generic [ref=e2768]: 789 צפיות
+                - generic [ref=e2769]:
+                  - paragraph [ref=e2770]: "נושא: שוק ההון"
+                  - paragraph [ref=e2771]: "תת נושא: מסחר"
+                - generic [ref=e2772]:
+                  - generic [ref=e2773]: שוק ההון
+                  - generic [ref=e2774]: חדש לצפייה
+            - generic [ref=e2775] [cursor=pointer]:
+              - generic [ref=e2776]:
+                - img "OTD2006" [ref=e2777]
+                - generic [ref=e2778]:
+                  - button "שמור" [ref=e2779]:
+                    - img [ref=e2780]
+                  - button "שמור לצמיתות" [ref=e2782]:
+                    - img [ref=e2783]
+                  - button "מחק סרטון" [ref=e2785]:
+                    - img [ref=e2786]
+                - generic [ref=e2789]: 5:57
+              - generic [ref=e2790]:
+                - heading "OTD2006" [level=3] [ref=e2792]
+                - generic [ref=e2794]:
+                  - generic [ref=e2795]: E
+                  - generic [ref=e2796]: Eyal Shani
+                - generic [ref=e2797]:
+                  - generic [ref=e2799]: 6 מאי 2007
+                  - generic [ref=e2800]:
+                    - generic [ref=e2801]: ·
+                    - generic [ref=e2802]: 262 צפיות
+                - generic [ref=e2803]:
+                  - paragraph [ref=e2804]: "נושא: שוק ההון"
+                  - paragraph [ref=e2805]: "תת נושא: מסחר"
+                - generic [ref=e2806]:
+                  - generic [ref=e2807]: שוק ההון
+                  - generic [ref=e2808]: חדש לצפייה
+  - region "Notifications alt+T"

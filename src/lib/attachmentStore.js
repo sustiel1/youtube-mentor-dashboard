@@ -82,6 +82,21 @@ export async function deleteAttachment(id) {
   });
 }
 
+// Clear ALL attachments from IndexedDB (used when wiping all local data)
+export async function clearAllAttachments() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const req = tx.objectStore(STORE_NAME).clear();
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+}
+
 // Read a File object and return its base64 dataUrl string
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {

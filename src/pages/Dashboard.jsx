@@ -1,20 +1,57 @@
 import { useState, useMemo, useEffect } from "react";
-import { RefreshCw, X, GraduationCap, Play, Trash2 } from "lucide-react";
+import { RefreshCw, X, GraduationCap, Play, Trash2, Moon, Sun, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { KpiCards } from "@/components/dashboard/KpiCards";
 import { FilterBar } from "@/components/dashboard/FilterBar";
+import { ExternalVideoModal } from "@/components/dashboard/ExternalVideoModal";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { ErrorsBar } from "@/components/dashboard/ErrorsBar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo } from "@/hooks/useVideos";
+import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo, useUpdateVideo } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { videoBelongsToTopicFamily, mentorBelongsToTopicFamily } from "@/lib/topicFilters";
 import { getCategoryCodeForTopicName } from "@/config/topicConfig";
-import { loadVideos, reanalyzeVideos } from "@/services/videoStorage";
-import { getDashboardStats } from "@/services/videoAnalytics";
+import { getDashboardStats, isVideoAddedOnLocalCalendarDay } from "@/services/videoAnalytics";
+import {
+  matchesObsidianSavedFilter,
+  OBSIDIAN_SAVED_FILTER_OPTIONS,
+} from "@/lib/obsidianSavedStatus";
+import {
+  getChannelScanState,
+  runChannelScan,
+  subscribeToChannelScanUpdates,
+} from "@/services/channelScanService";
+import { getLocalStorageUsageMB, getStorageBreakdown, estimateEmbeddedTranscriptMB, stripEmbeddedTranscripts, cleanStorageCaches, clearLocalVideoData } from "@/services/videoStorage";
+import { clearAllAttachments } from "@/lib/attachmentStore";
+import { DriveStatusBadge } from "@/components/ui/DriveStatusBadge";
+import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
+
+function mergeSelectedVideoState(fresh, prev) {
+  if (!fresh) return prev;
+  if (!prev) return fresh;
+
+  const keepIfMissing = (key, predicate = (value) => value != null && value !== "") =>
+    predicate(prev[key]) && !predicate(fresh[key]) ? { [key]: prev[key] } : {};
+
+  return {
+    ...fresh,
+    ...keepIfMissing("aiChapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("chapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("descriptionChapters", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("description"),
+    ...keepIfMissing("duration"),
+    ...keepIfMissing("chapterSource"),
+    ...keepIfMissing("analysisQuality"),
+    ...keepIfMissing("shortSummary"),
+    ...keepIfMissing("fullSummary"),
+    ...keepIfMissing("keyPoints", (value) => Array.isArray(value) && value.length > 0),
+    ...keepIfMissing("transcriptStatus"),
+    ...keepIfMissing("transcriptError"),
+    ...keepIfMissing("viewCount", (value) => Number.isFinite(value) && value > 0),
+  };
+}
 
 // Map KPI filterKey → video status value
 const KPI_STATUS_MAP = {
@@ -25,6 +62,8 @@ const KPI_STATUS_MAP = {
 };
 
 const KPI_FILTER_LABELS = {
+  today: "היום",
+  permanent: "לצמיתות",
   new: "סרטונים חדשים",
   processing: "בתהליך עיבוד",
   summarized: "עברו סיכום",
@@ -32,12 +71,23 @@ const KPI_FILTER_LABELS = {
 };
 
 const LEARNING_STATUS_FILTERS = [
-  { value: "not_started", label: "טרם התחיל", active: "border-gray-400 bg-gray-100 text-gray-700" },
-  { value: "in_progress", label: "בלמידה", active: "border-amber-400 bg-amber-50 text-amber-700" },
-  { value: "to_review", label: "לחזרה", active: "border-purple-400 bg-purple-50 text-purple-700" },
-  { value: "learned", label: "נלמד", active: "border-emerald-400 bg-emerald-50 text-emerald-700" },
-  { value: "completed", label: "הושלם", active: "border-blue-400 bg-blue-50 text-blue-700" },
+  { value: "not_started", label: "טרם התחיל", active: "border-gray-400 bg-gray-100 text-gray-700 dark:text-white" },
+  { value: "in_progress", label: "בלמידה", active: "border-amber-400 bg-amber-50 text-amber-700 dark:text-white" },
+  { value: "to_review", label: "לחזרה", active: "border-purple-400 bg-purple-50 text-purple-700 dark:text-white" },
+  { value: "learned", label: "נלמד", active: "border-emerald-400 bg-emerald-50 text-emerald-700 dark:text-white" },
+  { value: "completed", label: "הושלם", active: "border-blue-400 bg-blue-50 text-blue-700 dark:text-white" },
 ];
+
+function buildMentorYouTubeUrl(mentor) {
+  if (!mentor) return null;
+  const url = mentor.youtubeUrl || mentor.channelUrl || mentor.youtubePageUrl;
+  if (url && url.startsWith("http")) return url;
+  const handle = mentor.handle;
+  if (handle) return `https://www.youtube.com/@${handle.replace(/^@/, "")}`;
+  const channelId = mentor.youtubeChannelId || mentor.channelId;
+  if (channelId && channelId.startsWith("UC")) return `https://www.youtube.com/channel/${channelId}`;
+  return null;
+}
 
 function computeStats(videos) {
   return {
@@ -45,6 +95,7 @@ function computeStats(videos) {
     summarized: videos.filter((v) => v.status === "done").length,
     processing: videos.filter((v) => v.status === "processing").length,
     errors: videos.filter((v) => v.status === "error").length,
+    permanentCount: videos.filter((v) => v.isPermanent).length,
   };
 }
 
@@ -69,6 +120,18 @@ function DashboardSkeleton() {
       </div>
     </div>
   );
+}
+
+function formatChannelScanDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "—";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
 function applyFilters(videos, filters, topics, mentors = []) {
@@ -107,166 +170,152 @@ function applyFilters(videos, filters, topics, mentors = []) {
         if (!byMentor) return false;
       }
     }
+    if (!matchesObsidianSavedFilter(video, filters.obsidianSaved)) return false;
     return true;
   });
 }
 
 // ── Smart Dashboard ───────────────────────────────────────────────────────────
-// Shows KPI stats + top videos from localStorage (auto-sync data).
-// Reads local videos once on mount; updates when mentors load.
-function SmartDashboard({ mentors }) {
-  const [localVideos, setLocalVideos] = useState(() => loadVideos());
-  const [reanalyzing, setReanalyzing]       = useState(false);
-  const [reanalyzeResult, setReanalyzeResult] = useState(null);
+// Shows KPI stats from the live video list (same source as the grid).
+function SmartDashboard({
+  mentors,
+  videos,
+  totalNew = 0,
+  summarized = 0,
+  permanentCount = 0,
+  activeFilter,
+  onFilterClick,
+  onClearFilter,
+}) {
+  const stats = useMemo(() => getDashboardStats(videos, mentors), [videos, mentors]);
+  if (!videos.length || !stats) return null;
 
-  const stats = useMemo(() => getDashboardStats(localVideos, mentors), [localVideos, mentors]);
-
-  async function handleReanalyze() {
-    setReanalyzing(true);
-    setReanalyzeResult(null);
-    try {
-      const count = reanalyzeVideos();
-      setLocalVideos(loadVideos());
-      setReanalyzeResult(count);
-    } finally {
-      setReanalyzing(false);
-    }
-  }
-
-  if (!localVideos.length || !stats) return null;
+  const Card = ({ children, onClick, isActive = false, title }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "bg-white border border-gray-100 rounded-xl px-4 py-3 text-right transition-all cursor-pointer hover:shadow-sm hover:-translate-y-0.5",
+        "dark:bg-zinc-900/80 dark:border-zinc-800 dark:hover:shadow-black/20",
+        isActive && "ring-2 ring-indigo-300 border-indigo-200 dark:ring-indigo-500/30 dark:border-indigo-500/30"
+      )}
+    >
+      {children}
+    </button>
+  );
 
   return (
     <div className="mt-4 mb-2 space-y-3" dir="rtl">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-semibold text-gray-700">ניתוח מקומי</span>
-        <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
-          {localVideos.length} סרטונים ב-localStorage
-        </span>
-        <button
-          onClick={handleReanalyze}
-          disabled={reanalyzing}
-          className="mr-auto text-xs px-3 py-1 rounded-lg border border-violet-200 text-violet-600 bg-white hover:bg-violet-50 disabled:opacity-50 transition-colors"
+      {/* Stats row — 5 cards, single row on desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <Card
+          onClick={() => onFilterClick?.("today")}
+          isActive={activeFilter === "today"}
+          title="לחץ לסינון סרטונים שנוספו היום לדשבורד (לפי תאריך מקומי)"
         >
-          {reanalyzing ? 'מנתח...' : 'נתח מחדש סרטונים'}
-        </button>
-        {reanalyzeResult !== null && (
-          <span className="text-xs text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-0.5 border border-emerald-100">
-            נותחו מחדש {reanalyzeResult} סרטונים
-          </span>
-        )}
-      </div>
-
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
           <p className="text-xs text-gray-400 mb-1">היום</p>
           <p className="text-2xl font-bold text-indigo-600">{stats.newToday}</p>
           <p className="text-xs text-gray-500 mt-0.5">סרטונים חדשים</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+        </Card>
+        <Card
+          onClick={() => onFilterClick?.("new")}
+          isActive={activeFilter === "new"}
+          title="לחץ לסינון סרטונים חדשים"
+        >
+          <p className="text-xs text-gray-400 mb-1">סרטונים חדשים</p>
+          <p className="text-2xl font-bold text-emerald-600">{totalNew}</p>
+          <p className="text-xs text-gray-500 mt-0.5">טרם נותחו</p>
+        </Card>
+        <Card
+          onClick={() => onFilterClick?.("summarized")}
+          isActive={activeFilter === "summarized"}
+          title="לחץ לסינון סרטונים שעברו סיכום"
+        >
+          <p className="text-xs text-gray-400 mb-1">עברו סיכום</p>
+          <p className="text-2xl font-bold text-blue-600">{summarized}</p>
+          <p className="text-xs text-gray-500 mt-0.5">נותחו בהצלחה</p>
+        </Card>
+        <Card
+          onClick={() => onClearFilter?.()}
+          isActive={activeFilter == null}
+          title="לחץ להצגת כל הסרטונים"
+        >
           <p className="text-xs text-gray-400 mb-1">סה״כ שמורים</p>
           <p className="text-2xl font-bold text-emerald-600">{stats.totalSaved}</p>
           <p className="text-xs text-gray-500 mt-0.5">ב-30 הימים האחרונים</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
-          <p className="text-xs text-gray-400 mb-1">מנטור פעיל</p>
-          <p className="text-base font-bold text-violet-600 truncate leading-tight mt-0.5">{stats.topMentor.name}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{stats.topMentor.count} סרטונים</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
-          <p className="text-xs text-gray-400 mb-1">ממוצע איכות</p>
-          <p className="text-2xl font-bold text-amber-600">{stats.avgQuality}</p>
-          <p className="text-xs text-gray-500 mt-0.5">מתוך 10</p>
-        </div>
+        </Card>
+        <Card
+          onClick={() => onFilterClick?.("permanent")}
+          isActive={activeFilter === "permanent"}
+          title="לחץ לסינון סרטונים שמורים לצמיתות"
+        >
+          <p className="text-xs text-amber-500 mb-1">📌 לצמיתות</p>
+          <p className="text-2xl font-bold text-amber-600">{permanentCount}</p>
+          <p className="text-xs text-gray-500 mt-0.5">שמורים לצמיתות</p>
+        </Card>
       </div>
 
-      {/* Tag distribution */}
-      {Object.keys(stats.tagCounts).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(stats.tagCounts)
-            .sort((a, b) => b[1] - a[1])
-            .map(([tag, count]) => (
-              <span key={tag} className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100">
-                {tag} · {count}
-              </span>
-            ))}
-        </div>
-      )}
-
-      {/* Top videos by quality score */}
-      {stats.topVideos.length > 0 && (
-        <div className="border border-gray-100 rounded-xl overflow-hidden">
-          <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-600">סרטונים הכי איכותיים</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-50 text-right">
-                  <th className="px-4 py-2 text-xs font-medium text-gray-400">כותרת</th>
-                  <th className="px-4 py-2 text-xs font-medium text-gray-400">מנטור</th>
-                  <th className="px-4 py-2 text-xs font-medium text-gray-400">תגיות</th>
-                  <th className="px-4 py-2 text-xs font-medium text-gray-400">איכות</th>
-                  <th className="px-4 py-2 text-xs font-medium text-gray-400">תאריך</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.topVideos.map((video, i) => {
-                  const mentor = mentors.find((m) => m.id === video.mentorId);
-                  const score  = video.qualityScore || 0;
-                  const scoreColor =
-                    score >= 8 ? 'text-emerald-600 font-bold' :
-                    score >= 6 ? 'text-amber-600 font-semibold' :
-                                 'text-gray-500';
-                  return (
-                    <tr key={video.id} className={`border-b border-gray-50 hover:bg-gray-50/50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}>
-                      <td className="px-4 py-2 max-w-[220px]">
-                        <a
-                          href={video.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-gray-800 hover:text-indigo-600 transition-colors truncate block"
-                          title={video.title}
-                        >
-                          {video.title}
-                        </a>
-                      </td>
-                      <td className="px-4 py-2">
-                        <span className="text-xs text-gray-500">{mentor?.name || '—'}</span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {(video.aiTags || []).slice(0, 2).map((tag) => (
-                            <span key={tag} className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <span className={`text-sm ${scoreColor}`}>{score}</span>
-                        <span className="text-xs text-gray-300">/10</span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <span className="text-xs text-gray-400">{video.publishedAt?.slice(0, 10) || '—'}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-export default function Dashboard({ filters = { search: "", mentor: "all", category: "all" }, setFilters, navigateTo }) {
+export default function Dashboard({
+  filters = { search: "", mentor: "all", category: "all", topicId: "all", obsidianSaved: "all" },
+  setFilters,
+  navigateTo,
+  isDark,
+  toggleTheme,
+  pageParams,
+}) {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [isExternalVideoModalOpen, setIsExternalVideoModalOpen] = useState(false);
   const [activeDashboardFilter, setActiveDashboardFilter] = useState(null);
   const [learningStatusFilter, setLearningStatusFilter] = useState(null);
+  const [isChannelScanning, setIsChannelScanning] = useState(false);
+  const [channelScanInfo, setChannelScanInfo] = useState(() => getChannelScanState());
+  const [channelScanProgress, setChannelScanProgress] = useState(null);
+  const [storageMB, setStorageMB] = useState(() => getLocalStorageUsageMB());
+  const [storageBreakdown, setStorageBreakdown] = useState(null);
+  // Keep storageWarningMB for backward compat with the banner
+  const storageWarningMB = storageMB > 4 ? storageMB.toFixed(1) : null;
+
+  const refreshStorageMeter = () => {
+    setStorageMB(getLocalStorageUsageMB());
+    if (storageBreakdown !== null) setStorageBreakdown(getStorageBreakdown());
+  };
+
+  const handleCleanCaches = () => {
+    const { removedKeys, freedMB } = cleanStorageCaches();
+    setStorageMB(getLocalStorageUsageMB());
+    setStorageBreakdown(getStorageBreakdown());
+    toast.success(`נוקה ${freedMB} MB (${removedKeys} מפתחות הוסרו)`);
+  };
+
+  const handleToggleBreakdown = () => {
+    if (storageBreakdown) { setStorageBreakdown(null); return; }
+    const bd = getStorageBreakdown();
+    bd.embeddedTranscriptMB = estimateEmbeddedTranscriptMB();
+    setStorageBreakdown(bd);
+  };
+
+  const handleStripTranscripts = () => {
+    const { stripped, freedMB } = stripEmbeddedTranscripts();
+    setStorageMB(getLocalStorageUsageMB());
+    const bd = getStorageBreakdown();
+    bd.embeddedTranscriptMB = estimateEmbeddedTranscriptMB();
+    setStorageBreakdown(bd);
+    toast.success(`שוחרר ${freedMB} MB — תמלולים הוסרו מ-${stripped} סרטונים`);
+  };
+
+  // Close breakdown panel on Escape
+  useEffect(() => {
+    if (!storageBreakdown) return;
+    const handler = (e) => { if (e.key === 'Escape') setStorageBreakdown(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [storageBreakdown]);
 
   // ── Bulk / delete-all state ──────────────────────────────
   const [selectedIds, setSelectedIds]             = useState(new Set());
@@ -289,28 +338,63 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const updateLearningStatus = useUpdateLearningStatus();
   const assignTopics = useAssignTopics();
   const deleteVideo = useDeleteVideo();
+  const updateVideo = useUpdateVideo();
 
-  // Sync selectedVideo with list refetch — keep client-patched aiChapters if server list omits them
+  // Sync selectedVideo with list refetch — שומרים שדות שהורה עדכן בזמן אמת אם הרשימה המרוחזת עדיין חלשה/חלקית
   useEffect(() => {
     setSelectedVideo((prev) => {
       if (!prev || videos.length === 0) return prev;
       const fresh = videos.find((v) => v.id === prev.id);
       if (!fresh) return prev;
-      const keepChapters =
-        Array.isArray(prev.aiChapters) &&
-        prev.aiChapters.length > 0 &&
-        (!Array.isArray(fresh.aiChapters) || fresh.aiChapters.length === 0);
-      const keepDesc =
-        typeof prev.description === "string" &&
-        prev.description.length > 0 &&
-        (!fresh.description || String(fresh.description).length === 0);
-      return {
-        ...fresh,
-        ...(keepChapters ? { aiChapters: prev.aiChapters } : {}),
-        ...(keepDesc ? { description: prev.description } : {}),
-      };
+      return mergeSelectedVideoState(fresh, prev);
     });
   }, [videos]);
+
+  // Release large video object from memory after panel close animation completes
+  useEffect(() => {
+    if (panelOpen) return;
+    const timer = setTimeout(() => setSelectedVideo(null), 300);
+    return () => clearTimeout(timer);
+  }, [panelOpen]);
+
+  // Deep-link: open a video detail from other pages (e.g. Workspace)
+  useEffect(() => {
+    const targetId = pageParams?.openVideoId;
+    if (!targetId) return;
+
+    const existing =
+      videos.find((v) => v.videoId === targetId) ||
+      videos.find((v) => v.id === targetId) ||
+      null;
+
+    const meta = pageParams?.openVideoMeta;
+    const fallback = existing || (meta && typeof meta === "object" ? meta : null) || { id: targetId, videoId: targetId };
+
+    setSelectedVideo((prev) => mergeSelectedVideoState(fallback, prev));
+    setPanelOpen(true);
+  }, [pageParams?.openVideoId, pageParams?.openVideoMeta, videos]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToChannelScanUpdates((detail) => {
+      if (!detail) return;
+      if (detail.state === "scanning") {
+        setIsChannelScanning(true);
+        setChannelScanProgress("סורק ערוצים...");
+        return;
+      }
+      if (detail.state === "completed") {
+        setIsChannelScanning(false);
+        setChannelScanProgress(null);
+        setChannelScanInfo({
+          lastChannelScanAt: detail.lastChannelScanAt,
+          nextChannelScanAt: detail.nextChannelScanAt,
+          lastChannelScanSummary: detail.lastChannelScanSummary,
+        });
+        refetchVideos();
+      }
+    });
+    return unsubscribe;
+  }, [refetchVideos]);
 
   // Apply sidebar filters (search, mentor, category)
   const filteredVideos = useMemo(() => applyFilters(videos, filters, topics, mentors), [videos, filters, topics, mentors]);
@@ -318,7 +402,11 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   // Apply KPI status filter + learning status filter on top of sidebar filters
   const displayedVideos = useMemo(() => {
     let result = filteredVideos;
-    if (activeDashboardFilter) {
+    if (activeDashboardFilter === "today") {
+      result = result.filter((v) => isVideoAddedOnLocalCalendarDay(v));
+    } else if (activeDashboardFilter === "permanent") {
+      result = result.filter((v) => v.isPermanent);
+    } else if (activeDashboardFilter) {
       const statusValue = KPI_STATUS_MAP[activeDashboardFilter];
       result = result.filter((v) => v.status === statusValue);
     }
@@ -358,8 +446,42 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
     return mentor?.name ?? "";
   }, [selectedVideo, mentors]);
 
-  const getMentorName = (mentorId) =>
-    mentors.find((m) => m.id === mentorId)?.name || "";
+  const getMentorName = (mentorId, video = null) => {
+    const mentor = mentors.find((m) => m.id === mentorId);
+    if (mentor?.name) return mentor.name;
+    if (!video) return "";
+    const handle = video.handle || video.channelHandle;
+    return (
+      video.mentorName ||
+      video.channelName ||
+      video.channelTitle ||
+      video.youtubeChannelTitle ||
+      video.author ||
+      video.sourceTitle ||
+      (handle ? `@${handle.replace(/^@/, "")}` : "") ||
+      ""
+    );
+  };
+
+  const getMentorChannelUrl = (mentorId, video = null) => {
+    const mentor = mentors.find((m) => m.id === mentorId);
+    if (mentor) {
+      const url = mentor.channelUrl || mentor.youtubeUrl || mentor.youtubePageUrl;
+      if (url && url.startsWith("http")) return url;
+      const handle = mentor.handle;
+      if (handle) return `https://www.youtube.com/@${handle.replace(/^@/, "")}`;
+      const channelId = mentor.youtubeChannelId || mentor.channelId;
+      if (channelId && channelId.startsWith("UC")) return `https://www.youtube.com/channel/${channelId}`;
+    }
+    // Fallback: use channel data stored directly on the video
+    const videoUrl = video?.channelUrl || video?.youtubeUrl || video?.youtubePageUrl;
+    if (videoUrl && videoUrl.startsWith("http")) return videoUrl;
+    const handle = video?.handle || video?.channelHandle;
+    if (handle) return `https://www.youtube.com/@${handle.replace(/^@/, "")}`;
+    const channelId = video?.youtubeChannelId || video?.channelId;
+    if (channelId && channelId.startsWith("UC")) return `https://www.youtube.com/channel/${channelId}`;
+    return null;
+  };
 
   const handleVideoClick = (video) => {
     setSelectedVideo(video);
@@ -373,6 +495,20 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
     }
   };
 
+  const handlePermanentToggle = (video) => {
+    const wasPinned = video.isPermanent;
+    const patch = {
+      id: video.id,
+      isPermanent: !wasPinned,
+      // Stamp unpinnedAt when removing pin so the 30-day grace period starts
+      ...(wasPinned ? { unpinnedAt: new Date().toISOString() } : { unpinnedAt: null }),
+    };
+    updateVideo.mutate(patch);
+    if (selectedVideo?.id === video.id) {
+      setSelectedVideo({ ...video, ...patch });
+    }
+  };
+
   const handleLearningStatusChange = (video, status) => {
     updateLearningStatus.mutate({ id: video.id, learningStatus: status });
     if (selectedVideo?.id === video.id) {
@@ -381,6 +517,13 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   };
 
   const handleDeleteVideo = (video) => {
+    if (isDriveConnected() && video?.cloudBackupFileId) {
+      const title = String(video.title || '').trim().slice(0, 60);
+      const confirmed = window.confirm(
+        `מחק את "${title}"?\n\nהסרטון וגיבוי ה-Drive שלו יימחקו לצמיתות.`
+      );
+      if (!confirmed) return;
+    }
     deleteVideo.mutate(video.id);
     if (selectedVideo?.id === video.id) setPanelOpen(false);
   };
@@ -396,6 +539,36 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const handleRefresh = async () => {
     await refetchVideos();
     toast.success("הנתונים עודכנו");
+  };
+
+  const handleManualChannelScan = async () => {
+    if (isChannelScanning) return;
+    setIsChannelScanning(true);
+    setChannelScanProgress("סורק ערוצים...");
+    try {
+      const result = await runChannelScan(mentors, {
+        reason: "manual",
+        force: true,
+      });
+      await refetchVideos();
+      setChannelScanInfo({
+        lastChannelScanAt: result.lastChannelScanAt,
+        nextChannelScanAt: result.nextChannelScanAt,
+        lastChannelScanSummary: result.lastChannelScanSummary,
+      });
+
+      const summary = result.lastChannelScanSummary;
+      if (summary) {
+        toast.success(
+          `נסרקו ${summary.scannedChannels} ערוצים · נוספו ${summary.addedCount} סרטונים חדשים · ${summary.existingCount} סרטונים כבר קיימים · נכשלו ${summary.failedCount} ערוצים`
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "שגיאה בסריקת הערוצים");
+    } finally {
+      setIsChannelScanning(false);
+      setChannelScanProgress(null);
+    }
   };
 
   // ── Selection helpers ────────────────────────────────────
@@ -440,17 +613,28 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   };
 
   const handleDeleteAll = async () => {
-    const ids = displayedVideos.map((v) => v.id);
-    const count = ids.length;
+    const count = displayedVideos.length;
     setIsDeleting(true);
     try {
-      for (const id of ids) {
-        await deleteVideo.mutateAsync(id);
+      // 1. Remove all video records + per-video analysis keys from localStorage
+      for (const v of displayedVideos) {
+        try { localStorage.removeItem(`ai_analysis_${v.id}`); } catch {}
+        try { localStorage.removeItem(`analysis:${v.id}`); } catch {}
       }
-      toast.success(`נמחקו ${count} סרטונים בהצלחה`);
+      // Use bulk clear instead of one-by-one mutation (much faster, same result)
+      clearLocalVideoData();
+
+      // 2. Clear all IndexedDB attachments
+      await clearAllAttachments();
+
+      // 3. Refresh UI
+      await refetchVideos();
+      refreshStorageMeter();
+      toast.success(`נמחקו ${count} סרטונים + כל הנתונים הקשורים`);
       exitSelectionMode();
-    } catch {
+    } catch (err) {
       toast.error("שגיאה במחיקה — נסה שוב");
+      console.error("[deleteAll]", err);
     } finally {
       setIsDeleting(false);
       setDeleteAllConfirm(false);
@@ -461,20 +645,23 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
   const handleKpiFilterClick = (filterKey) => {
     setActiveDashboardFilter((prev) => (prev === filterKey ? null : filterKey));
   };
+  const clearKpiFilter = () => setActiveDashboardFilter(null);
 
   if (videosError && !isLoading) {
     toast.error("שגיאה בטעינת הנתונים");
   }
 
+  const lastChannelScanSummary = channelScanInfo.lastChannelScanSummary;
+  const channelScanSummaryText = lastChannelScanSummary
+    ? `נסרקו ${lastChannelScanSummary.scannedChannels} ערוצים · נוספו ${lastChannelScanSummary.addedCount} סרטונים חדשים · ${lastChannelScanSummary.existingCount} סרטונים כבר קיימים · נכשלו ${lastChannelScanSummary.failedCount} ערוצים`
+    : null;
+
   return (
-    <div data-testid="page-dashboard" className="min-h-screen">
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
+    <div data-testid="page-dashboard" className="min-h-screen text-slate-900 dark:text-white">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/90">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
-                {videos.length} סרטונים
-              </span>
               {/* Active KPI filter indicator */}
               {activeDashboardFilter && (
                 <button
@@ -494,6 +681,17 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                   <X className="h-3 w-3" />
                 </button>
               )}
+              {filters.obsidianSaved && filters.obsidianSaved !== "all" && (
+                <button
+                  onClick={() => setFilters((prev) => ({ ...prev, obsidianSaved: "all" }))}
+                  className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-full px-3 py-1 hover:bg-emerald-100 transition-colors dark:text-emerald-300 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/40"
+                >
+                  <span>
+                    {OBSIDIAN_SAVED_FILTER_OPTIONS.find((o) => o.value === filters.obsidianSaved)?.label || "מוח"}
+                  </span>
+                  <X className="h-3 w-3" />
+                </button>
+              )}
               {filteredVideos.length !== videos.length && !activeDashboardFilter && !filters.topicId?.length && (
                 <span className="text-xs text-indigo-600 bg-indigo-50 rounded-full px-3 py-1">
                   {filteredVideos.length} לאחר סינון
@@ -506,19 +704,150 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
               )}
             </div>
             <div className="flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2 text-[11px] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70">
+                <div className="flex items-center gap-3 text-right" dir="rtl">
+                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                    <span className="text-slate-500 dark:text-zinc-400">סריקה אוטומטית</span>
+                    <span className="font-semibold text-cyan-700 dark:text-cyan-300">כל 8 שעות</span>
+                  </div>
+                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
+                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                    <span className="text-slate-500 dark:text-zinc-400">סריקה אחרונה</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                      {formatChannelScanDate(channelScanInfo.lastChannelScanAt)}
+                    </span>
+                  </div>
+                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
+                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                    <span className="text-slate-500 dark:text-zinc-400">סריקה הבאה</span>
+                    <span className="font-semibold text-sky-700 dark:text-sky-300">
+                      {formatChannelScanDate(channelScanInfo.nextChannelScanAt)}
+                    </span>
+                  </div>
+                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
+                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                    <span className="text-slate-500 dark:text-zinc-400">סטטיסטיקת סריקה</span>
+                    <span
+                      className={cn(
+                        "max-w-[360px] truncate font-semibold",
+                        isChannelScanning
+                          ? "text-violet-700 dark:text-violet-300"
+                          : "text-fuchsia-700 dark:text-fuchsia-300"
+                      )}
+                    >
+                      {isChannelScanning
+                        ? channelScanProgress || "סורק ערוצים..."
+                        : channelScanSummaryText || "אין נתוני סריקה עדיין"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleManualChannelScan}
+                disabled={isChannelScanning}
+                className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isChannelScanning ? "animate-spin" : ""}`} />
+                {isChannelScanning ? "סורק ערוצים..." : "סריקה ידנית"}
+              </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                title={isDark ? "עבור למצב בהיר" : "עבור למצב כהה"}
+              >
+                {isDark ? (
+                  <Sun className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5 shrink-0 text-slate-600 dark:text-zinc-300" />
+                )}
+                <span className="text-right">{isDark ? "מצב בהיר" : "מצב כהה"}</span>
+              </button>
               <button
                 onClick={() => setDeleteAllConfirm(true)}
                 disabled={displayedVideos.length === 0 || isDeleting}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-30"
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
                 title="מחק את כל הסרטונים המוצגים"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 מחק הכל
               </button>
+              <DriveStatusBadge />
+              {/* ── Memory meter ── */}
+              <div className="relative flex flex-col items-end gap-0.5">
+                <div className="flex items-center gap-1.5" dir="ltr">
+                  <div className="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-700 overflow-hidden" title={`${storageMB} MB בשימוש מתוך ~5 MB`}>
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        storageMB >= 4.5 ? "bg-red-500" : storageMB >= 3.5 ? "bg-amber-400" : "bg-emerald-500"
+                      )}
+                      style={{ width: `${Math.min(100, (storageMB / 5) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] tabular-nums font-medium",
+                    storageMB >= 4.5 ? "text-red-500" : storageMB >= 3.5 ? "text-amber-500" : "text-slate-400 dark:text-zinc-500"
+                  )}>
+                    {storageMB}MB
+                  </span>
+                  <button
+                    onClick={handleToggleBreakdown}
+                    title="הצג פירוט לפי קטגוריה"
+                    className="text-[10px] text-slate-400 hover:text-slate-700 dark:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    {storageBreakdown ? "▲" : "פירוט"}
+                  </button>
+                  <button
+                    onClick={handleCleanCaches}
+                    title="נקה caches ישנים (תמלולים, ניתוחים)"
+                    className="text-[10px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 transition-colors"
+                  >
+                    נקה
+                  </button>
+                </div>
+                {/* ── Breakdown panel ── */}
+                {storageBreakdown && (
+                  <div className="absolute top-full right-0 mt-1 z-50 min-w-[220px] rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg px-3 py-2.5 text-[11px]" dir="rtl">
+                    <div className="space-y-1.5">
+                      {[
+                        { label: "cache תמלולים", mb: storageBreakdown.transcriptsMB, color: "bg-blue-300" },
+                        { label: "ניתוחים AI",    mb: storageBreakdown.analysesMB,   color: "bg-violet-400" },
+                        { label: "מטא-דאטה סרטונים", mb: parseFloat(((storageBreakdown.videosMB || 0) - (storageBreakdown.embeddedTranscriptMB || 0)).toFixed(2)), color: "bg-emerald-400" },
+                        { label: "תמלולים בסרטונים ⚠️", mb: storageBreakdown.embeddedTranscriptMB ?? 0, color: "bg-orange-400", isLarge: (storageBreakdown.embeddedTranscriptMB ?? 0) > 0.3 },
+                        { label: "שאר",            mb: storageBreakdown.otherMB,      color: "bg-slate-400" },
+                      ].map(({ label, mb, color, isLarge }) => (
+                        <div key={label} className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
+                          <span className={cn("flex-1", isLarge ? "text-orange-600 dark:text-orange-400 font-medium" : "text-slate-600 dark:text-slate-400")}>{label}</span>
+                          <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">{mb} MB</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-slate-100 dark:border-zinc-800 pt-1.5 flex justify-between font-semibold text-slate-700 dark:text-slate-300">
+                        <span>סה"כ</span>
+                        <span>{storageMB} MB</span>
+                      </div>
+                      {(storageBreakdown.embeddedTranscriptMB ?? 0) > 0.1 && (
+                        <div className="border-t border-slate-100 dark:border-zinc-800 pt-1.5">
+                          <p className="text-slate-500 dark:text-slate-400 mb-1 leading-tight">
+                            תמלולים נשמרים כפול — בתוך נתוני הסרטון ובcache נפרד.
+                          </p>
+                          <button
+                            onClick={handleStripTranscripts}
+                            className="w-full text-center rounded-md px-2 py-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 text-orange-700 dark:text-orange-400 font-medium transition-colors"
+                          >
+                            הסר תמלולים מהסרטונים ({storageBreakdown.embeddedTranscriptMB} MB)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
-                onClick={handleRefresh}
+                onClick={() => { handleRefresh(); refreshStorageMeter(); }}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
                 רענון
@@ -528,103 +857,136 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
         </div>
       </header>
 
+      {storageWarningMB && (
+        <div className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-6 py-2 dark:border-amber-500/30 dark:bg-amber-500/10" dir="rtl">
+          <span className="text-xs text-amber-700 dark:text-amber-300">
+            ⚠️ אחסון מקומי כמעט מלא ({storageWarningMB} MB מתוך ~5 MB) — שקול למחוק סרטונים ישנים
+          </span>
+          <button onClick={() => setStorageWarningMB(null)} className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 shrink-0">✕</button>
+        </div>
+      )}
+
       <main className="px-6 py-6">
         {isLoading ? (
           <DashboardSkeleton />
         ) : (
           <>
-            <KpiCards
-              stats={stats}
+            <SmartDashboard
+              mentors={mentors}
+              videos={videos}
+              totalNew={stats.totalNew}
+              summarized={stats.summarized}
+              permanentCount={stats.permanentCount}
               activeFilter={activeDashboardFilter}
               onFilterClick={handleKpiFilterClick}
+              onClearFilter={clearKpiFilter}
             />
 
-            <SmartDashboard mentors={mentors} />
-
-            {/* Learning Hub Hero — full bar clickable */}
+            {/* Unified compact control row (Learning Center + filters + search + selection mode) */}
             <div
-              onClick={() => navigateTo?.("LearningHub")}
-              role="button"
               dir="rtl"
-              className="w-full mt-4 mb-1 rounded-2xl overflow-hidden bg-gradient-to-l from-indigo-600 to-violet-600 shadow-md cursor-pointer hover:shadow-xl hover:scale-[1.005] transition-all duration-200 group"
+              className="mt-4 mb-3 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm backdrop-blur flex flex-row items-center gap-3 flex-nowrap overflow-x-auto dark:border-zinc-800/80 dark:bg-zinc-950/70 dark:shadow-2xl"
             >
-              <div className="px-6 py-5">
-                <div className="flex items-center justify-between gap-4">
+              {/* Manual add by URL — same toolbar row as filters */}
+              <button
+                type="button"
+                title="הוסף סרטון לפי קישור YouTube (גם אם לא נמצא בסריקת הערוץ)"
+                onClick={() => setIsExternalVideoModalOpen(true)}
+                className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
+              >
+                <Plus className="h-4 w-4 shrink-0 stroke-[2.5]" />
+                <span className="whitespace-nowrap">הוסף סרטון</span>
+              </button>
 
-                  {/* Right: icon + title + subtitle */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
-                      <GraduationCap className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-white leading-tight">
-                        מרכז הלמידה
-                      </p>
-                      <p className="text-sm text-white/65 mt-0.5">
-                        המשך מהנקודה האחרונה
-                      </p>
-                    </div>
-                  </div>
+              <FilterBar
+                compact
+                filters={filters}
+                onFiltersChange={setFilters}
+                mentors={mentors.filter((m) => m.active)}
+                topics={topics}
+              />
 
-                  {/* Left: CTA button */}
-                  <div className="flex items-center gap-2 bg-white text-indigo-600 text-sm font-bold px-5 py-2.5 rounded-xl shrink-0 group-hover:bg-indigo-50 transition-colors">
-                    <Play className="h-4 w-4 fill-indigo-600" />
-                    {learningStats.nextVideo?.learningStatus === "in_progress"
-                      ? "המשך ללמוד"
-                      : "התחל ללמוד"}
-                  </div>
-                </div>
-              </div>
+              {/* YouTube channel link — shown only when a specific mentor is selected */}
+              {filters.mentor !== "all" && (() => {
+                const selectedMentor = mentors.find((m) => m.id === filters.mentor);
+                const ytUrl = buildMentorYouTubeUrl(selectedMentor);
+                if (!ytUrl) return null;
+                return (
+                  <a
+                    href={ytUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-red-200/80 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+                    title={`פתח ערוץ יוטיוב של ${selectedMentor?.name}`}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">ערוץ המנטור</span>
+                  </a>
+                );
+              })()}
 
-              {/* Progress bar — stays, visual only */}
-              <div className="h-1.5 bg-white/20">
-                <div
-                  className="h-full bg-white/70 transition-all duration-700"
-                  style={{ width: `${learningStats.progress}%` }}
-                />
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={() => navigateTo?.("LearningHub")}
+                className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-50 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+              >
+                <span className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                  <GraduationCap className="h-4 w-4 text-red-500" />
+                </span>
+                <span className="whitespace-nowrap">מרכז הלמידה</span>
+                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-300 whitespace-nowrap">
+                  {learningStats.progress}% · {learningStats.savedCount}
+                </span>
+                <span className="inline-flex items-center gap-1 text-red-500 dark:text-red-300 whitespace-nowrap">
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  {learningStats.nextVideo?.learningStatus === "in_progress" ? "המשך" : "התחל"}
+                </span>
+              </button>
 
-            <FilterBar
-              filters={filters}
-              onFiltersChange={setFilters}
-              mentors={mentors.filter((m) => m.active)}
-              topics={topics}
-            />
+              <button
+                type="button"
+                onClick={() => window.open("https://www.youtube.com/", "_blank", "noopener,noreferrer")}
+                className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-50 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+              >
+                <span className="w-5 h-5 rounded-md bg-red-600 flex items-center justify-center shrink-0">
+                  <Play className="h-3 w-3 text-white fill-white" />
+                </span>
+                <span className="whitespace-nowrap">הערוץ שלי ביוטיוב</span>
+              </button>
 
-            {/* ── Selection toolbar ── */}
-            <div className="flex items-center gap-2 mb-3 flex-row-reverse" dir="rtl">
               <button
                 onClick={() => { setSelectionMode((p) => !p); if (selectionMode) exitSelectionMode(); }}
                 className={cn(
-                  "text-xs px-3 py-1.5 rounded-lg border transition-colors",
+                  "shrink-0 text-xs px-3 py-2 rounded-xl border transition-colors whitespace-nowrap",
                   selectionMode
-                    ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                    ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-200"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                 )}
               >
                 {selectionMode ? "בטל בחירה" : "בחר סרטונים"}
               </button>
-              {selectionMode && (
-                <>
-                  <button
-                    onClick={handleSelectAll}
-                    className="text-xs px-3 py-1.5 rounded-lg border bg-white border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    {selectedIds.size === displayedVideos.length ? "בטל הכל" : "בחר הכל"}
-                  </button>
-                  {selectedIds.size > 0 && (
-                    <button
-                      onClick={() => setDeleteBulkConfirm(true)}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      מחק נבחרים ({selectedIds.size})
-                    </button>
-                  )}
-                </>
-              )}
             </div>
+
+            {/* ── Selection toolbar (only when selectionMode) ── */}
+            {selectionMode && (
+              <div className="flex items-center gap-2 mb-3 flex-row-reverse" dir="rtl">
+                <button
+                  onClick={handleSelectAll}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  {selectedIds.size === displayedVideos.length ? "בטל הכל" : "בחר הכל"}
+                </button>
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={() => setDeleteBulkConfirm(true)}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    מחק נבחרים ({selectedIds.size})
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* ── Confirm: bulk delete ── */}
             {deleteBulkConfirm && (
@@ -674,38 +1036,6 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
               </div>
             )}
 
-            {/* Learning status filter chips */}
-            <div className="flex items-center gap-2 mb-5 flex-row-reverse justify-end" dir="rtl">
-              <span className="text-xs text-gray-500 font-medium shrink-0">סטטוס למידה:</span>
-              {LEARNING_STATUS_FILTERS.map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() =>
-                    setLearningStatusFilter((prev) =>
-                      prev === item.value ? null : item.value
-                    )
-                  }
-                  className={cn(
-                    "text-xs px-3 py-1 rounded-full border transition-all",
-                    learningStatusFilter === item.value
-                      ? item.active
-                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-              {learningStatusFilter && (
-                <button
-                  onClick={() => setLearningStatusFilter(null)}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                  title="נקה סינון"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
             {/* Errors view — only when "שגיאות" KPI is active */}
             {activeDashboardFilter === "errors" ? (
               <ErrorsBar
@@ -715,23 +1045,26 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
                 forceExpanded
               />
             ) : displayedVideos.length === 0 ? (
-              <div className="text-center py-16 text-sm text-gray-400">
+              <div className="text-center py-16 text-sm text-zinc-500">
                 אין סרטונים להציג
               </div>
             ) : (
               /* Unified grid — all videos, filtered by active KPI / learning status */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 [&>*]:h-full [&>*]:min-h-0">
                 {displayedVideos.map((video) => (
                   <VideoCard
                     key={video.id}
                     video={video}
-                    mentorName={getMentorName(video.mentorId)}
+                    mentorName={getMentorName(video.mentorId, video)}
+                    mentorChannelUrl={getMentorChannelUrl(video.mentorId, video)}
                     topics={topics}
                     onClick={selectionMode ? () => toggleSelectVideo(video.id) : handleVideoClick}
                     onSaveToggle={selectionMode ? undefined : handleSaveToggle}
+                    onPermanentToggle={selectionMode ? undefined : handlePermanentToggle}
                     onDelete={selectionMode ? undefined : handleDeleteVideo}
                     isSelected={selectedIds.has(video.id)}
                     onSelect={selectionMode ? toggleSelectVideo : undefined}
+                    isOpponentView={mentors.find((m) => m.id === video.mentorId)?.isOpponentView === true}
                   />
                 ))}
               </div>
@@ -743,6 +1076,7 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
       <VideoDetailPanel
         video={selectedVideo}
         mentorName={selectedMentorName}
+        mentors={mentors.filter((m) => m.active !== false)}
         open={panelOpen}
         onOpenChange={setPanelOpen}
         topics={topics}
@@ -751,6 +1085,21 @@ export default function Dashboard({ filters = { search: "", mentor: "all", categ
         onRemoveTopic={handleRemoveTopic}
         onAnalyzeDone={(result) => setSelectedVideo((prev) => ({ ...prev, ...result }))}
         onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        navigateTo={navigateTo}
+      />
+
+      <ExternalVideoModal
+        open={isExternalVideoModalOpen}
+        onClose={() => setIsExternalVideoModalOpen(false)}
+        mentors={mentors.filter((m) => m.active)}
+        topics={topics}
+        onVideoAdded={(video) => {
+          setIsExternalVideoModalOpen(false);
+          setSelectedVideo(video);
+          setPanelOpen(true);
+        }}
       />
     </div>
   );

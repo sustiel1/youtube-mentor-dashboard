@@ -9,6 +9,9 @@ dist/
 .env.local
 .env.*.local
 
+# Google Drive OAuth tokens — server-side only, never commit
+.gdrive-tokens.json
+
 # Editor
 .vscode/
 .idea/

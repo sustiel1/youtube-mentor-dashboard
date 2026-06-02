@@ -1,9 +1,22 @@
 import JSZip from 'jszip';
 import { buildAtomicNotesFromVideo, buildVideoFullNote, resolvePrimaryTopic, slugify } from './obsidianExport.js';
+import { resolveTopicBreadcrumb } from './topicFilters.js';
 import { getManualNotes } from './localManualNoteStore.js';
 import { getNotesByVideoId } from './localNoteStore.js';
 
 const SOURCE_LABELS = { manual: 'ידני', notebooklm: 'NotebookLM', research: 'מחקר' };
+
+function resolveVideoBrainPath(video, topics) {
+  const firstTopicId = Array.isArray(video.topicIds) ? video.topicIds[0] : null;
+  if (firstTopicId && topics.length) {
+    const { main, sub } = resolveTopicBreadcrumb(firstTopicId, topics);
+    const mainName = main?.name ? String(main.name).trim() : "";
+    const subName  = sub?.name  ? String(sub.name).trim()  : "";
+    if (mainName && subName) return `${mainName}/${subName}`;
+    if (mainName) return mainName;
+  }
+  return resolvePrimaryTopic(video);
+}
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -52,7 +65,7 @@ export function createEmptyAtomicByType() {
 }
 
 function incrementAtomicByField(atomicByType, field) {
-  if (field === 'mainLesson' || field === 'keyInsights' || field === 'brainHighlights') atomicByType.insights += 1;
+  if (field === 'mainLesson' || field === 'keyInsights' || field === 'brainHighlights' || field === 'keyPoints') atomicByType.insights += 1;
   else if (field === 'rules') atomicByType.rules += 1;
   else if (field === 'actionItems') atomicByType.actions += 1;
   else if (field === 'mistakesToAvoid') atomicByType.mistakes += 1;
@@ -152,7 +165,7 @@ export async function buildWorkspaceZip(videos, mentors, topics, { manualNotesOv
     const mentorName = mentorMap[video.mentorId] || video.channelTitle || '';
     const notes      = getNotesByVideoId(video.videoId || video.id);
 
-    const primaryTopic = resolvePrimaryTopic(video);
+    const primaryTopic = resolveVideoBrainPath(video, topics);
     const selections = video.selectedKnowledgeItems;
     const atomicNotes = buildAtomicNotesFromVideo(video, selections);
     for (const atom of atomicNotes) {

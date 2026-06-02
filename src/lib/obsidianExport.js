@@ -1,8 +1,8 @@
 // Obsidian-compatible Markdown export engine — v2
 // Supports: topic-based pathing, LLM-ready headings, temporal YAML, weekly recap.
 //
-// Root folders:  /Stock Market  /AI  /Development  /Daily
-// Sub-folders:   /Sessions  /Learnings
+// Root folders map directly to semantic destinations inside the vault.
+// Examples: /שוק ההון/ניתוח טכני  /טכנולוגיה ו-AI  /בריאות ותזונה  /ידע אישי/למידה
 //
 // Filename patterns:
 //   Daily:         YYYY-MM-DD.md
@@ -13,27 +13,225 @@
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 // Obsidian-first knowledge model:
-// Root is always a semantic Topic, with two stable folders: Learnings/ and Notes/
-export const PRIMARY_TOPICS = ['Stock Market', 'AI', 'Development', 'General'];
+// Root is always a semantic topic path inside the vault.
+import {
+  DEFAULT_OBSIDIAN_VAULT_NAME,
+  buildObsidianOpenUrl,
+  getConfiguredObsidianVaultName,
+} from "./obsidianVaultConfig";
+import { applyObsidianExportMetadata } from "./obsidianExportMetadata.js";
+
+export { applyObsidianExportMetadata, buildVaultExportMetadataPayload } from "./obsidianExportMetadata.js";
+
+function finalizeObsidianExport(content, video, exportOptions = {}) {
+  if (!video || exportOptions?.skipMetadata) return content;
+  return applyObsidianExportMetadata(content, video, exportOptions);
+}
+
+export const OBSIDIAN_VAULT_NAME = DEFAULT_OBSIDIAN_VAULT_NAME;
+
+export const OBSIDIAN_FOLDER_CATALOG = {
+  'שוק ההון': [
+    'שוק ההון/אופציות',
+    'שוק ההון/אינדיקטורים',
+    'שוק ההון/אסטרטגיות',
+    'שוק ההון/דוחות ורווחים',
+    'שוק ההון/השקעות לטווח ארוך',
+    'שוק ההון/טראמפ ושוק ההון',
+    'שוק ההון/מאקרו',
+    'שוק ההון/מניות AI',
+    'שוק ההון/מסחר יומי',
+    'שוק ההון/מסחר סווינג',
+    'שוק ההון/ניהול סיכונים',
+    'שוק ההון/ניתוח טכני',
+    'שוק ההון/פונדמנטלי',
+    'שוק ההון/רשימות מעקב',
+    'שוק ההון/שיטת הרצפים',
+  ],
+  'טכנולוגיה ו-AI': [
+    'טכנולוגיה ו-AI',
+    'טכנולוגיה ו-AI/מודלים סיניים',
+    'טכנולוגיה ו-AI/AI Workflows',
+    'טכנולוגיה ו-AI/APIs & Integrations',
+    'טכנולוגיה ו-AI/Automation',
+    'טכנולוגיה ו-AI/Backend',
+    'טכנולוגיה ו-AI/Base44',
+    'טכנולוגיה ו-AI/ChatGPT',
+    'טכנולוגיה ו-AI/Claude Code',
+    'טכנולוגיה ו-AI/Codex',
+    'טכנולוגיה ו-AI/Cursor',
+    'טכנולוגיה ו-AI/Debugging & QA',
+    'טכנולוגיה ו-AI/Frontend',
+    'טכנולוגיה ו-AI/Gemini',
+    'טכנולוגיה ו-AI/Local LLMs',
+    'טכנולוגיה ו-AI/n8n',
+    'טכנולוגיה ו-AI/Obsidian',
+    'טכנולוגיה ו-AI/Ollama',
+    'טכנולוגיה ו-AI/Perplexity',
+    'טכנולוגיה ו-AI/Prompt Engineering',
+    'טכנולוגיה ו-AI/RAG & Knowledge Systems',
+    'טכנולוגיה ו-AI/React',
+  ],
+  'בריאות ותזונה': [
+    'בריאות ותזונה',
+    'בריאות ותזונה/בדיקות ומעקב',
+    'בריאות ותזונה/גלידות וקינוחים',
+    'בריאות ותזונה/ירידה במשקל',
+    'בריאות ותזונה/לחמים וקמחים',
+    'בריאות ותזונה/מדי סוכר',
+    'בריאות ותזונה/מתכונים בריאים',
+    'בריאות ותזונה/סכרת',
+    'בריאות ותזונה/פעילות גופנית',
+    'בריאות ותזונה/קיטו',
+    'בריאות ותזונה/תוספים וזהירות',
+    'בריאות ותזונה/תזונה דלת פחמימות',
+  ],
+  'ידע אישי': [
+    'ידע אישי/החלטות',
+    'ידע אישי/למידה',
+    'ידע אישי/משימות',
+    'ידע אישי/סיכומים',
+    'ידע אישי/ציקליסטים',
+    'ידע אישי/ריאיונות',
+    'ידע אישי/תובנות אישיות',
+    'ידע אישי/תוכניות',
+  ],
+  'פוליטיקה': [
+    'פוליטיקה/בחירות',
+    'פוליטיקה/ביטחון וצבא',
+    'פוליטיקה/גיאופוליטיקה',
+    'פוליטיקה/דמוקרטיה ומוסדות',
+    'פוליטיקה/הכיבוש',
+    'פוליטיקה/חרדים וגיוס',
+    'פוליטיקה/טראמפ',
+    'פוליטיקה/כלכלה וחברה',
+    'פוליטיקה/מדינת הלכה',
+    'פוליטיקה/מחאה ואקטיביזם',
+    'פוליטיקה/מערכת המשפט',
+    'פוליטיקה/משיחיים',
+    'פוליטיקה/פוליטיקה פנימית',
+    'פוליטיקה/ריאיונות וזומק',
+    'פוליטיקה/שחיתות ושלטון',
+    'פוליטיקה/תקשורת ותעמולה',
+  ],
+};
+
+export const PRIMARY_TOPICS = Object.values(OBSIDIAN_FOLDER_CATALOG).flat();
+
+const DEFAULT_PRIMARY_TOPIC = 'ידע אישי/למידה';
+const DEFAULT_MAIN_CATEGORY = 'ידע אישי';
+
+const CATEGORY_TO_MAIN_CATEGORY = {
+  Markets: 'שוק ההון',
+  Stock: 'שוק ההון',
+  Trading: 'שוק ההון',
+  Finance: 'שוק ההון',
+  'Stock Market': 'שוק ההון',
+  AI: 'טכנולוגיה ו-AI',
+  Technology: 'טכנולוגיה ו-AI',
+  Tech: 'טכנולוגיה ו-AI',
+  Dev: 'טכנולוגיה ו-AI',
+  Development: 'טכנולוגיה ו-AI',
+  Health: 'בריאות ותזונה',
+  Nutrition: 'בריאות ותזונה',
+  Personal: 'ידע אישי',
+  General: 'ידע אישי',
+  Politics: 'פוליטיקה',
+  Political: 'פוליטיקה',
+};
 
 const CATEGORY_TO_TOPIC = {
-  Markets: 'Stock Market',
-  AI: 'AI',
-  Dev: 'Development',
+  Markets: 'שוק ההון/ניתוח טכני',
+  Stock: 'שוק ההון/ניתוח טכני',
+  Trading: 'שוק ההון/מסחר סווינג',
+  Finance: 'שוק ההון/מסחר סווינג',
+  'Stock Market': 'שוק ההון/ניתוח טכני',
+  AI: 'טכנולוגיה ו-AI',
+  Technology: 'טכנולוגיה ו-AI',
+  Tech: 'טכנולוגיה ו-AI',
+  Dev: 'טכנולוגיה ו-AI/Frontend',
+  Development: 'טכנולוגיה ו-AI/Frontend',
+  Health: 'בריאות ותזונה',
+  Nutrition: 'בריאות ותזונה',
+  Personal: 'ידע אישי/למידה',
+  General: 'ידע אישי/למידה',
+  Politics: 'פוליטיקה/פוליטיקה פנימית',
+  Political: 'פוליטיקה/פוליטיקה פנימית',
 };
 
 const FORMAT_LABELS = new Set(['weekly', 'daily', 'session']);
 
-// Keywords that hint at each primary topic (checked against tags + title + channelTitle)
-const TOPIC_KEYWORDS = {
-  'Stock Market': ['stock', 'market', 'trading', 'scanner', 'macro', 'chart', 'technical',
-    'fundamental', 'options', 'forex', 'earnings', 'bulls', 'bears', 'שוק', 'מניות',
-    'מסחר', 'ניתוח', 'בורסה', 'השקעות'],
-  'AI': ['ai', 'gpt', 'claude', 'gemini', 'llm', 'machine learning', 'automation',
-    'neural', 'prompt', 'rag', 'בינה', 'אוטומציה', 'מודל', 'שפה'],
-  'Development': ['dev', 'code', 'react', 'javascript', 'python', 'typescript', 'api',
-    'backend', 'frontend', 'database', 'git', 'פיתוח', 'קוד', 'תכנות'],
-};
+const FOLDER_KEYWORD_RULES = [
+  { folder: 'שוק ההון/מסחר סווינג', keywords: ['swing', 'trading', 'trade setup', 'momentum trade', 'swing trade', 'technical trading', 'מסחר סווינג', 'מסחר', 'טריידינג'] },
+  { folder: 'שוק ההון/ניתוח טכני', keywords: ['technical analysis', 'chart', 'price action', 'support resistance', 'indicator', 'indicators', 'ניתוח טכני', 'גרף', 'אינדיקטור'] },
+  { folder: 'שוק ההון/מאקרו', keywords: ['macro', 'economy', 'fed', 'inflation', 'rates', 'bond', 'yield', 'gdp', 'מאקרו', 'כלכלה', 'ריבית', 'אינפלציה'] },
+  { folder: 'שוק ההון/אופציות', keywords: ['option', 'options', 'calls', 'puts', 'spread', 'אופציה', 'אופציות'] },
+  { folder: 'שוק ההון/פונדמנטלי', keywords: ['fundamental', 'valuation', 'balance sheet', 'cash flow', 'earnings analysis', 'פונדמנטלי'] },
+  { folder: 'שוק ההון/דוחות ורווחים', keywords: ['earnings', 'quarterly results', 'guidance', 'דוחות', 'רווחים'] },
+  { folder: 'שוק ההון/השקעות לטווח ארוך', keywords: ['long term investing', 'investing', 'portfolio', 'compound', 'passive investing', 'השקעות לטווח ארוך'] },
+  { folder: 'שוק ההון/טראמפ ושוק ההון', keywords: ['trump market', 'trump tariffs', 'טראמפ ושוק ההון'] },
+  { folder: 'שוק ההון/מניות AI', keywords: ['ai stocks', 'nvidia', 'amd', 'super micro', 'מניות ai'] },
+  { folder: 'שוק ההון/מסחר יומי', keywords: ['day trading', 'intraday', 'scalping', 'מסחר יומי'] },
+  { folder: 'שוק ההון/ניהול סיכונים', keywords: ['risk management', 'stop loss', 'position sizing', 'ניהול סיכונים'] },
+  { folder: 'שוק ההון/רשימות מעקב', keywords: ['watchlist', 'watch list', 'scanner', 'רשימות מעקב'] },
+  { folder: 'שוק ההון/שיטת הרצפים', keywords: ['sequence', 'sequential', 'שיטת הרצפים'] },
+  { folder: 'טכנולוגיה ו-AI/מודלים סיניים', keywords: ['deepseek', 'qwen', 'alibaba', 'moonshot', 'kimi', 'chinese model', 'מודלים סיניים'] },
+  { folder: 'טכנולוגיה ו-AI/AI Workflows', keywords: ['workflow', 'workflows', 'agentic workflow', 'ai workflow'] },
+  { folder: 'טכנולוגיה ו-AI/APIs & Integrations', keywords: ['api', 'apis', 'integration', 'webhook', 'sdk', 'integrations'] },
+  { folder: 'טכנולוגיה ו-AI/Automation', keywords: ['automation', 'automate', 'zapier', 'make.com', 'אוטומציה'] },
+  { folder: 'טכנולוגיה ו-AI/Backend', keywords: ['backend', 'server', 'database', 'auth', 'sql', 'node server'] },
+  { folder: 'טכנולוגיה ו-AI/Base44', keywords: ['base44'] },
+  { folder: 'טכנולוגיה ו-AI/ChatGPT', keywords: ['chatgpt', 'openai'] },
+  { folder: 'טכנולוגיה ו-AI/Claude Code', keywords: ['claude code'] },
+  { folder: 'טכנולוגיה ו-AI/Codex', keywords: ['codex'] },
+  { folder: 'טכנולוגיה ו-AI/Cursor', keywords: ['cursor'] },
+  { folder: 'טכנולוגיה ו-AI/Debugging & QA', keywords: ['debug', 'debugging', 'qa', 'test', 'playwright', 'bugfix'] },
+  { folder: 'טכנולוגיה ו-AI/Frontend', keywords: ['frontend', 'ui', 'ux', 'css', 'tailwind'] },
+  { folder: 'טכנולוגיה ו-AI/Gemini', keywords: ['gemini'] },
+  { folder: 'טכנולוגיה ו-AI/Local LLMs', keywords: ['local llm', 'local llms', 'lm studio', 'gguf'] },
+  { folder: 'טכנולוגיה ו-AI/n8n', keywords: ['n8n'] },
+  { folder: 'טכנולוגיה ו-AI/Obsidian', keywords: ['obsidian', 'vault', 'markdown vault'] },
+  { folder: 'טכנולוגיה ו-AI/Ollama', keywords: ['ollama'] },
+  { folder: 'טכנולוגיה ו-AI/Perplexity', keywords: ['perplexity'] },
+  { folder: 'טכנולוגיה ו-AI/Prompt Engineering', keywords: ['prompt engineering', 'prompt', 'system prompt'] },
+  { folder: 'טכנולוגיה ו-AI/RAG & Knowledge Systems', keywords: ['rag', 'retrieval', 'knowledge base', 'knowledge system', 'vector database'] },
+  { folder: 'טכנולוגיה ו-AI/React', keywords: ['react', 'jsx', 'hooks', 'component', 'frontend react'] },
+  { folder: 'בריאות ותזונה/בדיקות ומעקב', keywords: ['blood work', 'lab test', 'tracking', 'glucose monitor', 'בדיקות', 'מעקב'] },
+  { folder: 'בריאות ותזונה/גלידות וקינוחים', keywords: ['ice cream', 'dessert', 'גלידה', 'קינוח'] },
+  { folder: 'בריאות ותזונה/ירידה במשקל', keywords: ['weight loss', 'fat loss', 'calorie deficit', 'ירידה במשקל'] },
+  { folder: 'בריאות ותזונה/לחמים וקמחים', keywords: ['bread', 'flour', 'sourdough', 'לחם', 'קמח'] },
+  { folder: 'בריאות ותזונה/מדי סוכר', keywords: ['cgm', 'glucose meter', 'blood sugar meter', 'מדי סוכר'] },
+  { folder: 'בריאות ותזונה/מתכונים בריאים', keywords: ['recipe', 'healthy recipe', 'meal prep', 'מתכון', 'מתכונים'] },
+  { folder: 'בריאות ותזונה/סכרת', keywords: ['diabetes', 'insulin resistance', 'סכרת'] },
+  { folder: 'בריאות ותזונה/פעילות גופנית', keywords: ['exercise', 'workout', 'fitness', 'cardio', 'strength', 'פעילות גופנית'] },
+  { folder: 'בריאות ותזונה/קיטו', keywords: ['keto', 'ketogenic', 'קטו', 'קיטו'] },
+  { folder: 'בריאות ותזונה/תוספים וזהירות', keywords: ['supplement', 'supplements', 'side effect', 'toxicity', 'תוסף', 'תוספים'] },
+  { folder: 'בריאות ותזונה/תזונה דלת פחמימות', keywords: ['low carb', 'low-carb', 'תזונה דלת פחמימות'] },
+  { folder: 'ידע אישי/החלטות', keywords: ['decision', 'decisions', 'החלטה', 'החלטות'] },
+  { folder: 'ידע אישי/למידה', keywords: ['learning', 'study', 'למידה', 'ללמוד'] },
+  { folder: 'ידע אישי/משימות', keywords: ['tasks', 'todo', 'execution', 'משימות'] },
+  { folder: 'ידע אישי/סיכומים', keywords: ['summary', 'recap', 'סיכום', 'סיכומים'] },
+  { folder: 'ידע אישי/ציקליסטים', keywords: ['cyclist', 'cycling', 'ציקליסט', 'ציקליסטים'] },
+  { folder: 'ידע אישי/ריאיונות', keywords: ['interview', 'podcast interview', 'ראיון', 'ריאיונות'] },
+  { folder: 'ידע אישי/תובנות אישיות', keywords: ['personal insight', 'self reflection', 'תובנות אישיות'] },
+  { folder: 'ידע אישי/תוכניות', keywords: ['plan', 'roadmap', 'planning', 'תוכנית', 'תוכניות'] },
+  { folder: 'פוליטיקה/בחירות', keywords: ['election', 'campaign', 'בחירות'] },
+  { folder: 'פוליטיקה/ביטחון וצבא', keywords: ['army', 'military', 'security', 'idf', 'ביטחון', 'צבא'] },
+  { folder: 'פוליטיקה/גיאופוליטיקה', keywords: ['geopolitics', 'geopolitical', 'גיאופוליטיקה'] },
+  { folder: 'פוליטיקה/דמוקרטיה ומוסדות', keywords: ['democracy', 'institutions', 'court reform', 'דמוקרטיה', 'מוסדות'] },
+  { folder: 'פוליטיקה/הכיבוש', keywords: ['occupation', 'הכיבוש'] },
+  { folder: 'פוליטיקה/חרדים וגיוס', keywords: ['haredi', 'draft', 'conscription', 'חרדים', 'גיוס'] },
+  { folder: 'פוליטיקה/טראמפ', keywords: ['trump', 'טראמפ'] },
+  { folder: 'פוליטיקה/כלכלה וחברה', keywords: ['society', 'social policy', 'economy policy', 'כלכלה וחברה'] },
+  { folder: 'פוליטיקה/מדינת הלכה', keywords: ['halacha state', 'religion and state', 'מדינת הלכה'] },
+  { folder: 'פוליטיקה/מחאה ואקטיביזם', keywords: ['protest', 'activism', 'מחאה', 'אקטיביזם'] },
+  { folder: 'פוליטיקה/מערכת המשפט', keywords: ['supreme court', 'judicial', 'מערכת המשפט'] },
+  { folder: 'פוליטיקה/משיחיים', keywords: ['messianic', 'משיחיים'] },
+  { folder: 'פוליטיקה/פוליטיקה פנימית', keywords: ['coalition', 'knesset', 'israeli politics', 'politics', 'פוליטיקה פנימית', 'פוליטיקה'] },
+  { folder: 'פוליטיקה/ריאיונות וזומק', keywords: ['zomek', 'זומק', 'political interview'] },
+  { folder: 'פוליטיקה/שחיתות ושלטון', keywords: ['corruption', 'governance', 'שחיתות', 'שלטון'] },
+  { folder: 'פוליטיקה/תקשורת ותעמולה', keywords: ['media', 'propaganda', 'תקשורת', 'תעמולה'] },
+];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,6 +279,54 @@ function listLines(items, fallback = '- ') {
   return filtered.length ? filtered.map((i) => `- ${i}`).join('\n') : fallback;
 }
 
+function normalizeText(value) {
+  return String(value || '').toLowerCase();
+}
+
+function getDetectionHaystack(video = {}) {
+  return [
+    video.category,
+    video.primaryTopic,
+    video.obsidianTopic,
+    video.title,
+    video.channelTitle,
+    video.shortSummary,
+    video.fullSummary,
+    video.brainSummary,
+    video.mainLesson,
+    video.strategyOrMethod,
+    ...(Array.isArray(video.tags) ? video.tags : []),
+    ...(Array.isArray(video.keyInsights) ? video.keyInsights : []),
+    ...(Array.isArray(video.keyPoints) ? video.keyPoints : []),
+    ...(Array.isArray(video.actionItems) ? video.actionItems : []),
+    ...(Array.isArray(video.rules) ? video.rules : []),
+  ]
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+export function getMainCategoryFromPath(path) {
+  const value = String(path || '').trim();
+  if (!value) return null;
+  const mainCategory = value.split('/')[0]?.trim();
+  return mainCategory && OBSIDIAN_FOLDER_CATALOG[mainCategory] ? mainCategory : null;
+}
+
+export function getFolderOptionsForMainCategory(mainCategory) {
+  return [...(OBSIDIAN_FOLDER_CATALOG[mainCategory] || [])];
+}
+
+export function getFolderOptionsForVideo(video = {}) {
+  const mainCategory =
+    getMainCategoryFromPath(video?.obsidianTopic) ||
+    CATEGORY_TO_MAIN_CATEGORY[video?.category] ||
+    getMainCategoryFromPath(resolvePrimaryTopic(video)) ||
+    DEFAULT_MAIN_CATEGORY;
+  return getFolderOptionsForMainCategory(mainCategory);
+}
+
 const BRAIN_HIGHLIGHT_SECTIONS = ['Reusable Insights', 'Principles', 'Rules', 'Reusable Actions', 'Key Concepts'];
 
 export function extractBrainHighlightsFromVideo(video = {}) {
@@ -123,34 +369,51 @@ export function extractBrainHighlightsFromVideo(video = {}) {
  * Priority: explicit category field → tag/title keyword match → 'Daily' fallback.
  */
 export function resolvePrimaryTopic(video = {}) {
-  // 1. Direct category mapping
+  if (video.obsidianTopic && PRIMARY_TOPICS.includes(String(video.obsidianTopic).trim())) {
+    return String(video.obsidianTopic).trim();
+  }
+
   if (video.category && CATEGORY_TO_TOPIC[video.category]) {
-    return CATEGORY_TO_TOPIC[video.category];
+    const categoryFolder = CATEGORY_TO_TOPIC[video.category];
+    const haystack = getDetectionHaystack(video);
+    const categoryMain = getMainCategoryFromPath(categoryFolder);
+    const categoryOptions = getFolderOptionsForMainCategory(categoryMain);
+    const categoryMatch = FOLDER_KEYWORD_RULES.find(
+      ({ folder, keywords }) =>
+        categoryOptions.includes(folder) && keywords.some((kw) => haystack.includes(normalizeText(kw)))
+    );
+    if (categoryMatch) return categoryMatch.folder;
+    return categoryFolder;
   }
 
-  // 2. Keyword scan across tags + title + channelTitle
-  const haystack = [
-    ...(video.tags || []),
-    video.title || '',
-    video.channelTitle || '',
-  ].join(' ').toLowerCase();
+  const haystack = getDetectionHaystack(video);
 
-  for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
-    if (keywords.some((kw) => haystack.includes(kw))) return topic;
+  for (const { folder, keywords } of FOLDER_KEYWORD_RULES) {
+    if (keywords.some((kw) => haystack.includes(normalizeText(kw)))) return folder;
   }
 
-  return 'General';
+  if (haystack.includes('ai') || haystack.includes('llm') || haystack.includes('מודל')) {
+    return 'טכנולוגיה ו-AI';
+  }
+
+  return DEFAULT_PRIMARY_TOPIC;
+}
+
+function normalizePrimaryTopic(topic) {
+  const value = String(topic || '').trim();
+  if (!value) return null;
+  if (PRIMARY_TOPICS.includes(value)) return value;
+  if (OBSIDIAN_FOLDER_CATALOG[value]?.length) return OBSIDIAN_FOLDER_CATALOG[value][0];
+  return CATEGORY_TO_TOPIC[value] || null;
 }
 
 /**
  * Constructs the full Obsidian vault path for a note.
- * Example: "Stock Market/Learnings/V-some-video.md"
+ * Example: "שוק ההון/ניתוח טכני/V-some-video.md"
  */
 export function getExportPath(type, primaryTopic, filename) {
-  const root = primaryTopic || 'General';
-  // Keep API stable: anything that isn't explicitly a "note" goes to Learnings/
-  if (type === 'note') return `${root}/Notes/${filename}`;
-  return `${root}/Learnings/${filename}`;
+  const root = normalizePrimaryTopic(primaryTopic) || DEFAULT_PRIMARY_TOPIC;
+  return `${root}/${filename}`;
 }
 
 // ── YAML frontmatter builder ───────────────────────────────────────────────────
@@ -164,7 +427,7 @@ function buildFrontmatter({ type, format, topic, source, channel, tags = [], dat
     '---',
     `type: ${type}`,
     ...(resolvedFormat ? [`format: ${resolvedFormat}`] : []),
-    `topic: ${topic || 'General'}`,
+    `topic: ${normalizePrimaryTopic(topic) || DEFAULT_PRIMARY_TOPIC}`,
     ...(source ? [`source: ${source}`] : []),
     ...(channel ? [`channel: ${channel}`] : []),
     `tags: [${cleanTags.join(', ')}]`,
@@ -180,7 +443,7 @@ function buildFrontmatter({ type, format, topic, source, channel, tags = [], dat
 
 export function generateDailyNote({
   date,
-  primaryTopic = 'General',
+  primaryTopic = DEFAULT_PRIMARY_TOPIC,
   focus = '',
   activityLog = [],
   nextBestMove = '',
@@ -220,7 +483,7 @@ export function generateDailyNote({
 export function generateSessionNote({
   title = '',
   date,
-  primaryTopic = 'General',
+  primaryTopic = DEFAULT_PRIMARY_TOPIC,
   context = '',
   technicalAnalysis = '',
   aiInsights = [],
@@ -263,7 +526,7 @@ export function generateSessionNote({
 export function generateLearningNote({
   topic = '',
   date,
-  primaryTopic = 'General',
+  primaryTopic = DEFAULT_PRIMARY_TOPIC,
   context = '',
   technicalAnalysis = '',
   aiInsights = '',
@@ -309,7 +572,7 @@ export function generateWeeklyRecapNote({
   learnings = [],
   keyThemes = [],
   nextWeekFocus = '',
-  primaryTopic = 'General',
+  primaryTopic = DEFAULT_PRIMARY_TOPIC,
   format,
   source,
   channel,
@@ -328,7 +591,7 @@ export function generateWeeklyRecapNote({
   const weekStartStr = weekStart.toISOString().slice(0, 10);
 
   const content = [
-    buildFrontmatter({ type: 'weekly-recap', format: format || 'weekly', topic: primaryTopic || 'General', source, channel, tags: ['weekly-recap', `week-${week}`], date: d, created }),
+    buildFrontmatter({ type: 'weekly-recap', format: format || 'weekly', topic: normalizePrimaryTopic(primaryTopic) || DEFAULT_PRIMARY_TOPIC, source, channel, tags: ['weekly-recap', `week-${week}`], date: d, created }),
     '',
     `# Week of ${weekStartStr} → ${d}`,
     '',
@@ -345,13 +608,13 @@ export function generateWeeklyRecapNote({
     nextWeekFocus || '- ',
   ].join('\n');
 
-  return { content, filename, path: getExportPath('weekly-recap', primaryTopic || 'General', filename) };
+  return { content, filename, path: getExportPath('weekly-recap', normalizePrimaryTopic(primaryTopic) || DEFAULT_PRIMARY_TOPIC, filename) };
 }
 
 // ── Video → Note builders ─────────────────────────────────────────────────────
 
-export function buildVideoLearningNote(video, mentorName = '', primaryTopicOverride = null, notes = []) {
-  const primaryTopic = primaryTopicOverride || resolvePrimaryTopic(video);
+export function buildVideoLearningNote(video, mentorName = '', primaryTopicOverride = null, notes = [], exportOptions = {}) {
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
   const tags = [
     ...(video.tags || []).map(cleanTag),
     ...(mentorName ? [cleanTag(mentorName)] : []),
@@ -385,11 +648,18 @@ export function buildVideoLearningNote(video, mentorName = '', primaryTopicOverr
     tags,
   });
   const notesSection = buildNotesSection(notes);
-  return notesSection ? { ...result, content: result.content + '\n\n' + notesSection } : result;
+  const raw = notesSection ? result.content + '\n\n' + notesSection : result.content;
+  return {
+    ...result,
+    content: finalizeObsidianExport(raw, video, {
+      analysisType: 'Useful Knowledge',
+      ...exportOptions,
+    }),
+  };
 }
 
-export function buildVideoSessionNote(video, mentorName = '', primaryTopicOverride = null, notes = []) {
-  const primaryTopic = primaryTopicOverride || resolvePrimaryTopic(video);
+export function buildVideoSessionNote(video, mentorName = '', primaryTopicOverride = null, notes = [], exportOptions = {}) {
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
   const tags = (video.tags || []).map(cleanTag).filter(Boolean);
 
   const chapters = (video.aiChapters || video.chapters || [])
@@ -431,11 +701,18 @@ export function buildVideoSessionNote(video, mentorName = '', primaryTopicOverri
     tags,
   });
   const notesSection = buildNotesSection(notes);
-  return notesSection ? { ...result, content: result.content + '\n\n' + notesSection } : result;
+  const raw = notesSection ? result.content + '\n\n' + notesSection : result.content;
+  return {
+    ...result,
+    content: finalizeObsidianExport(raw, video, {
+      analysisType: 'Session Export',
+      ...exportOptions,
+    }),
+  };
 }
 
-export function buildVideoDailyNote(video, mentorName = '', primaryTopicOverride = null, notes = []) {
-  const primaryTopic = primaryTopicOverride || resolvePrimaryTopic(video);
+export function buildVideoDailyNote(video, mentorName = '', primaryTopicOverride = null, notes = [], exportOptions = {}) {
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
   const sessionSlug = slugify(video.title || 'session', 40);
   const relatedSessions = [sessionSlug, ...(mentorName ? [mentorName] : [])].filter(Boolean);
 
@@ -453,7 +730,14 @@ export function buildVideoDailyNote(video, mentorName = '', primaryTopicOverride
     related: relatedSessions,
   });
   const notesSection = buildNotesSection(notes);
-  return notesSection ? { ...result, content: result.content + '\n\n' + notesSection } : result;
+  const raw = notesSection ? result.content + '\n\n' + notesSection : result.content;
+  return {
+    ...result,
+    content: finalizeObsidianExport(raw, video, {
+      analysisType: 'Notes',
+      ...exportOptions,
+    }),
+  };
 }
 
 // ── Notes section builder ─────────────────────────────────────────────────────
@@ -465,9 +749,9 @@ function secondsToTimestamp(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-function buildNotesSection(notes) {
+function buildNotesSection(notes, { heading = '## Learning Notes' } = {}) {
   if (!Array.isArray(notes) || notes.length === 0) return null;
-  const lines = ['## Learning Notes', ''];
+  const lines = [heading, ''];
   for (const note of notes) {
     const ts = note.timestampLabel || (Number.isFinite(note.timestampSeconds) ? secondsToTimestamp(note.timestampSeconds) : null);
     if (ts) lines.push(`**[${ts}]**`);
@@ -476,6 +760,26 @@ function buildNotesSection(notes) {
     lines.push('');
   }
   return lines.join('\n');
+}
+
+/** Standalone Obsidian export for user learning notes (Notes tab). */
+export function buildVideoNotesObsidianExport(video, notes = [], exportOptions = {}) {
+  const notesBody = buildNotesSection(notes, { heading: '## הערות למידה' });
+  if (!notesBody) return null;
+
+  const primaryTopic =
+    normalizePrimaryTopic(exportOptions.primaryTopicOverride) || resolvePrimaryTopic(video);
+  const filename = `N-${slugify(video?.title || 'notes', 40)}.md`;
+  const content = finalizeObsidianExport(notesBody, video, {
+    analysisType: 'Notes',
+    ...exportOptions,
+  });
+
+  return {
+    content,
+    filename,
+    path: getExportPath('learning', primaryTopic, filename),
+  };
 }
 
 // ── Atomic Knowledge Markdown builder ────────────────────────────────────────
@@ -524,17 +828,23 @@ export function getSelectedAtomicKnowledge(video, selections) {
     return sel[`${fieldKey}:0`] === true ? s : null;
   };
 
+  const rawAppBuilderPoints = Array.isArray(v.appBuilderData?.allPoints)
+    ? v.appBuilderData.allPoints.map(p => typeof p === 'string' ? p : String(p?.point || p?.text || '')).filter(Boolean)
+    : [];
+
   return {
-    mainLesson:      filterSingle(v.mainLesson,      'mainLesson'),
-    keyInsights:     filterArr(v.keyInsights,         'keyInsights'),
-    brainHighlights: filterArr(extractBrainHighlightsFromVideo(v), 'brainHighlights'),
-    rules:           filterArr(v.rules,               'rules'),
-    actionItems:     filterArr(v.actionItems,         'actionItems'),
-    mistakesToAvoid: filterArr(v.mistakesToAvoid,     'mistakesToAvoid'),
-    concepts:        filterArr(v.concepts,            'concepts'),
-    frameworks:      filterArr(v.frameworks,        'frameworks'),
-    questions:       filterArr(v.questions,         'questions'),
-    quotes:          filterArr(v.quotes,              'quotes'),
+    mainLesson:        filterSingle(v.mainLesson,      'mainLesson'),
+    keyInsights:       filterArr(v.keyInsights,         'keyInsights'),
+    brainHighlights:   filterArr(extractBrainHighlightsFromVideo(v), 'brainHighlights'),
+    keyPoints:         filterArr(v.keyPoints,           'keyPoints'),
+    rules:             filterArr(v.rules,               'rules'),
+    actionItems:       filterArr(v.actionItems,         'actionItems'),
+    mistakesToAvoid:   filterArr(v.mistakesToAvoid,     'mistakesToAvoid'),
+    concepts:          filterArr(v.concepts,            'concepts'),
+    frameworks:        filterArr(v.frameworks,          'frameworks'),
+    questions:         filterArr(v.questions,           'questions'),
+    quotes:            filterArr(v.quotes,              'quotes'),
+    appBuilderPoints:  filterArr(rawAppBuilderPoints,   'appBuilderPoints'),
   };
 }
 
@@ -543,6 +853,7 @@ export const ATOMIC_FIELD_TO_FOLDER = {
   mainLesson: 'Atomic/Insights',
   keyInsights: 'Atomic/Insights',
   brainHighlights: 'Atomic/Insights',
+  keyPoints: 'Atomic/Insights',
   rules: 'Atomic/Rules',
   actionItems: 'Atomic/Actions',
   mistakesToAvoid: 'Atomic/Mistakes',
@@ -584,10 +895,10 @@ export function buildAtomicNotesFromVideo(video, selections) {
   const keys = Object.keys(sel).filter((k) => sel[k] === true);
   if (keys.length === 0) return [];
 
-  const primaryTopic = resolvePrimaryTopic(v);
+  const primaryTopic = normalizePrimaryTopic(v?.obsidianTopic) || resolvePrimaryTopic(v);
   const videoSlug = slugify(v.title || 'video', 40) || 'video';
   const videoBasename = `V-${videoSlug}`;
-  const videoWikiPath = `${primaryTopic}/Learnings/${videoBasename}`;
+  const videoWikiPath = `${primaryTopic}/${videoBasename}`;
   const videoDisplayTitle = String(v.title || 'Video')
     .replace(/[\[\]]/g, ' ')
     .replace(/\|/g, ' ')
@@ -640,7 +951,7 @@ export function buildAtomicNotesFromVideo(video, selections) {
       '---',
       `type: atomic-${typeTag}`,
       `atomic_field: ${field}`,
-      `topic: ${primaryTopic || 'General'}`,
+      `topic: ${primaryTopic || DEFAULT_PRIMARY_TOPIC}`,
       `source: "${String(sourceWiki).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
       `tags: [${['atomic', typeTag].map(cleanTag).filter(Boolean).join(', ')}]`,
       `date: ${d}`,
@@ -663,7 +974,7 @@ export function buildAtomicNotesFromVideo(video, selections) {
       type: field,
       folder,
       slug,
-      markdown,
+      markdown: finalizeObsidianExport(markdown, v, { analysisType: 'Atomic Knowledge' }),
       sourceVideoTitle: v.title || '',
       sourceVideoId: videoIdStr,
     });
@@ -685,15 +996,17 @@ export function buildAtomicKnowledgeMarkdown(video, selections) {
   const hasArr = (a) => Array.isArray(a) && a.length > 0;
 
   const hasStructured =
-    meaningful(selected.mainLesson)    ||
-    hasArr(selected.keyInsights)       ||
-    hasArr(selected.rules)             ||
-    hasArr(selected.actionItems)       ||
-    hasArr(selected.mistakesToAvoid)   ||
-    hasArr(selected.concepts)          ||
-    hasArr(selected.frameworks)      ||
-    hasArr(selected.questions)       ||
-    hasArr(selected.quotes);
+    meaningful(selected.mainLesson)         ||
+    hasArr(selected.keyPoints)              ||
+    hasArr(selected.keyInsights)            ||
+    hasArr(selected.rules)                  ||
+    hasArr(selected.actionItems)            ||
+    hasArr(selected.mistakesToAvoid)        ||
+    hasArr(selected.concepts)               ||
+    hasArr(selected.frameworks)             ||
+    hasArr(selected.questions)              ||
+    hasArr(selected.quotes)                 ||
+    hasArr(selected.appBuilderPoints);
 
   if (!hasStructured) return null;
 
@@ -717,6 +1030,7 @@ export function buildAtomicKnowledgeMarkdown(video, selections) {
 
   const lines = [
     ...(meaningful(selected.mainLesson) ? ['## 🎯 Core Idea', selected.mainLesson, ''] : []),
+    ...atomicSection('## 📌 ידע שימושי (נקודות מפתח)', selected.keyPoints),
     ...atomicSection('## ⚡ Insights',           selected.keyInsights),
     ...atomicSection('## ✅ Rules & Principles',  selected.rules),
     ...atomicSection('## 🔁 Actions',             selected.actionItems),
@@ -725,6 +1039,7 @@ export function buildAtomicKnowledgeMarkdown(video, selections) {
     ...atomicSection('## 🏗️ Frameworks',         selected.frameworks),
     ...atomicSection('## ❓ Questions',           selected.questions),
     ...atomicSection('## 💬 Quotes',              selected.quotes),
+    ...atomicSection('## 🏗️ App Builder Points', selected.appBuilderPoints),
     ...(chapterLines.length ? ['## 📹 Chapters', ...chapterLines, ''] : []),
     '## 📝 Personal Notes',
     '[מלא ידנית]',
@@ -745,7 +1060,7 @@ const SOURCE_LABELS_HEB = { manual: 'ידני', notebooklm: 'NotebookLM', resear
 
 export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride = null, notes = [], manualNotes = [], exportOptions = undefined) {
   const opts = exportOptions && typeof exportOptions === 'object' ? exportOptions : {};
-  const primaryTopic = primaryTopicOverride || resolvePrimaryTopic(video);
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
   const d = toDateStr(video.publishedAt || video.analyzedAt);
   const created = toISOCreated(video.analyzedAt || video.publishedAt);
 
@@ -844,8 +1159,304 @@ export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride 
     lines.push('## הערות ידע חיצוני', '', ...manualLines.flatMap((l) => [l, '']),  '');
   }
 
-  const content = lines.join('\n');
+  const content = finalizeObsidianExport(lines.join('\n'), video, {
+    analysisType: opts.analysisType || 'Summary',
+    ...opts,
+  });
   return { content, filename, path: getExportPath('learning', primaryTopic, filename) };
+}
+
+// ── Full-video one-click export (all sections) ────────────────────────────────
+// Generates a comprehensive single note with every available content section.
+// Does NOT re-run AI — reads all fields from the video state object.
+
+export function buildFullVideoObsidianExport(video, {
+  mentorName = '',
+  primaryTopicOverride = null,
+  notes = [],
+  manualNotes = [],
+  includeTranscript = true,
+} = {}) {
+  const v = video || {};
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(v);
+  const d = toDateStr(v.publishedAt || v.analyzedAt);
+  const created = toISOCreated(v.analyzedAt || v.publishedAt);
+  const youtubeUrl = v.url || (v.videoId ? `https://youtube.com/watch?v=${v.videoId}` : null);
+  const filename = `V-${slugify(v.title || 'video', 45)}.md`;
+
+  const tags = [
+    ...(v.tags || []).map(cleanTag),
+    ...(mentorName ? [cleanTag(mentorName)] : []),
+  ].filter(Boolean);
+
+  const frontmatter = buildFrontmatter({
+    type: 'video-full',
+    topic: primaryTopic,
+    source: 'YouTube',
+    channel: mentorName || v.channelTitle || '',
+    tags,
+    date: d,
+    created,
+    related: mentorName ? [mentorName] : [],
+  });
+
+  const sec = (heading, body) => (body ? [heading, body, ''] : []);
+  const secList = (heading, arr) => {
+    const items = (Array.isArray(arr) ? arr : []).map(i => String(i).trim()).filter(Boolean);
+    return items.length ? [heading, ...items.map(i => `- ${i}`), ''] : [];
+  };
+
+  // Chapters
+  const chapters = (v.aiChapters || v.chapters || []).filter(Boolean);
+  const chapterLines = chapters.map((ch) => {
+    const ts = ch.timestamp || (Number.isFinite(ch.startSeconds) ? secondsToTimestamp(ch.startSeconds) : '');
+    const title = ch.title || ch.heading || '';
+    const desc = ch.description || ch.summary || '';
+    return `- **[${ts}]** ${title}${desc ? ` — ${desc}` : ''}`;
+  });
+
+  // Transcript (prefer longest available source)
+  const txRaw = v.transcript || v.manualTranscript || v.whisperTranscript || '';
+  const transcript = typeof txRaw === 'string' ? txRaw.trim() : '';
+
+  // Political / viral content
+  const networkSlogans = (Array.isArray(v.networkSlogans) ? v.networkSlogans : [])
+    .map(s => (typeof s === 'string' ? s : s?.text)).filter(Boolean);
+  const politicalSlogans = (Array.isArray(v.politicalSlogans) ? v.politicalSlogans : [])
+    .map(s => (typeof s === 'string' ? s : s?.text)).filter(Boolean);
+  const viralQuotes = (Array.isArray(v.viralQuotes) ? v.viralQuotes : []).filter(Boolean);
+  const counterArguments = (Array.isArray(v.counterArguments) ? v.counterArguments : []).filter(Boolean);
+
+  // App builder
+  const appBuilderPoints = Array.isArray(v.appBuilderData?.allPoints)
+    ? v.appBuilderData.allPoints.map(p => typeof p === 'string' ? p : String(p?.point || p?.text || '')).filter(Boolean)
+    : [];
+
+  // Brain highlights
+  const brainHighlights = extractBrainHighlightsFromVideo(v);
+
+  // Manual / NotebookLM notes
+  const manualLines = (manualNotes || []).map(n => {
+    const label = { manual: 'ידני', notebooklm: 'NotebookLM', research: 'מחקר' }[n.sourceType] || n.sourceType || '';
+    return `### ${n.title || 'הערה'}${label ? ` *(${label})*` : ''}\n${(n.content || '').trim()}`;
+  });
+
+  // Debug: collect section presence
+  const debugSections = {
+    shortSummary: !!(v.shortSummary || '').trim(),
+    fullSummary: !!(v.fullSummary || '').trim(),
+    chapters: chapters.length > 0,
+    keyInsights: Array.isArray(v.keyInsights) && v.keyInsights.length > 0,
+    keyPoints: Array.isArray(v.keyPoints) && v.keyPoints.length > 0,
+    rules: Array.isArray(v.rules) && v.rules.length > 0,
+    warnings: Array.isArray(v.warnings) && v.warnings.length > 0,
+    concepts: Array.isArray(v.concepts) && v.concepts.length > 0,
+    actionItems: Array.isArray(v.actionItems) && v.actionItems.length > 0,
+    mistakesToAvoid: Array.isArray(v.mistakesToAvoid) && v.mistakesToAvoid.length > 0,
+    brainHighlights: brainHighlights.length > 0,
+    notes: notes.length > 0,
+    manualNotes: manualNotes.length > 0,
+    networkSlogans: networkSlogans.length > 0,
+    politicalSlogans: politicalSlogans.length > 0,
+    viralQuotes: viralQuotes.length > 0,
+    counterArguments: counterArguments.length > 0,
+    appBuilderPoints: appBuilderPoints.length > 0,
+    transcript: transcript.length > 0,
+  };
+  const sectionsFound = Object.entries(debugSections).filter(([, v]) => v).map(([k]) => k);
+  const sectionsMissing = Object.entries(debugSections).filter(([, v]) => !v).map(([k]) => k);
+  console.log('[FullObsidianExport] sections found:', sectionsFound);
+  console.log('[FullObsidianExport] sections missing:', sectionsMissing);
+  console.log('[FullObsidianExport] destination path:', `${primaryTopic}/${filename}`);
+
+  const headerParts = [
+    youtubeUrl ? `[YouTube](${youtubeUrl})` : null,
+    mentorName ? `ערוץ: [[${mentorName}]]` : v.channelTitle ? `ערוץ: ${v.channelTitle}` : null,
+    v.publishedAt ? toDateStr(v.publishedAt) : null,
+    v.duration ? `⏱ ${v.duration}` : null,
+  ].filter(Boolean);
+
+  const lines = [
+    frontmatter,
+    '',
+    `# ${v.title || 'Video Analysis'}`,
+    '',
+    ...(headerParts.length ? [`> ${headerParts.join(' · ')}`, ''] : []),
+
+    // Metadata block
+    '## פרטי סרטון',
+    ...(v.title        ? [`- **כותרת:** ${v.title}`] : []),
+    ...((mentorName || v.channelTitle) ? [`- **ערוץ:** ${mentorName || v.channelTitle}`] : []),
+    ...(youtubeUrl     ? [`- **קישור:** ${youtubeUrl}`] : []),
+    ...(v.analyzedAt   ? [`- **תאריך ניתוח:** ${toDateStr(v.analyzedAt)}`] : []),
+    ...(v.publishedAt  ? [`- **תאריך פרסום:** ${toDateStr(v.publishedAt)}`] : []),
+    ...(v.duration     ? [`- **משך:** ${v.duration}`] : []),
+    ...(v.viewCount != null ? [`- **צפיות:** ${Number(v.viewCount).toLocaleString()}`] : []),
+    '',
+
+    ...sec('## סיכום קצר', (v.shortSummary || '').trim() || null),
+    ...sec('## סיכום מלא',  (v.fullSummary  || '').trim() || null),
+    ...sec('## לקח מרכזי',  (v.mainLesson   || '').trim() || null),
+
+    ...(chapterLines.length ? ['## פרקים', ...chapterLines, ''] : []),
+
+    ...secList('## תובנות מפתח',         v.keyInsights),
+    ...secList('## ידע שימושי',           v.keyPoints),
+    ...secList('## כללים ועקרונות',       v.rules),
+    ...secList('## אזהרות',               v.warnings),
+    ...secList('## מושגים',               v.concepts),
+    ...secList('## פעולות מומלצות',       v.actionItems),
+    ...secList('## טעויות להימנע',        v.mistakesToAvoid),
+    ...secList('## Brain Highlights',     brainHighlights),
+
+    ...(brainHighlights.length === 0 && v.brainSummary ? ['## 🧠 Brain Summary', '', v.brainSummary.trim(), ''] : []),
+
+    // Political / viral sections (only if content exists)
+    ...(viralQuotes.length > 0       ? ['## ציטוטים ויראליים', ...viralQuotes.map(q => `- "${q}"`), ''] : []),
+    ...(politicalSlogans.length > 0  ? ['## סיסמאות פוליטיות', ...politicalSlogans.map(s => `- ${s}`), ''] : []),
+    ...(networkSlogans.length > 0    ? ['## סיסמאות רשת', ...networkSlogans.map(s => `- ${s}`), ''] : []),
+    ...(counterArguments.length > 0  ? secList('## טיעוני נגד', counterArguments) : []),
+
+    // App builder
+    ...(appBuilderPoints.length > 0 ? secList('## 🏗️ App Builder', appBuilderPoints) : []),
+
+    // User notes (NoteEditor)
+    ...(buildNotesSection(notes) ? [buildNotesSection(notes), ''] : []),
+
+    // External notes (manual / NotebookLM)
+    ...(manualLines.length > 0 ? ['## הערות ידע חיצוני', '', ...manualLines.flatMap(l => [l, '']), ''] : []),
+
+    // Transcript (collapsed at bottom)
+    ...(includeTranscript && transcript ? [
+      '## תמלול מלא',
+      '',
+      '<details>',
+      '<summary>לחץ להצגת התמלול המלא</summary>',
+      '',
+      transcript,
+      '',
+      '</details>',
+      '',
+    ] : []),
+  ];
+
+  const content = finalizeObsidianExport(lines.join('\n'), v, { analysisType: 'Full Export' });
+  console.log('[FullObsidianExport] generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
+  return {
+    content,
+    filename,
+    path: `${primaryTopic}/${filename}`,
+    debugSections,
+    sectionsFound,
+    sectionsMissing,
+  };
+}
+
+// ── Obsidian deep-link ────────────────────────────────────────────────────────
+
+/**
+ * Builds an obsidian:// URI that opens the matching vault file for a video.
+ * Path mirrors buildVideoFullNote: {topic}/V-{slug}.md
+ */
+export function buildObsidianUrl(video, vaultName = getConfiguredObsidianVaultName()) {
+  const primaryTopic = normalizePrimaryTopic(video?.obsidianTopic) || resolvePrimaryTopic(video || {});
+  const slug = slugify((video || {}).title || 'video', 40);
+  const filePath = `${primaryTopic}/V-${slug}.md`;
+  return buildObsidianOpenUrl(filePath, vaultName);
+}
+
+let lastOpenedObsidianUrl = '';
+let lastOpenedObsidianAt = 0;
+const OBSIDIAN_OPEN_DEDUPE_MS = 1500;
+
+export function openObsidianUrl(url, options = {}) {
+  if (!url || typeof document === 'undefined') return { called: false, url };
+  const { bypassDedupe = false, method = 'anchor' } = options || {};
+  const now = Date.now();
+  const debug = {
+    called: true,
+    url,
+    method,
+    usedWindowOpen: false,
+    windowOpenBlocked: null,
+    usedAnchorClick: false,
+    focusAssistAttempted: false,
+    browserCannotForceExternalAppFocus: true,
+    deduped: false,
+  };
+
+  if (
+    !bypassDedupe &&
+    url === lastOpenedObsidianUrl &&
+    now - lastOpenedObsidianAt < OBSIDIAN_OPEN_DEDUPE_MS
+  ) {
+    debug.deduped = true;
+    console.log("[ObsidianOpen] deduped", {
+      url,
+      lastOpenedObsidianAt,
+      now,
+      windowMs: OBSIDIAN_OPEN_DEDUPE_MS,
+    });
+    return debug;
+  }
+
+  lastOpenedObsidianUrl = url;
+  lastOpenedObsidianAt = now;
+
+  console.log("[ObsidianOpen] attempting", debug);
+
+  if (method === 'window') {
+    try {
+      if (typeof window !== 'undefined' && typeof window.open === 'function') {
+        const opened = window.open(url, '_blank', 'noopener,noreferrer');
+        debug.usedWindowOpen = true;
+        debug.windowOpenBlocked = opened == null;
+        console.log("[ObsidianOpen] window.open", {
+          url,
+          blocked: debug.windowOpenBlocked,
+        });
+      }
+    } catch (error) {
+      debug.usedWindowOpen = true;
+      debug.windowOpenBlocked = true;
+      console.log("[ObsidianOpen] window.open error", {
+        url,
+        message: error?.message || String(error),
+      });
+    }
+  } else {
+    try {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.rel = 'noopener noreferrer';
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      debug.usedAnchorClick = true;
+      console.log("[ObsidianOpen] anchor.click", { url });
+    } catch (error) {
+      console.log("[ObsidianOpen] anchor.click error", {
+        url,
+        message: error?.message || String(error),
+      });
+    }
+  }
+
+  try {
+    if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+      debug.focusAssistAttempted = true;
+      window.setTimeout(() => {
+        try {
+          window.focus();
+        } catch {}
+      }, 120);
+    }
+  } catch {
+    debug.focusAssistAttempted = true;
+  }
+
+  return debug;
 }
 
 // ── Export utilities ──────────────────────────────────────────────────────────

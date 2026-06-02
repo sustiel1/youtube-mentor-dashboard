@@ -1,0 +1,62 @@
+[     103ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[     143ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[     159ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[     160ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:412:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[     160ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[   19824ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[   19825ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[   19838ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26
+[   19962ms] [LOG] [rss-source] channelId resolution {mentorName: Micha.Stocks, fromSourceUrl: —, fromMentorField: UCSxjNbPriyBh9RNl_QNSAtw, resolved: UCSxjNbPriyBh9RNl_QNSAtw, sourceUrl: —} @ http://localhost:5174/src/services/rssIngestion.js:302
+[   19963ms] [LOG] [rss] fetching {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   20246ms] [LOG] [rss] success (proxy) {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   20248ms] [LOG] [rss] success {mentorName: Micha.Stocks, videosCount: 5, topicIds: Array(3)} @ http://localhost:5174/src/services/rssIngestion.js:324
+[   21401ms] [LOG] [rss-source] channelId resolution {mentorName: בורסה גרף, fromSourceUrl: —, fromMentorField: UCrQmXSenNhePSOiCTdnhwRg, resolved: UCrQmXSenNhePSOiCTdnhwRg, sourceUrl: —} @ http://localhost:5174/src/services/rssIngestion.js:302
+[   21402ms] [LOG] [rss] fetching {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   21545ms] [LOG] [rss] success (proxy) {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   21546ms] [LOG] [rss] success {mentorName: בורסה גרף, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:324
+[   22440ms] [LOG] [rss-source] channelId resolution {mentorName: The Hasidic Trader, fromSourceUrl: —, fromMentorField: UCSB4SNRWhbemGAJ4wfeKj2Q, resolved: UCSB4SNRWhbemGAJ4wfeKj2Q, sourceUrl: —} @ http://localhost:5174/src/services/rssIngestion.js:302
+[   22440ms] [LOG] [rss] fetching {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   22625ms] [LOG] [rss] success (proxy) {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   22626ms] [LOG] [rss] success {mentorName: The Hasidic Trader, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:324

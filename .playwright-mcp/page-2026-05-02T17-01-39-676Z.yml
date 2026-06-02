@@ -1,0 +1,466 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e950] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - button "נושאים" [ref=e33] [cursor=pointer]
+            - button "הוסף" [ref=e34] [cursor=pointer]:
+              - img [ref=e35]
+              - text: הוסף
+          - generic [ref=e37]:
+            - generic [ref=e39]:
+              - button "כל הסרטונים של \"בינה מלאכותית\"" [ref=e40] [cursor=pointer]:
+                - img [ref=e41]
+              - generic [ref=e44]:
+                - button "ערוך נושא" [ref=e45] [cursor=pointer]:
+                  - img [ref=e46]
+                - button "מחק נושא" [ref=e49] [cursor=pointer]:
+                  - img [ref=e50]
+              - button "בינה מלאכותית" [ref=e53]
+              - button [ref=e54] [cursor=pointer]:
+                - img [ref=e55]
+              - img [ref=e57]
+            - generic [ref=e65]:
+              - button "כל הסרטונים של \"שוק ההון\"" [ref=e66] [cursor=pointer]:
+                - img [ref=e67]
+              - generic [ref=e71]:
+                - button "ערוך נושא" [ref=e72] [cursor=pointer]:
+                  - img [ref=e73]
+                - button "מחק נושא" [ref=e76] [cursor=pointer]:
+                  - img [ref=e77]
+              - button "שוק ההון" [ref=e80]
+              - button [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+              - img [ref=e84]
+            - generic [ref=e92]:
+              - button "כל הסרטונים של \"פיתוח תוכנה\"" [ref=e93] [cursor=pointer]:
+                - img [ref=e94]
+              - generic [ref=e97]:
+                - button "ערוך נושא" [ref=e98] [cursor=pointer]:
+                  - img [ref=e99]
+                - button "מחק נושא" [ref=e102] [cursor=pointer]:
+                  - img [ref=e103]
+              - button "פיתוח תוכנה" [ref=e106]
+              - button [ref=e107] [cursor=pointer]:
+                - img [ref=e108]
+              - img [ref=e110]
+            - generic [ref=e118]:
+              - button "כל הסרטונים של \"מסחר יומי\"" [ref=e119] [cursor=pointer]:
+                - img [ref=e120]
+              - generic [ref=e123]:
+                - button "ערוך נושא" [ref=e124] [cursor=pointer]:
+                  - img [ref=e125]
+                - button "מחק נושא" [ref=e128] [cursor=pointer]:
+                  - img [ref=e129]
+              - button "מסחר יומי" [ref=e132]
+              - button [ref=e133] [cursor=pointer]:
+                - img [ref=e134]
+              - img [ref=e136]
+            - generic [ref=e144]:
+              - button "כל הסרטונים של \"פיתוח\"" [ref=e145] [cursor=pointer]:
+                - img [ref=e146]
+              - generic [ref=e149]:
+                - button "ערוך נושא" [ref=e150] [cursor=pointer]:
+                  - img [ref=e151]
+                - button "מחק נושא" [ref=e154] [cursor=pointer]:
+                  - img [ref=e155]
+              - button "פיתוח" [ref=e158]
+              - button [ref=e159] [cursor=pointer]:
+                - img [ref=e160]
+              - img [ref=e162]
+            - generic [ref=e170]:
+              - button "כל הסרטונים של \"React\"" [ref=e171] [cursor=pointer]:
+                - img [ref=e172]
+              - generic [ref=e175]:
+                - button "ערוך נושא" [ref=e176] [cursor=pointer]:
+                  - img [ref=e177]
+                - button "מחק נושא" [ref=e180] [cursor=pointer]:
+                  - img [ref=e181]
+              - button "React" [ref=e184]
+              - button [ref=e185] [cursor=pointer]:
+                - img [ref=e186]
+              - img [ref=e188]
+            - generic [ref=e196]:
+              - button "כל הסרטונים של \"Base44\"" [ref=e197] [cursor=pointer]:
+                - img [ref=e198]
+              - generic [ref=e201]:
+                - button "ערוך נושא" [ref=e202] [cursor=pointer]:
+                  - img [ref=e203]
+                - button "מחק נושא" [ref=e206] [cursor=pointer]:
+                  - img [ref=e207]
+              - button "Base44" [ref=e210]
+              - button [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+              - img [ref=e214]
+            - generic [ref=e222]:
+              - button "כל הסרטונים של \"Prompt Engineering\"" [ref=e223] [cursor=pointer]:
+                - img [ref=e224]
+              - generic [ref=e227]:
+                - button "ערוך נושא" [ref=e228] [cursor=pointer]:
+                  - img [ref=e229]
+                - button "מחק נושא" [ref=e232] [cursor=pointer]:
+                  - img [ref=e233]
+              - button "Prompt Engineering" [ref=e236]
+              - button [ref=e237] [cursor=pointer]:
+                - img [ref=e238]
+              - img [ref=e240]
+      - generic [ref=e247]:
+        - button "מנטור חדש" [ref=e248] [cursor=pointer]:
+          - img [ref=e249]
+          - generic [ref=e252]: מנטור חדש
+        - button "ניהול" [ref=e253] [cursor=pointer]:
+          - img [ref=e254]
+          - generic [ref=e257]: ניהול
+    - main [ref=e258]:
+      - generic [ref=e952]:
+        - generic [ref=e953]:
+          - heading "ניהול" [level=1] [ref=e954]
+          - paragraph [ref=e955]: ניהול מנטורים, קטגוריות, נושאים ומקורות
+        - generic [ref=e956]:
+          - tablist [ref=e957]:
+            - tab "משיכת RSS" [ref=e958] [cursor=pointer]:
+              - img [ref=e959]
+              - text: משיכת RSS
+            - tab "ערוצים" [ref=e963] [cursor=pointer]
+            - tab "נושאים" [selected] [ref=e964] [cursor=pointer]
+            - tab "קטגוריות" [ref=e965] [cursor=pointer]
+            - tab "מקורות" [ref=e966] [cursor=pointer]
+          - tabpanel "נושאים" [ref=e1333]:
+            - generic [ref=e1334]:
+              - generic [ref=e1335]:
+                - heading "נושאים (18)" [level=2] [ref=e1336]
+                - button "ביטול" [active] [ref=e1803] [cursor=pointer]
+              - generic [ref=e1804]:
+                - paragraph [ref=e1805]: נושא חדש
+                - generic [ref=e1806]:
+                  - textbox "שם הנושא..." [ref=e1807]
+                  - generic [ref=e1808]:
+                    - button "blue" [ref=e1809] [cursor=pointer]
+                    - button "violet" [ref=e1810] [cursor=pointer]
+                    - button "cyan" [ref=e1811] [cursor=pointer]
+                    - button "emerald" [ref=e1812] [cursor=pointer]
+                    - button "amber" [ref=e1813] [cursor=pointer]
+                    - button "rose" [ref=e1814] [cursor=pointer]
+                    - button "orange" [ref=e1815] [cursor=pointer]
+                - generic [ref=e1816]:
+                  - button "הוסף" [disabled] [ref=e1817]
+                  - button "ביטול" [ref=e1818] [cursor=pointer]
+              - table [ref=e1339]:
+                - rowgroup [ref=e1340]:
+                  - row "נושא תיאור מנטורים סרטונים" [ref=e1341]:
+                    - columnheader "נושא" [ref=e1342]
+                    - columnheader "תיאור" [ref=e1343]
+                    - columnheader "מנטורים" [ref=e1344]
+                    - columnheader "סרטונים" [ref=e1345]
+                    - columnheader [ref=e1346]
+                - rowgroup [ref=e1347]:
+                  - row "בינה מלאכותית מודלי שפה, סוכני AI, AI גנרטיבי 5 6" [ref=e1348]:
+                    - cell "בינה מלאכותית" [ref=e1349]:
+                      - generic [ref=e1350]:
+                        - img [ref=e1352]
+                        - generic [ref=e1355]: בינה מלאכותית
+                    - cell "מודלי שפה, סוכני AI, AI גנרטיבי" [ref=e1356]
+                    - cell "5" [ref=e1357]
+                    - cell "6" [ref=e1358]
+                    - cell [ref=e1359]:
+                      - generic [ref=e1360]:
+                        - button "העבר לראש" [ref=e1361] [cursor=pointer]:
+                          - img [ref=e1362]
+                        - button [ref=e1365] [cursor=pointer]:
+                          - img [ref=e1366]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1369]:
+                          - img [ref=e1370]
+                  - row "שוק ההון כלכלה, בורסה, מדדים גלובליים 5 6" [ref=e1373]:
+                    - cell "שוק ההון" [ref=e1374]:
+                      - generic [ref=e1375]:
+                        - img [ref=e1377]
+                        - generic [ref=e1380]: שוק ההון
+                    - cell "כלכלה, בורסה, מדדים גלובליים" [ref=e1381]
+                    - cell "5" [ref=e1382]
+                    - cell "6" [ref=e1383]
+                    - cell [ref=e1384]:
+                      - generic [ref=e1385]:
+                        - button "העבר לראש" [ref=e1386] [cursor=pointer]:
+                          - img [ref=e1387]
+                        - button [ref=e1390] [cursor=pointer]:
+                          - img [ref=e1391]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1394]:
+                          - img [ref=e1395]
+                  - row "פיתוח תוכנה קוד, ארכיטקטורה, שפות תכנות 1 3" [ref=e1398]:
+                    - cell "פיתוח תוכנה" [ref=e1399]:
+                      - generic [ref=e1400]:
+                        - img [ref=e1402]
+                        - generic [ref=e1405]: פיתוח תוכנה
+                    - cell "קוד, ארכיטקטורה, שפות תכנות" [ref=e1406]
+                    - cell "1" [ref=e1407]
+                    - cell "3" [ref=e1408]
+                    - cell [ref=e1409]:
+                      - generic [ref=e1410]:
+                        - button "העבר לראש" [ref=e1411] [cursor=pointer]:
+                          - img [ref=e1412]
+                        - button [ref=e1415] [cursor=pointer]:
+                          - img [ref=e1416]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1419]:
+                          - img [ref=e1420]
+                  - row "אוטומציה n8n, Make, תהליכי אוטומציה עסקית, סוכני AI 3 5" [ref=e1423]:
+                    - cell "אוטומציה" [ref=e1424]:
+                      - generic [ref=e1425]:
+                        - img [ref=e1427]
+                        - generic [ref=e1430]: אוטומציה
+                    - cell "n8n, Make, תהליכי אוטומציה עסקית, סוכני AI" [ref=e1431]
+                    - cell "3" [ref=e1432]
+                    - cell "5" [ref=e1433]
+                    - cell [ref=e1434]:
+                      - generic [ref=e1435]:
+                        - button "העבר לראש" [ref=e1436] [cursor=pointer]:
+                          - img [ref=e1437]
+                        - button [ref=e1440] [cursor=pointer]:
+                          - img [ref=e1441]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1444]:
+                          - img [ref=e1445]
+                  - row "כלים וטכנולוגיות כלים חדשים, סקירות טכנולוגיה, תוכנות 4 5" [ref=e1448]:
+                    - cell "כלים וטכנולוגיות" [ref=e1449]:
+                      - generic [ref=e1450]:
+                        - img [ref=e1452]
+                        - generic [ref=e1455]: כלים וטכנולוגיות
+                    - cell "כלים חדשים, סקירות טכנולוגיה, תוכנות" [ref=e1456]
+                    - cell "4" [ref=e1457]
+                    - cell "5" [ref=e1458]
+                    - cell [ref=e1459]:
+                      - generic [ref=e1460]:
+                        - button "העבר לראש" [ref=e1461] [cursor=pointer]:
+                          - img [ref=e1462]
+                        - button [ref=e1465] [cursor=pointer]:
+                          - img [ref=e1466]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1469]:
+                          - img [ref=e1470]
+                  - row "השקעות אסטרטגיות השקעה, תיק מניות, הכנסה פסיבית 2 2" [ref=e1473]:
+                    - cell "השקעות" [ref=e1474]:
+                      - generic [ref=e1475]:
+                        - img [ref=e1477]
+                        - generic [ref=e1480]: השקעות
+                    - cell "אסטרטגיות השקעה, תיק מניות, הכנסה פסיבית" [ref=e1481]
+                    - cell "2" [ref=e1482]
+                    - cell "2" [ref=e1483]
+                    - cell [ref=e1484]:
+                      - generic [ref=e1485]:
+                        - button "העבר לראש" [ref=e1486] [cursor=pointer]:
+                          - img [ref=e1487]
+                        - button [ref=e1490] [cursor=pointer]:
+                          - img [ref=e1491]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1494]:
+                          - img [ref=e1495]
+                  - row "מסחר מסחר יומי, swing trading, ניהול פוזיציות 5 6" [ref=e1498]:
+                    - cell "מסחר" [ref=e1499]:
+                      - generic [ref=e1500]:
+                        - img [ref=e1502]
+                        - generic [ref=e1505]: מסחר
+                    - cell "מסחר יומי, swing trading, ניהול פוזיציות" [ref=e1506]
+                    - cell "5" [ref=e1507]
+                    - cell "6" [ref=e1508]
+                    - cell [ref=e1509]:
+                      - generic [ref=e1510]:
+                        - button "העבר לראש" [ref=e1511] [cursor=pointer]:
+                          - img [ref=e1512]
+                        - button [ref=e1515] [cursor=pointer]:
+                          - img [ref=e1516]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1519]:
+                          - img [ref=e1520]
+                  - row "ניתוח טכני גרפים, אינדיקטורים, תבניות מחיר 2 4" [ref=e1523]:
+                    - cell "ניתוח טכני" [ref=e1524]:
+                      - generic [ref=e1525]:
+                        - img [ref=e1527]
+                        - generic [ref=e1530]: ניתוח טכני
+                    - cell "גרפים, אינדיקטורים, תבניות מחיר" [ref=e1531]
+                    - cell "2" [ref=e1532]
+                    - cell "4" [ref=e1533]
+                    - cell [ref=e1534]:
+                      - generic [ref=e1535]:
+                        - button "העבר לראש" [ref=e1536] [cursor=pointer]:
+                          - img [ref=e1537]
+                        - button [ref=e1540] [cursor=pointer]:
+                          - img [ref=e1541]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1544]:
+                          - img [ref=e1545]
+                  - row "ניתוח פונדמנטלי ניתוח דוחות כספיים, הערכת שווי חברות — 0" [ref=e1548]:
+                    - cell "ניתוח פונדמנטלי" [ref=e1549]:
+                      - generic [ref=e1550]:
+                        - img [ref=e1552]
+                        - generic [ref=e1555]: ניתוח פונדמנטלי
+                    - cell "ניתוח דוחות כספיים, הערכת שווי חברות" [ref=e1556]
+                    - cell "—" [ref=e1557]
+                    - cell "0" [ref=e1558]
+                    - cell [ref=e1559]:
+                      - generic [ref=e1560]:
+                        - button "העבר לראש" [ref=e1561] [cursor=pointer]:
+                          - img [ref=e1562]
+                        - button [ref=e1565] [cursor=pointer]:
+                          - img [ref=e1566]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1569]:
+                          - img [ref=e1570]
+                  - row "מניות בחירת מניות, מגזרים, דיבידנדים 2 4" [ref=e1573]:
+                    - cell "מניות" [ref=e1574]:
+                      - generic [ref=e1575]:
+                        - img [ref=e1577]
+                        - generic [ref=e1580]: מניות
+                    - cell "בחירת מניות, מגזרים, דיבידנדים" [ref=e1581]
+                    - cell "2" [ref=e1582]
+                    - cell "4" [ref=e1583]
+                    - cell [ref=e1584]:
+                      - generic [ref=e1585]:
+                        - button "העבר לראש" [ref=e1586] [cursor=pointer]:
+                          - img [ref=e1587]
+                        - button [ref=e1590] [cursor=pointer]:
+                          - img [ref=e1591]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1594]:
+                          - img [ref=e1595]
+                  - row "בניית אפליקציות פיתוח אפליקציות, no-code, full-stack — 1" [ref=e1598]:
+                    - cell "בניית אפליקציות" [ref=e1599]:
+                      - generic [ref=e1600]:
+                        - img [ref=e1602]
+                        - generic [ref=e1605]: בניית אפליקציות
+                    - cell "פיתוח אפליקציות, no-code, full-stack" [ref=e1606]
+                    - cell "—" [ref=e1607]
+                    - cell "1" [ref=e1608]
+                    - cell [ref=e1609]:
+                      - generic [ref=e1610]:
+                        - button "העבר לראש" [ref=e1611] [cursor=pointer]:
+                          - img [ref=e1612]
+                        - button [ref=e1615] [cursor=pointer]:
+                          - img [ref=e1616]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1619]:
+                          - img [ref=e1620]
+                  - row "שיווק דיגיטלי פרסום ממומן, SEO, שיווק ברשתות חברתיות — 0" [ref=e1623]:
+                    - cell "שיווק דיגיטלי" [ref=e1624]:
+                      - generic [ref=e1625]:
+                        - img [ref=e1627]
+                        - generic [ref=e1630]: שיווק דיגיטלי
+                    - cell "פרסום ממומן, SEO, שיווק ברשתות חברתיות" [ref=e1631]
+                    - cell "—" [ref=e1632]
+                    - cell "0" [ref=e1633]
+                    - cell [ref=e1634]:
+                      - generic [ref=e1635]:
+                        - button "העבר לראש" [ref=e1636] [cursor=pointer]:
+                          - img [ref=e1637]
+                        - button [ref=e1640] [cursor=pointer]:
+                          - img [ref=e1641]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1644]:
+                          - img [ref=e1645]
+                  - row "פודקאסטים פרקים מומלצים, ריאיונות, למידה דרך האזנה — 0" [ref=e1648]:
+                    - cell "פודקאסטים" [ref=e1649]:
+                      - generic [ref=e1650]:
+                        - img [ref=e1652]
+                        - generic [ref=e1655]: פודקאסטים
+                    - cell "פרקים מומלצים, ריאיונות, למידה דרך האזנה" [ref=e1656]
+                    - cell "—" [ref=e1657]
+                    - cell "0" [ref=e1658]
+                    - cell [ref=e1659]:
+                      - generic [ref=e1660]:
+                        - button "העבר לראש" [ref=e1661] [cursor=pointer]:
+                          - img [ref=e1662]
+                        - button [ref=e1665] [cursor=pointer]:
+                          - img [ref=e1666]
+                        - generic "נושא מובנה — לא ניתן למחוק" [ref=e1669]:
+                          - img [ref=e1670]
+                  - row "מסחר יומי מותאם — 0" [ref=e1673]:
+                    - cell "מסחר יומי מותאם" [ref=e1674]:
+                      - generic [ref=e1675]:
+                        - img [ref=e1677]
+                        - generic [ref=e1680]: מסחר יומי
+                        - generic [ref=e1681]: מותאם
+                    - cell [ref=e1682]
+                    - cell "—" [ref=e1683]
+                    - cell "0" [ref=e1684]
+                    - cell [ref=e1685]:
+                      - generic [ref=e1686]:
+                        - button "העבר לראש" [ref=e1687] [cursor=pointer]:
+                          - img [ref=e1688]
+                        - button [ref=e1691] [cursor=pointer]:
+                          - img [ref=e1692]
+                        - button [ref=e1695] [cursor=pointer]:
+                          - img [ref=e1696]
+                  - row "פיתוח מותאם — 0" [ref=e1699]:
+                    - cell "פיתוח מותאם" [ref=e1700]:
+                      - generic [ref=e1701]:
+                        - img [ref=e1703]
+                        - generic [ref=e1706]: פיתוח
+                        - generic [ref=e1707]: מותאם
+                    - cell [ref=e1708]
+                    - cell "—" [ref=e1709]
+                    - cell "0" [ref=e1710]
+                    - cell [ref=e1711]:
+                      - generic [ref=e1712]:
+                        - button "העבר לראש" [ref=e1713] [cursor=pointer]:
+                          - img [ref=e1714]
+                        - button [ref=e1717] [cursor=pointer]:
+                          - img [ref=e1718]
+                        - button [ref=e1721] [cursor=pointer]:
+                          - img [ref=e1722]
+                  - row "React מותאם — 0" [ref=e1725]:
+                    - cell "React מותאם" [ref=e1726]:
+                      - generic [ref=e1727]:
+                        - img [ref=e1729]
+                        - generic [ref=e1732]: React
+                        - generic [ref=e1733]: מותאם
+                    - cell [ref=e1734]
+                    - cell "—" [ref=e1735]
+                    - cell "0" [ref=e1736]
+                    - cell [ref=e1737]:
+                      - generic [ref=e1738]:
+                        - button "העבר לראש" [ref=e1739] [cursor=pointer]:
+                          - img [ref=e1740]
+                        - button [ref=e1743] [cursor=pointer]:
+                          - img [ref=e1744]
+                        - button [ref=e1747] [cursor=pointer]:
+                          - img [ref=e1748]
+                  - row "Base44 מותאם — 0" [ref=e1751]:
+                    - cell "Base44 מותאם" [ref=e1752]:
+                      - generic [ref=e1753]:
+                        - img [ref=e1755]
+                        - generic [ref=e1758]: Base44
+                        - generic [ref=e1759]: מותאם
+                    - cell [ref=e1760]
+                    - cell "—" [ref=e1761]
+                    - cell "0" [ref=e1762]
+                    - cell [ref=e1763]:
+                      - generic [ref=e1764]:
+                        - button "העבר לראש" [ref=e1765] [cursor=pointer]:
+                          - img [ref=e1766]
+                        - button [ref=e1769] [cursor=pointer]:
+                          - img [ref=e1770]
+                        - button [ref=e1773] [cursor=pointer]:
+                          - img [ref=e1774]
+                  - row "Prompt Engineering מותאם — 0" [ref=e1777]:
+                    - cell "Prompt Engineering מותאם" [ref=e1778]:
+                      - generic [ref=e1779]:
+                        - img [ref=e1781]
+                        - generic [ref=e1784]: Prompt Engineering
+                        - generic [ref=e1785]: מותאם
+                    - cell [ref=e1786]
+                    - cell "—" [ref=e1787]
+                    - cell "0" [ref=e1788]
+                    - cell [ref=e1789]:
+                      - generic [ref=e1790]:
+                        - button "העבר לראש" [ref=e1791] [cursor=pointer]:
+                          - img [ref=e1792]
+                        - button [ref=e1795] [cursor=pointer]:
+                          - img [ref=e1796]
+                        - button [ref=e1799] [cursor=pointer]:
+                          - img [ref=e1800]
+  - region "Notifications alt+T"

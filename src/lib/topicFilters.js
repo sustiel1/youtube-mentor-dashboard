@@ -62,6 +62,43 @@ export function getMainTopicIdForTopic(topicId, topics = []) {
   return currentTopic?.id || "all";
 }
 
+/** Resolve the main topic object for a given leaf topic id. */
+export function getMainTopicForTopic(topicId, topics = []) {
+  if (!topicId || topicId === "all") return null;
+  const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+  let currentTopic = topicsById.get(topicId) || null;
+  if (!currentTopic) return null;
+  const seen = new Set();
+  while (currentTopic?.parentId && topicsById.has(currentTopic.parentId) && !seen.has(currentTopic.id)) {
+    seen.add(currentTopic.id);
+    currentTopic = topicsById.get(currentTopic.parentId);
+  }
+  return currentTopic || null;
+}
+
+/**
+ * Resolve the breadcrumb (main → sub) for display.
+ * Returns [mainTopic, subTopic] where subTopic is null if leaf is a main topic.
+ */
+export function resolveTopicBreadcrumb(leafTopicId, topics = []) {
+  if (!leafTopicId || leafTopicId === "all") return { main: null, sub: null };
+  const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+  const leaf = topicsById.get(leafTopicId) || null;
+  if (!leaf) return { main: null, sub: null };
+  if (!leaf.parentId) return { main: leaf, sub: null };
+  const main = getMainTopicForTopic(leafTopicId, topics);
+  return { main, sub: leaf };
+}
+
+/** Format a leaf topic id as: "Main · Sub" (or just "Main"). */
+export function formatTopicLabel(leafTopicId, topics = [], separator = " · ") {
+  const { main, sub } = resolveTopicBreadcrumb(leafTopicId, topics);
+  const mainName = main?.name ? String(main.name).trim() : "";
+  const subName = sub?.name ? String(sub.name).trim() : "";
+  if (mainName && subName) return `${mainName}${separator}${subName}`;
+  return mainName || subName || "";
+}
+
 export function getEffectiveMainTopicId(filters = {}, topics = []) {
   if (filters.category && filters.category !== "all") {
     return getMainTopicIdForTopic(filters.category, topics);
@@ -86,6 +123,10 @@ export function normalizeDashboardFilters(filters = {}, topics = []) {
 
   if (!nextFilters.mentor) {
     nextFilters.mentor = "all";
+  }
+
+  if (!nextFilters.obsidianSaved) {
+    nextFilters.obsidianSaved = "all";
   }
 
   if (nextFilters.category === "all" && nextFilters.topicId !== "all") {

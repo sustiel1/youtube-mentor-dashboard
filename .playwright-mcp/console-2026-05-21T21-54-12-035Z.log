@@ -1,0 +1,178 @@
+[      21ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[     148ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[     199ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[     332ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:48
+[   37924ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[   37925ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[   37925ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[   37925ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[   37925ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[   37927ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   37934ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[   37968ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   38076ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[   38076ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[   38076ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[   38076ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[   38076ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[   38079ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   38092ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[   38109ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   38319ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   39247ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[   39249ms] [LOG] [chapter-source] videoId local_1779400441584_696on @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[   39249ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[   39249ms] [LOG] [chapter-source] description chapters 13 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[   39250ms] [LOG] [chapter-source] duration fallback 1653 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[   39250ms] [LOG] [chapter-source] selected source description_timestamp @ http://localhost:5174/src/services/videoAnalytics.js:1313
+[   39250ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   39257ms] [LOG] [topic-inherit] {videoId: local_1779400441584_696on, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[   39295ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   39333ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   50482ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   75649ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   75663ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   94771ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[   96138ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  100721ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  118431ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  152911ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  168212ms] [LOG] [chapter-source] videoId local_1779400441584_e1h6a @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[  168212ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[  168212ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[  168213ms] [LOG] [chapter-source] duration fallback 2240 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[  168213ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1327
+[  168213ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  168219ms] [LOG] [topic-inherit] {videoId: local_1779400441584_e1h6a, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[  168267ms] [LOG] [chapter-source] videoId local_1779400441584_e1h6a @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[  168267ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[  168267ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[  168267ms] [LOG] [chapter-source] duration fallback 2240 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[  168267ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1327
+[  168268ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  168273ms] [LOG] [topic-inherit] {videoId: local_1779400441584_e1h6a, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[  168283ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  169626ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  169629ms] [LOG] [chapter-source] videoId local_1779400441584_e1h6a @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[  169629ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[  169629ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[  169629ms] [LOG] [chapter-source] duration fallback 2240 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[  169629ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1327
+[  169630ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  169635ms] [LOG] [topic-inherit] {videoId: local_1779400441584_e1h6a, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[  169652ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  169670ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  172828ms] [LOG] [transcript] selectedVideo {title: מסיבת צפיה אנבידיה, videoId: TAP3NCgbBgY, url: https://www.youtube.com/watch?v=TAP3NCgbBgY} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:2661
+[  172829ms] [LOG] [transcript] fetching via youtube-transcript-api videoId=TAP3NCgbBgY @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:2671
+[  172830ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  177246ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  177246ms] [LOG] [transcript] success language=he generated=true @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:2711
+[  177258ms] [LOG] [chapter-source] videoId local_1779400441584_e1h6a @ http://localhost:5174/src/services/videoAnalytics.js:1294
+[  177258ms] [LOG] [chapter-source] transcript usable true @ http://localhost:5174/src/services/videoAnalytics.js:1295
+[  177258ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1296
+[  177258ms] [LOG] [chapter-source] duration fallback 2240 @ http://localhost:5174/src/services/videoAnalytics.js:1297
+[  177258ms] [LOG] [chapter-source] selected source transcript @ http://localhost:5174/src/services/videoAnalytics.js:1301
+[  177259ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  177267ms] [LOG] [topic-inherit] {videoId: local_1779400441584_e1h6a, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1100
+[  177292ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  177308ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  188891ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  188941ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  191035ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  198685ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  198701ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  200687ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[  204083ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6351
+[ 1582721ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[ 1582724ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[20562740ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[20562929ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[20565595ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:48
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/q77hUq6bEnw/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/SVSaiQmCX5U/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/TAP3NCgbBgY/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/3iNHrQlEPmw/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/tKc0ywEijLI/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/_jOR8y4QYhc/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/e5p2sS43ra4/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/Fyvr-reVs6o/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/0hKj3EgERvQ/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-Lc2lLxJJiI/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/LV5nhyKoaQ8/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JvheNltQigo/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PbSY7ViJBeQ/hqdefault.jpg:0
+[20565636ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/OYe7KvA8vNI/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/M94yQOkXxTM/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gl0BoiMUCHM/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/P6yeIZzlXJA/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o8g2FaanEd8/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/t3rgOqsXK0U/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/AcfvYqhWD3k/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hXrHlCoQ140/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/n6hoimFRi_s/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/GrDos-NsK4k/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/e4la6x8H800/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-HwW0MpHnxc/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/f29-mgjP7hM/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/RAyZzsTGbWw/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5kcaMQhTyfQ/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/S5kBp2VgH2Y/hqdefault.jpg:0
+[20565637ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/kB5KLcmwcz0/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BhDllZgpBW8/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/5zNjk5X0Cn0/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ui7gACnpg3I/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/42n4hit8QcA/hqdefault.jpg:0
+[20565638ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JkJg7Xv0cdE/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/FsYuFonZvO4/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/bK2fIxi3Jic/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/rJHO_YKbqDc/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/xiJ-zby58C8/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/GkGPa8MrAVQ/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/MTOXbSdCO78/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/BrdXQphx48o/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/YUDj_14s7_M/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/s-Y1QCSck1w/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/K18rRr5YsOM/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/958YOSahyNw/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PEOAj9w4bCI/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/I_msgqMsplg/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w1RJ0x_6CUo/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/6-GYJWvTkak/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lHXtPkhElw4/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/md-ie6D_AZc/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ViilNVorlQo/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/AoGWOB7VchI/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8N_cx2BEeY0/hqdefault.jpg:0
+[20565639ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mxjk0KuEQEo/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/vbtUczknubo/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lFIbFLGcB5U/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/NNv80mMzFDs/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/R64vgkpVo9w/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/_fqr8ZtGNsc/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/azhWSShMSI8/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JgABZY58m2Q/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/JMae4CU7D8Q/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/3fYDBEWkL1s/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/a0ENfAXKa-Y/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/4nyq318epjQ/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/w8JlCAn-tS0/hqdefault.jpg:0
+[20565640ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/DV0CokdUMRE/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/TcoSQ1374J0/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/As6Sr3OzhzE/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/Svomq4WGRqk/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/o1a4h8QHWWA/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VOw6R1j67i0/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/VTMRNNRbQ40/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/un4_fc9x_bc/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/HFNgmi5jAic/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/8qzFObhqMVk/hqdefault.jpg:0
+[20565641ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hrujf6qaTPM/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ZaJfrlOYnXc/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/amAO41AZWx0/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/9bLgYFndOfo/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/CdOiURGDXHs/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/ocmHaK0Ic74/hqdefault.jpg:0
+[20565642ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mDWkyiHE1DA/hqdefault.jpg:0

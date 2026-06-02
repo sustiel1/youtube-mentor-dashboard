@@ -1,0 +1,48 @@
+[     136ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[     178ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[     178ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[     184ms] [INFO] [useVideos] local-first — 105 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26
+[     305ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779802518271:54
+[   12499ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[   12499ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   12499ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   12500ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   12500ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   12500ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   12500ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[   12502ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:6907
+[   12514ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1100
+[   12681ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[   12681ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   12682ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   12682ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   12682ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   12682ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   12683ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[   12684ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:6907
+[   12693ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1100
+[   12699ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:6907
+[   12823ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:6907
+[  924065ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[  924068ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[ 1179315ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[ 1179575ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[ 1179575ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[ 1179594ms] [INFO] [useVideos] local-first — 105 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26
+[ 1180048ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779802518271:54
+[ 1180281ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/4JffWNvArJk/hqdefault.jpg:0
+[ 1180282ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PwDDFH3-jI4/hqdefault.jpg:0
+[ 1180282ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/rZ3ETAZl0Xw/hqdefault.jpg:0
+[ 1180282ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/s6QAXylR2cE/hqdefault.jpg:0
+[ 1180282ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/lvQUloYKkA8/hqdefault.jpg:0
+[ 1180283ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/f3oqEzSPrgw/hqdefault.jpg:0
+[ 1180283ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/iGdySjDsJdI/hqdefault.jpg:0
+[ 1180284ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/mIcO1Z8FjoQ/hqdefault.jpg:0
+[ 1180285ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/32K1vCn_Ky4/hqdefault.jpg:0
+[ 1180289ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/LV5nhyKoaQ8/hqdefault.jpg:0
+[ 1180291ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/P6yeIZzlXJA/hqdefault.jpg:0
+[ 1180291ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/hXrHlCoQ140/hqdefault.jpg:0
+[ 1180294ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/PGWtY5GI6L8/hqdefault.jpg:0
+[ 1180295ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/gfBep9GapZg/hqdefault.jpg:0
+[ 1180296ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ https://img.youtube.com/vi/-FT2dpa8vZE/hqdefault.jpg:0
+[ 1684822ms] [INFO] [useVideos] local-first — 105 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26

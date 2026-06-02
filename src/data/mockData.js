@@ -194,143 +194,106 @@ export const MENTORS = [
 // parentId: null = קטגוריה ראשית | string = תת-נושא של קטגוריה ראשית
 // isMainCategory: true = מוצג במסך ראשי | false = מוצג רק בתוך קטגוריה
 export const TOPICS = [
-  // ── קטגוריות ראשיות ──────────────────────────────
-  {
-    id: "t1",
-    name: "בינה מלאכותית",
-    description: "מודלי שפה, סוכני AI, AI גנרטיבי",
-    color: "violet",
-    icon: "Bot",
-    isMainCategory: true,
-    parentId: null,
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t2",
-    name: "שוק ההון",
-    description: "כלכלה, בורסה, מדדים גלובליים",
-    color: "cyan",
-    icon: "TrendingUp",
-    isMainCategory: true,
-    parentId: null,
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t9",
-    name: "פיתוח תוכנה",
-    description: "קוד, ארכיטקטורה, שפות תכנות",
-    color: "blue",
-    icon: "Code",
-    isMainCategory: true,
-    parentId: null,
-    createdAt: "2024-03-11T10:00:00Z",
-  },
+  // ══════════════════════════════════════════════════
+  // ברינים ראשיים (5 Brains)
+  // ══════════════════════════════════════════════════
+  { id: "t1",        name: "טכנולוגיה ו-AI",   description: "AI, LLMs, כלי קוד, אוטומציה, פיתוח",         color: "violet", icon: "Bot",              isMainCategory: true, parentId: null, createdAt: "2024-03-10T10:00:00Z" },
+  { id: "t2",        name: "שוק ההון",          description: "מאקרו, מסחר, מניות, ניתוח",                   color: "cyan",   icon: "ChartCandlestick", isMainCategory: true, parentId: null, createdAt: "2024-03-10T10:00:00Z" },
+  { id: "t_pol",     name: "פוליטיקה",          description: "ישראל, ארה״ב, גיאופוליטיקה, מדיניות",         color: "red",    icon: "Landmark",         isMainCategory: true, parentId: null, createdAt: "2024-03-10T10:00:00Z" },
+  { id: "t_health",  name: "בריאות ותזונה",     description: "קיטו, סכרת, תזונה, פעילות גופנית",            color: "green",  icon: "HeartPulse",       isMainCategory: true, parentId: null, createdAt: "2024-03-10T10:00:00Z" },
+  { id: "t_personal",name: "ידע אישי",          description: "רעיונות, החלטות, תוכניות, תובנות",            color: "amber",  icon: "Hash",             isMainCategory: true, parentId: null, createdAt: "2024-03-10T10:00:00Z" },
 
-  // ── תת-נושאים: בינה מלאכותית (t1) ───────────────
-  {
-    id: "t8",
-    name: "אוטומציה",
-    description: "n8n, Make, תהליכי אוטומציה עסקית, סוכני AI",
-    color: "violet",
-    icon: "Layers",
-    isMainCategory: false,
-    parentId: "t1",
-    createdAt: "2024-03-11T10:00:00Z",
-  },
-  {
-    id: "t12",
-    name: "כלים וטכנולוגיות",
-    description: "כלים חדשים, סקירות טכנולוגיה, תוכנות",
-    color: "amber",
-    icon: "Lightbulb",
-    isMainCategory: false,
-    parentId: "t1",
-    createdAt: "2024-03-12T10:00:00Z",
-  },
+  // ══════════════════════════════════════════════════
+  // שוק ההון — Sub Brains (t2)
+  // ══════════════════════════════════════════════════
+  { id: "sb_sm_macro",      name: "מאקרו",                 description: "מדדים, כלכלה, ריבית, אינפלציה",                   color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_trump",      name: "טראמפ ושוק ההון",       description: "מכסים, DJT, רגולציה, הצהרות שמשפיעות על שוק",     color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_ai_stocks",  name: "מניות AI",              description: "NVDA, AMD, MSFT, AI infrastructure",              color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_risk",       name: "ניהול סיכונים",         description: "Position sizing, stop loss, הגנות",               color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_swing",      name: "מסחר סווינג",           description: "אסטרטגיות סווינג, timing, patterns",              color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_ta",         name: "ניתוח טכני",            description: "גרפים, אינדיקטורים, תבניות מחיר",                 color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_earnings",   name: "דוחות ורווחים",         description: "earnings reports, guidance, reactions",           color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_longterm",   name: "השקעות לטווח ארוך",     description: "value investing, dividend, portfolio",             color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_options",    name: "אופציות",               description: "calls, puts, spreads, Greeks",                    color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_watchlist",  name: "רשימות מעקב",           description: "מניות במעקב, watchlists, screeners",              color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_strategies", name: "אסטרטגיות",             description: "שיטות מסחר, frameworks, playbooks",              color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_indicators", name: "אינדיקטורים",           description: "RSI, MACD, VIX, breadth indicators",              color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_sequence",   name: "שיטת הרצפים",           description: "sequence trading method",                         color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_sm_fundamental",name: "ניתוח פונדמנטלי",       description: "דוחות כספיים, valuation, P/E",                    color: "cyan", icon: "Hash", isMainCategory: false, parentId: "t2", createdAt: "2024-03-10T10:00:00Z" },
 
-  // ── תת-נושאים: שוק ההון (t2) ─────────────────────
-  {
-    id: "t3",
-    name: "השקעות",
-    description: "אסטרטגיות השקעה, תיק מניות, הכנסה פסיבית",
-    color: "cyan",
-    icon: "Layers",
-    isMainCategory: false,
-    parentId: "t2",
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t4",
-    name: "מסחר",
-    description: "מסחר יומי, swing trading, ניהול פוזיציות",
-    color: "cyan",
-    icon: "TrendingUp",
-    isMainCategory: false,
-    parentId: "t2",
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t5",
-    name: "ניתוח טכני",
-    description: "גרפים, אינדיקטורים, תבניות מחיר",
-    color: "cyan",
-    icon: "Brain",
-    isMainCategory: false,
-    parentId: "t2",
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t6",
-    name: "ניתוח פונדמנטלי",
-    description: "ניתוח דוחות כספיים, הערכת שווי חברות",
-    color: "cyan",
-    icon: "Lightbulb",
-    isMainCategory: false,
-    parentId: "t2",
-    createdAt: "2024-03-10T10:00:00Z",
-  },
-  {
-    id: "t7",
-    name: "מניות",
-    description: "בחירת מניות, מגזרים, דיבידנדים",
-    color: "cyan",
-    icon: "Cpu",
-    isMainCategory: false,
-    parentId: "t2",
-    createdAt: "2024-03-10T10:00:00Z",
-  },
+  // ══════════════════════════════════════════════════
+  // פוליטיקה — Sub Brains (t_pol)
+  // ══════════════════════════════════════════════════
+  { id: "sb_pol_israel",    name: "ישראל",               description: "פוליטיקה ישראלית, פנים",                           color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_religion",  name: "דת ומדינה",           description: "יחסי דת ומדינה, הלכה בציבור",                     color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_theocracy", name: "מדינת הלכה",          description: "חקיקה דתית, כפייה, שלטון דתי",                    color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_messian",   name: "משיחיות",             description: "אידיאולוגיה משיחית, גאולה, ציונות דתית",           color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_occupation",name: "הכיבוש",              description: "שטחים, יהודה ושומרון, פלסטינאים",                  color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_democracy", name: "דמוקרטיה ומוסדות",   description: "הפרדת רשויות, מוסדות, שלטון חוק",                  color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_justice",   name: "מערכת המשפט",         description: "בג״ץ, פרקליטות, רפורמה משפטית",                   color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_media",     name: "תקשורת ותעמולה",      description: "תעמולה, פייק ניוז, מניפולציה תקשורתית",            color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_economy",   name: "כלכלה וחברה",         description: "אי שוויון, עוני, מדיניות כלכלית",                  color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_haredim",   name: "חרדים וגיוס",         description: "גיוס חרדים, פטור ממשרת, גרעון תקציבי",            color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_security",  name: "ביטחון וצבא",         description: "מלחמה, ביטחון לאומי, מדיניות הגנה",               color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_corruption",name: "שחיתות ושלטון",       description: "שחיתות, משפטים, ניגוד עניינים",                    color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_protest",   name: "מחאה ואקטיביזם",      description: "מחאות, אקטיביזם, קמפיינים",                        color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_elections", name: "בחירות 2026",         description: "סקרים, מצעים, war room, נרטיבים",                  color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_usa",       name: "ארה״ב",               description: "פוליטיקה אמריקאית, קונגרס, ממשל",                  color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_trump",     name: "טראמפ",               description: "טראמפ פוליטי (לא שוק הון)",                        color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_geo",       name: "גיאופוליטיקה",        description: "יחסי אומות, כוח גיאופוליטי, מלחמות",              color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pol_depth",     name: "רעיונות ועומק",       description: "ספרים, תיאוריות, פילוסופיה פוליטית",              color: "red", icon: "Hash", isMainCategory: false, parentId: "t_pol", createdAt: "2024-03-10T10:00:00Z" },
 
-  // ── תת-נושאים: פיתוח תוכנה (t9) ─────────────────
-  {
-    id: "t13",
-    name: "בניית אפליקציות",
-    description: "פיתוח אפליקציות, no-code, full-stack",
-    color: "blue",
-    icon: "BookOpen",
-    isMainCategory: false,
-    parentId: "t9",
-    createdAt: "2024-03-13T10:00:00Z",
-  },
-  {
-    id: "t10",
-    name: "שיווק דיגיטלי",
-    description: "פרסום ממומן, SEO, שיווק ברשתות חברתיות",
-    color: "blue",
-    icon: "Globe",
-    isMainCategory: false,
-    parentId: "t9",
-    createdAt: "2024-03-11T10:00:00Z",
-  },
-  {
-    id: "t11",
-    name: "פודקאסטים",
-    description: "פרקים מומלצים, ריאיונות, למידה דרך האזנה",
-    color: "blue",
-    icon: "BookOpen",
-    isMainCategory: false,
-    parentId: "t9",
-    createdAt: "2024-03-12T10:00:00Z",
-  },
+  // ══════════════════════════════════════════════════
+  // בריאות ותזונה — Sub Brains (t_health)
+  // ══════════════════════════════════════════════════
+  { id: "sb_ht_keto",       name: "קיטו",                 description: "דיאטה קטוגנית, מצב קטוזיס",                      color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_diabetes",   name: "סכרת",                 description: "סכרת סוג 2, ניהול סוכר, אינסולין",               color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_lowcarb",    name: "תזונה דלת פחמימות",   description: "low carb, LCHF, macros",                          color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_recipes",    name: "מתכונים בריאים",       description: "מתכוני קיטו, low carb",                           color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_bread",      name: "לחמים וקמחים",         description: "לחם קיטו, קמח שקדים, קמח קוקוס",                 color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_icecream",   name: "גלידות וקינוחים",      description: "קינוחים ללא סוכר, גלידת קיטו",                    color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_sugar",      name: "מדדי סוכר",            description: "גלוקוז, HbA1c, CGM",                             color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_weightloss", name: "ירידה במשקל",          description: "אסטרטגיות הרזיה, caloric deficit",                color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_exercise",   name: "פעילות גופנית",        description: "אימונים, כושר, חיזוק",                            color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_tests",      name: "בדיקות ומעקב",         description: "בדיקות דם, מעקב בריאות",                          color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ht_supplements",name: "תוספים וזהירות",       description: "תוספי תזונה, תופעות לוואי",                       color: "green", icon: "Hash", isMainCategory: false, parentId: "t_health", createdAt: "2024-03-10T10:00:00Z" },
+
+  // ══════════════════════════════════════════════════
+  // טכנולוגיה ו-AI — Sub Brains (t1)
+  // ══════════════════════════════════════════════════
+  { id: "sb_ai_claude",     name: "Claude Code",           description: "Claude Code CLI, API, hooks, MCP",                color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_codex",      name: "Codex",                 description: "OpenAI Codex, coding agents",                     color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_cursor",     name: "Cursor",                description: "Cursor IDE, AI coding assistant",                 color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_chatgpt",    name: "ChatGPT",               description: "ChatGPT models, GPT-4, usage",                   color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_gemini",     name: "Gemini",                description: "Google Gemini, Gems, Flash",                     color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_perplexity", name: "Perplexity",            description: "Perplexity AI, web search",                      color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_ollama",     name: "Ollama",                description: "Ollama, local model running",                    color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_chinese",    name: "מודלים סיניים",         description: "DeepSeek, Qwen, Kimi",                           color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_local",      name: "Local LLMs",            description: "מודלים מקומיים, פרטיות, inference",             color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_prompt",     name: "Prompt Engineering",    description: "prompts, chain-of-thought, system prompts",       color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_workflows",  name: "AI Workflows",          description: "זרימות עבודה עם AI, פייפליינים",                 color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_automation", name: "Automation",            description: "אוטומציה, בוטים, סוכנים",                        color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_n8n",        name: "n8n",                   description: "n8n workflows, integrations",                    color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_base44",     name: "Base44",                description: "Base44 platform, backend functions",             color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_obsidian",   name: "Obsidian",              description: "Obsidian vault, plugins, PKM",                   color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_rag",        name: "RAG / Knowledge Systems",description: "RAG, vector DB, knowledge retrieval",           color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_frontend",   name: "Frontend",              description: "React, CSS, UI/UX",                              color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_backend",    name: "Backend",               description: "Node.js, APIs, databases",                       color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_react",      name: "React",                 description: "React hooks, components, patterns",              color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_debug",      name: "Debugging & QA",        description: "debugging, testing, QA",                         color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_ai_apis",       name: "APIs & Integrations",   description: "API design, integrations, webhooks",             color: "violet", icon: "Hash", isMainCategory: false, parentId: "t1", createdAt: "2024-03-10T10:00:00Z" },
+
+  // ══════════════════════════════════════════════════
+  // ידע אישי — Sub Brains (t_personal)
+  // ══════════════════════════════════════════════════
+  { id: "sb_pk_ideas",     name: "רעיונות",               description: "רעיונות חופשיים, brainstorming",                  color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_tasks",     name: "משימות",                description: "TODO, משימות, מעקב",                              color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_decisions", name: "החלטות",                description: "החלטות חשובות, decision logs",                    color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_plans",     name: "תוכניות",               description: "תוכניות עתיד, roadmaps",                          color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_learning",  name: "למידה",                 description: "תוכניות למידה, progress tracking",                color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_checklists",name: "צ׳קליסטים",             description: "רשימות תיוג, חזרתיות",                            color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_summaries", name: "סיכומים",               description: "סיכומים, תקצירים",                                color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
+  { id: "sb_pk_insights",  name: "תובנות אישיות",         description: "תובנות, לקחים, wisdom",                           color: "amber", icon: "Hash", isMainCategory: false, parentId: "t_personal", createdAt: "2024-03-10T10:00:00Z" },
 ];
 
 // ── הערות ────────────────────────────────────────────────────────────────────
@@ -927,6 +890,42 @@ export const VIDEOS = [
 
 export function getMentorById(mentorId) {
   return MENTORS.find((m) => m.id === mentorId);
+}
+
+/** YouTube sources derived from mock mentors — used when Base44 Source entity is off */
+export function buildSyntheticSourcesFromMentors(mentors) {
+  if (!Array.isArray(mentors)) return [];
+  return mentors
+    .map((m) => {
+      if (m.youtubeChannelId) {
+        return {
+          id: `src_${m.id}`,
+          mentorId: m.id,
+          sourceType: "youtube",
+          sourceUrl: `https://www.youtube.com/channel/${m.youtubeChannelId}`,
+          active: m.active !== false,
+          lastCheckedAt: null,
+        };
+      }
+      const page = String(m.youtubePageUrl || m.channelUrl || m.youtubeUrl || "").trim();
+      if (!page) return null;
+      const lower = page.toLowerCase();
+      const sourceType =
+        lower.includes("youtube.com") || lower.includes("youtu.be")
+          ? "youtube"
+          : lower.includes("rss") || lower.includes("feed") || lower.endsWith(".xml")
+            ? "rss"
+            : "site";
+      return {
+        id: `src_${m.id}`,
+        mentorId: m.id,
+        sourceType,
+        sourceUrl: page,
+        active: m.active !== false,
+        lastCheckedAt: null,
+      };
+    })
+    .filter(Boolean);
 }
 
 export function getVideosByStatus(status) {

@@ -1,0 +1,3997 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - button:
+            - generic:
+              - img
+            - generic:
+              - paragraph: YouTube Mentor
+              - paragraph: מסך ראשי
+        - navigation:
+          - generic:
+            - paragraph: ניהול תוכן
+            - button:
+              - img
+              - generic: כל הסרטונים
+            - button:
+              - img
+              - generic: שמורים
+            - button:
+              - img
+              - generic: תור למידה
+            - button:
+              - img
+              - generic: גיבויי ענן
+          - generic:
+            - paragraph: מרחב הידע
+            - button:
+              - img
+              - generic: ספריית ידע
+            - button:
+              - img
+              - generic: חיפוש ידע
+            - button:
+              - img
+              - generic: Workspace
+          - generic:
+            - generic:
+              - button: הברינים שלי
+              - button:
+                - img
+                - text: נושא חדש
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: טכנולוגיה ו-AI
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: שוק ההון
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פוליטיקה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בריאות ותזונה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: ידע אישי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: מסחר יומי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח
+                  - button:
+                    - img
+                  - img
+        - generic:
+          - button:
+            - img
+            - generic: 🧠 שמור למוח
+          - button:
+            - img
+            - generic: מנטור חדש
+          - button:
+            - img
+            - generic: אוסף ערוצים חדש
+          - button:
+            - img
+            - generic: ניהול
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: סריקה אוטומטית
+                        - generic: כל 8 שעות
+                      - generic:
+                        - generic: סריקה אחרונה
+                        - generic: 26/05/2026 16:35
+                      - generic:
+                        - generic: סריקה הבאה
+                        - generic: 27/05/2026 00:35
+                      - generic:
+                        - generic: סטטיסטיקת סריקה
+                        - generic: נסרקו 14 ערוצים · נוספו 2 סרטונים חדשים · 57 סרטונים כבר קיימים · נכשלו 0 ערוצים
+                  - button:
+                    - img
+                    - text: סריקה ידנית
+                  - button:
+                    - img
+                    - generic: מצב כהה
+                  - button:
+                    - img
+                    - text: מחק הכל
+                  - button:
+                    - generic: ☁
+                    - generic: חבר Drive
+                  - generic:
+                    - generic:
+                      - generic: 0.98MB
+                      - button: פירוט
+                      - button: נקה
+                  - button:
+                    - img
+                    - text: רענון
+          - main:
+            - generic:
+              - generic:
+                - button:
+                  - paragraph: היום
+                  - paragraph: "4"
+                  - paragraph: סרטונים חדשים
+                - button:
+                  - paragraph: סרטונים חדשים
+                  - paragraph: "105"
+                  - paragraph: טרם נותחו
+                - button:
+                  - paragraph: עברו סיכום
+                  - paragraph: "0"
+                  - paragraph: נותחו בהצלחה
+                - button:
+                  - paragraph: סה״כ שמורים
+                  - paragraph: "106"
+                  - paragraph: ב-30 הימים האחרונים
+                - button:
+                  - paragraph: 📌 לצמיתות
+                  - paragraph: "0"
+                  - paragraph: שמורים לצמיתות
+            - generic:
+              - button:
+                - img
+                - generic: הוסף סרטון
+              - generic:
+                - generic:
+                  - img
+                  - textbox:
+                    - /placeholder: חיפוש לפי כותרת...
+                - combobox:
+                  - generic: כל המנטורים
+                  - img
+                - combobox:
+                  - generic: כל הקטגוריות
+                  - img
+                - combobox:
+                  - generic: כל הסרטונים
+                  - img
+              - button:
+                - generic:
+                  - img
+                - generic: מרכז הלמידה
+                - generic: 0% · 0
+                - generic:
+                  - img
+                  - text: התחל
+              - button:
+                - generic:
+                  - img
+                - generic: הערוץ שלי ביוטיוב
+              - button: בחר סרטונים
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: TEST — Fundamental V2 (with insights)
+                  - generic:
+                    - generic:
+                      - generic: T
+                      - generic: Test Channel
+                  - generic:
+                    - paragraph: "נושא: לא נבחר"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: אחר
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 19:36
+                - generic:
+                  - generic:
+                    - heading [level=3]: מבזק לייב פתיחה לתאריך 26.5.26
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 26 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 2.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 12:59
+                - generic:
+                  - generic:
+                    - heading [level=3]: 🚨 פלנטיר, טסלה וסופי — שבועיים לפסיקה הכי גדולה שלהן
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 26 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 17.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 10:01
+                - generic:
+                  - generic:
+                    - heading [level=3]: How To Find the Precise Turning Point
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 26 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:30
+                - generic:
+                  - generic:
+                    - heading [level=3]: This n8n AI Agent analyzes and tracks your receipt just with a Google Sheet and WhatsApp.
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 25 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 480 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:45
+                - generic:
+                  - generic:
+                    - heading [level=3]: "השוק מבולבל ומפוחד: סיכום שבועי"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 25 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 16.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 16:22
+                - generic:
+                  - generic:
+                    - heading [level=3]: This Simple Rule Predicts the Next Drop
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 25 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.4K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 51:57
+                - generic:
+                  - generic:
+                    - heading [level=3]: להפסיד בכפיות ולהרוויח בדליים בעזרת MACD וובינר הדרכה עם אייל גורביץ'
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 24 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 545 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 16:58
+                - generic:
+                  - generic:
+                    - heading [level=3]: ניתוח ערך / פנדמנטלי חלק 2 בעידן הבינה המלאכותית AI
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 24 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 7.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 8:21
+                - generic:
+                  - generic:
+                    - heading [level=3]: 16 Highly Reliable Trading Setups
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 24 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: "The 5-Step Swing Trading Method: Capture Multi-Day Forex Moves While the World Sleeps"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: Are Moving Average Crossover system Valid?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:22
+                - generic:
+                  - generic:
+                    - heading [level=3]: אס.אנד.פי 500 ומערכת ה-AI שלנו
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 488 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 21:49
+                - generic:
+                  - generic:
+                    - heading [level=3]: ניתוח ערך / פנדמנטלי חלק 1 בעידן הבינה המלאכותית AI
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 13.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: Is Trading Really Beginner Friendly?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:41
+                - generic:
+                  - generic:
+                    - heading [level=3]: How to learn n8n in 2026, building AI Agents the easy way
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 287 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 18:17
+                - generic:
+                  - generic:
+                    - heading [level=3]: 😱 אנבידיה בדיווח הכי טוב שלה - והמניה נופלת. למה?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 21.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: You’re Entering The Open Too Late
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 27:33
+                - generic:
+                  - generic:
+                    - heading [level=3]: קריפטוק - סטרטג'י + רגולציה + קלוד שחזר לו ביטקוין אבוד מ-2013 🤯 ועוד
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 21 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 20.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:03
+                - generic:
+                  - generic:
+                    - heading [level=3]: Before You Trade Again… Watch This
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 21 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 37:20
+                - generic:
+                  - generic:
+                    - heading [level=3]: מסיבת צפיה אנבידיה
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 20.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 2:24
+                - generic:
+                  - generic:
+                    - heading [level=3]: "המשך לייב מיוחד: דיוווח תוצאות אנבידיה"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 29.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 19:55
+                - generic:
+                  - generic:
+                    - heading [level=3]: מבזק לייב פתיחה לתאריך 20.5.26
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 13.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 20:02
+                - generic:
+                  - generic:
+                    - heading [level=3]: איך לחבר את קלוד קוד לכל העולם ב-5 דקות (בלי לכתוב קוד)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 2.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 17:24
+                - generic:
+                  - generic:
+                    - heading [level=3]: הוא בן 23, מנהל 13.7 מיליארד — ועושה פוטים על כל מה שהוא מאמין בו 🤯
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 25.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 10:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: The Crossover Happens TOO LATE
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 20 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 8.1K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: "The #1 Metric Every Trader Should Track"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 19 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.4K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 55:17
+                - generic:
+                  - generic:
+                    - heading [level=3]: אנליזה מבוססת AI בשוק ההון וובינר הדרכה
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 17 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 635 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 6:33
+                - generic:
+                  - generic:
+                    - heading [level=3]: שני טיפים קטנים שישנו לכם את כל חווית השימוש בקלוד קוד!!
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 17 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 2.8K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 9:05
+                - generic:
+                  - generic:
+                    - heading [level=3]: מדד S&P הבנקים ותא 90 - הכיוון מעלה אבל מה קורה עם רצועות בולינגר
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 17 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 577 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 7:52
+                - generic:
+                  - generic:
+                    - heading [level=3]: אס.אנד.פי 500 ושאר ירקות. האם רמת הסיכון עולה?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 17 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 1.1K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:07:01
+                - generic:
+                  - generic:
+                    - heading [level=3]: 3 Simple Things That Can Change Your Trading Today
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 16 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 11K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 43:25
+                - generic:
+                  - generic:
+                    - heading [level=3]: Are Moving Average Crossover system Valid?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 16 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 6K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: להתקין את קלוד קוד תוך פחות מדקה (העתק הדבק)!
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 15 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 3.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 15:30
+                - generic:
+                  - generic:
+                    - heading [level=3]: חקיקת קריפטו היסטורית עברה — אז למה הביטקוין עוד לא שיא? 🚨
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 15 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:47:20
+                - generic:
+                  - generic:
+                    - heading [level=3]: "Live Talk With Oliver: Unlock Real Consistency"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 15 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 23:25
+                - generic:
+                  - generic:
+                    - heading [level=3]: לייט נייט דיווחים אחרונים להשבוע
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 8.4K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 18:54
+                - generic:
+                  - generic:
+                    - heading [level=3]: מבזק לייב פתיחה לתאריך 14.5.26
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 13.1K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:41
+                - generic:
+                  - generic:
+                    - heading [level=3]: "🟠 סריברס: פי 20 אנשים רוצים אותה — ואני לא קונה. הנה למה"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 19.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 17:05
+                - generic:
+                  - generic:
+                    - heading [level=3]: The 5-Minute Pre-Open Routine
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 7.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 27:41
+                - generic:
+                  - generic:
+                    - heading [level=3]: לייט נייט - דיווחים של סיסקו יוסאר ועוד
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 13 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 10.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:42
+                - generic:
+                  - generic:
+                    - heading [level=3]: Trading Was My Lifeboat—It Can Be Yours Too
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 13 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 7:40
+                - generic:
+                  - generic:
+                    - heading [level=3]: כמה המניה עלתה או ירדה או איך היא עשתה את זה, על מה חשוב להסתכל? טבע, סולאראדג, טאואר, נופר אנרג'י
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 12 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 451 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:20:44
+                - generic:
+                  - generic:
+                    - heading [level=3]: Trading Is Easier Than Counting to 3
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 12 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 14.7K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 21:18
+                - generic:
+                  - generic:
+                    - heading [level=3]: 🔥 4 מניות ענק - יעלו 50% עד סוף השנה? 📈
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 11 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 11.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: מבזק לייב פתיחה לתאריך 11.5.26
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 11 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 12:26
+                - generic:
+                  - generic:
+                    - heading [level=3]: You Have NO IDEA How Easy Trading Is Today
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 11 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 3.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 14:35
+                - generic:
+                  - generic:
+                    - heading [level=3]: ⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 10 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 10.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - heading [level=3]: Open House - Watch and Trade the Open Live with Oliver Velez
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 מאי 2026
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 2:47:27
+                - generic:
+                  - generic:
+                    - heading [level=3]: THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 16.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:20
+                - generic:
+                  - generic:
+                    - heading [level=3]: אס.אנד.פי 500 ות"א 90 - למה אפשר לצפות וממה להיזהר?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 893 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 23:54
+                - generic:
+                  - generic:
+                    - heading [level=3]: ⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 27.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 2:23
+                - generic:
+                  - generic:
+                    - heading [level=3]: הסיפור של מניית IREN
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.8K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 49:30
+                - generic:
+                  - generic:
+                    - heading [level=3]: מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 14.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 10:33
+                - generic:
+                  - generic:
+                    - heading [level=3]: מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 457 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 14:14
+                - generic:
+                  - generic:
+                    - heading [level=3]: 🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw
+                      - generic: M
+                      - generic: Micha.Stocks
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 19.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 8:04
+                - generic:
+                  - generic:
+                    - heading [level=3]: The Phase That Creates Millionaire Traders
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:26:32
+                - generic:
+                  - generic:
+                    - heading [level=3]: 5 Hours That Can Change Your Trading Forever
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 7 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 11.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:58
+                - generic:
+                  - generic:
+                    - heading [level=3]: Believe in yourself
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCmD96zZeKnYof2jO1ON6acA
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 6 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 3.7K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 9:12
+                - generic:
+                  - generic:
+                    - heading [level=3]: מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 1 מאי 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 970 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:50
+                - generic:
+                  - generic:
+                    - heading [level=3]: אנליזת מבוססת AI איך משתמשים בזה
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 30 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 325 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 40:21
+                - generic:
+                  - generic:
+                    - heading [level=3]: צ׳אט GPT כמו שמעולם לא פגשתם!
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 28 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 36:48
+                - generic:
+                  - generic:
+                    - heading [level=3]: מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCrQmXSenNhePSOiCTdnhwRg
+                      - generic: ב
+                      - generic: בורסה גרף
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 27 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 934 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 26:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCfnihhol5a4Qc2EciLf5kOQ
+                      - generic: A
+                      - generic: Aimprove - אימפרוב
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 27 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 371 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 29:39
+                - generic:
+                  - generic:
+                    - heading [level=3]: ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCfnihhol5a4Qc2EciLf5kOQ
+                      - generic: A
+                      - generic: Aimprove - אימפרוב
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 303 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 22:03
+                - generic:
+                  - generic:
+                    - heading [level=3]: סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCfnihhol5a4Qc2EciLf5kOQ
+                      - generic: A
+                      - generic: Aimprove - אימפרוב
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 238 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 35:17
+                - generic:
+                  - generic:
+                    - heading [level=3]: כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCfnihhol5a4Qc2EciLf5kOQ
+                      - generic: A
+                      - generic: Aimprove - אימפרוב
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 192 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 21:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCfnihhol5a4Qc2EciLf5kOQ
+                      - generic: A
+                      - generic: Aimprove - אימפרוב
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 141 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 15:01
+                - generic:
+                  - generic:
+                    - heading [level=3]: ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC32oVb-nfyRBNlWzUw3dC5Q
+                      - generic: W
+                      - generic: Wysetrade
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 20K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:12:42
+                - generic:
+                  - generic:
+                    - heading [level=3]: עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 6 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 5.5K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:42
+                - generic:
+                  - generic:
+                    - heading [level=3]: "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 4 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 19.3K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 11:45
+                - generic:
+                  - generic:
+                    - heading [level=3]: The FASTEST way to build apps with Claude Code (Opus 4.6)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 2 אפר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 10.4K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 4:46
+                - generic:
+                  - generic:
+                    - heading [level=3]: Anthropic's NEWEST Feature Just Made Claude Code 10x Better
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 27 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 2K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 7:44
+                - generic:
+                  - generic:
+                    - heading [level=3]: Claude Code + Nano Banana 2 = Apple-Level Websites
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 18 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 23.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 40:37
+                - generic:
+                  - generic:
+                    - heading [level=3]: סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSyPOk83lhOXoGcT2vUNhdw
+                      - generic: D
+                      - generic: Dor Amir Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 17 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 110 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 48:09
+                - generic:
+                  - generic:
+                    - heading [level=3]: "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSyPOk83lhOXoGcT2vUNhdw
+                      - generic: D
+                      - generic: Dor Amir Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 16 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 133 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 8:46
+                - generic:
+                  - generic:
+                    - heading [level=3]: "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSyPOk83lhOXoGcT2vUNhdw
+                      - generic: D
+                      - generic: Dor Amir Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 15 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 85 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 26:12
+                - generic:
+                  - generic:
+                    - heading [level=3]: איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSyPOk83lhOXoGcT2vUNhdw
+                      - generic: D
+                      - generic: Dor Amir Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 15 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 96 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 17:32
+                - generic:
+                  - generic:
+                    - heading [level=3]: התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSyPOk83lhOXoGcT2vUNhdw
+                      - generic: D
+                      - generic: Dor Amir Trading
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 61 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 10:48
+                - generic:
+                  - generic:
+                    - heading [level=3]: Stop Making Ugly Websites with Claude Code
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC5_2We-HeVdEeHcIyfmMHOg
+                      - generic: E
+                      - generic: Ed Hill AI Automation
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 13 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 172K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:40:37
+                - generic:
+                  - generic:
+                    - heading [level=3]: מפגש 3 - הקסמים של קלוד קוד
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 6 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 8.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 56:16
+                - generic:
+                  - generic:
+                    - heading [level=3]: בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 5 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 4.8K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:32:51
+                - generic:
+                  - generic:
+                    - heading [level=3]: מפגש 2 - התקנת סקילים + בניית מצגות
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCGFogLEUR_nuiT83pt8zVWQ
+                      - generic: E
+                      - generic: Eden Bibas
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 5 מרץ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 7.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 4:30
+                - generic:
+                  - generic:
+                    - heading [level=3]: ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSB4SNRWhbemGAJ4wfeKj2Q
+                      - generic: T
+                      - generic: The Hasidic Trader
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 19 פבר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 81 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 43:16
+                - generic:
+                  - generic:
+                    - heading [level=3]: "שאלות ותשובות במסחר #1"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSB4SNRWhbemGAJ4wfeKj2Q
+                      - generic: T
+                      - generic: The Hasidic Trader
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 19 פבר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 333 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 11:58
+                - generic:
+                  - generic:
+                    - heading [level=3]: ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC32oVb-nfyRBNlWzUw3dC5Q
+                      - generic: W
+                      - generic: Wysetrade
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 6 פבר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 35.7K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 20:18
+                - generic:
+                  - generic:
+                    - heading [level=3]: היומן לא משקר 1
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSB4SNRWhbemGAJ4wfeKj2Q
+                      - generic: T
+                      - generic: The Hasidic Trader
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 1 פבר׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 252 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 19:56
+                - generic:
+                  - generic:
+                    - heading [level=3]: איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCxPN-JU3DsKwDgn5sTetNUQ
+                      - generic: R
+                      - generic: Ran Bar Zik
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 31 ינו׳ 2026
+                    - generic:
+                      - generic: ·
+                      - generic: 1.1K צפיות
+                  - generic:
+                    - paragraph: "נושא: Dev"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: פיתוח
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 12:57
+                - generic:
+                  - generic:
+                    - heading [level=3]: הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCxPN-JU3DsKwDgn5sTetNUQ
+                      - generic: R
+                      - generic: Ran Bar Zik
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 דצמ׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 890 צפיות
+                  - generic:
+                    - paragraph: "נושא: Dev"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: פיתוח
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 22:32
+                - generic:
+                  - generic:
+                    - heading [level=3]: איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCxPN-JU3DsKwDgn5sTetNUQ
+                      - generic: R
+                      - generic: Ran Bar Zik
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 14 דצמ׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 360 צפיות
+                  - generic:
+                    - paragraph: "נושא: Dev"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: פיתוח
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 17:02
+                - generic:
+                  - generic:
+                    - heading [level=3]: ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC32oVb-nfyRBNlWzUw3dC5Q
+                      - generic: W
+                      - generic: Wysetrade
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 נוב׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 79.1K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:15
+                - generic:
+                  - generic:
+                    - heading [level=3]: Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC32oVb-nfyRBNlWzUw3dC5Q
+                      - generic: W
+                      - generic: Wysetrade
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 29 אוק׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 26.2K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 7:45
+                - generic:
+                  - generic:
+                    - heading [level=3]: SDR התקנה והפעלה ראשונית SD 480p
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCxPN-JU3DsKwDgn5sTetNUQ
+                      - generic: R
+                      - generic: Ran Bar Zik
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 21 ספט׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 444 צפיות
+                  - generic:
+                    - paragraph: "נושא: Dev"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: פיתוח
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 7:03
+                - generic:
+                  - generic:
+                    - heading [level=3]: רן בר זיק בשש בכאן 27 10
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCxPN-JU3DsKwDgn5sTetNUQ
+                      - generic: R
+                      - generic: Ran Bar Zik
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 28 אוג׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 155 צפיות
+                  - generic:
+                    - paragraph: "נושא: Dev"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: פיתוח
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 14:25
+                - generic:
+                  - generic:
+                    - heading [level=3]: "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UC32oVb-nfyRBNlWzUw3dC5Q
+                      - generic: W
+                      - generic: Wysetrade
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 22 אוג׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 46.9K צפיות
+                  - generic:
+                    - paragraph: "נושא: Markets"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 40:34
+                - generic:
+                  - generic:
+                    - heading [level=3]: NY Session - Futures Trading 28.4.25
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSB4SNRWhbemGAJ4wfeKj2Q
+                      - generic: T
+                      - generic: The Hasidic Trader
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 29 אפר׳ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 266 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 13:29
+                - generic:
+                  - generic:
+                    - heading [level=3]: חכם במסחר
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCSB4SNRWhbemGAJ4wfeKj2Q
+                      - generic: T
+                      - generic: The Hasidic Trader
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 23 מרץ 2025
+                    - generic:
+                      - generic: ·
+                      - generic: 417 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 4:52
+                - generic:
+                  - generic:
+                    - heading [level=3]: Mr beast vs AI - Who will win ??
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCCQfwUJOOBLF5R9xbFeIFcg
+                      - generic: A
+                      - generic: AI Andy
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 4 יוני 2023
+                    - generic:
+                      - generic: ·
+                      - generic: 120 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 4:40
+                - generic:
+                  - generic:
+                    - heading [level=3]: AI got High on weed and this happened.....
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCCQfwUJOOBLF5R9xbFeIFcg
+                      - generic: A
+                      - generic: AI Andy
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 8 מאי 2023
+                    - generic:
+                      - generic: ·
+                      - generic: 51 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:00
+                - generic:
+                  - generic:
+                    - heading [level=3]: "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCCQfwUJOOBLF5R9xbFeIFcg
+                      - generic: A
+                      - generic: AI Andy
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 18 אפר׳ 2023
+                    - generic:
+                      - generic: ·
+                      - generic: 101 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:49
+                - generic:
+                  - generic:
+                    - heading [level=3]: "AI calculates humanities future #shorts #ai #future #fyp"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCCQfwUJOOBLF5R9xbFeIFcg
+                      - generic: A
+                      - generic: AI Andy
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 18 אפר׳ 2023
+                    - generic:
+                      - generic: ·
+                      - generic: 252 צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:59
+                - generic:
+                  - generic:
+                    - heading [level=3]: "What this AI knows about time travel!! #shorts #ai #fyp #timetravel"
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCCQfwUJOOBLF5R9xbFeIFcg
+                      - generic: A
+                      - generic: AI Andy
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 16 אפר׳ 2023
+                    - generic:
+                      - generic: ·
+                      - generic: 1.6K צפיות
+                  - generic:
+                    - paragraph: "נושא: טכנולוגיה ו-AI"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: בינה מלאכותית
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 0:27
+                - generic:
+                  - generic:
+                    - heading [level=3]: Daniela seven weeks old
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCNVcbJ6pxGEWGuoGopK83sQ
+                      - generic: E
+                      - generic: Eyal Shani
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 9 פבר׳ 2011
+                    - generic:
+                      - generic: ·
+                      - generic: 21 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 1:02
+                - generic:
+                  - generic:
+                    - heading [level=3]: Daniela one week old
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCNVcbJ6pxGEWGuoGopK83sQ
+                      - generic: E
+                      - generic: Eyal Shani
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 19 דצמ׳ 2010
+                    - generic:
+                      - generic: ·
+                      - generic: 38 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 2:37
+                - generic:
+                  - generic:
+                    - heading [level=3]: Helpdesk
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCNVcbJ6pxGEWGuoGopK83sQ
+                      - generic: E
+                      - generic: Eyal Shani
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 4 יוני 2007
+                    - generic:
+                      - generic: ·
+                      - generic: 789 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic: 5:57
+                - generic:
+                  - generic:
+                    - heading [level=3]: OTD2006
+                  - generic:
+                    - link:
+                      - /url: https://www.youtube.com/channel/UCNVcbJ6pxGEWGuoGopK83sQ
+                      - generic: E
+                      - generic: Eyal Shani
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: 6 מאי 2007
+                    - generic:
+                      - generic: ·
+                      - generic: 262 צפיות
+                  - generic:
+                    - paragraph: "נושא: שוק ההון"
+                    - paragraph: "תת נושא: כללי"
+                  - generic:
+                    - generic: שוק ההון
+                    - generic: חדש לצפייה
+    - region "Notifications alt+T"
+  - dialog "TEST — Fundamental V2 (with insights)" [ref=e4789]:
+    - generic [ref=e4790]:
+      - heading "TEST — Fundamental V2 (with insights)" [level=2]
+      - paragraph: צפייה בפרטי הסרטון, סיכום, פרקים, נקודות מפתח והערות.
+    - button [ref=e4791] [cursor=pointer]:
+      - img [ref=e4792]
+    - button "מצב כהה" [ref=e4795] [cursor=pointer]:
+      - img [ref=e4796]
+      - generic [ref=e4798]: מצב כהה
+    - generic [ref=e4802]:
+      - generic [ref=e4803]:
+        - generic [ref=e4804]:
+          - generic [ref=e4807]: פרטי וידאו
+          - generic [ref=e4808]:
+            - generic [ref=e4809]:
+              - generic [ref=e4810]: ערוץ
+              - generic "Test Channel" [ref=e4812]
+            - generic [ref=e4813]:
+              - generic [ref=e4814]: נושא
+              - generic "לא נבחר" [ref=e4815]
+            - generic [ref=e4816]:
+              - generic [ref=e4817]: תת נושא
+              - generic [ref=e4819]:
+                - generic "כללי" [ref=e4820]
+                - button "ערוך תת נושא" [ref=e4821] [cursor=pointer]:
+                  - img [ref=e4822]
+        - generic [ref=e4825]:
+          - generic [ref=e4826]:
+            - generic [ref=e4827]: ניתוח AI
+            - generic [ref=e4829]:
+              - generic [ref=e4831]: "איכות:"
+              - generic [ref=e4832]: לא נותח
+              - img [ref=e4833]
+          - generic [ref=e4836]:
+            - generic [ref=e4837]: טרם נשמר ניתוח AI
+            - generic [ref=e4838]: בחר מודל לניתוח
+          - generic [ref=e4839]:
+            - generic [ref=e4840]:
+              - generic [ref=e4841]: המלצת ניתוח (אוטומטית)
+              - generic [ref=e4842]:
+                - generic [ref=e4843]: קצר
+                - generic [ref=e4844]: "עומס ניתוח: מהיר"
+            - paragraph [ref=e4845]: סרטון קצר — מומלץ סיכום מהיר בלבד
+            - paragraph [ref=e4846]: "מומלץ:"
+            - list [ref=e4847]:
+              - listitem [ref=e4848]:
+                - generic [ref=e4849]: •
+                - generic [ref=e4850]: סיכום מהיר עם Gemini — ללא חובת פרקים מלאים
+              - listitem [ref=e4851]:
+                - generic [ref=e4852]: •
+                - generic [ref=e4853]: לא מומלץ להסתמך על ניתוח עמוק עם פרקים רבים בתוכן קצר מאוד
+            - paragraph [ref=e4854]: מבוסס על אורך תמלול (0 תווים) — משך הסרטון לא זמין; הסיווג מסתמך בעיקר על התמלול. לא מריצים ניתוח אוטומטית — רק המלצה.
+          - generic [ref=e4856]:
+            - button "עוד פעולות" [ref=e4857] [cursor=pointer]: ⋯
+            - button "פתח ב-Workspace" [ref=e4858] [cursor=pointer]:
+              - img [ref=e4859]
+              - text: פתח ב-Workspace
+            - generic [ref=e4862]:
+              - button "בחר תיקיית ידע" [ref=e4865] [cursor=pointer]:
+                - generic [ref=e4866]: בחר תיקיית ידע
+                - img [ref=e4867]
+              - generic [ref=e4869]: "תיקייה שזוהתה: שוק ההון/מסחר סווינג"
+        - generic [ref=e4870]:
+          - generic [ref=e4871]: פעולות AI
+          - generic [ref=e4872]:
+            - button "נתח עם קלוד" [ref=e4873] [cursor=pointer]:
+              - img [ref=e4874]
+              - text: נתח עם קלוד
+            - button "נתח עם Gemini" [ref=e4876] [cursor=pointer]:
+              - img [ref=e4877]
+              - text: נתח עם Gemini
+            - button "נתח עם llama3.2" [ref=e4879] [cursor=pointer]:
+              - img [ref=e4880]
+              - text: נתח עם llama3.2
+            - button "בדוק llama3.2" [ref=e4882] [cursor=pointer]:
+              - img [ref=e4883]
+              - text: בדוק llama3.2
+            - button "הדבק ניתוח ידני" [ref=e4885] [cursor=pointer]:
+              - img [ref=e4886]
+              - text: הדבק ניתוח ידני
+        - generic [ref=e4890]:
+          - generic [ref=e4891]:
+            - generic [ref=e4892]: סטטוס תמלול
+            - generic [ref=e4893]: אין תמלול usable
+          - generic [ref=e4895]:
+            - generic [ref=e4896]: אין תמלול זמין — אפשר להדביק תמלול ידני או לנסות למשוך תמלול מ-YouTube
+            - generic [ref=e4897]:
+              - button "ייבא תמלול מ-YouTube" [ref=e4898] [cursor=pointer]
+              - button "הדבק תמלול ידני" [ref=e4899] [cursor=pointer]:
+                - img [ref=e4900]
+                - text: הדבק תמלול ידני
+        - generic [ref=e4903]:
+          - generic [ref=e4905]: סטטוס למידה
+          - generic [ref=e4906]:
+            - generic [ref=e4908]:
+              - generic [ref=e4909]:
+                - textbox "הוסף הערה..." [ref=e4910]
+                - generic [ref=e4911]:
+                  - button "שמור הערה (Enter)" [disabled] [ref=e4912]:
+                    - img [ref=e4913]
+                  - button "העלה תמונה" [ref=e4916] [cursor=pointer]:
+                    - img [ref=e4917]
+              - paragraph [ref=e4921]:
+                - img [ref=e4922]
+                - text: אפשר להדביק צילום מסך עם Ctrl+V
+            - generic [ref=e4926]:
+              - button "העתק קישור" [ref=e4927] [cursor=pointer]:
+                - img [ref=e4928]
+                - text: העתק קישור
+              - link "NotebookLM" [ref=e4931] [cursor=pointer]:
+                - /url: https://notebooklm.google.com/
+                - img [ref=e4932]
+                - text: NotebookLM
+      - generic [ref=e4936]:
+        - generic [ref=e4938]:
+          - heading "TEST — Fundamental V2 (with insights)" [level=2] [ref=e4939]
+          - button "שמור" [ref=e4940] [cursor=pointer]:
+            - img [ref=e4941]
+        - generic [ref=e4944]:
+          - img "TEST — Fundamental V2 (with insights)" [ref=e4945]
+          - link [ref=e4946] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e4948]
+        - generic [ref=e4952]:
+          - tablist [ref=e4954]:
+            - tab "סיכום" [ref=e4955] [cursor=pointer]
+            - tab "ידע שימושי" [active] [selected] [ref=e4956] [cursor=pointer]
+            - tab "פרקים" [ref=e4957] [cursor=pointer]
+            - tab "הערות" [ref=e4958] [cursor=pointer]
+          - tabpanel "ידע שימושי" [ref=e5046]:
+            - generic [ref=e5047]:
+              - generic [ref=e5049]:
+                - generic [ref=e5050]:
+                  - generic [ref=e5051]: בחר חלקים לשמירה
+                  - generic [ref=e5052]: סמן פריטים ואז לחץ שמור למוח
+                - generic [ref=e5053]:
+                  - button "נקה" [ref=e5054] [cursor=pointer]
+                  - button "בחר הכל" [ref=e5055] [cursor=pointer]
+                  - button "שמור נבחרים למוח" [disabled] [ref=e5056]:
+                    - img [ref=e5057]
+                    - text: שמור נבחרים למוח
+              - generic [ref=e5059]:
+                - heading "נקודות ידע" [level=4] [ref=e5060]
+                - generic [ref=e5061]:
+                  - button "✓ הגדר יעד רווח לפני כניסה לעסקה" [ref=e5062] [cursor=pointer]:
+                    - generic [ref=e5063]: ✓
+                    - generic [ref=e5064]: הגדר יעד רווח לפני כניסה לעסקה
+                  - button "✓ שמור על יחס סיכון/תגמול של לפחות 1:2" [ref=e5065] [cursor=pointer]:
+                    - generic [ref=e5066]: ✓
+                    - generic [ref=e5067]: שמור על יחס סיכון/תגמול של לפחות 1:2
+                  - button "✓ עקוב אחר כמות פוזיציות פתוחות" [ref=e5068] [cursor=pointer]:
+                    - generic [ref=e5069]: ✓
+                    - generic [ref=e5070]: עקוב אחר כמות פוזיציות פתוחות
+              - generic [ref=e5071]:
+                - generic [ref=e5072]:
+                  - heading "ידע למוח" [level=4] [ref=e5073]
+                  - generic [ref=e5074]: 🧠
+                  - generic [ref=e5075]: "3"
+                - generic [ref=e5076]:
+                  - button "✓ ניהול סיכונים הוא 80% מההצלחה ללא ניהול סיכונים גם האסטרטגיה הטובה ביותר תיכשל" [ref=e5077] [cursor=pointer]:
+                    - generic [ref=e5078]: ✓
+                    - generic [ref=e5079]:
+                      - paragraph [ref=e5080]: ניהול סיכונים הוא 80% מההצלחה
+                      - paragraph [ref=e5081]: ללא ניהול סיכונים גם האסטרטגיה הטובה ביותר תיכשל
+                  - button "✓ הפסיכולוגיה חשובה יותר מהטכניקה רוב הסוחרים יודעים מה לעשות אבל לא עושים זאת" [ref=e5082] [cursor=pointer]:
+                    - generic [ref=e5083]: ✓
+                    - generic [ref=e5084]:
+                      - paragraph [ref=e5085]: הפסיכולוגיה חשובה יותר מהטכניקה
+                      - paragraph [ref=e5086]: רוב הסוחרים יודעים מה לעשות אבל לא עושים זאת
+                  - button "✓ מגמה היא חברתך מסחר נגד המגמה סטטיסטית מפסיד יותר" [ref=e5087] [cursor=pointer]:
+                    - generic [ref=e5088]: ✓
+                    - generic [ref=e5089]:
+                      - paragraph [ref=e5090]: מגמה היא חברתך
+                      - paragraph [ref=e5091]: מסחר נגד המגמה סטטיסטית מפסיד יותר
+            - generic [ref=e5092]:
+              - button "Obsidian" [ref=e5093] [cursor=pointer]:
+                - img [ref=e5094]
+                - text: Obsidian
+              - button "שמור נבחרים למוח" [ref=e5098] [cursor=pointer]:
+                - img [ref=e5099]
+                - text: שמור נבחרים למוח
+    - button "סגור" [ref=e4969] [cursor=pointer]:
+      - img [ref=e4970]
+      - generic [ref=e4973]: סגור

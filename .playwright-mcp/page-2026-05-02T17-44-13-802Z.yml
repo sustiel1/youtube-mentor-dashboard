@@ -1,0 +1,869 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - button:
+            - generic:
+              - img
+            - generic:
+              - paragraph: YouTube Mentor
+              - paragraph: מסך ראשי
+        - navigation:
+          - generic:
+            - button:
+              - img
+              - generic: כל הסרטונים
+            - button:
+              - img
+              - generic: שמורים
+            - button:
+              - img
+              - generic: תור למידה
+          - generic:
+            - generic:
+              - button: נושאים
+              - button:
+                - img
+                - text: הוסף
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בינה מלאכותית
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: שוק ההון
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח תוכנה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: מסחר יומי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: React
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Base44
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Prompt Engineering
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בדיקה אוטומטית
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: נושא בזמן אמת
+                  - button:
+                    - img
+                  - img
+        - generic:
+          - button:
+            - img
+            - generic: מנטור חדש
+          - button:
+            - img
+            - generic: ניהול
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: 24 סרטונים
+                - generic:
+                  - button:
+                    - img
+                    - text: מחק הכל
+                  - button:
+                    - img
+                    - text: רענון
+          - main:
+            - generic:
+              - button:
+                - generic:
+                  - generic:
+                    - paragraph: סרטונים חדשים
+                    - paragraph: "21"
+                  - img
+              - button:
+                - generic:
+                  - generic:
+                    - paragraph: עברו סיכום
+                    - paragraph: "3"
+                  - img
+              - button:
+                - generic:
+                  - generic:
+                    - paragraph: בתהליך
+                    - paragraph: "0"
+                  - img
+              - button:
+                - generic:
+                  - generic:
+                    - paragraph: שגיאות
+                    - paragraph: "0"
+                  - img
+            - button:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic:
+                      - paragraph: מרכז הלמידה
+                      - paragraph: המשך מהנקודה האחרונה
+                  - generic:
+                    - img
+                    - text: התחל ללמוד
+            - generic:
+              - generic:
+                - img
+                - textbox:
+                  - /placeholder: חיפוש לפי כותרת...
+              - combobox:
+                - generic: כל המנטורים
+                - img
+              - combobox:
+                - generic: כל הקטגוריות
+                - img
+            - generic:
+              - button: בחר סרטונים
+            - generic:
+              - generic: "סטטוס למידה:"
+              - button: טרם התחיל
+              - button: בלמידה
+              - button: לחזרה
+              - button: נלמד
+              - button: הושלם
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - img
+                      - text: נותח
+                - generic:
+                  - heading [level=3]: 85% of Traders Don’t Understand This… Do You?
+                  - generic:
+                    - generic:
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                  - paragraph: הסרטון "85% of Traders Don’t Understand This… Do You?" מציג גישה מעמיקה לנושא. זוהי תוצאה מדומה לבדיקת UI.
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: מוכן
+                    - generic: 2 מאי 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - img
+                      - text: נותח
+                - generic:
+                  - heading [level=3]: מבזק פתיחת מסחר + מניות ב 3 דק'
+                  - generic:
+                    - generic:
+                      - generic: M
+                      - generic: Micha.Stocks
+                  - paragraph: הסרטון "מבזק פתיחת מסחר + מניות ב 3 דק'" מציג גישה מעמיקה לנושא. זוהי תוצאה מדומה לבדיקת UI.
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: מוכן
+                    - generic: 1 מאי 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90
+                  - generic:
+                    - generic:
+                      - generic: ב
+                      - generic: בורסה גרף
+                  - generic:
+                    - generic: "#ניתוח טכני"
+                    - generic: "#שוק ההון"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 1 מאי 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: "⚠️ מיידי: למכור הכל? התשובה תפתיע אותך - SELL IN MAY AND GO AWAY"
+                  - generic:
+                    - generic:
+                      - generic: M
+                      - generic: Micha.Stocks
+                  - generic:
+                    - generic: "#שוק ההון"
+                    - generic: "#מניות"
+                    - generic: "#השקעות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 1 מאי 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: Forget Indicators… THIS Is What Really Moves Price
+                  - generic:
+                    - generic:
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                  - generic:
+                    - generic: "#מסחר"
+                    - generic: "#מניות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 1 מאי 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: לייט נייט - המשך דיווחים SNDK AAPL RDDT TWLO
+                  - generic:
+                    - generic:
+                      - generic: M
+                      - generic: Micha.Stocks
+                  - generic:
+                    - generic: "#שוק ההון"
+                    - generic: "#מניות"
+                    - generic: "#השקעות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 30 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: אנליזת מבוססת AI איך משתמשים בזה
+                  - generic:
+                    - generic:
+                      - generic: ב
+                      - generic: בורסה גרף
+                  - generic:
+                    - generic: "#ניתוח טכני"
+                    - generic: "#שוק ההון"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 30 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: גוגל פייננס - מה ניתן לעשות בגירסת ה איי איי
+                  - generic:
+                    - generic:
+                      - generic: M
+                      - generic: Micha.Stocks
+                  - generic:
+                    - generic: "#שוק ההון"
+                    - generic: "#מניות"
+                    - generic: "#השקעות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 30 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: מבזק לייב פתיחה לתאריך 30.4.26
+                  - generic:
+                    - generic:
+                      - generic: M
+                      - generic: Micha.Stocks
+                  - generic:
+                    - generic: "#שוק ההון"
+                    - generic: "#מניות"
+                    - generic: "#השקעות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 30 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: I Get Asked This Every Day… Here’s the Truth
+                  - generic:
+                    - generic:
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                  - generic:
+                    - generic: "#מסחר"
+                    - generic: "#מניות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 30 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: The right time to short
+                  - generic:
+                    - generic:
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                  - generic:
+                    - generic: "#מסחר"
+                    - generic: "#מניות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 29 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: Trade for 20 Minutes… Then Go Live Your Life
+                  - generic:
+                    - generic:
+                      - generic: O
+                      - generic: Oliver Velez Trading
+                  - generic:
+                    - generic: "#מסחר"
+                    - generic: "#מניות"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 29 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - img
+                      - text: נותח
+                - generic:
+                  - heading [level=3]: צ׳אט GPT כמו שמעולם לא פגשתם!
+                  - generic:
+                    - generic:
+                      - generic: E
+                      - generic: Eden Bibas
+                  - paragraph: הסרטון "צ׳אט GPT כמו שמעולם לא פגשתם!" מציג גישה מעמיקה לנושא. זוהי תוצאה מדומה לבדיקת UI.
+                  - generic:
+                    - generic:
+                      - generic: בינה מלאכותית
+                      - generic: מוכן
+                    - generic: 28 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?
+                  - generic:
+                    - generic:
+                      - generic: ב
+                      - generic: בורסה גרף
+                  - generic:
+                    - generic: "#ניתוח טכני"
+                    - generic: "#שוק ההון"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 27 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: אס.אנד.פי 500 ותל אביב 90
+                  - generic:
+                    - generic:
+                      - generic: ב
+                      - generic: בורסה גרף
+                  - generic:
+                    - generic: "#ניתוח טכני"
+                    - generic: "#שוק ההון"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 26 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: השוק האמריקאי, הדולר, הנפט ותא 90 - לאן הולכים המדדים אפריל 2026
+                  - generic:
+                    - generic:
+                      - generic: ב
+                      - generic: בורסה גרף
+                  - generic:
+                    - generic: "#ניתוח טכני"
+                    - generic: "#שוק ההון"
+                  - generic:
+                    - generic:
+                      - generic: שוק ההון
+                      - generic: חדש לצפייה
+                    - generic: 24 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר
+                  - generic:
+                    - generic:
+                      - generic: E
+                      - generic: Eden Bibas
+                  - generic:
+                    - generic: "#בינה מלאכותית"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: בינה מלאכותית
+                      - generic: חדש לצפייה
+                    - generic: 6 אפר׳ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: מפגש 3 - הקסמים של קלוד קוד
+                  - generic:
+                    - generic:
+                      - generic: E
+                      - generic: Eden Bibas
+                  - generic:
+                    - generic: "#בינה מלאכותית"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: בינה מלאכותית
+                      - generic: חדש לצפייה
+                    - generic: 6 מרץ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!
+                  - generic:
+                    - generic:
+                      - generic: E
+                      - generic: Eden Bibas
+                  - generic:
+                    - generic: "#בינה מלאכותית"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: בינה מלאכותית
+                      - generic: חדש לצפייה
+                    - generic: 5 מרץ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: מפגש 2 - התקנת סקילים + בניית מצגות
+                  - generic:
+                    - generic:
+                      - generic: E
+                      - generic: Eden Bibas
+                  - generic:
+                    - generic: "#בינה מלאכותית"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: בינה מלאכותית
+                      - generic: חדש לצפייה
+                    - generic: 5 מרץ 2026
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?
+                  - generic:
+                    - generic:
+                      - generic: R
+                      - generic: Ran Bar Zik
+                  - generic:
+                    - generic: "#פיתוח תוכנה"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: פיתוח
+                      - generic: חדש לצפייה
+                    - generic: 22 דצמ׳ 2025
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP
+                  - generic:
+                    - generic:
+                      - generic: R
+                      - generic: Ran Bar Zik
+                  - generic:
+                    - generic: "#פיתוח תוכנה"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: פיתוח
+                      - generic: חדש לצפייה
+                    - generic: 14 דצמ׳ 2025
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: SDR התקנה והפעלה ראשונית SD 480p
+                  - generic:
+                    - generic:
+                      - generic: R
+                      - generic: Ran Bar Zik
+                  - generic:
+                    - generic: "#פיתוח תוכנה"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: פיתוח
+                      - generic: חדש לצפייה
+                    - generic: 21 ספט׳ 2025
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                - generic:
+                  - heading [level=3]: רן בר זיק בשש בכאן 27 10
+                  - generic:
+                    - generic:
+                      - generic: R
+                      - generic: Ran Bar Zik
+                  - generic:
+                    - generic: "#פיתוח תוכנה"
+                    - generic: "#כלים וטכנולוגיות"
+                  - generic:
+                    - generic:
+                      - generic: פיתוח
+                      - generic: חדש לצפייה
+                    - generic: 28 אוג׳ 2025
+    - region "Notifications alt+T"
+  - dialog [ref=e350]:
+    - button [active] [ref=e351] [cursor=pointer]:
+      - img [ref=e352]
+    - generic [ref=e358]:
+      - generic [ref=e359]:
+        - img "85% of Traders Don’t Understand This… Do You?" [ref=e360]
+        - link [ref=e361] [cursor=pointer]:
+          - /url: https://www.youtube.com/watch?v=APWwH3k7DfE
+          - img [ref=e363]
+      - generic [ref=e367]:
+        - generic [ref=e368]:
+          - heading "85% of Traders Don’t Understand This… Do You?" [level=2] [ref=e369]
+          - button "שמור" [ref=e370] [cursor=pointer]:
+            - img [ref=e371]
+        - generic [ref=e373]:
+          - generic [ref=e374]:
+            - img [ref=e375]
+            - text: לפני 17 שעות
+          - button "העתק קישור" [ref=e377] [cursor=pointer]:
+            - img [ref=e378]
+            - text: העתק קישור
+          - generic [ref=e381]:
+            - generic [ref=e382]: O
+            - text: Oliver Velez Trading
+          - link "NotebookLM" [ref=e383] [cursor=pointer]:
+            - /url: https://notebooklm.google.com/
+            - img [ref=e384]
+            - text: NotebookLM
+          - generic [ref=e388]: שוק ההון
+          - generic [ref=e389]: מוכן
+      - generic [ref=e390]:
+        - paragraph [ref=e391]: מה תלמד כאן
+        - paragraph [ref=e392]: "[MOCK] הסרטון \"85% of Traders Don’t Understand This… Do You?\" מציג גישה מעמיקה לנושא. זוהי תוצאה מדומה לבדיקת UI."
+      - generic [ref=e394]:
+        - combobox [ref=e395] [cursor=pointer]:
+          - generic: טרם התחיל
+          - img [ref=e396]
+        - generic [ref=e399]: סטטוס למידה
+      - generic [ref=e401]:
+        - generic [ref=e402]:
+          - text: "#מסחר"
+          - button "×" [ref=e403] [cursor=pointer]
+        - generic [ref=e404]:
+          - text: "#מניות"
+          - button "×" [ref=e405] [cursor=pointer]
+      - generic [ref=e406]:
+        - tablist [ref=e407]:
+          - tab "סיכום" [selected] [ref=e408] [cursor=pointer]
+          - tab "נקודות מפתח" [ref=e409] [cursor=pointer]
+          - tab "הערות" [ref=e410] [cursor=pointer]
+        - tabpanel "סיכום" [ref=e411]:
+          - generic [ref=e412]:
+            - heading "סיכום קצר" [level=4] [ref=e413]
+            - paragraph [ref=e414]: "[MOCK] הסרטון \"85% of Traders Don’t Understand This… Do You?\" מציג גישה מעמיקה לנושא. זוהי תוצאה מדומה לבדיקת UI."
+          - generic [ref=e415]:
+            - heading "סיכום מלא" [level=4] [ref=e416]
+            - paragraph [ref=e417]: "[MOCK] הסרטון מכסה נושאים מרכזיים ומציג גישות מעשיות ברורות. כל התוכן הוא לבדיקה בלבד."
+          - generic [ref=e418]:
+            - heading "פרקי הסרטון" [level=4] [ref=e419]
+            - list [ref=e420]:
+              - listitem [ref=e421]:
+                - generic [ref=e422]: "1"
+                - generic [ref=e423]:
+                  - paragraph [ref=e424]: ניתוח השוק
+                  - paragraph [ref=e425]: מה קורה בשוק כרגע ולמה זה חשוב
+              - listitem [ref=e426]:
+                - generic [ref=e427]: "2"
+                - generic [ref=e428]:
+                  - paragraph [ref=e429]: זיהוי הזדמנויות
+                  - paragraph [ref=e430]: אינדיקציות לעסקאות פוטנציאליות
+              - listitem [ref=e431]:
+                - generic [ref=e432]: "3"
+                - generic [ref=e433]:
+                  - paragraph [ref=e434]: ניהול סיכונים
+                  - paragraph [ref=e435]: הגנה על ההשקעה וניהול פוזיציות
+              - listitem [ref=e436]:
+                - generic [ref=e437]: "4"
+                - generic [ref=e438]:
+                  - paragraph [ref=e439]: תוכנית פעולה
+                  - paragraph [ref=e440]: צעדים מעשיים ליישום מיידי
+              - listitem [ref=e441]:
+                - generic [ref=e442]: "5"
+                - generic [ref=e443]:
+                  - paragraph [ref=e444]: סיכום ומסקנות
+                  - paragraph [ref=e445]: הנקודות הכי חשובות לזכור
+          - button "נתח מחדש עם AI" [ref=e446] [cursor=pointer]:
+            - img [ref=e447]
+            - text: נתח מחדש עם AI
+    - button "סגור" [ref=e451] [cursor=pointer]:
+      - img [ref=e452]
+      - generic [ref=e455]: סגור

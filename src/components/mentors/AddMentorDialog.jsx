@@ -4,12 +4,15 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAddMentorWithSource } from "@/hooks/useMentors";
-import { useTopics } from "@/hooks/useTopics";
+import { useCreateTopic, useTopics } from "@/hooks/useTopics";
 import { getTopicByName, DEFAULT_TOPIC_CONFIG } from "@/config/topicConfig";
+import { isAcceptableMentorSourceUrl, normalizeMentorYouTubeSourceUrl } from "@/lib/mentorSourceUrl";
+import { getMainTopicIdForTopic } from "@/lib/topicFilters";
 
 // ── localStorage topic order (shared with sidebar & admin) ────────────────
 const ORDER_KEY = "ym_topic_order";
@@ -55,22 +58,27 @@ const SOURCE_TYPE_CONFIG = {
 
 // ── Initial form state ─────────────────────────────────────────────────────
 const EMPTY_FORM = {
-  name:        "",
-  topicId:     "",   // ID of selected topic from the DB
-  sourceUrl:   "",
-  topic:       "",   // free-text "תחום" (sub-topic / domain)
-  description: "",   // הערות
-  avatarUrl:   "",
-  active:      true,
+  name:           "",
+  topicId:        "",
+  sourceUrl:      "",
+  topic:          "",
+  description:    "",
+  avatarUrl:      "",
+  active:         true,
+  isOpponentView: false,
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
 export function AddMentorDialog({ open, onOpenChange }) {
   const [form, setForm]     = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [subTopicChoice, setSubTopicChoice] = useState("none"); // "none" | "__new__" | topicId
+  const [newSubTopicName, setNewSubTopicName] = useState("");
+  const [subTopicError, setSubTopicError] = useState("");
 
   const addMentor           = useAddMentorWithSource();
   const { data: allTopics = [] } = useTopics();
+  const createTopic = useCreateTopic();
 
   // Only main topics, in sidebar order
   const mainTopics = useMemo(() => {
@@ -86,14 +94,30 @@ export function AddMentorDialog({ open, onOpenChange }) {
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
+  const selectedMainTopicId = useMemo(
+    () => getMainTopicIdForTopic(form.topicId, allTopics),
+    [form.topicId, allTopics]
+  );
+
+  const availableSubTopics = useMemo(() => {
+    if (!selectedMainTopicId || selectedMainTopicId === "all") return [];
+    return allTopics
+      .filter((t) => t.parentId === selectedMainTopicId)
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "he"));
+  }, [allTopics, selectedMainTopicId]);
+
   const validate = () => {
     const errs = {};
     if (!form.name.trim())    errs.name    = "שדה חובה";
     if (!form.topicId)        errs.topicId = "יש לבחור נושא";
-    if (!form.sourceUrl.trim()) {
+    const sourceTrim = form.sourceUrl.trim();
+    const normalizedSource = normalizeMentorYouTubeSourceUrl(sourceTrim) || sourceTrim;
+    if (!sourceTrim) {
       errs.sourceUrl = "שדה חובה";
-    } else if (!isValidUrl(form.sourceUrl.trim())) {
+    } else if (!isValidUrl(sourceTrim)) {
       errs.sourceUrl = "URL לא תקין — יש להזין כתובת מלאה (https://...)";
+    } else if (!isAcceptableMentorSourceUrl(normalizedSource)) {
+      errs.sourceUrl = "קישור YouTube לא תקין";
     }
     return errs;
   };
@@ -102,24 +126,54 @@ export function AddMentorDialog({ open, onOpenChange }) {
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     try {
+      // If user chose to create a new sub-topic, create it first and use it as the leaf topicId.
+      let leafTopicId = form.topicId;
+      if (subTopicChoice === "__new__") {
+        const trimmed = newSubTopicName.trim();
+        if (!trimmed) {
+          setSubTopicError("יש להזין שם לתת-נושא");
+          return;
+        }
+        const created = await createTopic.mutateAsync({
+          name: trimmed,
+          color: "blue",
+          parentId: selectedMainTopicId && selectedMainTopicId !== "all" ? selectedMainTopicId : null,
+        });
+        leafTopicId = created?.id || leafTopicId;
+      }
+
       await addMentor.mutateAsync({
         mentorData: {
-          name:        form.name.trim(),
-          topicIds:    form.topicId ? [form.topicId] : [],
-          topic:       form.topic.trim()       || null,
-          avatarUrl:   form.avatarUrl.trim()   || null,
-          active:      form.active,
-          description: form.description.trim() || null,
+          name:           form.name.trim(),
+          topicIds:       leafTopicId ? [leafTopicId] : [],
+          topic:          form.topic.trim()       || null,
+          avatarUrl:      form.avatarUrl.trim()   || null,
+          active:         form.active,
+          description:    form.description.trim() || null,
+          isOpponentView: form.isOpponentView,
         },
-        sourceUrl:  form.sourceUrl.trim(),
+        sourceUrl:  normalizeMentorYouTubeSourceUrl(form.sourceUrl.trim()) || form.sourceUrl.trim(),
         sourceType: detectSourceType(form.sourceUrl.trim()),
       });
       toast.success(`המנטור "${form.name.trim()}" נוסף בהצלחה`);
       setForm(EMPTY_FORM);
       setErrors({});
+      setSubTopicChoice("none");
+      setNewSubTopicName("");
+      setSubTopicError("");
       onOpenChange(false);
     } catch (err) {
-      toast.error("שגיאה בשמירת המנטור — נסה שוב");
+      const msg = String(err?.message || "").trim();
+      const fallback = "שגיאה בשמירת המנטור — נסה שוב";
+      if (msg.includes("כבר קיים")) toast.error("שם מנטור כבר קיים");
+      else if (msg.includes("localStorage")) toast.error(msg.length < 200 ? msg : fallback);
+      else if (msg.includes("נושא") || msg.includes("topic")) toast.error(msg.length < 200 ? msg : "חסר נושא");
+      else if (msg.includes("YouTube") || msg.includes("קישור")) toast.error(msg.length < 200 ? msg : "קישור YouTube לא תקין");
+      else if (msg.includes("זהות") || msg.includes("ערוץ")) toast.error(msg.length < 200 ? msg : "לא ניתן לזהות ערוץ YouTube");
+      else if (msg.length > 2 && msg.length < 200) toast.error(msg);
+      else {
+        toast.error(fallback);
+      }
       console.error("[AddMentorDialog]", err);
     }
   };
@@ -128,6 +182,9 @@ export function AddMentorDialog({ open, onOpenChange }) {
     if (addMentor.isPending) return;
     setForm(EMPTY_FORM);
     setErrors({});
+    setSubTopicChoice("none");
+    setNewSubTopicName("");
+    setSubTopicError("");
     onOpenChange(false);
   };
 
@@ -145,6 +202,9 @@ export function AddMentorDialog({ open, onOpenChange }) {
               <DialogTitle className="text-base font-semibold text-gray-900">
                 הוספת מנטור חדש
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                טופס להוספת מנטור חדש יחד עם מקור YouTube או RSS.
+              </DialogDescription>
               <p className="text-xs text-gray-400 mt-0.5">
                 מלא את הפרטים הבסיסיים — ייצור מנטור ומקור יחד
               </p>
@@ -172,12 +232,18 @@ export function AddMentorDialog({ open, onOpenChange }) {
               {mainTopics.map((topic) => {
                 const cfg      = getTopicByName(topic.name) || DEFAULT_TOPIC_CONFIG;
                 const Icon     = cfg.Icon;
-                const selected = form.topicId === topic.id;
+                const selected = selectedMainTopicId === topic.id && (!form.topicId || form.topicId === topic.id);
                 return (
                   <button
                     key={topic.id}
                     type="button"
-                    onClick={() => set("topicId", selected ? "" : topic.id)}
+                    onClick={() => {
+                      const nextMain = selected ? "" : topic.id;
+                      set("topicId", nextMain);
+                      setSubTopicChoice("none");
+                      setNewSubTopicName("");
+                      setSubTopicError("");
+                    }}
                     className={[
                       "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-right transition-all",
                       selected
@@ -198,13 +264,70 @@ export function AddMentorDialog({ open, onOpenChange }) {
             {mainTopics.length === 0 && (
               <p className="text-xs text-gray-400 py-2 text-center">טוען נושאים...</p>
             )}
+
+            {/* Sub Topic (optional) */}
+            {selectedMainTopicId && selectedMainTopicId !== "all" && (
+              <div className="pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-700">תת-נושא (אופציונלי)</span>
+                  {availableSubTopics.length > 0 && (
+                    <span className="text-[11px] text-gray-400">
+                      {availableSubTopics.length} אפשרויות
+                    </span>
+                  )}
+                </div>
+
+                <select
+                  value={subTopicChoice}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSubTopicChoice(v);
+                    setSubTopicError("");
+                    if (v === "none") {
+                      set("topicId", selectedMainTopicId);
+                    } else if (v === "__new__") {
+                      set("topicId", selectedMainTopicId);
+                    } else {
+                      set("topicId", v); // leaf = subTopic
+                    }
+                  }}
+                  className={fieldCls() + " text-right"}
+                  disabled={!selectedMainTopicId}
+                >
+                  <option value="none">ללא תת-נושא</option>
+                  <option value="__new__">+ תת-נושא חדש</option>
+                  {availableSubTopics.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+
+                {subTopicChoice === "__new__" && (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      value={newSubTopicName}
+                      onChange={(e) => {
+                        setNewSubTopicName(e.target.value);
+                        if (subTopicError) setSubTopicError("");
+                      }}
+                      placeholder="שם תת-נושא חדש"
+                      className={fieldCls(subTopicError)}
+                    />
+                    {subTopicError && <p className="text-xs text-red-500">{subTopicError}</p>}
+                  </div>
+                )}
+              </div>
+            )}
           </Field>
 
           {/* 3. קישור למקור */}
           <Field label="קישור למנטור" required error={errors.sourceUrl}>
             <div className="space-y-1.5">
               <input
-                type="url"
+                type="text"
+                inputMode="url"
                 placeholder="https://www.youtube.com/@username"
                 value={form.sourceUrl}
                 onChange={(e) => set("sourceUrl", e.target.value)}
@@ -279,6 +402,18 @@ export function AddMentorDialog({ open, onOpenChange }) {
               className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-200"
             />
             <span className="text-sm text-gray-700">מנטור פעיל</span>
+          </label>
+
+          {/* Opponent View */}
+          <label className="flex items-center gap-3 cursor-pointer rounded-lg border border-rose-100 bg-rose-50 px-3 py-2.5 transition hover:bg-rose-100">
+            <input
+              type="checkbox"
+              checked={form.isOpponentView}
+              onChange={(e) => set("isOpponentView", e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-rose-600"
+            />
+            <span className="text-sm font-medium text-rose-700">☑ דעת האויב</span>
+            <span className="text-xs text-rose-500 mr-auto">ערוץ זה מייצג עמדה חיצונית — לא עמדתי האישית</span>
           </label>
         </div>
 

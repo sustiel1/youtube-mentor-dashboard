@@ -102,6 +102,23 @@ GitHub הוא מקור האמת של הקוד.
 
 ---
 
+## עיבוד קבצים עם Ollama
+
+### כלל
+- קבצים מעל 500 שורות — שלח ל-Ollama על `localhost:11434` עם המודל `qwen2.5-coder:7b` לקריאה וסיכום.
+- קבצים עד 500 שורות — עבד ישירות ללא Ollama.
+
+### דוגמה לשליחה ל-Ollama
+```bash
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen2.5-coder:7b",
+  "prompt": "Summarize this file:\n<file content here>",
+  "stream": false
+}'
+```
+
+---
+
 ## Environment Variables
 
 ### כלל
@@ -115,3 +132,36 @@ VITE_BASE44_APP_BASE_URL=https://your-app-name.base44.app
 GEMINI_API_KEY=your_gemini_api_key
 BASE44_TOKEN=your_base44_token
 ```
+
+---
+
+## הגדרות AI מאושרות — אל תשנה בלי אישור מפורש
+
+הגדרות אלה נבדקו ותוקנו ידנית. שינוי שלהן עלול לשבור את זרימת הניתוח.
+
+### Claude API (vite.config.js)
+
+| הגדרה | ערך | סיבה |
+|---|---|---|
+| `max_tokens` | `8192` | ערך נמוך יותר גורם ל-JSON חתוך (Unterminated string) |
+| `ANTHROPIC_MESSAGE_MS` | `600_000` | timeout של 600 שניות — transcript ארוך דורש זמן |
+| `server.httpServer.timeout` | `620_000` | חייב להיות גדול מ-ANTHROPIC_MESSAGE_MS |
+| `CHUNK_THRESHOLD` | `15_000` | transcripts מעל 15K תווים מחולקים ל-2 chunks |
+| chunk split point | `~10_000` תווים | מחפש `.` הכי קרוב ל-10,500 כדי לפצל במשפט שלם |
+
+### Gemini / transcript (vite.config.js + VideoDetailPanel.jsx)
+
+| הגדרה | ערך | סיבה |
+|---|---|---|
+| transcript threshold | `300` תווים | transcripts קצרים מ-300 תווים לא עוברים לניתוח |
+| `GEMINI_MOCK` | `false` | mock מחזיר טקסט מלאכותי שעובר quality gate לא נכון |
+
+### Environment Variables נדרשים
+
+```env
+ANTHROPIC_API_KEY=sk-ant-api03-...   # server-side only, ללא VITE_ prefix
+GEMINI_API_KEY=...
+GEMINI_MOCK=false
+```
+
+> **שים לב:** `ANTHROPIC_API_KEY` ללא prefix של `VITE_` — זה בכוונה. המפתח נחשף רק ב-vite.config.js (server-side), לא ב-client bundle.

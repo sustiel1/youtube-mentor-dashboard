@@ -1,0 +1,432 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e1062] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+          - button "ספריית ידע" [active] [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+            - generic [ref=e34]: ספריית ידע
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - button "נושאים" [ref=e37] [cursor=pointer]
+            - button "הוסף" [ref=e38] [cursor=pointer]:
+              - img [ref=e39]
+              - text: הוסף
+          - generic [ref=e41]:
+            - generic [ref=e43]:
+              - button "כל הסרטונים של \"בינה מלאכותית\"" [ref=e44] [cursor=pointer]:
+                - img [ref=e45]
+              - generic [ref=e48]:
+                - button "ערוך נושא" [ref=e49] [cursor=pointer]:
+                  - img [ref=e50]
+                - button "מחק נושא" [ref=e53] [cursor=pointer]:
+                  - img [ref=e54]
+              - button "בינה מלאכותית" [ref=e57]
+              - button [ref=e58] [cursor=pointer]:
+                - img [ref=e59]
+              - img [ref=e61]
+            - generic [ref=e69]:
+              - button "כל הסרטונים של \"שוק ההון\"" [ref=e70] [cursor=pointer]:
+                - img [ref=e71]
+              - generic [ref=e75]:
+                - button "ערוך נושא" [ref=e76] [cursor=pointer]:
+                  - img [ref=e77]
+                - button "מחק נושא" [ref=e80] [cursor=pointer]:
+                  - img [ref=e81]
+              - button "שוק ההון" [ref=e84]
+              - button [ref=e85] [cursor=pointer]:
+                - img [ref=e86]
+              - img [ref=e88]
+            - generic [ref=e96]:
+              - button "כל הסרטונים של \"פיתוח תוכנה\"" [ref=e97] [cursor=pointer]:
+                - img [ref=e98]
+              - generic [ref=e101]:
+                - button "ערוך נושא" [ref=e102] [cursor=pointer]:
+                  - img [ref=e103]
+                - button "מחק נושא" [ref=e106] [cursor=pointer]:
+                  - img [ref=e107]
+              - button "פיתוח תוכנה" [ref=e110]
+              - button [ref=e111] [cursor=pointer]:
+                - img [ref=e112]
+              - img [ref=e114]
+            - generic [ref=e122]:
+              - button "כל הסרטונים של \"מסחר יומי\"" [ref=e123] [cursor=pointer]:
+                - img [ref=e124]
+              - generic [ref=e127]:
+                - button "ערוך נושא" [ref=e128] [cursor=pointer]:
+                  - img [ref=e129]
+                - button "מחק נושא" [ref=e132] [cursor=pointer]:
+                  - img [ref=e133]
+              - button "מסחר יומי" [ref=e136]
+              - button [ref=e137] [cursor=pointer]:
+                - img [ref=e138]
+              - img [ref=e140]
+            - generic [ref=e148]:
+              - button "כל הסרטונים של \"פיתוח\"" [ref=e149] [cursor=pointer]:
+                - img [ref=e150]
+              - generic [ref=e153]:
+                - button "ערוך נושא" [ref=e154] [cursor=pointer]:
+                  - img [ref=e155]
+                - button "מחק נושא" [ref=e158] [cursor=pointer]:
+                  - img [ref=e159]
+              - button "פיתוח" [ref=e162]
+              - button [ref=e163] [cursor=pointer]:
+                - img [ref=e164]
+              - img [ref=e166]
+            - generic [ref=e174]:
+              - button "כל הסרטונים של \"React\"" [ref=e175] [cursor=pointer]:
+                - img [ref=e176]
+              - generic [ref=e179]:
+                - button "ערוך נושא" [ref=e180] [cursor=pointer]:
+                  - img [ref=e181]
+                - button "מחק נושא" [ref=e184] [cursor=pointer]:
+                  - img [ref=e185]
+              - button "React" [ref=e188]
+              - button [ref=e189] [cursor=pointer]:
+                - img [ref=e190]
+              - img [ref=e192]
+            - generic [ref=e200]:
+              - button "כל הסרטונים של \"Base44\"" [ref=e201] [cursor=pointer]:
+                - img [ref=e202]
+              - generic [ref=e205]:
+                - button "ערוך נושא" [ref=e206] [cursor=pointer]:
+                  - img [ref=e207]
+                - button "מחק נושא" [ref=e210] [cursor=pointer]:
+                  - img [ref=e211]
+              - button "Base44" [ref=e214]
+              - button [ref=e215] [cursor=pointer]:
+                - img [ref=e216]
+              - img [ref=e218]
+            - generic [ref=e226]:
+              - button "כל הסרטונים של \"Prompt Engineering\"" [ref=e227] [cursor=pointer]:
+                - img [ref=e228]
+              - generic [ref=e231]:
+                - button "ערוך נושא" [ref=e232] [cursor=pointer]:
+                  - img [ref=e233]
+                - button "מחק נושא" [ref=e236] [cursor=pointer]:
+                  - img [ref=e237]
+              - button "Prompt Engineering" [ref=e240]
+              - button [ref=e241] [cursor=pointer]:
+                - img [ref=e242]
+              - img [ref=e244]
+      - generic [ref=e251]:
+        - button "מנטור חדש" [ref=e252] [cursor=pointer]:
+          - img [ref=e253]
+          - generic [ref=e256]: מנטור חדש
+        - button "ניהול" [ref=e257] [cursor=pointer]:
+          - img [ref=e258]
+          - generic [ref=e261]: ניהול
+    - main [ref=e262]:
+      - generic [ref=e1063]:
+        - generic [ref=e1064]:
+          - img [ref=e1065]
+          - generic [ref=e1067]:
+            - heading "ספריית ידע" [level=1] [ref=e1068]
+            - paragraph [ref=e1069]: 24 סרטונים · 24 מוצגים
+        - generic [ref=e1070]:
+          - generic [ref=e1071]:
+            - img
+            - textbox "חיפוש לפי כותרת או מנטור..." [ref=e1072]
+          - generic [ref=e1073]:
+            - generic [ref=e1074]: "תמלול:"
+            - button "הכל" [ref=e1075] [cursor=pointer]
+            - button "גבוה" [ref=e1076] [cursor=pointer]
+            - button "בינוני" [ref=e1077] [cursor=pointer]
+            - button "נמוך" [ref=e1078] [cursor=pointer]
+            - button "אין תמלול" [ref=e1079] [cursor=pointer]
+          - generic [ref=e1080]:
+            - generic [ref=e1081]: "פרקים:"
+            - button "הכל" [ref=e1082] [cursor=pointer]
+            - button "AI" [ref=e1083] [cursor=pointer]
+            - button "תיאור" [ref=e1084] [cursor=pointer]
+            - button "הערכה" [ref=e1085] [cursor=pointer]
+            - button "ללא פרקים" [ref=e1086] [cursor=pointer]
+        - table [ref=e1088]:
+          - rowgroup [ref=e1089]:
+            - row "כותרת מנטור תמלול פרקים מקור פרקים נותח" [ref=e1090]:
+              - columnheader "כותרת" [ref=e1091]
+              - columnheader "מנטור" [ref=e1092]
+              - columnheader "תמלול" [ref=e1093]
+              - columnheader "פרקים" [ref=e1094]
+              - columnheader "מקור פרקים" [ref=e1095]
+              - columnheader "נותח" [ref=e1096]
+          - rowgroup [ref=e1097]:
+            - row "ניתוח שבועי — שוק המניות האמריקאי 15.3.2025 Micha.Stocks אין — — —" [ref=e1098] [cursor=pointer]:
+              - cell "ניתוח שבועי — שוק המניות האמריקאי 15.3.2025" [ref=e1099]:
+                - paragraph [ref=e1100]: ניתוח שבועי — שוק המניות האמריקאי
+                - paragraph [ref=e1101]: 15.3.2025
+              - cell "Micha.Stocks" [ref=e1102]
+              - cell "אין" [ref=e1103]:
+                - generic [ref=e1104]: אין
+              - cell "—" [ref=e1105]
+              - cell "—" [ref=e1106]:
+                - generic [ref=e1107]: —
+              - cell "—" [ref=e1108]
+            - row "5 מניות שאני עוקב אחריהן עכשיו 8.3.2025 Micha.Stocks אין — — —" [ref=e1109] [cursor=pointer]:
+              - cell "5 מניות שאני עוקב אחריהן עכשיו 8.3.2025" [ref=e1110]:
+                - paragraph [ref=e1111]: 5 מניות שאני עוקב אחריהן עכשיו
+                - paragraph [ref=e1112]: 8.3.2025
+              - cell "Micha.Stocks" [ref=e1113]
+              - cell "אין" [ref=e1114]:
+                - generic [ref=e1115]: אין
+              - cell "—" [ref=e1116]
+              - cell "—" [ref=e1117]:
+                - generic [ref=e1118]: —
+              - cell "—" [ref=e1119]
+            - row "ניתוח טכני — איך קוראים גרף נכון 14.3.2025 בורסה גרף אין — — —" [ref=e1120] [cursor=pointer]:
+              - cell "ניתוח טכני — איך קוראים גרף נכון 14.3.2025" [ref=e1121]:
+                - paragraph [ref=e1122]: ניתוח טכני — איך קוראים גרף נכון
+                - paragraph [ref=e1123]: 14.3.2025
+              - cell "בורסה גרף" [ref=e1124]
+              - cell "אין" [ref=e1125]:
+                - generic [ref=e1126]: אין
+              - cell "—" [ref=e1127]
+              - cell "—" [ref=e1128]:
+                - generic [ref=e1129]: —
+              - cell "—" [ref=e1130]
+            - row "RSI + MACD — שימוש נכון באינדיקטורים 7.3.2025 בורסה גרף אין — — —" [ref=e1131] [cursor=pointer]:
+              - cell "RSI + MACD — שימוש נכון באינדיקטורים 7.3.2025" [ref=e1132]:
+                - paragraph [ref=e1133]: RSI + MACD — שימוש נכון באינדיקטורים
+                - paragraph [ref=e1134]: 7.3.2025
+              - cell "בורסה גרף" [ref=e1135]
+              - cell "אין" [ref=e1136]:
+                - generic [ref=e1137]: אין
+              - cell "—" [ref=e1138]
+              - cell "—" [ref=e1139]:
+                - generic [ref=e1140]: —
+              - cell "—" [ref=e1141]
+            - row "Build an AI Agent with n8n — Full Tutorial 16.3.2025 Ed Hill AI Automation אין — — —" [ref=e1142] [cursor=pointer]:
+              - cell "Build an AI Agent with n8n — Full Tutorial 16.3.2025" [ref=e1143]:
+                - paragraph [ref=e1144]: Build an AI Agent with n8n — Full Tutorial
+                - paragraph [ref=e1145]: 16.3.2025
+              - cell "Ed Hill AI Automation" [ref=e1146]
+              - cell "אין" [ref=e1147]:
+                - generic [ref=e1148]: אין
+              - cell "—" [ref=e1149]
+              - cell "—" [ref=e1150]:
+                - generic [ref=e1151]: —
+              - cell "—" [ref=e1152]
+            - row "Automate Your Business with AI — 5 Workflows 9.3.2025 Ed Hill AI Automation אין — — —" [ref=e1153] [cursor=pointer]:
+              - cell "Automate Your Business with AI — 5 Workflows 9.3.2025" [ref=e1154]:
+                - paragraph [ref=e1155]: Automate Your Business with AI — 5 Workflows
+                - paragraph [ref=e1156]: 9.3.2025
+              - cell "Ed Hill AI Automation" [ref=e1157]
+              - cell "אין" [ref=e1158]:
+                - generic [ref=e1159]: אין
+              - cell "—" [ref=e1160]
+              - cell "—" [ref=e1161]:
+                - generic [ref=e1162]: —
+              - cell "—" [ref=e1163]
+            - row "Make vs n8n — השוואה מלאה ל-2025 13.3.2025 Automation-Tribe אין — — —" [ref=e1164] [cursor=pointer]:
+              - cell "Make vs n8n — השוואה מלאה ל-2025 13.3.2025" [ref=e1165]:
+                - paragraph [ref=e1166]: Make vs n8n — השוואה מלאה ל-2025
+                - paragraph [ref=e1167]: 13.3.2025
+              - cell "Automation-Tribe" [ref=e1168]
+              - cell "אין" [ref=e1169]:
+                - generic [ref=e1170]: אין
+              - cell "—" [ref=e1171]
+              - cell "—" [ref=e1172]:
+                - generic [ref=e1173]: —
+              - cell "—" [ref=e1174]
+            - row "n8n Crash Course — מדריך למתחילים 6.3.2025 Automation-Tribe אין — — —" [ref=e1175] [cursor=pointer]:
+              - cell "n8n Crash Course — מדריך למתחילים 6.3.2025" [ref=e1176]:
+                - paragraph [ref=e1177]: n8n Crash Course — מדריך למתחילים
+                - paragraph [ref=e1178]: 6.3.2025
+              - cell "Automation-Tribe" [ref=e1179]
+              - cell "אין" [ref=e1180]:
+                - generic [ref=e1181]: אין
+              - cell "—" [ref=e1182]
+              - cell "—" [ref=e1183]:
+                - generic [ref=e1184]: —
+              - cell "—" [ref=e1185]
+            - row "10 AI Tools That Changed My Workflow in 2025 17.3.2025 AI Andy אין — — —" [ref=e1186] [cursor=pointer]:
+              - cell "10 AI Tools That Changed My Workflow in 2025 17.3.2025" [ref=e1187]:
+                - paragraph [ref=e1188]: 10 AI Tools That Changed My Workflow in 2025
+                - paragraph [ref=e1189]: 17.3.2025
+              - cell "AI Andy" [ref=e1190]
+              - cell "אין" [ref=e1191]:
+                - generic [ref=e1192]: אין
+              - cell "—" [ref=e1193]
+              - cell "—" [ref=e1194]:
+                - generic [ref=e1195]: —
+              - cell "—" [ref=e1196]
+            - row "ChatGPT למתחילים — המדריך המלא בעברית 12.3.2025 Aimprove - אימפרוב אין — — —" [ref=e1197] [cursor=pointer]:
+              - cell "ChatGPT למתחילים — המדריך המלא בעברית 12.3.2025" [ref=e1198]:
+                - paragraph [ref=e1199]: ChatGPT למתחילים — המדריך המלא בעברית
+                - paragraph [ref=e1200]: 12.3.2025
+              - cell "Aimprove - אימפרוב" [ref=e1201]
+              - cell "אין" [ref=e1202]:
+                - generic [ref=e1203]: אין
+              - cell "—" [ref=e1204]
+              - cell "—" [ref=e1205]:
+                - generic [ref=e1206]: —
+              - cell "—" [ref=e1207]
+            - row "Claude vs ChatGPT — מה עדיף ב-2025? 5.3.2025 Aimprove - אימפרוב אין — — —" [ref=e1208] [cursor=pointer]:
+              - cell "Claude vs ChatGPT — מה עדיף ב-2025? 5.3.2025" [ref=e1209]:
+                - paragraph [ref=e1210]: Claude vs ChatGPT — מה עדיף ב-2025?
+                - paragraph [ref=e1211]: 5.3.2025
+              - cell "Aimprove - אימפרוב" [ref=e1212]
+              - cell "אין" [ref=e1213]:
+                - generic [ref=e1214]: אין
+              - cell "—" [ref=e1215]
+              - cell "—" [ref=e1216]:
+                - generic [ref=e1217]: —
+              - cell "—" [ref=e1218]
+            - row "פסיכולוגיית מסחר — למה רוב הטריידרים מפסידים 11.3.2025 The Hasidic Trader אין — — —" [ref=e1219] [cursor=pointer]:
+              - cell "פסיכולוגיית מסחר — למה רוב הטריידרים מפסידים 11.3.2025" [ref=e1220]:
+                - paragraph [ref=e1221]: פסיכולוגיית מסחר — למה רוב הטריידרים מפסידים
+                - paragraph [ref=e1222]: 11.3.2025
+              - cell "The Hasidic Trader" [ref=e1223]
+              - cell "אין" [ref=e1224]:
+                - generic [ref=e1225]: אין
+              - cell "—" [ref=e1226]
+              - cell "—" [ref=e1227]:
+                - generic [ref=e1228]: —
+              - cell "—" [ref=e1229]
+            - row "Sora, Gemini ו-GPT-5 — כל מה שחדש בעולם ה-AI 18.3.2025 Eden Bibas אין — — —" [ref=e1230] [cursor=pointer]:
+              - cell "Sora, Gemini ו-GPT-5 — כל מה שחדש בעולם ה-AI 18.3.2025" [ref=e1231]:
+                - paragraph [ref=e1232]: Sora, Gemini ו-GPT-5 — כל מה שחדש בעולם ה-AI
+                - paragraph [ref=e1233]: 18.3.2025
+              - cell "Eden Bibas" [ref=e1234]
+              - cell "אין" [ref=e1235]:
+                - generic [ref=e1236]: אין
+              - cell "—" [ref=e1237]
+              - cell "—" [ref=e1238]:
+                - generic [ref=e1239]: —
+              - cell "—" [ref=e1240]
+            - 'row "The #1 Trading Strategy for Momentum Stocks 10.3.2025 Oliver Velez Trading אין — — —" [ref=e1241] [cursor=pointer]':
+              - 'cell "The #1 Trading Strategy for Momentum Stocks 10.3.2025" [ref=e1242]':
+                - paragraph [ref=e1243]: "The #1 Trading Strategy for Momentum Stocks"
+                - paragraph [ref=e1244]: 10.3.2025
+              - cell "Oliver Velez Trading" [ref=e1245]
+              - cell "אין" [ref=e1246]:
+                - generic [ref=e1247]: אין
+              - cell "—" [ref=e1248]
+              - cell "—" [ref=e1249]:
+                - generic [ref=e1250]: —
+              - cell "—" [ref=e1251]
+            - row "How to Read the Tape — Level 2 Trading 3.3.2025 Oliver Velez Trading אין — — —" [ref=e1252] [cursor=pointer]:
+              - cell "How to Read the Tape — Level 2 Trading 3.3.2025" [ref=e1253]:
+                - paragraph [ref=e1254]: How to Read the Tape — Level 2 Trading
+                - paragraph [ref=e1255]: 3.3.2025
+              - cell "Oliver Velez Trading" [ref=e1256]
+              - cell "אין" [ref=e1257]:
+                - generic [ref=e1258]: אין
+              - cell "—" [ref=e1259]
+              - cell "—" [ref=e1260]:
+                - generic [ref=e1261]: —
+              - cell "—" [ref=e1262]
+            - row "Build an AI Trading Agent — Step by Step 16.3.2025 AI Pathways אין — — —" [ref=e1263] [cursor=pointer]:
+              - cell "Build an AI Trading Agent — Step by Step 16.3.2025" [ref=e1264]:
+                - paragraph [ref=e1265]: Build an AI Trading Agent — Step by Step
+                - paragraph [ref=e1266]: 16.3.2025
+              - cell "AI Pathways" [ref=e1267]
+              - cell "אין" [ref=e1268]:
+                - generic [ref=e1269]: אין
+              - cell "—" [ref=e1270]
+              - cell "—" [ref=e1271]:
+                - generic [ref=e1272]: —
+              - cell "—" [ref=e1273]
+            - row "סיכום שבוע — שוק האמריקאי, עסקאות ותובנות 14.3.2025 Dor Amir Trading אין — — —" [ref=e1274] [cursor=pointer]:
+              - cell "סיכום שבוע — שוק האמריקאי, עסקאות ותובנות 14.3.2025" [ref=e1275]:
+                - paragraph [ref=e1276]: סיכום שבוע — שוק האמריקאי, עסקאות ותובנות
+                - paragraph [ref=e1277]: 14.3.2025
+              - cell "Dor Amir Trading" [ref=e1278]
+              - cell "אין" [ref=e1279]:
+                - generic [ref=e1280]: אין
+              - cell "—" [ref=e1281]
+              - cell "—" [ref=e1282]:
+                - generic [ref=e1283]: —
+              - cell "—" [ref=e1284]
+            - row "מה זה מניה? — שיעור ראשון לחלוטין 9.3.2025 Eyal Shani אין — — —" [ref=e1285] [cursor=pointer]:
+              - cell "מה זה מניה? — שיעור ראשון לחלוטין 9.3.2025" [ref=e1286]:
+                - paragraph [ref=e1287]: מה זה מניה? — שיעור ראשון לחלוטין
+                - paragraph [ref=e1288]: 9.3.2025
+              - cell "Eyal Shani" [ref=e1289]
+              - cell "אין" [ref=e1290]:
+                - generic [ref=e1291]: אין
+              - cell "—" [ref=e1292]
+              - cell "—" [ref=e1293]:
+                - generic [ref=e1294]: —
+              - cell "—" [ref=e1295]
+            - row "Stop Loss ו-Take Profit — ניהול סיכונים נכון 2.3.2025 Eyal Shani אין — — —" [ref=e1296] [cursor=pointer]:
+              - cell "Stop Loss ו-Take Profit — ניהול סיכונים נכון 2.3.2025" [ref=e1297]:
+                - paragraph [ref=e1298]: Stop Loss ו-Take Profit — ניהול סיכונים נכון
+                - paragraph [ref=e1299]: 2.3.2025
+              - cell "Eyal Shani" [ref=e1300]
+              - cell "אין" [ref=e1301]:
+                - generic [ref=e1302]: אין
+              - cell "—" [ref=e1303]
+              - cell "—" [ref=e1304]:
+                - generic [ref=e1305]: —
+              - cell "—" [ref=e1306]
+            - row "בניית אפליקציה ראשונה עם Base44 — מאפס לפרודקשן 15.3.2025 Base44 Community אין — — —" [ref=e1307] [cursor=pointer]:
+              - cell "בניית אפליקציה ראשונה עם Base44 — מאפס לפרודקשן 15.3.2025" [ref=e1308]:
+                - paragraph [ref=e1309]: בניית אפליקציה ראשונה עם Base44 — מאפס לפרודקשן
+                - paragraph [ref=e1310]: 15.3.2025
+              - cell "Base44 Community" [ref=e1311]
+              - cell "אין" [ref=e1312]:
+                - generic [ref=e1313]: אין
+              - cell "—" [ref=e1314]
+              - cell "—" [ref=e1315]:
+                - generic [ref=e1316]: —
+              - cell "—" [ref=e1317]
+            - row "Web Performance 2025 — כל מה שמפתח צריך לדעת 13.3.2025 Ran Bar Zik אין — — —" [ref=e1318] [cursor=pointer]:
+              - cell "Web Performance 2025 — כל מה שמפתח צריך לדעת 13.3.2025" [ref=e1319]:
+                - paragraph [ref=e1320]: Web Performance 2025 — כל מה שמפתח צריך לדעת
+                - paragraph [ref=e1321]: 13.3.2025
+              - cell "Ran Bar Zik" [ref=e1322]
+              - cell "אין" [ref=e1323]:
+                - generic [ref=e1324]: אין
+              - cell "—" [ref=e1325]
+              - cell "—" [ref=e1326]:
+                - generic [ref=e1327]: —
+              - cell "—" [ref=e1328]
+            - row "TypeScript — למה כל מפתח JavaScript חייב לעבור 6.3.2025 Ran Bar Zik אין — — —" [ref=e1329] [cursor=pointer]:
+              - cell "TypeScript — למה כל מפתח JavaScript חייב לעבור 6.3.2025" [ref=e1330]:
+                - paragraph [ref=e1331]: TypeScript — למה כל מפתח JavaScript חייב לעבור
+                - paragraph [ref=e1332]: 6.3.2025
+              - cell "Ran Bar Zik" [ref=e1333]
+              - cell "אין" [ref=e1334]:
+                - generic [ref=e1335]: אין
+              - cell "—" [ref=e1336]
+              - cell "—" [ref=e1337]:
+                - generic [ref=e1338]: —
+              - cell "—" [ref=e1339]
+            - row "Price Action Trading — כל מה שצריך לדעת 17.3.2025 Wysetrade אין — — —" [ref=e1340] [cursor=pointer]:
+              - cell "Price Action Trading — כל מה שצריך לדעת 17.3.2025" [ref=e1341]:
+                - paragraph [ref=e1342]: Price Action Trading — כל מה שצריך לדעת
+                - paragraph [ref=e1343]: 17.3.2025
+              - cell "Wysetrade" [ref=e1344]
+              - cell "אין" [ref=e1345]:
+                - generic [ref=e1346]: אין
+              - cell "—" [ref=e1347]
+              - cell "—" [ref=e1348]:
+                - generic [ref=e1349]: —
+              - cell "—" [ref=e1350]
+            - row "Support & Resistance — הבסיס של הניתוח הטכני 10.3.2025 Wysetrade אין — — —" [ref=e1351] [cursor=pointer]:
+              - cell "Support & Resistance — הבסיס של הניתוח הטכני 10.3.2025" [ref=e1352]:
+                - paragraph [ref=e1353]: Support & Resistance — הבסיס של הניתוח הטכני
+                - paragraph [ref=e1354]: 10.3.2025
+              - cell "Wysetrade" [ref=e1355]
+              - cell "אין" [ref=e1356]:
+                - generic [ref=e1357]: אין
+              - cell "—" [ref=e1358]
+              - cell "—" [ref=e1359]:
+                - generic [ref=e1360]: —
+              - cell "—" [ref=e1361]
+  - region "Notifications alt+T"

@@ -1,0 +1,339 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "מדריך" [ref=e9] [cursor=pointer]
+        - generic [ref=e11]:
+          - link "דף הבית של YouTube" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e16]: IL
+        - button "לדילוג על הניווט" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: לדילוג על הניווט
+      - generic [ref=e25]:
+        - search [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - combobox "חיפוש" [expanded] [ref=e30]
+              - button [ref=e33] [cursor=pointer]
+            - button "Search" [ref=e34] [cursor=pointer]
+        - generic [ref=e37]:
+          - button "חיפוש באמצעות הקול" [ref=e39] [cursor=pointer]
+          - tooltip "tooltip"
+  - navigation [ref=e50]
+  - main [ref=e52]:
+    - generic [ref=e59]:
+      - generic [ref=e75]:
+        - heading "Eyal Shani" [level=1] [ref=e77]
+        - generic [ref=e78]:
+          - group [ref=e79]:
+            - generic [ref=e80]: "@eyaltomato_"
+          - generic [ref=e81]: •
+          - group [ref=e82]:
+            - generic "‏‫‏6.15 אלף‬‏ ‏מנויים‏" [ref=e83]: ‏‫6.15K‏‬‏ ‏מנויים‏
+            - generic [ref=e84]: •
+            - generic [ref=e85]: ‫46‬ סרטונים
+        - generic [ref=e87] [cursor=pointer]:
+          - generic [ref=e89]: למידע נוסף על הערוץ הזה
+          - button "תיאור. למידע נוסף על הערוץ הזה…כדי לראות עוד טקסט, אפשר ללחוץ." [ref=e90]:
+            - generic [ref=e91]: …עוד
+        - generic [ref=e92]:
+          - link "twitter.com/eyalshanisaid" [ref=e95] [cursor=pointer]:
+            - /url: https://www.youtube.com/redirect?event=channel_header&redir_token=QUFFLUhqazl1TzdENmltcllHeVM0Y2xSWmttaklwdnY2Z3xBQ3Jtc0ttUkVLT1VJVG03R3hFMWUxQkZyQm8wYjBSNzBYeE1MSXRCQkFmenVNd2Q4bi1LbXJCbHF4eG1KMHFXMnlnWkQ0NDBHQnBRaW5YQjJiYnFaMkxIN1JGbXFrOFFSVFpJX0NaMm11cDhTZkZwa08tSGNMTQ&q=https%3A%2F%2Ftwitter.com%2Feyalshanisaid
+          - button "ו-3 קישורים נוספים" [ref=e98] [cursor=pointer]
+        - button "הרשמה למינוי" [ref=e102] [cursor=pointer]:
+          - generic [ref=e103]: הרשמה למינוי
+      - tablist [ref=e110]:
+        - tablist [ref=e114]:
+          - tab "דף הבית" [selected] [ref=e115] [cursor=pointer]:
+            - generic [ref=e116]: דף הבית
+          - tab "סרטונים" [ref=e117] [cursor=pointer]:
+            - generic [ref=e118]: סרטונים
+          - tab "Shorts" [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]: Shorts
+          - tab "פלייליסטים" [ref=e121] [cursor=pointer]:
+            - generic [ref=e122]: פלייליסטים
+          - button "חיפוש" [ref=e126] [cursor=pointer]
+    - generic [ref=e134]:
+      - generic [ref=e138]:
+        - heading "Eyal Shani & Shahar Segal - All episodes להפעלת כל הסרטונים" [level=2] [ref=e141]:
+          - link "Eyal Shani & Shahar Segal - All episodes" [ref=e144] [cursor=pointer]:
+            - /url: /playlist?list=PL4D3CA015C255AE08
+            - generic [ref=e145]: Eyal Shani & Shahar Segal - All episodes
+          - link "להפעלת כל הסרטונים" [ref=e149] [cursor=pointer]:
+            - /url: /watch?v=LAMP0Ntwin8&list=PL4D3CA015C255AE08&pp=0gcJCVYEgXWwhyeT
+            - generic [ref=e152]: להפעלת כל הסרטונים
+        - generic [ref=e157]:
+          - generic [ref=e160]:
+            - generic [ref=e162] [cursor=pointer]:
+              - link [ref=e163]:
+                - /url: /watch?v=LAMP0Ntwin8
+                - generic [ref=e170]: 10:23
+              - generic [ref=e172]:
+                - generic [ref=e173]:
+                  - heading "איל שני ושחר סגל - לחם אבוד Eyal Shani&Shahar Segal - lost bread 10 דקות, 23 שניות" [level=3] [ref=e174]:
+                    - link "איל שני ושחר סגל - לחם אבוד Eyal Shani&Shahar Segal - lost bread 10 דקות, 23 שניות" [ref=e175]:
+                      - /url: /watch?v=LAMP0Ntwin8
+                      - text: איל שני ושחר סגל - לחם אבוד Eyal Shani&Shahar Segal - lost bread
+                  - generic [ref=e177]:
+                    - group [ref=e178]:
+                      - link "Eyal Shani" [ref=e181]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e182]:
+                      - generic [ref=e183]: ‫76K‏‬ צפיות
+                      - generic [ref=e184]: •
+                      - generic [ref=e185]: לפני 13 שנים
+                    - group [ref=e186]:
+                      - img "כתוביות סמויות" [ref=e189]:
+                        - generic [ref=e190]: כתוביות
+                - button "פעולות נוספות" [ref=e193]
+            - generic [ref=e200] [cursor=pointer]:
+              - link [ref=e201]:
+                - /url: /watch?v=oNHZfSZf1tQ
+                - generic [ref=e208]: 8:49
+              - generic [ref=e210]:
+                - generic [ref=e211]:
+                  - heading "איל שני ושחר סגל - דג במלח Eyal Shani&Shahar Segal - Fish in salt 8 דקות, 49 שניות" [level=3] [ref=e212]:
+                    - link "איל שני ושחר סגל - דג במלח Eyal Shani&Shahar Segal - Fish in salt 8 דקות, 49 שניות" [ref=e213]:
+                      - /url: /watch?v=oNHZfSZf1tQ
+                      - text: איל שני ושחר סגל - דג במלח Eyal Shani&Shahar Segal - Fish in salt
+                  - generic [ref=e215]:
+                    - group [ref=e216]:
+                      - link "Eyal Shani" [ref=e219]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e220]:
+                      - generic [ref=e221]: ‫90K‏‬ צפיות
+                      - generic [ref=e222]: •
+                      - generic [ref=e223]: לפני 13 שנים
+                    - group [ref=e224]:
+                      - img "כתוביות סמויות" [ref=e227]:
+                        - generic [ref=e228]: כתוביות
+                - button "פעולות נוספות" [ref=e231]
+            - generic [ref=e238] [cursor=pointer]:
+              - link [ref=e239]:
+                - /url: /watch?v=kWUpUdtNU0o
+                - generic [ref=e246]: 12:59
+              - generic [ref=e248]:
+                - generic [ref=e249]:
+                  - heading "איל שני ושחר סגל - פיצה Eyal Shani&Shahar Segal - Pizza 12 דקות, 59 שניות" [level=3] [ref=e250]:
+                    - link "איל שני ושחר סגל - פיצה Eyal Shani&Shahar Segal - Pizza 12 דקות, 59 שניות" [ref=e251]:
+                      - /url: /watch?v=kWUpUdtNU0o
+                      - text: איל שני ושחר סגל - פיצה Eyal Shani&Shahar Segal - Pizza
+                  - generic [ref=e253]:
+                    - group [ref=e254]:
+                      - link "Eyal Shani" [ref=e257]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e258]:
+                      - generic [ref=e259]: ‫265K‏‬ צפיות
+                      - generic [ref=e260]: •
+                      - generic [ref=e261]: לפני 13 שנים
+                - button "פעולות נוספות" [ref=e264]
+            - generic [ref=e271] [cursor=pointer]:
+              - link [ref=e272]:
+                - /url: /watch?v=cbJkFpbB1mQ
+                - generic [ref=e279]: 10:31
+              - generic [ref=e281]:
+                - generic [ref=e282]:
+                  - 'heading "Eyal Shani & Shahar Segal Ep.10: pudding איל שני ושחר סגל פרק 10: פודינג 10 דקות, 31 שניות" [level=3] [ref=e283]':
+                    - 'link "Eyal Shani & Shahar Segal Ep.10: pudding איל שני ושחר סגל פרק 10: פודינג 10 דקות, 31 שניות" [ref=e284]':
+                      - /url: /watch?v=cbJkFpbB1mQ
+                      - text: "Eyal Shani & Shahar Segal Ep.10: pudding איל שני ושחר סגל פרק 10: פודינג"
+                  - generic [ref=e286]:
+                    - group [ref=e287]:
+                      - link "Eyal Shani" [ref=e290]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e291]:
+                      - generic [ref=e292]: ‫58K‏‬ צפיות
+                      - generic [ref=e293]: •
+                      - generic [ref=e294]: לפני 13 שנים
+                - button "פעולות נוספות" [ref=e297]
+            - generic [ref=e304] [cursor=pointer]:
+              - link [ref=e305]:
+                - /url: /watch?v=JCOhTXq0KMg&pp=0gcJCd4KAYcqIYzv
+                - generic [ref=e312]: 12:03
+              - generic [ref=e314]:
+                - generic [ref=e315]:
+                  - 'heading "Eyal Shani & Shahar Segal Ep.9: sashimi איל שני ושחר סגל פרק 9: סשימי 12 דקות, 3 שניות" [level=3] [ref=e316]':
+                    - 'link "Eyal Shani & Shahar Segal Ep.9: sashimi איל שני ושחר סגל פרק 9: סשימי 12 דקות, 3 שניות" [ref=e317]':
+                      - /url: /watch?v=JCOhTXq0KMg&pp=0gcJCd4KAYcqIYzv
+                      - text: "Eyal Shani & Shahar Segal Ep.9: sashimi איל שני ושחר סגל פרק 9: סשימי"
+                  - generic [ref=e319]:
+                    - group [ref=e320]:
+                      - link "Eyal Shani" [ref=e323]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e324]:
+                      - generic [ref=e325]: ‫79K‏‬ צפיות
+                      - generic [ref=e326]: •
+                      - generic [ref=e327]: לפני 13 שנים
+                - button "פעולות נוספות" [ref=e330]
+            - generic [ref=e337] [cursor=pointer]:
+              - link [ref=e338]:
+                - /url: /watch?v=JVbnTHZE7ws
+                - generic [ref=e345]: 11:47
+              - generic [ref=e347]:
+                - generic [ref=e348]:
+                  - 'heading "Eyal Shani & Shahar Segal Ep.8: cauliflower איל שני ושחר סגל פרק 8: כרובית 11 דקות, 47 שניות" [level=3] [ref=e349]':
+                    - 'link "Eyal Shani & Shahar Segal Ep.8: cauliflower איל שני ושחר סגל פרק 8: כרובית 11 דקות, 47 שניות" [ref=e350]':
+                      - /url: /watch?v=JVbnTHZE7ws
+                      - text: "Eyal Shani & Shahar Segal Ep.8: cauliflower איל שני ושחר סגל פרק 8: כרובית"
+                  - generic [ref=e352]:
+                    - group [ref=e353]:
+                      - link "Eyal Shani" [ref=e356]:
+                        - /url: /@eyaltomato_
+                    - group [ref=e357]:
+                      - generic [ref=e358]: ‫180K‏‬ צפיות
+                      - generic [ref=e359]: •
+                      - generic [ref=e360]: לפני 13 שנים
+                - button "פעולות נוספות" [ref=e363]
+          - button "הבא" [ref=e371] [cursor=pointer]
+      - generic [ref=e380]:
+        - heading "סרטונים" [level=2] [ref=e383]:
+          - link "סרטונים" [ref=e386] [cursor=pointer]:
+            - /url: /@eyaltomato_/videos?view=0&sort=dd&shelf_id=2
+            - generic [ref=e387]: סרטונים
+        - generic [ref=e389]:
+          - generic [ref=e392]:
+            - generic [ref=e394] [cursor=pointer]:
+              - link [ref=e395]:
+                - /url: /watch?v=f_GTLRWueEo
+                - generic [ref=e402]: 2:11
+              - generic [ref=e404]:
+                - generic [ref=e405]:
+                  - heading "ברוסקטת עגבניות שתי דקות, 11 שניות" [level=3] [ref=e406]:
+                    - link "ברוסקטת עגבניות שתי דקות, 11 שניות" [ref=e407]:
+                      - /url: /watch?v=f_GTLRWueEo
+                      - text: ברוסקטת עגבניות
+                  - group [ref=e410]:
+                    - generic [ref=e411]: ‫4.6K‏‬ צפיות
+                    - generic [ref=e412]: •
+                    - generic [ref=e413]: לפני 11 חודשים
+                - button "פעולות נוספות" [ref=e416]
+            - generic [ref=e423] [cursor=pointer]:
+              - link [ref=e424]:
+                - /url: /watch?v=lTsfUEZJ0pg
+                - generic [ref=e431]: 4:25
+              - generic [ref=e433]:
+                - generic [ref=e434]:
+                  - heading "רביולי עגבניות 4 דקות, 25 שניות" [level=3] [ref=e435]:
+                    - link "רביולי עגבניות 4 דקות, 25 שניות" [ref=e436]:
+                      - /url: /watch?v=lTsfUEZJ0pg
+                      - text: רביולי עגבניות
+                  - group [ref=e439]:
+                    - generic [ref=e440]: ‫5.5K‏‬ צפיות
+                    - generic [ref=e441]: •
+                    - generic [ref=e442]: לפני 11 חודשים
+                - button "פעולות נוספות" [ref=e445]
+            - generic [ref=e452] [cursor=pointer]:
+              - link [ref=e453]:
+                - /url: /watch?v=w4l1Xn89XNc
+                - generic [ref=e460]: 3:36
+              - generic [ref=e462]:
+                - generic [ref=e463]:
+                  - heading "בייגל שרימפס 3 דקות, 36 שניות" [level=3] [ref=e464]:
+                    - link "בייגל שרימפס 3 דקות, 36 שניות" [ref=e465]:
+                      - /url: /watch?v=w4l1Xn89XNc
+                      - text: בייגל שרימפס
+                  - group [ref=e468]:
+                    - generic [ref=e469]: ‫3.9K‏‬ צפיות
+                    - generic [ref=e470]: •
+                    - generic [ref=e471]: לפני שנה
+                - button "פעולות נוספות" [ref=e474]
+            - generic [ref=e481] [cursor=pointer]:
+              - link [ref=e482]:
+                - /url: /watch?v=zjtlVpv6dyE
+                - generic [ref=e489]: 0:52
+              - generic [ref=e491]:
+                - generic [ref=e492]:
+                  - heading "פסיפס עגבניות 52 שניות" [level=3] [ref=e493]:
+                    - link "פסיפס עגבניות 52 שניות" [ref=e494]:
+                      - /url: /watch?v=zjtlVpv6dyE
+                      - text: פסיפס עגבניות
+                  - group [ref=e497]:
+                    - generic [ref=e498]: ‫4.1K‏‬ צפיות
+                    - generic [ref=e499]: •
+                    - generic [ref=e500]: לפני שנה
+                - button "פעולות נוספות" [ref=e503]
+            - generic [ref=e510] [cursor=pointer]:
+              - link [ref=e511]:
+                - /url: /watch?v=ubl252pwRxs&pp=0gcJCd4KAYcqIYzv
+                - generic [ref=e518]: 1:44
+              - generic [ref=e520]:
+                - generic [ref=e521]:
+                  - heading "רוסטביף קארפציו 1 דקה, 44 שניות" [level=3] [ref=e522]:
+                    - link "רוסטביף קארפציו 1 דקה, 44 שניות" [ref=e523]:
+                      - /url: /watch?v=ubl252pwRxs&pp=0gcJCd4KAYcqIYzv
+                      - text: רוסטביף קארפציו
+                  - group [ref=e526]:
+                    - generic [ref=e527]: ‫6.9K‏‬ צפיות
+                    - generic [ref=e528]: •
+                    - generic [ref=e529]: לפני שנה
+                - button "פעולות נוספות" [ref=e532]
+            - generic [ref=e539] [cursor=pointer]:
+              - link [ref=e540]:
+                - /url: /watch?v=qJQsMcJ3s00
+                - generic [ref=e547]: 2:37
+              - generic [ref=e549]:
+                - generic [ref=e550]:
+                  - heading "קלאמרי צרוב מונח על קצף עגבניות שתי דקות, 37 שניות" [level=3] [ref=e551]:
+                    - link "קלאמרי צרוב מונח על קצף עגבניות שתי דקות, 37 שניות" [ref=e552]:
+                      - /url: /watch?v=qJQsMcJ3s00
+                      - text: קלאמרי צרוב מונח על קצף עגבניות
+                  - group [ref=e555]:
+                    - generic [ref=e556]: ‫4.5K‏‬ צפיות
+                    - generic [ref=e557]: •
+                    - generic [ref=e558]: לפני שנה
+                - button "פעולות נוספות" [ref=e561]
+          - button "הבא" [ref=e569] [cursor=pointer]
+      - generic [ref=e577]:
+        - generic [ref=e578]:
+          - heading "Shorts" [level=2] [ref=e582]:
+            - generic [ref=e584]: Shorts
+          - button "פעולות נוספות" [ref=e588] [cursor=pointer]
+        - generic [ref=e594]:
+          - generic [ref=e596]:
+            - link [ref=e597] [cursor=pointer]:
+              - /url: /shorts/63eWUFyLiSg
+            - generic [ref=e601] [cursor=pointer]:
+              - link "מוכר בורות" [ref=e602]:
+                - /url: /shorts/63eWUFyLiSg
+              - generic [ref=e603]: ‫15K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e605] [cursor=pointer]
+          - generic [ref=e612]:
+            - link [ref=e613] [cursor=pointer]:
+              - /url: /shorts/BJV5xaOxeIs
+            - generic [ref=e617] [cursor=pointer]:
+              - 'link "פתיתים בפיתה #food" [ref=e618]':
+                - /url: /shorts/BJV5xaOxeIs
+              - generic [ref=e619]: ‫20K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e621] [cursor=pointer]
+          - generic [ref=e628]:
+            - link [ref=e629] [cursor=pointer]:
+              - /url: /shorts/Z4fvl30SD9M
+            - generic [ref=e633] [cursor=pointer]:
+              - link "פיצה דם בלי טיפה אחת של דם" [ref=e634]:
+                - /url: /shorts/Z4fvl30SD9M
+              - generic [ref=e635]: ‫50K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e637] [cursor=pointer]
+          - generic [ref=e644]:
+            - link [ref=e645] [cursor=pointer]:
+              - /url: /shorts/YhRjOb6Mbx4
+            - generic [ref=e649] [cursor=pointer]:
+              - link "מלכה עוברת דירה לרח׳ מנחם בגין 146" [ref=e650]:
+                - /url: /shorts/YhRjOb6Mbx4
+              - generic [ref=e651]: ‫65K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e653] [cursor=pointer]
+          - generic [ref=e660]:
+            - link [ref=e661] [cursor=pointer]:
+              - /url: /shorts/20Z_4MmtqLA
+            - generic [ref=e665] [cursor=pointer]:
+              - 'link "פטריות מכושפות #איילשני" [ref=e666]':
+                - /url: /shorts/20Z_4MmtqLA
+              - generic [ref=e667]: ‫31K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e669] [cursor=pointer]
+          - generic [ref=e676]:
+            - link [ref=e677] [cursor=pointer]:
+              - /url: /shorts/NP7b57aJZXY
+            - generic [ref=e681] [cursor=pointer]:
+              - link "יום שני זה פיתה בולונז במזנון" [ref=e682]:
+                - /url: /shorts/NP7b57aJZXY
+              - generic [ref=e683]: ‫85K‏‬ צפיות
+            - button "פעולות נוספות" [ref=e685] [cursor=pointer]

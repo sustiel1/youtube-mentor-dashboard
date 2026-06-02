@@ -14,6 +14,7 @@ export const TOPIC_CONFIG_BY_NAME = {
   "מנופים":             { Icon: Construction,     bg: "bg-orange-100", text: "text-orange-600", label: "מנופים"          },
   "סוכר":               { Icon: Candy,            bg: "bg-pink-100",   text: "text-pink-600",   label: "סוכר"            },
   "בריאות":             { Icon: HeartPulse,       bg: "bg-red-100",    text: "text-red-600",    label: "בריאות"          },
+  "בריאות ותזונה":      { Icon: HeartPulse,       bg: "bg-green-100",  text: "text-green-600",  label: "בריאות ותזונה"   },
   "פוליטיקה":           { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה"        },
   "פוליטיקה ותוכן ישר": { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה ותוכן" },
   "פוליטיקה ותוכן":     { Icon: Landmark,         bg: "bg-blue-100",   text: "text-blue-600",   label: "פוליטיקה ותוכן" },
@@ -21,8 +22,10 @@ export const TOPIC_CONFIG_BY_NAME = {
   "אוכל":               { Icon: ChefHat,          bg: "bg-yellow-100", text: "text-yellow-700", label: "אוכל"            },
   "אוטומציה":           { Icon: Workflow,         bg: "bg-indigo-100", text: "text-indigo-600", label: "אוטומציה"        },
   "בינה מלאכותית":      { Icon: Bot,              bg: "bg-violet-100", text: "text-violet-600", label: "בינה מלאכותית"  },
+  "טכנולוגיה ו-AI":     { Icon: Bot,              bg: "bg-violet-100", text: "text-violet-600", label: "טכנולוגיה ו-AI"  },
   "שוק ההון":           { Icon: ChartCandlestick, bg: "bg-green-100",  text: "text-green-600",  label: "שוק ההון"        },
   "פיתוח":              { Icon: Code,             bg: "bg-sky-100",    text: "text-sky-600",    label: "פיתוח"           },
+  "ידע אישי":           { Icon: Hash,             bg: "bg-amber-100",  text: "text-amber-600",  label: "ידע אישי"        },
 };
 
 // ── Category code → Hebrew name (for mentor.category field) ───────────────

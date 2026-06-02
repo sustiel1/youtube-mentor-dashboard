@@ -1,0 +1,15 @@
+[   12768ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=483a61bc:21608
+[   12853ms] [INFO] [useVideos] local-first — 88 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[   13004ms] [LOG] [rss] fetching {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   13182ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/favicon.ico:0
+[   13185ms] [LOG] [rss] success (proxy) {channelName: Micha.Stocks, channelId: UCSxjNbPriyBh9RNl_QNSAtw} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   13187ms] [LOG] [rss] success {mentorName: Micha.Stocks, videosCount: 5, topicIds: Array(3)} @ http://localhost:5174/src/services/rssIngestion.js:318
+[   14274ms] [LOG] [rss] fetching {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   14446ms] [LOG] [rss] success (proxy) {channelName: בורסה גרף, channelId: UCrQmXSenNhePSOiCTdnhwRg} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   14447ms] [LOG] [rss] success {mentorName: בורסה גרף, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:318
+[   15589ms] [LOG] [rss] fetching {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   15849ms] [LOG] [rss] success (proxy) {channelName: The Hasidic Trader, channelId: UCSB4SNRWhbemGAJ4wfeKj2Q} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   15850ms] [LOG] [rss] success {mentorName: The Hasidic Trader, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:318
+[   16529ms] [LOG] [rss] fetching {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA, rssUrl: https://www.youtube.com/feeds/videos.xml?channel_id=UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5174/src/services/rssIngestion.js:152
+[   16677ms] [LOG] [rss] success (proxy) {channelName: Oliver Velez Trading, channelId: UCmD96zZeKnYof2jO1ON6acA} @ http://localhost:5174/src/services/rssIngestion.js:184
+[   16678ms] [LOG] [rss] success {mentorName: Oliver Velez Trading, videosCount: 5, topicIds: Array(2)} @ http://localhost:5174/src/services/rssIngestion.js:318

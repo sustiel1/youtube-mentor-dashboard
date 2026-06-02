@@ -1,4 +1,4 @@
-import { Video, CheckCircle, Loader2, ShieldAlert } from "lucide-react";
+import { Video, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const KPI_ITEMS = [
@@ -20,29 +20,11 @@ const KPI_ITEMS = [
     color: "text-blue-500",
     activeRing: "ring-blue-300 border-blue-300",
   },
-  {
-    key: "processing",
-    filterKey: "processing",
-    label: "בתהליך",
-    tooltip: "סרטונים שנמצאים כרגע בעיבוד",
-    icon: Loader2,
-    color: "text-cyan-500",
-    activeRing: "ring-cyan-300 border-cyan-300",
-  },
-  {
-    key: "errors",
-    filterKey: "errors",
-    label: "שגיאות",
-    tooltip: "סרטונים שנכשלו בעיבוד — לחץ לפרטים",
-    icon: ShieldAlert,
-    color: "text-red-500",
-    activeRing: "ring-red-300 border-red-300",
-  },
 ];
 
 export function KpiCards({ stats, activeFilter, onFilterClick }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
       {KPI_ITEMS.map((item) => {
         const Icon = item.icon;
         const isActive = activeFilter === item.filterKey;
@@ -53,10 +35,10 @@ export function KpiCards({ stats, activeFilter, onFilterClick }) {
             title={item.tooltip}
             dir="rtl"
             className={cn(
-              "bg-white rounded-2xl border border-gray-100 px-5 pt-5 pb-4 shadow-sm text-right",
+              "rounded-2xl border border-slate-200 bg-white px-5 pt-5 pb-4 text-right shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-2xl",
               "transition-all duration-200 cursor-pointer",
-              "hover:shadow-md hover:-translate-y-0.5",
-              isActive && `ring-2 ${item.activeRing} bg-gray-50/50`
+              "hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-black/30",
+              isActive && `ring-2 ${item.activeRing} bg-slate-50 dark:bg-zinc-900`
             )}
           >
             {/* Row: label (right) + large icon (left) */}
@@ -65,11 +47,11 @@ export function KpiCards({ stats, activeFilter, onFilterClick }) {
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "text-xs font-medium mb-2.5 leading-tight",
-                  isActive ? "text-gray-700" : "text-gray-400"
+                  isActive ? "text-slate-700 dark:text-zinc-200" : "text-slate-500 dark:text-zinc-400"
                 )}>
                   {item.label}
                 </p>
-                <p className="text-4xl font-bold text-gray-900 leading-none">
+                <p className="text-4xl font-bold leading-none text-slate-900 dark:text-white">
                   {stats[item.key] ?? 0}
                 </p>
               </div>

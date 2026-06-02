@@ -1,0 +1,5 @@
+[     166ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[     242ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1856
+[     243ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779802518271:1871
+[     255ms] [INFO] [useVideos] local-first — 105 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26
+[     372ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779804899836:54

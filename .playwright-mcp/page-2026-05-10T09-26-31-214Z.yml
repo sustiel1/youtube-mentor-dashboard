@@ -1,0 +1,880 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e2365] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+          - button "ספריית ידע" [active] [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+            - generic [ref=e34]: ספריית ידע
+          - button "חיפוש ידע" [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+            - generic [ref=e39]: חיפוש ידע
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - button "נושאים" [ref=e42] [cursor=pointer]
+            - button "הוסף" [ref=e43] [cursor=pointer]:
+              - img [ref=e44]
+              - text: הוסף
+          - generic [ref=e46]:
+            - generic [ref=e48]:
+              - button "כל הסרטונים של \"בינה מלאכותית\"" [ref=e49] [cursor=pointer]:
+                - img [ref=e50]
+              - generic [ref=e53]:
+                - button "ערוך נושא" [ref=e54] [cursor=pointer]:
+                  - img [ref=e55]
+                - button "מחק נושא" [ref=e58] [cursor=pointer]:
+                  - img [ref=e59]
+              - button "בינה מלאכותית" [ref=e62]
+              - button [ref=e63] [cursor=pointer]:
+                - img [ref=e64]
+              - img [ref=e66]
+            - generic [ref=e74]:
+              - button "כל הסרטונים של \"שוק ההון\"" [ref=e75] [cursor=pointer]:
+                - img [ref=e76]
+              - generic [ref=e80]:
+                - button "ערוך נושא" [ref=e81] [cursor=pointer]:
+                  - img [ref=e82]
+                - button "מחק נושא" [ref=e85] [cursor=pointer]:
+                  - img [ref=e86]
+              - button "שוק ההון" [ref=e89]
+              - button [ref=e90] [cursor=pointer]:
+                - img [ref=e91]
+              - img [ref=e93]
+            - generic [ref=e101]:
+              - button "כל הסרטונים של \"פיתוח תוכנה\"" [ref=e102] [cursor=pointer]:
+                - img [ref=e103]
+              - generic [ref=e106]:
+                - button "ערוך נושא" [ref=e107] [cursor=pointer]:
+                  - img [ref=e108]
+                - button "מחק נושא" [ref=e111] [cursor=pointer]:
+                  - img [ref=e112]
+              - button "פיתוח תוכנה" [ref=e115]
+              - button [ref=e116] [cursor=pointer]:
+                - img [ref=e117]
+              - img [ref=e119]
+            - generic [ref=e127]:
+              - button "כל הסרטונים של \"מסחר יומי\"" [ref=e128] [cursor=pointer]:
+                - img [ref=e129]
+              - generic [ref=e132]:
+                - button "ערוך נושא" [ref=e133] [cursor=pointer]:
+                  - img [ref=e134]
+                - button "מחק נושא" [ref=e137] [cursor=pointer]:
+                  - img [ref=e138]
+              - button "מסחר יומי" [ref=e141]
+              - button [ref=e142] [cursor=pointer]:
+                - img [ref=e143]
+              - img [ref=e145]
+            - generic [ref=e153]:
+              - button "כל הסרטונים של \"פיתוח\"" [ref=e154] [cursor=pointer]:
+                - img [ref=e155]
+              - generic [ref=e158]:
+                - button "ערוך נושא" [ref=e159] [cursor=pointer]:
+                  - img [ref=e160]
+                - button "מחק נושא" [ref=e163] [cursor=pointer]:
+                  - img [ref=e164]
+              - button "פיתוח" [ref=e167]
+              - button [ref=e168] [cursor=pointer]:
+                - img [ref=e169]
+              - img [ref=e171]
+            - generic [ref=e179]:
+              - button "כל הסרטונים של \"React\"" [ref=e180] [cursor=pointer]:
+                - img [ref=e181]
+              - generic [ref=e184]:
+                - button "ערוך נושא" [ref=e185] [cursor=pointer]:
+                  - img [ref=e186]
+                - button "מחק נושא" [ref=e189] [cursor=pointer]:
+                  - img [ref=e190]
+              - button "React" [ref=e193]
+              - button [ref=e194] [cursor=pointer]:
+                - img [ref=e195]
+              - img [ref=e197]
+            - generic [ref=e205]:
+              - button "כל הסרטונים של \"Base44\"" [ref=e206] [cursor=pointer]:
+                - img [ref=e207]
+              - generic [ref=e210]:
+                - button "ערוך נושא" [ref=e211] [cursor=pointer]:
+                  - img [ref=e212]
+                - button "מחק נושא" [ref=e215] [cursor=pointer]:
+                  - img [ref=e216]
+              - button "Base44" [ref=e219]
+              - button [ref=e220] [cursor=pointer]:
+                - img [ref=e221]
+              - img [ref=e223]
+            - generic [ref=e231]:
+              - button "כל הסרטונים של \"Prompt Engineering\"" [ref=e232] [cursor=pointer]:
+                - img [ref=e233]
+              - generic [ref=e236]:
+                - button "ערוך נושא" [ref=e237] [cursor=pointer]:
+                  - img [ref=e238]
+                - button "מחק נושא" [ref=e241] [cursor=pointer]:
+                  - img [ref=e242]
+              - button "Prompt Engineering" [ref=e245]
+              - button [ref=e246] [cursor=pointer]:
+                - img [ref=e247]
+              - img [ref=e249]
+      - generic [ref=e256]:
+        - button "מנטור חדש" [ref=e257] [cursor=pointer]:
+          - img [ref=e258]
+          - generic [ref=e261]: מנטור חדש
+        - button "ניהול" [ref=e262] [cursor=pointer]:
+          - img [ref=e263]
+          - generic [ref=e266]: ניהול
+    - main [ref=e267]:
+      - generic [ref=e2385]:
+        - generic [ref=e2386]:
+          - img [ref=e2387]
+          - generic [ref=e2389]:
+            - heading "ספריית ידע" [level=1] [ref=e2390]
+            - paragraph [ref=e2391]: 59 סרטונים · 59 מוצגים
+        - generic [ref=e2392]:
+          - generic [ref=e2393]:
+            - img
+            - textbox "חיפוש לפי כותרת או מנטור..." [ref=e2394]
+          - generic [ref=e2395]:
+            - generic [ref=e2396]: "תמלול:"
+            - button "הכל" [ref=e2397] [cursor=pointer]
+            - button "גבוה" [ref=e2398] [cursor=pointer]
+            - button "בינוני" [ref=e2399] [cursor=pointer]
+            - button "נמוך" [ref=e2400] [cursor=pointer]
+            - button "אין תמלול" [ref=e2401] [cursor=pointer]
+          - generic [ref=e2402]:
+            - generic [ref=e2403]: "פרקים:"
+            - button "הכל" [ref=e2404] [cursor=pointer]
+            - button "AI" [ref=e2405] [cursor=pointer]
+            - button "תיאור" [ref=e2406] [cursor=pointer]
+            - button "הערכה" [ref=e2407] [cursor=pointer]
+            - button "ללא פרקים" [ref=e2408] [cursor=pointer]
+        - table [ref=e2410]:
+          - rowgroup [ref=e2411]:
+            - row "כותרת מנטור תמלול פרקים מקור פרקים נותח Brain" [ref=e2412]:
+              - columnheader "כותרת" [ref=e2413]
+              - columnheader "מנטור" [ref=e2414]
+              - columnheader "תמלול" [ref=e2415]
+              - columnheader "פרקים" [ref=e2416]
+              - columnheader "מקור פרקים" [ref=e2417]
+              - columnheader "נותח" [ref=e2418]
+              - columnheader "Brain" [ref=e2419]
+          - rowgroup [ref=e2420]:
+            - row "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים? 10.5.2026 Micha.Stocks אין 9 תיאור — —" [ref=e2421] [cursor=pointer]:
+              - cell "⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים? 10.5.2026" [ref=e2422]:
+                - paragraph [ref=e2423]: ⚠️ חגיגה פרבולית - 6 שבועות עלייה – המסיבה עומדת להסתיים?
+                - paragraph [ref=e2424]: 10.5.2026
+              - cell "Micha.Stocks" [ref=e2425]
+              - cell "אין" [ref=e2426]:
+                - generic [ref=e2427]: אין
+              - cell "9" [ref=e2428]
+              - cell "תיאור" [ref=e2429]:
+                - generic [ref=e2430]: תיאור
+              - cell "—" [ref=e2431]
+              - cell "—" [ref=e2432]
+            - row "Open House - Watch and Trade the Open Live with Oliver Velez 9.5.2026 Oliver Velez Trading אין — — — —" [ref=e2433] [cursor=pointer]:
+              - cell "Open House - Watch and Trade the Open Live with Oliver Velez 9.5.2026" [ref=e2434]:
+                - paragraph [ref=e2435]: Open House - Watch and Trade the Open Live with Oliver Velez
+                - paragraph [ref=e2436]: 9.5.2026
+              - cell "Oliver Velez Trading" [ref=e2437]
+              - cell "אין" [ref=e2438]:
+                - generic [ref=e2439]: אין
+              - cell "—" [ref=e2440]
+              - cell "—" [ref=e2441]:
+                - generic [ref=e2442]: —
+              - cell "—" [ref=e2443]
+              - cell "—" [ref=e2444]
+            - row "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE 9.5.2026 Oliver Velez Trading אין — — — —" [ref=e2445] [cursor=pointer]:
+              - cell "THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE 9.5.2026" [ref=e2446]:
+                - paragraph [ref=e2447]: THE 3 STEPS THAT EVERY TRADER MUST KNOW TO BE PROFITABLE
+                - paragraph [ref=e2448]: 9.5.2026
+              - cell "Oliver Velez Trading" [ref=e2449]
+              - cell "אין" [ref=e2450]:
+                - generic [ref=e2451]: אין
+              - cell "—" [ref=e2452]
+              - cell "—" [ref=e2453]:
+                - generic [ref=e2454]: —
+              - cell "—" [ref=e2455]
+              - cell "—" [ref=e2456]
+            - row "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר? 9.5.2026 בורסה גרף אין — — — —" [ref=e2457] [cursor=pointer]:
+              - cell "אס.אנד.פי 500 ות\"א 90 - למה אפשר לצפות וממה להיזהר? 9.5.2026" [ref=e2458]:
+                - paragraph [ref=e2459]: אס.אנד.פי 500 ות"א 90 - למה אפשר לצפות וממה להיזהר?
+                - paragraph [ref=e2460]: 9.5.2026
+              - cell "בורסה גרף" [ref=e2461]
+              - cell "אין" [ref=e2462]:
+                - generic [ref=e2463]: אין
+              - cell "—" [ref=e2464]
+              - cell "—" [ref=e2465]:
+                - generic [ref=e2466]: —
+              - cell "—" [ref=e2467]
+              - cell "—" [ref=e2468]
+            - row "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴 9.5.2026 Micha.Stocks אין 9 תיאור — —" [ref=e2469] [cursor=pointer]:
+              - cell "⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴 9.5.2026" [ref=e2470]:
+                - paragraph [ref=e2471]: ⛔️ מייקל ברי מזהיר מקריסה של 83% - האם הוא צודק? 🔴
+                - paragraph [ref=e2472]: 9.5.2026
+              - cell "Micha.Stocks" [ref=e2473]
+              - cell "אין" [ref=e2474]:
+                - generic [ref=e2475]: אין
+              - cell "9" [ref=e2476]
+              - cell "תיאור" [ref=e2477]:
+                - generic [ref=e2478]: תיאור
+              - cell "—" [ref=e2479]
+              - cell "—" [ref=e2480]
+            - row "הסיפור של מניית IREN 8.5.2026 Micha.Stocks אין — — — —" [ref=e2481] [cursor=pointer]:
+              - cell "הסיפור של מניית IREN 8.5.2026" [ref=e2482]:
+                - paragraph [ref=e2483]: הסיפור של מניית IREN
+                - paragraph [ref=e2484]: 8.5.2026
+              - cell "Micha.Stocks" [ref=e2485]
+              - cell "אין" [ref=e2486]:
+                - generic [ref=e2487]: אין
+              - cell "—" [ref=e2488]
+              - cell "—" [ref=e2489]:
+                - generic [ref=e2490]: —
+              - cell "—" [ref=e2491]
+              - cell "—" [ref=e2492]
+            - row "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק' 8.5.2026 Micha.Stocks אין — — — —" [ref=e2493] [cursor=pointer]:
+              - cell "מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק' 8.5.2026" [ref=e2494]:
+                - paragraph [ref=e2495]: מבזק פתיחת מסחר לתאריך 8.5.26 + מניות ב 3 דק'
+                - paragraph [ref=e2496]: 8.5.2026
+              - cell "Micha.Stocks" [ref=e2497]
+              - cell "אין" [ref=e2498]:
+                - generic [ref=e2499]: אין
+              - cell "—" [ref=e2500]
+              - cell "—" [ref=e2501]:
+                - generic [ref=e2502]: —
+              - cell "—" [ref=e2503]
+              - cell "—" [ref=e2504]
+            - row "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן 8.5.2026 בורסה גרף אין — — — —" [ref=e2505] [cursor=pointer]:
+              - cell "מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן 8.5.2026" [ref=e2506]:
+                - paragraph [ref=e2507]: מהו הנורמלי החדש של הדולר? האם הוא יכול להגיע ל- 2.5? ומה עם מדד הנדלן
+                - paragraph [ref=e2508]: 8.5.2026
+              - cell "בורסה גרף" [ref=e2509]
+              - cell "אין" [ref=e2510]:
+                - generic [ref=e2511]: אין
+              - cell "—" [ref=e2512]
+              - cell "—" [ref=e2513]:
+                - generic [ref=e2514]: —
+              - cell "—" [ref=e2515]
+              - cell "—" [ref=e2516]
+            - row "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד 8.5.2026 Micha.Stocks אין 10 תיאור — —" [ref=e2517] [cursor=pointer]:
+              - cell "🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד 8.5.2026" [ref=e2518]:
+                - paragraph [ref=e2519]: 🚨 נר האלוהים של מניית אירן - ואז הכל התרסק | השוק מתחיל לפחד
+                - paragraph [ref=e2520]: 8.5.2026
+              - cell "Micha.Stocks" [ref=e2521]
+              - cell "אין" [ref=e2522]:
+                - generic [ref=e2523]: אין
+              - cell "10" [ref=e2524]
+              - cell "תיאור" [ref=e2525]:
+                - generic [ref=e2526]: תיאור
+              - cell "—" [ref=e2527]
+              - cell "—" [ref=e2528]
+            - row "The Phase That Creates Millionaire Traders 8.5.2026 Oliver Velez Trading אין — — — —" [ref=e2529] [cursor=pointer]:
+              - cell "The Phase That Creates Millionaire Traders 8.5.2026" [ref=e2530]:
+                - paragraph [ref=e2531]: The Phase That Creates Millionaire Traders
+                - paragraph [ref=e2532]: 8.5.2026
+              - cell "Oliver Velez Trading" [ref=e2533]
+              - cell "אין" [ref=e2534]:
+                - generic [ref=e2535]: אין
+              - cell "—" [ref=e2536]
+              - cell "—" [ref=e2537]:
+                - generic [ref=e2538]: —
+              - cell "—" [ref=e2539]
+              - cell "—" [ref=e2540]
+            - row "5 Hours That Can Change Your Trading Forever 7.5.2026 Oliver Velez Trading אין — — — —" [ref=e2541] [cursor=pointer]:
+              - cell "5 Hours That Can Change Your Trading Forever 7.5.2026" [ref=e2542]:
+                - paragraph [ref=e2543]: 5 Hours That Can Change Your Trading Forever
+                - paragraph [ref=e2544]: 7.5.2026
+              - cell "Oliver Velez Trading" [ref=e2545]
+              - cell "אין" [ref=e2546]:
+                - generic [ref=e2547]: אין
+              - cell "—" [ref=e2548]
+              - cell "—" [ref=e2549]:
+                - generic [ref=e2550]: —
+              - cell "—" [ref=e2551]
+              - cell "—" [ref=e2552]
+            - row "Believe in yourself 6.5.2026 Oliver Velez Trading אין — — — —" [ref=e2553] [cursor=pointer]:
+              - cell "Believe in yourself 6.5.2026" [ref=e2554]:
+                - paragraph [ref=e2555]: Believe in yourself
+                - paragraph [ref=e2556]: 6.5.2026
+              - cell "Oliver Velez Trading" [ref=e2557]
+              - cell "אין" [ref=e2558]:
+                - generic [ref=e2559]: אין
+              - cell "—" [ref=e2560]
+              - cell "—" [ref=e2561]:
+                - generic [ref=e2562]: —
+              - cell "—" [ref=e2563]
+              - cell "—" [ref=e2564]
+            - row "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90 1.5.2026 בורסה גרף אין — — — —" [ref=e2565] [cursor=pointer]:
+              - cell "מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90 1.5.2026" [ref=e2566]:
+                - paragraph [ref=e2567]: מה קורה כשפורצים לשיא כל הזמנים - S&P ניקיי ותא 90
+                - paragraph [ref=e2568]: 1.5.2026
+              - cell "בורסה גרף" [ref=e2569]
+              - cell "אין" [ref=e2570]:
+                - generic [ref=e2571]: אין
+              - cell "—" [ref=e2572]
+              - cell "—" [ref=e2573]:
+                - generic [ref=e2574]: —
+              - cell "—" [ref=e2575]
+              - cell "—" [ref=e2576]
+            - row "אנליזת מבוססת AI איך משתמשים בזה 30.4.2026 בורסה גרף אין — — — —" [ref=e2577] [cursor=pointer]:
+              - cell "אנליזת מבוססת AI איך משתמשים בזה 30.4.2026" [ref=e2578]:
+                - paragraph [ref=e2579]: אנליזת מבוססת AI איך משתמשים בזה
+                - paragraph [ref=e2580]: 30.4.2026
+              - cell "בורסה גרף" [ref=e2581]
+              - cell "אין" [ref=e2582]:
+                - generic [ref=e2583]: אין
+              - cell "—" [ref=e2584]
+              - cell "—" [ref=e2585]:
+                - generic [ref=e2586]: —
+              - cell "—" [ref=e2587]
+              - cell "—" [ref=e2588]
+            - row "צ׳אט GPT כמו שמעולם לא פגשתם! 28.4.2026 Eden Bibas אין 12 תיאור — —" [ref=e2589] [cursor=pointer]:
+              - cell "צ׳אט GPT כמו שמעולם לא פגשתם! 28.4.2026" [ref=e2590]:
+                - paragraph [ref=e2591]: צ׳אט GPT כמו שמעולם לא פגשתם!
+                - paragraph [ref=e2592]: 28.4.2026
+              - cell "Eden Bibas" [ref=e2593]
+              - cell "אין" [ref=e2594]:
+                - generic [ref=e2595]: אין
+              - cell "12" [ref=e2596]
+              - cell "תיאור" [ref=e2597]:
+                - generic [ref=e2598]: תיאור
+              - cell "—" [ref=e2599]
+              - cell "—" [ref=e2600]
+            - row "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד? 27.4.2026 בורסה גרף אין — — — —" [ref=e2601] [cursor=pointer]:
+              - cell "מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד? 27.4.2026" [ref=e2602]:
+                - paragraph [ref=e2603]: מסחר על נר בודד וכנגד המגמה, האם זה יכול לעבוד?
+                - paragraph [ref=e2604]: 27.4.2026
+              - cell "בורסה גרף" [ref=e2605]
+              - cell "אין" [ref=e2606]:
+                - generic [ref=e2607]: אין
+              - cell "—" [ref=e2608]
+              - cell "—" [ref=e2609]:
+                - generic [ref=e2610]: —
+              - cell "—" [ref=e2611]
+              - cell "—" [ref=e2612]
+            - row "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79 27.4.2026 Aimprove - אימפרוב אין 28 תיאור — —" [ref=e2613] [cursor=pointer]:
+              - cell "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79 27.4.2026" [ref=e2614]:
+                - paragraph [ref=e2615]: למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79
+                - paragraph [ref=e2616]: 27.4.2026
+              - cell "Aimprove - אימפרוב" [ref=e2617]
+              - cell "אין" [ref=e2618]:
+                - generic [ref=e2619]: אין
+              - cell "28" [ref=e2620]
+              - cell "תיאור" [ref=e2621]:
+                - generic [ref=e2622]: תיאור
+              - cell "—" [ref=e2623]
+              - cell "—" [ref=e2624]
+            - row "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77 22.4.2026 Aimprove - אימפרוב אין — — — —" [ref=e2625] [cursor=pointer]:
+              - cell "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77 22.4.2026" [ref=e2626]:
+                - paragraph [ref=e2627]: ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77
+                - paragraph [ref=e2628]: 22.4.2026
+              - cell "Aimprove - אימפרוב" [ref=e2629]
+              - cell "אין" [ref=e2630]:
+                - generic [ref=e2631]: אין
+              - cell "—" [ref=e2632]
+              - cell "—" [ref=e2633]:
+                - generic [ref=e2634]: —
+              - cell "—" [ref=e2635]
+              - cell "—" [ref=e2636]
+            - row "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78 22.4.2026 Aimprove - אימפרוב אין 18 תיאור — —" [ref=e2637] [cursor=pointer]:
+              - cell "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78 22.4.2026" [ref=e2638]:
+                - paragraph [ref=e2639]: סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78
+                - paragraph [ref=e2640]: 22.4.2026
+              - cell "Aimprove - אימפרוב" [ref=e2641]
+              - cell "אין" [ref=e2642]:
+                - generic [ref=e2643]: אין
+              - cell "18" [ref=e2644]
+              - cell "תיאור" [ref=e2645]:
+                - generic [ref=e2646]: תיאור
+              - cell "—" [ref=e2647]
+              - cell "—" [ref=e2648]
+            - row "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74 14.4.2026 Aimprove - אימפרוב אין 26 תיאור — —" [ref=e2649] [cursor=pointer]:
+              - cell "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74 14.4.2026" [ref=e2650]:
+                - paragraph [ref=e2651]: כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74
+                - paragraph [ref=e2652]: 14.4.2026
+              - cell "Aimprove - אימפרוב" [ref=e2653]
+              - cell "אין" [ref=e2654]:
+                - generic [ref=e2655]: אין
+              - cell "26" [ref=e2656]
+              - cell "תיאור" [ref=e2657]:
+                - generic [ref=e2658]: תיאור
+              - cell "—" [ref=e2659]
+              - cell "—" [ref=e2660]
+            - row "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75 14.4.2026 Aimprove - אימפרוב אין — — — —" [ref=e2661] [cursor=pointer]:
+              - cell "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75 14.4.2026" [ref=e2662]:
+                - paragraph [ref=e2663]: תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75
+                - paragraph [ref=e2664]: 14.4.2026
+              - cell "Aimprove - אימפרוב" [ref=e2665]
+              - cell "אין" [ref=e2666]:
+                - generic [ref=e2667]: אין
+              - cell "—" [ref=e2668]
+              - cell "—" [ref=e2669]:
+                - generic [ref=e2670]: —
+              - cell "—" [ref=e2671]
+              - cell "—" [ref=e2672]
+            - row "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....) 9.4.2026 Wysetrade אין — — — —" [ref=e2673] [cursor=pointer]:
+              - cell "ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....) 9.4.2026" [ref=e2674]:
+                - paragraph [ref=e2675]: ULTIMATE Liquidity Trading Strategy (Dangerously Effective.....)
+                - paragraph [ref=e2676]: 9.4.2026
+              - cell "Wysetrade" [ref=e2677]
+              - cell "אין" [ref=e2678]:
+                - generic [ref=e2679]: אין
+              - cell "—" [ref=e2680]
+              - cell "—" [ref=e2681]:
+                - generic [ref=e2682]: —
+              - cell "—" [ref=e2683]
+              - cell "—" [ref=e2684]
+            - row "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר 6.4.2026 Eden Bibas אין — — — —" [ref=e2685] [cursor=pointer]:
+              - cell "עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר 6.4.2026" [ref=e2686]:
+                - paragraph [ref=e2687]: עולם ה-AI בטירוף - עדן ביבס מארח את אשתו לפודקאסט בסגנון אחר
+                - paragraph [ref=e2688]: 6.4.2026
+              - cell "Eden Bibas" [ref=e2689]
+              - cell "אין" [ref=e2690]:
+                - generic [ref=e2691]: אין
+              - cell "—" [ref=e2692]
+              - cell "—" [ref=e2693]:
+                - generic [ref=e2694]: —
+              - cell "—" [ref=e2695]
+              - cell "—" [ref=e2696]
+            - 'row "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits 4.4.2026 Ed Hill AI Automation אין — — — —" [ref=e2697] [cursor=pointer]':
+              - 'cell "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits 4.4.2026" [ref=e2698]':
+                - paragraph [ref=e2699]: "Claim your free Claude Code credits now (limited offer until 17th April) #claudecode #freecredits"
+                - paragraph [ref=e2700]: 4.4.2026
+              - cell "Ed Hill AI Automation" [ref=e2701]
+              - cell "אין" [ref=e2702]:
+                - generic [ref=e2703]: אין
+              - cell "—" [ref=e2704]
+              - cell "—" [ref=e2705]:
+                - generic [ref=e2706]: —
+              - cell "—" [ref=e2707]
+              - cell "—" [ref=e2708]
+            - row "The FASTEST way to build apps with Claude Code (Opus 4.6) 2.4.2026 Ed Hill AI Automation אין 6 תיאור — —" [ref=e2709] [cursor=pointer]:
+              - cell "The FASTEST way to build apps with Claude Code (Opus 4.6) 2.4.2026" [ref=e2710]:
+                - paragraph [ref=e2711]: The FASTEST way to build apps with Claude Code (Opus 4.6)
+                - paragraph [ref=e2712]: 2.4.2026
+              - cell "Ed Hill AI Automation" [ref=e2713]
+              - cell "אין" [ref=e2714]:
+                - generic [ref=e2715]: אין
+              - cell "6" [ref=e2716]
+              - cell "תיאור" [ref=e2717]:
+                - generic [ref=e2718]: תיאור
+              - cell "—" [ref=e2719]
+              - cell "—" [ref=e2720]
+            - row "Anthropic's NEWEST Feature Just Made Claude Code 10x Better 27.3.2026 Ed Hill AI Automation אין — — — —" [ref=e2721] [cursor=pointer]:
+              - cell "Anthropic's NEWEST Feature Just Made Claude Code 10x Better 27.3.2026" [ref=e2722]:
+                - paragraph [ref=e2723]: Anthropic's NEWEST Feature Just Made Claude Code 10x Better
+                - paragraph [ref=e2724]: 27.3.2026
+              - cell "Ed Hill AI Automation" [ref=e2725]
+              - cell "אין" [ref=e2726]:
+                - generic [ref=e2727]: אין
+              - cell "—" [ref=e2728]
+              - cell "—" [ref=e2729]:
+                - generic [ref=e2730]: —
+              - cell "—" [ref=e2731]
+              - cell "—" [ref=e2732]
+            - row "Claude Code + Nano Banana 2 = Apple-Level Websites 18.3.2026 Ed Hill AI Automation אין 4 תיאור — —" [ref=e2733] [cursor=pointer]:
+              - cell "Claude Code + Nano Banana 2 = Apple-Level Websites 18.3.2026" [ref=e2734]:
+                - paragraph [ref=e2735]: Claude Code + Nano Banana 2 = Apple-Level Websites
+                - paragraph [ref=e2736]: 18.3.2026
+              - cell "Ed Hill AI Automation" [ref=e2737]
+              - cell "אין" [ref=e2738]:
+                - generic [ref=e2739]: אין
+              - cell "4" [ref=e2740]
+              - cell "תיאור" [ref=e2741]:
+                - generic [ref=e2742]: תיאור
+              - cell "—" [ref=e2743]
+              - cell "—" [ref=e2744]
+            - row "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28 17.3.2026 Dor Amir Trading אין — — — —" [ref=e2745] [cursor=pointer]:
+              - cell "סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28 17.3.2026" [ref=e2746]:
+                - paragraph [ref=e2747]: סיימתם את הקורס הבסיסי! מה השלב הבא? (ההכשרה המתקדמת) | שיעור 28
+                - paragraph [ref=e2748]: 17.3.2026
+              - cell "Dor Amir Trading" [ref=e2749]
+              - cell "אין" [ref=e2750]:
+                - generic [ref=e2751]: אין
+              - cell "—" [ref=e2752]
+              - cell "—" [ref=e2753]:
+                - generic [ref=e2754]: —
+              - cell "—" [ref=e2755]
+              - cell "—" [ref=e2756]
+            - 'row "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27 16.3.2026 Dor Amir Trading אין — — — —" [ref=e2757] [cursor=pointer]':
+              - 'cell "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27 16.3.2026" [ref=e2758]':
+                - paragraph [ref=e2759]: "מסחר תוך-יומי (Day Trading): האסטרטגיות של המוסדיים | קורס מסחר בחינם - שיעור 27"
+                - paragraph [ref=e2760]: 16.3.2026
+              - cell "Dor Amir Trading" [ref=e2761]
+              - cell "אין" [ref=e2762]:
+                - generic [ref=e2763]: אין
+              - cell "—" [ref=e2764]
+              - cell "—" [ref=e2765]:
+                - generic [ref=e2766]: —
+              - cell "—" [ref=e2767]
+              - cell "—" [ref=e2768]
+            - 'row "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26 15.3.2026 Dor Amir Trading אין — — — —" [ref=e2769] [cursor=pointer]':
+              - 'cell "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26 15.3.2026" [ref=e2770]':
+                - paragraph [ref=e2771]: "סינון מניות מתקדם ב-Finviz: אסטרטגיות איתור | קורס מסחר בחינם - שיעור 26"
+                - paragraph [ref=e2772]: 15.3.2026
+              - cell "Dor Amir Trading" [ref=e2773]
+              - cell "אין" [ref=e2774]:
+                - generic [ref=e2775]: אין
+              - cell "—" [ref=e2776]
+              - cell "—" [ref=e2777]:
+                - generic [ref=e2778]: —
+              - cell "—" [ref=e2779]
+              - cell "—" [ref=e2780]
+            - row "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25 15.3.2026 Dor Amir Trading אין — — — —" [ref=e2781] [cursor=pointer]:
+              - cell "איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25 15.3.2026" [ref=e2782]:
+                - paragraph [ref=e2783]: איך למצוא מניות למסחר בשניות? מדריך לאתר Finviz | קורס מסחר בחינם - שיעור 25
+                - paragraph [ref=e2784]: 15.3.2026
+              - cell "Dor Amir Trading" [ref=e2785]
+              - cell "אין" [ref=e2786]:
+                - generic [ref=e2787]: אין
+              - cell "—" [ref=e2788]
+              - cell "—" [ref=e2789]:
+                - generic [ref=e2790]: —
+              - cell "—" [ref=e2791]
+              - cell "—" [ref=e2792]
+            - row "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24 14.3.2026 Dor Amir Trading אין — — — —" [ref=e2793] [cursor=pointer]:
+              - cell "התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24 14.3.2026" [ref=e2794]:
+                - paragraph [ref=e2795]: התייחסות לדוחות רבעוניים ודוגמאות למסחר סווינג | קורס מסחר בחינם - שיעור 24
+                - paragraph [ref=e2796]: 14.3.2026
+              - cell "Dor Amir Trading" [ref=e2797]
+              - cell "אין" [ref=e2798]:
+                - generic [ref=e2799]: אין
+              - cell "—" [ref=e2800]
+              - cell "—" [ref=e2801]:
+                - generic [ref=e2802]: —
+              - cell "—" [ref=e2803]
+              - cell "—" [ref=e2804]
+            - row "Stop Making Ugly Websites with Claude Code 13.3.2026 Ed Hill AI Automation אין 5 תיאור — —" [ref=e2805] [cursor=pointer]:
+              - cell "Stop Making Ugly Websites with Claude Code 13.3.2026" [ref=e2806]:
+                - paragraph [ref=e2807]: Stop Making Ugly Websites with Claude Code
+                - paragraph [ref=e2808]: 13.3.2026
+              - cell "Ed Hill AI Automation" [ref=e2809]
+              - cell "אין" [ref=e2810]:
+                - generic [ref=e2811]: אין
+              - cell "5" [ref=e2812]
+              - cell "תיאור" [ref=e2813]:
+                - generic [ref=e2814]: תיאור
+              - cell "—" [ref=e2815]
+              - cell "—" [ref=e2816]
+            - row "מפגש 3 - הקסמים של קלוד קוד 6.3.2026 Eden Bibas אין — — — —" [ref=e2817] [cursor=pointer]:
+              - cell "מפגש 3 - הקסמים של קלוד קוד 6.3.2026" [ref=e2818]:
+                - paragraph [ref=e2819]: מפגש 3 - הקסמים של קלוד קוד
+                - paragraph [ref=e2820]: 6.3.2026
+              - cell "Eden Bibas" [ref=e2821]
+              - cell "אין" [ref=e2822]:
+                - generic [ref=e2823]: אין
+              - cell "—" [ref=e2824]
+              - cell "—" [ref=e2825]:
+                - generic [ref=e2826]: —
+              - cell "—" [ref=e2827]
+              - cell "—" [ref=e2828]
+            - row "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה! 5.3.2026 Eden Bibas אין — — — —" [ref=e2829] [cursor=pointer]:
+              - cell "בניית מצגות ו-Skills בקלוד קוד - מפגש חובה! 5.3.2026" [ref=e2830]:
+                - paragraph [ref=e2831]: בניית מצגות ו-Skills בקלוד קוד - מפגש חובה!
+                - paragraph [ref=e2832]: 5.3.2026
+              - cell "Eden Bibas" [ref=e2833]
+              - cell "אין" [ref=e2834]:
+                - generic [ref=e2835]: אין
+              - cell "—" [ref=e2836]
+              - cell "—" [ref=e2837]:
+                - generic [ref=e2838]: —
+              - cell "—" [ref=e2839]
+              - cell "—" [ref=e2840]
+            - row "מפגש 2 - התקנת סקילים + בניית מצגות 5.3.2026 Eden Bibas אין — — — —" [ref=e2841] [cursor=pointer]:
+              - cell "מפגש 2 - התקנת סקילים + בניית מצגות 5.3.2026" [ref=e2842]:
+                - paragraph [ref=e2843]: מפגש 2 - התקנת סקילים + בניית מצגות
+                - paragraph [ref=e2844]: 5.3.2026
+              - cell "Eden Bibas" [ref=e2845]
+              - cell "אין" [ref=e2846]:
+                - generic [ref=e2847]: אין
+              - cell "—" [ref=e2848]
+              - cell "—" [ref=e2849]:
+                - generic [ref=e2850]: —
+              - cell "—" [ref=e2851]
+              - cell "—" [ref=e2852]
+            - row "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות 19.2.2026 The Hasidic Trader אין — — — —" [ref=e2853] [cursor=pointer]:
+              - cell "ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות 19.2.2026" [ref=e2854]:
+                - paragraph [ref=e2855]: ניהול פוזיציה נכון - מתוך סשן שאלות ותשובות
+                - paragraph [ref=e2856]: 19.2.2026
+              - cell "The Hasidic Trader" [ref=e2857]
+              - cell "אין" [ref=e2858]:
+                - generic [ref=e2859]: אין
+              - cell "—" [ref=e2860]
+              - cell "—" [ref=e2861]:
+                - generic [ref=e2862]: —
+              - cell "—" [ref=e2863]
+              - cell "—" [ref=e2864]
+            - 'row "שאלות ותשובות במסחר #1 19.2.2026 The Hasidic Trader אין — — — —" [ref=e2865] [cursor=pointer]':
+              - 'cell "שאלות ותשובות במסחר #1 19.2.2026" [ref=e2866]':
+                - paragraph [ref=e2867]: "שאלות ותשובות במסחר #1"
+                - paragraph [ref=e2868]: 19.2.2026
+              - cell "The Hasidic Trader" [ref=e2869]
+              - cell "אין" [ref=e2870]:
+                - generic [ref=e2871]: אין
+              - cell "—" [ref=e2872]
+              - cell "—" [ref=e2873]:
+                - generic [ref=e2874]: —
+              - cell "—" [ref=e2875]
+              - cell "—" [ref=e2876]
+            - row "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....) 6.2.2026 Wysetrade אין — — — —" [ref=e2877] [cursor=pointer]:
+              - cell "ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....) 6.2.2026" [ref=e2878]:
+                - paragraph [ref=e2879]: ULTIMATE Moving Average Trading Strategy For Daily Profits (Feels Illegal....)
+                - paragraph [ref=e2880]: 6.2.2026
+              - cell "Wysetrade" [ref=e2881]
+              - cell "אין" [ref=e2882]:
+                - generic [ref=e2883]: אין
+              - cell "—" [ref=e2884]
+              - cell "—" [ref=e2885]:
+                - generic [ref=e2886]: —
+              - cell "—" [ref=e2887]
+              - cell "—" [ref=e2888]
+            - row "היומן לא משקר 1 1.2.2026 The Hasidic Trader אין — — — —" [ref=e2889] [cursor=pointer]:
+              - cell "היומן לא משקר 1 1.2.2026" [ref=e2890]:
+                - paragraph [ref=e2891]: היומן לא משקר 1
+                - paragraph [ref=e2892]: 1.2.2026
+              - cell "The Hasidic Trader" [ref=e2893]
+              - cell "אין" [ref=e2894]:
+                - generic [ref=e2895]: אין
+              - cell "—" [ref=e2896]
+              - cell "—" [ref=e2897]:
+                - generic [ref=e2898]: —
+              - cell "—" [ref=e2899]
+              - cell "—" [ref=e2900]
+            - row "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook? 31.1.2026 Ran Bar Zik אין — — — —" [ref=e2901] [cursor=pointer]:
+              - cell "איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook? 31.1.2026" [ref=e2902]:
+                - paragraph [ref=e2903]: איך האייג׳נט שרץ על מכונה מקומית, OpenClaw עובד ואיך הוא מתחבר לרשת חברתית כמו Moltbook?
+                - paragraph [ref=e2904]: 31.1.2026
+              - cell "Ran Bar Zik" [ref=e2905]
+              - cell "אין" [ref=e2906]:
+                - generic [ref=e2907]: אין
+              - cell "—" [ref=e2908]
+              - cell "—" [ref=e2909]:
+                - generic [ref=e2910]: —
+              - cell "—" [ref=e2911]
+              - cell "—" [ref=e2912]
+            - row "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט? 22.12.2025 Ran Bar Zik אין — — — —" [ref=e2913] [cursor=pointer]:
+              - cell "הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט? 22.12.2025" [ref=e2914]:
+                - paragraph [ref=e2915]: הסטנדרט החדש של Agent skills, הסבר מעמיק כולל הצצה אל מאחורי הקלעים. מה זה ולמה זה פשוט?
+                - paragraph [ref=e2916]: 22.12.2025
+              - cell "Ran Bar Zik" [ref=e2917]
+              - cell "אין" [ref=e2918]:
+                - generic [ref=e2919]: אין
+              - cell "—" [ref=e2920]
+              - cell "—" [ref=e2921]:
+                - generic [ref=e2922]: —
+              - cell "—" [ref=e2923]
+              - cell "—" [ref=e2924]
+            - row "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP 14.12.2025 Ran Bar Zik אין — — — —" [ref=e2925] [cursor=pointer]:
+              - cell "איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP 14.12.2025" [ref=e2926]:
+                - paragraph [ref=e2927]: איך אוטומציה של דפדפנים עובדת? בואו להכיר את CDP
+                - paragraph [ref=e2928]: 14.12.2025
+              - cell "Ran Bar Zik" [ref=e2929]
+              - cell "אין" [ref=e2930]:
+                - generic [ref=e2931]: אין
+              - cell "—" [ref=e2932]
+              - cell "—" [ref=e2933]:
+                - generic [ref=e2934]: —
+              - cell "—" [ref=e2935]
+              - cell "—" [ref=e2936]
+            - row "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE) 22.11.2025 Wysetrade אין — — — —" [ref=e2937] [cursor=pointer]:
+              - cell "ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE) 22.11.2025" [ref=e2938]:
+                - paragraph [ref=e2939]: ULTIMATE Supertrend Indicator Trading Strategy (FREE FULL COURSE)
+                - paragraph [ref=e2940]: 22.11.2025
+              - cell "Wysetrade" [ref=e2941]
+              - cell "אין" [ref=e2942]:
+                - generic [ref=e2943]: אין
+              - cell "—" [ref=e2944]
+              - cell "—" [ref=e2945]:
+                - generic [ref=e2946]: —
+              - cell "—" [ref=e2947]
+              - cell "—" [ref=e2948]
+            - row "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..) 29.10.2025 Wysetrade אין — — — —" [ref=e2949] [cursor=pointer]:
+              - cell "Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..) 29.10.2025" [ref=e2950]:
+                - paragraph [ref=e2951]: Find WINNING Chart Patterns With Just One Click! (This Is Unfair…..)
+                - paragraph [ref=e2952]: 29.10.2025
+              - cell "Wysetrade" [ref=e2953]
+              - cell "אין" [ref=e2954]:
+                - generic [ref=e2955]: אין
+              - cell "—" [ref=e2956]
+              - cell "—" [ref=e2957]:
+                - generic [ref=e2958]: —
+              - cell "—" [ref=e2959]
+              - cell "—" [ref=e2960]
+            - row "SDR התקנה והפעלה ראשונית SD 480p 21.9.2025 Ran Bar Zik אין — — — —" [ref=e2961] [cursor=pointer]:
+              - cell "SDR התקנה והפעלה ראשונית SD 480p 21.9.2025" [ref=e2962]:
+                - paragraph [ref=e2963]: SDR התקנה והפעלה ראשונית SD 480p
+                - paragraph [ref=e2964]: 21.9.2025
+              - cell "Ran Bar Zik" [ref=e2965]
+              - cell "אין" [ref=e2966]:
+                - generic [ref=e2967]: אין
+              - cell "—" [ref=e2968]
+              - cell "—" [ref=e2969]:
+                - generic [ref=e2970]: —
+              - cell "—" [ref=e2971]
+              - cell "—" [ref=e2972]
+            - row "רן בר זיק בשש בכאן 27 10 28.8.2025 Ran Bar Zik אין — — — —" [ref=e2973] [cursor=pointer]:
+              - cell "רן בר זיק בשש בכאן 27 10 28.8.2025" [ref=e2974]:
+                - paragraph [ref=e2975]: רן בר זיק בשש בכאן 27 10
+                - paragraph [ref=e2976]: 28.8.2025
+              - cell "Ran Bar Zik" [ref=e2977]
+              - cell "אין" [ref=e2978]:
+                - generic [ref=e2979]: אין
+              - cell "—" [ref=e2980]
+              - cell "—" [ref=e2981]:
+                - generic [ref=e2982]: —
+              - cell "—" [ref=e2983]
+              - cell "—" [ref=e2984]
+            - 'row "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever) 22.8.2025 Wysetrade אין — — — —" [ref=e2985] [cursor=pointer]':
+              - 'cell "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever) 22.8.2025" [ref=e2986]':
+                - paragraph [ref=e2987]: "The #1 Secret of Profitable Traders: Use A Trading Journal (Or Lose Forever)"
+                - paragraph [ref=e2988]: 22.8.2025
+              - cell "Wysetrade" [ref=e2989]
+              - cell "אין" [ref=e2990]:
+                - generic [ref=e2991]: אין
+              - cell "—" [ref=e2992]
+              - cell "—" [ref=e2993]:
+                - generic [ref=e2994]: —
+              - cell "—" [ref=e2995]
+              - cell "—" [ref=e2996]
+            - row "NY Session - Futures Trading 28.4.25 29.4.2025 The Hasidic Trader אין — — — —" [ref=e2997] [cursor=pointer]:
+              - cell "NY Session - Futures Trading 28.4.25 29.4.2025" [ref=e2998]:
+                - paragraph [ref=e2999]: NY Session - Futures Trading 28.4.25
+                - paragraph [ref=e3000]: 29.4.2025
+              - cell "The Hasidic Trader" [ref=e3001]
+              - cell "אין" [ref=e3002]:
+                - generic [ref=e3003]: אין
+              - cell "—" [ref=e3004]
+              - cell "—" [ref=e3005]:
+                - generic [ref=e3006]: —
+              - cell "—" [ref=e3007]
+              - cell "—" [ref=e3008]
+            - row "חכם במסחר 23.3.2025 The Hasidic Trader אין — — — —" [ref=e3009] [cursor=pointer]:
+              - cell "חכם במסחר 23.3.2025" [ref=e3010]:
+                - paragraph [ref=e3011]: חכם במסחר
+                - paragraph [ref=e3012]: 23.3.2025
+              - cell "The Hasidic Trader" [ref=e3013]
+              - cell "אין" [ref=e3014]:
+                - generic [ref=e3015]: אין
+              - cell "—" [ref=e3016]
+              - cell "—" [ref=e3017]:
+                - generic [ref=e3018]: —
+              - cell "—" [ref=e3019]
+              - cell "—" [ref=e3020]
+            - row "Mr beast vs AI - Who will win ?? 4.6.2023 AI Andy אין — — — —" [ref=e3021] [cursor=pointer]:
+              - cell "Mr beast vs AI - Who will win ?? 4.6.2023" [ref=e3022]:
+                - paragraph [ref=e3023]: Mr beast vs AI - Who will win ??
+                - paragraph [ref=e3024]: 4.6.2023
+              - cell "AI Andy" [ref=e3025]
+              - cell "אין" [ref=e3026]:
+                - generic [ref=e3027]: אין
+              - cell "—" [ref=e3028]
+              - cell "—" [ref=e3029]:
+                - generic [ref=e3030]: —
+              - cell "—" [ref=e3031]
+              - cell "—" [ref=e3032]
+            - row "AI got High on weed and this happened..... 8.5.2023 AI Andy אין — — — —" [ref=e3033] [cursor=pointer]:
+              - cell "AI got High on weed and this happened..... 8.5.2023" [ref=e3034]:
+                - paragraph [ref=e3035]: AI got High on weed and this happened.....
+                - paragraph [ref=e3036]: 8.5.2023
+              - cell "AI Andy" [ref=e3037]
+              - cell "אין" [ref=e3038]:
+                - generic [ref=e3039]: אין
+              - cell "—" [ref=e3040]
+              - cell "—" [ref=e3041]:
+                - generic [ref=e3042]: —
+              - cell "—" [ref=e3043]
+              - cell "—" [ref=e3044]
+            - 'row "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity 18.4.2023 AI Andy אין — — — —" [ref=e3045] [cursor=pointer]':
+              - 'cell "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity 18.4.2023" [ref=e3046]':
+                - paragraph [ref=e3047]: "Shocking plans of AI for future!! #shorts #fyp #ai #viral #future #funny #humanity"
+                - paragraph [ref=e3048]: 18.4.2023
+              - cell "AI Andy" [ref=e3049]
+              - cell "אין" [ref=e3050]:
+                - generic [ref=e3051]: אין
+              - cell "—" [ref=e3052]
+              - cell "—" [ref=e3053]:
+                - generic [ref=e3054]: —
+              - cell "—" [ref=e3055]
+              - cell "—" [ref=e3056]
+            - 'row "AI calculates humanities future #shorts #ai #future #fyp 18.4.2023 AI Andy אין — — — —" [ref=e3057] [cursor=pointer]':
+              - 'cell "AI calculates humanities future #shorts #ai #future #fyp 18.4.2023" [ref=e3058]':
+                - paragraph [ref=e3059]: "AI calculates humanities future #shorts #ai #future #fyp"
+                - paragraph [ref=e3060]: 18.4.2023
+              - cell "AI Andy" [ref=e3061]
+              - cell "אין" [ref=e3062]:
+                - generic [ref=e3063]: אין
+              - cell "—" [ref=e3064]
+              - cell "—" [ref=e3065]:
+                - generic [ref=e3066]: —
+              - cell "—" [ref=e3067]
+              - cell "—" [ref=e3068]
+            - 'row "What this AI knows about time travel!! #shorts #ai #fyp #timetravel 16.4.2023 AI Andy אין — — — —" [ref=e3069] [cursor=pointer]':
+              - 'cell "What this AI knows about time travel!! #shorts #ai #fyp #timetravel 16.4.2023" [ref=e3070]':
+                - paragraph [ref=e3071]: "What this AI knows about time travel!! #shorts #ai #fyp #timetravel"
+                - paragraph [ref=e3072]: 16.4.2023
+              - cell "AI Andy" [ref=e3073]
+              - cell "אין" [ref=e3074]:
+                - generic [ref=e3075]: אין
+              - cell "—" [ref=e3076]
+              - cell "—" [ref=e3077]:
+                - generic [ref=e3078]: —
+              - cell "—" [ref=e3079]
+              - cell "—" [ref=e3080]
+            - row "Daniela seven weeks old 9.2.2011 Eyal Shani אין — — — —" [ref=e3081] [cursor=pointer]:
+              - cell "Daniela seven weeks old 9.2.2011" [ref=e3082]:
+                - paragraph [ref=e3083]: Daniela seven weeks old
+                - paragraph [ref=e3084]: 9.2.2011
+              - cell "Eyal Shani" [ref=e3085]
+              - cell "אין" [ref=e3086]:
+                - generic [ref=e3087]: אין
+              - cell "—" [ref=e3088]
+              - cell "—" [ref=e3089]:
+                - generic [ref=e3090]: —
+              - cell "—" [ref=e3091]
+              - cell "—" [ref=e3092]
+            - row "Daniela one week old 19.12.2010 Eyal Shani אין — — — —" [ref=e3093] [cursor=pointer]:
+              - cell "Daniela one week old 19.12.2010" [ref=e3094]:
+                - paragraph [ref=e3095]: Daniela one week old
+                - paragraph [ref=e3096]: 19.12.2010
+              - cell "Eyal Shani" [ref=e3097]
+              - cell "אין" [ref=e3098]:
+                - generic [ref=e3099]: אין
+              - cell "—" [ref=e3100]
+              - cell "—" [ref=e3101]:
+                - generic [ref=e3102]: —
+              - cell "—" [ref=e3103]
+              - cell "—" [ref=e3104]
+            - row "Helpdesk 4.6.2007 Eyal Shani אין — — — —" [ref=e3105] [cursor=pointer]:
+              - cell "Helpdesk 4.6.2007" [ref=e3106]:
+                - paragraph [ref=e3107]: Helpdesk
+                - paragraph [ref=e3108]: 4.6.2007
+              - cell "Eyal Shani" [ref=e3109]
+              - cell "אין" [ref=e3110]:
+                - generic [ref=e3111]: אין
+              - cell "—" [ref=e3112]
+              - cell "—" [ref=e3113]:
+                - generic [ref=e3114]: —
+              - cell "—" [ref=e3115]
+              - cell "—" [ref=e3116]
+            - row "OTD2006 6.5.2007 Eyal Shani אין — — — —" [ref=e3117] [cursor=pointer]:
+              - cell "OTD2006 6.5.2007" [ref=e3118]:
+                - paragraph [ref=e3119]: OTD2006
+                - paragraph [ref=e3120]: 6.5.2007
+              - cell "Eyal Shani" [ref=e3121]
+              - cell "אין" [ref=e3122]:
+                - generic [ref=e3123]: אין
+              - cell "—" [ref=e3124]
+              - cell "—" [ref=e3125]:
+                - generic [ref=e3126]: —
+              - cell "—" [ref=e3127]
+              - cell "—" [ref=e3128]
+  - region "Notifications alt+T"

@@ -1,0 +1,873 @@
+[     178ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[     261ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[     262ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[     272ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[     464ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:54
+[     842ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/favicon.ico:0
+[   31212ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   31212ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   31212ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   31213ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   31213ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   31213ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   31213ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   31215ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   31224ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   31259ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   31357ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   31357ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   31357ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   31357ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   31357ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   31357ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   31357ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   31358ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   31364ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   31378ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   31542ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   32836ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[   32840ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   32840ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   32840ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   32840ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   32840ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   32840ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   32840ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   32841ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   32846ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   32898ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   32944ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   34054ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   34397ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   34402ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   34402ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   55919ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   55919ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   55919ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   55919ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   55919ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   55919ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   55920ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   55920ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   55926ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   56000ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   56000ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   56000ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   56000ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   56000ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   56000ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   56000ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   56001ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   56006ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   56017ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   58238ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   58588ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   58600ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   58600ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   71788ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   71788ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   71788ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   71788ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   71788ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   71789ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   71789ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   71789ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   71794ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   71830ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   71901ms] [LOG] [chapters-debug] {videoPropId: local_1779719720699_4x638, videoId: local_1779719720699_4x638, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   71902ms] [LOG] [chapter-source] videoId local_1779719720699_4x638 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   71902ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   71902ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   71902ms] [LOG] [chapter-source] duration fallback 825 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   71902ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   71902ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId local_1779719720699_4x638 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[   71903ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   71909ms] [LOG] [topic-inherit] {videoId: local_1779719720699_4x638, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[   71925ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   79343ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   79764ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   91382ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   91423ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   91724ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[   91733ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[   91733ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[  143463ms] [LOG] [chapters-debug] {videoPropId: local_1778402155483_4pcbo, videoId: local_1778402155483_4pcbo, aiChapters: 9, chaptersCount: 9} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[  143463ms] [LOG] [political-chapters] rendered chapters count 9 source description_timestamp videoId local_1778402155483_4pcbo @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[  143464ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  143471ms] [LOG] [topic-inherit] {videoId: local_1778402155483_4pcbo, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[  143485ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  143529ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  143736ms] [LOG] [chapters-debug] {videoPropId: local_1778402155483_4pcbo, videoId: local_1778402155483_4pcbo, aiChapters: 9, chaptersCount: 9} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[  143736ms] [LOG] [political-chapters] rendered chapters count 9 source description_timestamp videoId local_1778402155483_4pcbo @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[  143737ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  143751ms] [LOG] [topic-inherit] {videoId: local_1778402155483_4pcbo, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: https://www.youtube.com/channel/UCSxjNbPriyBh9RNl_QNSAtw, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[  143808ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  143868ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  143886ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  145398ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  145401ms] [LOG] [chapters-debug] {videoPropId: local_1778402155483_4pcbo, videoId: local_1778402155483_4pcbo, aiChapters: 9, chaptersCount: 9} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[  145402ms] [LOG] [political-chapters] rendered chapters count 9 source description_timestamp videoId local_1778402155483_4pcbo @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[  145402ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  145409ms] [LOG] [topic-inherit] {videoId: local_1778402155483_4pcbo, channelId: UCSxjNbPriyBh9RNl_QNSAtw, channelUrl: http://www.youtube.com/@Micha.Stocks, channelName: Micha.Stocks, resolvedMainTopicId: t2} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1099
+[  145457ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  145502ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  187154ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  187169ms] [LOG] [political-fields] undefined undefined undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:6822
+[  897483ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[  899655ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[  899763ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1854
+[  899763ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:1869
+[  899778ms] [INFO] [useVideos] local-first — 101 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:24
+[  899916ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx:54
+[  907631ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789438888:1854
+[  907631ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789438888:1869
+[  913828ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789445137:1854
+[  913828ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789445137:1869
+[  924358ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789455640:1854
+[  924358ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789455640:1869
+[  931374ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789462375:1853
+[  931375ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789462375:1868
+[  936728ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789467746:1854
+[  936729ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789467746:1869
+[  948972ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  948981ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  948990ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  948995ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789479985:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  963782ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  963886ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  963889ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  963900ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789494718:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  972090ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  972186ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  972189ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  972191ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789503011:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  977846ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  977924ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  977927ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  977928ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789508749:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  983157ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  983222ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  983225ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  983225ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789514112:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  991630ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  991707ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  991710ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  991711ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789522591:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[  997512ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  997585ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[  997588ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[  997588ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789528515:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1013845ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1013907ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1013910ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1013910ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789544797:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1028147ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1028211ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1028214ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1028215ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789559075:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1042641ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1042704ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1042707ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1042709ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789573559:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1053822ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1053897ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1053899ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx?t=1779789585018:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx?t=1779789585018:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1779789585018:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1053900ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789585018:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1062534ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1062608ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1062610ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx?t=1779789593738:411:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx?t=1779789593738:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1779789593738:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1062611ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1067014ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1067076ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1067079ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx?t=1779789598258:412:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx?t=1779789593738:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1779789593738:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1067080ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1073960ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1074034ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[ 1074036ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx?t=1779789605181:412:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx?t=1779789593738:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1779789593738:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[ 1074037ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[ 1522334ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[ 1522338ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_NETWORK_IO_SUSPENDED @ http://localhost:5174/@vite/client:1034
+[13886546ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[13886786ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[13886834ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[13886838ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx?t=1779789605181:412:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx?t=1779789605181:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx?t=1779789605181:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[13886839ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779789593738:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)
+[13946399ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:963
+[13948711ms] [ERROR] WebSocket connection to 'ws://localhost:5174/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:5174/@vite/client:1034
+[13953417ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[13953475ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[13953492ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3680:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:3705:24)
+[13953493ms] [ERROR] The above error occurred in the <VideoDetailPanel> component:
+
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:908:10)
+    at div
+    at Dashboard (http://localhost:5174/src/pages/Dashboard.jsx:412:3)
+    at main
+    at div
+    at AppLayout (http://localhost:5174/src/App.jsx:39:22)
+    at QueryClientProvider (http://localhost:5174/node_modules/.vite/deps/@tanstack_react-query.js?v=d188bb89:3193:3)
+    at App (http://localhost:5174/src/App.jsx:187:42)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14079
+[13953493ms] ReferenceError: Cannot access 'video' before initialization
+    at http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:66
+    at mountState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12053:28)
+    at Object.useState (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:12593:24)
+    at useState (http://localhost:5174/node_modules/.vite/deps/chunk-VJA5E53X.js?v=d188bb89:1066:29)
+    at VideoDetailPanel (http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx:954:51)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:11596:26)
+    at mountIndeterminateComponent (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:14974:21)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:15962:22)
+    at beginWork$1 (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19806:22)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:19251:20)

@@ -1,0 +1,600 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - button:
+            - generic:
+              - img
+            - generic:
+              - paragraph: YouTube Mentor
+              - paragraph: Learning Hub
+        - navigation:
+          - generic:
+            - button:
+              - img
+              - generic: כל הסרטונים
+            - button:
+              - img
+              - generic: שמורים
+            - button:
+              - img
+              - generic: תור למידה
+            - button:
+              - img
+              - generic: ספריית ידע
+          - generic:
+            - generic:
+              - button: נושאים
+              - button:
+                - img
+                - text: הוסף
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: בינה מלאכותית
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: שוק ההון
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח תוכנה
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: מסחר יומי
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: פיתוח
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: React
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Base44
+                  - button:
+                    - img
+                  - img
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                  - generic:
+                    - button:
+                      - img
+                    - button:
+                      - img
+                  - button: Prompt Engineering
+                  - button:
+                    - img
+                  - img
+        - generic:
+          - button:
+            - img
+            - generic: מנטור חדש
+          - button:
+            - img
+            - generic: ניהול
+      - main:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - heading [level=1]: ספריית ידע
+              - paragraph: 24 סרטונים · 24 מוצגים
+          - generic:
+            - generic:
+              - img
+              - textbox:
+                - /placeholder: חיפוש לפי כותרת או מנטור...
+            - generic:
+              - generic: "תמלול:"
+              - button: הכל
+              - button: גבוה
+              - button: בינוני
+              - button: נמוך
+              - button: אין תמלול
+            - generic:
+              - generic: "פרקים:"
+              - button: הכל
+              - button: AI
+              - button: תיאור
+              - button: הערכה
+              - button: ללא פרקים
+          - generic:
+            - table:
+              - rowgroup:
+                - row:
+                  - columnheader: כותרת
+                  - columnheader: מנטור
+                  - columnheader: תמלול
+                  - columnheader: פרקים
+                  - columnheader: מקור פרקים
+                  - columnheader: נותח
+              - rowgroup:
+                - row:
+                  - cell:
+                    - paragraph: ניתוח שבועי — שוק המניות האמריקאי
+                    - paragraph: 15.3.2025
+                  - cell: Micha.Stocks
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: 5 מניות שאני עוקב אחריהן עכשיו
+                    - paragraph: 8.3.2025
+                  - cell: Micha.Stocks
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: ניתוח טכני — איך קוראים גרף נכון
+                    - paragraph: 14.3.2025
+                  - cell: בורסה גרף
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: RSI + MACD — שימוש נכון באינדיקטורים
+                    - paragraph: 7.3.2025
+                  - cell: בורסה גרף
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Build an AI Agent with n8n — Full Tutorial
+                    - paragraph: 16.3.2025
+                  - cell: Ed Hill AI Automation
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Automate Your Business with AI — 5 Workflows
+                    - paragraph: 9.3.2025
+                  - cell: Ed Hill AI Automation
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Make vs n8n — השוואה מלאה ל-2025
+                    - paragraph: 13.3.2025
+                  - cell: Automation-Tribe
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: n8n Crash Course — מדריך למתחילים
+                    - paragraph: 6.3.2025
+                  - cell: Automation-Tribe
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: 10 AI Tools That Changed My Workflow in 2025
+                    - paragraph: 17.3.2025
+                  - cell: AI Andy
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: ChatGPT למתחילים — המדריך המלא בעברית
+                    - paragraph: 12.3.2025
+                  - cell: Aimprove - אימפרוב
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Claude vs ChatGPT — מה עדיף ב-2025?
+                    - paragraph: 5.3.2025
+                  - cell: Aimprove - אימפרוב
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: פסיכולוגיית מסחר — למה רוב הטריידרים מפסידים
+                    - paragraph: 11.3.2025
+                  - cell: The Hasidic Trader
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Sora, Gemini ו-GPT-5 — כל מה שחדש בעולם ה-AI
+                    - paragraph: 18.3.2025
+                  - cell: Eden Bibas
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: "The #1 Trading Strategy for Momentum Stocks"
+                    - paragraph: 10.3.2025
+                  - cell: Oliver Velez Trading
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: How to Read the Tape — Level 2 Trading
+                    - paragraph: 3.3.2025
+                  - cell: Oliver Velez Trading
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Build an AI Trading Agent — Step by Step
+                    - paragraph: 16.3.2025
+                  - cell: AI Pathways
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: סיכום שבוע — שוק האמריקאי, עסקאות ותובנות
+                    - paragraph: 14.3.2025
+                  - cell: Dor Amir Trading
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: מה זה מניה? — שיעור ראשון לחלוטין
+                    - paragraph: 9.3.2025
+                  - cell: Eyal Shani
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Stop Loss ו-Take Profit — ניהול סיכונים נכון
+                    - paragraph: 2.3.2025
+                  - cell: Eyal Shani
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: בניית אפליקציה ראשונה עם Base44 — מאפס לפרודקשן
+                    - paragraph: 15.3.2025
+                  - cell: Base44 Community
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Web Performance 2025 — כל מה שמפתח צריך לדעת
+                    - paragraph: 13.3.2025
+                  - cell: Ran Bar Zik
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: TypeScript — למה כל מפתח JavaScript חייב לעבור
+                    - paragraph: 6.3.2025
+                  - cell: Ran Bar Zik
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Price Action Trading — כל מה שצריך לדעת
+                    - paragraph: 17.3.2025
+                  - cell: Wysetrade
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+                - row:
+                  - cell:
+                    - paragraph: Support & Resistance — הבסיס של הניתוח הטכני
+                    - paragraph: 10.3.2025
+                  - cell: Wysetrade
+                  - cell:
+                    - generic: אין
+                  - cell: —
+                  - cell:
+                    - generic: —
+                  - cell: —
+    - region "Notifications alt+T"
+  - dialog "ניתוח שבועי — שוק המניות האמריקאי" [ref=e1363]:
+    - generic [ref=e1364]:
+      - heading "ניתוח שבועי — שוק המניות האמריקאי" [level=2]
+      - paragraph: צפייה בפרטי הסרטון, סיכום, פרקים, נקודות מפתח והערות.
+    - button [active] [ref=e1365] [cursor=pointer]:
+      - img [ref=e1366]
+    - button "מצב כהה" [ref=e1369] [cursor=pointer]:
+      - img [ref=e1370]
+      - generic [ref=e1372]: מצב כהה
+    - generic [ref=e1376]:
+      - generic [ref=e1377]:
+        - generic [ref=e1378]:
+          - generic [ref=e1380]:
+            - generic [ref=e1381]: פרטי וידאו
+            - generic [ref=e1382]: 15 מרץ 2025
+          - generic [ref=e1383]:
+            - generic [ref=e1384]:
+              - generic [ref=e1385]: משך
+              - generic [ref=e1386]: 19:15
+            - generic [ref=e1387]:
+              - generic [ref=e1388]: צפיות
+              - generic [ref=e1389]: 12.3K
+          - generic [ref=e1390]:
+            - generic [ref=e1391]: Micha.Stocks
+            - generic [ref=e1392]: Markets
+        - generic [ref=e1393]:
+          - generic [ref=e1394]:
+            - generic [ref=e1395]: ניתוח AI
+            - generic [ref=e1397]:
+              - generic [ref=e1399]: "איכות:"
+              - generic [ref=e1400]: לא נותח
+              - img [ref=e1401]
+          - generic [ref=e1404]:
+            - generic [ref=e1405]: טרם נשמר ניתוח AI
+            - generic [ref=e1406]: בחר מודל לניתוח
+        - generic [ref=e1407]:
+          - generic [ref=e1408]:
+            - generic [ref=e1409]: סטטוס תמלול
+            - generic [ref=e1410]: אין תמלול usable
+          - generic [ref=e1413]: אין תמלול זמין — השתמש בכפתורי "פעולות תמלול" להוספה
+        - generic [ref=e1414]:
+          - generic [ref=e1416]: סטטוס למידה
+          - generic [ref=e1417]:
+            - generic [ref=e1419]:
+              - generic [ref=e1420]:
+                - textbox "הוסף הערה..." [ref=e1421]
+                - generic [ref=e1422]:
+                  - button "שמור הערה (Enter)" [disabled] [ref=e1423]:
+                    - img [ref=e1424]
+                  - button "העלה תמונה" [ref=e1427] [cursor=pointer]:
+                    - img [ref=e1428]
+              - paragraph [ref=e1432]:
+                - img [ref=e1433]
+                - text: אפשר להדביק צילום מסך עם Ctrl+V
+            - generic [ref=e1437]:
+              - button "העתק קישור" [ref=e1438] [cursor=pointer]:
+                - img [ref=e1439]
+                - text: העתק קישור
+              - link "NotebookLM" [ref=e1442] [cursor=pointer]:
+                - /url: https://notebooklm.google.com/
+                - img [ref=e1443]
+                - text: NotebookLM
+              - button "לצמיתות" [ref=e1447] [cursor=pointer]:
+                - img [ref=e1448]
+                - text: לצמיתות
+            - generic [ref=e1451]:
+              - generic [ref=e1452]:
+                - generic [ref=e1453]:
+                  - button "Learning" [ref=e1454] [cursor=pointer]
+                  - button "Session" [ref=e1455] [cursor=pointer]
+                  - button "Daily" [ref=e1456] [cursor=pointer]
+                  - button "Weekly" [ref=e1457] [cursor=pointer]
+                - button "Stock Market ✦" [ref=e1459] [cursor=pointer]:
+                  - generic [ref=e1460]: Stock Market ✦
+                  - img [ref=e1461]
+              - generic [ref=e1463]:
+                - generic "Stock Market/Learnings/L-.md" [ref=e1464]:
+                  - img [ref=e1465]
+                  - generic [ref=e1467]: Stock Market/Learnings/L-.md
+                - button "העתק" [ref=e1468] [cursor=pointer]:
+                  - img [ref=e1469]
+                  - text: העתק
+                - button ".md" [ref=e1472] [cursor=pointer]:
+                  - img [ref=e1473]
+                  - text: .md
+      - generic [ref=e1476]:
+        - complementary [ref=e1477]:
+          - generic [ref=e1478]:
+            - generic [ref=e1479]: פעולות AI
+            - generic [ref=e1480]:
+              - button "נתח עם קלוד" [ref=e1481] [cursor=pointer]:
+                - img [ref=e1482]
+                - text: נתח עם קלוד
+              - button "נתח עם Gemini" [ref=e1484] [cursor=pointer]:
+                - img [ref=e1485]
+                - text: נתח עם Gemini
+              - button "נתח עם llama3.2" [ref=e1487] [cursor=pointer]:
+                - img [ref=e1488]
+                - text: נתח עם llama3.2
+              - button "בדוק llama3.2" [ref=e1490] [cursor=pointer]:
+                - img [ref=e1491]
+                - text: בדוק llama3.2
+              - generic [ref=e1493]: "המודל llama3.2 לא מותקן. הרץ: ollama pull llama3.2"
+              - generic [ref=e1494]:
+                - generic [ref=e1495]:
+                  - generic [ref=e1496]: סטטוס Ollama מקומי
+                  - generic [ref=e1497]:
+                    - img [ref=e1498]
+                    - text: דורש בדיקה
+                - generic [ref=e1500]:
+                  - generic [ref=e1501]:
+                    - generic [ref=e1502]: המודל llama3.2 לא מותקן
+                    - generic [ref=e1503]:
+                      - generic [ref=e1504]: ollama pull llama3.2
+                      - button "העתק" [ref=e1505] [cursor=pointer]:
+                        - img [ref=e1506]
+                        - text: העתק
+                  - button "בדיקת תגובה מהמודל" [ref=e1509] [cursor=pointer]:
+                    - img [ref=e1510]
+                    - text: בדיקת תגובה מהמודל
+          - generic [ref=e1512]:
+            - generic [ref=e1513]: פעולות תמלול
+            - generic [ref=e1514]:
+              - button "הדבק תמלול ידני" [ref=e1515] [cursor=pointer]:
+                - img [ref=e1516]
+                - text: הדבק תמלול ידני
+              - button "נסה תמלול YouTube" [ref=e1519] [cursor=pointer]
+        - generic [ref=e1521]:
+          - generic [ref=e1523]:
+            - heading "ניתוח שבועי — שוק המניות האמריקאי" [level=2] [ref=e1524]
+            - button "שמור" [ref=e1525] [cursor=pointer]:
+              - img [ref=e1526]
+          - generic [ref=e1529]:
+            - img "ניתוח שבועי — שוק המניות האמריקאי" [ref=e1530]
+            - link [ref=e1531] [cursor=pointer]:
+              - /url: https://www.youtube.com/@micha.stocks
+              - img [ref=e1533]
+          - generic [ref=e1537]:
+            - tablist [ref=e1538]:
+              - tab "סיכום" [ref=e1539] [cursor=pointer]
+              - tab "נקודות מפתח" [ref=e1540] [cursor=pointer]
+              - tab "פרקים" [selected] [ref=e1541] [cursor=pointer]
+              - tab "הערות" [ref=e1542] [cursor=pointer]
+            - tabpanel "פרקים" [ref=e1543]:
+              - generic [ref=e1544]:
+                - generic [ref=e1545]:
+                  - heading "פרקי הסרטון" [level=4] [ref=e1547]
+                  - generic [ref=e1548]: לחץ על הזמן כדי לנווט
+                - generic [ref=e1549]: לא נמצא תמלול זמין לסרטון זה.
+                - generic [ref=e1550]:
+                  - paragraph [ref=e1551]: אין עדיין חלוקה לפרקים
+                  - button "נסה פרקים" [ref=e1552] [cursor=pointer]
+    - button "סגור" [ref=e1553] [cursor=pointer]:
+      - img [ref=e1554]
+      - generic [ref=e1557]: סגור

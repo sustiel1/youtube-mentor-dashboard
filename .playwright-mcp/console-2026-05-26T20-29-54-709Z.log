@@ -1,0 +1,63 @@
+[     172ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-H343HIDT.js?v=d188bb89:21608
+[     263ms] [LOG] [chapters-debug] {videoPropId: undefined, videoId: undefined, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1884
+[     264ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId undefined @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1899
+[     280ms] [INFO] [useVideos] local-first — 106 videos from storage @ http://localhost:5174/src/hooks/useVideos.js:26
+[     402ms] [INFO] [App] channelScan: ׳¡׳¨׳™׳§׳” ׳‘׳•׳¦׳¢׳” ׳‘׳₪׳—׳•׳× ׳-8 ׳©׳¢׳•׳× ג€” ׳׳“׳׳’ @ http://localhost:5174/src/App.jsx?t=1779827364976:54
+[   21642ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1884
+[   21643ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   21643ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   21643ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   21643ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   21643ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   21643ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1899
+[   21656ms] [LOG] [topic-inherit] {videoId: test_fundamental_002, channelId: null, channelUrl: null, channelName: Test Channel, resolvedMainTopicId: null} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1103
+[   21752ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1884
+[   21752ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[   21752ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[   21752ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[   21752ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[   21752ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[   21752ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779827364976:1899
+[  972549ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828366480:1884
+[  972550ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[  972550ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[  972550ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[  972550ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[  972550ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[  972550ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828366480:1899
+[  972568ms] [LOG] [topic-inherit] {videoId: test_fundamental_002, channelId: null, channelUrl: null, channelName: Test Channel, resolvedMainTopicId: null} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828366480:1103
+[  972583ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828366480:1884
+[  972583ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[  972583ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[  972583ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[  972583ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[  972584ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[  972584ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828366480:1899
+[ 1265607ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828659483:1884
+[ 1265607ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[ 1265607ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[ 1265607ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[ 1265607ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[ 1265607ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[ 1265608ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828659483:1899
+[ 1265621ms] [LOG] [topic-inherit] {videoId: test_fundamental_002, channelId: null, channelUrl: null, channelName: Test Channel, resolvedMainTopicId: null} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828659483:1103
+[ 1279490ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828673649:1884
+[ 1279490ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[ 1279490ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[ 1279490ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[ 1279490ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[ 1279490ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[ 1279490ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828673649:1899
+[ 1279506ms] [LOG] [topic-inherit] {videoId: test_fundamental_002, channelId: null, channelUrl: null, channelName: Test Channel, resolvedMainTopicId: null} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779828673649:1103
+[ 1814035ms] [LOG] [chapters-debug] {videoPropId: test_fundamental_002, videoId: test_fundamental_002, aiChapters: 0, chaptersCount: 0} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:1884
+[ 1814036ms] [LOG] [chapter-source] videoId test_fundamental_002 @ http://localhost:5174/src/services/videoAnalytics.js:1364
+[ 1814036ms] [LOG] [chapter-source] transcript usable false @ http://localhost:5174/src/services/videoAnalytics.js:1365
+[ 1814036ms] [LOG] [chapter-source] description chapters 0 @ http://localhost:5174/src/services/videoAnalytics.js:1366
+[ 1814036ms] [LOG] [chapter-source] duration fallback 0 @ http://localhost:5174/src/services/videoAnalytics.js:1367
+[ 1814036ms] [LOG] [chapter-source] selected source none @ http://localhost:5174/src/services/videoAnalytics.js:1397
+[ 1814036ms] [LOG] [political-chapters] rendered chapters count 0 source none videoId test_fundamental_002 @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:1899
+[ 1814039ms] [LOG] [fundamental-debug] allPoints: [Object, Object, Object] keyInsights: [Object, Object, Object] appBuilding: {suggestedFeatures: Array(3)} learning keys: [rules, warnings, analogies, keyInsights] @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:8123
+[ 1814050ms] [LOG] [topic-inherit] {videoId: test_fundamental_002, channelId: null, channelUrl: null, channelName: Test Channel, resolvedMainTopicId: null} @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:1103
+[ 1814053ms] [LOG] [fundamental-debug] allPoints: [Object, Object, Object] keyInsights: [Object, Object, Object] appBuilding: {suggestedFeatures: Array(3)} learning keys: [rules, warnings, analogies, keyInsights] @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:8123
+[ 1814064ms] [LOG] [fundamental-debug] allPoints: [Object, Object, Object] keyInsights: [Object, Object, Object] appBuilding: {suggestedFeatures: Array(3)} learning keys: [rules, warnings, analogies, keyInsights] @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:8123
+[ 1814074ms] [LOG] [fundamental-debug] allPoints: [Object, Object, Object] keyInsights: [Object, Object, Object] appBuilding: {suggestedFeatures: Array(3)} learning keys: [rules, warnings, analogies, keyInsights] @ http://localhost:5174/src/components/dashboard/VideoDetailPanel.jsx?t=1779829208051:8123

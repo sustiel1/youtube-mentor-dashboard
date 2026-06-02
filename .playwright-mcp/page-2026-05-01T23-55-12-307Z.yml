@@ -1,0 +1,204 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "מדריך" [ref=e9] [cursor=pointer]
+        - generic [ref=e11]:
+          - link "דף הבית של YouTube" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e16]: IL
+        - button "לדילוג על הניווט" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: לדילוג על הניווט
+      - generic [ref=e25]:
+        - search [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - combobox "חיפוש" [expanded] [ref=e30]
+              - button [ref=e33] [cursor=pointer]
+            - button "Search" [ref=e34] [cursor=pointer]
+        - generic [ref=e37]:
+          - button "חיפוש באמצעות הקול" [ref=e39] [cursor=pointer]
+          - tooltip "tooltip"
+      - generic [ref=e46]:
+        - button "הגדרות" [ref=e51] [cursor=pointer]
+        - link "כניסה" [ref=e55] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26hl%3Diw%26next%3Dhttps%253A%252F%252Fwww.youtube.com%252F%2540itsAimprove&hl=he&ec=65620
+          - generic [ref=e58]: כניסה
+  - navigation [ref=e62]
+  - main [ref=e64]:
+    - generic [ref=e71]:
+      - generic [ref=e87]:
+        - heading "Aimprove- אימפרוב בינה מלאכותית" [level=1] [ref=e89]
+        - generic [ref=e90]:
+          - group [ref=e91]:
+            - generic [ref=e92]: "@itsAimprove"
+          - generic [ref=e93]: •
+          - group [ref=e94]:
+            - generic "‏‫‏5.46 אלף‬‏ ‏מנויים‏" [ref=e95]: ‏‫5.46K‏‬‏ ‏מנויים‏
+            - generic [ref=e96]: •
+            - generic [ref=e97]: ‫158‬ סרטונים
+        - generic [ref=e99] [cursor=pointer]:
+          - generic [ref=e100]: אני מנגישה AI לכולם.ן! 🤖 בואו ללמוד עוד בסדנאות ובקורסים שלי 🎓 לינק למטה!
+          - button "תיאור. אני מנגישה AI לכולם.ן! 🤖 בואו ללמו…כדי לראות עוד טקסט, אפשר ללחוץ." [ref=e101]:
+            - generic [ref=e102]: …עוד
+        - generic [ref=e103]:
+          - link "wa.me/972515079762" [ref=e106] [cursor=pointer]:
+            - /url: https://www.youtube.com/redirect?event=channel_header&redir_token=QUFFLUhqbXA0a083VWlqbGtkanhkbEVhRU5lRWplZGZzd3xBQ3Jtc0trbmxUM291NkJPZ3ZzYlJRSkdUUlVVVTlIejVGS3AzNWpyc1FpbWtzUEN6eFBmdkVYZko3NXc2NUdLdHBmdXh2aC1XdmVNV3Y5TGpLX3dOdk9TdnZRR2NKVmh3aGNoMmh5QVE1WHRIRUlSSkZwR04yaw&q=https%3A%2F%2Fwa.me%2F972515079762
+          - button "ו-7 קישורים נוספים" [ref=e109] [cursor=pointer]
+        - button "הרשמה למינוי" [ref=e113] [cursor=pointer]:
+          - generic [ref=e114]: הרשמה למינוי
+      - tablist [ref=e121]:
+        - tablist [ref=e125]:
+          - tab "דף הבית" [selected] [ref=e126] [cursor=pointer]:
+            - generic [ref=e127]: דף הבית
+          - tab "סרטונים" [ref=e128] [cursor=pointer]:
+            - generic [ref=e129]: סרטונים
+          - tab "Shorts" [ref=e130] [cursor=pointer]:
+            - generic [ref=e131]: Shorts
+          - tab "פודקאסטים" [ref=e132] [cursor=pointer]:
+            - generic [ref=e133]: פודקאסטים
+          - tab "פלייליסטים" [ref=e134] [cursor=pointer]:
+            - generic [ref=e135]: פלייליסטים
+          - button "חיפוש" [ref=e139] [cursor=pointer]
+        - button [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]:
+            - img
+    - generic [ref=e149]:
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - heading "Shorts" [level=2] [ref=e157]:
+            - generic [ref=e159]: Shorts
+          - button "פעולות נוספות" [ref=e163] [cursor=pointer]
+        - generic [ref=e166]:
+          - generic [ref=e169]:
+            - generic [ref=e171]:
+              - link [ref=e172] [cursor=pointer]:
+                - /url: /shorts/tU3IcpKFcLE
+              - generic [ref=e176] [cursor=pointer]:
+                - link "✨ תלמידים מספרים על אימפרוב | גילי אלגבי משתף איך לימודי AI עם שלהבת ורדי שינו לו את החיים! ✨" [ref=e177]:
+                  - /url: /shorts/tU3IcpKFcLE
+                - generic [ref=e178]: ‫330‬ צפיות
+              - button "פעולות נוספות" [ref=e180] [cursor=pointer]
+            - generic [ref=e187]:
+              - link [ref=e188] [cursor=pointer]:
+                - /url: /shorts/c4oAJD_OAAs
+              - generic [ref=e192] [cursor=pointer]:
+                - link "ככה תמצאו טיסות זולות ✈️😍" [ref=e193]:
+                  - /url: /shorts/c4oAJD_OAAs
+                - generic [ref=e194]: ‫1.5K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e196] [cursor=pointer]
+            - generic [ref=e203]:
+              - link [ref=e204] [cursor=pointer]:
+                - /url: /shorts/5TxUWriaz-Y
+              - generic [ref=e208] [cursor=pointer]:
+                - link "GPT4.5 בדרך???" [ref=e209]:
+                  - /url: /shorts/5TxUWriaz-Y
+                - generic [ref=e210]: ‫716‬ צפיות
+              - button "פעולות נוספות" [ref=e212] [cursor=pointer]
+            - generic [ref=e219]:
+              - link [ref=e220] [cursor=pointer]:
+                - /url: /shorts/GnjO1Ua5MHk
+              - generic [ref=e224] [cursor=pointer]:
+                - link "צ׳אטGPT חוגג שנה 🥳 ובשנה הזאת קרו הרבה דברים! הפרק המלא של הפודקאסט ׳לומדים AI’ זמין עכשיו 🎙️" [ref=e225]:
+                  - /url: /shorts/GnjO1Ua5MHk
+                - generic [ref=e226]: ‫472‬ צפיות
+              - button "פעולות נוספות" [ref=e228] [cursor=pointer]
+          - button "הבא" [ref=e236] [cursor=pointer]
+      - generic [ref=e245]:
+        - heading "סרטונים" [level=2] [ref=e248]:
+          - link "סרטונים" [ref=e251] [cursor=pointer]:
+            - /url: /@itsAimprove/videos?view=0&sort=dd&shelf_id=2
+            - generic [ref=e252]: סרטונים
+        - generic [ref=e254]:
+          - generic [ref=e257]:
+            - generic [ref=e259] [cursor=pointer]:
+              - link [ref=e260]:
+                - /url: /watch?v=YUDj_14s7_M
+                - generic [ref=e267]: 26:00
+              - generic [ref=e269]:
+                - generic [ref=e270]:
+                  - heading "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79 26 דקות" [level=3] [ref=e271]:
+                    - link "למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79 26 דקות" [ref=e272]:
+                      - /url: /watch?v=YUDj_14s7_M
+                      - text: למה אני לא ממליצה להשתמש בקלוד קוד | לומדים AI פרק 79
+                  - group [ref=e275]:
+                    - generic [ref=e276]: ‫275‬ צפיות
+                    - generic [ref=e277]: •
+                    - generic [ref=e278]: לפני 4 ימים
+                - button "פעולות נוספות" [ref=e281]
+            - generic [ref=e288] [cursor=pointer]:
+              - link [ref=e289]:
+                - /url: /watch?v=s-Y1QCSck1w
+                - generic [ref=e296]: 29:40
+              - generic [ref=e298]:
+                - generic [ref=e299]:
+                  - heading "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77 29 דקות" [level=3] [ref=e300]:
+                    - link "ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77 29 דקות" [ref=e301]:
+                      - /url: /watch?v=s-Y1QCSck1w
+                      - text: ככה סוכן AI אמיתי נראה מבפנים (אחרי שתאזינו - תדעו על סוכנים יותר מ-95% מהאנשים) | לומדים AI פרק 77
+                  - group [ref=e304]:
+                    - generic [ref=e305]: ‫269‬ צפיות
+                    - generic [ref=e306]: •
+                    - generic [ref=e307]: לפני 9 ימים
+                - button "פעולות נוספות" [ref=e310]
+            - generic [ref=e317] [cursor=pointer]:
+              - link [ref=e318]:
+                - /url: /watch?v=958YOSahyNw
+                - generic [ref=e325]: 22:04
+              - generic [ref=e327]:
+                - generic [ref=e328]:
+                  - heading "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78 22 דקות" [level=3] [ref=e329]:
+                    - link "סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78 22 דקות" [ref=e330]:
+                      - /url: /watch?v=958YOSahyNw
+                      - text: סוף סוף מפה של קלוד שלא תבלבל אתכם (סקירה מלאה) | לומדים AI פרק 78
+                  - group [ref=e333]:
+                    - generic [ref=e334]: ‫215‬ צפיות
+                    - generic [ref=e335]: •
+                    - generic [ref=e336]: לפני 9 ימים
+                - button "פעולות נוספות" [ref=e339]
+            - generic [ref=e346] [cursor=pointer]:
+              - link [ref=e347]:
+                - /url: /watch?v=K18rRr5YsOM
+                - generic [ref=e354]: 35:18
+              - generic [ref=e356]:
+                - generic [ref=e357]:
+                  - heading "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74 35 דקות" [level=3] [ref=e358]:
+                    - link "כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74 35 דקות" [ref=e359]:
+                      - /url: /watch?v=K18rRr5YsOM
+                      - text: כל האמת על סוכני AI לעסק (במקום עובדים אנושיים) | לומדים AI פרק 74
+                  - group [ref=e362]:
+                    - generic [ref=e363]: ‫177‬ צפיות
+                    - generic [ref=e364]: •
+                    - generic [ref=e365]: לפני שבועיים (2)
+                - button "פעולות נוספות" [ref=e368]
+            - generic [ref=e375] [cursor=pointer]:
+              - link [ref=e376]:
+                - /url: /watch?v=PEOAj9w4bCI
+                - generic [ref=e383]: 21:00
+              - generic [ref=e385]:
+                - generic [ref=e386]:
+                  - heading "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75 21 דקות" [level=3] [ref=e387]:
+                    - link "תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75 21 דקות" [ref=e388]:
+                      - /url: /watch?v=PEOAj9w4bCI
+                      - text: תיזהרו מ-OpenClaw (הסיבה מפחידה משחשבתם) | לומדים AI פרק 75
+                  - group [ref=e391]:
+                    - generic [ref=e392]: ‫129‬ צפיות
+                    - generic [ref=e393]: •
+                    - generic [ref=e394]: לפני שבועיים (2)
+                - button "פעולות נוספות" [ref=e397]
+            - generic [ref=e404] [cursor=pointer]:
+              - link [ref=e405]:
+                - /url: /watch?v=kT6oqjgN60M
+                - generic [ref=e412]: 23:09
+              - generic [ref=e414]:
+                - generic [ref=e415]:
+                  - heading "ככה בונים עסק שלם עם AI (בלי לשלם משכורות לעובדים) | לומדים AI פרק 73 23 דקות" [level=3] [ref=e416]:
+                    - link "ככה בונים עסק שלם עם AI (בלי לשלם משכורות לעובדים) | לומדים AI פרק 73 23 דקות" [ref=e417]:
+                      - /url: /watch?v=kT6oqjgN60M
+                      - text: ככה בונים עסק שלם עם AI (בלי לשלם משכורות לעובדים) | לומדים AI פרק 73
+                  - group [ref=e420]:
+                    - generic [ref=e421]: ‫198‬ צפיות
+                    - generic [ref=e422]: •
+                    - generic [ref=e423]: לפני שבועיים (2)
+                - button "פעולות נוספות" [ref=e426]
+          - button "הבא" [ref=e434] [cursor=pointer]

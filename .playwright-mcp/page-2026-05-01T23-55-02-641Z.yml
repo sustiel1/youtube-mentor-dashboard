@@ -1,0 +1,404 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "מדריך" [ref=e9] [cursor=pointer]
+        - generic [ref=e11]:
+          - link "דף הבית של YouTube" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e16]: IL
+        - button "לדילוג על הניווט" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: לדילוג על הניווט
+      - generic [ref=e25]:
+        - search [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - combobox "חיפוש" [expanded] [ref=e30]
+              - button [ref=e33] [cursor=pointer]
+            - button "Search" [ref=e34] [cursor=pointer]
+        - generic [ref=e37]:
+          - button "חיפוש באמצעות הקול" [ref=e39] [cursor=pointer]
+          - tooltip "tooltip"
+  - navigation [ref=e50]
+  - main [ref=e52]:
+    - generic [ref=e59]:
+      - generic [ref=e75]:
+        - heading "Ed Hill | AI Automation" [level=1] [ref=e77]
+        - generic [ref=e78]:
+          - group [ref=e79]:
+            - generic [ref=e80]: "@EdHillAI"
+          - generic [ref=e81]: •
+          - group [ref=e82]:
+            - generic "‏‫‏76.9 אלף‬‏ ‏מנויים‏" [ref=e83]: ‏‫76.9K‏‬‏ ‏מנויים‏
+            - generic [ref=e84]: •
+            - generic [ref=e85]: ‫184‬ סרטונים
+        - generic [ref=e87] [cursor=pointer]:
+          - generic [ref=e88]: 👇 Want to learn AI Automation?
+          - button "תיאור. 👇 Want to learn AI Automation?…כדי לראות עוד טקסט, אפשר ללחוץ." [ref=e89]:
+            - generic [ref=e90]: …עוד
+        - link "edhill.ai/community?vid=yt-bio" [ref=e94] [cursor=pointer]:
+          - /url: https://www.youtube.com/redirect?event=channel_header&redir_token=QUFFLUhqbjJONW1uaFNvejQwbm9LRDFXZUhjbkdZNlJ5UXxBQ3Jtc0ttam9TMGwyRE1LUnBXbXI1c0F1eWRhdFRIWkh1dlpMaWRvSWtZbm9YbzRsT25xal9xeTlBMFZyaHIzdE51Ti1wQmhSTTBVaXhYcjJWbzl4cGFaYWR5YUNVbnFRc3NKNjFQYU12aDdEMXpWQS11UzFQVQ&q=https%3A%2F%2Fedhill.ai%2Fcommunity%3Fvid%3Dyt-bio
+        - button "הרשמה למינוי" [ref=e98] [cursor=pointer]:
+          - generic [ref=e99]: הרשמה למינוי
+      - tablist [ref=e106]:
+        - tablist [ref=e110]:
+          - tab "דף הבית" [selected] [ref=e111] [cursor=pointer]:
+            - generic [ref=e112]: דף הבית
+          - tab "סרטונים" [ref=e113] [cursor=pointer]:
+            - generic [ref=e114]: סרטונים
+          - tab "Shorts" [ref=e115] [cursor=pointer]:
+            - generic [ref=e116]: Shorts
+          - tab "פלייליסטים" [ref=e117] [cursor=pointer]:
+            - generic [ref=e118]: פלייליסטים
+          - tab "פוסטים" [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]: פוסטים
+          - button "חיפוש" [ref=e124] [cursor=pointer]
+    - generic [ref=e132]:
+      - generic [ref=e136]:
+        - heading "סרטונים פופולריים" [level=2] [ref=e139]:
+          - link "סרטונים פופולריים" [ref=e142] [cursor=pointer]:
+            - /url: /@EdHillAI/videos?view=0&sort=p&shelf_id=2
+            - generic [ref=e143]: סרטונים פופולריים
+        - generic [ref=e145]:
+          - generic [ref=e148]:
+            - generic [ref=e150] [cursor=pointer]:
+              - link [ref=e151]:
+                - /url: /watch?v=HGBMr1RQliY
+                - generic [ref=e158]: 22:06
+              - generic [ref=e160]:
+                - generic [ref=e161]:
+                  - heading "I Built an AI Voice Agent That Never Misses a Call (No Code) 22 דקות" [level=3] [ref=e162]:
+                    - link "I Built an AI Voice Agent That Never Misses a Call (No Code) 22 דקות" [ref=e163]:
+                      - /url: /watch?v=HGBMr1RQliY
+                      - text: I Built an AI Voice Agent That Never Misses a Call (No Code)
+                  - generic [ref=e165]:
+                    - group [ref=e166]:
+                      - generic [ref=e167]: ‫285K‏‬ צפיות
+                      - generic [ref=e168]: •
+                      - generic [ref=e169]: לפני 8 חודשים
+                    - group [ref=e170]:
+                      - img "כתוביות סמויות" [ref=e173]:
+                        - generic [ref=e174]: כתוביות
+                - button "פעולות נוספות" [ref=e177]
+            - generic [ref=e184] [cursor=pointer]:
+              - link [ref=e185]:
+                - /url: /watch?v=ptVrPiDV9pw
+                - generic [ref=e192]: 11:04
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - heading "I Rebuilt a $12M AI App in 20 Minutes with No Code (n8n + lovable) 11 דקות, 4 שניות" [level=3] [ref=e196]:
+                    - link "I Rebuilt a $12M AI App in 20 Minutes with No Code (n8n + lovable) 11 דקות, 4 שניות" [ref=e197]:
+                      - /url: /watch?v=ptVrPiDV9pw
+                      - text: I Rebuilt a $12M AI App in 20 Minutes with No Code (n8n + lovable)
+                  - generic [ref=e199]:
+                    - group [ref=e200]:
+                      - generic [ref=e201]: ‫202K‏‬ צפיות
+                      - generic [ref=e202]: •
+                      - generic [ref=e203]: לפני 8 חודשים
+                    - group [ref=e204]:
+                      - img "כתוביות סמויות" [ref=e207]:
+                        - generic [ref=e208]: כתוביות
+                - button "פעולות נוספות" [ref=e211]
+            - generic [ref=e218] [cursor=pointer]:
+              - link [ref=e219]:
+                - /url: /watch?v=NNv80mMzFDs
+                - generic [ref=e226]: 10:48
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - heading "תפסיקו ליצור אתרים מכוערים עם קלוד קוד 10 דקות, 48 שניות" [level=3] [ref=e230]:
+                    - link "תפסיקו ליצור אתרים מכוערים עם קלוד קוד 10 דקות, 48 שניות" [ref=e231]:
+                      - /url: /watch?v=NNv80mMzFDs
+                      - text: תפסיקו ליצור אתרים מכוערים עם קלוד קוד
+                  - generic [ref=e233]:
+                    - group [ref=e234]:
+                      - generic [ref=e235]: ‫165K‏‬ צפיות
+                      - generic [ref=e236]: •
+                      - generic [ref=e237]: לפני חודש (1)
+                    - group [ref=e238]:
+                      - img "כתוביות סמויות" [ref=e241]:
+                        - generic [ref=e242]: כתוביות
+                - button "פעולות נוספות" [ref=e245]
+            - generic [ref=e252] [cursor=pointer]:
+              - link [ref=e253]:
+                - /url: /watch?v=lo0e0IQqUwM
+                - generic [ref=e260]: 19:42
+              - generic [ref=e262]:
+                - generic [ref=e263]:
+                  - heading "איך הכנתי 100 סרטונים קצרים ביוטיוב תוך דקות | מדריך n8n ללא קוד 19 דקות" [level=3] [ref=e264]:
+                    - link "איך הכנתי 100 סרטונים קצרים ביוטיוב תוך דקות | מדריך n8n ללא קוד 19 דקות" [ref=e265]:
+                      - /url: /watch?v=lo0e0IQqUwM
+                      - text: איך הכנתי 100 סרטונים קצרים ביוטיוב תוך דקות | מדריך n8n ללא קוד
+                  - generic [ref=e267]:
+                    - group [ref=e268]:
+                      - generic [ref=e269]: ‫147K‏‬ צפיות
+                      - generic [ref=e270]: •
+                      - generic [ref=e271]: לפני 10 חודשים
+                    - group [ref=e272]:
+                      - img "כתוביות סמויות" [ref=e275]:
+                        - generic [ref=e276]: כתוביות
+                - button "פעולות נוספות" [ref=e279]
+            - generic [ref=e286] [cursor=pointer]:
+              - link [ref=e287]:
+                - /url: /watch?v=sJPZgnKmqL0
+                - generic [ref=e294]: 18:28
+              - generic [ref=e296]:
+                - generic [ref=e297]:
+                  - heading "Build Your First AI Agent in 18 Minutes | No-Code n8n Tutorial 18 דקות" [level=3] [ref=e298]:
+                    - link "Build Your First AI Agent in 18 Minutes | No-Code n8n Tutorial 18 דקות" [ref=e299]:
+                      - /url: /watch?v=sJPZgnKmqL0
+                      - text: Build Your First AI Agent in 18 Minutes | No-Code n8n Tutorial
+                  - generic [ref=e301]:
+                    - group [ref=e302]:
+                      - generic [ref=e303]: ‫76K‏‬ צפיות
+                      - generic [ref=e304]: •
+                      - generic [ref=e305]: לפני 11 חודשים
+                    - group [ref=e306]:
+                      - img "כתוביות סמויות" [ref=e309]:
+                        - generic [ref=e310]: כתוביות
+                - button "פעולות נוספות" [ref=e313]
+            - generic [ref=e320] [cursor=pointer]:
+              - link [ref=e321]:
+                - /url: /watch?v=LFO4cP0KMwk
+                - generic [ref=e328]: 19:45
+              - generic [ref=e330]:
+                - generic [ref=e331]:
+                  - heading "הסוכן האולטימטיבי לפרסום אוטומטי של תוכן מדי יום - 9 פלטפורמות חברתיות ב-1 | מדריך n8n ללא קוד 19 דקות" [level=3] [ref=e332]:
+                    - link "הסוכן האולטימטיבי לפרסום אוטומטי של תוכן מדי יום - 9 פלטפורמות חברתיות ב-1 | מדריך n8n ללא קוד 19 דקות" [ref=e333]:
+                      - /url: /watch?v=LFO4cP0KMwk
+                      - text: הסוכן האולטימטיבי לפרסום אוטומטי של תוכן מדי יום - 9 פלטפורמות חברתיות ב-1 | מדריך n8n ללא קוד
+                  - generic [ref=e335]:
+                    - group [ref=e336]:
+                      - generic [ref=e337]: ‫64K‏‬ צפיות
+                      - generic [ref=e338]: •
+                      - generic [ref=e339]: לפני 10 חודשים
+                    - group [ref=e340]:
+                      - img "כתוביות סמויות" [ref=e343]:
+                        - generic [ref=e344]: כתוביות
+                - button "פעולות נוספות" [ref=e347]
+          - button "הבא" [ref=e355] [cursor=pointer]
+      - generic [ref=e363]:
+        - generic [ref=e364]:
+          - heading "Shorts" [level=2] [ref=e368]:
+            - generic [ref=e370]: Shorts
+          - button "פעולות נוספות" [ref=e374] [cursor=pointer]
+        - generic [ref=e377]:
+          - generic [ref=e380]:
+            - generic [ref=e382]:
+              - link [ref=e383] [cursor=pointer]:
+                - /url: /shorts/6-GYJWvTkak
+              - generic [ref=e387] [cursor=pointer]:
+                - 'link "קבלו עכשיו את נקודות הזכות החינמיות שלכם בקוד קלוד (הצעה מוגבלת עד 17 באפריל) #claudecode #freecr..." [ref=e388]':
+                  - /url: /shorts/6-GYJWvTkak
+                - generic [ref=e389]: ‫19K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e391] [cursor=pointer]
+            - generic [ref=e398]:
+              - link [ref=e399] [cursor=pointer]:
+                - /url: /shorts/ShFPXCxsUak
+              - generic [ref=e403] [cursor=pointer]:
+                - link "איך לבנות את אנליסט הנתונים הראשון שלך בתחום הבינה המלאכותית (ב-Google Sheets) בפחות מ-30 שניות -..." [ref=e404]:
+                  - /url: /shorts/ShFPXCxsUak
+                - generic [ref=e405]: ‫11K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e407] [cursor=pointer]
+            - generic [ref=e414]:
+              - link [ref=e415] [cursor=pointer]:
+                - /url: /shorts/RMGozTLXow8
+              - generic [ref=e419] [cursor=pointer]:
+                - link "איך לבנות את סוכן הבינה המלאכותית הראשון שלך בוואטסאפ כמי שאינו טכנולוגי בפחות מ-30 שניות (מדריך ..." [ref=e420]:
+                  - /url: /shorts/RMGozTLXow8
+                - generic [ref=e421]: ‫6.2K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e423] [cursor=pointer]
+            - generic [ref=e430]:
+              - link [ref=e431] [cursor=pointer]:
+                - /url: /shorts/jbvYujG6otM
+              - generic [ref=e435] [cursor=pointer]:
+                - 'link "מדריך n8n: סוכן בינה מלאכותית זה של WhatsApp מטפל בפגישות שלך ביומן גוגל." [ref=e436]':
+                  - /url: /shorts/jbvYujG6otM
+                - generic [ref=e437]: ‫9.8K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e439] [cursor=pointer]
+            - generic [ref=e446]:
+              - link [ref=e447] [cursor=pointer]:
+                - /url: /shorts/dhAauNQhnM4
+              - generic [ref=e451] [cursor=pointer]:
+                - link "פקידת קבלה זו של בינה מלאכותית עונה לכל השיחות הנכנסות שלך באמצעות לוח שנה של גוגל (מדריך n8n ללא..." [ref=e452]:
+                  - /url: /shorts/dhAauNQhnM4
+                - generic [ref=e453]: ‫9.4K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e455] [cursor=pointer]
+            - generic [ref=e462]:
+              - link [ref=e463] [cursor=pointer]:
+                - /url: /shorts/Otv0SrTJ75A
+              - generic [ref=e467] [cursor=pointer]:
+                - link "איך ללמוד n8n בשנת 2026, בניית סוכן בינה מלאכותית היא לימוד n8n בדרך הקשה (מפת הדרכים שלי)." [ref=e468]:
+                  - /url: /shorts/Otv0SrTJ75A
+                - generic [ref=e469]: ‫15K‏‬ צפיות
+              - button "פעולות נוספות" [ref=e471] [cursor=pointer]
+          - button "הבא" [ref=e479] [cursor=pointer]
+      - generic [ref=e488]:
+        - heading "פלייליסטים שנוצרו" [level=2] [ref=e491]:
+          - link "פלייליסטים שנוצרו" [ref=e494] [cursor=pointer]:
+            - /url: /@EdHillAI/playlists?view=1&sort=dd&shelf_id=4
+            - generic [ref=e495]: פלייליסטים שנוצרו
+        - generic [ref=e500]:
+          - generic [ref=e502] [cursor=pointer]:
+            - link [ref=e503]:
+              - /url: /watch?v=lHXtPkhElw4&list=PLJ4OauLew9m2ro88huiDlAYbaQLxj1D7m
+              - generic [ref=e515]: 5 סרטונים
+            - generic [ref=e518]:
+              - heading "Claude Code Launchpad 🚀" [level=3] [ref=e519]:
+                - link "Claude Code Launchpad 🚀" [ref=e520]:
+                  - /url: /watch?v=lHXtPkhElw4&list=PLJ4OauLew9m2ro88huiDlAYbaQLxj1D7m
+              - group [ref=e523]:
+                - link "להצגת כל הפלייליסט" [ref=e526]:
+                  - /url: /playlist?list=PLJ4OauLew9m2ro88huiDlAYbaQLxj1D7m
+          - generic [ref=e528] [cursor=pointer]:
+            - link [ref=e529]:
+              - /url: /watch?v=HGBMr1RQliY&list=PLJ4OauLew9m2p6S3HfKJ-NcfDi5MzVqC3
+              - generic [ref=e541]: 4 סרטונים
+            - generic [ref=e544]:
+              - heading "AI Voice Agents" [level=3] [ref=e545]:
+                - link "AI Voice Agents" [ref=e546]:
+                  - /url: /watch?v=HGBMr1RQliY&list=PLJ4OauLew9m2p6S3HfKJ-NcfDi5MzVqC3
+              - group [ref=e549]:
+                - link "להצגת כל הפלייליסט" [ref=e552]:
+                  - /url: /playlist?list=PLJ4OauLew9m2p6S3HfKJ-NcfDi5MzVqC3
+          - generic [ref=e554] [cursor=pointer]:
+            - link [ref=e555]:
+              - /url: /watch?v=vcvRVlc_VFg&list=PLJ4OauLew9m23Cav0vhnW8IzvONgbfzdb
+              - generic [ref=e567]: 101 סרטונים
+            - generic [ref=e570]:
+              - heading "n8n Shorts" [level=3] [ref=e571]:
+                - link "n8n Shorts" [ref=e572]:
+                  - /url: /watch?v=vcvRVlc_VFg&list=PLJ4OauLew9m23Cav0vhnW8IzvONgbfzdb
+              - group [ref=e575]:
+                - link "להצגת כל הפלייליסט" [ref=e578]:
+                  - /url: /playlist?list=PLJ4OauLew9m23Cav0vhnW8IzvONgbfzdb
+          - generic [ref=e580] [cursor=pointer]:
+            - link [ref=e581]:
+              - /url: /watch?v=HGBMr1RQliY&list=PLJ4OauLew9m3JJKfs1beO7Ic5J14H8XpO
+              - generic [ref=e593]: 37 סרטונים
+            - generic [ref=e596]:
+              - heading "No Code Beginner AI Launchpad (2026)" [level=3] [ref=e597]:
+                - link "No Code Beginner AI Launchpad (2026)" [ref=e598]:
+                  - /url: /watch?v=HGBMr1RQliY&list=PLJ4OauLew9m3JJKfs1beO7Ic5J14H8XpO
+              - group [ref=e601]:
+                - link "להצגת כל הפלייליסט" [ref=e604]:
+                  - /url: /playlist?list=PLJ4OauLew9m3JJKfs1beO7Ic5J14H8XpO
+      - generic [ref=e608]:
+        - heading "סרטונים" [level=2] [ref=e611]:
+          - link "סרטונים" [ref=e614] [cursor=pointer]:
+            - /url: /@EdHillAI/videos?view=0&sort=dd&shelf_id=5
+            - generic [ref=e615]: סרטונים
+        - generic [ref=e620]:
+          - generic [ref=e622] [cursor=pointer]:
+            - link [ref=e623]:
+              - /url: /watch?v=lHXtPkhElw4
+              - generic [ref=e630]: 11:46
+            - generic [ref=e632]:
+              - generic [ref=e633]:
+                - heading "הדרך המהירה ביותר לבנות אפליקציות עם Claude Code (Opus 4.6) 11 דקות, 46 שניות" [level=3] [ref=e634]:
+                  - link "הדרך המהירה ביותר לבנות אפליקציות עם Claude Code (Opus 4.6) 11 דקות, 46 שניות" [ref=e635]:
+                    - /url: /watch?v=lHXtPkhElw4
+                    - text: הדרך המהירה ביותר לבנות אפליקציות עם Claude Code (Opus 4.6)
+                - generic [ref=e637]:
+                  - group [ref=e638]:
+                    - generic [ref=e639]: ‫9.6K‏‬ צפיות
+                    - generic [ref=e640]: •
+                    - generic [ref=e641]: לפני 4 שבועות
+                  - group [ref=e642]:
+                    - img "כתוביות סמויות" [ref=e645]:
+                      - generic [ref=e646]: כתוביות
+              - button "פעולות נוספות" [ref=e649]
+          - generic [ref=e656] [cursor=pointer]:
+            - link [ref=e657]:
+              - /url: /watch?v=md-ie6D_AZc
+              - generic [ref=e664]: 4:46
+            - generic [ref=e666]:
+              - generic [ref=e667]:
+                - heading "הפיצ'ר החדש ביותר של Anthropic הפך את Claude Code לטוב פי 10 4 דקות, 46 שניות" [level=3] [ref=e668]:
+                  - link "הפיצ'ר החדש ביותר של Anthropic הפך את Claude Code לטוב פי 10 4 דקות, 46 שניות" [ref=e669]:
+                    - /url: /watch?v=md-ie6D_AZc
+                    - text: הפיצ'ר החדש ביותר של Anthropic הפך את Claude Code לטוב פי 10
+                - generic [ref=e671]:
+                  - group [ref=e672]:
+                    - generic [ref=e673]: ‫1.9K‏‬ צפיות
+                    - generic [ref=e674]: •
+                    - generic [ref=e675]: לפני חודש (1)
+                  - group [ref=e676]:
+                    - img "כתוביות סמויות" [ref=e679]:
+                      - generic [ref=e680]: כתוביות
+              - button "פעולות נוספות" [ref=e683]
+          - generic [ref=e690] [cursor=pointer]:
+            - link [ref=e691]:
+              - /url: /watch?v=ViilNVorlQo
+              - generic [ref=e698]: 7:44
+            - generic [ref=e700]:
+              - generic [ref=e701]:
+                - heading "קלוד קוד + ננו בננה 2 = אתרים ברמת אפל 7 דקות, 44 שניות" [level=3] [ref=e702]:
+                  - link "קלוד קוד + ננו בננה 2 = אתרים ברמת אפל 7 דקות, 44 שניות" [ref=e703]:
+                    - /url: /watch?v=ViilNVorlQo
+                    - text: קלוד קוד + ננו בננה 2 = אתרים ברמת אפל
+                - generic [ref=e705]:
+                  - group [ref=e706]:
+                    - generic [ref=e707]: ‫22K‏‬ צפיות
+                    - generic [ref=e708]: •
+                    - generic [ref=e709]: לפני חודש (1)
+                  - group [ref=e710]:
+                    - img "כתוביות סמויות" [ref=e713]:
+                      - generic [ref=e714]: כתוביות
+              - button "פעולות נוספות" [ref=e717]
+          - generic [ref=e724] [cursor=pointer]:
+            - link [ref=e725]:
+              - /url: /watch?v=NNv80mMzFDs
+              - generic [ref=e732]: 10:48
+            - generic [ref=e734]:
+              - generic [ref=e735]:
+                - heading "תפסיקו ליצור אתרים מכוערים עם קלוד קוד 10 דקות, 48 שניות" [level=3] [ref=e736]:
+                  - link "תפסיקו ליצור אתרים מכוערים עם קלוד קוד 10 דקות, 48 שניות" [ref=e737]:
+                    - /url: /watch?v=NNv80mMzFDs
+                    - text: תפסיקו ליצור אתרים מכוערים עם קלוד קוד
+                - generic [ref=e739]:
+                  - group [ref=e740]:
+                    - generic [ref=e741]: ‫165K‏‬ צפיות
+                    - generic [ref=e742]: •
+                    - generic [ref=e743]: לפני חודש (1)
+                  - group [ref=e744]:
+                    - img "כתוביות סמויות" [ref=e747]:
+                      - generic [ref=e748]: כתוביות
+              - button "פעולות נוספות" [ref=e751]
+          - generic [ref=e758] [cursor=pointer]:
+            - link [ref=e759]:
+              - /url: /watch?v=2d6mM2w4g-k
+              - generic [ref=e766]: 11:46
+            - generic [ref=e768]:
+              - generic [ref=e769]:
+                - heading "תפסיקו להשתמש בקוד של קלוד בשביל זה (השתמשו ב-n8n במקום זאת) 11 דקות, 46 שניות" [level=3] [ref=e770]:
+                  - link "תפסיקו להשתמש בקוד של קלוד בשביל זה (השתמשו ב-n8n במקום זאת) 11 דקות, 46 שניות" [ref=e771]:
+                    - /url: /watch?v=2d6mM2w4g-k
+                    - text: תפסיקו להשתמש בקוד של קלוד בשביל זה (השתמשו ב-n8n במקום זאת)
+                - generic [ref=e773]:
+                  - group [ref=e774]:
+                    - generic [ref=e775]: ‫2.6K‏‬ צפיות
+                    - generic [ref=e776]: •
+                    - generic [ref=e777]: לפני חודש (1)
+                  - group [ref=e778]:
+                    - img "כתוביות סמויות" [ref=e781]:
+                      - generic [ref=e782]: כתוביות
+              - button "פעולות נוספות" [ref=e785]
+          - generic [ref=e792] [cursor=pointer]:
+            - link [ref=e793]:
+              - /url: /watch?v=hNPXxyEHvYs
+              - generic [ref=e800]: 8:45
+            - generic [ref=e802]:
+              - generic [ref=e803]:
+                - heading "בניתי מחדש אפליקציה של 12 מיליון דולר באמצעות קוד קלוד (מדריך מלא 2026) 8 דקות, 45 שניות" [level=3] [ref=e804]:
+                  - link "בניתי מחדש אפליקציה של 12 מיליון דולר באמצעות קוד קלוד (מדריך מלא 2026) 8 דקות, 45 שניות" [ref=e805]:
+                    - /url: /watch?v=hNPXxyEHvYs
+                    - text: בניתי מחדש אפליקציה של 12 מיליון דולר באמצעות קוד קלוד (מדריך מלא 2026)
+                - generic [ref=e807]:
+                  - group [ref=e808]:
+                    - generic [ref=e809]: ‫3.3K‏‬ צפיות
+                    - generic [ref=e810]: •
+                    - generic [ref=e811]: לפני 3 חודשים
+                  - group [ref=e812]:
+                    - img "כתוביות סמויות" [ref=e815]:
+                      - generic [ref=e816]: כתוביות
+              - button "פעולות נוספות" [ref=e819]

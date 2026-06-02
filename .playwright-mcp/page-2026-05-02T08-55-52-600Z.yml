@@ -1,0 +1,299 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - button "YouTube Mentor Learning Hub" [ref=e87] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: YouTube Mentor
+          - paragraph [ref=e13]: Learning Hub
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - button "כל הסרטונים" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: כל הסרטונים
+          - button "שמורים" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e26]: שמורים
+          - button "תור למידה" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+            - generic [ref=e30]: תור למידה
+        - generic [ref=e32]:
+          - button "נושאים" [ref=e33] [cursor=pointer]
+          - button "הוסף" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+            - text: הוסף
+      - generic [ref=e37]:
+        - button "מנטור חדש" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e42]: מנטור חדש
+        - button "ניהול" [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+          - generic [ref=e47]: ניהול
+    - main [ref=e48]:
+      - generic [ref=e89]:
+        - generic [ref=e90]:
+          - heading "ניהול" [level=1] [ref=e91]
+          - paragraph [ref=e92]: ניהול מנטורים, קטגוריות, נושאים ומקורות
+        - generic [ref=e93]:
+          - tablist [ref=e94]:
+            - tab "משיכת RSS" [ref=e95] [cursor=pointer]:
+              - img [ref=e96]
+              - text: משיכת RSS
+            - tab "ערוצים" [active] [selected] [ref=e100] [cursor=pointer]
+            - tab "נושאים" [ref=e101] [cursor=pointer]
+            - tab "קטגוריות" [ref=e102] [cursor=pointer]
+            - tab "מקורות" [ref=e103] [cursor=pointer]
+          - tabpanel "ערוצים" [ref=e470]:
+            - generic [ref=e471]:
+              - heading "מנטורים (14)" [level=2] [ref=e473]
+              - generic [ref=e474]:
+                - heading "לא משויך (14)" [level=3] [ref=e475]
+                - table [ref=e477]:
+                  - rowgroup [ref=e478]:
+                    - row "M Micha.Stocks שוק ההון פעיל" [ref=e479]:
+                      - cell "M Micha.Stocks" [ref=e480]:
+                        - generic [ref=e481]:
+                          - generic [ref=e482]: M
+                          - generic [ref=e483]: Micha.Stocks
+                      - cell "שוק ההון" [ref=e484]:
+                        - generic [ref=e485]:
+                          - img [ref=e486]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e490]:
+                        - generic [ref=e491]: פעיל
+                      - cell [ref=e492]:
+                        - generic [ref=e493]:
+                          - button [ref=e494] [cursor=pointer]:
+                            - img [ref=e495]
+                          - button [ref=e498] [cursor=pointer]:
+                            - img [ref=e499]
+                    - row "ב בורסה גרף שוק ההון פעיל" [ref=e502]:
+                      - cell "ב בורסה גרף" [ref=e503]:
+                        - generic [ref=e504]:
+                          - generic [ref=e505]: ב
+                          - generic [ref=e506]: בורסה גרף
+                      - cell "שוק ההון" [ref=e507]:
+                        - generic [ref=e508]:
+                          - img [ref=e509]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e513]:
+                        - generic [ref=e514]: פעיל
+                      - cell [ref=e515]:
+                        - generic [ref=e516]:
+                          - button [ref=e517] [cursor=pointer]:
+                            - img [ref=e518]
+                          - button [ref=e521] [cursor=pointer]:
+                            - img [ref=e522]
+                    - row "T The Hasidic Trader שוק ההון פעיל" [ref=e525]:
+                      - cell "T The Hasidic Trader" [ref=e526]:
+                        - generic [ref=e527]:
+                          - generic [ref=e528]: T
+                          - generic [ref=e529]: The Hasidic Trader
+                      - cell "שוק ההון" [ref=e530]:
+                        - generic [ref=e531]:
+                          - img [ref=e532]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e536]:
+                        - generic [ref=e537]: פעיל
+                      - cell [ref=e538]:
+                        - generic [ref=e539]:
+                          - button [ref=e540] [cursor=pointer]:
+                            - img [ref=e541]
+                          - button [ref=e544] [cursor=pointer]:
+                            - img [ref=e545]
+                    - row "O Oliver Velez Trading שוק ההון פעיל" [ref=e548]:
+                      - cell "O Oliver Velez Trading" [ref=e549]:
+                        - generic [ref=e550]:
+                          - generic [ref=e551]: O
+                          - generic [ref=e552]: Oliver Velez Trading
+                      - cell "שוק ההון" [ref=e553]:
+                        - generic [ref=e554]:
+                          - img [ref=e555]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e559]:
+                        - generic [ref=e560]: פעיל
+                      - cell [ref=e561]:
+                        - generic [ref=e562]:
+                          - button [ref=e563] [cursor=pointer]:
+                            - img [ref=e564]
+                          - button [ref=e567] [cursor=pointer]:
+                            - img [ref=e568]
+                    - row "D Dor Amir Trading שוק ההון פעיל" [ref=e571]:
+                      - cell "D Dor Amir Trading" [ref=e572]:
+                        - generic [ref=e573]:
+                          - generic [ref=e574]: D
+                          - generic [ref=e575]: Dor Amir Trading
+                      - cell "שוק ההון" [ref=e576]:
+                        - generic [ref=e577]:
+                          - img [ref=e578]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e582]:
+                        - generic [ref=e583]: פעיל
+                      - cell [ref=e584]:
+                        - generic [ref=e585]:
+                          - button [ref=e586] [cursor=pointer]:
+                            - img [ref=e587]
+                          - button [ref=e590] [cursor=pointer]:
+                            - img [ref=e591]
+                    - row "E Eyal Shani שוק ההון פעיל" [ref=e594]:
+                      - cell "E Eyal Shani" [ref=e595]:
+                        - generic [ref=e596]:
+                          - generic [ref=e597]: E
+                          - generic [ref=e598]: Eyal Shani
+                      - cell "שוק ההון" [ref=e599]:
+                        - generic [ref=e600]:
+                          - img [ref=e601]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e605]:
+                        - generic [ref=e606]: פעיל
+                      - cell [ref=e607]:
+                        - generic [ref=e608]:
+                          - button [ref=e609] [cursor=pointer]:
+                            - img [ref=e610]
+                          - button [ref=e613] [cursor=pointer]:
+                            - img [ref=e614]
+                    - row "W Wysetrade שוק ההון פעיל" [ref=e617]:
+                      - cell "W Wysetrade" [ref=e618]:
+                        - generic [ref=e619]:
+                          - generic [ref=e620]: W
+                          - generic [ref=e621]: Wysetrade
+                      - cell "שוק ההון" [ref=e622]:
+                        - generic [ref=e623]:
+                          - img [ref=e624]
+                          - text: שוק ההון
+                      - cell "פעיל" [ref=e628]:
+                        - generic [ref=e629]: פעיל
+                      - cell [ref=e630]:
+                        - generic [ref=e631]:
+                          - button [ref=e632] [cursor=pointer]:
+                            - img [ref=e633]
+                          - button [ref=e636] [cursor=pointer]:
+                            - img [ref=e637]
+                    - row "E Ed Hill AI Automation בינה מלאכותית פעיל" [ref=e640]:
+                      - cell "E Ed Hill AI Automation" [ref=e641]:
+                        - generic [ref=e642]:
+                          - generic [ref=e643]: E
+                          - generic [ref=e644]: Ed Hill AI Automation
+                      - cell "בינה מלאכותית" [ref=e645]:
+                        - generic [ref=e646]:
+                          - img [ref=e647]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e650]:
+                        - generic [ref=e651]: פעיל
+                      - cell [ref=e652]:
+                        - generic [ref=e653]:
+                          - button [ref=e654] [cursor=pointer]:
+                            - img [ref=e655]
+                          - button [ref=e658] [cursor=pointer]:
+                            - img [ref=e659]
+                    - row "A Automation-Tribe בינה מלאכותית פעיל" [ref=e662]:
+                      - cell "A Automation-Tribe" [ref=e663]:
+                        - generic [ref=e664]:
+                          - generic [ref=e665]: A
+                          - generic [ref=e666]: Automation-Tribe
+                      - cell "בינה מלאכותית" [ref=e667]:
+                        - generic [ref=e668]:
+                          - img [ref=e669]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e672]:
+                        - generic [ref=e673]: פעיל
+                      - cell [ref=e674]:
+                        - generic [ref=e675]:
+                          - button [ref=e676] [cursor=pointer]:
+                            - img [ref=e677]
+                          - button [ref=e680] [cursor=pointer]:
+                            - img [ref=e681]
+                    - row "A AI Andy בינה מלאכותית פעיל" [ref=e684]:
+                      - cell "A AI Andy" [ref=e685]:
+                        - generic [ref=e686]:
+                          - generic [ref=e687]: A
+                          - generic [ref=e688]: AI Andy
+                      - cell "בינה מלאכותית" [ref=e689]:
+                        - generic [ref=e690]:
+                          - img [ref=e691]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e694]:
+                        - generic [ref=e695]: פעיל
+                      - cell [ref=e696]:
+                        - generic [ref=e697]:
+                          - button [ref=e698] [cursor=pointer]:
+                            - img [ref=e699]
+                          - button [ref=e702] [cursor=pointer]:
+                            - img [ref=e703]
+                    - row "A Aimprove - אימפרוב בינה מלאכותית פעיל" [ref=e706]:
+                      - cell "A Aimprove - אימפרוב" [ref=e707]:
+                        - generic [ref=e708]:
+                          - generic [ref=e709]: A
+                          - generic [ref=e710]: Aimprove - אימפרוב
+                      - cell "בינה מלאכותית" [ref=e711]:
+                        - generic [ref=e712]:
+                          - img [ref=e713]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e716]:
+                        - generic [ref=e717]: פעיל
+                      - cell [ref=e718]:
+                        - generic [ref=e719]:
+                          - button [ref=e720] [cursor=pointer]:
+                            - img [ref=e721]
+                          - button [ref=e724] [cursor=pointer]:
+                            - img [ref=e725]
+                    - row "E Eden Bibas בינה מלאכותית פעיל" [ref=e728]:
+                      - cell "E Eden Bibas" [ref=e729]:
+                        - generic [ref=e730]:
+                          - generic [ref=e731]: E
+                          - generic [ref=e732]: Eden Bibas
+                      - cell "בינה מלאכותית" [ref=e733]:
+                        - generic [ref=e734]:
+                          - img [ref=e735]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e738]:
+                        - generic [ref=e739]: פעיל
+                      - cell [ref=e740]:
+                        - generic [ref=e741]:
+                          - button [ref=e742] [cursor=pointer]:
+                            - img [ref=e743]
+                          - button [ref=e746] [cursor=pointer]:
+                            - img [ref=e747]
+                    - row "A AI Pathways בינה מלאכותית פעיל" [ref=e750]:
+                      - cell "A AI Pathways" [ref=e751]:
+                        - generic [ref=e752]:
+                          - generic [ref=e753]: A
+                          - generic [ref=e754]: AI Pathways
+                      - cell "בינה מלאכותית" [ref=e755]:
+                        - generic [ref=e756]:
+                          - img [ref=e757]
+                          - text: בינה מלאכותית
+                      - cell "פעיל" [ref=e760]:
+                        - generic [ref=e761]: פעיל
+                      - cell [ref=e762]:
+                        - generic [ref=e763]:
+                          - button [ref=e764] [cursor=pointer]:
+                            - img [ref=e765]
+                          - button [ref=e768] [cursor=pointer]:
+                            - img [ref=e769]
+                    - row "R Ran Bar Zik פיתוח פעיל" [ref=e772]:
+                      - cell "R Ran Bar Zik" [ref=e773]:
+                        - generic [ref=e774]:
+                          - generic [ref=e775]: R
+                          - generic [ref=e776]: Ran Bar Zik
+                      - cell "פיתוח" [ref=e777]:
+                        - generic [ref=e778]:
+                          - img [ref=e779]
+                          - text: פיתוח
+                      - cell "פעיל" [ref=e782]:
+                        - generic [ref=e783]: פעיל
+                      - cell [ref=e784]:
+                        - generic [ref=e785]:
+                          - button [ref=e786] [cursor=pointer]:
+                            - img [ref=e787]
+                          - button [ref=e790] [cursor=pointer]:
+                            - img [ref=e791]
+              - generic [ref=e794]:
+                - heading "מוסתרים (1)" [level=3] [ref=e795]
+                - table [ref=e797]:
+                  - rowgroup [ref=e798]:
+                    - row "Base44 Community שחזר" [ref=e799]:
+                      - cell "Base44 Community" [ref=e800]
+                      - cell "שחזר" [ref=e801]:
+                        - button "שחזר" [ref=e802] [cursor=pointer]
+  - region "Notifications alt+T"

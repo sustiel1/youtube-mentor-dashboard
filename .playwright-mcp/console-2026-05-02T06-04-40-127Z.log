@@ -1,0 +1,251 @@
+[     190ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5184/node_modules/.vite/deps/chunk-SXRIVT2P.js?v=a9ccdb68:21608
+[     301ms] [INFO] [autoRssSync] מתחיל sync עבור 14 מנטורים @ http://localhost:5184/src/services/autoRssSync.js:62
+[     302ms] [WARNING] [RSS] Micha.Stocks: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[     322ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/favicon.ico:0
+[     490ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/User/me:0
+[     491ms] [ERROR] [Base44 SDK Error] 401: Authentication required to view users @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     491ms] [ERROR] Error data: {
+  "message": "Authentication required to view users",
+  "detail": "You must be logged in to perform this operation.",
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     718ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCSxjNbPriyBh9RNl_QNSAtw:0
+[     719ms] [WARNING] [autoRssSync] Micha.Stocks: נכשל — שגיאת RSS עבור "Micha.Stocks": Channel ID "UCSxjNbPriyBh9RNl_QNSAtw" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[     719ms] [WARNING] [RSS] בורסה גרף: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[     830ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551eec81f8166c63b12c1%22%7D:0
+[     831ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     831ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     846ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dc1efd4e64f6914d2d%22%7D:0
+[     847ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     847ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     851ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55201a221de5bd3f4f081%22%7D:0
+[     852ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     852ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[     888ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dde6972985542890cc%22%7D:0
+[     889ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[     889ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1002ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202fcc10c1c22b4c7a5%22%7D:0
+[    1003ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1003ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1065ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd34c7432b309e0b98%22%7D:0
+[    1066ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1066ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1113ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551dd14f40d7c4c0837f3%22%7D:0
+[    1114ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1114ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1117ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551deac60b0104708bb51%22%7D:0
+[    1119ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1119ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1127ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ee5e2c6762249f99a7%22%7D:0
+[    1128ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1128ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1158ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55202b057ffcffb91bbcf%22%7D:0
+[    1158ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1158ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1269ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f552026a50f4fddcaf3d26%22%7D:0
+[    1270ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1270ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1359ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f55203f277ddc71ae696a8%22%7D:0
+[    1360ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1360ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1393ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed210b7f42730f32150%22%7D:0
+[    1394ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1394ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1398ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef484bf1fa43e1c684%22%7D:0
+[    1399ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1399ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1420ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef34c7432b309e0ba0%22%7D:0
+[    1421ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1421ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1429ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f551ef25b41d504725d19b%22%7D:0
+[    1430ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1430ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1484ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCrQmXSenNhePSOiCTdnhwRg:0
+[    1485ms] [WARNING] [autoRssSync] בורסה גרף: נכשל — שגיאת RSS עבור "בורסה גרף": Channel ID "UCrQmXSenNhePSOiCTdnhwRg" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    1485ms] [WARNING] [RSS] The Hasidic Trader: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    1598ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed20bb5e1012fa2b749%22%7D:0
+[    1598ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1598ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1620ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed2c1b7fae10fdebe9b%22%7D:0
+[    1621ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1621ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1662ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3727da8a9fdf63bd8%22%7D:0
+[    1662ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1662ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1665ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Note?q=%7B%22videoId%22:%2269f54ed3534564bc2d4f3b20%22%7D:0
+[    1666ms] [ERROR] [Base44 SDK Error] 404: Entity schema Note not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    1666ms] [ERROR] Error data: {
+  "message": "Entity schema Note not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    1749ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCSB4SNRWhbemGAJ4wfeKj2Q:0
+[    1750ms] [WARNING] [autoRssSync] The Hasidic Trader: נכשל — שגיאת RSS עבור "The Hasidic Trader": Channel ID "UCSB4SNRWhbemGAJ4wfeKj2Q" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    1750ms] [WARNING] [RSS] Oliver Velez Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    1816ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCmD96zZeKnYof2jO1ON6acA:0
+[    1817ms] [WARNING] [autoRssSync] Oliver Velez Trading: נכשל — שגיאת RSS עבור "Oliver Velez Trading": Channel ID "UCmD96zZeKnYof2jO1ON6acA" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    1817ms] [WARNING] [RSS] Dor Amir Trading: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2079ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCSyPOk83lhOXoGcT2vUNhdw:0
+[    2079ms] [WARNING] [autoRssSync] Dor Amir Trading: נכשל — שגיאת RSS עבור "Dor Amir Trading": Channel ID "UCSyPOk83lhOXoGcT2vUNhdw" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2079ms] [WARNING] [RSS] Eyal Shani: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2171ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCNVcbJ6pxGEWGuoGopK83sQ:0
+[    2171ms] [WARNING] [autoRssSync] Eyal Shani: נכשל — שגיאת RSS עבור "Eyal Shani": Channel ID "UCNVcbJ6pxGEWGuoGopK83sQ" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2171ms] [WARNING] [RSS] Wysetrade: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2406ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UC32oVb-nfyRBNlWzUw3dC5Q:0
+[    2407ms] [WARNING] [autoRssSync] Wysetrade: נכשל — שגיאת RSS עבור "Wysetrade": Channel ID "UC32oVb-nfyRBNlWzUw3dC5Q" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2407ms] [WARNING] [RSS] Ed Hill AI Automation: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2500ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UC5_2We-HeVdEeHcIyfmMHOg:0
+[    2500ms] [WARNING] [autoRssSync] Ed Hill AI Automation: נכשל — שגיאת RSS עבור "Ed Hill AI Automation": Channel ID "UC5_2We-HeVdEeHcIyfmMHOg" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2501ms] [WARNING] [RSS] Automation-Tribe: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2737ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCFkwdS-osDYKdz4TCe7XIXA:0
+[    2738ms] [WARNING] [autoRssSync] Automation-Tribe: נכשל — שגיאת RSS עבור "Automation-Tribe": Channel ID "UCFkwdS-osDYKdz4TCe7XIXA" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2738ms] [WARNING] [RSS] AI Andy: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    2830ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCCQfwUJOOBLF5R9xbFeIFcg:0
+[    2831ms] [WARNING] [autoRssSync] AI Andy: נכשל — שגיאת RSS עבור "AI Andy": Channel ID "UCCQfwUJOOBLF5R9xbFeIFcg" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    2831ms] [WARNING] [RSS] Aimprove - אימפרוב: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    3087ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCfnihhol5a4Qc2EciLf5kOQ:0
+[    3087ms] [WARNING] [autoRssSync] Aimprove - אימפרוב: נכשל — שגיאת RSS עבור "Aimprove - אימפרוב": Channel ID "UCfnihhol5a4Qc2EciLf5kOQ" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    3088ms] [WARNING] [RSS] Eden Bibas: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    3183ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCGFogLEUR_nuiT83pt8zVWQ:0
+[    3184ms] [WARNING] [autoRssSync] Eden Bibas: נכשל — שגיאת RSS עבור "Eden Bibas": Channel ID "UCGFogLEUR_nuiT83pt8zVWQ" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    3184ms] [WARNING] [RSS] Base44 Community: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    3416ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UC9wNu-y7T3vZMq5SA441i8g:0
+[    3416ms] [WARNING] [autoRssSync] Base44 Community: נכשל — שגיאת RSS עבור "Base44 Community": Channel ID "UC9wNu-y7T3vZMq5SA441i8g" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    3416ms] [WARNING] [RSS] Ran Bar Zik: Base44 FetchRSS unavailable — falling back to dev proxy base44.functions.FetchRss is not a function @ http://localhost:5184/src/services/rssIngestion.js:104
+[    3519ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/rss?channelId=UCxPN-JU3DsKwDgn5sTetNUQ:0
+[    3519ms] [WARNING] [autoRssSync] Ran Bar Zik: נכשל — שגיאת RSS עבור "Ran Bar Zik": Channel ID "UCxPN-JU3DsKwDgn5sTetNUQ" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש. @ http://localhost:5184/src/services/autoRssSync.js:84
+[    3519ms] [INFO] [autoRssSync] הסתיים — 0 סרטונים חדשים נוספו @ http://localhost:5184/src/services/autoRssSync.js:92
+[    6030ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5184/api/apps/69c03636eaa02b23de4465b5/entities/Source:0
+[    6031ms] [ERROR] [Base44 SDK Error] 404: Entity schema Source not found in app @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3593
+[    6031ms] [ERROR] Error data: {
+  "message": "Entity schema Source not found in app",
+  "detail": null,
+  "traceback": null,
+  "extra_data": null,
+  "request_id": null
+} @ http://localhost:5184/node_modules/.vite/deps/@base44_sdk.js?v=a9ccdb68:3596
+[    6031ms] [WARNING] [useSources] Base44 unavailable: Entity schema Source not found in app @ http://localhost:5184/src/hooks/useSources.js:12
+[   10572ms] [ERROR] `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog @ http://localhost:5184/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=a9ccdb68:315
+[   10572ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5184/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=a9ccdb68:329

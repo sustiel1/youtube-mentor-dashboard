@@ -10,19 +10,55 @@
 import { CHANNEL_CONFIG } from "@/config/channelConfig";
 import { CATEGORY_TO_NAME } from "@/config/topicConfig";
 import { base44 } from "@/api/base44Client";
+import { isBase44Enabled } from "@/config/base44Flags";
+import { fetchVideoMetadata } from "@/services/youtubeApi";
+import {
+  extractChannelIdFromUrl,
+  extractHandleFromUrl,
+} from "@/lib/mentorSourceUrl";
+
+export { extractChannelIdFromUrl, extractHandleFromUrl };
+
+// Best-effort: fetch duration + viewCount from YouTube watch page (no API key needed).
+// Returns the record unchanged if the fetch fails or times out.
+async function enrichWithYouTubeMetadata(record) {
+  const videoId = record._videoId;
+  if (!videoId) return record;
+  try {
+    const meta = await fetchVideoMetadata(videoId);
+    if (!meta) return record;
+    return {
+      ...record,
+      ...(meta.duration != null ? { duration: meta.duration } : {}),
+      ...(Number.isFinite(meta.viewCount) ? { viewCount: meta.viewCount } : {}),
+    };
+  } catch {
+    return record;
+  }
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 // כמה סרטונים אחרונים למשוך לכל ערוץ (YouTube RSS מחזיר עד 15)
 export const RSS_FETCH_LIMIT = 5;
 
 // ── Validation ────────────────────────────────────────────────────────────────
-function validateChannelId(channelId, channelName) {
+export function validateChannelId(channelId, channelName) {
   if (!channelId) {
-    throw new Error(`Channel ID חסר עבור "${channelName}" — עדכן channelConfig.js`);
+    throw new Error(`Channel ID חסר עבור "${channelName}"`);
   }
-  if (!channelId.startsWith("UC") || channelId.length !== 24) {
+  const id = String(channelId).trim();
+  if (id.includes('...') || id.includes('…')) {
+    throw new Error(`Channel ID מקוצר עבור "${channelName}": "${id}" — נא להזין את ה-ID המלא`);
+  }
+  if (/\s/.test(id)) {
+    throw new Error(`Channel ID מכיל רווחים עבור "${channelName}": "${id}"`);
+  }
+  if (!id.startsWith('UC')) {
+    throw new Error(`Channel ID לא תקין עבור "${channelName}": "${id}" — חייב להתחיל ב-"UC"`);
+  }
+  if (id.length < 20 || id.length > 30) {
     throw new Error(
-      `Channel ID לא תקין עבור "${channelName}": "${channelId}" — חייב להתחיל ב-"UC" ולהיות 24 תווים`
+      `Channel ID באורך לא תקין עבור "${channelName}": "${id}" (${id.length} תווים, צפוי 20–30)`
     );
   }
 }
@@ -95,6 +131,7 @@ function buildVideoRecord(entry, mentorId, channelCfg) {
     errorMessage: null,
     isSaved: false,
     learningStatus: "not_started",
+    analysisStatus: "not_analyzed",
     topicIds: channelCfg.topicIds ?? [],
     subCategory: channelCfg.subCategory ?? "",
     description: entry.description ?? null,
@@ -112,32 +149,41 @@ function buildVideoRecord(entry, mentorId, channelCfg) {
 // ── Fetch RSS XML ────────────────────────────────────────────────────────────
 // Priority: Base44 backend function → Vite dev proxy (fallback)
 async function fetchRssXml(channelId, channelName) {
-  // 1. Try Base44 backend function (works in both dev and production)
-  try {
-    const result = await base44.functions.FetchRss({ channelId });
-    if (result?.xml) {
-      console.info(`[RSS] ${channelName}: fetched via Base44 backend`);
-      return result.xml;
+  const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+  console.log('[rss] fetching', { channelName, channelId, rssUrl });
+
+  if (isBase44Enabled() && base44) {
+    try {
+      const result = await base44.functions.FetchRss({ channelId });
+      if (result?.xml) {
+        console.log('[rss] success (Base44)', { channelName, channelId });
+        return result.xml;
+      }
+    } catch (e) {
+      console.warn(`[rss] Base44 FetchRSS unavailable — falling back to dev proxy`, { channelName, error: e.message });
     }
-  } catch (e) {
-    console.warn(`[RSS] ${channelName}: Base44 FetchRSS unavailable — falling back to dev proxy`, e.message);
   }
 
-  // 2. Fallback: Vite dev server proxy (only works in development)
+  // Local-first / fallback: Vite dev server proxy
   const proxyUrl = `/api/rss?channelId=${encodeURIComponent(channelId)}`;
   const res = await fetch(proxyUrl);
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const detail = body?.message ?? `HTTP ${res.status}`;
-    const hint = res.status === 404
-      ? `Channel ID "${channelId}" לא נמצא ב-YouTube. בדוק את ה-ID או הרץ "זהה" מחדש.`
-      : detail;
+    const hint =
+      res.status === 404
+        ? `Channel ID "${channelId}" לא נמצא ב-YouTube — בדוק שה-ID נכון.`
+        : res.status === 500
+        ? `YouTube החזיר 500 — ייתכן שה-Channel ID שגוי או שיש תקלה זמנית. נסה שוב בעוד כמה דקות.`
+        : detail;
+    console.error('[rss] failed', { channelName, channelId, status: res.status, error: hint });
     throw new Error(`שגיאת RSS עבור "${channelName}": ${hint}`);
   }
 
-  console.info(`[RSS] ${channelName}: fetched via dev proxy`);
-  return res.text();
+  const xml = await res.text();
+  console.log('[rss] success (proxy)', { channelName, channelId });
+  return xml;
 }
 
 // ── Fetch one channel's RSS ───────────────────────────────────────────────────
@@ -190,9 +236,10 @@ export async function ingestChannel({ mentorId, existingVideos = [], saveVideo, 
 
   const saved = [];
   for (const record of toSave) {
-    const { _videoId, _channelName, ...videoData } = record;
+    const enriched = await enrichWithYouTubeMetadata(record);
+    const { _videoId, _channelName, ...videoData } = enriched;
     await saveVideo(videoData);
-    saved.push(record);
+    saved.push(enriched);
   }
 
   return {
@@ -225,23 +272,7 @@ export async function ingestChannels({ mentorIds, existingVideos = [], saveVideo
 }
 
 // ── DB-driven helpers ─────────────────────────────────────────────────────────
-
-// Extract YouTube channel ID from a sourceUrl.
-// Handles: https://www.youtube.com/channel/UCxxxxxx  or bare "UCxxxxxx"
-export function extractChannelIdFromUrl(url) {
-  if (!url) return null;
-  if (url.startsWith("UC") && url.length === 24) return url;
-  const m = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
-  return m ? m[1] : null;
-}
-
-// Extract YouTube @handle from a sourceUrl.
-// Handles: https://www.youtube.com/@handle
-export function extractHandleFromUrl(url) {
-  if (!url) return null;
-  const m = url.match(/\/@([^/?]+)/);
-  return m ? m[1] : null;
-}
+// extractChannelIdFromUrl / extractHandleFromUrl → @/lib/mentorSourceUrl
 
 // Derive topicIds for a mentor using real DB topics.
 // Uses mentor.topicIds if already set; otherwise maps mentor.category → Topic by name.
@@ -266,10 +297,16 @@ export function getTopicIdsForMentor(mentor, topics = []) {
 //   - https://www.youtube.com/channel/UCxxxxxx  (has channelId → fetch directly)
 //   - https://www.youtube.com/@handle           (needs resolve → then save channel URL)
 export async function fetchChannelRSSFromSource(mentor, source, topics = [], limit = RSS_FETCH_LIMIT) {
-  const channelId =
-    extractChannelIdFromUrl(source?.sourceUrl) ||
-    mentor.youtubeChannelId ||
-    null;
+  const fromSource = extractChannelIdFromUrl(source?.sourceUrl);
+  const channelId = fromSource || mentor.youtubeChannelId || null;
+
+  console.log('[rss-source] channelId resolution', {
+    mentorName:      mentor.name,
+    fromSourceUrl:   fromSource || '—',
+    fromMentorField: mentor.youtubeChannelId || mentor.channelId || '—',
+    resolved:        channelId || '—',
+    sourceUrl:       source?.sourceUrl || '—',
+  });
 
   if (!channelId) {
     throw new Error(`Channel ID חסר עבור "${mentor.name}"`);
@@ -285,9 +322,10 @@ export async function fetchChannelRSSFromSource(mentor, source, topics = [], lim
   const entries = parseYouTubeXML(xml, limit);
   const topicIds = getTopicIdsForMentor(mentor, topics);
 
-  console.info(`[RSS DB] ${mentor.name}: ${entries.length} סרטונים, topicIds=${JSON.stringify(topicIds)}`);
+  console.log('[rss] success', { mentorName: mentor.name, videosCount: entries.length, topicIds });
 
-  return entries.map((e) => ({
+  return Promise.all(entries.map(async (e) => {
+    const record = {
     mentorId:       mentor.id,
     sourceId:       source?.id ?? null,
     title:          e.title,
@@ -304,10 +342,14 @@ export async function fetchChannelRSSFromSource(mentor, source, topics = [], lim
     errorMessage:   null,
     isSaved:        false,
     learningStatus: "not_started",
+    analysisStatus: "not_analyzed",
     topicIds,
     subCategory:    "",
     description:    e.description ?? null,
     _videoId:       e.videoId,
     _channelName:   e.channelName ?? mentor.name,
+    };
+
+    return enrichWithYouTubeMetadata(record);
   }));
 }

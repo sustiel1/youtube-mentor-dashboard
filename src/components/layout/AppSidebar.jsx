@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  House, LayoutGrid, Bookmark, BookOpen,
+  House, LayoutGrid, Bookmark, BookOpen, Library, Search,
   Settings, UserPlus, BookPlus, ChevronDown, GripVertical,
-  Pencil, Trash2, Check, X,
-  Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash,
+  Pencil, Trash2, Check, X, BookMarked,
+  Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash, Moon, Sun,
+  Layers, Cloud,
 } from "lucide-react";
 import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
 import { useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
@@ -23,9 +24,10 @@ export const getTopicConfig = getTopicByName;
 
 import { cn } from "@/lib/utils";
 import { AddMentorDialog } from "@/components/mentors/AddMentorDialog";
+import { AddChannelCollectionDialog } from "@/components/collections/AddChannelCollectionDialog";
 import { AddTopicDialog } from "@/components/topics/AddTopicDialog";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
-import { filterMentorsByTopicFamily, getOrderedMainTopics } from "@/lib/topicFilters";
+import { filterMentorsByTopicFamily, formatTopicLabel, getOrderedMainTopics, videoBelongsToTopicFamily } from "@/lib/topicFilters";
 
 // ── localStorage helpers for topic order (shared with Admin.jsx) ──────────
 const ORDER_KEY = "ym_topic_order";
@@ -85,11 +87,16 @@ export function AppSidebar({
   filters,
   mentors,
   topics,
+  videos = [],
   savedCount,
   learningCount,
+  isDark,
+  toggleTheme,
+  onSaveToBrain,
 }) {
   const [expandedTopicId, setExpandedTopicId] = useState(null);
   const [addMentorOpen, setAddMentorOpen]     = useState(false);
+  const [addChannelCollectionOpen, setAddChannelCollectionOpen] = useState(false);
   const [addTopicOpen, setAddTopicOpen]       = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [draggingId, setDraggingId]           = useState(null);
@@ -195,30 +202,30 @@ export function AppSidebar({
     setExpandedTopicId((prev) => (prev === id ? null : id));
 
   return (
-    <aside className="w-60 shrink-0 border-l border-gray-100 bg-white flex flex-col h-screen sticky top-0">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-l border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/95">
 
       {/* Logo + Home button */}
-      <div className="px-4 py-4 border-b border-gray-100">
+      <div className="border-b border-slate-200 px-4 py-5 dark:border-zinc-800/80">
         <button
           onClick={() => navigateTo("Dashboard")}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-right",
+            "w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-right border border-transparent",
             isHome
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "hover:bg-gray-50 text-gray-800"
+              ? "bg-gradient-to-l from-red-600 to-red-500 text-white shadow-2xl border-red-400/20"
+              : "border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
           )}
         >
           <div className={cn(
-            "flex items-center justify-center w-8 h-8 rounded-lg shrink-0",
-            isHome ? "bg-white/20" : "bg-indigo-50"
+            "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
+            isHome ? "bg-white/10" : "bg-slate-100 dark:bg-zinc-900"
           )}>
-            <House className={cn("h-4 w-4", isHome ? "text-white" : "text-indigo-600")} />
+            <House className={cn("h-4 w-4", isHome ? "text-white" : "text-red-400")} />
           </div>
           <div className="text-right leading-tight">
-            <p className={cn("text-sm font-bold", isHome ? "text-white" : "text-gray-900")}>
+            <p className={cn("text-sm font-bold", isHome ? "text-white" : "text-slate-900 dark:text-white")}>
               YouTube Mentor
             </p>
-            <p className={cn("text-xs", isHome ? "text-white/70" : "text-gray-400")}>
+            <p className={cn("text-xs", isHome ? "text-white/70" : "text-slate-500 dark:text-zinc-500")}>
               {isHome ? "מסך ראשי" : "Learning Hub"}
             </p>
           </div>
@@ -228,8 +235,9 @@ export function AppSidebar({
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
 
-        {/* ── Main nav ── */}
+        {/* ── ניהול תוכן ── */}
         <div className="space-y-1">
+          <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">ניהול תוכן</p>
           <NavButton
             icon={LayoutGrid}
             label="כל הסרטונים"
@@ -252,9 +260,38 @@ export function AppSidebar({
             isActive={currentPage === "LearningQueue"}
             onClick={() => navigateTo("LearningQueue")}
           />
+          <NavButton
+            icon={Cloud}
+            label="גיבויי ענן"
+            isActive={currentPage === "CloudBackups"}
+            onClick={() => navigateTo("CloudBackups")}
+          />
         </div>
 
-        {/* ── נושאים (ראשיים בלבד, עם מנטורים כנסתיים) ── */}
+        {/* ── מרחב הידע ── */}
+        <div className="space-y-1">
+          <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">מרחב הידע</p>
+          <NavButton
+            icon={Library}
+            label="ספריית ידע"
+            isActive={currentPage === "KnowledgeLibrary"}
+            onClick={() => navigateTo("KnowledgeLibrary")}
+          />
+          <NavButton
+            icon={Search}
+            label="חיפוש ידע"
+            isActive={currentPage === "KnowledgeSearch"}
+            onClick={() => navigateTo("KnowledgeSearch")}
+          />
+          <NavButton
+            icon={BookMarked}
+            label="Workspace"
+            isActive={currentPage === "Workspace" || currentPage === "TopicKnowledgePage"}
+            onClick={() => navigateTo("Workspace")}
+          />
+        </div>
+
+        {/* ── הברינים שלי (ראשיים בלבד, עם מנטורים כנסתיים) ── */}
         <div>
           <div className="flex items-center justify-between px-3 mb-2">
             <button
@@ -266,14 +303,14 @@ export function AppSidebar({
                   : "text-gray-700 hover:text-indigo-600"
               )}
             >
-              נושאים
+              הברינים שלי
             </button>
             <button
               onClick={() => setAddTopicOpen(true)}
               className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-md px-1.5 py-1 transition-colors"
             >
               <BookPlus className="h-3.5 w-3.5" />
-              הוסף
+              נושא חדש
             </button>
           </div>
 
@@ -284,8 +321,9 @@ export function AppSidebar({
               const colors       = TOPIC_COLOR_CLASS[topic.color] || TOPIC_COLOR_CLASS.violet;
               const isExpanded   = expandedTopicId === topic.id;
               const topicMentors = filterMentorsByTopicFamily(activeMentors, topic.id, topics);
+              const topicVideos = videos.filter((video) => videoBelongsToTopicFamily(video, topic.id, topics));
               const isTopicActive =
-                (currentPage === "TopicPage" || currentPage === "TopicLearningPage") &&
+                (currentPage === "TopicPage" || currentPage === "TopicLearningPage" || currentPage === "TopicKnowledgePage") &&
                 pageParams?.topicId === topic.id;
               const isDragging = draggingId === topic.id;
 
@@ -306,13 +344,13 @@ export function AppSidebar({
                   <div className={cn(
                     "group flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm transition-colors",
                     isTopicActive
-                      ? "bg-gray-100 text-gray-900 font-semibold"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-gray-100 text-gray-900 font-semibold dark:bg-zinc-900 dark:text-zinc-100"
+                      : "text-gray-600 hover:bg-gray-50 dark:text-zinc-200 dark:hover:bg-zinc-900/60 dark:hover:text-white"
                   )}>
-                    {/* 1. Topic icon — click → all videos for this topic */}
+                    {/* 1. Topic icon — click → BrainPage for this topic */}
                     <button
-                      onClick={() => navigateWithFilter("topicId", topic.id)}
-                      title={`כל הסרטונים של "${topic.name}"`}
+                      onClick={() => navigateTo("TopicKnowledgePage", { topicId: topic.id })}
+                      title={`פתח ידע: ${topic.name}`}
                       className={cn(
                         "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-75",
                         cfg ? `${cfg.bg} ${cfg.text}` : colors.chip
@@ -396,64 +434,109 @@ export function AppSidebar({
                         כל הסרטונים ←
                       </button>
 
-                      {topicMentors.length > 0 ? topicMentors.map((mentor) => {
-                        const initial = mentor.name?.[0]?.toUpperCase() || "?";
-                        const isMentorActive =
-                          currentPage === "Dashboard" && activeMentor === mentor.id;
-                        const isConfirming = deletingMentorId === mentor.id;
-                        return (
-                          <div
-                            key={mentor.id}
-                            className={cn(
-                              "group flex flex-row-reverse items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors",
-                              isMentorActive
-                                ? "bg-gray-100 text-gray-900 font-semibold"
-                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                            )}
-                          >
-                            {/* Avatar initial */}
-                            <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
-                              {initial}
-                            </span>
+                      {topicMentors.length > 0 ? (() => {
+                        const topicsById = Object.fromEntries(topics.map((t) => [t.id, t]));
+                        const subTopics = topics
+                          .filter((t) => t.parentId === topic.id)
+                          .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "he"));
 
-                            {/* Name — clickable → MentorPage */}
-                            <button
-                              onClick={() => navigateTo("MentorPage", { mentorId: mentor.id })}
-                              className="flex-1 text-right truncate"
+                        const grouped = new Map(); // key: subTopicId | "__none__" → mentors[]
+                        for (const m of topicMentors) {
+                          const leaf = m.topicIds?.[0] ? String(m.topicIds[0]) : "";
+                          const leafTopic = leaf ? topicsById[leaf] : null;
+                          const isUnderThisMain = leafTopic?.parentId === topic.id;
+                          const key = isUnderThisMain ? leafTopic.id : "__none__";
+                          if (!grouped.has(key)) grouped.set(key, []);
+                          grouped.get(key).push(m);
+                        }
+
+                        const renderMentorRow = (mentor) => {
+                          const initial = mentor.name?.[0]?.toUpperCase() || "?";
+                          const isMentorActive =
+                            currentPage === "Dashboard" && activeMentor === mentor.id;
+                          const isConfirming = deletingMentorId === mentor.id;
+                          return (
+                            <div
+                              key={mentor.id}
+                              className={cn(
+                                "group flex flex-row-reverse items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors",
+                                isMentorActive
+                                  ? "bg-gray-100 text-gray-900 font-semibold dark:bg-zinc-900 dark:text-white"
+                                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-zinc-200 dark:hover:bg-zinc-900/60 dark:hover:text-white"
+                              )}
                             >
-                              {mentor.name}
-                            </button>
-
-                            {/* Delete confirm / delete button */}
-                            {isConfirming ? (
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <button
-                                  onClick={() => handleDeleteMentor(mentor.id)}
-                                  title="אישור מחיקה"
-                                  className="p-0.5 rounded text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={() => setDeletingMentorId(null)}
-                                  title="ביטול"
-                                  className="p-0.5 rounded text-gray-400 hover:bg-gray-100 transition-colors"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ) : (
+                              <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {initial}
+                              </span>
                               <button
-                                onClick={() => setDeletingMentorId(mentor.id)}
-                                title="מחק מנטור"
-                                className="p-0.5 rounded opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
+                                onClick={() => navigateTo("MentorPage", { mentorId: mentor.id })}
+                                className="flex-1 text-right truncate"
+                                title={mentor.name}
                               >
-                                <Trash2 className="h-3 w-3" />
+                                {mentor.name}
                               </button>
-                            )}
-                          </div>
-                        );
-                      }) : (
+                              {isConfirming ? (
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button
+                                    onClick={() => handleDeleteMentor(mentor.id)}
+                                    title="אישור מחיקה"
+                                    className="p-0.5 rounded text-red-500 hover:bg-red-50 transition-colors"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingMentorId(null)}
+                                    title="ביטול"
+                                    className="p-0.5 rounded text-gray-400 hover:bg-gray-100 transition-colors"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setDeletingMentorId(mentor.id)}
+                                  title="מחק מנטור"
+                                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        };
+
+                        const blocks = [];
+                        for (const st of subTopics) {
+                          const list = grouped.get(st.id) || [];
+                          if (list.length === 0) continue;
+                          blocks.push(
+                            <div key={st.id} className="pt-1">
+                              <div className="px-2 py-1 text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+                                {formatTopicLabel(st.id, topics)}
+                              </div>
+                              <div className="space-y-0.5">
+                                {list.map(renderMentorRow)}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const noSub = grouped.get("__none__") || [];
+                        if (noSub.length > 0) {
+                          blocks.push(
+                            <div key="__none__" className="pt-1">
+                              <div className="px-2 py-1 text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+                                ללא תת-נושא
+                              </div>
+                              <div className="space-y-0.5">
+                                {noSub.map(renderMentorRow)}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return <>{blocks}</>;
+                      })() : (
                         <p className="text-xs text-gray-400 px-2 py-1 text-right">אין מנטורים</p>
                       )}
                     </div>
@@ -467,13 +550,29 @@ export function AppSidebar({
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-gray-100 space-y-1">
+      <div className="space-y-2 border-t border-slate-200 px-3 py-4 dark:border-zinc-800">
+        {onSaveToBrain && (
+          <button
+            onClick={() => onSaveToBrain("")}
+            className="w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors dark:bg-violet-950/30 dark:text-violet-300 dark:hover:bg-violet-900/40"
+          >
+            <BookPlus className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-right">🧠 שמור למוח</span>
+          </button>
+        )}
         <button
           onClick={() => setAddMentorOpen(true)}
-          className="w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+          className="w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors dark:text-zinc-100 dark:hover:bg-zinc-900"
         >
           <UserPlus className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-right">מנטור חדש</span>
+        </button>
+        <button
+          onClick={() => setAddChannelCollectionOpen(true)}
+          className="w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors dark:text-zinc-100 dark:hover:bg-zinc-900"
+        >
+          <Layers className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-right">אוסף ערוצים חדש</span>
         </button>
         <NavButton
           icon={Settings}
@@ -484,7 +583,11 @@ export function AppSidebar({
         />
       </div>
 
-      <AddMentorDialog   open={addMentorOpen}   onOpenChange={setAddMentorOpen}   />
+      <AddMentorDialog open={addMentorOpen} onOpenChange={setAddMentorOpen} />
+      <AddChannelCollectionDialog
+        open={addChannelCollectionOpen}
+        onOpenChange={setAddChannelCollectionOpen}
+      />
       <AddTopicDialog    open={addTopicOpen}    onOpenChange={setAddTopicOpen}    />
       <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
 
@@ -517,9 +620,9 @@ function EditTopicDialog({ topic, onClose }) {
 
   return (
     <Dialog open={!!topic} onOpenChange={onClose}>
-      <DialogContent dir="rtl" className="max-w-sm">
+      <DialogContent dir="rtl" className="max-w-sm border-zinc-800 bg-zinc-950 text-white" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold text-gray-900">
+          <DialogTitle className="text-base font-semibold text-white">
             עריכת נושא
           </DialogTitle>
         </DialogHeader>
@@ -532,21 +635,21 @@ function EditTopicDialog({ topic, onClose }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
               autoFocus
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition"
             />
           </div>
           <div className="flex gap-2 justify-start pt-1">
             <button
               onClick={handleSave}
               disabled={updateTopic.isPending || !name.trim()}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-500 disabled:opacity-50 transition-colors"
             >
               {updateTopic.isPending ? "שומר..." : "שמור"}
             </button>
             <button
               onClick={onClose}
               disabled={updateTopic.isPending}
-              className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              className="px-4 py-2 text-sm text-zinc-300 rounded-xl hover:bg-zinc-800 transition-colors"
             >
               ביטול
             </button>
@@ -563,16 +666,16 @@ function NavButton({ icon: Icon, label, badge, isActive, onClick, iconFilled, te
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        "w-full flex flex-row-reverse items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium transition-colors",
         isActive
-          ? "bg-gray-100 text-gray-900"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          ? "border border-slate-200 bg-slate-100 text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
       )}
     >
       <Icon className={cn("h-4 w-4 shrink-0", iconFilled && "fill-current")} />
       <span className="flex-1 text-right">{label}</span>
       {badge != null && (
-        <span className="text-xs text-gray-400 bg-gray-200/60 rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+        <span className="min-w-[20px] rounded-full bg-slate-200 px-1.5 py-0.5 text-center text-xs text-slate-700 dark:bg-zinc-800 dark:text-zinc-200">
           {badge}
         </span>
       )}
