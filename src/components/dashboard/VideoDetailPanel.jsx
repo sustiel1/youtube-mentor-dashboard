@@ -526,6 +526,7 @@ const MARKET_SUB_IDS = new Set(['gemini-fundamental', 'gemini-technical', 'gemin
 
 const MARKET_DROPDOWN_ITEMS = [
   { id: 'gemini-fundamental', icon: '📊', label: 'פונדמנטלי' },
+  { id: 'gemini-news',        icon: '📰', label: 'מבזק בוקר' },
   { id: 'app-builder',        icon: '🏗️', label: 'App Builder', isAppBuilder: true },
   { id: 'gemini-technical',   icon: '📈', label: 'טכני',  soon: true },
   { id: 'gemini-macro',       icon: '🌍', label: 'מאקרו', soon: true },
@@ -725,6 +726,9 @@ export function VideoDetailPanel({
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
   const [isTranscriptViewerOpen, setIsTranscriptViewerOpen] = useState(false);
+  const [isGemsPasteOpen, setIsGemsPasteOpen] = useState(false);
+  const [gemsPasteInput, setGemsPasteInput] = useState("");
+  const [gemsPasteError, setGemsPasteError] = useState("");
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
@@ -1444,6 +1448,24 @@ export function VideoDetailPanel({
       analysisSavedAt: snapshot.analysisSavedAt,
     }));
     toast.success("הניתוח נשמר");
+  };
+
+  const handleApplyGemsJson = () => {
+    const raw = gemsPasteInput.trim();
+    if (!raw) { setGemsPasteError("הדבק JSON לפני לחיצה על החל"); return; }
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { setGemsPasteError("JSON לא תקין — בדוק שאין שגיאות syntax"); return; }
+    try {
+      const normalized = normalizeAiAnalysisResult(parsed);
+      if (!normalized) { setGemsPasteError("לא זוהה פורמט ניתוח תקין"); return; }
+      persistAnalysisState(normalized);
+      setGemsPasteInput("");
+      setGemsPasteError("");
+      setIsGemsPasteOpen(false);
+      toast.success("ניתוח GEMS הוחל בהצלחה");
+    } catch (err) {
+      setGemsPasteError(`שגיאה בעיבוד: ${err.message}`);
+    }
   };
 
   const handleDeleteSavedAnalysis = () => {
@@ -2974,6 +2996,15 @@ export function VideoDetailPanel({
                           🧠 שמור למוח
                         </button>
                       </div>
+                      {/* Row 5: Paste JSON from GEMS */}
+                      <button
+                        type="button"
+                        onClick={() => { setIsGemsPasteOpen(true); setGemsPasteError(""); setGemsPasteInput(""); }}
+                        className="w-full h-8 flex items-center justify-center gap-2 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 active:scale-95 transition-all flex-row-reverse mt-1"
+                      >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        📥 הדבק JSON מ-GEMS
+                      </button>
                     </div>
                   );
                 })()}
@@ -3382,8 +3413,8 @@ export function VideoDetailPanel({
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-[320px_minmax(0,1fr)] gap-6 items-start" dir="rtl">
-              <aside className="w-full space-y-4">
+            <div className="mt-6 grid grid-cols-1 gap-6 items-start" dir="rtl">
+              <aside className="hidden w-full space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right">
                   <div className="mb-3 text-base font-bold text-slate-900 dark:text-white">פעולות AI</div>
                   {showLowQualityWarning && (
@@ -3921,13 +3952,13 @@ export function VideoDetailPanel({
                           </div>
                         )}
                         {video.keyPoints?.length > 0 && (
-                          <div className="text-right">
+                          <div className="text-right" dir="rtl">
                             <h4 className="text-sm font-semibold text-gray-800 mb-3">נקודות מפתח</h4>
-                            <ul className="space-y-2.5">
+                            <ul className="space-y-2.5" dir="rtl">
                               {video.keyPoints.map((point, i) => (
-                                <li key={i} className="flex items-start gap-2.5 flex-row-reverse text-sm text-gray-800">
+                                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-800">
                                   <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                                  <span className="leading-relaxed">{point}</span>
+                                  <span className="leading-relaxed flex-1">{point}</span>
                                 </li>
                               ))}
                             </ul>
@@ -4083,13 +4114,13 @@ export function VideoDetailPanel({
               {/* ── Key Points tab ── */}
               <TabsContent value="keypoints" className="mt-5 min-h-[320px]" dir="rtl">
                 {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <ul className="space-y-3 text-right">
+                  <ul className="space-y-3 text-right" dir="rtl">
                     {video.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-3 flex-row-reverse">
+                      <li key={i} className="flex items-start gap-3">
                         <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
                           {i + 1}
                         </span>
-                        <span className="text-sm text-gray-800 leading-7">{point}</span>
+                        <span className="text-sm text-gray-800 leading-7 flex-1">{point}</span>
                       </li>
                     ))}
                   </ul>
@@ -4189,7 +4220,7 @@ export function VideoDetailPanel({
         </DialogHeader>
         <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 text-right space-y-2">
           <p className="text-sm text-slate-700 font-medium">מה מתוכנן:</p>
-          <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside" dir="rtl">
             <li>הורדת אודיו מהסרטון</li>
             <li>תמלול אוטומטי באמצעות Whisper</li>
             <li>ניתוח AI מלא על בסיס התמלול</li>
@@ -4505,6 +4536,43 @@ export function VideoDetailPanel({
             </div>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+
+    {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}
+    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteInput(""); setGemsPasteError(""); } }}>
+      <DialogContent dir="rtl" className="max-w-xl z-[200]">
+        <DialogHeader>
+          <DialogTitle className="text-right text-base font-bold">📥 הדבק JSON מ-GEMS</DialogTitle>
+          <DialogDescription className="text-right text-sm text-slate-500">
+            הדבק JSON שקיבלת מ-Gemini Gem (תוצאת ניתוח).
+          </DialogDescription>
+        </DialogHeader>
+        <textarea
+          className="w-full h-52 rounded-lg border border-slate-200 p-3 text-xs text-slate-800 resize-y font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-300 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+          placeholder='{ "allPoints": [...], "chapters": [...], ... }'
+          value={gemsPasteInput}
+          onChange={(e) => { setGemsPasteInput(e.target.value); setGemsPasteError(""); }}
+          dir="ltr"
+        />
+        {gemsPasteError && (
+          <p className="text-xs text-red-600 dark:text-red-400 text-right">{gemsPasteError}</p>
+        )}
+        <div className="flex gap-2 justify-start flex-row-reverse">
+          <button
+            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteInput(""); setGemsPasteError(""); }}
+            className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
+          >
+            ביטול
+          </button>
+          <button
+            onClick={handleApplyGemsJson}
+            disabled={!gemsPasteInput.trim()}
+            className="px-5 py-2 text-sm bg-violet-600 text-white rounded-lg disabled:opacity-50 hover:bg-violet-700 font-semibold"
+          >
+            החל ניתוח
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
     </>

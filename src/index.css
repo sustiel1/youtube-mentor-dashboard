@@ -59,3 +59,42 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 }
+
+@layer utilities {
+  /* Hebrew analysis content — force RTL for all text blocks */
+  .analysis-content,
+  .hebrew-content {
+    direction: rtl;
+    text-align: right;
+  }
+  .analysis-content p,
+  .hebrew-content p,
+  .analysis-content h4,
+  .hebrew-content h4 {
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: embed;
+  }
+  .analysis-content ul,
+  .hebrew-content ul,
+  .analysis-content ol,
+  .hebrew-content ol {
+    direction: rtl;
+    text-align: right;
+    list-style-position: inside;
+    padding-right: 1.5rem;
+    padding-left: 0;
+  }
+  .analysis-content li,
+  .hebrew-content li {
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: plaintext;
+  }
+
+  /* For inline text spans inside flex list items (cannot use block-level dir) */
+  .rtl-text {
+    direction: rtl;
+    unicode-bidi: embed;
+  }
+}
