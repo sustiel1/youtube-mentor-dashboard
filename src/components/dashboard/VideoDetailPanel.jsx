@@ -985,93 +985,8 @@ export function VideoDetailPanel({
     return { brainId: brainId || null, subBrainId: subBrainId || null, customBrainName: customBrainName || null, customSubName: customSubName || null };
   }, []);
 
-  const buildSaveAllContent = useCallback(() => {
-    const fmtSec = (sec) => {
-      if (!Number.isFinite(sec)) return '';
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = Math.floor(sec % 60);
-      return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
-    };
-    const lines = [];
-    const stats = {};
-    const sect = (title, items, formatter) => {
-      if (!Array.isArray(items) || items.length === 0) return 0;
-      lines.push(`## ${title}`, '');
-      items.forEach(item => { const t = formatter(item); if (t) lines.push(t); });
-      lines.push('');
-      return items.length;
-    };
-    const chapters = (video?.aiChapters || video?.chapters || []);
-    if (chapters.length) {
-      lines.push('## 📑 פרקים', '');
-      chapters.forEach(ch => {
-        const ts = ch.startSeconds != null ? ` \`${fmtSec(ch.startSeconds)}\`` : '';
-        lines.push(`### ${ch.title}${ts}`);
-        if (ch.summary) { lines.push(''); lines.push(ch.summary); }
-        lines.push('');
-      });
-      stats['פרקים'] = chapters.length;
-    }
-    stats['תובנות'] = sect('⚡ תובנות מרכזיות', video?.keyInsights, i => `- ${i}`);
-    stats['ידע שימושי'] = sect('💡 ידע שימושי', video?.keyPoints, p => `- ${p}`);
-    stats['כללים'] = sect('✅ כללים', video?.rules, r => `- ${r}`);
-    stats['מושגים'] = sect('🧩 מושגים', video?.concepts, c => `- ${c}`);
-    stats['פעולות'] = sect('🔁 פעולות', video?.actionItems, a => `- ${a}`);
-    stats['טעויות'] = sect('⚠️ טעויות', video?.mistakesToAvoid, m => `- ${m}`);
-    if (Array.isArray(videoNotes) && videoNotes.length > 0) {
-      lines.push('## 📝 הערות', '');
-      videoNotes.forEach(n => { const t = n.content || n.text || ''; if (t) lines.push(`- ${t}`); });
-      lines.push('');
-      stats['הערות'] = videoNotes.length;
-    }
-    const totalItems = Object.values(stats).reduce((a, b) => a + b, 0);
-    return { markdown: lines.join('\n'), stats, totalItems };
-  }, [video, videoNotes]);
-
-  const handleSaveAllToBrain = useCallback(() => {
-    const content = buildSaveAllContent();
-    const cleanStr = (s) => String(s || '').replace(/[/\\?*:|"<>]/g, '').trim();
-    const topicPart = cleanStr(video?.category || 'כללי').slice(0, 40);
-    const subPart = cleanStr(video?.subCategory || '');
-    const titlePart = cleanStr(video?.title || 'סרטון').slice(0, 60);
-    const path = subPart && subPart !== 'כללי'
-      ? `${topicPart}/${subPart}/${titlePart}.md`
-      : `${topicPart}/${titlePart}.md`;
-    setSaveAllContent({ ...content, path });
-    setSaveAllConfirmOpen(true);
-  }, [buildSaveAllContent, video]);
-
-  const handleSaveAllConfirmed = useCallback(async () => {
-    if (!saveAllContent) return;
-    try {
-      const res = await fetch('/api/vault/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: saveAllContent.path,
-          content: saveAllContent.markdown,
-          videoTitle: video?.title,
-          videoUrl: getWatchUrl(video),
-          channelTitle: video?.channelTitle,
-          duration: video?.duration,
-        }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        toast.success(`✅ נשמרו ${saveAllContent.totalItems} פריטים למוח`, {
-          description: `נתיב: ${saveAllContent.path}`,
-          duration: 6000,
-        });
-        setSaveAllConfirmOpen(false);
-        setSaveAllContent(null);
-      } else {
-        toast.error(`שגיאה בשמירה: ${data.error || 'לא ידוע'}`);
-      }
-    } catch (err) {
-      toast.error(`שגיאה: ${err.message}`);
-    }
-  }, [saveAllContent, video]);
+  // buildSaveAllContent / handleSaveAllToBrain / handleSaveAllConfirmed are defined
+  // AFTER videoNotes (line ~1198) to avoid TDZ — see bottom of hook section.
 
   const enrichedVideo = useMemo(() => video || {}, [video]);
 
@@ -1198,6 +1113,95 @@ export function VideoDetailPanel({
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
   const hasNote = videoNotes.length > 0;
   const notePreview = hasNote ? videoNotes[0].content : null;
+
+  // Defined here (after videoNotes) to avoid TDZ crash
+  const buildSaveAllContent = useCallback(() => {
+    const fmtSec = (sec) => {
+      if (!Number.isFinite(sec)) return '';
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+    };
+    const lines = [];
+    const stats = {};
+    const sect = (title, items, formatter) => {
+      if (!Array.isArray(items) || items.length === 0) return 0;
+      lines.push(`## ${title}`, '');
+      items.forEach(item => { const t = formatter(item); if (t) lines.push(t); });
+      lines.push('');
+      return items.length;
+    };
+    const chapters = (video?.aiChapters || video?.chapters || []);
+    if (chapters.length) {
+      lines.push('## 📑 פרקים', '');
+      chapters.forEach(ch => {
+        const ts = ch.startSeconds != null ? ` \`${fmtSec(ch.startSeconds)}\`` : '';
+        lines.push(`### ${ch.title}${ts}`);
+        if (ch.summary) { lines.push(''); lines.push(ch.summary); }
+        lines.push('');
+      });
+      stats['פרקים'] = chapters.length;
+    }
+    stats['תובנות'] = sect('⚡ תובנות מרכזיות', video?.keyInsights, i => `- ${i}`);
+    stats['ידע שימושי'] = sect('💡 ידע שימושי', video?.keyPoints, p => `- ${p}`);
+    stats['כללים'] = sect('✅ כללים', video?.rules, r => `- ${r}`);
+    stats['מושגים'] = sect('🧩 מושגים', video?.concepts, c => `- ${c}`);
+    stats['פעולות'] = sect('🔁 פעולות', video?.actionItems, a => `- ${a}`);
+    stats['טעויות'] = sect('⚠️ טעויות', video?.mistakesToAvoid, m => `- ${m}`);
+    if (Array.isArray(videoNotes) && videoNotes.length > 0) {
+      lines.push('## 📝 הערות', '');
+      videoNotes.forEach(n => { const t = n.content || n.text || ''; if (t) lines.push(`- ${t}`); });
+      lines.push('');
+      stats['הערות'] = videoNotes.length;
+    }
+    const totalItems = Object.values(stats).reduce((a, b) => a + b, 0);
+    return { markdown: lines.join('\n'), stats, totalItems };
+  }, [video, videoNotes]);
+
+  const handleSaveAllToBrain = useCallback(() => {
+    const content = buildSaveAllContent();
+    const cleanStr = (s) => String(s || '').replace(/[/\\?*:|"<>]/g, '').trim();
+    const topicPart = cleanStr(video?.category || 'כללי').slice(0, 40);
+    const subPart = cleanStr(video?.subCategory || '');
+    const titlePart = cleanStr(video?.title || 'סרטון').slice(0, 60);
+    const path = subPart && subPart !== 'כללי'
+      ? `${topicPart}/${subPart}/${titlePart}.md`
+      : `${topicPart}/${titlePart}.md`;
+    setSaveAllContent({ ...content, path });
+    setSaveAllConfirmOpen(true);
+  }, [buildSaveAllContent, video]);
+
+  const handleSaveAllConfirmed = useCallback(async () => {
+    if (!saveAllContent) return;
+    try {
+      const res = await fetch('/api/vault/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: saveAllContent.path,
+          content: saveAllContent.markdown,
+          videoTitle: video?.title,
+          videoUrl: getWatchUrl(video),
+          channelTitle: video?.channelTitle,
+          duration: video?.duration,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`✅ נשמרו ${saveAllContent.totalItems} פריטים למוח`, {
+          description: `נתיב: ${saveAllContent.path}`,
+          duration: 6000,
+        });
+        setSaveAllConfirmOpen(false);
+        setSaveAllContent(null);
+      } else {
+        toast.error(`שגיאה בשמירה: ${data.error || 'לא ידוע'}`);
+      }
+    } catch (err) {
+      toast.error(`שגיאה: ${err.message}`);
+    }
+  }, [saveAllContent, video]);
 
   const knowledgeItemId = useMemo(() => {
     const sourceId = String(video?.videoId || video?.id || "");
