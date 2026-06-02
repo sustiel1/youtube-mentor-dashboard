@@ -2832,46 +2832,29 @@ export function VideoDetailPanel({
             {/* ── Thumbnail ── */}
             <div className="grid w-full items-stretch gap-4 xl:grid-cols-4 md:grid-cols-2" dir="rtl">
               <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
-                <div className="border-b border-slate-100 dark:border-zinc-800 py-3 mb-2 min-h-[88px]" dir="rtl">
-                  <div className="flex items-center justify-between" dir="rtl">
-                    <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
-                    {videoDateLabel && (
-                      <span className="text-sm font-medium text-slate-700 dark:text-zinc-200 text-right" dir="rtl">
-                        {videoDateLabel}
+                <div className="border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2" dir="rtl">
+                  <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-zinc-800" dir="rtl">
+                  {[
+                    { label: "ערוץ",          value: videoMentorLabel,                                                mono: false },
+                    { label: "נושא",           value: videoTopics[0]?.name || null,                                  mono: false },
+                    { label: "תת-נושא",        value: subCategoryOverride ?? video.subCategory ?? null,               mono: false },
+                    { label: "קטגוריה",        value: videoCategoryLabel,                                             mono: false },
+                    { label: "תאריך פרסום",    value: video.publishedAt ? format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) : null, mono: true },
+                    { label: "אורך הסרטון",    value: videoDuration,                                                  mono: true  },
+                    { label: "צפיות",          value: viewCountFormatted ? viewCountFormatted.replace(/\s*צפיות$/, "") : null, mono: true },
+                    { label: "Video ID",       value: videoYtId || video.id || null,                                  mono: true  },
+                    { label: "Obsidian",       value: hasObsidianSavedStatus(video) ? "✅ נשמר" : null,               mono: false },
+                  ].map(({ label, value, mono }) => (
+                    <div key={label} className="grid grid-cols-[5rem_1fr] items-center py-1.5 gap-x-2">
+                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right shrink-0">{label}</span>
+                      <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
+                        {value || "—"}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="divide-y divide-slate-100 dark:divide-zinc-800 border-b border-slate-100 dark:border-zinc-800 mb-1" dir="rtl">
-                  {videoMentorLabel && (
-                    <div className="grid grid-cols-[3rem_1fr] items-center py-2.5 gap-x-3">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right">ערוץ</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100 truncate text-left" dir="ltr" title={videoMentorLabel}>{videoMentorLabel}</span>
-                    </div>
-                  )}
-                  {videoCategoryLabel && (
-                    <div className="grid grid-cols-[3rem_1fr] items-center py-2.5 gap-x-3">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right">נושא</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100 truncate text-left" dir="ltr">{videoCategoryLabel}</span>
-                    </div>
-                  )}
-                  {videoDuration && (
-                    <div className="grid grid-cols-[3rem_1fr] items-center py-2.5 gap-x-3">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right">משך</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100 tabular-nums text-left" dir="ltr">{videoDuration}</span>
-                    </div>
-                  )}
-                  {viewCountFormatted && (
-                    <div className="grid grid-cols-[3rem_1fr] items-center py-2.5 gap-x-3">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right">צפיות</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100 tabular-nums text-left" dir="ltr">{viewCountFormatted.replace(/\s*צפיות$/, "")}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Spacer to keep card height consistent */}
-                <div className="mt-auto" />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 py-3 mb-2 min-h-[88px]" dir="rtl">
