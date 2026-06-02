@@ -77,10 +77,11 @@ import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
-import { classifyVideoForGem, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
 import { resolveChannelToMentor } from "@/lib/channelMentorResolver";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel } from "@/lib/obsidianSavedStatus";
+import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
 
 function getWatchUrl(video) {
@@ -737,6 +738,7 @@ export function VideoDetailPanel({
   const [subCategoryOverride, setSubCategoryOverride] = useState(null);
   const [recApplied, setRecApplied] = useState(false);
   const [vaultSubtopics, setVaultSubtopics] = useState([]);
+  const [gemOverride, setGemOverride] = useState(null);
   const hasSavedAnalysis = !!savedAnalysisMeta;
   const queryClient = useQueryClient();
 
@@ -747,7 +749,8 @@ export function VideoDetailPanel({
     setSubCategoryOverride(null);
     setRecApplied(false);
     setVaultSubtopics([]);
-  }, [video?.id]);
+    setGemOverride(video?.gemOverride ?? null);
+  }, [video?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pendingBrainSave && !isKnowledgePickerOpen) {
       setBrainPickerOpen(true);
@@ -792,8 +795,29 @@ export function VideoDetailPanel({
     const transcriptText = String(video?.transcript || '');
     const mentorResolved = resolveChannelToMentor(video);
     const forcedCategoryLabel = mentorResolved?.categoryLabel ?? null;
-    return classifyVideoForGem(video, transcriptText, { forcedCategoryLabel });
-  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags]); // eslint-disable-line react-hooks/exhaustive-deps
+    const firstTopicId = Array.isArray(video.topicIds) ? video.topicIds[0] : null;
+    const forcedTopicName = firstTopicId ? (topics.find(t => t.id === firstTopicId)?.name ?? null) : null;
+    return classifyVideoForGem(video, transcriptText, { forcedCategoryLabel, forcedTopicName });
+  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const effectiveGemInfo = useMemo(() => {
+    if (!gemRec) return null;
+    if (gemOverride) {
+      const manual = GEM_ALT_OPTIONS.find(g => g.key === gemOverride);
+      if (manual) {
+        const manualCatMap = GEM_CATEGORY_MAP[manual.key];
+        return {
+          ...gemRec,
+          gemKey: manual.key,
+          gemLabel: manual.label,
+          gemIcon: manual.icon,
+          recommendedCategoryLabel: manualCatMap?.categoryLabel ?? gemRec.recommendedCategoryLabel,
+          isManual: true,
+        };
+      }
+    }
+    return { ...gemRec, isManual: false };
+  }, [gemRec, gemOverride]);
 
   useEffect(() => {
     if (!open || initialChapterIndex == null) {
@@ -1130,13 +1154,16 @@ export function VideoDetailPanel({
 
   const handleApplyRecommendation = useCallback(async () => {
     if (!gemRec) return;
-    const catCode = gemRec.recommendedCategoryCode ?? null;
     const catLabel = categoryOverride ?? gemRec.recommendedCategoryLabel ?? null;
     const subCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
-    await saveVideoFields({ category: catLabel, subCategory: subCat });
+    const firstTopicId = Array.isArray(video?.topicIds) ? video.topicIds[0] : null;
+    const topicName = firstTopicId ? (topics.find(t => t.id === firstTopicId)?.name ?? null) : null;
+    const topicRule = topicName ? getTopicRule(topicName) : null;
+    const obsidianTopic = topicRule?.obsidianPrimary ?? null;
+    await saveVideoFields({ category: catLabel, subCategory: subCat, ...(obsidianTopic ? { obsidianTopic } : {}) });
     setRecApplied(true);
     toast.success('המלצת הניתוח נשמרה לסרטון');
-  }, [gemRec, categoryOverride, subCategoryOverride, saveVideoFields]);
+  }, [gemRec, categoryOverride, subCategoryOverride, saveVideoFields, video?.topicIds, topics]);
 
   const buildVaultDestination = useCallback((brainId, subBrainId, customBrainName, customSubName) => {
     return { brainId: brainId || null, subBrainId: subBrainId || null, customBrainName: customBrainName || null, customSubName: customSubName || null };
@@ -1265,6 +1292,90 @@ export function VideoDetailPanel({
     } finally {
       setIsYoutubeChaptersFetch(false);
     }
+  };
+
+  const handleAutoDetectChapters = async () => {
+    setYoutubeChaptersHint(null);
+
+    // Step 1: check existing description for timestamps (no API call needed)
+    const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
+    if (existingDesc) {
+      const descChapters = extractTimestampsFromDescription(existingDesc);
+      if (descChapters.length >= 2) {
+        const aiChapters = descChapters.map((c) => ({
+          ...c,
+          timeSource: c.timeSource || 'real',
+          chapterSource: 'description_timestamp',
+          source: 'description_timestamp',
+        }));
+        const updates = {
+          aiChapters,
+          chapters: aiChapters,
+          descriptionChapters: aiChapters,
+          chapterSource: 'description_timestamp',
+          analysisQuality: 'medium',
+        };
+        const localSaved = patchVideo(updates);
+        if (localSaved) {
+          onVideoPatch?.(localSaved);
+        } else {
+          try {
+            await Video.update(video.id, updates);
+            patchVideo(updates);
+            queryClient.invalidateQueries({ queryKey: ['videos'] });
+            onVideoPatch?.({ ...video, ...updates });
+          } catch {
+            toast.error('לא ניתן לשמור את הפרקים');
+          }
+        }
+        toast.success(`נמצאו ${aiChapters.length} פרקים מתיאור הסרטון`);
+        return;
+      }
+    }
+
+    // Step 2: fetch from YouTube API (falls back to setYoutubeChaptersHint on failure)
+    await handleFetchYoutubeChapters();
+  };
+
+  const handleGenerateTranscriptChapters = () => {
+    // storedTranscriptSegments is defined later in the render scope — safely accessible here as a closure
+    const segs = storedTranscriptSegments;
+    if (!segs?.length) {
+      toast.error('אין תמלול זמין לצור פרקים');
+      return;
+    }
+    const parsed = {
+      lines: segs.map((s) => ({
+        text: s.text || '',
+        start: s.startSeconds ?? s.start ?? 0,
+      })),
+    };
+    const chapters = generateChaptersFromTranscript(parsed, video);
+    if (!chapters?.length) {
+      toast.error('התמלול קצר מדי לצור פרקים');
+      return;
+    }
+    const aiChapters = chapters.map((c) => ({
+      ...c,
+      chapterSource: 'ai_transcript',
+      source: 'ai_transcript',
+      timeSource: c.timeSource || 'transcript',
+    }));
+    const updates = { aiChapters, chapters: aiChapters, chapterSource: 'ai_transcript' };
+    const localSaved = patchVideo(updates);
+    if (localSaved) {
+      onVideoPatch?.(localSaved);
+    } else {
+      Video.update(video.id, updates)
+        .then(() => {
+          patchVideo(updates);
+          queryClient.invalidateQueries({ queryKey: ['videos'] });
+          onVideoPatch?.({ ...video, ...updates });
+        })
+        .catch(() => toast.error('לא ניתן לשמור את הפרקים'));
+    }
+    setYoutubeChaptersHint(null);
+    toast.success(`נוצרו ${aiChapters.length} פרקים מהתמלול`);
   };
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
@@ -2409,7 +2520,9 @@ export function VideoDetailPanel({
         ? "מבוסס תמלול"
         : chapterSourceInfo.source === "description_timestamp"
           ? "מבוסס פרקי YouTube/תיאור"
-          : null;
+          : chapterSourceInfo.source === "ai_transcript"
+            ? "AI מתמלול"
+            : null;
   const chapterSourceBadgeClass =
     "bg-blue-50 text-blue-700 border-blue-200";
   const storedTranscriptSegments =
@@ -2831,31 +2944,53 @@ export function VideoDetailPanel({
 
             {/* ── Thumbnail ── */}
             <div className="grid w-full items-stretch gap-4 xl:grid-cols-4 md:grid-cols-2" dir="rtl">
-              <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
-                <div className="border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2" dir="rtl">
-                  <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-zinc-800" dir="rtl">
-                  {[
-                    { label: "ערוץ",          value: videoMentorLabel,                                                mono: false },
-                    { label: "נושא",           value: videoTopics[0]?.name || null,                                  mono: false },
-                    { label: "תת-נושא",        value: subCategoryOverride ?? video.subCategory ?? null,               mono: false },
-                    { label: "קטגוריה",        value: videoCategoryLabel,                                             mono: false },
-                    { label: "תאריך פרסום",    value: video.publishedAt ? format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) : null, mono: true },
-                    { label: "אורך הסרטון",    value: videoDuration,                                                  mono: true  },
-                    { label: "צפיות",          value: viewCountFormatted ? viewCountFormatted.replace(/\s*צפיות$/, "") : null, mono: true },
-                    { label: "Video ID",       value: videoYtId || video.id || null,                                  mono: true  },
-                    { label: "Obsidian",       value: hasObsidianSavedStatus(video) ? "✅ נשמר" : null,               mono: false },
-                  ].map(({ label, value, mono }) => (
-                    <div key={label} className="grid grid-cols-[5rem_1fr] items-center py-1.5 gap-x-2">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right shrink-0">{label}</span>
-                      <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
-                        {value || "—"}
-                      </span>
+              {(() => {
+                const transcriptStatusLabel = (() => {
+                  const s = video.transcriptStatus;
+                  if (s === "youtube") return "✅ YouTube";
+                  if (s === "manual") return "✅ ידני";
+                  if (["none", "found_empty_body", "no_caption_tracks", "unavailable"].includes(s)) return "❌ אין";
+                  if (s === "missing_timestamps") return "⚠️ חסרות חותמות";
+                  if (s === "too_short") return "⚠️ קצר מדי";
+                  return null;
+                })();
+                const aiAnalysisLabel = savedAnalysisMeta ? analysisProviderLabel : null;
+                const gemLabel = effectiveGemInfo ? `${effectiveGemInfo.gemIcon} ${effectiveGemInfo.gemLabel}` : null;
+                const commentCount = video.statistics?.commentCount ?? video.commentCount ?? null;
+                const commentLabel = commentCount != null ? Number(commentCount).toLocaleString() : null;
+                const knowledgeCount = totalSelectedKnowledgeItems > 0 ? String(totalSelectedKnowledgeItems) : null;
+                const rows = [
+                  { label: "ערוץ",         value: videoMentorLabel,                                                             mono: false },
+                  { label: "נושא",          value: videoTopics[0]?.name || null,                                                 mono: false },
+                  { label: "תת-נושא",       value: (subCategoryOverride ?? video.subCategory) || null,                           mono: false },
+                  { label: "Gem מומלץ",     value: gemLabel,                                                                     mono: false },
+                  { label: "תאריך פרסום",   value: video.publishedAt ? format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) : null, mono: true },
+                  { label: "אורך",          value: videoDuration,                                                                mono: true  },
+                  { label: "צפיות",         value: viewCountFormatted ? viewCountFormatted.replace(/\s*צפיות$/, "") : null,      mono: true  },
+                  { label: "תגובות",        value: commentLabel,                                                                 mono: true  },
+                  { label: "תמלול",         value: transcriptStatusLabel,                                                        mono: false },
+                  { label: "ניתוח AI",      value: aiAnalysisLabel,                                                              mono: false },
+                  { label: "פריטי ידע",     value: knowledgeCount,                                                               mono: true  },
+                  { label: "Obsidian",      value: hasObsidianSavedStatus(video) ? "✅ נשמר" : null,                             mono: false },
+                ];
+                return (
+                  <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
+                    <div className="border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2">
+                      <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="divide-y divide-slate-100 dark:divide-zinc-800">
+                      {rows.map(({ label, value, mono }) => (
+                        <div key={label} className="grid grid-cols-[5.5rem_1fr] items-center py-1.5 gap-x-2">
+                          <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right shrink-0">{label}</span>
+                          <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
+                            {value || "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 py-3 mb-2 min-h-[88px]" dir="rtl">
                   <div className="text-right text-lg font-bold text-slate-900 dark:text-white">ניתוח AI</div>
@@ -2909,24 +3044,28 @@ export function VideoDetailPanel({
                 </div>
 
                 {/* ── GEM Recommendation ─────────────────────────────── */}
-                {gemRec && (() => {
-                  const effectiveCat = categoryOverride ?? gemRec.recommendedCategoryLabel ?? '';
-                  const options = vaultSubtopics.length > 0 ? vaultSubtopics : getGemSubCategoryFallback(gemRec.gemKey);
-                  const effectiveSubCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
-                  const isOverridden = subCategoryOverride != null && subCategoryOverride !== gemRec.recommendedSubCategory;
-                  const gemUrl = getGemUrl(gemRec.gemKey);
+                {effectiveGemInfo && (() => {
+                  const effectiveCat = categoryOverride ?? effectiveGemInfo.recommendedCategoryLabel ?? '';
+                  const options = vaultSubtopics.length > 0 ? vaultSubtopics : getGemSubCategoryFallback(effectiveGemInfo.gemKey);
+                  const effectiveSubCat = subCategoryOverride ?? effectiveGemInfo.recommendedSubCategory ?? 'כללי';
+                  const isSubOverridden = subCategoryOverride != null && subCategoryOverride !== effectiveGemInfo.recommendedSubCategory;
+                  const gemUrl = getGemUrl(effectiveGemInfo.gemKey);
                   return (
                     <div className="flex flex-col gap-2 py-2 border-t border-slate-100 dark:border-zinc-800">
-                      {/* Row 1: Gem badge + confidence */}
+                      {/* Row 1: Gem icon + label + auto/manual badge */}
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base">{gemRec.gemIcon}</span>
-                          <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">Gem: {gemRec.gemLabel}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-base">{effectiveGemInfo.gemIcon}</span>
+                          <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">Gem: {effectiveGemInfo.gemLabel}</span>
                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                            gemRec.confidence === 'high' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                            gemRec.confidence === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
-                          }`}>{gemRec.confidencePct}%</span>
+                            effectiveGemInfo.isManual
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : effectiveGemInfo.confidence === 'high' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : effectiveGemInfo.confidence === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
+                          }`}>
+                            {effectiveGemInfo.isManual ? '👤 ידני' : '🤖 אוטומטי'}
+                          </span>
                         </div>
                         {gemUrl && (
                           <button
@@ -2936,6 +3075,37 @@ export function VideoDetailPanel({
                           >
                             <ExternalLink className="h-3 w-3" />
                             פתח Gem
+                          </button>
+                        )}
+                      </div>
+                      {/* Row 1b: Manual Gem selector */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">שנה Gem:</span>
+                        <select
+                          value={effectiveGemInfo.gemKey}
+                          onChange={(e) => {
+                            const key = e.target.value;
+                            const isAuto = key === gemRec?.gemKey;
+                            setGemOverride(isAuto ? null : key);
+                            patchVideo({ gemOverride: isAuto ? null : key });
+                          }}
+                          className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        >
+                          {GEM_ALT_OPTIONS.map(g => (
+                            <option key={g.key} value={g.key}>{g.icon} {g.label}</option>
+                          ))}
+                        </select>
+                        {effectiveGemInfo.isManual && (
+                          <button
+                            type="button"
+                            title="חזור להמלצה אוטומטית"
+                            onClick={() => {
+                              setGemOverride(null);
+                              patchVideo({ gemOverride: null });
+                            }}
+                            className="shrink-0 text-sm hover:opacity-70 transition-opacity"
+                          >
+                            🔄
                           </button>
                         )}
                       </div>
@@ -2953,7 +3123,7 @@ export function VideoDetailPanel({
                           className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
                         >
                           {options.map(opt => (
-                            <option key={opt} value={opt}>{opt}{opt === gemRec.recommendedSubCategory && !isOverridden ? ' ★' : ''}</option>
+                            <option key={opt} value={opt}>{opt}{opt === effectiveGemInfo.recommendedSubCategory && !isSubOverridden ? ' ★' : ''}</option>
                           ))}
                         </select>
                       </div>
@@ -4124,52 +4294,97 @@ export function VideoDetailPanel({
                 )}
               </TabsContent>
 
-              {/* ── Notes tab ── */}
+              {/* ── Chapters tab ── */}
                 <TabsContent value="chapters" className="mt-4 min-h-[320px]" dir="rtl">
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="mb-4 flex items-center justify-between gap-3 flex-row-reverse">
-                    <div className="flex items-center gap-2 flex-row-reverse">
-                      <h4 className="text-base font-bold text-slate-900 dark:text-zinc-100">פרקי הסרטון</h4>
-                      {chapterSourceBadge && (
-                        <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
-                          {chapterSourceBadge}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-slate-400 dark:text-zinc-500">לחץ על הזמן כדי לנווט</span>
-                  </div>
-                  {chapterSourceInfo.message && (
-                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right leading-relaxed">
-                      {chapterSourceInfo.message}
-                    </div>
-                  )}
-                  {baseChapters?.length > 0 ? (
-                      <div className="space-y-3">
-                      {baseChapters.map((chapter, index) => (
-                        <div key={`chapters-tab-${index}`} id={`chap-hl-${index}`}>
-                          <ChapterItem
-                            section={chapter}
-                            playerRef={undefined}
-                            videoUrl={getWatchUrl(video)}
-                            isHighlighted={index === highlightedChapterIndex}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex min-h-[180px] flex-col items-start justify-center gap-4 text-right" dir="rtl">
-                      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין חלוקה לפרקים</p>
+
+                    {/* header: title + badge + auto-detect button */}
+                    <div className="mb-3 flex items-center justify-between gap-3 flex-row-reverse">
+                      <div className="flex items-center gap-2 flex-row-reverse">
+                        <h4 className="text-base font-bold text-slate-900 dark:text-zinc-100">פרקי הסרטון</h4>
+                        {chapterSourceBadge && (
+                          <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
+                            {chapterSourceBadge}
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
-                        onClick={handleFetchYoutubeChapters}
+                        onClick={handleAutoDetectChapters}
                         disabled={isYoutubeChaptersFetch}
-                        className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                       >
-                        {isYoutubeChaptersFetch ? "טוען..." : "נסה פרקים"}
+                        {isYoutubeChaptersFetch ? "⏳ בודק..." : "🔍 בדוק פרקים אוטומטית"}
                       </button>
                     </div>
-                  )}
-                </div>
+
+                    {/* source message */}
+                    {chapterSourceInfo.message && (
+                      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right leading-relaxed dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                        {chapterSourceInfo.message}
+                      </div>
+                    )}
+
+                    {/* hint: no timestamps → offer AI generation */}
+                    {youtubeChaptersHint === "no_timestamps" && (
+                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-right dark:border-zinc-700 dark:bg-zinc-900">
+                        <p className="text-xs text-slate-600 dark:text-zinc-400">לא נמצאו timestamps בתיאור הסרטון.</p>
+                        {hasStoredTranscript && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateTranscriptChapters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                          >
+                            🤖 צור פרקים בעזרת AI
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* hint: no API key */}
+                    {youtubeChaptersHint === "no_api_key" && (
+                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">לא הוגדר VITE_YOUTUBE_API_KEY.</p>
+                        {hasStoredTranscript && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateTranscriptChapters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                          >
+                            🤖 צור פרקים מהתמלול
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* hint: fetch error */}
+                    {youtubeChaptersHint === "fetch_failed" && (
+                      <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 text-right dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                        שגיאה בטעינת נתוני YouTube — נסה שוב.
+                      </div>
+                    )}
+
+                    {/* chapters list or empty state */}
+                    {baseChapters?.length > 0 ? (
+                      <div className="space-y-3">
+                        {baseChapters.map((chapter, index) => (
+                          <div key={`chapters-tab-${index}`} id={`chap-hl-${index}`}>
+                            <ChapterItem
+                              section={chapter}
+                              playerRef={undefined}
+                              videoUrl={getWatchUrl(video)}
+                              isHighlighted={index === highlightedChapterIndex}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex min-h-[140px] flex-col items-end justify-center gap-2 text-right" dir="rtl">
+                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין חלוקה לפרקים</p>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500">לחץ על 🔍 בדוק פרקים אוטומטית למעלה</p>
+                      </div>
+                    )}
+                  </div>
               </TabsContent>
 
                 <TabsContent value="notes" className="mt-5 min-h-[320px]" dir="rtl">
