@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef } from "react";
+﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -75,6 +75,12 @@ import { LearningStatusBadge, LEARNING_STATUSES } from "./LearningStatusBadge";
 import { SaveButton } from "./SaveButton";
 import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
+import { BrainDestinationPicker } from "./BrainDestinationPicker";
+import { classifyVideoForGem, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
+import { resolveChannelToMentor } from "@/lib/channelMentorResolver";
+import { hasObsidianSavedStatus, getBrainSaveButtonLabel } from "@/lib/obsidianSavedStatus";
+import { isBase44Enabled } from "@/config/base44Flags";
 
 function getWatchUrl(video) {
   if (!video) return "";
@@ -568,11 +574,30 @@ export function VideoDetailPanel({
   const video = persistedVideo ?? videoProp;
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
+  const [brainPickerOpen, setBrainPickerOpen] = useState(false);
+  const [pendingBrainSave, setPendingBrainSave] = useState(null);
+  const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
+  const [saveAllContent, setSaveAllContent] = useState(null);
+  const [categoryOverride, setCategoryOverride] = useState(null);
+  const [subCategoryOverride, setSubCategoryOverride] = useState(null);
+  const [recApplied, setRecApplied] = useState(false);
+  const [vaultSubtopics, setVaultSubtopics] = useState([]);
   const hasSavedAnalysis = !!savedAnalysisMeta;
   const queryClient = useQueryClient();
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
+  useEffect(() => {
+    setCategoryOverride(null);
+    setSubCategoryOverride(null);
+    setRecApplied(false);
+    setVaultSubtopics([]);
+  }, [video?.id]);
+  useEffect(() => {
+    if (pendingBrainSave && !isKnowledgePickerOpen) {
+      setBrainPickerOpen(true);
+    }
+  }, [pendingBrainSave, isKnowledgePickerOpen]);
 
   const persistSelectedItems = (next) => {
     setSelectedItems(next);
@@ -606,6 +631,14 @@ export function VideoDetailPanel({
     () => selectableAtomicFields.reduce((sum, field) => sum + field.items.length, 0),
     [selectableAtomicFields]
   );
+
+  const gemRec = useMemo(() => {
+    if (!video) return null;
+    const transcriptText = String(video?.transcript || '');
+    const mentorResolved = resolveChannelToMentor(video);
+    const forcedCategoryLabel = mentorResolved?.categoryLabel ?? null;
+    return classifyVideoForGem(video, transcriptText, { forcedCategoryLabel });
+  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!open || initialChapterIndex == null) {
@@ -924,7 +957,121 @@ export function VideoDetailPanel({
       replaceLocalNotesForVideo(video.id, savedAnalysis.notes);
       queryClient.invalidateQueries({ queryKey: ["notes", "video", video.id] });
     }
-  }, [open, video?.id]);
+  }, [open, video?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveVideoFields = useCallback(async (updates) => {
+    patchVideo(updates);
+    onVideoPatch?.({ ...video, ...updates });
+    if (isBase44Enabled()) {
+      try {
+        await Video.update(video.id, updates);
+      } catch (err) {
+        console.warn('[Save] Base44 sync failed (non-blocking):', err?.message);
+      }
+    }
+  }, [patchVideo, onVideoPatch, video]);
+
+  const handleApplyRecommendation = useCallback(async () => {
+    if (!gemRec) return;
+    const catCode = gemRec.recommendedCategoryCode ?? null;
+    const catLabel = categoryOverride ?? gemRec.recommendedCategoryLabel ?? null;
+    const subCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
+    await saveVideoFields({ category: catLabel, subCategory: subCat });
+    setRecApplied(true);
+    toast.success('המלצת הניתוח נשמרה לסרטון');
+  }, [gemRec, categoryOverride, subCategoryOverride, saveVideoFields]);
+
+  const buildVaultDestination = useCallback((brainId, subBrainId, customBrainName, customSubName) => {
+    return { brainId: brainId || null, subBrainId: subBrainId || null, customBrainName: customBrainName || null, customSubName: customSubName || null };
+  }, []);
+
+  const buildSaveAllContent = useCallback(() => {
+    const fmtSec = (sec) => {
+      if (!Number.isFinite(sec)) return '';
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+    };
+    const lines = [];
+    const stats = {};
+    const sect = (title, items, formatter) => {
+      if (!Array.isArray(items) || items.length === 0) return 0;
+      lines.push(`## ${title}`, '');
+      items.forEach(item => { const t = formatter(item); if (t) lines.push(t); });
+      lines.push('');
+      return items.length;
+    };
+    const chapters = (video?.aiChapters || video?.chapters || []);
+    if (chapters.length) {
+      lines.push('## 📑 פרקים', '');
+      chapters.forEach(ch => {
+        const ts = ch.startSeconds != null ? ` \`${fmtSec(ch.startSeconds)}\`` : '';
+        lines.push(`### ${ch.title}${ts}`);
+        if (ch.summary) { lines.push(''); lines.push(ch.summary); }
+        lines.push('');
+      });
+      stats['פרקים'] = chapters.length;
+    }
+    stats['תובנות'] = sect('⚡ תובנות מרכזיות', video?.keyInsights, i => `- ${i}`);
+    stats['ידע שימושי'] = sect('💡 ידע שימושי', video?.keyPoints, p => `- ${p}`);
+    stats['כללים'] = sect('✅ כללים', video?.rules, r => `- ${r}`);
+    stats['מושגים'] = sect('🧩 מושגים', video?.concepts, c => `- ${c}`);
+    stats['פעולות'] = sect('🔁 פעולות', video?.actionItems, a => `- ${a}`);
+    stats['טעויות'] = sect('⚠️ טעויות', video?.mistakesToAvoid, m => `- ${m}`);
+    if (Array.isArray(videoNotes) && videoNotes.length > 0) {
+      lines.push('## 📝 הערות', '');
+      videoNotes.forEach(n => { const t = n.content || n.text || ''; if (t) lines.push(`- ${t}`); });
+      lines.push('');
+      stats['הערות'] = videoNotes.length;
+    }
+    const totalItems = Object.values(stats).reduce((a, b) => a + b, 0);
+    return { markdown: lines.join('\n'), stats, totalItems };
+  }, [video, videoNotes]);
+
+  const handleSaveAllToBrain = useCallback(() => {
+    const content = buildSaveAllContent();
+    const cleanStr = (s) => String(s || '').replace(/[/\\?*:|"<>]/g, '').trim();
+    const topicPart = cleanStr(video?.category || 'כללי').slice(0, 40);
+    const subPart = cleanStr(video?.subCategory || '');
+    const titlePart = cleanStr(video?.title || 'סרטון').slice(0, 60);
+    const path = subPart && subPart !== 'כללי'
+      ? `${topicPart}/${subPart}/${titlePart}.md`
+      : `${topicPart}/${titlePart}.md`;
+    setSaveAllContent({ ...content, path });
+    setSaveAllConfirmOpen(true);
+  }, [buildSaveAllContent, video]);
+
+  const handleSaveAllConfirmed = useCallback(async () => {
+    if (!saveAllContent) return;
+    try {
+      const res = await fetch('/api/vault/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: saveAllContent.path,
+          content: saveAllContent.markdown,
+          videoTitle: video?.title,
+          videoUrl: getWatchUrl(video),
+          channelTitle: video?.channelTitle,
+          duration: video?.duration,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`✅ נשמרו ${saveAllContent.totalItems} פריטים למוח`, {
+          description: `נתיב: ${saveAllContent.path}`,
+          duration: 6000,
+        });
+        setSaveAllConfirmOpen(false);
+        setSaveAllContent(null);
+      } else {
+        toast.error(`שגיאה בשמירה: ${data.error || 'לא ידוע'}`);
+      }
+    } catch (err) {
+      toast.error(`שגיאה: ${err.message}`);
+    }
+  }, [saveAllContent, video]);
 
   const enrichedVideo = useMemo(() => video || {}, [video]);
 
@@ -2558,6 +2705,92 @@ export function VideoDetailPanel({
                   )}
                 </div>
 
+                {/* ── GEM Recommendation ─────────────────────────────── */}
+                {gemRec && (() => {
+                  const effectiveCat = categoryOverride ?? gemRec.recommendedCategoryLabel ?? '';
+                  const options = vaultSubtopics.length > 0 ? vaultSubtopics : getGemSubCategoryFallback(gemRec.gemKey);
+                  const effectiveSubCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
+                  const isOverridden = subCategoryOverride != null && subCategoryOverride !== gemRec.recommendedSubCategory;
+                  const gemUrl = getGemUrl(gemRec.gemKey);
+                  return (
+                    <div className="flex flex-col gap-2 py-2 border-t border-slate-100 dark:border-zinc-800">
+                      {/* Row 1: Gem badge + confidence */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">{gemRec.gemIcon}</span>
+                          <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">Gem: {gemRec.gemLabel}</span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
+                            gemRec.confidence === 'high' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                            gemRec.confidence === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
+                          }`}>{gemRec.confidencePct}%</span>
+                        </div>
+                        {gemUrl && (
+                          <button
+                            type="button"
+                            onClick={() => openGeminiGemUrl(gemUrl)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-200 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            פתח Gem
+                          </button>
+                        )}
+                      </div>
+                      {/* Row 2: Category */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">קטגוריה:</span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200 flex-1 truncate">{effectiveCat || '—'}</span>
+                      </div>
+                      {/* Row 3: Sub-category selector */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">תת-נושא:</span>
+                        <select
+                          value={effectiveSubCat}
+                          onChange={(e) => setSubCategoryOverride(e.target.value)}
+                          className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        >
+                          {options.map(opt => (
+                            <option key={opt} value={opt}>{opt}{opt === gemRec.recommendedSubCategory && !isOverridden ? ' ★' : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Row 4: Action buttons */}
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={handleApplyRecommendation}
+                          disabled={recApplied}
+                          className={`flex-1 text-[11px] font-semibold h-7 rounded-lg transition-colors ${
+                            recApplied
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-default'
+                              : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50'
+                          }`}
+                        >
+                          {recApplied ? '✓ נשמר' : '💾 שמור סיווג'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveAllToBrain}
+                          className="flex-1 text-[11px] font-semibold h-7 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-colors"
+                        >
+                          🧠 שמור למוח
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── ObsidianExportButton (folder picker) ─────────────── */}
+                <div className="pt-1 border-t border-slate-100 dark:border-zinc-800 mt-1">
+                  <ObsidianExportButton
+                    key={video.id}
+                    video={video}
+                    mentorName={mentorName}
+                    notes={videoNotes}
+                    onPatch={patchVideo}
+                  />
+                </div>
+
                 <div className="hidden flex-1 flex-col gap-2 pt-3">
                     <button
                       onClick={runClaudeAnalysisFromCard}
@@ -3958,6 +4191,56 @@ export function VideoDetailPanel({
             </div>
           );
         })()}
+      </DialogContent>
+    </Dialog>
+
+    {/* ── Brain Destination Picker ─────────────────────────── */}
+    <BrainDestinationPicker
+      open={brainPickerOpen}
+      onOpenChange={(open) => {
+        setBrainPickerOpen(open);
+        if (!open) setPendingBrainSave(null);
+      }}
+      video={video}
+      onConfirm={({ brainId, subBrainId, customBrainName, customSubName }) => {
+        setBrainPickerOpen(false);
+        setPendingBrainSave(null);
+        handleSaveAllToBrain();
+      }}
+    />
+
+    {/* ── Save All Confirmation Dialog ─────────────────────── */}
+    <Dialog open={saveAllConfirmOpen} onOpenChange={setSaveAllConfirmOpen}>
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-right text-lg font-bold">🧠 שמור סרטון מלא למוח</DialogTitle>
+        </DialogHeader>
+        {saveAllContent && (
+          <div className="space-y-4 text-right">
+            <p className="text-sm text-slate-600 dark:text-zinc-400">
+              יישמרו <strong>{saveAllContent.totalItems}</strong> פריטים לנתיב:
+            </p>
+            <code className="block text-xs bg-slate-50 dark:bg-zinc-800 rounded-lg px-3 py-2 break-all text-slate-700 dark:text-zinc-300">
+              {saveAllContent.path}
+            </code>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setSaveAllConfirmOpen(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAllConfirmed}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                שמור
+              </button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
     </>
