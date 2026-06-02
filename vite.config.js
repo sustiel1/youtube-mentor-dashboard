@@ -2,6 +2,7 @@ import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import path from 'path'
+import { YoutubeTranscript } from 'youtube-transcript'
 
 // ─── RSS Proxy Plugin ─────────────────────────────────────────────────────────
 // Route: GET /api/rss?channelId=UCxxxxxxxx
@@ -136,8 +137,10 @@ function makeChannelResolverPlugin() {
 // GEMINI_API_KEY is loaded via loadEnv — NEVER bundled or sent to the browser.
 // In production, Base44 backend function handles Gemini (/backend/analyze-video.function.js).
 // ─────────────────────────────────────────────────────────────────────────────
-// ─── YouTube timedtext proxy (dev only) ──────────────────────────────────────
-// GET /api/youtube-transcript?v=VIDEO_ID  →  raw srv3 XML (used for AI chapters)
+// ─── YouTube Transcript Proxy (dev only) ─────────────────────────────────────
+// GET /api/youtube-transcript?v=VIDEO_ID
+// Uses youtube-transcript package (InnerTube API) — works where timedtext API is blocked.
+// Returns { body, segments, lang, fetchedAt } matching fetchTranscriptPayload expectations.
 // ─────────────────────────────────────────────────────────────────────────────
 function makeYoutubeTranscriptPlugin() {
   return {
@@ -152,26 +155,50 @@ function makeYoutubeTranscriptPlugin() {
           return;
         }
 
-        const langs = ['iw', 'he', 'en', 'a.en'];
-        const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        const langs = ['iw', 'he', 'en'];
+        console.log(`[transcript-proxy] videoId=${v} provider=youtube-transcript trying langs=${langs.join(',')}`);
+
+        let segments = null;
+        let selectedLang = null;
 
         for (const lang of langs) {
-          const u = `https://www.youtube.com/api/timedtext?v=${encodeURIComponent(v)}&lang=${encodeURIComponent(lang)}&fmt=srv3`;
           try {
-            const r = await fetch(u, { headers: { 'User-Agent': ua, 'Accept-Language': 'en-US,en;q=0.9,he;q=0.8' } });
-            const text = await r.text();
-            if (r.ok && text && text.length > 40 && !/caption(s)? unavailable/i.test(text)) {
-              res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-              res.end(JSON.stringify({ body: text, lang }));
-              return;
+            const raw = await YoutubeTranscript.fetchTranscript(v, { lang });
+            if (Array.isArray(raw) && raw.length > 0) {
+              // offset/duration are in milliseconds — convert to seconds
+              segments = raw.map(s => ({
+                text: String(s.text || '').trim(),
+                start: Number(s.offset ?? s.start ?? 0) / 1000,
+                duration: Number(s.duration ?? 0) / 1000,
+                startSeconds: Number(s.offset ?? s.start ?? 0) / 1000,
+                durationSeconds: Number(s.duration ?? 0) / 1000,
+              })).filter(s => s.text);
+              selectedLang = lang;
+              break;
             }
-          } catch {
-            // try next language
+          } catch (err) {
+            console.log(`[transcript-proxy] lang=${lang} unavailable: ${err.message?.slice(0, 80)}`);
           }
         }
 
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: 'No captions for this video' }));
+        if (!segments || segments.length === 0) {
+          console.log(`[transcript-proxy] ALL_LANGS_FAILED videoId=${v}`);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: 'No captions available' }));
+          return;
+        }
+
+        const body = segments.map(s => s.text).join(' ');
+        console.log(`[transcript-proxy] SUCCESS videoId=${v} lang=${selectedLang} segments=${segments.length} bodyLen=${body.length}`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          ok: true,
+          body,
+          segments,
+          lang: selectedLang,
+          fetchedAt: new Date().toISOString(),
+        }));
       });
     },
   };

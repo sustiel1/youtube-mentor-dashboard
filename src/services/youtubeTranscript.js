@@ -275,6 +275,7 @@ export async function fetchTranscriptPayload(videoId) {
   try {
     const res = await fetch(`/api/youtube-transcript?v=${encodeURIComponent(videoId)}`);
     const data = await res.json().catch(() => ({}));
+    console.log(`[transcript-payload] videoId=${videoId} httpStatus=${res.status} ok=${res.ok} error=${data.error || 'none'} lang=${data.lang || 'none'} bodyLen=${typeof data.body === 'string' ? data.body.length : 'N/A'}`);
     if (!res.ok) {
       if (import.meta.env.DEV) {
         console.info(`[transcript] unavailable reason=${data.message || data.error || res.status}`);
@@ -290,6 +291,7 @@ export async function fetchTranscriptPayload(videoId) {
       return null;
     }
 
+    console.log(`[transcript-payload] bodyPreview=${body.slice(0, 120).replace(/\n/g,' ')}`);
     const parsed = parseTranscript(data);
     const payload = {
       body,
@@ -300,6 +302,7 @@ export async function fetchTranscriptPayload(videoId) {
     const map = readCache();
     map[videoId] = payload;
     writeCache(map);
+    console.log(`[transcript-payload] parsedLines=${parsed.lines.length} lang=${payload.lang || 'unknown'}`);
     if (parsed.lines.length > 0) {
       saveSegments(videoId, parsed.lines);
     }

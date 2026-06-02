@@ -2,7 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2, Moon, Sun, ClipboardList, Info, Trash2, Pin, Copy, CheckCircle2, AlertCircle, BookMarked, Zap } from "lucide-react";
+import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2, Moon, Sun, ClipboardList, Info, Trash2, Pin, Copy, CheckCircle2, AlertCircle, BookMarked, Zap, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
@@ -29,7 +29,7 @@ import {
   validateAiAnalysisQuality,
   validateChaptersForSave,
 } from "@/services/videoAnalytics";
-import { fetchTranscript, getBestTranscript, parseTranscript, validateTranscriptUsable } from "@/services/youtubeTranscript";
+import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable } from "@/services/youtubeTranscript";
 import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
 import { fetchVideoDescription, fetchVideoMetadata } from "@/services/youtubeApi";
 import {
@@ -76,6 +76,7 @@ import { SaveButton } from "./SaveButton";
 import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
+import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
 import { resolveChannelToMentor } from "@/lib/channelMentorResolver";
@@ -520,6 +521,155 @@ function extractBrainHighlights(brainSummary, keyInsights, keyPoints) {
   ].slice(0, 10);
 }
 
+// ─── GEMS Quick-Copy Action Panel ────────────────────────────────────────────
+const MARKET_SUB_IDS = new Set(['gemini-fundamental', 'gemini-technical', 'gemini-macro', 'gemini-news']);
+
+const MARKET_DROPDOWN_ITEMS = [
+  { id: 'gemini-fundamental', icon: '📊', label: 'פונדמנטלי' },
+  { id: 'app-builder',        icon: '🏗️', label: 'App Builder', isAppBuilder: true },
+  { id: 'gemini-technical',   icon: '📈', label: 'טכני',  soon: true },
+  { id: 'gemini-macro',       icon: '🌍', label: 'מאקרו', soon: true },
+];
+
+function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, storedTranscriptSegments, transcriptSourceLabel, handleQuickCopy }) {
+  const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
+  const marketRef = useRef(null);
+
+  useEffect(() => {
+    if (!marketDropdownOpen) return;
+    function onMouseDown(e) {
+      if (marketRef.current && !marketRef.current.contains(e.target)) setMarketDropdownOpen(false);
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [marketDropdownOpen]);
+
+  const durationDisplay = (() => {
+    const d = video?.duration;
+    if (!d) return null;
+    if (typeof d === 'string' && d.includes(':')) return d;
+    if (typeof d === 'number') {
+      const m = Math.floor(d / 60);
+      const s = String(Math.floor(d % 60)).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+    return String(d);
+  })();
+
+  const stats = [
+    { label: 'מקור',         value: transcriptSourceLabel || '—' },
+    { label: 'מקטעים',       value: storedTranscriptSegments?.length ?? '—' },
+    { label: 'מילים',        value: transcriptWordCount ? transcriptWordCount.toLocaleString() : '—' },
+    { label: 'אורך הסרטון',  value: durationDisplay || '—' },
+  ];
+
+  const mainActions = QUICK_COPY_ACTIONS.filter(a => !MARKET_SUB_IDS.has(a.id));
+
+  function handleMarketItem(item) {
+    if (item.soon) return;
+    if (item.isAppBuilder) {
+      if (fullTranscriptText) navigator.clipboard.writeText(fullTranscriptText).catch(() => {});
+      window.open('https://gemini.google.com/gem/c195e8991418', '_blank');
+      setMarketDropdownOpen(false);
+      return;
+    }
+    const action = QUICK_COPY_ACTIONS.find(a => a.id === item.id);
+    if (action) { handleQuickCopy(action); setMarketDropdownOpen(false); }
+  }
+
+  return (
+    <div dir="rtl" className="space-y-2">
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-1.5">
+        {stats.map(stat => (
+          <div key={stat.label} className="rounded-lg bg-slate-100/80 dark:bg-zinc-800/50 px-2 py-2 text-center">
+            <div className="text-[9px] uppercase tracking-wide text-slate-400 dark:text-zinc-500 mb-0.5">{stat.label}</div>
+            <div className="text-xs font-semibold text-slate-700 dark:text-zinc-200 truncate tabular-nums">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Action cards — 4 per row */}
+      <div className="grid grid-cols-4 gap-1.5">
+        {mainActions.map(action => {
+          const isMarketToggle = action.id === 'gemini-combo';
+          if (isMarketToggle) {
+            return (
+              <div key={action.id} className="relative" ref={marketRef}>
+                <button
+                  type="button"
+                  onClick={() => setMarketDropdownOpen(p => !p)}
+                  className={`w-full rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 border transition-all group ${
+                    marketDropdownOpen
+                      ? 'bg-slate-100 dark:bg-zinc-800 border-slate-400 dark:border-zinc-600'
+                      : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30'
+                  }`}
+                >
+                  <span className="text-base leading-none">{action.icon}</span>
+                  <span className={`text-[11px] font-medium leading-tight text-center ${marketDropdownOpen ? 'text-slate-700 dark:text-zinc-200' : 'text-slate-600 dark:text-zinc-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300'}`}>
+                    {action.label.replace('Gemini ', '')}
+                  </span>
+                  <ChevronDown className={`h-2.5 w-2.5 text-slate-400 dark:text-zinc-500 transition-transform duration-200 ${marketDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {marketDropdownOpen && (
+                  <div className="absolute top-full mt-1 right-0 z-50 w-44 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden">
+                    {MARKET_DROPDOWN_ITEMS.map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleMarketItem(item)}
+                        disabled={item.soon}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                          item.soon
+                            ? 'text-slate-300 dark:text-zinc-600 cursor-not-allowed'
+                            : item.isAppBuilder
+                              ? 'text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40'
+                              : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80'
+                        }`}
+                      >
+                        <span className="text-base leading-none">{item.icon}</span>
+                        <span className="flex-1 text-right">{item.label}</span>
+                        {item.soon && <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded-full">בקרוב</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          // Check if this action has a configured Gem URL
+          const actionGemKey = action.flow ? action.flow.replace('gem-', '') : null;
+          const actionGemUrl = actionGemKey ? getGemUrl(actionGemKey) : (action.url || null);
+          const hasUrl = Boolean(actionGemUrl);
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => handleQuickCopy(action)}
+              disabled={!fullTranscriptText}
+              title={hasUrl ? `פתח ${action.label.replace('Gemini ','')} ב-Gemini` : 'Gem URL לא מוגדר — לחץ להעתקה בלבד'}
+              className={`rounded-xl py-3 px-2 flex flex-col items-center gap-1 border transition-all group disabled:opacity-40 disabled:cursor-not-allowed ${
+                hasUrl
+                  ? 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30'
+                  : 'bg-slate-50 dark:bg-zinc-950 border-dashed border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
+              }`}
+            >
+              <span className="text-base leading-none">{action.icon}</span>
+              <span className={`text-[11px] font-medium leading-tight text-center ${hasUrl ? 'text-slate-600 dark:text-zinc-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300' : 'text-slate-400 dark:text-zinc-600'}`}>
+                {action.label.replace('Gemini ', '')}
+              </span>
+              {!hasUrl && (
+                <span className="text-[9px] text-slate-300 dark:text-zinc-700 leading-none">🔗 הגדר</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function VideoDetailPanel({
   video: videoProp,
   mentorName,
@@ -574,6 +724,7 @@ export function VideoDetailPanel({
   const video = persistedVideo ?? videoProp;
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
+  const [isTranscriptViewerOpen, setIsTranscriptViewerOpen] = useState(false);
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
@@ -970,6 +1121,8 @@ export function VideoDetailPanel({
       }
     }
   }, [patchVideo, onVideoPatch, video]);
+
+  // handleQuickCopy defined after videoDuration+fullTranscriptText to avoid TDZ — see below.
 
   const handleApplyRecommendation = useCallback(async () => {
     if (!gemRec) return;
@@ -2109,41 +2262,45 @@ export function VideoDetailPanel({
       return;
     }
     setIsFetchingYtApiTranscript(true);
-    console.log("[transcript] fetching via youtube-transcript-api videoId=" + ytId);
+    console.log("[transcript] fetching via proxy ytId=" + ytId);
     try {
-      const res = await fetch("/api/youtube-transcript", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId: ytId }),
+      // Uses GET /api/youtube-transcript?v=<ytId> — the correct endpoint
+      const payload = await fetchTranscriptPayload(ytId);
+      console.log("[transcript-handler] payload=", {
+        ok: payload !== null,
+        bodyLen: typeof payload?.body === "string" ? payload.body.length : "N/A",
+        lang: payload?.lang ?? "N/A",
+        segmentsCount: Array.isArray(payload?.segments) ? payload.segments.length : "N/A",
+        fetchedAt: payload?.fetchedAt ?? "N/A",
+        firstSegment: Array.isArray(payload?.segments) && payload.segments.length > 0 ? payload.segments[0] : null,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!data?.success || !String(data?.text || "").trim()) {
-        const reason = data?.error || "לא נמצא תמלול זמין דרך YouTube";
-        console.log("[transcript] unavailable reason=" + reason);
+      const segments = Array.isArray(payload?.segments) ? payload.segments : [];
+      const body = typeof payload?.body === "string" ? payload.body : "";
+
+      if (!segments.length && body.length < 40) {
+        const reason = "לא נמצא תמלול זמין דרך YouTube";
+        console.log("[transcript] unavailable reason=empty-payload");
         setAnalyzeError(reason);
         toast.error(reason);
         return;
       }
-      const segments = Array.isArray(data.segments) ? data.segments : [];
-      const meta = data.metadata || {};
-      const qualityResult = (() => { try { return validateTranscriptUsable({ segments }); } catch { return {}; } })();
+
+      const qualityResult = (() => {
+        try { return validateTranscriptUsable({ segments }); } catch { return {}; }
+      })();
+
       const patch = {
-        transcript: data.text,
+        transcript: body,
         transcriptSegments: segments,
-        transcriptSource: "youtube-transcript-api",
-        transcriptLanguage: data.language || null,
+        transcriptSource: "youtube-timedtext",
+        transcriptLanguage: payload?.lang || null,
         transcriptStatus: "youtube",
         transcriptQuality: qualityResult.transcriptQuality || "low",
         transcriptError: null,
       };
-      if (Number.isFinite(meta.viewCount) && meta.viewCount > 0) patch.viewCount = meta.viewCount;
-      if (Number.isFinite(meta.durationSeconds) && meta.durationSeconds > 0) patch.durationSeconds = meta.durationSeconds;
-      if (meta.publishDate && !video.publishedAt) {
-        const d = String(meta.publishDate);
-        if (/^\d{8}$/.test(d)) patch.publishedAt = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T00:00:00.000Z`;
-      }
+
       persistAnalysisState(patch);
-      console.log("[transcript] success language=" + data.language + " generated=" + data.isGenerated);
+      console.log("[transcript] success lang=" + (payload?.lang || "?") + " segments=" + segments.length);
       setAnalyzeError(null);
       toast.success("תמלול נשמר בהצלחה");
     } catch (error) {
@@ -2248,10 +2405,47 @@ export function VideoDetailPanel({
   const hasStoredTranscript = storedTranscriptSegments.length > 0 || transcriptTextLength > 100;
   const transcriptSourceLabel =
     video.transcriptSource === "youtube-transcript-api" ? "youtube-transcript-api"
+    : video.transcriptSource === "youtube-timedtext" ? "YouTube"
     : video.transcriptStatus === "manual" ? "ידני"
     : video.transcriptStatus === "gemini" ? "Gemini"
     : video.transcriptStatus === "youtube" ? "YouTube"
     : null;
+  const fullTranscriptText =
+    typeof video.transcript === "string" && video.transcript.trim().length > 40
+      ? video.transcript.trim()
+      : typeof video.manualTranscript === "string" && video.manualTranscript.trim().length > 40
+        ? video.manualTranscript.trim()
+        : storedTranscriptSegments.length > 0
+          ? storedTranscriptSegments.map(s => s.text || '').join(' ')
+          : "";
+  const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
+
+  // Regular function (not useCallback) — avoids React hooks-after-return violation
+  const handleQuickCopy = async (action) => {
+    if (!fullTranscriptText) {
+      toast.error("אין תמלול זמין לשליחה");
+      return;
+    }
+    const prompt = action.buildPrompt({
+      title: video?.title || '',
+      duration: videoDuration || '',
+      transcript: fullTranscriptText,
+    });
+    try {
+      await navigator.clipboard.writeText(prompt);
+      toast.success(action.toastMsg);
+    } catch {
+      toast.error("לא ניתן לגשת ללוח");
+    }
+    // Resolve Gem URL from flow field (e.g. 'gem-political' → getGemUrl('political'))
+    const gemKey = action.flow ? action.flow.replace('gem-', '') : null;
+    const gemUrl = gemKey ? getGemUrl(gemKey) : (action.url || null);
+    if (gemUrl) {
+      openGeminiGemUrl(gemUrl);
+    } else if (gemKey) {
+      toast.info(`Gem "${action.label.replace('Gemini ', '')}" לא מוגדר — הגדר URL בהגדרות Gems`);
+    }
+  };
   const qualityChapters = resolveVideoChapters(video || {});
   const qualityFallbackUsed = Boolean(
     chapterSourceInfo.source &&
@@ -3028,6 +3222,26 @@ export function VideoDetailPanel({
 
                   {/* Transcript actions (UI-only move from sidebar) */}
                   <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800 space-y-2">
+                    {hasStoredTranscript && (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setIsTranscriptViewerOpen(true)}
+                          className="h-9 text-xs font-medium px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1"
+                        >
+                          📄 פתח תמלול
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success('התמלול הועתק ללוח')).catch(() => toast.error('לא ניתן להעתיק'));
+                          }}
+                          className="h-9 text-xs font-medium px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1"
+                        >
+                          📋 העתק תמלול
+                        </button>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => setIsManualTranscriptOpen(true)}
@@ -3054,6 +3268,22 @@ export function VideoDetailPanel({
                         מחק תמלול
                       </button>
                     )}
+                  </div>
+
+                  {/* ── GEMS Quick-Copy shortcuts ──────────────────────── */}
+                  <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Zap className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wide">העתק + שלח ל-Gem</span>
+                    </div>
+                    <GeminiActionsPanel
+                      video={video}
+                      fullTranscriptText={fullTranscriptText}
+                      transcriptWordCount={transcriptWordCount}
+                      storedTranscriptSegments={storedTranscriptSegments}
+                      transcriptSourceLabel={transcriptSourceLabel}
+                      handleQuickCopy={handleQuickCopy}
+                    />
                   </div>
                 </div>
               </div>
@@ -4195,6 +4425,36 @@ export function VideoDetailPanel({
             </div>
           );
         })()}
+      </DialogContent>
+    </Dialog>
+
+    {/* ── Transcript Viewer ───────────────────────────────── */}
+    <Dialog open={isTranscriptViewerOpen} onOpenChange={setIsTranscriptViewerOpen}>
+      <DialogContent dir="rtl" className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="text-right text-base font-bold truncate">
+            📄 תמלול — {video?.title || 'סרטון'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex items-center justify-between gap-3 px-1 py-1 shrink-0">
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400">
+            {transcriptSourceLabel && <span>מקור: <strong>{transcriptSourceLabel}</strong></span>}
+            {storedTranscriptSegments.length > 0 && <span>מקטעים: <strong>{storedTranscriptSegments.length}</strong></span>}
+            {transcriptWordCount > 0 && <span>מילים: <strong>{transcriptWordCount.toLocaleString()}</strong></span>}
+          </div>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success('התמלול הועתק ללוח')).catch(() => {})}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors flex items-center gap-1 shrink-0"
+          >
+            📋 העתק
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-900/80 min-h-0">
+          <pre className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-7 text-slate-800 dark:text-zinc-100 text-right" dir="rtl">
+            {fullTranscriptText || 'אין תמלול זמין'}
+          </pre>
+        </div>
       </DialogContent>
     </Dialog>
 
