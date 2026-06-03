@@ -17,7 +17,7 @@ const GEM_ROWS = [
   { key: "general", label: "כללי", icon: "✨" },
   { key: "technical", label: "טכני", icon: "📈" },
   { key: "macro", label: "מאקרו", icon: "🌍" },
-  { key: "news", label: "חדשות", icon: "📰" },
+  { key: "news", label: "מבזק בוקר", icon: "📰" },
 ];
 
 function loadGems() {

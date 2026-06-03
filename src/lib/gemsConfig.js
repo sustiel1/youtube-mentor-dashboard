@@ -7,7 +7,7 @@ export const defaultGems = {
   general: "",
   technical: "",
   macro: "",
-  news: "",
+  news: "https://gemini.google.com/gem/0e687d497bd3",
 };
 
 function normalizeGemUrl(url) {
