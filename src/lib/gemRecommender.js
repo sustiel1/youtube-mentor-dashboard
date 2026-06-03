@@ -1,6 +1,8 @@
 // ─── Gem Recommender ────────────────────────────────────────────────────────
 // Classifies a video to the most suitable Gemini Gem based on metadata + transcript.
 
+import { getTopicRule } from "@/lib/topicRules";
+
 const GEM_RULES = [
   {
     key: "fundamental",
@@ -241,7 +243,7 @@ function countMatches(text, keywords) {
 }
 
 export function classifyVideoForGem(video, transcriptText = "", options = {}) {
-  const { forcedCategoryLabel = null } = options;
+  const { forcedCategoryLabel = null, forcedTopicName = null } = options;
   const title   = (video?.title || "").toLowerCase();
   const channel = (video?.channelTitle || video?.channelName || video?.channel || "").toLowerCase();
   const topic   = (video?.topic || video?.category || "").toLowerCase();
@@ -264,15 +266,26 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
 
   scores.sort((a, b) => b.score - a.score);
 
-  // Boost: mentor-resolved category (strong, +20) — prevents wrong gem when channel is known
-  if (forcedCategoryLabel) {
+  // HARD RULE: Topic-driven enforcement (highest priority).
+  // When a topic is known, only gems from that topic's category are eligible.
+  // Within the category, content-based ranking still applies.
+  const topicRule = forcedTopicName ? getTopicRule(forcedTopicName) : null;
+  if (topicRule) {
+    const targetCat = normalizeCategoryName(topicRule.gemCategoryLabel).toLowerCase();
+    const topicGems = scores.filter(s => normalizeCategoryName(GEM_CATEGORY_MAP[s.key]?.categoryLabel ?? '').toLowerCase() === targetCat);
+    const otherGems = scores.filter(s => normalizeCategoryName(GEM_CATEGORY_MAP[s.key]?.categoryLabel ?? '').toLowerCase() !== targetCat);
+    scores.splice(0, scores.length, ...topicGems, ...otherGems);
+    console.log('[GemClassify] topic hard rule:', forcedTopicName, '→', targetCat, '→ top gem:', scores[0].key);
+  } else if (forcedCategoryLabel) {
+    // HARD RULE: channel-resolved category — AI keyword scoring cannot override a known mentor's category.
+    // Same priority as topic rule: only gems belonging to this category are eligible.
     const forced = normalizeCategoryName(forcedCategoryLabel).toLowerCase();
-    for (const s of scores) {
-      const gemCat = normalizeCategoryName(GEM_CATEGORY_MAP[s.key]?.categoryLabel ?? '').toLowerCase();
-      if (gemCat && gemCat === forced) { s.score += 20; break; }
+    const categoryGems = scores.filter(s => normalizeCategoryName(GEM_CATEGORY_MAP[s.key]?.categoryLabel ?? '').toLowerCase() === forced);
+    const otherGems    = scores.filter(s => normalizeCategoryName(GEM_CATEGORY_MAP[s.key]?.categoryLabel ?? '').toLowerCase() !== forced);
+    if (categoryGems.length > 0) {
+      scores.splice(0, scores.length, ...categoryGems, ...otherGems);
     }
-    scores.sort((a, b) => b.score - a.score);
-    console.log('[GemClassify] mentor forced category:', forcedCategoryLabel, '→ top gem after boost:', scores[0].key, scores[0].score);
+    console.log('[GemClassify] channel hard category rule:', forcedCategoryLabel, '→ eligible:', categoryGems.map(g => g.key), '→ top gem:', scores[0].key);
   }
 
   // Boost: if video.category is explicitly set to a known category, reward the matching gem.

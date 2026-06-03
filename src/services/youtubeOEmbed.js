@@ -6,6 +6,7 @@
 
 import { buildYouTubeUrl } from '@/lib/youtubeUrlParser';
 import { fetchVideoMetadata } from '@/services/youtubeApi';
+import { resolveChannelToMentor } from '@/lib/channelMentorResolver';
 
 // Thumbnail quality ladder — maxresdefault (1280px) first, hqdefault (480px) as fallback.
 // VideoCard/VideoDetailPanel handle the onError chain down to hqdefault via the img element.
@@ -57,47 +58,83 @@ export async function buildExternalVideoObject(videoId, options = {}) {
   let channelId = '';
   let channelUrl = '';
   let channelThumbnail = '';
+  let publishedAt = null;
+  let duration = null;
+  let viewCount = null;
+
+  console.log('[buildExternalVideo] start — videoId:', videoId);
 
   try {
     const meta = await fetchYouTubeMeta(videoId);
     title = meta.title;
     channelTitle = meta.channelTitle;
+    console.log('[buildExternalVideo] oEmbed — title:', title || '(none)', '| channelTitle:', channelTitle || '(none)');
   } catch {
     // oEmbed unavailable — title stays empty, thumbnail still works via direct URL
   }
 
   try {
     const metadata = await fetchVideoMetadata(videoId);
+    console.log('[buildExternalVideo] metadata result:', {
+      channelId: metadata?.channelId || '(none)',
+      channelTitle: metadata?.channelTitle || '(none)',
+      viewCount: metadata?.viewCount ?? '(none)',
+      duration: metadata?.duration || '(none)',
+      publishedAt: metadata?.publishedAt || '(none)',
+    });
     if (metadata?.channelTitle) channelTitle = metadata.channelTitle;
     if (metadata?.channelId) channelId = String(metadata.channelId).trim();
     if (metadata?.channelUrl) channelUrl = String(metadata.channelUrl).trim();
     if (metadata?.channelThumbnail) channelThumbnail = String(metadata.channelThumbnail).trim();
+    if (metadata?.publishedAt) publishedAt = String(metadata.publishedAt);
+    if (metadata?.duration) duration = String(metadata.duration);
+    if (metadata?.viewCount != null) viewCount = Number(metadata.viewCount);
   } catch {
     // keep external add lightweight even if extended metadata fails
+  }
+
+  // Auto-match channel → existing mentor (channelId > channelUrl > name)
+  // Only runs when user did not explicitly pick a mentor in the add dialog.
+  let resolvedMentorId = mentorId;
+  let resolvedTopicIds = Array.isArray(topicIds) ? [...topicIds] : [];
+  let resolvedCategory = null;
+
+  if (!resolvedMentorId) {
+    const partial = { channelId: channelId || null, channelUrl: channelUrl || null, channelTitle };
+    const match = resolveChannelToMentor(partial);
+    console.log('[buildExternalVideo] mentor match:', match ? `"${match.mentor.name}" via ${match.matchType}` : 'none');
+    if (match) {
+      resolvedMentorId = match.mentor.id;
+      resolvedCategory = match.categoryCode || null;
+      // Inherit mentor's topics only when user didn't pick any topic explicitly
+      if (resolvedTopicIds.length === 0 && Array.isArray(match.topicIds) && match.topicIds.length > 0) {
+        resolvedTopicIds = [...match.topicIds];
+        console.log('[buildExternalVideo] inherited topicIds from mentor:', resolvedTopicIds);
+      }
+    }
   }
 
   const overrideTitle =
     typeof titleOverride === 'string' && titleOverride.trim() ? titleOverride.trim() : '';
 
   const now = new Date().toISOString();
-  const safeTopicIds = Array.isArray(topicIds)
-    ? topicIds.map((id) => String(id).trim()).filter(Boolean)
-    : [];
+  const safeTopicIds = resolvedTopicIds.map((id) => String(id).trim()).filter(Boolean);
 
-  return {
+  const videoObj = {
     id: `ext_${videoId}`,
     videoId,
     youtubeId: videoId,
     url: buildYouTubeUrl(videoId),
     title: overrideTitle || title || 'סרטון YouTube',
-    thumbnail: getMaxResThumbnailUrl(videoId),   // matches video.thumbnail used by VideoCard + VideoDetailPanel
+    thumbnail: getMaxResThumbnailUrl(videoId),
     channelTitle,
     channelId: channelId || null,
     channelUrl: channelUrl || (channelId ? `https://www.youtube.com/channel/${channelId}` : null),
     channelThumbnail: channelThumbnail || null,
-    mentorId: mentorId && String(mentorId).trim() ? mentorId : null,
+    mentorId: resolvedMentorId && String(resolvedMentorId).trim() ? resolvedMentorId : null,
+    ...(resolvedCategory ? { category: resolvedCategory } : {}),
     source,
-    publishedAt: now,
+    publishedAt: publishedAt || now,
     fetchedAt: now,
     addedManually: true,
     addedAt: now,
@@ -106,9 +143,26 @@ export async function buildExternalVideoObject(videoId, options = {}) {
     learningStatus: 'not_started',
     isSaved: false,
     topicIds: safeTopicIds,
+    ...(duration ? { duration } : {}),
+    ...(viewCount != null ? { viewCount } : {}),
     tags: [],
     aiChapters: [],
     chapters: [],
     keyPoints: [],
   };
+
+  console.log('[buildExternalVideo] final:', {
+    videoId: videoObj.videoId,
+    title: videoObj.title,
+    channelTitle: videoObj.channelTitle || '(none)',
+    channelId: videoObj.channelId || '(none)',
+    mentorId: videoObj.mentorId || '(none)',
+    category: videoObj.category || '(none)',
+    topicIds: videoObj.topicIds,
+    publishedAt: videoObj.publishedAt,
+    duration: videoObj.duration || '(none)',
+    viewCount: videoObj.viewCount ?? '(none)',
+  });
+
+  return videoObj;
 }

@@ -204,6 +204,210 @@ function makeYoutubeTranscriptPlugin() {
   };
 }
 
+// ─── Gemini Video Content Plugin ─────────────────────────────────────────────
+// Route: POST /api/gemini-video-content
+// Smart input strategy: URL-first analysis, transcript fallback.
+// analysisMode: 'smart' (default) | 'url_only' | 'transcript_only'
+// ─────────────────────────────────────────────────────────────────────────────
+function makeGeminiVideoContentPlugin(env) {
+  function isResultSufficient(data) {
+    if (!data || typeof data !== 'object') return false;
+    const raw = JSON.stringify(data).toLowerCase();
+    if (raw.includes('placeholder') || raw.includes('cannot access') || raw.includes('לא יכול לגשת')) return false;
+    const hasFullSummary = String(data.fullSummary || '').trim().length > 50;
+    const hasKeyPoints  = Array.isArray(data.keyPoints)  && data.keyPoints.filter(Boolean).length >= 2;
+    const hasChapters   = Array.isArray(data.chapters)   && data.chapters.length >= 2;
+    return hasFullSummary && hasKeyPoints && hasChapters;
+  }
+
+  function buildTxText(transcriptText, transcriptSegments) {
+    if (Array.isArray(transcriptSegments) && transcriptSegments.length > 0) {
+      const seg = transcriptSegments
+        .map(s => `[${Math.floor(Number(s.start ?? s.startSeconds ?? 0))}] ${String(s.text || '').trim()}`)
+        .filter(s => s.length > 5)
+        .join('\n');
+      if (seg.length > 200) return seg;
+    }
+    return typeof transcriptText === 'string' && transcriptText.trim().length > 200
+      ? transcriptText.trim()
+      : null;
+  }
+
+  function buildGeminiAnalysisPrompt({ title, channelName, mentor, category, chaptersTarget, durationSeconds, userNotes }) {
+    return [
+      'נתח את הסרטון ביסודיות והחזר JSON בלבד, בלי markdown ובלי טקסט נוסף.',
+      '',
+      '═══ מטרת הניתוח ═══',
+      'המטרה: חלץ ידע אישי מקצועי שניתן לעשות בו שימוש חוזר.',
+      'שאל: "אם שכחתי לגמרי את הסרטון — מה הייתי רוצה שיישאר?" — זה הידע שצריך לחלץ.',
+      '',
+      '═══ כללי פרקים ═══',
+      `צור בערך ${chaptersTarget || 6} פרקים איכותיים שמכסים את כל הסרטון.`,
+      'כל כותרת פרק חייבת להיות ספציפית. אסור: "פתיח", "סיכום", "פרק 1".',
+      'כלול startSeconds ו-endSeconds לכל פרק.',
+      '',
+      '═══ כללי איכות ═══',
+      'אסור: "placeholder", ביטויים גנריים.',
+      'אם אין חומר לשדה — החזר מערך ריק.',
+      'עברית תקינה וברורה.',
+      '',
+      `כותרת: ${title}`,
+      channelName ? `ערוץ: ${channelName}` : null,
+      mentor ? `מנטור: ${mentor}` : null,
+      category ? `קטגוריה: ${category}` : null,
+      Number.isFinite(Number(durationSeconds)) && Number(durationSeconds) > 0
+        ? `משך סרטון בשניות: ${Math.floor(Number(durationSeconds))}`
+        : null,
+      userNotes ? `הערות: ${userNotes}` : null,
+      '',
+      'החזר JSON עם השדות הבאים בלבד:',
+      JSON.stringify({
+        shortSummary: '2-3 משפטים',
+        fullSummary: '4-6 משפטים עם תובנות מעשיות',
+        keyPoints: ['...'],
+        chapters: [{ title: '...', startSeconds: 0, endSeconds: 120, summary: '...', keyPoints: ['...'] }],
+        keyInsights: ['...'],
+        actionItems: ['...'],
+        rules: ['...'],
+        mainLesson: '...',
+        strategyOrMethod: '...',
+        tags: ['...'],
+      }, null, 2),
+    ].filter(Boolean).join('\n');
+  }
+
+  return {
+    name: 'gemini-video-content',
+    configureServer(server) {
+      server.middlewares.use('/api/gemini-video-content', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+
+        const apiKey = env.GEMINI_API_KEY;
+        if (!apiKey) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'GEMINI_API_KEY_MISSING', message: 'Add GEMINI_API_KEY to .env' }));
+          return;
+        }
+
+        let body;
+        try {
+          body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', chunk => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+            req.on('error', reject);
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_BODY' }));
+          return;
+        }
+
+        const {
+          videoId,
+          title = '',
+          channelName = '',
+          youtubeUrl,
+          transcriptText,
+          transcriptSegments,
+          analysisMode = 'smart',
+          userNotes,
+          durationSeconds = null,
+          mentor = null,
+          category = null,
+          chaptersTarget = 6,
+          chapterHints = [],
+        } = body;
+
+        const ytUrl = youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null);
+
+        try {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const prompt = buildGeminiAnalysisPrompt({ title, channelName, mentor, category, chaptersTarget, durationSeconds, userNotes });
+
+          let urlAnalysisResult = null;
+          let urlAnalysisError = null;
+
+          // Stage 1: URL-based analysis (Smart or URL-Only mode)
+          if (analysisMode !== 'transcript_only' && ytUrl) {
+            console.log(`[gemini-video-content] Stage 1: URL analysis mode=${analysisMode} videoId=${videoId || 'unknown'}`);
+            try {
+              const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+              const urlResult = await model.generateContent([
+                { fileData: { mimeType: 'video/mp4', fileUri: ytUrl } },
+                { text: prompt },
+              ]);
+              const raw = urlResult.response.text().trim();
+              const cleaned = raw.replace(/^```json?\n?/i, '').replace(/\n?```$/, '').trim();
+              const parsed = JSON.parse(cleaned);
+              const sufficient = isResultSufficient(parsed);
+              console.log(`[gemini-video-content] URL result sufficient=${sufficient}`);
+
+              if (sufficient || analysisMode === 'url_only') {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ...parsed, analysisSource: 'youtube_url', analysisMode: 'fast', lowConfidence: !sufficient }));
+                return;
+              }
+              urlAnalysisResult = parsed;
+              console.log('[gemini-video-content] URL result insufficient — falling back to transcript');
+            } catch (err) {
+              urlAnalysisError = String(err?.message || err);
+              console.log(`[gemini-video-content] URL analysis failed: ${urlAnalysisError.slice(0, 100)}`);
+              if (analysisMode === 'url_only') {
+                const status = err?.status ?? err?.statusCode ?? 500;
+                res.writeHead(status, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'URL_ANALYSIS_FAILED', message: urlAnalysisError }));
+                return;
+              }
+            }
+          }
+
+          // Stage 2: Transcript fallback
+          const txText = buildTxText(transcriptText, transcriptSegments);
+          if (!txText || txText.length < 300) {
+            if (urlAnalysisResult) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ...urlAnalysisResult, analysisSource: 'youtube_url', analysisMode: 'fast', lowConfidence: true, noTranscriptFallback: true }));
+              return;
+            }
+            const reason = urlAnalysisError
+              ? `ניתוח URL נכשל ואין תמלול זמין לגיבוי`
+              : 'אין תמלול זמין לניתוח';
+            res.writeHead(422, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: reason }));
+            return;
+          }
+
+          console.log(`[gemini-video-content] Stage 2: Transcript analysis txLen=${txText.length}`);
+          const chapterHintsText = Array.isArray(chapterHints) && chapterHints.length > 0
+            ? chapterHints.map(c => `${c.timestampLabel || ''}: ${c.title || ''}`.trim()).filter(Boolean).join('\n')
+            : '';
+          const txPrompt = [prompt, chapterHintsText ? `\nרמזי פרקים:\n${chapterHintsText}` : null, '\nTranscript:', txText].filter(Boolean).join('\n');
+
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+          const txResult = await model.generateContent(txPrompt);
+          const raw = txResult.response.text().trim();
+          const cleaned = raw.replace(/^```json?\n?/i, '').replace(/\n?```$/, '').trim();
+          const parsed = JSON.parse(cleaned);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ...parsed, analysisSource: 'transcript', analysisMode: 'transcript' }));
+        } catch (err) {
+          const status = err?.status ?? err?.statusCode ?? 500;
+          const isQuotaZero = status === 429 && String(err?.message || '').includes('limit: 0');
+          const code = isQuotaZero ? 'QUOTA_ZERO' : status === 429 ? 'RATE_LIMIT' : status === 401 ? 'INVALID_KEY' : 'GEMINI_ERROR';
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: code, message: err?.message }));
+        }
+      });
+    },
+  };
+}
+
 function makeGeminiPlugin(env) {
   return {
     name: 'gemini-proxy',
@@ -312,6 +516,110 @@ function makeGeminiPlugin(env) {
   };
 }
 
+// ─── YouTube Video Metadata Proxy ────────────────────────────────────────────
+// Route: GET /api/youtube-video-metadata?v=VIDEO_ID
+// Scrapes YouTube watch page in Node (no CORS, no API key) to extract:
+//   channelId, channelTitle, channelUrl, viewCount, duration, publishedAt
+// Used by buildExternalVideoObject → resolveChannelToMentor for auto mentor detection.
+// ─────────────────────────────────────────────────────────────────────────────
+function makeYouTubeVideoMetadataPlugin() {
+  return {
+    name: 'youtube-video-metadata',
+    configureServer(server) {
+      server.middlewares.use('/api/youtube-video-metadata', async (req, res) => {
+        const urlObj = new URL(req.url, 'http://localhost');
+        const videoId = urlObj.searchParams.get('v');
+
+        if (!videoId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'MISSING_VIDEO_ID', message: 'v query param required' }));
+          return;
+        }
+
+        console.log(`[yt-metadata] → fetching metadata for videoId=${videoId}`);
+
+        try {
+          const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            },
+          });
+
+          if (!response.ok) {
+            console.log(`[yt-metadata] ← YouTube returned ${response.status} for videoId=${videoId}`);
+            res.writeHead(response.status, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'YOUTUBE_FETCH_FAILED', status: response.status }));
+            return;
+          }
+
+          const html = await response.text();
+
+          // channelId — reliable across page formats
+          const channelIdMatch = html.match(/"channelId":"(UC[\w-]{22})"/);
+          const channelId = channelIdMatch?.[1] || null;
+
+          // channelTitle — try ownerChannelName first, then author
+          const ownerChannelMatch = html.match(/"ownerChannelName":"([^"]+)"/);
+          const authorMatch = html.match(/"author":"([^"]+)"/);
+          const rawChannelTitle = ownerChannelMatch?.[1] || authorMatch?.[1] || null;
+          const channelTitle = rawChannelTitle ? rawChannelTitle.replace(/\\u0026/g, '&').replace(/\\"/g, '"') : null;
+
+          // viewCount
+          const viewCountMatch = html.match(/"viewCount":"(\d+)"/);
+          const viewCount = viewCountMatch ? Number(viewCountMatch[1]) : null;
+
+          // duration — lengthSeconds → ISO 8601
+          const lengthMatch = html.match(/"lengthSeconds":"(\d+)"/);
+          const lengthSeconds = lengthMatch ? Number(lengthMatch[1]) : null;
+          let duration = null;
+          if (lengthSeconds > 0) {
+            const h = Math.floor(lengthSeconds / 3600);
+            const m = Math.floor((lengthSeconds % 3600) / 60);
+            const s = lengthSeconds % 60;
+            duration = h > 0 ? `PT${h}H${m}M${s}S` : `PT${m}M${s}S`;
+          }
+
+          // publishedAt — meta tag is most reliable
+          const metaDateMatch = html.match(/<meta itemprop="datePublished" content="([\d-]+)">/);
+          const jsonDateMatch = html.match(/"publishDate":"([\d-]+)"/);
+          const rawDate = metaDateMatch?.[1] || jsonDateMatch?.[1] || null;
+          const publishedAt = rawDate ? `${rawDate}T00:00:00Z` : null;
+
+          const result = {
+            channelId,
+            channelTitle,
+            channelUrl: channelId ? `https://www.youtube.com/channel/${channelId}` : null,
+            viewCount,
+            duration,
+            publishedAt,
+          };
+
+          console.log(`[yt-metadata] ← result for ${videoId}:`, {
+            channelId: result.channelId || '(none)',
+            channelTitle: result.channelTitle || '(none)',
+            viewCount: result.viewCount ?? '(none)',
+            duration: result.duration || '(none)',
+            publishedAt: result.publishedAt || '(none)',
+          });
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'max-age=300',
+          });
+          res.end(JSON.stringify(result));
+
+        } catch (err) {
+          console.error(`[yt-metadata] error for ${videoId}:`, err.message);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'FETCH_FAILED', message: err.message }));
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix loads ALL vars from .env (not just VITE_ ones)
   const env = loadEnv(mode, process.cwd(), '');
@@ -326,7 +634,9 @@ export default defineConfig(({ mode }) => {
       makeRssProxyPlugin(),
       makeChannelResolverPlugin(),
       makeYoutubeTranscriptPlugin(),
+      makeGeminiVideoContentPlugin(env),
       makeGeminiPlugin(env),
+      makeYouTubeVideoMetadataPlugin(),
       base44({
         legacySDKImports: false,
         hmrNotifier: true,

@@ -706,6 +706,8 @@ export function VideoDetailPanel({
   const [isFetchingYtApiTranscript, setIsFetchingYtApiTranscript] = useState(false);
   const [geminiStatus, setGeminiStatus] = useState("idle");
   const [geminiMessage, setGeminiMessage] = useState(null);
+  const [geminiAnalysisMode, setGeminiAnalysisMode] = useState("smart");
+  const [geminiAnalysisSource, setGeminiAnalysisSource] = useState(null);
   const [llamaStatus, setLlamaStatus] = useState("idle");
   const [llamaMessage, setLlamaMessage] = useState(null);
   const [llamaHealthStatus, setLlamaHealthStatus] = useState("idle");
@@ -797,7 +799,19 @@ export function VideoDetailPanel({
     const forcedCategoryLabel = mentorResolved?.categoryLabel ?? null;
     const firstTopicId = Array.isArray(video.topicIds) ? video.topicIds[0] : null;
     const forcedTopicName = firstTopicId ? (topics.find(t => t.id === firstTopicId)?.name ?? null) : null;
-    return classifyVideoForGem(video, transcriptText, { forcedCategoryLabel, forcedTopicName });
+    const result = classifyVideoForGem(video, transcriptText, { forcedCategoryLabel, forcedTopicName });
+    console.log('[GemDecision]', {
+      channel: video?.channelTitle || video?.channelName || video?.channel || '',
+      mentorCategory: forcedCategoryLabel ?? 'none',
+      topic: forcedTopicName ?? 'none',
+      subTopic: result.recommendedSubCategory,
+      aiCategory: result.recommendedCategoryLabel,
+      selectedGem: result.gemKey,
+      decisionSource: mentorResolved
+        ? (forcedTopicName ? 'topic_hard_rule' : 'channel_hard_rule')
+        : 'ai_classification',
+    });
+    return result;
   }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveGemInfo = useMemo(() => {
@@ -1297,6 +1311,11 @@ export function VideoDetailPanel({
   const handleAutoDetectChapters = async () => {
     setYoutubeChaptersHint(null);
 
+    // Debug: log current state before detection
+    const _apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    const _segs = storedTranscriptSegments; // closure — defined later in render scope, initialized by call time
+    console.log(`[Chapters] transcriptExists=${Boolean(_segs?.length > 0)} apiKeyExists=${Boolean(_apiKey?.trim())} chapterSource=${chapterSourceInfo?.source ?? 'none'}`);
+
     // Step 1: check existing description for timestamps (no API call needed)
     const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
     if (existingDesc) {
@@ -1333,7 +1352,14 @@ export function VideoDetailPanel({
       }
     }
 
-    // Step 2: fetch from YouTube API (falls back to setYoutubeChaptersHint on failure)
+    // Step 2: if transcript is already loaded locally, generate chapters directly — no YouTube API needed
+    if (_segs?.length) {
+      console.log(`[Chapters] transcript available (${_segs.length} segments) — generating without YouTube API`);
+      handleGenerateTranscriptChapters();
+      return;
+    }
+
+    // Step 3: no description timestamps, no local transcript — try YouTube API
     await handleFetchYoutubeChapters();
   };
 
@@ -2363,19 +2389,55 @@ export function VideoDetailPanel({
   })();
 
   const viewCountFormatted = (() => {
-    const n = video.viewCount ?? video.statistics?.viewCount ?? video.metadata?.viewCount;
+    const n = video.viewCount ??
+              video.views ??
+              video.statistics?.viewCount ??
+              video.metadata?.viewCount ??
+              video.stats?.viewCount;
     if (!n) return null;
     if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M צפיות`;
     if (n >= 1_000)     return `${+(n / 1_000).toFixed(1)}K צפיות`;
     return `${n} צפיות`;
   })();
 
-  const videoDuration = formatVideoDuration(
-    video.duration ??
-    video.durationSeconds ??
-    video.videoDuration ??
-    video.metadata?.duration
-  );
+  const videoDuration = (() => {
+    const direct = formatVideoDuration(
+      video.duration ??
+      video.durationSeconds ??
+      video.videoDuration ??
+      video.metadata?.duration ??
+      video.durationLabel ??
+      video.stats?.duration ??
+      video.contentDetails?.duration ??
+      video.snippet?.duration ??
+      video.analysis?.duration
+    );
+    if (direct) return direct;
+    // Fallback: estimate from last aiChapter startSeconds
+    const chapters = Array.isArray(video.aiChapters) ? video.aiChapters : [];
+    if (chapters.length > 0) {
+      const last = chapters[chapters.length - 1];
+      const lastSec = typeof last?.startSeconds === 'number' ? last.startSeconds : null;
+      if (lastSec !== null && lastSec > 60) return formatVideoDuration(lastSec);
+    }
+    return null;
+  })();
+
+  console.log('[VideoMetadata]', {
+    duration: video.duration,
+    durationSeconds: video.durationSeconds,
+    durationLabel: video.durationLabel,
+    'metadata.duration': video.metadata?.duration,
+    'stats.duration': video.stats?.duration,
+    'contentDetails.duration': video.contentDetails?.duration,
+    videoDurationResolved: videoDuration,
+    viewCount: video.viewCount,
+    views: video.views,
+    'statistics.viewCount': video.statistics?.viewCount,
+    'metadata.viewCount': video.metadata?.viewCount,
+    viewsResolved: viewCountFormatted,
+    videoObject: video,
+  });
   const videoDateLabel = video.publishedAt ? format(new Date(video.publishedAt), "d MMMM yyyy", { locale: he }) : null;
   const videoMentorLabel = mentorName && mentorName !== "לא ידוע" ? mentorName : null;
   const videoCategoryLabel = typeof video.category === "string" && video.category.trim() ? video.category.trim() : null;
@@ -2458,58 +2520,125 @@ export function VideoDetailPanel({
   };
 
   const handleGeminiContent = async () => {
-    console.log("[Gemini] content fetch clicked", video.id);
+    const ytId = getVideoIdFromUrl(getWatchUrl(video));
+    const ytUrl = ytId ? `https://www.youtube.com/watch?v=${ytId}` : null;
+    console.log("[Gemini] analysis clicked", { videoId: video.id, mode: geminiAnalysisMode, hasUrl: Boolean(ytUrl) });
     setGeminiStatus("loading");
     setGeminiMessage(null);
-    console.log("[Gemini] request started", video.id);
+    setGeminiAnalysisSource(null);
 
     try {
       const chapterHints = resolveVideoChapters(video || {});
+      const durationSec = getVideoDurationSeconds(video);
+      const chaptersTarget = durationSec <= 8 * 60 ? 4 : durationSec <= 14 * 60 ? 5 : durationSec <= 22 * 60 ? 7 : 8;
+      const txText = typeof video?.transcript === 'string' && video.transcript.trim().length > 40 ? video.transcript.trim() : null;
+      const txSegments = Array.isArray(video?.transcriptSegments) && video.transcriptSegments.length > 0
+        ? video.transcriptSegments
+        : storedTranscriptSegments?.length > 0 ? storedTranscriptSegments : null;
+
       const result = await fetchGeminiVideoContent({
         videoId: video.id,
         title: video.title,
+        channelName: mentorName || video.channelTitle || video.channelName || '',
         description: typeof video.description === "string" ? video.description : "",
-        durationSeconds: getVideoDurationSeconds(video),
+        durationSeconds: durationSec,
         mentor: mentorName || null,
         category: video.category || null,
         chapterHints,
+        chaptersTarget,
+        analysisMode: geminiAnalysisMode,
+        youtubeUrl: ytUrl,
+        transcriptText: txText,
+        transcriptSegments: txSegments,
       });
 
-      const transcriptText = typeof result?.transcriptText === "string" ? result.transcriptText.trim() : "";
-      const parsed = parseManualTranscript(transcriptText);
-      const transcriptSegments = Array.isArray(parsed?.segments) ? parsed.segments : [];
-      const usableLength = transcriptText.length;
+      const analysisSource = result?.analysisSource || 'unknown';
+      setGeminiAnalysisSource(analysisSource);
+      console.log("[Gemini] analysis done", { analysisSource, analysisMode: result?.analysisMode });
 
-      if (!transcriptText || usableLength < 80) {
-        throw new Error("Gemini לא החזיר טקסט usable לסרטון הזה");
-      }
+      const normalized = validateAiAnalysisQuality(result);
+      const rawChapters = Array.isArray(normalized.chapters) ? normalized.chapters : [];
+      const normalizedChapters = analysisSource === 'transcript' && txSegments?.length > 0
+        ? normalizeTranscriptBackedChapters(rawChapters, txSegments)
+        : rawChapters.map((c, i) => ({
+            title: String(c?.title || `פרק ${i + 1}`).trim(),
+            startSeconds: Number.isFinite(c?.startSeconds) ? c.startSeconds : i * 120,
+            endSeconds: Number.isFinite(c?.endSeconds) ? c.endSeconds : null,
+            summary: String(c?.summary || '').trim(),
+            keyPoints: Array.isArray(c?.keyPoints) ? c.keyPoints : [],
+            timeSource: analysisSource === 'youtube_url' ? 'estimated' : 'real',
+          }));
 
-      persistAnalysisState({
-        transcript: transcriptText,
-        transcriptSegments,
-        transcriptSource: "gemini",
-        transcriptLanguage: result?.language || "he",
-        transcriptStatus: "gemini",
-        transcriptError: null,
+      const chaptersValidation = validateChaptersForSave(normalizedChapters, {
+        minChapters: 2,
+        minSummaryChars: 5,
+        requireKeyPoints: false,
+        allowNullEndSecondsForLast: true,
+        allowGenericTitles: true,
       });
+
+      const chaptersToSave = chaptersValidation.ok ? chaptersValidation.chapters : normalizedChapters;
+      const analysisSavedAt = Date.now();
+      const patch = {
+        shortSummary: normalized.shortSummary,
+        fullSummary: normalized.fullSummary,
+        keyPoints: normalized.keyPoints,
+        tags: normalized.tags,
+        aiSummaryShort: normalized.shortSummary,
+        aiSummaryLong: normalized.fullSummary,
+        aiChapters: chaptersToSave,
+        chapters: chaptersToSave,
+        videoTopics: chaptersToVideoTopics(chaptersToSave),
+        keyInsights: normalized.keyInsights,
+        actionItems: normalized.actionItems,
+        mainLesson: normalized.mainLesson,
+        strategyOrMethod: normalized.strategyOrMethod || null,
+        rules: normalized.rules,
+        analysisProvider: 'gemini',
+        analysisSource,
+        analysisMode: result?.analysisMode || 'transcript',
+        analysisStatus: 'saved',
+        analysisSavedAt,
+        analysisError: null,
+        chapterSource: analysisSource === 'youtube_url' ? 'gemini_url' : 'transcript',
+        analyzedAt: new Date().toISOString(),
+        analysisQuality: calculateAnalysisQuality({
+          transcriptText: txText || '',
+          transcriptSegments: txSegments || [],
+          chapters: chaptersToSave,
+          analysisProvider: 'gemini',
+          analysisStatus: 'completed',
+          transcriptStatus: video.transcriptStatus || null,
+          fallbackUsed: false,
+          claudeCompleted: false,
+        }),
+      };
+
+      const saved = persistAnalysisState(patch);
+      const nextVideo = { ...(saved || video), ...patch };
+      setVideoState(nextVideo);
+      const snapshot = { ...buildAnalysisSnapshot(nextVideo), analysisSavedAt };
+      saveSavedAnalysis(video.id, snapshot);
+      setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gemini', analysisSavedAt }));
+      onVideoPatch?.(nextVideo);
+      onAnalyzeDone?.(nextVideo);
 
       setAnalyzeError(null);
       setGeminiStatus("success");
-      setGeminiMessage("Gemini הביא תוכן usable מהסרטון. אפשר עכשיו לנתח עם Claude.");
-      console.log("[Gemini] request completed", {
-        length: usableLength,
-        segments: transcriptSegments.length,
-      });
-      toast.success("תוכן מהסרטון נשמר דרך Gemini");
+      const sourceLabel = analysisSource === 'youtube_url' ? 'ניתוח מבוסס קישור YouTube' : 'ניתוח מבוסס תמלול מלא';
+      setGeminiMessage(sourceLabel);
+      toast.success(`ניתוח Gemini הושלם — ${sourceLabel}`);
     } catch (error) {
       const code = error?.code;
       const message =
         code === "GEMINI_API_KEY_MISSING" || code === "INVALID_KEY"
           ? "Gemini לא מוגדר — חסר או לא תקין API key"
-          : error?.message || "Gemini לא הצליח להביא תוכן usable מהסרטון";
+          : code === "NO_TRANSCRIPT"
+          ? "Gemini לא הצליח לנתח מה-URL ואין תמלול זמין לגיבוי"
+          : error?.message || "Gemini לא הצליח לנתח את הסרטון";
       setGeminiStatus("failed");
       setGeminiMessage(message);
-      console.error("[Gemini] request failed", message);
+      console.error("[Gemini] analysis failed", message);
       toast.error(message);
     }
   };
@@ -2954,23 +3083,17 @@ export function VideoDetailPanel({
                   if (s === "too_short") return "⚠️ קצר מדי";
                   return null;
                 })();
-                const aiAnalysisLabel = savedAnalysisMeta ? analysisProviderLabel : null;
                 const gemLabel = effectiveGemInfo ? `${effectiveGemInfo.gemIcon} ${effectiveGemInfo.gemLabel}` : null;
-                const commentCount = video.statistics?.commentCount ?? video.commentCount ?? null;
-                const commentLabel = commentCount != null ? Number(commentCount).toLocaleString() : null;
-                const knowledgeCount = totalSelectedKnowledgeItems > 0 ? String(totalSelectedKnowledgeItems) : null;
+                const channelMentorId = resolveChannelToMentor(video)?.mentor?.id ?? null;
                 const rows = [
-                  { label: "ערוץ",         value: videoMentorLabel,                                                             mono: false },
+                  { label: "ערוץ",         value: videoMentorLabel,                                                             mono: false, onClick: (channelMentorId && navigateTo) ? () => navigateTo("MentorPage", { mentorId: channelMentorId }) : undefined },
                   { label: "נושא",          value: videoTopics[0]?.name || null,                                                 mono: false },
                   { label: "תת-נושא",       value: (subCategoryOverride ?? video.subCategory) || null,                           mono: false },
                   { label: "Gem מומלץ",     value: gemLabel,                                                                     mono: false },
                   { label: "תאריך פרסום",   value: video.publishedAt ? format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) : null, mono: true },
                   { label: "אורך",          value: videoDuration,                                                                mono: true  },
                   { label: "צפיות",         value: viewCountFormatted ? viewCountFormatted.replace(/\s*צפיות$/, "") : null,      mono: true  },
-                  { label: "תגובות",        value: commentLabel,                                                                 mono: true  },
                   { label: "תמלול",         value: transcriptStatusLabel,                                                        mono: false },
-                  { label: "ניתוח AI",      value: aiAnalysisLabel,                                                              mono: false },
-                  { label: "פריטי ידע",     value: knowledgeCount,                                                               mono: true  },
                   { label: "Obsidian",      value: hasObsidianSavedStatus(video) ? "✅ נשמר" : null,                             mono: false },
                 ];
                 return (
@@ -2979,12 +3102,24 @@ export function VideoDetailPanel({
                       <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
                     </div>
                     <div className="divide-y divide-slate-100 dark:divide-zinc-800">
-                      {rows.map(({ label, value, mono }) => (
+                      {rows.map(({ label, value, mono, onClick }) => (
                         <div key={label} className="grid grid-cols-[5.5rem_1fr] items-center py-1.5 gap-x-2">
                           <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right shrink-0">{label}</span>
-                          <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
-                            {value || "—"}
-                          </span>
+                          {onClick ? (
+                            <button
+                              type="button"
+                              onClick={onClick}
+                              dir="rtl"
+                              title={value || ""}
+                              className={`text-xs font-semibold truncate text-right cursor-pointer hover:underline transition-colors ${value ? "text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300" : "text-slate-300 dark:text-zinc-600"}`}
+                            >
+                              {value || "—"}
+                            </button>
+                          ) : (
+                            <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
+                              {value || "—"}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -3613,6 +3748,28 @@ export function VideoDetailPanel({
                       )}
                       נתח עם קלוד
                     </button>
+                    {/* Gemini analysis mode selector */}
+                    <div className="flex items-center gap-1 justify-end" dir="rtl">
+                      {[
+                        { id: 'smart',            label: 'חכם ✨', title: 'URL ראשון, תמלול כגיבוי (מומלץ)' },
+                        { id: 'url_only',         label: 'URL',    title: 'ניתוח מה-URL בלבד'              },
+                        { id: 'transcript_only',  label: 'תמלול',  title: 'ניתוח מהתמלול בלבד'             },
+                      ].map(({ id, label, title }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          title={title}
+                          onClick={() => setGeminiAnalysisMode(id)}
+                          className={`px-2 py-0.5 text-[10px] rounded-md border transition-colors ${
+                            geminiAnalysisMode === id
+                              ? 'bg-pink-100 border-pink-300 text-pink-800 font-semibold dark:bg-pink-950/40 dark:border-pink-700 dark:text-pink-300'
+                              : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-700 dark:text-zinc-400'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     <button
                       type="button"
                       onClick={handleGeminiContent}
@@ -3627,6 +3784,18 @@ export function VideoDetailPanel({
                       )}
                       נתח עם Gemini
                     </button>
+                    {geminiStatus === "success" && geminiAnalysisSource && (
+                      <div
+                        dir="rtl"
+                        className={`flex items-center justify-end gap-1.5 text-[10px] px-2 py-1 rounded-lg border ${
+                          geminiAnalysisSource === 'youtube_url'
+                            ? 'text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-800/50'
+                            : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800/50'
+                        }`}
+                      >
+                        {geminiAnalysisSource === 'youtube_url' ? '🔗 ניתוח מבוסס קישור YouTube' : '📝 ניתוח מבוסס תמלול מלא'}
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={runLlamaAnalysisFromCard}

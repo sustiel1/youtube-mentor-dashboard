@@ -1,4 +1,5 @@
 // Obsidian-compatible Markdown export engine — v2
+import { getObsidianPrimaryByTopicId } from "@/lib/topicRules";
 // Supports: topic-based pathing, LLM-ready headings, temporal YAML, weekly recap.
 //
 // Root folders map directly to semantic destinations inside the vault.
@@ -141,6 +142,7 @@ const CATEGORY_TO_MAIN_CATEGORY = {
 };
 
 const CATEGORY_TO_TOPIC = {
+  // English category codes (from mentor resolver)
   Markets: 'שוק ההון/ניתוח טכני',
   Stock: 'שוק ההון/ניתוח טכני',
   Trading: 'שוק ההון/מסחר סווינג',
@@ -157,6 +159,11 @@ const CATEGORY_TO_TOPIC = {
   General: 'ידע אישי/למידה',
   Politics: 'פוליטיקה/פוליטיקה פנימית',
   Political: 'פוליטיקה/פוליטיקה פנימית',
+  // Hebrew category labels (from GEM_CATEGORY_MAP.categoryLabel — saved by handleApplyRecommendation)
+  'שוק ההון':       'שוק ההון',
+  'פיתוח':          'טכנולוגיה ו-AI',
+  'פוליטיקה':       'פוליטיקה',
+  'בריאות':         'בריאות ותזונה',
 };
 
 const FORMAT_LABELS = new Set(['weekly', 'daily', 'session']);
@@ -371,6 +378,13 @@ export function extractBrainHighlightsFromVideo(video = {}) {
 export function resolvePrimaryTopic(video = {}) {
   if (video.obsidianTopic && PRIMARY_TOPICS.includes(String(video.obsidianTopic).trim())) {
     return String(video.obsidianTopic).trim();
+  }
+
+  // Priority: topicIds from mentor/classification (HARD RULE — before category keyword matching)
+  const topicIds = Array.isArray(video.topicIds) ? video.topicIds : [];
+  for (const tid of topicIds) {
+    const folder = getObsidianPrimaryByTopicId(tid);
+    if (folder) return folder;
   }
 
   if (video.category && CATEGORY_TO_TOPIC[video.category]) {
