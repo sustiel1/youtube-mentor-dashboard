@@ -2133,7 +2133,11 @@ export function VideoDetailPanel({
       return next;
     });
   };
-  const multiSelectClear = () => setMultiSelected(new Map());
+  const multiSelectClear = () => {
+    console.log('[Selection] Clear all selected items');
+    setMultiSelected(new Map());
+    clearBrainSelections();
+  };
   const handleSaveSelectedToObsidian = () => {
     if (multiSelected.size === 0) return;
     const lines = [`# פריטים נבחרים — ${video?.title || ''}`, ''];
@@ -4078,13 +4082,13 @@ export function VideoDetailPanel({
                 const viewCountShort = viewCountFormatted
                   ? viewCountFormatted.replace(/\s*צפיות\s*/g, '').replace(/\s*views\s*/gi, '').trim()
                   : null;
-                const BASE = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[5px] text-[11px] font-medium leading-none whitespace-nowrap transition-colors";
-                const DEF  = "border-slate-200/90 bg-white text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300";
-                const MUTED = "border-slate-200/80 bg-slate-50 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400";
+                const BASE = "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium leading-none whitespace-nowrap transition-all duration-150 shadow-sm";
+                const DEF  = "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
+                const MUTED = "border-slate-200 bg-slate-50/80 text-slate-600 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300";
                 const hasAnyChip = !!(effectiveGemInfo || video.publishedAt || videoDuration || viewCountShort || videoYtId || transcriptChip || videoTopics[0]?.name);
                 if (!hasAnyChip && !hasStoredTranscript) return null;
                 return (
-                  <div className="flex flex-wrap gap-1.5 pt-1 items-center" dir="rtl">
+                  <div className="flex flex-wrap gap-2 pt-1.5 items-center" dir="rtl">
                     {/* Topic */}
                     {videoTopics[0]?.name && (
                       <span className={`${BASE} ${MUTED}`}>
@@ -4996,19 +5000,14 @@ export function VideoDetailPanel({
                         const itemId = `keypoints:${i}`;
                         return (
                           <li key={i} className="flex items-start gap-2">
-                            <input type="checkbox"
-                              checked={multiSelected.has(itemId)}
-                              onChange={() => toggleMultiSelect(itemId, { text: point, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
-                              className="mt-3 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
-                            />
                             <span className="mt-2.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
                               {i + 1}
                             </span>
                             <BrainSelectableItem
                               id={itemId}
                               text={point}
-                              isSelected={!!brainSelections[itemId]}
-                              onToggle={() => toggleBrainItem(itemId, point, 'keypoints', 'נקודות מפתח')}
+                              isSelected={multiSelected.has(itemId)}
+                              onToggle={() => toggleMultiSelect(itemId, { text: point, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
                               onSaveSingle={(note) => saveSingleItemToBrain(point, 'keypoints', 'נקודות מפתח', note)}
                               onCopy={() => navigator.clipboard.writeText(point).then(() => toast.success('הועתק'))}
                             />
@@ -6141,22 +6140,15 @@ export function VideoDetailPanel({
                                       const itemId = `brain-hi:${key}:${vIdx}`;
                                       const itemText = safeStr(v);
                                       return (
-                                        <li key={vIdx} className="flex items-start gap-2">
-                                          <input type="checkbox"
-                                            checked={multiSelected.has(itemId)}
-                                            onChange={() => toggleMultiSelect(itemId, { text: itemText, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' })}
-                                            className="mt-2 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
+                                        <li key={vIdx}>
+                                          <BrainSelectableItem
+                                            id={itemId}
+                                            text={itemText}
+                                            isSelected={multiSelected.has(itemId)}
+                                            onToggle={() => toggleMultiSelect(itemId, { text: itemText, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' })}
+                                            onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'brain-hi', 'תובנות מרכזיות', note)}
+                                            onCopy={() => _psCopy(v)}
                                           />
-                                          <div className="flex-1 min-w-0">
-                                            <BrainSelectableItem
-                                              id={itemId}
-                                              text={itemText}
-                                              isSelected={!!brainSelections[itemId]}
-                                              onToggle={() => toggleBrainItem(itemId, itemText, 'brain-hi', 'תובנות מרכזיות')}
-                                              onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'brain-hi', 'תובנות מרכזיות', note)}
-                                              onCopy={() => _psCopy(v)}
-                                            />
-                                          </div>
                                         </li>
                                       );
                                     })}
