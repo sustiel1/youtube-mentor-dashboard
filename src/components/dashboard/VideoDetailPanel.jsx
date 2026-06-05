@@ -1074,6 +1074,9 @@ export function VideoDetailPanel({
   const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
   const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
   const [savedAnalysisMeta, setSavedAnalysisMeta] = useState(null);
+  const [isSubtitleEditing, setIsSubtitleEditing] = useState(false);
+  const [subtitleDraft, setSubtitleDraft] = useState("");
+  const [isSubtitleSaving, setIsSubtitleSaving] = useState(false);
   const restoredAnalysisRef = useRef(null);
   const ollamaStatusRequestRef = useRef(false);
   const updateSummary = useUpdateSummary();
@@ -1111,6 +1114,12 @@ export function VideoDetailPanel({
   const queryClient = useQueryClient();
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
+  useEffect(() => {
+    const loadedSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
+    setSubtitleDraft(loadedSubtitle);
+    setIsSubtitleEditing(false);
+    console.log("[VideoHeader] Subtitle loaded:", loadedSubtitle || null);
+  }, [video?.id, video?.customSubtitle]);
   useEffect(() => {
     const extraTabs = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value);
     if (extraTabs.includes(activePoliticalTab)) setShowMorePoliticalTabs(true);
@@ -1579,6 +1588,7 @@ export function VideoDetailPanel({
       speakerPosition: savedAnalysis.speakerPosition ?? undefined,
       duration: savedAnalysis.duration ?? undefined,
       viewCount: savedAnalysis.viewCount ?? undefined,
+      customSubtitle: savedAnalysis.customSubtitle ?? undefined,
     });
 
     const savedVideo = patchVideo(patch);
@@ -1605,6 +1615,9 @@ export function VideoDetailPanel({
       }
     }
   }, [patchVideo, onVideoPatch, video]);
+
+  const currentCustomSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
+  const subtitleDisplayValue = currentCustomSubtitle || "הוסף תת-כותרת";
 
   // handleQuickCopy defined after videoDuration+fullTranscriptText to avoid TDZ — see below.
 
@@ -1896,7 +1909,10 @@ export function VideoDetailPanel({
   }, [video, videoNotes]);
 
   const handleGeneratePoliticalSummary = useCallback(async () => {
-    if (!fullTranscriptText || fullTranscriptText.trim().length < 100) return;
+    if (!fullTranscriptText || fullTranscriptText.trim().length < 100) {
+      toast.error("אין תמלול זמין — ייבא תמלול מ-YouTube או הדבק ידנית כדי לנתח");
+      return;
+    }
     setIsPoliticalSummaryLoading(true);
     setPoliticalSummaryError(null);
     try {
@@ -2323,6 +2339,7 @@ export function VideoDetailPanel({
       speakerPosition: v.speakerPosition ?? null,
       duration: v.duration ?? null,
       viewCount: v.viewCount ?? null,
+      customSubtitle: v.customSubtitle ?? null,
       analysisSavedAt: new Date().toISOString(),
       notes: Array.isArray(videoNotes)
         ? videoNotes.map((note) => ({
@@ -2336,6 +2353,36 @@ export function VideoDetailPanel({
         : [],
     };
   };
+
+  const handleSubtitleSave = useCallback(async () => {
+    if (!video?.id || isSubtitleSaving) return;
+    const normalizedSubtitle = subtitleDraft.trim();
+    const nextSubtitle = normalizedSubtitle || null;
+    const currentSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
+
+    if ((currentSubtitle || null) === nextSubtitle) {
+      setIsSubtitleEditing(false);
+      return;
+    }
+
+    setIsSubtitleSaving(true);
+    try {
+      const updates = { customSubtitle: nextSubtitle };
+      await saveVideoFields(updates);
+      const nextVideo = { ...video, ...updates };
+      saveSavedAnalysis(video.id, {
+        ...buildAnalysisSnapshot(nextVideo),
+        savedAt: new Date().toISOString(),
+      });
+      console.log("[VideoHeader] Subtitle saved:", nextSubtitle);
+      setIsSubtitleEditing(false);
+    } catch (error) {
+      console.warn("[VideoHeader] Subtitle save failed:", error?.message || error);
+      toast.error("שמירת תת-הכותרת נכשלה");
+    } finally {
+      setIsSubtitleSaving(false);
+    }
+  }, [buildAnalysisSnapshot, isSubtitleSaving, saveVideoFields, subtitleDraft, video]);
 
   const handleSaveAnalysis = () => {
     const snapshot = buildAnalysisSnapshot();
@@ -4094,7 +4141,7 @@ export function VideoDetailPanel({
                 const BASE = "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium leading-none whitespace-nowrap transition-all duration-150 shadow-sm";
                 const DEF  = "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
                 const MUTED = "border-slate-200 bg-slate-50/80 text-slate-600 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300";
-                const hasAnyChip = !!(effectiveGemInfo || video.publishedAt || videoDuration || viewCountShort || videoYtId || transcriptChip || videoTopics[0]?.name);
+                const hasAnyChip = !!(effectiveGemInfo || video.publishedAt || currentCustomSubtitle || videoDuration || viewCountShort || videoYtId || transcriptChip || videoTopics[0]?.name);
                 if (!hasAnyChip && !hasStoredTranscript) return null;
                 return (
                   <div className="flex flex-wrap gap-2 pt-1.5 items-center" dir="rtl">
@@ -4118,6 +4165,70 @@ export function VideoDetailPanel({
                         <span className="text-xs leading-none">{effectiveGemInfo.gemIcon}</span>
                         <span className="font-semibold">{effectiveGemInfo.gemLabel}</span>
                       </span>
+                    )}
+                    {/* Custom subtitle */}
+                    {isSubtitleEditing ? (
+                      <span
+                        className={`${BASE} ${DEF} max-w-full sm:max-w-[320px]`}
+                        title="תת-כותרת מותאמת אישית לסרטון"
+                      >
+                        <span className="text-xs leading-none">✏️</span>
+                        <input
+                          type="text"
+                          value={subtitleDraft}
+                          onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setSubtitleDraft(nextValue);
+                            console.log("[VideoHeader] Subtitle updated:", nextValue);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              handleSubtitleSave();
+                            }
+                            if (event.key === "Escape") {
+                              event.preventDefault();
+                              setSubtitleDraft(currentCustomSubtitle);
+                              setIsSubtitleEditing(false);
+                            }
+                          }}
+                          placeholder="הוסף תת-כותרת"
+                          autoFocus
+                          className="min-w-[120px] max-w-[180px] bg-transparent text-sm font-medium outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSubtitleSave}
+                          disabled={isSubtitleSaving}
+                          className="inline-flex items-center justify-center rounded-md text-emerald-600 transition hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-400"
+                          title="שמור תת-כותרת"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubtitleDraft(currentCustomSubtitle);
+                            setIsSubtitleEditing(false);
+                          }}
+                          className="inline-flex items-center justify-center rounded-md text-slate-400 transition hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                          title="בטל עריכה"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsSubtitleEditing(true)}
+                        className={`${BASE} ${DEF} max-w-full sm:max-w-[320px]`}
+                        title="תת-כותרת מותאמת אישית לסרטון"
+                      >
+                        <span className="text-xs leading-none">📝</span>
+                        <span className={cn("truncate", !currentCustomSubtitle && "text-slate-500 dark:text-zinc-400")}>
+                          {subtitleDisplayValue}
+                        </span>
+                      </button>
                     )}
                     {/* Date */}
                     {video.publishedAt && (
@@ -4545,9 +4656,10 @@ export function VideoDetailPanel({
               {/* ── Main tabs row ── */}
               <TabsList className="flex w-full rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 no-scrollbar" dir="rtl">
                 {[
-                  { value: "summary",   label: "📝 סיכום" },
-                  { value: "keypoints", label: "📌 נקודות מפתח" },
-                  { value: "chapters",  label: "📚 פרקים" },
+                  { value: "summary",     label: "📝 סיכום" },
+                  { value: "keypoints",   label: "📌 נקודות מפתח" },
+                  { value: "chapters",    label: "📚 פרקים" },
+                  { value: "ai-analysis", label: "🧠 ניתוח AI" },
                   ...(effectiveGemInfo?.gemKey === 'political' ? [{ value: "political", label: "🏛️ פוליטי" }] : []),
                 ].map(({ value, label }) => (
                   <TabsTrigger
