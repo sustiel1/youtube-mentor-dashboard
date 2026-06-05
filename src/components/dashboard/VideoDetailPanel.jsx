@@ -1096,6 +1096,7 @@ export function VideoDetailPanel({
   const [savedPsSections, setSavedPsSections] = useState({});
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
+  const [multiObsidianPickerMode, setMultiObsidianPickerMode] = useState(false);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
   const [saveAllContent, setSaveAllContent] = useState(null);
   const [categoryOverride, setCategoryOverride] = useState(null);
@@ -2140,6 +2141,11 @@ export function VideoDetailPanel({
   };
   const handleSaveSelectedToObsidian = () => {
     if (multiSelected.size === 0) return;
+    setMultiObsidianPickerMode(true);
+    setBrainPickerOpen(true);
+  };
+
+  const buildMultiSelectMarkdown = ({ folder, subFolder } = {}) => {
     const lines = [`# פריטים נבחרים — ${video?.title || ''}`, ''];
     const bySection = new Map();
     multiSelected.forEach((item) => {
@@ -2155,8 +2161,11 @@ export function VideoDetailPanel({
       });
       lines.push('');
     });
-    downloadMarkdown(lines.join('\n'), `selected-${(video?.title || 'items').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40)}.md`);
-    toast.success(`${multiSelected.size} פריטים יוצאו ל-Obsidian`);
+    lines.push('---');
+    const watchUrl = getWatchUrl(video);
+    if (watchUrl) lines.push(`מקור: [${video?.title || ''}](${watchUrl})`);
+    if (folder) lines.push(`נתיב: ${subFolder ? `${folder}/${subFolder}/` : `${folder}/`}`);
+    return lines.join('\n');
   };
   const handleSaveSelectedToBrain = () => {
     if (multiSelected.size === 0) return;
@@ -6611,13 +6620,27 @@ export function VideoDetailPanel({
       open={brainPickerOpen}
       onOpenChange={(open) => {
         setBrainPickerOpen(open);
-        if (!open) setPendingBrainSave(null);
+        if (!open) {
+          setPendingBrainSave(null);
+          setMultiObsidianPickerMode(false);
+        }
       }}
       video={video}
       onConfirm={({ brainId, subBrainId, customBrainName, customSubName }) => {
         setBrainPickerOpen(false);
-        setPendingBrainSave(null);
-        handleSaveAllToBrain();
+        if (multiObsidianPickerMode) {
+          setMultiObsidianPickerMode(false);
+          const folder = customBrainName || brainId || 'כללי';
+          const subFolder = customSubName || subBrainId || '';
+          const md = buildMultiSelectMarkdown({ folder, subFolder });
+          const filename = `selected-${(video?.title || 'items').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40)}.md`;
+          downloadMarkdown(md, filename);
+          toast.success(`${multiSelected.size} פריטים יוצאו ל-Obsidian`);
+          multiSelectClear();
+        } else {
+          setPendingBrainSave(null);
+          handleSaveAllToBrain();
+        }
       }}
     />
 
