@@ -11,18 +11,26 @@ function resolveStartSeconds(section) {
   return null;
 }
 
-function formatChapterTimestamp(seconds) {
+function parseTimestampString(str) {
+  if (typeof str !== "string") return null;
+  const parts = str.trim().split(":").map(Number);
+  if (parts.some(isNaN)) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function formatHebrewTimestamp(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return "";
-  const totalSeconds = Math.floor(seconds);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
 
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
-
-  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 function ChapterShell({ children, clickable = false, title, onClick, isHighlighted = false }) {
@@ -118,7 +126,12 @@ function ChapterContent({ section, timestampLabel, muted = false }) {
 
 const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false }) => {
   const finalSeconds = resolveStartSeconds(section);
-  const formattedTimestamp = section?.timestamp || formatChapterTimestamp(finalSeconds);
+  const resolvedSeconds = finalSeconds !== null
+    ? finalSeconds
+    : parseTimestampString(section?.timestamp);
+  const formattedTimestamp = resolvedSeconds !== null
+    ? formatHebrewTimestamp(resolvedSeconds)
+    : (section?.timestamp || "");
   const isValid = finalSeconds !== null;
   const hasPlayerSeek = Boolean(playerRef?.current?.seekTo);
   const urlStr = typeof videoUrl === "string" ? videoUrl.trim() : "";
