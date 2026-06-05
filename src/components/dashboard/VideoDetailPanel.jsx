@@ -78,6 +78,7 @@ import { SaveButton } from "./SaveButton";
 import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
+import { BrainSelectableItem } from "./BrainSelectableItem";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
@@ -145,6 +146,28 @@ function PanelThumbnail({ video }) {
       onLoad={handleLoad}
     />
   );
+}
+
+// ── ErrorBoundary for the entire panel — prevents white screen on any render crash ──
+class PanelErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) {
+    console.error('[PanelError] VideoDetailPanel render crash:', error.message, '\nStack:', error.stack?.split('\n').slice(0,4).join('\n'));
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div dir="rtl" className="flex flex-col items-center gap-4 py-16 text-center px-6">
+          <span className="text-4xl">&#9888;&#65039;</span>
+          <p className="text-base font-bold text-red-700 dark:text-red-300">שגיאת תצוגה — לא ניתן להציג את תוכן הסרטון</p>
+          <p className="text-xs text-red-500 dark:text-red-400 font-mono max-w-sm break-all">{this.state.error.message}</p>
+          <button type="button" onClick={() => this.setState({ error: null })} className="mt-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">נסה שוב</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // ── ErrorBoundary for political tab content ──────────────────────────────────
@@ -563,6 +586,24 @@ function buildAnalysisQualityExplanation({
 
 const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2", gems: "GEMS JSON" };
 
+const POLITICAL_TABS_DEFS = [
+  // ── Primary 4 (always visible) ──────────────────────────────────────────────
+  { value: "brain-hi",       label: "תובנות",            emoji: "🧠", bg: "bg-violet-50",  border: "border-violet-200",  text: "text-violet-700",  active: "bg-violet-600"  },
+  { value: "ideology",       label: "אידיאולוגיה",      emoji: "⚖️", bg: "bg-indigo-50",  border: "border-indigo-200",  text: "text-indigo-700",  active: "bg-indigo-600"  },
+  { value: "opponent",       label: "צד שני",            emoji: "🗣️", bg: "bg-rose-50",    border: "border-rose-200",    text: "text-rose-700",    active: "bg-rose-600"    },
+  { value: "slogans",        label: "סיסמאות",           emoji: "📢", bg: "bg-purple-50",  border: "border-purple-200",  text: "text-purple-700",  active: "bg-purple-600"  },
+  // ── Extra (behind "עוד ▼") ──────────────────────────────────────────────────
+  { value: "theology",       label: "דת ותיאולוגיה",    emoji: "✡️", bg: "bg-amber-50",   border: "border-amber-200",   text: "text-amber-700",   active: "bg-amber-600"   },
+  { value: "liberal-jewish", label: "יהדות ליברלית",    emoji: "🕊️", bg: "bg-sky-50",     border: "border-sky-200",     text: "text-sky-700",     active: "bg-sky-600"     },
+  { value: "virals",         label: "ציטוטים",           emoji: "🔥", bg: "bg-orange-50",  border: "border-orange-200",  text: "text-orange-700",  active: "bg-orange-500"  },
+  { value: "debates",        label: "ויכוחים",           emoji: "⚔️", bg: "bg-red-50",     border: "border-red-200",     text: "text-red-700",     active: "bg-red-600"     },
+  { value: "comments",       label: "תגובות",            emoji: "💬", bg: "bg-teal-50",    border: "border-teal-200",    text: "text-teal-700",    active: "bg-teal-600"    },
+  { value: "campaign",       label: "קיט קמפיין",        emoji: "📦", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", active: "bg-emerald-600" },
+  { value: "reusable",       label: "ידע רב פעמי",       emoji: "📚", bg: "bg-cyan-50",    border: "border-cyan-200",    text: "text-cyan-700",    active: "bg-cyan-600"    },
+];
+const POLITICAL_TABS_PRIMARY = 4;
+const POLITICAL_TAB_VALUES = new Set(POLITICAL_TABS_DEFS.map(t => t.value));
+
 function extractSavedAnalysisMeta(saved) {
   if (!saved) return null;
   const provider = saved.analysisProvider || "unknown";
@@ -789,6 +830,48 @@ function repairGemsJson(raw) {
   s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
   if (s !== beforeControl) fixes.push('Removed control characters');
 
+  // Unescape structural \n / \" sequences from double-stringified JSON.
+  // Gemini sometimes returns JSON where structural separators are literal \n (two chars)
+  // and property-name delimiters are literal \" — this appears when the model wraps its
+  // output in a JSON string before returning it.
+  {
+    const before = s;
+    // Detect \n or \" as literal two-char sequences OUTSIDE any string context
+    let _hasEsc = false;
+    let _inS = false, _esc = false;
+    for (let i = 0; i < s.length - 1; i++) {
+      if (_esc)             { _esc = false; continue; }
+      if (s[i] === '\\' && _inS) { _esc = true; continue; }
+      if (s[i] === '"')           { _inS = !_inS; continue; }
+      if (!_inS && s[i] === '\\' && (s[i + 1] === 'n' || s[i + 1] === '"')) {
+        _hasEsc = true; break;
+      }
+    }
+    if (_hasEsc) {
+      let out = '';
+      _inS = false; _esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (_esc) { out += c; _esc = false; continue; }
+        if (c === '\\' && _inS) { out += c; _esc = true; continue; }
+        if (c === '"') { _inS = !_inS; out += c; continue; }
+        if (_inS) { out += c; continue; }
+        // Outside string: convert structural escape sequences to real chars
+        if (c === '\\' && i + 1 < s.length) {
+          const nx = s[i + 1];
+          if (nx === 'n')  { out += '\n'; i++; continue; }
+          if (nx === 'r')  { out += '\r'; i++; continue; }
+          if (nx === 't')  { out += '\t'; i++; continue; }
+          if (nx === '"')  { out += '"';  i++; continue; }
+          if (nx === '\\') { out += '\\'; i++; continue; }
+        }
+        out += c;
+      }
+      s = out;
+      if (s !== before) fixes.push('Unescaped structural \\n/\\" (double-stringified JSON)');
+    }
+  }
+
   // Escape literal newlines / carriage-returns / tabs embedded inside JSON string values.
   // JSON spec forbids unescaped \n \r \t inside string literals.
   // AI models sometimes emit real line-breaks inside strings → "Bad control character" error.
@@ -966,6 +1049,10 @@ export function VideoDetailPanel({
   const [isCheckingTranscript, setIsCheckingTranscript] = useState(false);
   const [isAutoTranscriptModalOpen, setIsAutoTranscriptModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("chapters");
+  const prevTabRef = useRef("chapters");
+  const [activePoliticalTab, setActivePoliticalTab] = useState("brain-hi");
+  const [showMorePoliticalTabs, setShowMorePoliticalTabs] = useState(false);
+  const [multiSelected, setMultiSelected] = useState(new Map()); // id → { text, sectionLabel, type, timestamp? }
   const [highlightedChapterIndex, setHighlightedChapterIndex] = useState(null);
   const [isManualTranscriptOpen, setIsManualTranscriptOpen] = useState(false);
   const [manualTranscriptInput, setManualTranscriptInput] = useState("");
@@ -1018,10 +1105,15 @@ export function VideoDetailPanel({
   const [gemOverride, setGemOverride] = useState(null);
   const [transcriptSearch, setTranscriptSearch] = useState("");
   const [transcriptSearchIndex, setTranscriptSearchIndex] = useState(0);
+  const [brainSelections, setBrainSelections] = useState({});
   const hasSavedAnalysis = !!savedAnalysisMeta;
   const queryClient = useQueryClient();
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
+  useEffect(() => {
+    const extraTabs = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value);
+    if (extraTabs.includes(activePoliticalTab)) setShowMorePoliticalTabs(true);
+  }, [activePoliticalTab]);
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
   useEffect(() => {
     if (!video) { setPoliticalSummary(null); return; }
@@ -2016,6 +2108,152 @@ export function VideoDetailPanel({
 
   if (!video) return null;
 
+  const toggleBrainItem = (id, text, sourceTab, tabLabel) => {
+    setBrainSelections(prev => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = { text, sourceTab, tabLabel };
+      return next;
+    });
+  };
+  const clearBrainSelections = () => setBrainSelections({});
+  const brainSelectionCount = Object.keys(brainSelections).length;
+
+  const toggleMultiSelect = (id, payload) => {
+    setMultiSelected(prev => {
+      const next = new Map(prev);
+      if (next.has(id)) next.delete(id); else next.set(id, payload);
+      return next;
+    });
+  };
+  const multiSelectAll = (items) => {
+    setMultiSelected(prev => {
+      const next = new Map(prev);
+      items.forEach(({ id, ...rest }) => next.set(id, rest));
+      return next;
+    });
+  };
+  const multiSelectClear = () => setMultiSelected(new Map());
+  const handleSaveSelectedToObsidian = () => {
+    if (multiSelected.size === 0) return;
+    const lines = [`# פריטים נבחרים — ${video?.title || ''}`, ''];
+    const bySection = new Map();
+    multiSelected.forEach((item) => {
+      const sec = item.sectionLabel || 'כללי';
+      if (!bySection.has(sec)) bySection.set(sec, []);
+      bySection.get(sec).push(item);
+    });
+    bySection.forEach((items, section) => {
+      lines.push(`## ${section}`);
+      items.forEach(item => {
+        const ts = item.timestamp ? ` (${item.timestamp})` : '';
+        lines.push(`- ${item.text}${ts}`);
+      });
+      lines.push('');
+    });
+    downloadMarkdown(lines.join('\n'), `selected-${(video?.title || 'items').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40)}.md`);
+    toast.success(`${multiSelected.size} פריטים יוצאו ל-Obsidian`);
+  };
+  const handleSaveSelectedToBrain = () => {
+    if (multiSelected.size === 0) return;
+    let count = 0;
+    multiSelected.forEach((item) => {
+      saveSingleItemToBrain(item.text, item.type || 'multi', item.sectionLabel || 'נבחרים', '');
+      count++;
+    });
+    if (count > 0) toast.success(`${count} פריטים נשמרו למוח`);
+    multiSelectClear();
+  };
+
+  const saveSingleItemToBrain = (text, sourceTab, tabLabel, note = '') => {
+    const videoId = video?.youtubeId || video?.id;
+    const videoUrl = getWatchUrl(video) || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null);
+    const now = new Date().toISOString();
+    const slug = String(text || '').slice(0, 60).replace(/[^a-zA-Zא-ת\d\s]/g, '').trim().replace(/\s+/g, '-') || 'item';
+    upsertKnowledgeItem({
+      id: `brain-item:${videoId}:${sourceTab}:${Date.now()}`,
+      title: String(text || '').slice(0, 80),
+      topicId: video?.topicIds?.[0] || null,
+      videoId,
+      videoTitle: video?.title || '',
+      sourceType: 'youtube',
+      sourceId: videoId,
+      kind: 'learning',
+      markdown: [
+        `# ${String(text || '').slice(0, 80)}`,
+        '',
+        String(text || ''),
+        note ? `\n---\nהערה: ${note}` : null,
+        videoUrl ? `\n---\nמקור: [${video?.title || ''}](${videoUrl})` : null,
+      ].filter(v => v !== null).join('\n'),
+      workspacePath: `ידע/${sourceTab}/${String(video?.title || videoId || 'פריט').slice(0, 40)}/${slug}.md`,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        videoId: videoId || null,
+        videoTitle: video?.title || null,
+        videoUrl: videoUrl || null,
+        sourceTab,
+        tabLabel,
+        category: video?.category || null,
+        subCategory: video?.subCategory || null,
+        note: note || null,
+        savedAt: now,
+        contentRole: 'my_position',
+        perspective: 'self',
+        userPosition: 'endorsed',
+      },
+    });
+    toast.success(`✅ נשמר למוח`);
+  };
+
+  const handleSaveBrainSelections = () => {
+    const videoId = video?.youtubeId || video?.id;
+    const videoUrl = getWatchUrl(video) || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null);
+    const now = new Date().toISOString();
+    let count = 0;
+    Object.entries(brainSelections).forEach(([id, { text, sourceTab, tabLabel, note }]) => {
+      const slug = String(text || '').slice(0, 60).replace(/[^a-zA-Zא-ת\d\s]/g, '').trim().replace(/\s+/g, '-') || 'item';
+      upsertKnowledgeItem({
+        id: `brain-item:${videoId}:${id}`,
+        title: String(text || '').slice(0, 80),
+        topicId: video?.topicIds?.[0] || null,
+        videoId,
+        videoTitle: video?.title || '',
+        sourceType: 'youtube',
+        sourceId: videoId,
+        kind: 'learning',
+        markdown: [
+          `# ${String(text || '').slice(0, 80)}`,
+          '',
+          String(text || ''),
+          note ? `\n---\nהערה: ${note}` : null,
+          videoUrl ? `\n---\nמקור: [${video?.title || ''}](${videoUrl})` : null,
+        ].filter(v => v !== null).join('\n'),
+        workspacePath: `ידע/${sourceTab}/${String(video?.title || videoId || 'פריט').slice(0, 40)}/${slug}.md`,
+        createdAt: now,
+        updatedAt: now,
+        metadata: {
+          videoId: videoId || null,
+          videoTitle: video?.title || null,
+          videoUrl: videoUrl || null,
+          sourceTab,
+          tabLabel,
+          category: video?.category || null,
+          subCategory: video?.subCategory || null,
+          note: note || null,
+          savedAt: now,
+          contentRole: 'my_position',
+          perspective: 'self',
+          userPosition: 'endorsed',
+        },
+      });
+      count++;
+    });
+    toast.success(`✅ ${count} פריטים נשמרו למוח`);
+    clearBrainSelections();
+  };
+
   const persistAnalysisState = (updates) => {
     const saved = patchVideo(updates);
     onVideoPatch?.(saved ?? { ...video, ...updates });
@@ -2101,6 +2339,7 @@ export function VideoDetailPanel({
   };
 
   const _applyParsedGems = (parsed) => {
+    console.log('[GEMS JSON] apply started');
     console.log('[GEMS Parse] parsed keys:', Object.keys(parsed || {}).join(', '));
     console.log('[GEMS Parse] has politicalSummary:', !!parsed?.politicalSummary);
     console.log('[GEMS Parse] has theologyAnalysis:', !!(parsed?.theologyAnalysis || parsed?.politicalSummary?.theologyAnalysis));
@@ -2112,15 +2351,26 @@ export function VideoDetailPanel({
     const gemsPatched = persistAnalysisState({ ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() });
     console.log('[GEMS JSON] data mapped to app state');
 
-    // If GEMS JSON contains politicalSummary, persist it immediately
-    if (parsed.politicalSummary) {
-      const videoId = video?.youtubeId || video?.id;
-      if (videoId) {
-        const savedKey = `political_summary_${videoId}`;
-        localStorage.setItem(savedKey, JSON.stringify(parsed));
-        setPoliticalSummary(parsed);
-        console.log(`[PoliticalSummary] loaded from GEMS JSON for videoId=${videoId}`);
-        console.log(`[PoliticalSummary] saved for videoId=${videoId}`);
+    // Persist political summary — triggered by any political data field OR by the gem key
+    {
+      const isPoliticalGems =
+        effectiveGemInfo?.gemKey === 'political' ||
+        !!(parsed.politicalSummary) ||
+        !!(parsed.ideologyAnalysis) ||
+        !!(parsed.opponentView) ||
+        !!(parsed.theologyAnalysis) ||
+        !!(parsed.brainHighlights) ||
+        (Array.isArray(parsed.viralQuotes) && parsed.viralQuotes.length > 0) ||
+        (Array.isArray(parsed.debateResponses) && parsed.debateResponses.length > 0) ||
+        (Array.isArray(parsed.politicalSlogans) && parsed.politicalSlogans.length > 0);
+      if (isPoliticalGems) {
+        const videoId = video?.youtubeId || video?.id;
+        if (videoId) {
+          const savedKey = `political_summary_${videoId}`;
+          localStorage.setItem(savedKey, JSON.stringify(parsed));
+          setPoliticalSummary(parsed);
+          console.log(`[PoliticalSummary] saved from GEMS JSON for videoId=${videoId}`);
+        }
       }
     }
 
@@ -2139,9 +2389,14 @@ export function VideoDetailPanel({
     setGemsPasteError("");
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
+    console.log('[GEMS JSON] render-safe data ready');
+    // Close modal first, then switch tabs after React flushes state
     setIsGemsPasteOpen(false);
-    setActiveTab("summary");
-    console.log('[Tabs] active tab after analysis: summary');
+    setTimeout(() => {
+      setActiveTab("political");
+      setActivePoliticalTab("brain-hi");
+      console.log('[Tabs] active tab after analysis: political/brain-hi');
+    }, 50);
     toast.success("GEMS JSON נקלט בהצלחה ✓ הנתונים עודכנו");
     toast.success("הניתוח נשמר בהצלחה ✓");
     return true;
@@ -3802,58 +4057,116 @@ export function VideoDetailPanel({
                 }
                 return <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">{label}</span>;
               })()}
-              {/* Metadata chips — topic, sub-topic, gem, date, duration, views, transcript, obsidian */}
+              {/* Metadata chips — redesigned: pill style, consistent height, RTL order */}
               {(() => {
-                const transcriptStatusLabel = (() => {
+                const transcriptChip = (() => {
                   const s = video.transcriptStatus;
-                  if (s === "youtube") return "✅ YouTube";
-                  if (s === "manual") return "✅ ידני";
-                  if (["none", "found_empty_body", "no_caption_tracks", "unavailable"].includes(s)) return "❌ אין";
-                  if (s === "missing_timestamps") return "⚠️ חסרות חותמות";
-                  if (s === "too_short") return "⚠️ קצר מדי";
+                  if (!s) return null;
+                  if (s === 'youtube') return { isYt: true, label: 'תמלול', ok: true };
+                  if (s === 'manual') return { icon: '✅', label: 'תמלול ידני', ok: true };
+                  if (['none', 'found_empty_body', 'no_caption_tracks', 'unavailable'].includes(s)) return { icon: '❌', label: 'אין תמלול', ok: false };
+                  if (s === 'missing_timestamps') return { icon: '⚠️', label: 'תמלול חלקי', ok: null };
+                  if (s === 'too_short') return { icon: '⚠️', label: 'תמלול קצר', ok: null };
                   return null;
                 })();
-                const gemLabel = effectiveGemInfo ? `${effectiveGemInfo.gemIcon} ${effectiveGemInfo.gemLabel}` : null;
-                const ytLogoSm = (
-                  <svg viewBox="0 0 90 63" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-5 rounded-[2px] shrink-0">
+                const ytLogo = (
+                  <svg viewBox="0 0 90 63" xmlns="http://www.w3.org/2000/svg" className="h-3 w-[17px] rounded-[2px] shrink-0">
                     <rect width="90" height="63" rx="13" fill="#FF0000"/>
                     <path d="M37 16L63 31.5L37 47V16Z" fill="white"/>
                   </svg>
                 );
-                const chips = [
-                  videoTopics[0]?.name ? { label: "נושא", value: videoTopics[0].name } : null,
-                  (subCategoryOverride ?? video.subCategory) ? { label: "תת-נושא", value: subCategoryOverride ?? video.subCategory } : null,
-                  gemLabel ? { label: "Gem", value: gemLabel } : null,
-                  video.publishedAt ? { label: "תאריך", value: format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) } : null,
-                  videoDuration ? { label: "אורך", value: videoDuration } : null,
-                  viewCountFormatted ? { label: "צפיות", value: viewCountFormatted } : null,
-                  transcriptStatusLabel ? { label: "תמלול", value: transcriptStatusLabel, logo: video.transcriptStatus === "youtube" ? ytLogoSm : null } : null,
-                  hasObsidianSavedStatus(video) ? { label: "Obsidian", value: "✅ נשמר" } : null,
-                ].filter(Boolean);
-                if (chips.length === 0) return null;
+                const viewCountShort = viewCountFormatted
+                  ? viewCountFormatted.replace(/\s*צפיות\s*/g, '').replace(/\s*views\s*/gi, '').trim()
+                  : null;
+                const BASE = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[5px] text-[11px] font-medium leading-none whitespace-nowrap transition-colors";
+                const DEF  = "border-slate-200/90 bg-white text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300";
+                const MUTED = "border-slate-200/80 bg-slate-50 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400";
+                const hasAnyChip = !!(effectiveGemInfo || video.publishedAt || videoDuration || viewCountShort || videoYtId || transcriptChip || videoTopics[0]?.name);
+                if (!hasAnyChip && !hasStoredTranscript) return null;
                 return (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5 items-center" dir="rtl">
-                    {chips.map(({ label, value, logo }) => (
-                      <span key={label} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-800">
-                        <span className="font-medium text-slate-400 dark:text-zinc-500">{label}:</span>
-                        {logo ? (
-                          <span className="inline-flex items-center gap-1">
-                            {logo}
-                            <span className="font-semibold text-slate-700 dark:text-zinc-200">YouTube</span>
-                          </span>
-                        ) : (
-                          <span className="font-semibold text-slate-700 dark:text-zinc-200">{value}</span>
-                        )}
+                  <div className="flex flex-wrap gap-1.5 pt-1 items-center" dir="rtl">
+                    {/* Topic */}
+                    {videoTopics[0]?.name && (
+                      <span className={`${BASE} ${MUTED}`}>
+                        <span className="text-[10px] leading-none">📂</span>
+                        <span>{videoTopics[0].name}</span>
                       </span>
-                    ))}
+                    )}
+                    {/* Sub-topic */}
+                    {(subCategoryOverride ?? video.subCategory) && (
+                      <span className={`${BASE} ${MUTED}`}>
+                        <span className="text-[10px] leading-none">🏷️</span>
+                        <span>{subCategoryOverride ?? video.subCategory}</span>
+                      </span>
+                    )}
+                    {/* Gem */}
+                    {effectiveGemInfo && (
+                      <span className={`${BASE} border-indigo-200/80 bg-indigo-50/50 text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/30 dark:text-indigo-300`}>
+                        <span className="text-xs leading-none">{effectiveGemInfo.gemIcon}</span>
+                        <span className="font-semibold">{effectiveGemInfo.gemLabel}</span>
+                      </span>
+                    )}
+                    {/* Date */}
+                    {video.publishedAt && (
+                      <span className={`${BASE} ${DEF}`}>
+                        <span className="text-xs leading-none">📅</span>
+                        <span>{format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he })}</span>
+                      </span>
+                    )}
+                    {/* Duration */}
+                    {videoDuration && (
+                      <span className={`${BASE} ${DEF}`}>
+                        <span className="text-xs leading-none">⏱️</span>
+                        <span>{videoDuration}</span>
+                      </span>
+                    )}
+                    {/* Views */}
+                    {viewCountShort && (
+                      <span className={`${BASE} ${DEF}`}>
+                        <span className="text-xs leading-none">👁️</span>
+                        <span>{viewCountShort}</span>
+                      </span>
+                    )}
+                    {/* YouTube link */}
+                    {videoYtId && (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${videoYtId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${BASE} border-red-200/60 bg-white text-slate-600 hover:border-red-300 hover:bg-red-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-red-700/50`}
+                      >
+                        {ytLogo}
+                        <span>YouTube</span>
+                      </a>
+                    )}
+                    {/* Transcript status */}
+                    {transcriptChip && (
+                      <span className={`${BASE} ${
+                        transcriptChip.ok === true
+                          ? 'border-emerald-200/80 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300'
+                          : transcriptChip.ok === false
+                            ? 'border-red-200/70 bg-red-50/40 text-red-600 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400'
+                            : 'border-amber-200/80 bg-amber-50/50 text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300'
+                      }`}>
+                        {transcriptChip.isYt ? <>{ytLogo}<span>{transcriptChip.label}</span></> : <><span className="text-xs leading-none">{transcriptChip.icon}</span><span>{transcriptChip.label}</span></>}
+                      </span>
+                    )}
+                    {/* Obsidian saved */}
+                    {hasObsidianSavedStatus(video) && (
+                      <span className={`${BASE} border-emerald-200/80 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300`}>
+                        <span className="text-xs leading-none">✅</span>
+                        <span>Obsidian</span>
+                      </span>
+                    )}
+                    {/* Delete transcript — soft red, always last */}
                     {hasStoredTranscript && (
                       <button
                         type="button"
                         onClick={handleDeleteTranscript}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-600 hover:bg-red-100 active:scale-95 transition-colors dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400"
+                        className={`${BASE} border-rose-200/60 bg-white text-rose-500 hover:bg-rose-50/80 hover:border-rose-300 active:scale-95 dark:border-rose-800/30 dark:bg-zinc-900 dark:text-rose-400`}
                       >
-                        <span>🧹</span>
-                        <span className="font-medium">מחק תמלול מהזיכרון</span>
+                        <span className="text-xs leading-none">🧹</span>
+                        <span>מחק תמלול</span>
                       </button>
                     )}
                   </div>
@@ -3868,7 +4181,7 @@ export function VideoDetailPanel({
                   <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">⚡ פעולות מהירות</span>
                 </div>
                 {/* Primary actions — grid fills full width */}
-                <div className="grid grid-cols-6 gap-2 mb-2">
+                <div className="grid grid-cols-7 gap-2 mb-2">
                   {[
                     {
                       id: 'yt-transcript',
@@ -3928,7 +4241,7 @@ export function VideoDetailPanel({
                     },
                     {
                       id: 'save-brain',
-                      emoji: '✅',
+                      emoji: '💾',
                       label: 'שמור למוח',
                       sub: 'שמור ידע',
                       cn: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300',
@@ -3958,8 +4271,17 @@ export function VideoDetailPanel({
                       label: 'תמלול הסרט',
                       sub: hasStoredTranscript ? 'הצג תמלול' : 'הדבק תמלול',
                       cn: 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300',
-                      onClick: hasStoredTranscript ? () => setIsTranscriptViewerOpen(true) : () => setIsManualTranscriptOpen(true),
+                      onClick: () => setActiveTab("transcript"),
                       status: { ok: hasStoredTranscript, okLabel: 'תמלול קיים', failLabel: 'אין תמלול' },
+                    },
+                    {
+                      id: 'workspace',
+                      emoji: '💼',
+                      label: 'Workspace',
+                      sub: isSavedInWorkspace ? 'פתח' : 'עבור אל',
+                      cn: 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-300',
+                      onClick: handleOpenInWorkspace,
+                      status: { ok: isSavedInWorkspace, okLabel: 'קיים', failLabel: 'לא נפתח' },
                     },
                   ].map(({ id, emoji, label, sub, cn, onClick, disabled, status, labelCn, subCn }) => (
                     <button key={id} type="button" onClick={onClick} disabled={disabled}
@@ -4007,6 +4329,7 @@ export function VideoDetailPanel({
             </div>
 
             {/* ── Main Content: Sidebar + Tabs ── */}
+            <PanelErrorBoundary>
             <div className="flex gap-4 items-start px-4 pt-2 pb-4" dir="rtl">
 
               {/* ── SIDEBAR ── */}
@@ -4028,19 +4351,118 @@ export function VideoDetailPanel({
                   </a>
                 </div>
               </div>
+              {/* ── Notes Card ── */}
+              <div className="rounded-2xl border border-amber-200 bg-white/90 shadow-sm dark:border-amber-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
+                <div className="px-4 pt-3 pb-1 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span className="text-base">📝</span>
+                  <span>הערות</span>
+                  {videoNotes.length > 0 && (
+                    <span className="mr-auto text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/40 rounded-full px-2 py-0.5">
+                      {videoNotes.length} הערות
+                    </span>
+                  )}
+                </div>
+                <div className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-zinc-400">
+                  {videoNotes.length === 0 ? "אין הערות עדיין" : `${videoNotes.length} הערות שמורות`}
+                </div>
+                <div className="px-4 pb-3">
+                  <button
+                    type="button"
+                    onClick={() => { prevTabRef.current = activeTab !== "notes" ? activeTab : prevTabRef.current; setActiveTab("notes"); }}
+                    className="w-full h-8 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 active:scale-95 transition-all shadow-sm flex-row-reverse"
+                  >
+                    📝 פתח הערות
+                  </button>
+                </div>
+              </div>
+
+              {/* ── NotebookLM Card ── */}
+              {(() => {
+                const nlmUrl = getWatchUrl(video);
+                const hasUrl = !!nlmUrl;
+                const buildMarkdown = () => [
+                  `# ${video.title}`,
+                  video.channelTitle ? `מנטור: ${video.channelTitle}` : null,
+                  nlmUrl ? `קישור: ${nlmUrl}` : null,
+                  video.shortSummary ? `\n## סיכום\n${video.shortSummary}` : null,
+                  Array.isArray(video.keyPoints) && video.keyPoints.length
+                    ? `\n## נקודות מפתח\n${video.keyPoints.map(p => `• ${p}`).join('\n')}`
+                    : null,
+                ].filter(Boolean).join('\n');
+                const handleOpen = () => {
+                  if (!hasUrl) return;
+                  navigator.clipboard.writeText(nlmUrl)
+                    .then(() => toast.success("קישור הסרטון הועתק ✓"))
+                    .catch(() => {});
+                  window.open("https://notebooklm.google.com/", "_blank", "noopener,noreferrer");
+                  toast.success("NotebookLM נפתח 🚀");
+                };
+                return (
+                  <div className="rounded-2xl border border-violet-200 bg-white/90 shadow-sm dark:border-violet-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
+                    <div className="px-4 pt-3 pb-1 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <span className="text-base">📓</span>
+                      <span>NotebookLM</span>
+                      <span className={`mr-auto text-[11px] font-medium rounded-full px-2 py-0.5 border ${
+                        hasUrl
+                          ? "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-700/40"
+                          : "text-slate-500 bg-slate-50 border-slate-200 dark:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-700"
+                      }`}>
+                        {hasUrl ? "✅ URL זמין" : "❌ אין URL"}
+                      </span>
+                    </div>
+                    <div className="px-4 py-3 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={handleOpen}
+                        disabled={!hasUrl}
+                        className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex-row-reverse"
+                      >
+                        <span>🚀</span>
+                        פתח ב-NotebookLM
+                      </button>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={!hasUrl}
+                          onClick={() => {
+                            if (!hasUrl) return;
+                            navigator.clipboard.writeText(nlmUrl).then(() => toast.success("URL הועתק ✓")).catch(() => {});
+                          }}
+                          className="flex-1 h-7 inline-flex items-center justify-center gap-1 rounded-lg border border-violet-200 text-violet-700 text-[11px] font-medium hover:bg-violet-50 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed dark:border-violet-800/40 dark:text-violet-300"
+                        >
+                          📋 URL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(buildMarkdown()).then(() => toast.success("Markdown הועתק ✓")).catch(() => {});
+                          }}
+                          className="flex-1 h-7 inline-flex items-center justify-center gap-1 rounded-lg border border-violet-200 text-violet-700 text-[11px] font-medium hover:bg-violet-50 active:scale-95 transition-all dark:border-violet-800/40 dark:text-violet-300"
+                        >
+                          📄 Markdown
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!fullTranscriptText}
+                          onClick={() => {
+                            if (!fullTranscriptText) return;
+                            navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success("תמלול הועתק ✓")).catch(() => {});
+                          }}
+                          className="flex-1 h-7 inline-flex items-center justify-center gap-1 rounded-lg border border-violet-200 text-violet-700 text-[11px] font-medium hover:bg-violet-50 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed dark:border-violet-800/40 dark:text-violet-300"
+                        >
+                          📚 תמלול
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── Manual Transcript Card ── */}
               <div className="rounded-2xl border border-teal-200 bg-white/90 shadow-sm dark:border-teal-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
                 <div className="px-4 pt-3 pb-2 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <span className="text-base">📋</span>
                   <span>תמלול ידני</span>
-                </div>
-                <div className={`px-4 py-2.5 text-sm font-semibold flex items-center gap-2 flex-row-reverse border-y ${
-                  hasStoredTranscript
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-950/30 dark:text-emerald-400"
-                    : "border-red-200 bg-red-50 text-red-600 dark:border-red-700/40 dark:bg-red-950/30 dark:text-red-400"
-                }`}>
-                  <span>{hasStoredTranscript ? "✅" : "❌"}</span>
-                  <span>{hasStoredTranscript ? "תמלול קיים" : "אין תמלול"}</span>
                 </div>
                 <div className="px-4 py-3">
                   <button
@@ -4070,7 +4492,7 @@ export function VideoDetailPanel({
                 <div className="px-4 py-3 flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={handleGeminiContent}
+                    onClick={() => { setActiveTab("ai-analysis"); handleGeminiContent(); }}
                     disabled={geminiStatus === 'loading'}
                     className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm disabled:opacity-50 flex-row-reverse"
                   >
@@ -4094,24 +4516,6 @@ export function VideoDetailPanel({
                 </div>
               </div>
 
-              {/* ── Workspace Card ── */}
-              <div className="rounded-2xl border border-violet-200 bg-white/90 px-4 py-3 shadow-sm dark:border-violet-900/40 dark:bg-zinc-900/80 text-right" dir="rtl">
-                <div className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
-                  <BookMarked className="h-4 w-4 text-violet-600 shrink-0" />
-                  <span>💼 Workspace</span>
-                </div>
-                <p className={`text-xs font-medium mb-3 ${isSavedInWorkspace ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`}>
-                  {isSavedInWorkspace ? "✅ שמור ב-Workspace" : "לא שמור עדיין"}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleOpenInWorkspace}
-                  className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                >
-                  <BookMarked className="h-4 w-4" />
-                  פתח ב-Workspace
-                </button>
-              </div>
               </div>{/* closes sidebar */}
 
               {/* ── MAIN CONTENT ── */}
@@ -4125,38 +4529,22 @@ export function VideoDetailPanel({
 
             {/* ── טאבים ── */}
             <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-              <TabsList className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 gap-0.5 no-scrollbar">
+              {/* ── Main tabs row ── */}
+              <TabsList className="flex w-full rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 no-scrollbar" dir="rtl">
                 {[
-                  { value: "summary",      label: "סיכום" },
-                  { value: "keypoints",    label: "נקודות מפתח" },
-                  { value: "chapters",     label: "פרקים" },
-                  { value: "notes",        label: "הערות" },
-                  { value: "transcript",   label: "📄 תמלול" },
-                  { value: "ai-analysis",  label: "🧠 ניתוח AI" },
-                  { value: "brain-select", label: "💾 שמור ידע למוח" },
-                  ...(effectiveGemInfo?.gemKey === 'political' ? [
-                    { value: "ideology",       label: "⚖️ אידיאולוגיה" },
-                    { value: "theology",       label: "✡️ דת ותיאולוגיה" },
-                    { value: "liberal-jewish", label: "🕊️ יהדות ליברלית" },
-                    { value: "opponent",       label: "🗣️ צד שני" },
-                    { value: "virals",         label: "🔥 ציטוטים" },
-                    { value: "slogans",        label: "📢 סיסמאות" },
-                    { value: "debates",        label: "⚔️ ויכוחים" },
-                    { value: "comments",       label: "💬 תגובות" },
-                    { value: "campaign",       label: "📦 קיט קמפיין" },
-                    { value: "reusable",       label: "📚 ידע רב פעמי" },
-                    { value: "brain-hi",       label: "🧠 תובנות" },
-                  ] : []),
+                  { value: "summary",   label: "📝 סיכום" },
+                  { value: "keypoints", label: "📌 נקודות מפתח" },
+                  { value: "chapters",  label: "📚 פרקים" },
+                  ...(effectiveGemInfo?.gemKey === 'political' ? [{ value: "political", label: "🏛️ פוליטי" }] : []),
                 ].map(({ value, label }) => (
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="whitespace-nowrap px-3 text-xs rounded-xl py-2 shrink-0
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-sm font-medium transition-all duration-150
                       text-slate-500 dark:text-zinc-400
-                      data-[state=active]:bg-indigo-600 data-[state=active]:text-white
-                      data-[state=active]:font-semibold data-[state=active]:shadow-sm
-                      hover:text-slate-700 dark:hover:text-zinc-200
-                      transition-all"
+                      data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
+                      dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
+                      hover:text-slate-700 dark:hover:text-zinc-200"
                   >
                     {label}
                   </TabsTrigger>
@@ -4208,7 +4596,7 @@ export function VideoDetailPanel({
                   if (isPoliticalVideo) {
                     const hasTranscript = fullTranscriptText && fullTranscriptText.trim().length >= 100;
 
-                    if (!hasTranscript) {
+                    if (!hasTranscript && !politicalSummary) {
                       return (
                         <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/60 py-8 text-center dark:border-blue-800/40 dark:bg-blue-950/20" dir="rtl">
                           <span className="text-2xl">📋</span>
@@ -4259,7 +4647,9 @@ export function VideoDetailPanel({
                     // Build display object: prefer nested politicalSummary, fallback from other fields, or old format
                     console.log('[GEMS Parse] rendering political summary — keys:', Object.keys(politicalSummary || {}).join(', '));
                     let _psDisplay = null;
+                    try {
                     if (politicalSummary?.politicalSummary) {
+                      // Branch 1: nested { politicalSummary: { ... } }
                       _psDisplay = politicalSummary.politicalSummary;
                     } else if (politicalSummary && (
                       politicalSummary.keyInsights?.length ||
@@ -4267,9 +4657,10 @@ export function VideoDetailPanel({
                       politicalSummary.knowledgePoints?.length ||
                       politicalSummary.viralQuotes?.length
                     )) {
+                      // Branch 2: old flat format with keyInsights / arguments
                       _psDisplay = {
                         shortSummary: politicalSummary.keyInsights?.[0] || '',
-                        mainClaim: politicalSummary.arguments?.[0] || '',
+                        mainClaim: politicalSummary.arguments?.[0] || politicalSummary.mainClaim || politicalSummary.mainArgument || '',
                         keyPoints: politicalSummary.knowledgePoints?.slice(0, 8) || [],
                         actorsMap: { speakers: [], attackedGroups: [], defendedGroups: [], targetAudience: [] },
                         supportingArguments: politicalSummary.arguments || [],
@@ -4278,12 +4669,16 @@ export function VideoDetailPanel({
                         emotionalFraming: [],
                         practicalUse: politicalSummary.debateResponses || [],
                         bottomLine: politicalSummary.keyInsights?.at?.(-1) || '',
+                        context: politicalSummary.context || '',
+                        conclusion: politicalSummary.conclusion || '',
+                        implications: Array.isArray(politicalSummary.implications) ? politicalSummary.implications : [],
                       };
                     } else if (politicalSummary) {
+                      // Branch 3: any politicalSummary object (including direct GEMS JSON)
                       const _pu = politicalSummary.practicalUse;
                       _psDisplay = {
-                        shortSummary: politicalSummary.shortOverview || politicalSummary.shortSummary || '',
-                        mainClaim: politicalSummary.mainClaim || '',
+                        shortSummary: politicalSummary.shortOverview || politicalSummary.shortSummary || politicalSummary.summary || '',
+                        mainClaim: politicalSummary.mainClaim || politicalSummary.mainArgument || '',
                         keyPoints: politicalSummary.keyPoints || [],
                         actorsMap: politicalSummary.actors ? {
                           speakers: [politicalSummary.actors.speakers].filter(Boolean),
@@ -4297,9 +4692,23 @@ export function VideoDetailPanel({
                         emotionalFraming: politicalSummary.emotionalTone || politicalSummary.emotionalFraming || [],
                         practicalUse: _pu ? (Array.isArray(_pu) ? _pu : [_pu.replyToPost, _pu.debateArgument, _pu.slogan].filter(Boolean)) : [],
                         bottomLine: politicalSummary.bottomLine || '',
+                        context: politicalSummary.context || '',
+                        conclusion: politicalSummary.conclusion || '',
+                        implications: Array.isArray(politicalSummary.implications) ? politicalSummary.implications : [],
                       };
                     }
-                    const ps = _psDisplay;
+                    } catch (_psErr) {
+                      console.error('[psDisplay] computation error:', _psErr.message);
+                      _psDisplay = null;
+                    }
+                    // Normalize: merge alternate field names from any branch
+                    const ps = _psDisplay ? {
+                      ..._psDisplay,
+                      mainClaim: _psDisplay.mainClaim || _psDisplay.mainArgument || '',
+                      context: _psDisplay.context || '',
+                      conclusion: _psDisplay.conclusion || '',
+                      implications: Array.isArray(_psDisplay.implications) ? _psDisplay.implications : [],
+                    } : null;
                     // Safely extract a display string from any value (guards against AI returning objects instead of strings)
                     const safeStr = (v) => {
                       if (v === null || v === undefined) return '';
@@ -4352,7 +4761,10 @@ export function VideoDetailPanel({
                               { k: 'weaknesses', l: 'נקודות חולשה', c: ps.weaknessesAndCounterpoints },
                               { k: 'usefulQuotes', l: 'ציטוטים חזקים', c: ps.usefulQuotes },
                               { k: 'bottomLine', l: 'שורה תחתונה', c: ps.bottomLine },
-                            ].filter(s => s.c && (typeof s.c === 'string' ? s.c.trim() : s.c.length > 0));
+                              { k: 'context', l: 'הקשר', c: ps.context },
+                              { k: 'conclusion', l: 'מסקנה', c: ps.conclusion },
+                              { k: 'implications', l: 'השלכות', c: ps.implications },
+                            ].filter(s => s.c && (typeof s.c === 'string' ? s.c.trim() : (Array.isArray(s.c) ? s.c.length > 0 : false)));
                             sections.forEach(({ k, l, c }) => handleSavePsSection(k, l, c));
                             toast.success(`✅ כל הסיכום נשמר למוח (${sections.length} חלקים)`);
                           }} className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700/50 dark:bg-indigo-950/30 dark:text-indigo-300">🧠 שמור הכל למוח</button>
@@ -4365,6 +4777,9 @@ export function VideoDetailPanel({
                               ps.weaknessesAndCounterpoints?.length && `## נקודות חולשה\n${ps.weaknessesAndCounterpoints.map(w => `- ${w}`).join('\n')}`,
                               ps.usefulQuotes?.length && `## ציטוטים חזקים\n${ps.usefulQuotes.map(q => `> "${q}"`).join('\n')}`,
                               ps.bottomLine && `## שורה תחתונה\n${ps.bottomLine}`,
+                              ps.context && `## הקשר\n${ps.context}`,
+                              ps.conclusion && `## מסקנה\n${ps.conclusion}`,
+                              ps.implications?.length && `## השלכות\n${ps.implications.map((imp, i) => `${i + 1}. ${safeStr(imp)}`).join('\n')}`,
                             ].filter(Boolean).join('\n\n');
                             const md = `# ניתוח פוליטי — ${video?.title || ''}\n\n${lines}`;
                             downloadMarkdown(md, `political-${video?.youtubeId || video?.id || 'summary'}.md`);
@@ -4402,7 +4817,8 @@ export function VideoDetailPanel({
                               { label: 'מי מוגן', value: ps.actorsMap.defendedGroups, icon: '🛡️' },
                               { label: 'קהל יעד', value: ps.actorsMap.targetAudience, icon: '👥' },
                             ].map(({ label, value, icon: aIcon }) => {
-                              const display = Array.isArray(value) ? value.join(', ') : value;
+                              const _arrToStr = (v) => Array.isArray(v) ? v.map(x => typeof x === 'string' ? x : String(x?.text || x?.name || x || '')).filter(Boolean).join(', ') : null;
+                              const display = Array.isArray(value) ? _arrToStr(value) : (typeof value === 'string' ? value : null);
                               return display ? (
                                 <div key={label} className="rounded-lg bg-amber-100/70 px-2.5 py-2 dark:bg-amber-900/20">
                                   <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-0.5">{aIcon} {label}</div>
@@ -4492,9 +4908,32 @@ export function VideoDetailPanel({
                                 : <button type="button" onClick={() => handleSavePsSection('bottomLine', 'שורה תחתונה', ps.bottomLine)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-300 px-1.5 py-0.5 rounded border border-transparent hover:border-indigo-500/50 hover:bg-indigo-950/30 transition-colors">🧠 שמור</button>
                               }
                             </div>
-                            <p className="text-sm font-bold text-white dark:text-slate-900 leading-relaxed">{ps.bottomLine}</p>
+                            <p className="text-sm font-bold text-white dark:text-slate-900 leading-relaxed">{safeStr(ps.bottomLine)}</p>
                           </div>
                         )}
+
+                        {/* 11. הקשר */}
+                        {ps.context && <PCard title="הקשר" icon="🔍" cn="border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900" saveKey="context" saveContent={ps.context}>
+                          <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed">{safeStr(ps.context)}</p>
+                        </PCard>}
+
+                        {/* 12. מסקנה */}
+                        {ps.conclusion && <PCard title="מסקנה" icon="✅" cn="border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20" saveKey="conclusion" saveContent={ps.conclusion}>
+                          <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100 leading-relaxed">{safeStr(ps.conclusion)}</p>
+                        </PCard>}
+
+                        {/* 13. השלכות */}
+                        {ps.implications?.length > 0 && <PCard title="השלכות" icon="🔮" cn="border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20" saveKey="implications" saveContent={ps.implications}>
+                          <ul className="space-y-1.5">
+                            {ps.implications.map((imp, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-violet-900 dark:text-violet-100">
+                                <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-violet-500 text-white text-[10px] flex items-center justify-center font-bold">{i + 1}</span>
+                                <span className="leading-snug">{safeStr(imp)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </PCard>}
+
                       </div>
                       </PoliticalTabBoundary>
                     );
@@ -4544,16 +4983,40 @@ export function VideoDetailPanel({
               {/* ── Key Points tab ── */}
               <TabsContent value="keypoints" className="mt-5 min-h-[320px]" dir="rtl">
                 {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <ul className="space-y-3 text-right" dir="rtl">
-                    {video.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                          {i + 1}
-                        </span>
-                        <span className="text-sm text-gray-800 leading-7 flex-1">{point}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                      <span className="text-xs text-slate-400 dark:text-zinc-500">{video.keyPoints.length} נקודות</span>
+                      <button type="button"
+                        onClick={() => multiSelectAll(video.keyPoints.map((text, i) => ({ id: `keypoints:${i}`, text, sectionLabel: 'נקודות מפתח', type: 'keypoints' })))}
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                      >בחר הכל</button>
+                    </div>
+                    <ul className="space-y-3 text-right" dir="rtl">
+                      {video.keyPoints.map((point, i) => {
+                        const itemId = `keypoints:${i}`;
+                        return (
+                          <li key={i} className="flex items-start gap-2">
+                            <input type="checkbox"
+                              checked={multiSelected.has(itemId)}
+                              onChange={() => toggleMultiSelect(itemId, { text: point, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
+                              className="mt-3 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
+                            />
+                            <span className="mt-2.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {i + 1}
+                            </span>
+                            <BrainSelectableItem
+                              id={itemId}
+                              text={point}
+                              isSelected={!!brainSelections[itemId]}
+                              onToggle={() => toggleBrainItem(itemId, point, 'keypoints', 'נקודות מפתח')}
+                              onSaveSingle={(note) => saveSingleItemToBrain(point, 'keypoints', 'נקודות מפתח', note)}
+                              onCopy={() => navigator.clipboard.writeText(point).then(() => toast.success('הועתק'))}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
                 ) : (
                   <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-400">
                     אין נקודות מפתח זמינות
@@ -4575,9 +5038,9 @@ export function VideoDetailPanel({
                 <TabsContent value="chapters" className="mt-4 min-h-[320px]" dir="rtl">
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
 
-                    {/* header: title + badge + auto-detect button */}
-                    <div className="mb-3 flex items-center justify-between gap-3 flex-row-reverse">
-                      <div className="flex items-center gap-2 flex-row-reverse">
+                    {/* header: title + badge (right) + auto-detect button (left) */}
+                    <div className="mb-3 flex items-center justify-between gap-3" dir="rtl">
+                      <div className="flex items-center gap-2">
                         <h4 className="text-base font-bold text-slate-900 dark:text-zinc-100">פרקי הסרטון</h4>
                         {chapterSourceBadge && (
                           <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
@@ -4643,18 +5106,37 @@ export function VideoDetailPanel({
 
                     {/* chapters list or empty state */}
                     {baseChapters?.length > 0 ? (
-                      <div className="space-y-3">
-                        {baseChapters.map((chapter, index) => (
-                          <div key={`chapters-tab-${index}`} id={`chap-hl-${index}`}>
-                            <ChapterItem
-                              section={chapter}
-                              playerRef={undefined}
-                              videoUrl={getWatchUrl(video)}
-                              isHighlighted={index === highlightedChapterIndex}
-                            />
-                          </div>
-                        ))}
-                      </div>
+                      <>
+                        <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                          <span className="text-xs text-slate-400 dark:text-zinc-500">{baseChapters.length} פרקים</span>
+                          <button type="button"
+                            onClick={() => multiSelectAll(baseChapters.map((ch, i) => ({ id: `chapters:${i}`, text: ch.title || `פרק ${i + 1}`, sectionLabel: 'פרקים', type: 'chapters', timestamp: ch.timestamp || '' })))}
+                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                          >בחר הכל</button>
+                        </div>
+                        <div className="space-y-3">
+                          {baseChapters.map((chapter, index) => {
+                            const chId = `chapters:${index}`;
+                            return (
+                              <div key={`chapters-tab-${index}`} id={`chap-hl-${index}`} className="flex items-start gap-2">
+                                <input type="checkbox"
+                                  checked={multiSelected.has(chId)}
+                                  onChange={() => toggleMultiSelect(chId, { text: chapter.title || `פרק ${index + 1}`, sectionLabel: 'פרקים', type: 'chapters', timestamp: chapter.timestamp || '' })}
+                                  className="mt-3.5 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <ChapterItem
+                                    section={chapter}
+                                    playerRef={undefined}
+                                    videoUrl={getWatchUrl(video)}
+                                    isHighlighted={index === highlightedChapterIndex}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
                     ) : (
                       <div className="flex min-h-[140px] flex-col items-end justify-center gap-2 text-right" dir="rtl">
                         <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין חלוקה לפרקים</p>
@@ -4665,8 +5147,19 @@ export function VideoDetailPanel({
               </TabsContent>
 
                 <TabsContent value="notes" className="mt-5 min-h-[320px]" dir="rtl">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <div id="learning-notes" className="max-h-[260px] overflow-auto pr-1">
+                  <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-100 dark:border-zinc-800" dir="rtl">
+                      <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">📝 הערות</span>
+                      <button
+                        type="button"
+                        title="סגור הערות"
+                        onClick={() => setActiveTab(prevTabRef.current || "summary")}
+                        className="flex items-center justify-center h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-95 transition-all dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div id="learning-notes" className="px-4 py-3 max-h-[400px] overflow-auto">
                       <NoteEditor videoId={video.id} hideEmptyState />
                     </div>
                   </div>
@@ -5050,6 +5543,16 @@ export function VideoDetailPanel({
                     'politicalSummary';
                   handleSavePsSection(key, label, val, sectionType);
                 };
+                // Safe string helper — prevents "Objects are not valid as React child" crash
+                const safeStr = (v) => {
+                  if (v === null || v === undefined) return '';
+                  if (typeof v === 'string') return v;
+                  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+                  if (Array.isArray(v)) return v.map(safeStr).join(', ');
+                  if (typeof v === 'object') return v.text || v.value || v.slogan || v.content || v.description || JSON.stringify(v);
+                  return String(v);
+                };
+                const safeArr = (arr) => (Array.isArray(arr) ? arr : []).map(safeStr).filter(Boolean);
                 // Dual-structure support: flat (v2.1) with fallback to nested (legacy)
                 const _vq  = politicalSummary?.viralQuotes           || politicalSummary?.politicalSummary?.viralQuotes           || [];
                 const _ov  = politicalSummary?.opponentView          || politicalSummary?.politicalSummary?.opponentView          || null;
@@ -5068,9 +5571,80 @@ export function VideoDetailPanel({
                 const _bh  = politicalSummary?.brainHighlights    || politicalSummary?.politicalSummary?.brainHighlights    || null;
                 const _ia  = politicalSummary?.ideologyAnalysis   || politicalSummary?.politicalSummary?.ideologyAnalysis   || null;
 
+                const _extraPoliticalValues = new Set(POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value));
                 return (
+                  <TabsContent value="political" className="mt-3" dir="rtl">
                   <PoliticalTabBoundary>
-                  <>
+                  <div dir="rtl">
+                    {/* ── Political secondary nav ── */}
+                    {(() => {
+                      const primary = POLITICAL_TABS_DEFS.slice(0, POLITICAL_TABS_PRIMARY);
+                      const extra = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY);
+                      const isExtraActive = _extraPoliticalValues.has(activePoliticalTab);
+                      return (
+                        <div className="mb-3" dir="rtl">
+                          <div className="flex items-stretch gap-1 rounded-2xl bg-slate-100/80 dark:bg-zinc-800/60 p-1">
+                            {primary.map(tab => {
+                              const isActive = activePoliticalTab === tab.value;
+                              return (
+                                <button
+                                  key={tab.value}
+                                  type="button"
+                                  onClick={() => { setActivePoliticalTab(tab.value); setShowMorePoliticalTabs(false); }}
+                                  className={cn(
+                                    "flex-1 flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-medium transition-all duration-150 select-none cursor-pointer min-w-0",
+                                    isActive
+                                      ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white"
+                                      : "text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                  )}
+                                >
+                                  <span className="leading-none shrink-0">{tab.emoji}</span>
+                                  <span className="truncate">{tab.label}</span>
+                                </button>
+                              );
+                            })}
+                            <button
+                              type="button"
+                              onClick={() => setShowMorePoliticalTabs(v => !v)}
+                              className={cn(
+                                "flex items-center justify-center gap-0.5 rounded-xl py-2 px-2.5 text-[11px] font-medium transition-all duration-150 cursor-pointer shrink-0",
+                                (showMorePoliticalTabs || isExtraActive)
+                                  ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white"
+                                  : "text-slate-500 hover:text-slate-700 dark:text-zinc-400"
+                              )}
+                            >
+                              <span>עוד</span>
+                              <span className="text-[9px] leading-none">{showMorePoliticalTabs ? '▲' : '▼'}</span>
+                            </button>
+                          </div>
+                          {showMorePoliticalTabs && (
+                            <div className="mt-1.5 flex flex-wrap gap-1 px-1">
+                              {extra.map(tab => {
+                                const isActive = activePoliticalTab === tab.value;
+                                return (
+                                  <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => setActivePoliticalTab(tab.value)}
+                                    className={cn(
+                                      "flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+                                      isActive
+                                        ? "bg-slate-800 text-white border-transparent dark:bg-slate-200 dark:text-slate-900"
+                                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-700"
+                                    )}
+                                  >
+                                    <span>{tab.emoji}</span>
+                                    <span>{tab.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    <Tabs value={activePoliticalTab} onValueChange={setActivePoliticalTab} className="w-full" dir="rtl">
+                    <>
                     {/* ── 🔥 Viral Quotes Tab ── */}
                     <TabsContent value="virals" className="mt-4 min-h-[320px]" dir="rtl">
                       {!_vq?.length ? (
@@ -5159,7 +5733,7 @@ export function VideoDetailPanel({
                                         <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
                                           <Copy className="h-3 w-3" />
                                         </button>
-                                        <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{v}</span>
+                                        <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{safeStr(v)}</span>
                                       </li>
                                     ))}
                                   </ul>
@@ -5211,7 +5785,7 @@ export function VideoDetailPanel({
                                     {Array.isArray(val) ? (
                                       <ul className="space-y-1">
                                         {val.map((v, idx) => (
-                                          <li key={idx} className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">• {v}</li>
+                                          <li key={idx} className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">• {safeStr(v)}</li>
                                         ))}
                                       </ul>
                                     ) : (
@@ -5298,9 +5872,9 @@ export function VideoDetailPanel({
                                   </div>
                                   {(tone || confidence || sourceIdea) && (
                                     <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
-                                      {tone       && <span className="rounded-full border border-purple-300 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-800 dark:text-purple-200">{tone}</span>}
+                                      {tone       && <span className="rounded-full border border-purple-300 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-800 dark:text-purple-200">{String(tone)}</span>}
                                       {confidence && <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">{Math.round(Number(confidence) * 100)}%</span>}
-                                      {sourceIdea && <span className="text-[10px] text-slate-400 dark:text-zinc-500 italic">{sourceIdea}</span>}
+                                      {sourceIdea && <span className="text-[10px] text-slate-400 dark:text-zinc-500 italic">{String(sourceIdea)}</span>}
                                     </div>
                                   )}
                                 </div>
@@ -5450,7 +6024,7 @@ export function VideoDetailPanel({
                                     {val.map((v, vIdx) => (
                                       <li key={vIdx} className="flex items-start gap-2 justify-between">
                                         <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600"><Copy className="h-3 w-3" /></button>
-                                        <span className="flex-1 text-sm text-indigo-900 dark:text-indigo-100 text-right leading-snug">{v}</span>
+                                        <span className="flex-1 text-sm text-indigo-900 dark:text-indigo-100 text-right leading-snug">{safeStr(v)}</span>
                                       </li>
                                     ))}
                                   </ul>
@@ -5500,7 +6074,7 @@ export function VideoDetailPanel({
                                     {val.map((v, vIdx) => (
                                       <li key={vIdx} className="flex items-start gap-2 justify-between">
                                         <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-teal-600"><Copy className="h-3 w-3" /></button>
-                                        <span className="flex-1 text-sm text-teal-900 dark:text-teal-100 text-right leading-snug">{v}</span>
+                                        <span className="flex-1 text-sm text-teal-900 dark:text-teal-100 text-right leading-snug">{safeStr(v)}</span>
                                       </li>
                                     ))}
                                   </ul>
@@ -5525,10 +6099,26 @@ export function VideoDetailPanel({
                         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
                           <div className="flex items-center justify-between flex-row-reverse mb-1">
                             <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🧠 תובנות מרכזיות</h4>
-                            <button type="button" onClick={() => {
-                              const allItems = Object.values(_bh).flat().filter(v => typeof v === 'string' && v.trim());
-                              _psSave('brainHighlights', 'תובנות מרכזיות', allItems);
-                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                            <div className="flex items-center gap-3">
+                              <button type="button"
+                                onClick={() => {
+                                  const allItems = [];
+                                  ['topInsights','topArguments','topWarnings','topQuotes','savePriority'].forEach(key => {
+                                    const arr = _bh[key];
+                                    if (Array.isArray(arr)) arr.forEach((v, vIdx) => {
+                                      const text = safeStr(v);
+                                      if (text) allItems.push({ id: `brain-hi:${key}:${vIdx}`, text, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' });
+                                    });
+                                  });
+                                  multiSelectAll(allItems);
+                                }}
+                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                              >בחר הכל</button>
+                              <button type="button" onClick={() => {
+                                const allItems = Object.values(_bh).flat().filter(v => typeof v === 'string' && v.trim());
+                                _psSave('brainHighlights', 'תובנות מרכזיות', allItems);
+                              }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                            </div>
                           </div>
                           {[
                             { key: 'topInsights',  label: '⚡ תובנות מובילות' },
@@ -5546,13 +6136,30 @@ export function VideoDetailPanel({
                                   <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{label}</span>
                                 </div>
                                 {Array.isArray(val) ? (
-                                  <ul className="space-y-1.5">
-                                    {val.map((v, vIdx) => (
-                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
-                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-amber-600"><Copy className="h-3 w-3" /></button>
-                                        <span className="flex-1 text-sm text-amber-900 dark:text-amber-100 text-right leading-snug">{v}</span>
-                                      </li>
-                                    ))}
+                                  <ul className="space-y-1">
+                                    {val.map((v, vIdx) => {
+                                      const itemId = `brain-hi:${key}:${vIdx}`;
+                                      const itemText = safeStr(v);
+                                      return (
+                                        <li key={vIdx} className="flex items-start gap-2">
+                                          <input type="checkbox"
+                                            checked={multiSelected.has(itemId)}
+                                            onChange={() => toggleMultiSelect(itemId, { text: itemText, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' })}
+                                            className="mt-2 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <BrainSelectableItem
+                                              id={itemId}
+                                              text={itemText}
+                                              isSelected={!!brainSelections[itemId]}
+                                              onToggle={() => toggleBrainItem(itemId, itemText, 'brain-hi', 'תובנות מרכזיות')}
+                                              onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'brain-hi', 'תובנות מרכזיות', note)}
+                                              onCopy={() => _psCopy(v)}
+                                            />
+                                          </div>
+                                        </li>
+                                      );
+                                    })}
                                   </ul>
                                 ) : (
                                   <p className="text-sm text-amber-900 dark:text-amber-100 text-right">{String(val)}</p>
@@ -5604,9 +6211,9 @@ export function VideoDetailPanel({
                             if (!raw || (Array.isArray(raw) && raw.length === 0)) return null;
                             // Normalize: string → wrap in array; object with segments → flatten
                             const items = isString
-                              ? (typeof raw === 'string' ? [raw] : (Array.isArray(raw) ? raw : [String(raw)]))
-                              : (Array.isArray(raw) ? raw
-                                : (raw?.segments ? raw.segments
+                              ? (typeof raw === 'string' ? [raw] : (Array.isArray(raw) ? raw.map(safeStr) : [String(raw)]))
+                              : (Array.isArray(raw) ? raw.map(safeStr)
+                                : (raw?.segments ? raw.segments.map(safeStr)
                                 : (typeof raw === 'string' ? [raw] : [String(raw)])));
                             const displayItems = items.filter(v => v && String(v).trim());
                             if (displayItems.length === 0) return null;
@@ -5624,22 +6231,38 @@ export function VideoDetailPanel({
                                   >🧠 שמור</button>
                                 </div>
                                 {displayItems.length === 1 && isString ? (
-                                  <div className="flex items-start gap-2 justify-between">
-                                    <button type="button" onClick={() => _psCopy(displayItems[0])} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
-                                      <Copy className="h-3.5 w-3.5" />
-                                    </button>
-                                    <p className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-relaxed font-semibold">{displayItems[0]}</p>
-                                  </div>
+                                  (() => {
+                                    const itemId = `ideology:${key}:0`;
+                                    const itemText = displayItems[0];
+                                    return (
+                                      <BrainSelectableItem
+                                        id={itemId}
+                                        text={itemText}
+                                        isSelected={!!brainSelections[itemId]}
+                                        onToggle={() => toggleBrainItem(itemId, itemText, 'ideology', 'אידיאולוגיה וערכים')}
+                                        onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'ideology', 'אידיאולוגיה וערכים', note)}
+                                        onCopy={() => _psCopy(displayItems[0])}
+                                      />
+                                    );
+                                  })()
                                 ) : (
-                                  <ul className="space-y-1.5">
-                                    {displayItems.map((v, idx) => (
-                                      <li key={idx} className="flex items-start gap-2 justify-between">
-                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
-                                          <Copy className="h-3 w-3" />
-                                        </button>
-                                        <span className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-snug">{String(v)}</span>
-                                      </li>
-                                    ))}
+                                  <ul className="space-y-1">
+                                    {displayItems.map((v, idx) => {
+                                      const itemId = `ideology:${key}:${idx}`;
+                                      const itemText = String(v);
+                                      return (
+                                        <li key={idx}>
+                                          <BrainSelectableItem
+                                            id={itemId}
+                                            text={itemText}
+                                            isSelected={!!brainSelections[itemId]}
+                                            onToggle={() => toggleBrainItem(itemId, itemText, 'ideology', 'אידיאולוגיה וערכים')}
+                                            onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'ideology', 'אידיאולוגיה וערכים', note)}
+                                            onCopy={() => _psCopy(v)}
+                                          />
+                                        </li>
+                                      );
+                                    })}
                                   </ul>
                                 )}
                               </div>
@@ -5648,15 +6271,48 @@ export function VideoDetailPanel({
                         </div>
                       )}
                     </TabsContent>
-                  </>
+                    </>
+                    </Tabs>
+                  </div>
                   </PoliticalTabBoundary>
+                  </TabsContent>
                 );
               })()}
               </Tabs>
               </div>{/* closes main content */}
             </div>{/* closes main content row */}
+            </PanelErrorBoundary>
           </div>{/* closes max-w-[1400px] wrapper */}
         </ScrollArea>
+
+        {/* ── Brain Selection Floating Bar ─────────────────────────────── */}
+        {brainSelectionCount > 0 && (
+          <div
+            className="flex-shrink-0 flex items-center justify-between gap-3 border-t border-indigo-200 bg-indigo-50/95 dark:border-indigo-800/50 dark:bg-indigo-950/80 px-6 py-3"
+            dir="rtl"
+          >
+            <button
+              type="button"
+              onClick={clearBrainSelections}
+              className="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+            >
+              ✕ בטל בחירה
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">
+                {brainSelectionCount} פריטים נבחרו
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveBrainSelections}
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+              >
+                🧠 שמור {brainSelectionCount} למוח
+              </button>
+            </div>
+          </div>
+        )}
+
       </DialogContent>
     </Dialog>
 
@@ -6120,6 +6776,17 @@ export function VideoDetailPanel({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* ── Multi-select floating action bar ── */}
+    {multiSelected.size > 0 && (
+      <div dir="rtl" className="fixed bottom-6 left-1/2 z-[9999] -translate-x-1/2 flex items-center gap-3 rounded-2xl bg-zinc-900/95 px-5 py-3 shadow-2xl ring-1 ring-white/10 backdrop-blur-sm">
+        <span className="text-sm font-semibold text-white whitespace-nowrap">נבחרו {multiSelected.size} פריטים</span>
+        <div className="w-px h-5 bg-white/20 shrink-0" />
+        <button type="button" onClick={handleSaveSelectedToObsidian} className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">💾 שמור ל-Obsidian</button>
+        <button type="button" onClick={handleSaveSelectedToBrain} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">🧠 שמור למוח</button>
+        <button type="button" onClick={multiSelectClear} className="flex items-center gap-1.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95">❌ נקה</button>
+      </div>
+    )}
     </>
   );
 }
