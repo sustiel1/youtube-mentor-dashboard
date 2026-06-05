@@ -2123,6 +2123,29 @@ export function VideoDetailPanel({
     }
   }, [knowledgeItemId]);
 
+  // Must be before 'if (!video) return null' — hooks cannot be called after a conditional return
+  const handleSubtitleSave = useCallback(async () => {
+    if (!video?.id || isSubtitleSaving) return;
+    const normalizedSubtitle = subtitleDraft.trim();
+    const nextSubtitle = normalizedSubtitle || null;
+    const currentSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
+    if ((currentSubtitle || null) === nextSubtitle) { setIsSubtitleEditing(false); return; }
+    setIsSubtitleSaving(true);
+    try {
+      const updates = { customSubtitle: nextSubtitle };
+      await saveVideoFields(updates);
+      const nextVideo = { ...video, ...updates };
+      saveSavedAnalysis(video.id, { ...buildAnalysisSnapshot(nextVideo), savedAt: new Date().toISOString() });
+      console.log("[VideoHeader] Subtitle saved:", nextSubtitle);
+      setIsSubtitleEditing(false);
+    } catch (error) {
+      console.warn("[VideoHeader] Subtitle save failed:", error?.message || error);
+      toast.error("שמירת תת-הכותרת נכשלה");
+    } finally {
+      setIsSubtitleSaving(false);
+    }
+  }, [buildAnalysisSnapshot, isSubtitleSaving, saveVideoFields, subtitleDraft, video]);
+
   if (!video) return null;
 
   const toggleBrainItem = (id, text, sourceTab, tabLabel) => {
@@ -2353,36 +2376,6 @@ export function VideoDetailPanel({
         : [],
     };
   };
-
-  const handleSubtitleSave = useCallback(async () => {
-    if (!video?.id || isSubtitleSaving) return;
-    const normalizedSubtitle = subtitleDraft.trim();
-    const nextSubtitle = normalizedSubtitle || null;
-    const currentSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
-
-    if ((currentSubtitle || null) === nextSubtitle) {
-      setIsSubtitleEditing(false);
-      return;
-    }
-
-    setIsSubtitleSaving(true);
-    try {
-      const updates = { customSubtitle: nextSubtitle };
-      await saveVideoFields(updates);
-      const nextVideo = { ...video, ...updates };
-      saveSavedAnalysis(video.id, {
-        ...buildAnalysisSnapshot(nextVideo),
-        savedAt: new Date().toISOString(),
-      });
-      console.log("[VideoHeader] Subtitle saved:", nextSubtitle);
-      setIsSubtitleEditing(false);
-    } catch (error) {
-      console.warn("[VideoHeader] Subtitle save failed:", error?.message || error);
-      toast.error("שמירת תת-הכותרת נכשלה");
-    } finally {
-      setIsSubtitleSaving(false);
-    }
-  }, [buildAnalysisSnapshot, isSubtitleSaving, saveVideoFields, subtitleDraft, video]);
 
   const handleSaveAnalysis = () => {
     const snapshot = buildAnalysisSnapshot();
