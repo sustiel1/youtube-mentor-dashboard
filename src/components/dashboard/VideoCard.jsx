@@ -253,7 +253,18 @@ export function VideoCard({
       >
         <div className="shrink-0">
           <h3 className="line-clamp-2 min-h-[2.75rem] text-right text-sm font-semibold leading-snug text-slate-900 dark:text-white">
-            {video.title}
+            {(() => {
+              const videoUrl = buildVideoUrl(video);
+              return videoUrl ? (
+                <a
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="hover:underline"
+                >{video.title}</a>
+              ) : video.title;
+            })()}
           </h3>
         </div>
 
@@ -277,10 +288,12 @@ export function VideoCard({
             const nameCls = isUnknown
               ? "truncate text-right text-xs text-slate-400 dark:text-zinc-500"
               : "truncate text-right text-xs text-slate-500 dark:text-zinc-300";
-            if (mentorChannelUrl) {
+            const channelHref = mentorChannelUrl
+              || (video.channelId ? `https://www.youtube.com/channel/${video.channelId}` : null);
+            if (channelHref) {
               return (
                 <a
-                  href={mentorChannelUrl}
+                  href={channelHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}

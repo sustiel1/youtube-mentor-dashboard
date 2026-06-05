@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -29,7 +29,9 @@ import {
   validateAiAnalysisQuality,
   validateChaptersForSave,
 } from "@/services/videoAnalytics";
-import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable } from "@/services/youtubeTranscript";
+import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache } from "@/services/youtubeTranscript";
+import { clearSegments } from "@/lib/localSegmentStore";
+import { deleteChunks } from "@/lib/localChunkStore";
 import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
 import { fetchVideoDescription, fetchVideoMetadata } from "@/services/youtubeApi";
 import {
@@ -67,7 +69,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 import { ObsidianExportButton } from "./ObsidianExportButton";
-import { buildVideoFullNote, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
+import { buildVideoFullNote, buildObsidianUrl, openObsidianUrl, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
 import { getManualNotesByTopic } from "@/lib/localManualNoteStore";
 import { createKnowledgeItemFromVideo, getKnowledgeItems, upsertKnowledgeItem } from "@/lib/localKnowledgeItemStore";
 import { CategoryBadge } from "./CategoryBadge";
@@ -83,6 +85,88 @@ import { resolveChannelToMentor } from "@/lib/channelMentorResolver";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
+import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
+
+// ── PanelThumbnail — uses full fallback chain + gray-placeholder detection ────
+function PanelThumbnail({ video }) {
+  const youtubeId = video?.youtubeId;
+  const storedUrl = video?.thumbnail || video?.thumbnailUrl;
+
+  const { src, status, onError: hookOnError, onLoad: hookOnLoad, refresh } = useThumbnailFallback({
+    youtubeId,
+    storedUrl,
+  });
+
+  useEffect(() => {
+    if (youtubeId) {
+      console.log(`[Thumbnail] videoId=${youtubeId}`);
+      console.log(`[Thumbnail] original url=${storedUrl || '(none)'}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeId]);
+
+  const handleLoad = useCallback((e) => {
+    console.log(`[Thumbnail] load success — videoId=${youtubeId} url=${src}`);
+    hookOnLoad(e);
+  }, [youtubeId, src, hookOnLoad]);
+
+  const handleError = useCallback(() => {
+    console.log(`[Thumbnail] load failed — videoId=${youtubeId} url=${src}`);
+    console.log(`[Thumbnail] fallback activated — videoId=${youtubeId}`);
+    hookOnError();
+  }, [youtubeId, src, hookOnError]);
+
+  if (status === 'failed') {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-100 dark:bg-zinc-900">
+        <span className="text-slate-400 dark:text-zinc-500 text-sm select-none">📺 אין תמונה זמינה</span>
+        {youtubeId && (
+          <button
+            type="button"
+            onClick={() => {
+              console.log(`[Thumbnail] manual refresh — videoId=${youtubeId}`);
+              refresh();
+            }}
+            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            רענן תמונת סרטון
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={video?.title}
+      className="w-full h-full object-cover"
+      onError={handleError}
+      onLoad={handleLoad}
+    />
+  );
+}
+
+// ── ErrorBoundary for political tab content ──────────────────────────────────
+class PoliticalTabBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error) {
+    console.error('[Render Error] political tab failed:', error.message, error.stack?.split('\n')[1]?.trim());
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div dir="rtl" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right dark:border-red-800/50 dark:bg-red-950/20">
+          <p className="text-sm font-bold text-red-700 dark:text-red-300">אירעה שגיאה בהצגת הטאב — בדוק Console</p>
+          <p className="text-xs text-red-500 dark:text-red-400 mt-1 font-mono">{this.state.error.message}</p>
+          <button type="button" onClick={() => this.setState({ error: null })} className="mt-2 text-xs text-red-600 hover:underline dark:text-red-400">נסה שוב</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function getWatchUrl(video) {
   if (!video) return "";
@@ -477,7 +561,7 @@ function buildAnalysisQualityExplanation({
   }
 }
 
-const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2" };
+const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2", gems: "GEMS JSON" };
 
 function extractSavedAnalysisMeta(saved) {
   if (!saved) return null;
@@ -671,6 +755,189 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
   );
 }
 // ─────────────────────────────────────────────────────────────────────────────
+// GEMS JSON repair helpers
+
+function repairGemsJson(raw) {
+  let s = raw.trim();
+  const fixes = [];
+
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  if (/^```(?:json)?\s*/i.test(s)) {
+    s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    fixes.push('Removed markdown wrapper');
+  }
+
+  // Skip leading non-JSON text before first { or [
+  const jsonStart = s.search(/[{[]/);
+  if (jsonStart > 0) {
+    s = s.slice(jsonStart);
+    fixes.push('Skipped leading non-JSON text');
+  }
+
+  // Fix curly/smart quotes → standard ASCII quotes
+  const beforeQuotes = s;
+  s = s.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
+  if (s !== beforeQuotes) fixes.push('Fixed smart/curly quotes');
+
+  // Remove trailing commas before } or ]
+  const beforeTrailing = s;
+  s = s.replace(/,(\s*[}\]])/g, '$1');
+  if (s !== beforeTrailing) fixes.push('Fixed trailing comma');
+
+  // Remove ASCII control chars except tab/newline/carriage-return (handled below)
+  const beforeControl = s;
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  if (s !== beforeControl) fixes.push('Removed control characters');
+
+  // Escape literal newlines / carriage-returns / tabs embedded inside JSON string values.
+  // JSON spec forbids unescaped \n \r \t inside string literals.
+  // AI models sometimes emit real line-breaks inside strings → "Bad control character" error.
+  {
+    const beforeNl = s;
+    let out = '';
+    let inS = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (esc) { out += c; esc = false; continue; }
+      if (c === '\\' && inS) { out += c; esc = true; continue; }
+      if (c === '"') { inS = !inS; out += c; continue; }
+      if (inS) {
+        if (c === '\n') { out += '\\n'; continue; }
+        if (c === '\r') { out += '\\r'; continue; }
+        if (c === '\t') { out += '\\t'; continue; }
+      }
+      out += c;
+    }
+    s = out;
+    if (s !== beforeNl) fixes.push('Escaped literal line-breaks inside strings');
+  }
+
+  // Remove extra/unmatched closing brackets/braces
+  {
+    const removeSet = new Set();
+    const sc = [];
+    let inS = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (esc) { esc = false; continue; }
+      if (c === '\\' && inS) { esc = true; continue; }
+      if (c === '"') { inS = !inS; continue; }
+      if (inS) continue;
+      if (c === '{') sc.push({ c: '}', i });
+      else if (c === '[') sc.push({ c: ']', i });
+      else if (c === '}' || c === ']') {
+        if (sc.length && sc[sc.length - 1].c === c) sc.pop();
+        else removeSet.add(i);
+      }
+    }
+    if (removeSet.size > 0) {
+      s = [...s].filter((_, idx) => !removeSet.has(idx)).join('');
+      fixes.push(`Removed ${removeSet.size} extra closing bracket(s)`);
+    }
+  }
+
+  // Balance missing closing brackets/braces (scans outside string literals)
+  const stack = [];
+  let inStr = false, escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === '\\' && inStr) { escaped = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') stack.push('}');
+    else if (c === '[') stack.push(']');
+    else if (c === '}' || c === ']') { if (stack.length && stack[stack.length - 1] === c) stack.pop(); }
+  }
+  if (stack.length > 0) {
+    const closing = stack.reverse().join('');
+    s = s + '\n' + closing;
+    fixes.push(`Added missing closing bracket(s): ${closing}`);
+  }
+
+  // Escape unescaped quotes inside string values.
+  // Pass 1 (regex): Hebrew gershayim כ"ט / abbreviations (word-char " word-char).
+  //   ְ-׿ covers the full Hebrew Unicode block (alef–tav, nikud, punctuation)
+  const beforeGershayim = s;
+  s = s.replace(/([ְ-׿\w])"([ְ-׿\w])/g, '$1\\"$2');
+  if (s !== beforeGershayim) fixes.push('Escaped Hebrew gershayim / in-word quote(s)');
+
+  // Pass 2 (position-based): remaining unescaped quotes caught by parse error position.
+  //   Works in Chrome <120 / Node.js where error message contains "position N" / "at N".
+  let quoteFixes = 0;
+  for (let attempt = 0; attempt < 15; attempt++) {
+    try { JSON.parse(s); break; } catch (err) {
+      const loc = getJsonErrorLocation(s, err.message);
+      if (!loc || loc.pos <= 0) break;
+      if (s[loc.pos - 1] !== '"') break;
+      s = s.slice(0, loc.pos - 1) + '\\"' + s.slice(loc.pos);
+      quoteFixes++;
+    }
+  }
+  if (quoteFixes > 0) fixes.push(`Escaped ${quoteFixes} additional unescaped quote(s)`);
+
+  fixes.forEach(fix => console.log(`[JSON Repair] ${fix}`));
+  if (fixes.length === 0) console.log('[JSON Repair] No automatic fixes needed');
+  return s;
+}
+
+function getJsonErrorLocation(raw, errMsg) {
+  // Chrome/Node: "at position N" or "position N"
+  const posMatch = errMsg.match(/position (\d+)/i);
+  if (posMatch) {
+    const pos = parseInt(posMatch[1], 10);
+    const before = raw.slice(0, pos);
+    const lines = before.split('\n');
+    return { pos, line: lines.length, col: lines[lines.length - 1].length + 1, char: raw[pos] ?? 'EOF' };
+  }
+  // Firefox: "at line N column M of the JSON data"
+  const lcMatch = errMsg.match(/line (\d+) column (\d+)/i);
+  if (lcMatch) {
+    const line = parseInt(lcMatch[1], 10);
+    const col = parseInt(lcMatch[2], 10);
+    const rawLines = raw.split('\n');
+    let pos = 0;
+    for (let i = 0; i < line - 1 && i < rawLines.length; i++) pos += rawLines[i].length + 1;
+    pos += col - 1;
+    return { pos, line, col, char: raw[pos] ?? 'EOF' };
+  }
+  // Fallback: bare "at N"
+  const atMatch = errMsg.match(/\bat (\d+)\b/);
+  if (atMatch) {
+    const pos = parseInt(atMatch[1], 10);
+    const before = raw.slice(0, pos);
+    const lines = before.split('\n');
+    return { pos, line: lines.length, col: lines[lines.length - 1].length + 1, char: raw[pos] ?? 'EOF' };
+  }
+  return null;
+}
+
+function translateJsonError(msg) {
+  if (!msg) return null;
+  const m = String(msg);
+  if (/Unexpected string/i.test(m)) return { en: 'Unexpected string', he: 'מחרוזת לא צפויה — ייתכן חסרה פסיק או טקסט מחוץ ל-JSON' };
+  if (/Expected.*,/i.test(m) || /Missing comma/i.test(m)) return { en: 'Missing comma', he: 'חסרה פסיק בין שדות' };
+  if (/Unexpected token/i.test(m)) return { en: 'Unexpected token', he: 'תו לא צפוי — בעיה בתחביר' };
+  if (/Unexpected end/i.test(m)) return { en: 'Unexpected end of JSON', he: 'ה-JSON לא הושלם — ייתכן חסרים סוגריים בסוף' };
+  if (/Expected.*:/i.test(m)) return { en: 'Missing colon', he: 'חסרה נקודתיים' };
+  if (/Extra data/i.test(m)) return { en: 'Extra data after JSON', he: 'טקסט מחוץ ל-JSON' };
+  return { en: m, he: 'שגיאת תחביר' };
+}
+
+function getJsonErrorContext(raw, pos, linesBefore = 3, linesAfter = 3) {
+  if (pos == null || pos < 0) return null;
+  const lines = raw.split('\n');
+  const before = raw.slice(0, pos);
+  const errorLineIdx = before.split('\n').length - 1;
+  const start = Math.max(0, errorLineIdx - linesBefore);
+  const end = Math.min(lines.length - 1, errorLineIdx + linesAfter);
+  return lines.slice(start, end + 1).map((text, i) => ({
+    lineNum: start + i + 1,
+    text,
+    isError: start + i === errorLineIdx,
+  }));
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function VideoDetailPanel({
   video: videoProp,
@@ -732,6 +999,14 @@ export function VideoDetailPanel({
   const [isGemsPasteOpen, setIsGemsPasteOpen] = useState(false);
   const [gemsPasteInput, setGemsPasteInput] = useState("");
   const [gemsPasteError, setGemsPasteError] = useState("");
+  const [gemsParsedErrorInfo, setGemsParsedErrorInfo] = useState(null);
+  const [gemsRepairApplied, setGemsRepairApplied] = useState(false);
+  const [gemsErrorContext, setGemsErrorContext] = useState(null);
+  const [gemsJsonApplied, setGemsJsonApplied] = useState(false);
+  const [politicalSummary, setPoliticalSummary] = useState(null);
+  const [isPoliticalSummaryLoading, setIsPoliticalSummaryLoading] = useState(false);
+  const [politicalSummaryError, setPoliticalSummaryError] = useState(null);
+  const [savedPsSections, setSavedPsSections] = useState({});
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
@@ -741,17 +1016,56 @@ export function VideoDetailPanel({
   const [recApplied, setRecApplied] = useState(false);
   const [vaultSubtopics, setVaultSubtopics] = useState([]);
   const [gemOverride, setGemOverride] = useState(null);
+  const [transcriptSearch, setTranscriptSearch] = useState("");
+  const [transcriptSearchIndex, setTranscriptSearchIndex] = useState(0);
   const hasSavedAnalysis = !!savedAnalysisMeta;
   const queryClient = useQueryClient();
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
   useEffect(() => {
+    if (!video) { setPoliticalSummary(null); return; }
+    const key = `political_summary_${video.id || video.youtubeId}`;
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log(`[PoliticalSummary] loaded from JSON for videoId=${video.id || video.youtubeId}`);
+        setPoliticalSummary(parsed);
+      } else {
+        setPoliticalSummary(null);
+      }
+    } catch { setPoliticalSummary(null); }
+    setPoliticalSummaryError(null);
+  }, [video?.id, video?.youtubeId]);
+  useEffect(() => {
+    const videoId = video?.youtubeId || video?.id;
+    if (!videoId) { setSavedPsSections({}); return; }
+    const prefix = `political:${videoId}:`;
+    const saved = {};
+    getKnowledgeItems().forEach(item => {
+      if (item.id?.startsWith(prefix)) saved[item.id.slice(prefix.length)] = true;
+    });
+    setSavedPsSections(saved);
+  }, [video?.id, video?.youtubeId]);
+  useEffect(() => {
+    if (!isGemsPasteOpen) return;
+    const saved = video?.id ? (localStorage.getItem(`gems-paste-${video.id}`) || '') : '';
+    setGemsPasteInput(saved);
+    setGemsPasteError('');
+    setGemsParsedErrorInfo(null);
+    setGemsRepairApplied(false);
+    setGemsErrorContext(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGemsPasteOpen]);
+  useEffect(() => {
     setCategoryOverride(null);
     setSubCategoryOverride(null);
     setRecApplied(false);
     setVaultSubtopics([]);
     setGemOverride(video?.gemOverride ?? null);
+    const appliedKey = video?.id ? `gems-applied-${video.id}` : null;
+    setGemsJsonApplied(appliedKey ? localStorage.getItem(appliedKey) === 'true' : false);
   }, [video?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pendingBrainSave && !isKnowledgePickerOpen) {
@@ -850,6 +1164,14 @@ export function VideoDetailPanel({
     }, 150);
     return () => clearTimeout(timer);
   }, [highlightedChapterIndex]);
+
+  useEffect(() => {
+    setTranscriptSearchIndex(0);
+    const timer = setTimeout(() => {
+      document.getElementById("ts-match-0")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [transcriptSearch]);
 
   const scrollToLearningNotes = () => {
     const el = document.getElementById("learning-notes");
@@ -1093,8 +1415,25 @@ export function VideoDetailPanel({
 
   useEffect(() => {
     if (!video?.id) { setSavedAnalysisMeta(null); return; }
-    setSavedAnalysisMeta(extractSavedAnalysisMeta(loadSavedAnalysis(video.id)));
-  }, [video?.id, open]);
+    const saved = loadSavedAnalysis(video.id);
+    if (saved) {
+      console.log(`[AI Analysis] loaded from storage for videoId=${video.id}`);
+      setSavedAnalysisMeta(extractSavedAnalysisMeta(saved));
+      return;
+    }
+    // Fallback: derive from video fields when no formal save exists
+    if (video.analysisProvider && (video.shortSummary || video.fullSummary || video.keyInsights?.length)) {
+      console.log(`[AI Analysis] loaded from storage for videoId=${video.id} (fallback from video state)`);
+      setSavedAnalysisMeta({
+        provider: video.analysisProvider,
+        providerLabel: PROVIDER_LABELS[video.analysisProvider] ?? 'ניתוח קיים',
+        savedAt: video.analyzedAt || null,
+      });
+    } else {
+      console.log(`[AI Analysis] no saved analysis found for videoId=${video.id}`);
+      setSavedAnalysisMeta(null);
+    }
+  }, [video?.id, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!open || !video?.id) return;
@@ -1135,6 +1474,16 @@ export function VideoDetailPanel({
       strategyOrMethod: savedAnalysis.strategyOrMethod ?? undefined,
       rules: Array.isArray(savedAnalysis.rules) ? savedAnalysis.rules : undefined,
       mistakesToAvoid: Array.isArray(savedAnalysis.mistakesToAvoid) ? savedAnalysis.mistakesToAvoid : undefined,
+      warnings: Array.isArray(savedAnalysis.warnings) ? savedAnalysis.warnings : undefined,
+      concepts: Array.isArray(savedAnalysis.concepts) ? savedAnalysis.concepts : undefined,
+      frameworks: Array.isArray(savedAnalysis.frameworks) ? savedAnalysis.frameworks : undefined,
+      thesis: Array.isArray(savedAnalysis.thesis) ? savedAnalysis.thesis : undefined,
+      questions: Array.isArray(savedAnalysis.questions) ? savedAnalysis.questions : undefined,
+      checklists: Array.isArray(savedAnalysis.checklists) ? savedAnalysis.checklists : undefined,
+      brainSummary: savedAnalysis.brainSummary ?? undefined,
+      contentType: savedAnalysis.contentType ?? undefined,
+      mainClaim: savedAnalysis.mainClaim ?? undefined,
+      speakerPosition: savedAnalysis.speakerPosition ?? undefined,
       duration: savedAnalysis.duration ?? undefined,
       viewCount: savedAnalysis.viewCount ?? undefined,
     });
@@ -1453,6 +1802,160 @@ export function VideoDetailPanel({
     return { markdown: lines.join('\n'), stats, totalItems };
   }, [video, videoNotes]);
 
+  const handleGeneratePoliticalSummary = useCallback(async () => {
+    if (!fullTranscriptText || fullTranscriptText.trim().length < 100) return;
+    setIsPoliticalSummaryLoading(true);
+    setPoliticalSummaryError(null);
+    try {
+      const res = await fetch('/api/political-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: video?.youtubeId || video?.id,
+          title: video?.title || '',
+          transcriptText: fullTranscriptText,
+          channelName: video?.channelTitle || video?.channelName || '',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || `שגיאה ${res.status}`);
+      const _vid = video?.youtubeId || video?.id;
+      if (data.politicalSummary) {
+        console.log(`[PoliticalSummary] loaded from JSON for videoId=${_vid}`);
+      } else {
+        console.log(`[PoliticalSummary] generated fallback for videoId=${_vid}`);
+      }
+      setPoliticalSummary(data);
+      const key = `political_summary_${video?.id || video?.youtubeId}`;
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log(`[PoliticalSummary] saved for videoId=${_vid}`);
+    } catch (err) {
+      setPoliticalSummaryError(err.message || 'שגיאה ביצירת הסיכום');
+    } finally {
+      setIsPoliticalSummaryLoading(false);
+    }
+  // fullTranscriptText is defined at line ~3011 (after this callback).
+  // It's safe to omit from deps — it's recaptured from closure on every render via video change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video]);
+
+  const handleDeletePoliticalSummary = useCallback(() => {
+    setPoliticalSummary(null);
+    setPoliticalSummaryError(null);
+    const key = `political_summary_${video?.id || video?.youtubeId}`;
+    localStorage.removeItem(key);
+  }, [video]);
+
+  // Auto-generate political summary when video opens and has transcript but no stored summary.
+  // Deps: video id + gem key only — does NOT trigger on manual delete (by design).
+  useEffect(() => {
+    const isPolitical = effectiveGemInfo?.gemKey === 'political';
+    const videoId = video?.youtubeId || video?.id;
+    if (!isPolitical || !videoId) return;
+
+    // If already stored in localStorage, the load-effect will restore state — skip
+    const savedKey = `political_summary_${videoId}`;
+    if (localStorage.getItem(savedKey)) return;
+
+    const hasTranscript = (
+      (typeof video?.transcript === 'string' && video.transcript.trim().length >= 100) ||
+      (typeof video?.manualTranscript === 'string' && video.manualTranscript.trim().length >= 100) ||
+      (Array.isArray(video?.transcriptSegments) && video.transcriptSegments.length > 10)
+    );
+    const hasAnalysisData = (
+      video?.keyInsights?.length > 0 ||
+      video?.arguments?.length > 0 ||
+      video?.knowledgePoints?.length > 0 ||
+      video?.viralQuotes?.length > 0
+    );
+
+    if (!hasTranscript && !hasAnalysisData) {
+      console.log(`[PoliticalSummary] no transcript found for videoId=${videoId}`);
+      return;
+    }
+
+    console.log(`[PoliticalSummary] transcript exists for videoId=${videoId}`);
+
+    // Has analysis data but no full transcript — build fallback from existing fields
+    if (hasAnalysisData && !hasTranscript) {
+      const fallback = {
+        keyInsights: video.keyInsights || [],
+        arguments: video.arguments || [],
+        counterArguments: video.counterArguments || [],
+        knowledgePoints: video.knowledgePoints || [],
+        viralQuotes: video.viralQuotes || [],
+        debateResponses: video.debateResponses || [],
+      };
+      console.log(`[PoliticalSummary] fallback generated for videoId=${videoId}`);
+      setPoliticalSummary(fallback);
+      localStorage.setItem(savedKey, JSON.stringify(fallback));
+      console.log(`[PoliticalSummary] saved for videoId=${videoId}`);
+      return;
+    }
+
+    // Has transcript — call API for full analysis
+    console.log(`[PoliticalSummary] auto generation started for videoId=${videoId}`);
+    handleGeneratePoliticalSummary();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id, video?.youtubeId, effectiveGemInfo?.gemKey]);
+
+  const handleSavePsSection = useCallback((sectionKey, sectionLabel, content, sectionTypeOverride) => {
+    const videoId = video?.youtubeId || video?.id;
+    if (!videoId || !content) return;
+    const markdownContent = Array.isArray(content)
+      ? content.map((s, i) => `${i + 1}. ${s}`).join('\n')
+      : String(content);
+    const resolvedSectionType = sectionTypeOverride || 'politicalSummary';
+    const itemId = `political:${videoId}:${sectionKey}`;
+    const now = new Date().toISOString();
+    const item = {
+      id: itemId,
+      title: `${sectionLabel} — ${video?.title || 'סרטון'}`,
+      content: `## ${sectionLabel}\n\n${markdownContent}\n\n---\nמקור: [${video?.title || ''}](https://youtube.com/watch?v=${videoId})\nערוץ: ${video?.channelTitle || video?.channelName || ''}`,
+      topicId: video?.topicIds?.[0] || null,
+      videoId,
+      videoTitle: video?.title || '',
+      channelTitle: video?.channelTitle || video?.channelName || '',
+      sourceType: 'youtube',
+      sourceId: videoId,
+      sectionType: resolvedSectionType,
+      sectionName: sectionKey,
+      workspacePath: (() => {
+        const POLITICAL_PATHS = {
+          politicalSummary:         'פוליטיקה/סיכום פוליטי',
+          ideologyAnalysis:         'פוליטיקה/אידיאולוגיה וערכים',
+          theologyAnalysis:         'פוליטיקה/דת ותיאולוגיה',
+          liberalJewishPerspective: 'פוליטיקה/יהדות ליברלית',
+          opponentView:             'פוליטיקה/דעת הצד השני',
+          debateResponses:          'פוליטיקה/תגובות לוויכוחים',
+          commentBank:              'פוליטיקה/בנק תגובות',
+          campaignKit:              'פוליטיקה/קיט קמפיין',
+          reusableKnowledge:        'פוליטיקה/ידע רב פעמי',
+        };
+        const base = POLITICAL_PATHS[resolvedSectionType] || 'פוליטיקה';
+        return `${base}/${(video?.title || videoId).slice(0, 40)}/${sectionLabel}.md`;
+      })(),
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        contentRole: 'my_position',
+        perspective: 'self',
+        userPosition: 'endorsed',
+        sectionType: resolvedSectionType,
+        sectionName: sectionKey,
+        videoId,
+        videoTitle: video?.title || '',
+        channelTitle: video?.channelTitle || video?.channelName || '',
+        topic: video?.category || null,
+        subTopic: video?.subCategory || null,
+        createdAt: now,
+      },
+    };
+    upsertKnowledgeItem(item);
+    setSavedPsSections(prev => ({ ...prev, [sectionKey]: true }));
+    toast.success(`✅ ${sectionLabel} נשמר למוח`);
+  }, [video]);
+
   const handleSaveAllToBrain = useCallback(() => {
     const content = buildSaveAllContent();
     const cleanStr = (s) => String(s || '').replace(/[/\\?*:|"<>]/g, '').trim();
@@ -1557,6 +2060,16 @@ export function VideoDetailPanel({
       strategyOrMethod: v.strategyOrMethod ?? null,
       rules: Array.isArray(v.rules) ? v.rules : [],
       mistakesToAvoid: Array.isArray(v.mistakesToAvoid) ? v.mistakesToAvoid : [],
+      warnings: Array.isArray(v.warnings) ? v.warnings : [],
+      concepts: Array.isArray(v.concepts) ? v.concepts : [],
+      frameworks: Array.isArray(v.frameworks) ? v.frameworks : [],
+      thesis: Array.isArray(v.thesis) ? v.thesis : [],
+      questions: Array.isArray(v.questions) ? v.questions : [],
+      checklists: Array.isArray(v.checklists) ? v.checklists : [],
+      brainSummary: v.brainSummary ?? null,
+      contentType: v.contentType ?? null,
+      mainClaim: v.mainClaim ?? null,
+      speakerPosition: v.speakerPosition ?? null,
       duration: v.duration ?? null,
       viewCount: v.viewCount ?? null,
       analysisSavedAt: new Date().toISOString(),
@@ -1587,31 +2100,154 @@ export function VideoDetailPanel({
     toast.success("הניתוח נשמר");
   };
 
+  const _applyParsedGems = (parsed) => {
+    console.log('[GEMS Parse] parsed keys:', Object.keys(parsed || {}).join(', '));
+    console.log('[GEMS Parse] has politicalSummary:', !!parsed?.politicalSummary);
+    console.log('[GEMS Parse] has theologyAnalysis:', !!(parsed?.theologyAnalysis || parsed?.politicalSummary?.theologyAnalysis));
+    console.log('[GEMS Parse] has opponentView:', !!(parsed?.opponentView || parsed?.politicalSummary?.opponentView));
+    console.log('[GEMS Parse] has viralQuotes:', !!(parsed?.viralQuotes?.length || parsed?.politicalSummary?.viralQuotes?.length));
+    const normalized = normalizeAiAnalysisResult(parsed);
+    if (!normalized) { setGemsPasteError("לא זוהה פורמט ניתוח תקין"); return false; }
+    console.log('[GEMS JSON] parse success');
+    const gemsPatched = persistAnalysisState({ ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() });
+    console.log('[GEMS JSON] data mapped to app state');
+
+    // If GEMS JSON contains politicalSummary, persist it immediately
+    if (parsed.politicalSummary) {
+      const videoId = video?.youtubeId || video?.id;
+      if (videoId) {
+        const savedKey = `political_summary_${videoId}`;
+        localStorage.setItem(savedKey, JSON.stringify(parsed));
+        setPoliticalSummary(parsed);
+        console.log(`[PoliticalSummary] loaded from GEMS JSON for videoId=${videoId}`);
+        console.log(`[PoliticalSummary] saved for videoId=${videoId}`);
+      }
+    }
+
+    if (video?.id) {
+      const nextVideo = { ...video, ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() };
+      const snapshot = buildAnalysisSnapshot(nextVideo);
+      saveSavedAnalysis(video.id, snapshot);
+      setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gems', analysisSavedAt: snapshot.analysisSavedAt }));
+      localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      console.log(`[GEMS JSON] saved for videoId=${video.id}`);
+      console.log(`[AI Analysis] saved for videoId=${video.id}`);
+    }
+    setGemsJsonApplied(true);
+    console.log('[GEMS JSON] status updated to valid');
+
+    setGemsPasteError("");
+    setGemsParsedErrorInfo(null);
+    setGemsRepairApplied(false);
+    setIsGemsPasteOpen(false);
+    setActiveTab("summary");
+    console.log('[Tabs] active tab after analysis: summary');
+    toast.success("GEMS JSON נקלט בהצלחה ✓ הנתונים עודכנו");
+    toast.success("הניתוח נשמר בהצלחה ✓");
+    return true;
+  };
+
   const handleApplyGemsJson = () => {
     const raw = gemsPasteInput.trim();
     if (!raw) { setGemsPasteError("הדבק JSON לפני לחיצה על החל"); return; }
     let parsed;
-    try { parsed = JSON.parse(raw); } catch { setGemsPasteError("JSON לא תקין — בדוק שאין שגיאות syntax"); return; }
+    let parseErr = null;
     try {
-      const normalized = normalizeAiAnalysisResult(parsed);
-      if (!normalized) { setGemsPasteError("לא זוהה פורמט ניתוח תקין"); return; }
-      persistAnalysisState(normalized);
-      setGemsPasteInput("");
-      setGemsPasteError("");
-      setIsGemsPasteOpen(false);
-      toast.success("ניתוח GEMS הוחל בהצלחה");
+      parsed = JSON.parse(raw);
     } catch (err) {
-      setGemsPasteError(`שגיאה בעיבוד: ${err.message}`);
+      parseErr = err;
+    }
+    if (parseErr) {
+      // Auto-repair attempt
+      const repaired = repairGemsJson(raw);
+      let repairedParsed;
+      try {
+        repairedParsed = JSON.parse(repaired);
+        console.log('[JSON Repair] parse success');
+        setGemsPasteInput(repaired);
+        setGemsRepairApplied(true);
+        setGemsParsedErrorInfo(null);
+        setGemsPasteError("");
+        setGemsErrorContext(null);
+        try { _applyParsedGems(repairedParsed); } catch (err) { setGemsPasteError(`שגיאה בעיבוד: ${err.message}`); }
+        return;
+      } catch {
+        const loc = getJsonErrorLocation(raw, parseErr.message);
+        const translation = translateJsonError(parseErr.message);
+        console.log('[JSON Debug] parse failed at line:', loc?.line ?? '?', 'col:', loc?.col ?? '?');
+        console.log('[JSON Debug] error message:', parseErr.message);
+        const ctx = loc ? getJsonErrorContext(raw, loc.pos) : null;
+        if (ctx) console.log('[JSON Debug] context:', ctx.find(l => l.isError)?.text ?? '');
+        setGemsParsedErrorInfo(loc ? { ...loc, msg: parseErr.message, translation } : null);
+        setGemsErrorContext(ctx);
+        const locStr = loc ? ` — שורה ${loc.line}, עמודה ${loc.col}` : '';
+        setGemsPasteError(`JSON לא תקין${locStr}`);
+        return;
+      }
+    }
+    setGemsParsedErrorInfo(null);
+    setGemsErrorContext(null);
+    try { _applyParsedGems(parsed); } catch (err) { setGemsPasteError(`שגיאה בעיבוד: ${err.message}`); }
+  };
+
+  const handleRepairGemsJson = () => {
+    const raw = gemsPasteInput.trim();
+    if (!raw) return;
+    const repaired = repairGemsJson(raw);
+    try {
+      JSON.parse(repaired);
+      console.log('[JSON Repair] parse success');
+      setGemsPasteInput(repaired);
+      setGemsRepairApplied(true);
+      setGemsParsedErrorInfo(null);
+      setGemsPasteError("");
+      setGemsErrorContext(null);
+      toast.success("JSON תוקן — לחץ 'החל ניתוח' להמשיך");
+    } catch (err2) {
+      console.log('[JSON Repair] parse failed:', err2.message);
+      const loc = getJsonErrorLocation(repaired, err2.message);
+      const ctx = loc ? getJsonErrorContext(repaired, loc.pos) : null;
+      setGemsPasteInput(repaired);
+      setGemsErrorContext(ctx);
+      setGemsParsedErrorInfo(loc ? { ...loc, msg: err2.message, translation: translateJsonError(err2.message) } : null);
+      setGemsPasteError(loc ? `התיקון האוטומטי נכשל — הבעיה נמצאת ליד שורה ${loc.line}` : "תיקון אוטומטי לא הצליח — ערוך ידנית");
     }
   };
 
+  const handleClearGemsPaste = () => {
+    setGemsPasteInput('');
+    setGemsPasteError('');
+    setGemsParsedErrorInfo(null);
+    setGemsRepairApplied(false);
+    setGemsErrorContext(null);
+    if (video?.id) localStorage.removeItem(`gems-paste-${video.id}`);
+  };
+
+  const handleCopyGemsError = () => {
+    if (!gemsParsedErrorInfo) return;
+    const { line, col, char, msg, translation } = gemsParsedErrorInfo;
+    const contextLines = gemsErrorContext
+      ? gemsErrorContext.map(ln => `${String(ln.lineNum).padStart(4)}: ${ln.text}${ln.isError ? '  ◀' : ''}`).join('\n')
+      : '';
+    const report = [
+      'JSON Error Report',
+      '=================',
+      `שגיאה: JSON לא תקין — שורה ${line}, עמודה ${col}`,
+      `שורה: ${line} · עמודה: ${col} · תו: "${char}"`,
+      translation ? `סיבה: ${translation.en} — ${translation.he}` : `סיבה: ${msg}`,
+      '',
+      'אזור בעייתי:',
+      contextLines,
+    ].filter(l => l !== undefined).join('\n');
+    navigator.clipboard.writeText(report).then(() => toast.success("שגיאה הועתקה ללוח"));
+  };
+
   const handleDeleteSavedAnalysis = () => {
-    const ok = deleteSavedAnalysis(video.id);
-    if (!ok) {
-      toast.error("לא ניתן למחוק את הניתוח השמור");
-      return;
-    }
+    deleteSavedAnalysis(video.id);
+    localStorage.removeItem(`gems-applied-${video.id}`);
+    console.log(`[AI Analysis] deleted for videoId=${video.id}`);
     setSavedAnalysisMeta(null);
+    setGemsJsonApplied(false);
     restoredAnalysisRef.current = null;
     patchVideo({
       aiChapters: [],
@@ -1628,6 +2264,9 @@ export function VideoDetailPanel({
       strategyOrMethod: null,
       rules: [],
       mistakesToAvoid: [],
+      warnings: [],
+      concepts: [],
+      frameworks: [],
       tags: [],
       analysisProvider: null,
       analyzedAt: null,
@@ -2302,7 +2941,10 @@ export function VideoDetailPanel({
       onVideoPatch?.(nextVideo);
       onAnalyzeDone?.(nextVideo);
       console.log("[ai-reanalyze] saved", video.id);
+      console.log(`[AI Analysis] analysis completed`);
+      console.log(`[AI Analysis] saved for videoId=${video.id}`);
       toast.success("הניתוח הושלם בהצלחה");
+      toast.success("הניתוח נשמר בהצלחה ✓");
     } catch (err) {
       const code = err?.code;
       // Log raw error for debugging — never show raw err.message in toast
@@ -2508,15 +3150,39 @@ export function VideoDetailPanel({
   };
 
   const handleDeleteTranscript = () => {
+    const ytId = video?.videoId || video?.youtubeId || getVideoIdFromUrl(getWatchUrl(video));
+    let cleared = 0;
+
+    // Clear per-videoId caches
+    if (ytId) {
+      if (clearTranscriptCache(ytId)) { cleared++; console.log(`[Transcript Delete] cleared transcript cache for ${ytId}`); }
+      if (clearSegments(ytId)) { cleared++; console.log(`[Transcript Delete] cleared segments for ${ytId}`); }
+    }
+    if (video?.id) {
+      try { deleteChunks(video.id); cleared++; console.log(`[Transcript Delete] cleared chunks for ${video.id}`); } catch { /* ok */ }
+    }
+
+    // Clear all transcript + analysis fields from video record
     persistAnalysisState({
       transcript: null,
+      manualTranscript: null,
+      whisperTranscript: null,
       transcriptSegments: null,
       transcriptSource: null,
       transcriptLanguage: null,
       transcriptStatus: "unavailable",
       transcriptError: null,
+      transcriptQuality: null,
+      transcriptLength: null,
+      chapters: [],
+      aiChapters: [],
+      chapterSource: null,
+      analysisStatus: "not_analyzed",
+      analysisError: null,
     });
-    toast.success("התמלול נמחק");
+
+    console.log(`[Transcript Delete] נמחקו ${cleared} רשומות מהזיכרון עבור videoId: ${ytId}`);
+    toast.success(`🧹 נמחקו ${cleared} רשומות מהזיכרון עבור: ${ytId || video?.id}`);
   };
 
   const handleGeminiContent = async () => {
@@ -2620,6 +3286,8 @@ export function VideoDetailPanel({
       const snapshot = { ...buildAnalysisSnapshot(nextVideo), analysisSavedAt };
       saveSavedAnalysis(video.id, snapshot);
       setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gemini', analysisSavedAt }));
+      console.log(`[AI Analysis] analysis completed`);
+      console.log(`[AI Analysis] saved for videoId=${video.id}`);
       onVideoPatch?.(nextVideo);
       onAnalyzeDone?.(nextVideo);
 
@@ -2628,6 +3296,7 @@ export function VideoDetailPanel({
       const sourceLabel = analysisSource === 'youtube_url' ? 'ניתוח מבוסס קישור YouTube' : 'ניתוח מבוסס תמלול מלא';
       setGeminiMessage(sourceLabel);
       toast.success(`ניתוח Gemini הושלם — ${sourceLabel}`);
+      toast.success("הניתוח נשמר בהצלחה ✓");
     } catch (error) {
       const code = error?.code;
       const message =
@@ -2683,6 +3352,21 @@ export function VideoDetailPanel({
           ? storedTranscriptSegments.map(s => s.text || '').join(' ')
           : "";
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
+
+  const transcriptSearchMatches = (() => {
+    const q = transcriptSearch.trim().toLowerCase();
+    if (!q || !fullTranscriptText) return [];
+    const lower = fullTranscriptText.toLowerCase();
+    const results = [];
+    let pos = 0;
+    while (pos < lower.length) {
+      const idx = lower.indexOf(q, pos);
+      if (idx === -1) break;
+      results.push(idx);
+      pos = idx + 1;
+    }
+    return results;
+  })();
 
   // Regular function (not useCallback) — avoids React hooks-after-return violation
   const handleQuickCopy = async (action) => {
@@ -3032,7 +3716,7 @@ export function VideoDetailPanel({
         )}
 
         <ScrollArea className="flex-1">
-          <div className="w-full px-5 py-6 space-y-5 bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100">
+          <div dir="rtl" className="flex flex-col max-w-[1400px] mx-auto bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100">
 
             {isDev && (
               <div className="hidden rounded-xl border border-slate-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
@@ -3070,9 +3754,55 @@ export function VideoDetailPanel({
                 )}
               </div>
             )}
-
-            {/* ── Thumbnail ── */}
-            <div className="grid w-full items-stretch gap-4 xl:grid-cols-4 md:grid-cols-2" dir="rtl">
+            {/* ── Header Zone (metadata — thumbnail moved to sidebar) ── */}
+            <div className="px-4 pt-3 pb-2 flex flex-col gap-1.5 border-b border-slate-100 dark:border-zinc-800" dir="rtl">
+              {/* Title + Save button */}
+              <div className="flex items-start gap-2 flex-row-reverse">
+                <h2 className="flex-1 text-xl font-bold leading-snug text-slate-900 dark:text-zinc-100">
+                  {(() => {
+                    const watchUrl = getWatchUrl(video) || (video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : null);
+                    return watchUrl ? (
+                      <a
+                        href={watchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >{video.title}</a>
+                    ) : video.title;
+                  })()}
+                </h2>
+                <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
+              </div>
+              {/* Channel name */}
+              {(() => {
+                const channelMentorId = resolveChannelToMentor(video)?.mentor?.id ?? null;
+                const label = mentorName || video.channelTitle || video.channelName || "";
+                if (!label) return null;
+                if (channelMentorId && navigateTo) {
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("MentorPage", { mentorId: channelMentorId })}
+                      className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline text-right w-fit"
+                      dir="rtl"
+                    >{label}</button>
+                  );
+                }
+                const channelHref = video.channelUrl || (video.channelId ? `https://www.youtube.com/channel/${video.channelId}` : null);
+                if (channelHref) {
+                  return (
+                    <a
+                      href={channelHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-slate-700 dark:text-zinc-300 hover:underline w-fit"
+                      dir="rtl"
+                    >{label}</a>
+                  );
+                }
+                return <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">{label}</span>;
+              })()}
+              {/* Metadata chips — topic, sub-topic, gem, date, duration, views, transcript, obsidian */}
               {(() => {
                 const transcriptStatusLabel = (() => {
                   const s = video.transcriptStatus;
@@ -3084,1067 +3814,308 @@ export function VideoDetailPanel({
                   return null;
                 })();
                 const gemLabel = effectiveGemInfo ? `${effectiveGemInfo.gemIcon} ${effectiveGemInfo.gemLabel}` : null;
-                const channelMentorId = resolveChannelToMentor(video)?.mentor?.id ?? null;
-                const rows = [
-                  { label: "ערוץ",         value: videoMentorLabel,                                                             mono: false, onClick: (channelMentorId && navigateTo) ? () => navigateTo("MentorPage", { mentorId: channelMentorId }) : undefined },
-                  { label: "נושא",          value: videoTopics[0]?.name || null,                                                 mono: false },
-                  { label: "תת-נושא",       value: (subCategoryOverride ?? video.subCategory) || null,                           mono: false },
-                  { label: "Gem מומלץ",     value: gemLabel,                                                                     mono: false },
-                  { label: "תאריך פרסום",   value: video.publishedAt ? format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) : null, mono: true },
-                  { label: "אורך",          value: videoDuration,                                                                mono: true  },
-                  { label: "צפיות",         value: viewCountFormatted ? viewCountFormatted.replace(/\s*צפיות$/, "") : null,      mono: true  },
-                  { label: "תמלול",         value: transcriptStatusLabel,                                                        mono: false },
-                  { label: "Obsidian",      value: hasObsidianSavedStatus(video) ? "✅ נשמר" : null,                             mono: false },
-                ];
-                return (
-                  <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
-                    <div className="border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2">
-                      <div className="text-right text-lg font-bold text-slate-900 dark:text-white">פרטי וידאו</div>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-zinc-800">
-                      {rows.map(({ label, value, mono, onClick }) => (
-                        <div key={label} className="grid grid-cols-[5.5rem_1fr] items-center py-1.5 gap-x-2">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 text-right shrink-0">{label}</span>
-                          {onClick ? (
-                            <button
-                              type="button"
-                              onClick={onClick}
-                              dir="rtl"
-                              title={value || ""}
-                              className={`text-xs font-semibold truncate text-right cursor-pointer hover:underline transition-colors ${value ? "text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300" : "text-slate-300 dark:text-zinc-600"}`}
-                            >
-                              {value || "—"}
-                            </button>
-                          ) : (
-                            <span className={`text-xs font-semibold truncate text-left ${mono ? "font-mono tabular-nums" : ""} ${value ? "text-slate-800 dark:text-zinc-100" : "text-slate-300 dark:text-zinc-600"}`} dir={mono ? "ltr" : "rtl"} title={value || ""}>
-                              {value || "—"}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                const ytLogoSm = (
+                  <svg viewBox="0 0 90 63" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-5 rounded-[2px] shrink-0">
+                    <rect width="90" height="63" rx="13" fill="#FF0000"/>
+                    <path d="M37 16L63 31.5L37 47V16Z" fill="white"/>
+                  </svg>
                 );
-              })()}
-              <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right flex flex-col" dir="rtl">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 py-3 mb-2 min-h-[88px]" dir="rtl">
-                  <div className="text-right text-lg font-bold text-slate-900 dark:text-white">ניתוח AI</div>
-                  <div className="flex flex-col items-start gap-1 text-xs" dir="rtl">
-                    <span className="hidden items-center gap-1.5 flex-row-reverse text-violet-700 dark:text-violet-300">
-                      <span className="h-2 w-2 rounded-full bg-violet-500 dark:bg-violet-300" />
-                      <span className="font-semibold">מקור:</span>
-                      <span className="font-medium">{analysisProviderLabel}</span>
-                    </span>
-                    <span className={`inline-flex items-center gap-1.5 flex-row-reverse border rounded-md px-2 py-0.5 ${analysisQualityUi.className}`}>
-                      <span className={`h-2 w-2 rounded-full ${analysisQualityUi.dotClass}`} />
-                      <span className="font-semibold">איכות:</span>
-                      <span className="font-medium">{analysisQualityUi.label}</span>
-                      <Info className="h-3.5 w-3.5 opacity-70" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Saved analysis status */}
-                <div className="pt-2 pb-1 text-right" dir="rtl">
-                  {savedAnalysisMeta ? (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 w-fit">
-                        <button
-                          type="button"
-                          onClick={handleDeleteSavedAnalysis}
-                          title="מחק ניתוח שמור"
-                          className="inline-flex items-center justify-center rounded-md p-1 text-red-500 hover:text-red-600 transition-colors dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs dark:border-emerald-800 dark:bg-emerald-900/30 flex-row-reverse w-fit">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">ניתוח שמור</span>
-                          <span className="text-slate-400 dark:text-zinc-500">·</span>
-                          <span className="text-emerald-700 dark:text-emerald-400">{savedAnalysisMeta.providerLabel}</span>
-                        </div>
-                      </div>
-                      {savedAnalysisMeta.savedAt && (
-                        <p className="text-[10px] text-slate-400 dark:text-zinc-500 pr-0.5">
-                          {format(new Date(savedAnalysisMeta.savedAt), "dd/MM/yyyy HH:mm", { locale: he })}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-slate-400 dark:text-zinc-500">טרם נשמר ניתוח AI</span>
-                      <span className="text-[10px] text-slate-300 dark:text-zinc-600">בחר מודל לניתוח</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── GEM Recommendation ─────────────────────────────── */}
-                {effectiveGemInfo && (() => {
-                  const effectiveCat = categoryOverride ?? effectiveGemInfo.recommendedCategoryLabel ?? '';
-                  const options = vaultSubtopics.length > 0 ? vaultSubtopics : getGemSubCategoryFallback(effectiveGemInfo.gemKey);
-                  const effectiveSubCat = subCategoryOverride ?? effectiveGemInfo.recommendedSubCategory ?? 'כללי';
-                  const isSubOverridden = subCategoryOverride != null && subCategoryOverride !== effectiveGemInfo.recommendedSubCategory;
-                  const gemUrl = getGemUrl(effectiveGemInfo.gemKey);
-                  return (
-                    <div className="flex flex-col gap-2 py-2 border-t border-slate-100 dark:border-zinc-800">
-                      {/* Row 1: Gem icon + label + auto/manual badge */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-base">{effectiveGemInfo.gemIcon}</span>
-                          <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">Gem: {effectiveGemInfo.gemLabel}</span>
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                            effectiveGemInfo.isManual
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                              : effectiveGemInfo.confidence === 'high' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : effectiveGemInfo.confidence === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                              : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
-                          }`}>
-                            {effectiveGemInfo.isManual ? '👤 ידני' : '🤖 אוטומטי'}
-                          </span>
-                        </div>
-                        {gemUrl && (
-                          <button
-                            type="button"
-                            onClick={() => openGeminiGemUrl(gemUrl)}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-200 transition-colors"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            פתח Gem
-                          </button>
-                        )}
-                      </div>
-                      {/* Row 1b: Manual Gem selector */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">שנה Gem:</span>
-                        <select
-                          value={effectiveGemInfo.gemKey}
-                          onChange={(e) => {
-                            const key = e.target.value;
-                            const isAuto = key === gemRec?.gemKey;
-                            setGemOverride(isAuto ? null : key);
-                            patchVideo({ gemOverride: isAuto ? null : key });
-                          }}
-                          className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                        >
-                          {GEM_ALT_OPTIONS.map(g => (
-                            <option key={g.key} value={g.key}>{g.icon} {g.label}</option>
-                          ))}
-                        </select>
-                        {effectiveGemInfo.isManual && (
-                          <button
-                            type="button"
-                            title="חזור להמלצה אוטומטית"
-                            onClick={() => {
-                              setGemOverride(null);
-                              patchVideo({ gemOverride: null });
-                            }}
-                            className="shrink-0 text-sm hover:opacity-70 transition-opacity"
-                          >
-                            🔄
-                          </button>
-                        )}
-                      </div>
-                      {/* Row 2: Category */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">קטגוריה:</span>
-                        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200 flex-1 truncate">{effectiveCat || '—'}</span>
-                      </div>
-                      {/* Row 3: Sub-category selector */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">תת-נושא:</span>
-                        <select
-                          value={effectiveSubCat}
-                          onChange={(e) => setSubCategoryOverride(e.target.value)}
-                          className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                        >
-                          {options.map(opt => (
-                            <option key={opt} value={opt}>{opt}{opt === effectiveGemInfo.recommendedSubCategory && !isSubOverridden ? ' ★' : ''}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {/* Row 4: Action buttons */}
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          type="button"
-                          onClick={handleApplyRecommendation}
-                          disabled={recApplied}
-                          className={`flex-1 text-[11px] font-semibold h-7 rounded-lg transition-colors ${
-                            recApplied
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-default'
-                              : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50'
-                          }`}
-                        >
-                          {recApplied ? '✓ נשמר' : '💾 שמור סיווג'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveAllToBrain}
-                          className="flex-1 text-[11px] font-semibold h-7 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-colors"
-                        >
-                          🧠 שמור למוח
-                        </button>
-                      </div>
-                      {/* Row 5: Paste JSON from GEMS */}
-                      <button
-                        type="button"
-                        onClick={() => { setIsGemsPasteOpen(true); setGemsPasteError(""); setGemsPasteInput(""); }}
-                        className="w-full h-8 flex items-center justify-center gap-2 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 active:scale-95 transition-all flex-row-reverse mt-1"
-                      >
-                        <ClipboardList className="h-3.5 w-3.5" />
-                        📥 הדבק JSON מ-GEMS
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                {/* ── ObsidianExportButton (folder picker) ─────────────── */}
-                <div className="pt-1 border-t border-slate-100 dark:border-zinc-800 mt-1">
-                  <ObsidianExportButton
-                    key={video.id}
-                    video={video}
-                    mentorName={mentorName}
-                    notes={videoNotes}
-                    onPatch={patchVideo}
-                  />
-                </div>
-
-                <div className="hidden flex-1 flex-col gap-2 pt-3">
-                    <button
-                      onClick={runClaudeAnalysisFromCard}
-                      disabled={isClaudeAnalysisRunning}
-                      className="w-full h-10 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title={
-                        isClaudeAnalysisRunning
-                          ? "כבר מתבצע ניתוח"
-                          : aiRequiresTranscript
-                            ? "אין תמלול מלא. עדיין אפשר ללחוץ ולקבל שגיאה ברורה / להשתמש בתמלול חלקי/ידני."
-                            : undefined
-                      }
-                    >
-                      {isClaudeAnalysisRunning ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      נתח עם קלוד
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleGeminiContent}
-                      disabled={geminiStatus === "loading"}
-                      className="w-full h-10 flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-xl hover:bg-pink-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title={geminiStatus === "loading" ? "Gemini עובד..." : "נתח עם Gemini"}
-                    >
-                      {geminiStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      נתח עם Gemini
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={runLlamaAnalysisFromCard}
-                      disabled={llamaStatus === "loading"}
-                      className="w-full h-10 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title="נתח עם llama3.2"
-                    >
-                      {llamaStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      {llamaStatus === "loading" ? "מנתח עם llama3.2..." : "נתח עם llama3.2"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCheckLlamaStatus}
-                      disabled={llamaHealthStatus === "loading"}
-                      className="w-full h-10 flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-800 text-sm font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-50 active:scale-95 transition-all shadow-sm dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900 flex-row-reverse"
-                      title="בדוק llama3.2"
-                    >
-                      {llamaHealthStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-slate-400/50 border-t-slate-700 rounded-full animate-spin dark:border-zinc-500/40 dark:border-t-zinc-100" />
-                      ) : (
-                        <Info className="h-4 w-4" />
-                      )}
-                      בדוק llama3.2
-                    </button>
-                    {llamaHealthMessage && (
-                      <div
-                        className={cn(
-                          "w-full rounded-xl border px-3 py-2 text-right text-xs leading-relaxed",
-                          llamaHealthStatus === "ready"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                            : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300"
-                        )}
-                      >
-                        {llamaHealthMessage}
-                      </div>
-                    )}
-                    <div className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 text-right dark:border-zinc-800 dark:bg-zinc-950/70">
-                      <div className="mb-2 flex items-center justify-between gap-2 flex-row-reverse">
-                        <span className="text-sm font-semibold text-slate-900 dark:text-zinc-100">סטטוס Ollama מקומי</span>
-                        {llamaHealthStatus === "ready" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300 flex-row-reverse">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            מוכן
-                          </span>
-                        ) : llamaHealthStatus === "loading" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-300 flex-row-reverse">
-                            <div className="h-3 w-3 border-2 border-sky-400/40 border-t-sky-700 rounded-full animate-spin dark:border-sky-500/30 dark:border-t-sky-200" />
-                            בודק
+                const chips = [
+                  videoTopics[0]?.name ? { label: "נושא", value: videoTopics[0].name } : null,
+                  (subCategoryOverride ?? video.subCategory) ? { label: "תת-נושא", value: subCategoryOverride ?? video.subCategory } : null,
+                  gemLabel ? { label: "Gem", value: gemLabel } : null,
+                  video.publishedAt ? { label: "תאריך", value: format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he }) } : null,
+                  videoDuration ? { label: "אורך", value: videoDuration } : null,
+                  viewCountFormatted ? { label: "צפיות", value: viewCountFormatted } : null,
+                  transcriptStatusLabel ? { label: "תמלול", value: transcriptStatusLabel, logo: video.transcriptStatus === "youtube" ? ytLogoSm : null } : null,
+                  hasObsidianSavedStatus(video) ? { label: "Obsidian", value: "✅ נשמר" } : null,
+                ].filter(Boolean);
+                if (chips.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5 items-center" dir="rtl">
+                    {chips.map(({ label, value, logo }) => (
+                      <span key={label} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-800">
+                        <span className="font-medium text-slate-400 dark:text-zinc-500">{label}:</span>
+                        {logo ? (
+                          <span className="inline-flex items-center gap-1">
+                            {logo}
+                            <span className="font-semibold text-slate-700 dark:text-zinc-200">YouTube</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300 flex-row-reverse">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            דורש בדיקה
-                          </span>
+                          <span className="font-semibold text-slate-700 dark:text-zinc-200">{value}</span>
                         )}
-                      </div>
-                      <div className="mb-2 text-[11px] text-slate-500 dark:text-zinc-400">בדיקה אוטומטית פעילה</div>
-
-                      <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-300">
-                        {(llamaHealthStatus === "ollama_offline" || !llamaHealthStatus || llamaHealthStatus === "idle") && (
-                          <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
-                            <div className="font-medium text-slate-900 dark:text-zinc-100">Ollama לא פעיל</div>
-                            <div className="mt-1 flex items-center justify-between gap-2 flex-row-reverse">
-                              <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{OLLAMA_SERVE_COMMAND}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopyCommand(OLLAMA_SERVE_COMMAND)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 flex-row-reverse"
-                              >
-                                <Copy className="h-3 w-3" />
-                                העתק
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {llamaHealthStatus === "model_missing" && (
-                          <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
-                            <div className="font-medium text-slate-900 dark:text-zinc-100">המודל llama3.2 לא מותקן</div>
-                            <div className="mt-1 flex items-center justify-between gap-2 flex-row-reverse">
-                              <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{OLLAMA_PULL_COMMAND}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopyCommand(OLLAMA_PULL_COMMAND)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 flex-row-reverse"
-                              >
-                                <Copy className="h-3 w-3" />
-                                העתק
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleQuickTestLlama}
-                          disabled={llamaQuickTestStatus === "loading"}
-                          className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 flex-row-reverse"
-                        >
-                          {llamaQuickTestStatus === "loading" ? (
-                            <div className="h-4 w-4 border-2 border-slate-400/50 border-t-slate-700 rounded-full animate-spin dark:border-zinc-500/40 dark:border-t-zinc-100" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                          בדיקת תגובה מהמודל
-                        </button>
-
-                        {llamaQuickTestMessage && (
-                          <div
-                            className={cn(
-                              "rounded-lg border px-3 py-2 text-xs leading-relaxed",
-                              llamaQuickTestStatus === "ready"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300"
-                            )}
-                          >
-                            {llamaQuickTestMessage}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleSaveAnalysis}
-                      className="w-full h-10 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 active:scale-95 transition-all shadow-sm dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 flex-row-reverse"
-                    >
-                      <StickyNote className="h-4 w-4" />
-                      שמור ניתוח
-                    </button>
-                </div>
-              </div>
-              <div className="hidden rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right">
-                <div className="mb-3 text-base font-bold text-slate-900 dark:text-white">שמירת ניתוח</div>
-                <div className="space-y-2.5">
-                  <button
-                    type="button"
-                    onClick={handleSaveAnalysis}
-                    className="w-full h-10 text-xs font-medium px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 flex-row-reverse"
-                  >
-                    <StickyNote className="h-3.5 w-3.5" />
-                    שמור ניתוח
-                  </button>
-                  <p className="text-[11px] leading-5 text-slate-500 dark:text-zinc-400">
-                    נשמר מקומית תחת הסרטון הזה וישוחזר אוטומטית בפתיחה הבאה.
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right" dir="rtl">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 py-3 mb-2" dir="rtl">
-                  <div className="text-right text-lg font-bold text-slate-900 dark:text-white">סטטוס תמלול</div>
-                  {hasStoredTranscript ? (
-                    <span className="inline-flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                      תמלול זמין
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-2 text-slate-400 dark:text-zinc-500 font-medium text-sm">
-                      <span className="h-2 w-2 rounded-full bg-slate-400" />
-                      אין תמלול usable
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  {hasStoredTranscript ? (
-                    <>
-                      {transcriptSourceLabel && (
-                        <div className="flex items-center justify-between text-xs" dir="rtl">
-                          <span className="text-slate-500 dark:text-zinc-400">מקור</span>
-                          <span className="font-medium text-slate-800 dark:text-zinc-200">{transcriptSourceLabel}</span>
-                        </div>
-                      )}
-                      {storedTranscriptSegments.length > 0 && (
-                        <div className="flex items-center justify-between text-xs" dir="rtl">
-                          <span className="text-slate-500 dark:text-zinc-400">מקטעים</span>
-                          <span className="font-medium text-slate-800 dark:text-zinc-200 tabular-nums">{storedTranscriptSegments.length}</span>
-                        </div>
-                      )}
-                      {transcriptTextLength > 0 && (
-                        <div className="flex items-center justify-between text-xs" dir="rtl">
-                          <span className="text-slate-500 dark:text-zinc-400">אורך</span>
-                          <span className="font-medium text-slate-800 dark:text-zinc-200 tabular-nums">{transcriptTextLength.toLocaleString()} תווים</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-xs text-slate-500 dark:text-zinc-400">
-                      אין תמלול זמין — אפשר להדביק תמלול ידני או לנסות למשוך תמלול מ-YouTube
-                    </div>
-                  )}
-
-                  {/* Transcript actions (UI-only move from sidebar) */}
-                  <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800 space-y-2">
-                    {hasStoredTranscript && (
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setIsTranscriptViewerOpen(true)}
-                          className="h-9 text-xs font-medium px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1"
-                        >
-                          📄 פתח תמלול
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success('התמלול הועתק ללוח')).catch(() => toast.error('לא ניתן להעתיק'));
-                          }}
-                          className="h-9 text-xs font-medium px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1"
-                        >
-                          📋 העתק תמלול
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setIsManualTranscriptOpen(true)}
-                      className="w-full h-9 text-xs font-medium px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5 flex-row-reverse"
-                    >
-                      <ClipboardList className="h-3.5 w-3.5" />
-                      הדבק תמלול ידני
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleYtApiTranscript}
-                      disabled={isFetchingYtApiTranscript}
-                      className="w-full h-9 text-xs font-medium px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5 dark:bg-emerald-950/30 dark:border-emerald-800/50 dark:text-emerald-300 dark:hover:bg-emerald-900/40 flex-row-reverse"
-                    >
-                      {isFetchingYtApiTranscript ? "מביא תמלול..." : "נסה תמלול YouTube"}
-                    </button>
+                      </span>
+                    ))}
                     {hasStoredTranscript && (
                       <button
                         type="button"
                         onClick={handleDeleteTranscript}
-                        className="w-full h-9 text-xs font-medium rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-900/30"
+                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-600 hover:bg-red-100 active:scale-95 transition-colors dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400"
                       >
-                        <Trash2 className="h-3 w-3" />
-                        מחק תמלול
+                        <span>🧹</span>
+                        <span className="font-medium">מחק תמלול מהזיכרון</span>
                       </button>
                     )}
                   </div>
-
-                  {/* ── GEMS Quick-Copy shortcuts ──────────────────────── */}
-                  <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Zap className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wide">העתק + שלח ל-Gem</span>
-                    </div>
-                    <GeminiActionsPanel
-                      video={video}
-                      fullTranscriptText={fullTranscriptText}
-                      transcriptWordCount={transcriptWordCount}
-                      storedTranscriptSegments={storedTranscriptSegments}
-                      transcriptSourceLabel={transcriptSourceLabel}
-                      handleQuickCopy={handleQuickCopy}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right" dir="rtl">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 py-3 mb-3" dir="rtl">
-                  <div className="text-right text-lg font-bold text-slate-900 dark:text-white">סטטוס למידה</div>
-                  {videoYtId && (
-                    <a
-                      href={getWatchUrl(video) || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        if (!getWatchUrl(video)) e.preventDefault();
-                      }}
-                      className="inline-flex items-center gap-1.5 flex-row-reverse text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      dir="ltr"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      פתח YouTube
-                    </a>
-                  )}
-                </div>
-                <div className="flex flex-col pt-2" dir="rtl">
-                  <div id="learning-notes" className="max-h-[210px] overflow-auto pr-1">
-                    <NoteEditor videoId={video.id} hideEmptyState />
-                  </div>
-                  <div className="mt-3 flex flex-row gap-2 justify-start items-center flex-wrap">
-                    <button
-                      onClick={handleCopyLink}
-                      className="inline-flex min-h-9 items-center gap-1.5 flex-row-reverse rounded-xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                    >
-                      <Link2 className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                      העתק קישור
-                    </button>
-                    <a
-                      href="https://notebooklm.google.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-9 items-center gap-1.5 flex-row-reverse rounded-xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                      NotebookLM
-                    </a>
-                    {/* Permanent pin toggle */}
-                    <button
-                      onClick={() => {
-                        const wasPinned = video?.isPermanent;
-                        const pinPatch = {
-                          isPermanent: !wasPinned,
-                          ...(wasPinned ? { unpinnedAt: new Date().toISOString() } : { unpinnedAt: null }),
-                        };
-                        const saved = patchVideo(pinPatch);
-                        onVideoPatch?.(saved ?? { ...video, ...pinPatch });
-                      }}
-                      className={[
-                        "inline-flex min-h-9 items-center gap-1.5 flex-row-reverse rounded-xl border px-3 py-1.5 text-xs font-medium shadow-sm transition-colors",
-                        video?.isPermanent
-                          ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-600/40 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
-                          : "border-slate-200 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800",
-                      ].join(" ")}
-                      title={video?.isPermanent ? "בטל שמירה לצמיתות" : "שמור לצמיתות — לא יימחק אחרי 30 יום"}
-                    >
-                      <Pin className={["h-3.5 w-3.5", video?.isPermanent ? "text-amber-500 fill-amber-400" : "text-slate-400 dark:text-zinc-400"].join(" ")} />
-                      {video?.isPermanent ? "מוצמד" : "לצמיתות"}
-                    </button>
-                  </div>
-
-                  {/* Workspace CTA */}
-                  <div className="mt-2 space-y-2">
-                    <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/60">
-                      <span className="text-slate-600 dark:text-zinc-300">Workspace</span>
-                      <span
-                        className={[
-                          "font-semibold",
-                          isSavedInWorkspace
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-slate-400 dark:text-zinc-500",
-                        ].join(" ")}
-                      >
-                        {isSavedInWorkspace ? "Saved in Workspace" : "Not saved yet"}
-                      </span>
-                    </div>
-                    {/* Primary: navigate into the knowledge layer */}
-                    <button
-                      type="button"
-                      onClick={handleOpenInWorkspace}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm"
-                    >
-                      <BookMarked className="h-4 w-4" />
-                      פתח ב-Workspace
-                    </button>
-                    {/* Secondary: copy / download raw markdown */}
-                    <ObsidianExportButton key={video.id} video={video} mentorName={mentorName} notes={videoNotes} onPatch={patchVideo} />
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 items-start" dir="rtl">
-              <aside className="hidden w-full space-y-4">
-                <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 text-right">
-                  <div className="mb-3 text-base font-bold text-slate-900 dark:text-white">פעולות AI</div>
-                  {showLowQualityWarning && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 px-3 py-2.5 text-right mb-2">
-                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">
-                        ⚠️ איכות התמלול נמוכה — ניתוח AI עלול להיות לא מדויק
-                      </p>
-                      <div className="flex gap-2 justify-start flex-row-reverse">
-                        <button
-                          type="button"
-                          onClick={() => setShowLowQualityWarning(false)}
-                          className="text-xs px-3 py-1 rounded-lg border border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-50"
-                        >
-                          ביטול
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => { setShowLowQualityWarning(false); await runAiAnalysis({ force: false }); }}
-                          className="text-xs px-3 py-1 rounded-lg bg-amber-600 text-white hover:bg-amber-700"
-                        >
-                          המשך בכל זאת
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-2.5">
-                    <button
-                      onClick={runClaudeAnalysisFromCard}
-                      disabled={isClaudeAnalysisRunning}
-                      className="w-full h-11 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title={
-                        isClaudeAnalysisRunning
-                          ? "כבר מתבצע ניתוח"
-                          : aiRequiresTranscript
-                            ? "אין תמלול מלא. עדיין אפשר ללחוץ ולקבל שגיאה ברורה / להשתמש בתמלול חלקי/ידני."
-                            : undefined
-                      }
-                    >
-                      {isClaudeAnalysisRunning ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      נתח עם קלוד
-                    </button>
-                    {/* Gemini analysis mode selector */}
-                    <div className="flex items-center gap-1 justify-end" dir="rtl">
-                      {[
-                        { id: 'smart',            label: 'חכם ✨', title: 'URL ראשון, תמלול כגיבוי (מומלץ)' },
-                        { id: 'url_only',         label: 'URL',    title: 'ניתוח מה-URL בלבד'              },
-                        { id: 'transcript_only',  label: 'תמלול',  title: 'ניתוח מהתמלול בלבד'             },
-                      ].map(({ id, label, title }) => (
-                        <button
-                          key={id}
-                          type="button"
-                          title={title}
-                          onClick={() => setGeminiAnalysisMode(id)}
-                          className={`px-2 py-0.5 text-[10px] rounded-md border transition-colors ${
-                            geminiAnalysisMode === id
-                              ? 'bg-pink-100 border-pink-300 text-pink-800 font-semibold dark:bg-pink-950/40 dark:border-pink-700 dark:text-pink-300'
-                              : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-700 dark:text-zinc-400'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleGeminiContent}
-                      disabled={geminiStatus === "loading"}
-                      className="w-full h-11 flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-xl hover:bg-pink-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title={geminiStatus === "loading" ? "Gemini עובד..." : "נתח עם Gemini"}
-                    >
-                      {geminiStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      נתח עם Gemini
-                    </button>
-                    {geminiStatus === "success" && geminiAnalysisSource && (
-                      <div
-                        dir="rtl"
-                        className={`flex items-center justify-end gap-1.5 text-[10px] px-2 py-1 rounded-lg border ${
-                          geminiAnalysisSource === 'youtube_url'
-                            ? 'text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-800/50'
-                            : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800/50'
-                        }`}
-                      >
-                        {geminiAnalysisSource === 'youtube_url' ? '🔗 ניתוח מבוסס קישור YouTube' : '📝 ניתוח מבוסס תמלול מלא'}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={runLlamaAnalysisFromCard}
-                      disabled={llamaStatus === "loading"}
-                      className="w-full h-11 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
-                      title="נתח עם llama3.2"
-                    >
-                      {llamaStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      {llamaStatus === "loading" ? "מנתח עם llama3.2..." : "נתח עם llama3.2"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCheckLlamaStatus}
-                      disabled={llamaHealthStatus === "loading"}
-                      className="w-full h-11 flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-800 text-sm font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-50 active:scale-95 transition-all shadow-sm dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900 flex-row-reverse"
-                      title="בדוק llama3.2"
-                    >
-                      {llamaHealthStatus === "loading" ? (
-                        <div className="h-4 w-4 border-2 border-slate-400/50 border-t-slate-700 rounded-full animate-spin dark:border-zinc-500/40 dark:border-t-zinc-100" />
-                      ) : (
-                        <Info className="h-4 w-4" />
-                      )}
-                      בדוק llama3.2
-                    </button>
-                    {llamaHealthMessage && (
-                      <div
-                        className={cn(
-                          "w-full rounded-xl border px-3 py-2 text-right text-xs leading-relaxed",
-                          llamaHealthStatus === "ready"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                            : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300"
-                        )}
-                      >
-                        {llamaHealthMessage}
-                      </div>
-                    )}
-                    <div className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 text-right dark:border-zinc-800 dark:bg-zinc-950/70">
-                      <div className="mb-2 flex items-center justify-between gap-2 flex-row-reverse">
-                        <span className="text-sm font-semibold text-slate-900 dark:text-zinc-100">סטטוס Ollama מקומי</span>
-                        {llamaHealthStatus === "ready" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300 flex-row-reverse">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            מוכן
-                          </span>
-                        ) : llamaHealthStatus === "loading" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-300 flex-row-reverse">
-                            <div className="h-3 w-3 border-2 border-sky-400/40 border-t-sky-700 rounded-full animate-spin dark:border-sky-500/30 dark:border-t-sky-200" />
-                            בודק
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300 flex-row-reverse">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            דורש בדיקה
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-300">
-                        {(llamaHealthStatus === "ollama_offline" || !llamaHealthStatus || llamaHealthStatus === "idle") && (
-                          <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
-                            <div className="font-medium text-slate-900 dark:text-zinc-100">Ollama לא פעיל</div>
-                            <div className="mt-1 flex items-center justify-between gap-2 flex-row-reverse">
-                              <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{OLLAMA_SERVE_COMMAND}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopyCommand(OLLAMA_SERVE_COMMAND)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 flex-row-reverse"
-                              >
-                                <Copy className="h-3 w-3" />
-                                העתק
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {llamaHealthStatus === "model_missing" && (
-                          <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
-                            <div className="font-medium text-slate-900 dark:text-zinc-100">המודל llama3.2 לא מותקן</div>
-                            <div className="mt-1 flex items-center justify-between gap-2 flex-row-reverse">
-                              <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{OLLAMA_PULL_COMMAND}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopyCommand(OLLAMA_PULL_COMMAND)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 flex-row-reverse"
-                              >
-                                <Copy className="h-3 w-3" />
-                                העתק
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleQuickTestLlama}
-                          disabled={llamaQuickTestStatus === "loading"}
-                          className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 flex-row-reverse"
-                        >
-                          {llamaQuickTestStatus === "loading" ? (
-                            <div className="h-4 w-4 border-2 border-slate-400/50 border-t-slate-700 rounded-full animate-spin dark:border-zinc-500/40 dark:border-t-zinc-100" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                          בדיקת תגובה מהמודל
-                        </button>
-
-                        {llamaQuickTestMessage && (
-                          <div
-                            className={cn(
-                              "rounded-lg border px-3 py-2 text-xs leading-relaxed",
-                              llamaQuickTestStatus === "ready"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300"
-                            )}
-                          >
-                            {llamaQuickTestMessage}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            {/* ── Quick Actions ── */}
+            <div className="px-4 py-2 border-b border-slate-100 dark:border-zinc-800">
+              <div className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80" dir="rtl">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Zap className="h-3 w-3 text-amber-500 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">⚡ פעולות מהירות</span>
                 </div>
-
-                {/* Transcript actions were moved into "סטטוס תמלול" card (UI-only). */}
-
-                {hasManualTranscript && (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 shadow-sm dark:border-rose-900/40 dark:bg-rose-950/20 text-right">
-                    <button
-                      onClick={handleRemoveManualTranscript}
-                      className="w-full h-10 inline-flex items-center justify-center gap-1.5 flex-row-reverse rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-200"
-                    >
-                      הסר תמלול ידני
+                {/* Primary actions — grid fills full width */}
+                <div className="grid grid-cols-6 gap-2 mb-2">
+                  {[
+                    {
+                      id: 'yt-transcript',
+                      emoji: (
+                        <svg viewBox="0 0 90 63" xmlns="http://www.w3.org/2000/svg" className="h-5 w-7 rounded-[3px]">
+                          <rect width="90" height="63" rx="13" fill="#FF0000"/>
+                          <path d="M37 16L63 31.5L37 47V16Z" fill="white"/>
+                        </svg>
+                      ),
+                      label: 'נסה תמלול YouTube',
+                      sub: 'תמלול אוטומטי',
+                      cn: 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300',
+                      onClick: handleYtApiTranscript,
+                      disabled: isCheckingTranscript,
+                      status: { ok: hasStoredTranscript, okLabel: 'קיים', failLabel: 'אין תמלול' },
+                    },
+                    {
+                      id: 'gem-recommended',
+                      emoji: effectiveGemInfo?.gemIcon || '✨',
+                      label: 'Gem מומלץ',
+                      sub: effectiveGemInfo?.gemLabel || 'לא זוהה',
+                      labelCn: 'text-[11px] font-bold leading-snug',
+                      subCn: 'text-[10px] font-semibold leading-snug opacity-80',
+                      cn: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300',
+                      onClick: async () => {
+                        if (!fullTranscriptText) {
+                          toast.error("אין תמלול להעתקה — ייבא או הדבק תמלול קודם");
+                          return;
+                        }
+                        const gemKey = effectiveGemInfo?.gemKey;
+                        const gemUrl = gemKey ? getGemUrl(gemKey) : null;
+                        if (!gemUrl) {
+                          toast.error("לא הוגדר קישור ל-Gem הזה");
+                          return;
+                        }
+                        try {
+                          await navigator.clipboard.writeText(fullTranscriptText);
+                          toast.success("התמלול הועתק — הדבק אותו ב-Gemini עם Ctrl+V");
+                        } catch {
+                          toast.error("לא ניתן להעתיק ללוח");
+                          return;
+                        }
+                        openGeminiGemUrl(gemUrl);
+                      },
+                      status: { ok: !!(effectiveGemInfo && getGemUrl(effectiveGemInfo.gemKey)), okLabel: 'מוגדר', failLabel: 'לא מוגדר' },
+                    },
+                    {
+                      id: 'gems',
+                      emoji: '💎',
+                      label: 'GEMS JSON',
+                      sub: gemsJsonApplied ? 'JSON תקין' : 'הדבק JSON',
+                      cn: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-violet-300',
+                      onClick: () => { setIsGemsPasteOpen(true); setGemsPasteError(""); setGemsPasteInput(""); },
+                      status: gemsJsonApplied
+                        ? { ok: true,  okLabel: 'נטען', failLabel: '' }
+                        : { ok: false, okLabel: '', failLabel: 'לא נטען' },
+                    },
+                    {
+                      id: 'save-brain',
+                      emoji: '✅',
+                      label: 'שמור למוח',
+                      sub: 'שמור ידע',
+                      cn: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300',
+                      onClick: handleSaveAllToBrain,
+                      status: { ok: !!video?.savedToBrain, okLabel: 'נשמר', failLabel: 'לא נשמר' },
+                    },
+                    {
+                      id: 'obsidian-primary',
+                      emoji: (
+                        <svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-[17px]">
+                          <path d="M40 2L74 22V74L40 94L6 74V22L40 2Z" fill="#4C1D95"/>
+                          <path d="M40 2L74 22L40 42L6 22L40 2Z" fill="#7C3AED"/>
+                          <path d="M74 22L40 42V94L74 74V22Z" fill="#5B21B6"/>
+                          <path d="M6 22L40 42V94L6 74V22Z" fill="#3B1382"/>
+                          <path d="M40 12L60 22L40 36L20 22L40 12Z" fill="#C4B5FD" opacity="0.65"/>
+                        </svg>
+                      ),
+                      label: 'Obsidian',
+                      sub: 'פתח ב-Obsidian',
+                      cn: 'border-purple-200 bg-white text-purple-700 hover:bg-purple-50 dark:border-purple-800/40 dark:bg-purple-950/20 dark:text-purple-300',
+                      onClick: () => { try { openObsidianUrl(buildObsidianUrl(video)); } catch { toast.error("שגיאה בפתיחת Obsidian"); } },
+                      status: { ok: hasObsidianSavedStatus(video), okLabel: 'נשמר', failLabel: 'לא נשמר' },
+                    },
+                    {
+                      id: 'transcript-view',
+                      emoji: '📋',
+                      label: 'תמלול הסרט',
+                      sub: hasStoredTranscript ? 'הצג תמלול' : 'הדבק תמלול',
+                      cn: 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300',
+                      onClick: hasStoredTranscript ? () => setIsTranscriptViewerOpen(true) : () => setIsManualTranscriptOpen(true),
+                      status: { ok: hasStoredTranscript, okLabel: 'תמלול קיים', failLabel: 'אין תמלול' },
+                    },
+                  ].map(({ id, emoji, label, sub, cn, onClick, disabled, status, labelCn, subCn }) => (
+                    <button key={id} type="button" onClick={onClick} disabled={disabled}
+                      className={`flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2 w-full text-center transition-all hover:shadow-sm active:scale-95 disabled:opacity-40 ${cn}`}>
+                      <span className="flex items-center justify-center h-5 leading-none">
+                        {typeof emoji === 'string' ? <span className="text-lg">{emoji}</span> : emoji}
+                      </span>
+                      <span className={labelCn || "text-[10px] font-semibold leading-snug"}>{label}</span>
+                      <span className={subCn || "text-[9px] opacity-55 leading-snug"}>{sub}</span>
+                      {status && (
+                        <span className={`mt-1 inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                          status.ok
+                            ? 'border-emerald-400 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300'
+                            : 'border-red-400 bg-red-100 text-red-700 dark:border-red-600 dark:bg-red-900/50 dark:text-red-300'
+                        }`}>
+                          <span className="text-[9px]">{status.ok ? '✅' : '❌'}</span>
+                          <span>{status.ok ? status.okLabel : status.failLabel}</span>
+                        </span>
+                      )}
                     </button>
-                  </div>
-                )}
-              </aside>
-
-              <div className="min-w-0 w-full flex justify-center">
-            <div className="w-full max-w-3xl">
-            <div className="text-right" dir="rtl">
-              <div className="mb-2 flex items-start gap-3 flex-row-reverse">
-                <h2 className="flex-1 text-right text-2xl font-bold leading-snug text-slate-900 tracking-tight dark:text-zinc-100">
-                  {video.title}
-                </h2>
-                <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
-              </div>
-            </div>
-
-            <div className="w-full mt-0">
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 shadow-md dark:bg-zinc-900">
-                <img
-                  src={video.thumbnail || video.thumbnailUrl}
-                  alt={video.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const youtubeId = video.youtubeId;
-                    if (youtubeId && !e.target.dataset.triedHq) {
-                      e.target.dataset.triedHq = "1";
-                      e.target.src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-                      return;
-                    }
-                    e.target.src =
-                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' fill='%23f3f4f6'%3E%3Crect width='640' height='360'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239ca3af' font-size='18'%3ENo Thumbnail%3C/text%3E%3C/svg%3E";
-                  }}
-                />
-                <a
-                  href={getWatchUrl(video) || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    if (!getWatchUrl(video)) e.preventDefault();
-                  }}
-                >
-                  <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                    <ExternalLink className="h-5 w-5 text-slate-800" />
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            {/* ── כותרת ── */}
-            <div className="hidden space-y-3">
-              <div className="flex items-start gap-2 flex-row-reverse">
-                <h2 className="flex-1 text-right text-2xl font-bold leading-snug text-slate-900 tracking-tight dark:text-zinc-100">
-                  <span className="inline-flex flex-wrap items-center justify-end gap-2">
-                    {videoDuration ? (
-                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-800 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
-                        {videoDuration}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
-                        משך לא זמין
-                      </span>
-                    )}
-                    <span>{video.title}</span>
-                  </span>
-                </h2>
-                <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
-              </div>
-              <div className="hidden rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80" dir="rtl" />
-              {metadataItems.length > 0 && (
-                <div className="hidden flex flex-wrap items-center justify-end gap-2 text-sm text-slate-600 dark:text-zinc-300" dir="rtl">
-                  {metadataItems.map((item, index) => (
-                    <span key={`${item}-${index}`} className="inline-flex items-center gap-2">
-                      {index > 0 && <span className="text-slate-400 dark:text-zinc-500">·</span>}
-                      <span className="tabular-nums">{item}</span>
-                    </span>
                   ))}
                 </div>
-              )}
-
-              {/* Metadata chips — white cards with border */}
-              <div className="hidden flex flex-wrap items-center gap-2.5" dir="rtl">
-                {videoDuration && (
-                  <span className="inline-flex min-h-9 items-center gap-1.5 bg-white/90 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-                    <Clock className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                    {videoDuration}
-                  </span>
-                )}
-                {viewCountFormatted && (
-                  <span className="inline-flex min-h-9 items-center gap-1.5 bg-white/90 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-                    <Eye className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                    {viewCountFormatted}
-                  </span>
-                )}
-                {relativeDate && (
-                  <span className="inline-flex min-h-9 items-center gap-1.5 bg-white/90 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                    {relativeDate}
-                  </span>
-                )}
-                <button
-                  onClick={handleCopyLink}
-                  className="inline-flex min-h-9 items-center gap-1.5 bg-white/90 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  <Link2 className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                  העתק קישור
-                </button>
-                {mentorName && mentorName !== "לא ידוע" && (
-                  <span className="inline-flex min-h-9 items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1.5 rounded-xl">
-                    <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[9px] font-bold shrink-0">
-                      {mentorName.charAt(0).toUpperCase()}
-                    </span>
-                    {mentorName}
-                  </span>
-                )}
-                <a
-                  href="https://notebooklm.google.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-9 items-center gap-1.5 bg-white/90 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  <ExternalLink className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
-                  NotebookLM
-                </a>
-                <CategoryBadge category={video.category} />
-                <StatusBadge status={video.status} />
-              </div>
-            </div>
-
-            {/* Note preview */}
-            {false && notePreview && (
-              <button
-                onClick={scrollToLearningNotes}
-                className="flex items-start gap-1.5 flex-row-reverse text-right hover:opacity-70 transition-opacity w-full"
-              >
-                <StickyNote className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-red-500 line-clamp-2 leading-relaxed">{notePreview}</p>
-              </button>
-            )}
-
-            {/* ── תקציר — white card with shadow ── */}
-            <div className="hidden bg-slate-50 border border-slate-200 rounded-2xl shadow-sm px-4 py-4 text-right dark:bg-zinc-900 dark:border-zinc-800">
-              {(video.shortSummary || enrichedVideo.aiSummaryShort) ? (
-                <>
-                  <p className="text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-widest">מה תלמד כאן</p>
-                  <p className="text-sm text-gray-800 leading-7 line-clamp-3">{(video.shortSummary || enrichedVideo.aiSummaryShort).replace(/\[MOCK\]\s*/g, '')}</p>
-                </>
-              ) : (
-                <p className="text-xs text-gray-500 text-center py-1">ניתוח AI זמין לאחר בחירה באחת מפעולות הניתוח</p>
-              )}
-            </div>
-
-            {/* ── Progress bar + סטטוס למידה ── */}
-            {false && (() => {
-              const pctMap = { not_started: 0, in_progress: 40, learned: 80, completed: 100 };
-              const pct    = pctMap[video.learningStatus] ?? 0;
-              return (
-                <div className="space-y-3">
-                  {/* Status row */}
-                  <div className="flex items-center justify-between">
-                    <Select
-                      value={video.learningStatus || "not_started"}
-                      onValueChange={(val) => onLearningStatusChange?.(video, val)}
-                    >
-                      <SelectTrigger className="h-7 text-xs bg-white border-slate-200 text-slate-900 w-[145px] dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100" dir="rtl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent dir="rtl">
-                        {LEARNING_STATUSES.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">סטטוס למידה</span>
-                      <LearningStatusBadge status={video.learningStatus} />
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="relative h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-visible" dir="ltr">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pct}%`,
-                        background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
-                      }}
-                    />
-                    {pct > 0 && (
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full bg-indigo-600 border-[3px] border-white shadow-md transition-all duration-500"
-                        style={{ left: `calc(${pct}% - 9px)` }}
-                      />
-                    )}
-                  </div>
+                {/* Secondary actions */}
+                <div className="flex flex-wrap gap-1.5 border-t border-slate-100 dark:border-zinc-800 pt-2">
+                  {[
+                    {
+                      id: 'markdown',
+                      emoji: '📄',
+                      label: 'יצוא MD',
+                      cn: 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                      onClick: () => {
+                        const note = buildVideoFullNote(video, mentorName, videoNotes);
+                        downloadMarkdown(note, `${(video.title || 'video').replace(/[^\w\sא-ת]/g, '').trim().slice(0, 50)}.md`);
+                      },
+                    },
+                  ].map(({ id, emoji, label, cn, onClick, disabled }) => (
+                    <button key={id} type="button" onClick={onClick} disabled={disabled}
+                      className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 transition-all hover:shadow-sm active:scale-95 disabled:opacity-40 text-[11px] font-medium ${cn}`}>
+                      <span className="text-xs leading-none">{emoji}</span>
+                      <span>{label}</span>
+                    </button>
+                  ))}
                 </div>
-              );
-            })()}
-
-            {/* נושאים */}
-            {false && videoTopics.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 flex-row-reverse">
-                {videoTopics.map((topic) => (
-                  <span key={topic.id} className="inline-flex items-center gap-1 text-[11px] text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
-                    #{topic.name}
-                    {onRemoveTopic && (
-                      <button onClick={() => onRemoveTopic(video, topic.id)} className="hover:text-gray-700 leading-none">×</button>
-                    )}
-                  </span>
-                ))}
               </div>
-            )}
+            </div>
 
+            {/* ── Main Content: Sidebar + Tabs ── */}
+            <div className="flex gap-4 items-start px-4 pt-2 pb-4" dir="rtl">
+
+              {/* ── SIDEBAR ── */}
+              <div className="w-[340px] shrink-0 flex flex-col gap-3 self-start sticky top-0">
+              {/* ── Video Thumbnail Card ── */}
+              <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
+                <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
+                  <PanelThumbnail video={video} />
+                  <a
+                    href={getWatchUrl(video) || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
+                    onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
+                  >
+                    <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                      <ExternalLink className="h-5 w-5 text-slate-800" />
+                    </div>
+                  </a>
+                </div>
+              </div>
+              {/* ── Manual Transcript Card ── */}
+              <div className="rounded-2xl border border-teal-200 bg-white/90 shadow-sm dark:border-teal-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
+                <div className="px-4 pt-3 pb-2 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span className="text-base">📋</span>
+                  <span>תמלול ידני</span>
+                </div>
+                <div className={`px-4 py-2.5 text-sm font-semibold flex items-center gap-2 flex-row-reverse border-y ${
+                  hasStoredTranscript
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : "border-red-200 bg-red-50 text-red-600 dark:border-red-700/40 dark:bg-red-950/30 dark:text-red-400"
+                }`}>
+                  <span>{hasStoredTranscript ? "✅" : "❌"}</span>
+                  <span>{hasStoredTranscript ? "תמלול קיים" : "אין תמלול"}</span>
+                </div>
+                <div className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsManualTranscriptOpen(true)}
+                    className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 active:scale-95 transition-all shadow-sm flex-row-reverse"
+                  >
+                    📋 הדבק תמלול ידני
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Start Analysis Card ── */}
+              <div className="rounded-2xl border border-indigo-200 bg-white/90 shadow-sm dark:border-indigo-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
+                <div className="px-4 pt-3 pb-2 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span className="text-base">🧠</span>
+                  <span>ניתוח AI</span>
+                </div>
+                <div className={`px-4 py-2 text-xs font-semibold flex items-center gap-2 flex-row-reverse border-y ${
+                  savedAnalysisMeta
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400"
+                }`}>
+                  <span>{savedAnalysisMeta ? "✅" : "⬜"}</span>
+                  <span>{savedAnalysisMeta ? (savedAnalysisMeta.providerLabel || "ניתוח קיים") : "אין ניתוח"}</span>
+                </div>
+                <div className="px-4 py-3 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGeminiContent}
+                    disabled={geminiStatus === 'loading'}
+                    className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow-sm disabled:opacity-50 flex-row-reverse"
+                  >
+                    {geminiStatus === 'loading' ? (
+                      <div className="h-3.5 w-3.5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span>🧠</span>
+                    )}
+                    {geminiStatus === 'loading' ? 'מנתח...' : 'התחל ניתוח'}
+                  </button>
+                  {savedAnalysisMeta && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("ai-analysis")}
+                      className="w-full h-8 inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 text-indigo-700 text-xs font-medium hover:bg-indigo-50 active:scale-95 transition-all dark:border-indigo-800/40 dark:text-indigo-300 flex-row-reverse"
+                    >
+                      <span>🔍</span>
+                      הצג ניתוח
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Workspace Card ── */}
+              <div className="rounded-2xl border border-violet-200 bg-white/90 px-4 py-3 shadow-sm dark:border-violet-900/40 dark:bg-zinc-900/80 text-right" dir="rtl">
+                <div className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
+                  <BookMarked className="h-4 w-4 text-violet-600 shrink-0" />
+                  <span>💼 Workspace</span>
+                </div>
+                <p className={`text-xs font-medium mb-3 ${isSavedInWorkspace ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`}>
+                  {isSavedInWorkspace ? "✅ שמור ב-Workspace" : "לא שמור עדיין"}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenInWorkspace}
+                  className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 active:scale-95 transition-all shadow-sm flex-row-reverse"
+                >
+                  <BookMarked className="h-4 w-4" />
+                  פתח ב-Workspace
+                </button>
+              </div>
+              </div>{/* closes sidebar */}
+
+              {/* ── MAIN CONTENT ── */}
+              <div className="flex-1 min-w-0">
             {/* Error */}
             {video.status === "error" && video.errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-right">
@@ -4153,46 +4124,44 @@ export function VideoDetailPanel({
             )}
 
             {/* ── טאבים ── */}
-            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full mt-4" dir="rtl">
-              <div className="flex flex-wrap items-center gap-2">
-                <TabsList className="inline-flex w-auto max-w-full flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+              <TabsList className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 gap-0.5 no-scrollbar">
+                {[
+                  { value: "summary",      label: "סיכום" },
+                  { value: "keypoints",    label: "נקודות מפתח" },
+                  { value: "chapters",     label: "פרקים" },
+                  { value: "notes",        label: "הערות" },
+                  { value: "transcript",   label: "📄 תמלול" },
+                  { value: "ai-analysis",  label: "🧠 ניתוח AI" },
+                  { value: "brain-select", label: "💾 שמור ידע למוח" },
+                  ...(effectiveGemInfo?.gemKey === 'political' ? [
+                    { value: "ideology",       label: "⚖️ אידיאולוגיה" },
+                    { value: "theology",       label: "✡️ דת ותיאולוגיה" },
+                    { value: "liberal-jewish", label: "🕊️ יהדות ליברלית" },
+                    { value: "opponent",       label: "🗣️ צד שני" },
+                    { value: "virals",         label: "🔥 ציטוטים" },
+                    { value: "slogans",        label: "📢 סיסמאות" },
+                    { value: "debates",        label: "⚔️ ויכוחים" },
+                    { value: "comments",       label: "💬 תגובות" },
+                    { value: "campaign",       label: "📦 קיט קמפיין" },
+                    { value: "reusable",       label: "📚 ידע רב פעמי" },
+                    { value: "brain-hi",       label: "🧠 תובנות" },
+                  ] : []),
+                ].map(({ value, label }) => (
                   <TabsTrigger
-                    value="summary"
-                    className="px-4 text-xs rounded-xl py-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-slate-900 dark:data-[state=active]:text-zinc-100 text-slate-500 dark:text-zinc-400 transition-all"
+                    key={value}
+                    value={value}
+                    className="whitespace-nowrap px-3 text-xs rounded-xl py-2 shrink-0
+                      text-slate-500 dark:text-zinc-400
+                      data-[state=active]:bg-indigo-600 data-[state=active]:text-white
+                      data-[state=active]:font-semibold data-[state=active]:shadow-sm
+                      hover:text-slate-700 dark:hover:text-zinc-200
+                      transition-all"
                   >
-                    סיכום
+                    {label}
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="keypoints"
-                    className="px-4 text-xs rounded-xl py-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-slate-900 dark:data-[state=active]:text-zinc-100 text-slate-500 dark:text-zinc-400 transition-all"
-                  >
-                    נקודות מפתח
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="chapters"
-                    className="px-4 text-xs rounded-xl py-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-slate-900 dark:data-[state=active]:text-zinc-100 text-slate-500 dark:text-zinc-400 transition-all"
-                  >
-                    פרקים
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="px-4 text-xs rounded-xl py-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm data-[state=active]:font-semibold data-[state=active]:text-slate-900 dark:data-[state=active]:text-zinc-100 text-slate-500 dark:text-zinc-400 transition-all"
-                  >
-                    הערות
-                  </TabsTrigger>
-                </TabsList>
-
-                <button
-                  type="button"
-                  onClick={() => setIsKnowledgePickerOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-xs font-semibold text-indigo-700 shadow-sm transition-colors hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
-                >
-                  <span>🧠 בחר ידע לברין</span>
-                  <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-300">
-                    נבחרו {totalSelectedKnowledgeItems} מתוך {totalSelectableKnowledgeItems}
-                  </span>
-                </button>
-              </div>
+                ))}
+              </TabsList>
 
               {/* ── Summary tab ── */}
               <TabsContent value="summary" className="mt-5 min-h-[320px]" dir="rtl">
@@ -4231,202 +4200,341 @@ export function VideoDetailPanel({
                     </div>
                   )}
 
-                  {/* No-transcript notice */}
-                  {false && transcriptDiagnostics && (
-                    <div className="rounded-lg border border-slate-200 bg-white/80 dark:border-zinc-700 dark:bg-zinc-950/70 p-3 space-y-1 text-xs text-slate-700 dark:text-zinc-200">
-                      <p><strong>videoId:</strong> {transcriptDiagnostics.videoId}</p>
-                      <p><strong>captionTracks:</strong> {transcriptDiagnostics.diagnostics?.foundCaptionTracks ? "כן" : "לא"}</p>
-                      <p><strong>tracks:</strong> {transcriptDiagnostics.diagnostics?.tracksCount ?? 0}</p>
-                      <p><strong>languages:</strong> {(transcriptDiagnostics.diagnostics?.languages || []).join(", ") || "—"}</p>
-                      <p><strong>manual:</strong> {transcriptDiagnostics.diagnostics?.hasManualCaptions ? "כן" : "לא"} | <strong>auto:</strong> {transcriptDiagnostics.diagnostics?.hasAutoCaptions ? "כן" : "לא"}</p>
-                      <p><strong>json3:</strong> {transcriptDiagnostics.diagnostics?.json3Succeeded ? "כן" : "לא"} | <strong>srv3:</strong> {transcriptDiagnostics.diagnostics?.srv3Succeeded ? "כן" : "לא"}</p>
-                      <p><strong>segments:</strong> {transcriptDiagnostics.segmentsCount ?? 0}</p>
-                      <p><strong>source:</strong> {transcriptDiagnostics.source || "—"}</p>
-                      <p><strong>reason:</strong> {transcriptDiagnostics.reason || "ok"}</p>
-                    </div>
-                  )}
                 </div>
                 {(() => {
-                  const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
-                  const summaryLong  = (video.fullSummary  || enrichedVideo.aiSummaryLong)?.replace(/\[MOCK\]\s*/g, '');
-                  const chapters = baseChapters;
-                  const watchUrl = getWatchUrl(video);
-                  const brainHighlights = extractBrainHighlights(video.brainSummary, video.keyInsights, video.keyPoints);
-                  const hasData = summaryShort || summaryLong || video.keyPoints?.length > 0 || chapters?.length > 0 || brainHighlights.length > 0;
-                  if (hasData) {
+                  const isPoliticalVideo = effectiveGemInfo?.gemKey === 'political';
+
+                  // ── Political summary branch ──────────────────────────────
+                  if (isPoliticalVideo) {
+                    const hasTranscript = fullTranscriptText && fullTranscriptText.trim().length >= 100;
+
+                    if (!hasTranscript) {
+                      return (
+                        <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/60 py-8 text-center dark:border-blue-800/40 dark:bg-blue-950/20" dir="rtl">
+                          <span className="text-2xl">📋</span>
+                          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">אין תמלול — אי אפשר ליצור סיכום פוליטי</p>
+                          <p className="text-xs text-blue-600/70 dark:text-blue-400/60">ייבא תמלול מ-YouTube או הדבק ידנית</p>
+                        </div>
+                      );
+                    }
+
+                    if (isPoliticalSummaryLoading) {
+                      return (
+                        <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50/60 py-8 dark:border-blue-800/40 dark:bg-blue-950/20">
+                          <div className="h-6 w-6 rounded-full border-2 border-blue-300 border-t-blue-700 animate-spin dark:border-blue-600 dark:border-t-blue-200" />
+                          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">מנתח את הסרטון הפוליטי...</p>
+                          <p className="text-xs text-blue-600/70 dark:text-blue-400/60">זה יכול לקחת 20–40 שניות</p>
+                        </div>
+                      );
+                    }
+
+                    if (politicalSummaryError && !politicalSummary) {
+                      return (
+                        <div className="mt-3 space-y-3" dir="rtl">
+                          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">{politicalSummaryError}</div>
+                          <button type="button" onClick={handleGeneratePoliticalSummary} className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all">
+                            🔄 נסה שוב
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    if (!politicalSummary) {
+                      return (
+                        <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-blue-300 bg-blue-50/60 py-8 text-center dark:border-blue-700/40 dark:bg-blue-950/20" dir="rtl">
+                          <span className="text-3xl">🏛️</span>
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-blue-900 dark:text-blue-200">סרטון פוליטי זוהה</p>
+                            <p className="text-xs text-blue-600/80 dark:text-blue-400/70">צור סיכום פוליטי מובנה מתוך התמלול</p>
+                          </div>
+                          <button type="button" onClick={handleGeneratePoliticalSummary} className="inline-flex items-center gap-2 flex-row-reverse rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm">
+                            <span className="text-base">🏛️</span>
+                            צור סיכום פוליטי
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // ── Render 10-section political summary ──────────────
+                    // Build display object: prefer nested politicalSummary, fallback from other fields, or old format
+                    console.log('[GEMS Parse] rendering political summary — keys:', Object.keys(politicalSummary || {}).join(', '));
+                    let _psDisplay = null;
+                    if (politicalSummary?.politicalSummary) {
+                      _psDisplay = politicalSummary.politicalSummary;
+                    } else if (politicalSummary && (
+                      politicalSummary.keyInsights?.length ||
+                      politicalSummary.arguments?.length ||
+                      politicalSummary.knowledgePoints?.length ||
+                      politicalSummary.viralQuotes?.length
+                    )) {
+                      _psDisplay = {
+                        shortSummary: politicalSummary.keyInsights?.[0] || '',
+                        mainClaim: politicalSummary.arguments?.[0] || '',
+                        keyPoints: politicalSummary.knowledgePoints?.slice(0, 8) || [],
+                        actorsMap: { speakers: [], attackedGroups: [], defendedGroups: [], targetAudience: [] },
+                        supportingArguments: politicalSummary.arguments || [],
+                        weaknessesAndCounterpoints: politicalSummary.counterArguments || [],
+                        usefulQuotes: politicalSummary.viralQuotes || [],
+                        emotionalFraming: [],
+                        practicalUse: politicalSummary.debateResponses || [],
+                        bottomLine: politicalSummary.keyInsights?.at?.(-1) || '',
+                      };
+                    } else if (politicalSummary) {
+                      const _pu = politicalSummary.practicalUse;
+                      _psDisplay = {
+                        shortSummary: politicalSummary.shortOverview || politicalSummary.shortSummary || '',
+                        mainClaim: politicalSummary.mainClaim || '',
+                        keyPoints: politicalSummary.keyPoints || [],
+                        actorsMap: politicalSummary.actors ? {
+                          speakers: [politicalSummary.actors.speakers].filter(Boolean),
+                          attackedGroups: [politicalSummary.actors.attacked].filter(Boolean),
+                          defendedGroups: [politicalSummary.actors.protected].filter(Boolean),
+                          targetAudience: [politicalSummary.actors.targetAudience].filter(Boolean),
+                        } : (politicalSummary.actorsMap || {}),
+                        supportingArguments: politicalSummary.argumentsFor || politicalSummary.supportingArguments || [],
+                        weaknessesAndCounterpoints: politicalSummary.weaknesses || politicalSummary.weaknessesAndCounterpoints || [],
+                        usefulQuotes: politicalSummary.usefulQuotes || [],
+                        emotionalFraming: politicalSummary.emotionalTone || politicalSummary.emotionalFraming || [],
+                        practicalUse: _pu ? (Array.isArray(_pu) ? _pu : [_pu.replyToPost, _pu.debateArgument, _pu.slogan].filter(Boolean)) : [],
+                        bottomLine: politicalSummary.bottomLine || '',
+                      };
+                    }
+                    const ps = _psDisplay;
+                    // Safely extract a display string from any value (guards against AI returning objects instead of strings)
+                    const safeStr = (v) => {
+                      if (v === null || v === undefined) return '';
+                      if (typeof v === 'string') return v.trim();
+                      if (typeof v === 'object') {
+                        const pick = v.point || v.text || v.claim || v.insight || v.fact || v.summary ||
+                          v.slogan || v.quote || v.response || v.argument || v.value || v.rule ||
+                          v.title || v.content || v.emotion || v.framing;
+                        if (pick) return String(pick).trim();
+                        const first = Object.values(v).find(x => typeof x === 'string' && x.trim());
+                        return first ? first.trim() : JSON.stringify(v);
+                      }
+                      return String(v);
+                    };
+                    const emotionColorMap = { כעס:'bg-red-100 text-red-700 border-red-200', פחד:'bg-orange-100 text-orange-700 border-orange-200', תקווה:'bg-emerald-100 text-emerald-700 border-emerald-200', דחיפות:'bg-yellow-100 text-yellow-800 border-yellow-200', בוז:'bg-purple-100 text-purple-700 border-purple-200', הזדהות:'bg-sky-100 text-sky-700 border-sky-200' };
+                    const PCard = ({ title, icon, cn, saveKey, saveContent, children }) => {
+                      const isSaved = saveKey ? !!savedPsSections[saveKey] : false;
+                      return (
+                        <div className={`rounded-xl border px-4 py-3 ${cn || 'border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'}`} dir="rtl">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-base leading-none">{icon}</span>
+                              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 tracking-wide">{title}</span>
+                            </div>
+                            {saveKey && (isSaved
+                              ? <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">✅ נשמר</span>
+                              : <button type="button" onClick={() => handleSavePsSection(saveKey, title, saveContent)}
+                                  className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 px-1.5 py-0.5 rounded border border-transparent hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
+                                  🧠 שמור
+                                </button>
+                            )}
+                          </div>
+                          {children}
+                        </div>
+                      );
+                    };
                     return (
-                      <>
-                        {summaryShort && (
-                          <div className="text-right">
-                            <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום קצר</h4>
-                            <p className="text-sm text-gray-800 leading-7">{summaryShort}</p>
+                      <PoliticalTabBoundary>
+                      <div className="mt-3 space-y-3" dir="rtl">
+                        {/* Actions row */}
+                        <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
+                          <button type="button" onClick={handleGeneratePoliticalSummary} disabled={isPoliticalSummaryLoading} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:border-blue-700/50 dark:bg-blue-950/30 dark:text-blue-300">🔄 רענן</button>
+                          <button type="button" onClick={handleDeletePoliticalSummary} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400">🗑️ מחק</button>
+                          <button type="button" onClick={() => {
+                            const sections = [
+                              { k: 'shortSummary', l: 'תקציר קצר', c: ps.shortSummary },
+                              { k: 'mainClaim', l: 'הטענה המרכזית', c: ps.mainClaim },
+                              { k: 'keyPoints', l: 'נקודות מרכזיות', c: ps.keyPoints },
+                              { k: 'supportingArguments', l: 'טיעונים בעד', c: ps.supportingArguments },
+                              { k: 'weaknesses', l: 'נקודות חולשה', c: ps.weaknessesAndCounterpoints },
+                              { k: 'usefulQuotes', l: 'ציטוטים חזקים', c: ps.usefulQuotes },
+                              { k: 'bottomLine', l: 'שורה תחתונה', c: ps.bottomLine },
+                            ].filter(s => s.c && (typeof s.c === 'string' ? s.c.trim() : s.c.length > 0));
+                            sections.forEach(({ k, l, c }) => handleSavePsSection(k, l, c));
+                            toast.success(`✅ כל הסיכום נשמר למוח (${sections.length} חלקים)`);
+                          }} className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700/50 dark:bg-indigo-950/30 dark:text-indigo-300">🧠 שמור הכל למוח</button>
+                          <button type="button" onClick={() => {
+                            const lines = [
+                              ps.shortSummary && `## תקציר קצר\n${ps.shortSummary}`,
+                              ps.mainClaim && `## הטענה המרכזית\n${ps.mainClaim}`,
+                              ps.keyPoints?.length && `## נקודות מרכזיות\n${ps.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}`,
+                              ps.supportingArguments?.length && `## טיעונים בעד\n${ps.supportingArguments.map(a => `- ${a}`).join('\n')}`,
+                              ps.weaknessesAndCounterpoints?.length && `## נקודות חולשה\n${ps.weaknessesAndCounterpoints.map(w => `- ${w}`).join('\n')}`,
+                              ps.usefulQuotes?.length && `## ציטוטים חזקים\n${ps.usefulQuotes.map(q => `> "${q}"`).join('\n')}`,
+                              ps.bottomLine && `## שורה תחתונה\n${ps.bottomLine}`,
+                            ].filter(Boolean).join('\n\n');
+                            const md = `# ניתוח פוליטי — ${video?.title || ''}\n\n${lines}`;
+                            downloadMarkdown(md, `political-${video?.youtubeId || video?.id || 'summary'}.md`);
+                          }} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">💾 Obsidian</button>
+                        </div>
+
+                        {/* 1. תקציר קצר */}
+                        {ps.shortSummary && <PCard title="תקציר קצר" icon="📝" cn="border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900" saveKey="shortSummary" saveContent={ps.shortSummary}>
+                          <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7">{ps.shortSummary}</p>
+                        </PCard>}
+
+                        {/* 2. הטענה המרכזית */}
+                        {ps.mainClaim && <PCard title="הטענה המרכזית" icon="🎯" cn="border-indigo-200 bg-indigo-50 dark:border-indigo-800/50 dark:bg-indigo-950/30" saveKey="mainClaim" saveContent={ps.mainClaim}>
+                          <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100 leading-relaxed">{ps.mainClaim}</p>
+                        </PCard>}
+
+                        {/* 3. נקודות מרכזיות */}
+                        {ps.keyPoints?.length > 0 && <PCard title="נקודות מרכזיות" icon="📌" cn="border-blue-200 bg-blue-50/60 dark:border-blue-800/40 dark:bg-blue-950/20" saveKey="keyPoints" saveContent={ps.keyPoints}>
+                          <ul className="space-y-1.5">
+                            {ps.keyPoints.map((pt, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-blue-900 dark:text-blue-100">
+                                <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">{i + 1}</span>
+                                <span className="leading-snug">{safeStr(pt)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </PCard>}
+
+                        {/* 4. מי נגד מי */}
+                        {ps.actorsMap && <PCard title="מי נגד מי" icon="⚔️" cn="border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20">
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { label: 'הדובר/ים', value: ps.actorsMap.speakers, icon: '🎤' },
+                              { label: 'מי מותקף', value: ps.actorsMap.attackedGroups, icon: '🎯' },
+                              { label: 'מי מוגן', value: ps.actorsMap.defendedGroups, icon: '🛡️' },
+                              { label: 'קהל יעד', value: ps.actorsMap.targetAudience, icon: '👥' },
+                            ].map(({ label, value, icon: aIcon }) => {
+                              const display = Array.isArray(value) ? value.join(', ') : value;
+                              return display ? (
+                                <div key={label} className="rounded-lg bg-amber-100/70 px-2.5 py-2 dark:bg-amber-900/20">
+                                  <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-0.5">{aIcon} {label}</div>
+                                  <div className="text-xs text-amber-900 dark:text-amber-200 leading-snug">{display}</div>
+                                </div>
+                              ) : null;
+                            })}
                           </div>
-                        )}
-                        {summaryLong && (
-                          <div className="text-right">
-                            <h4 className="text-sm font-bold text-gray-900 mb-2">סיכום מלא</h4>
-                            <p className="text-sm text-gray-800 leading-7 whitespace-pre-line">{summaryLong}</p>
-                          </div>
-                        )}
-                        {chapterSourceInfo.message && (
-                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right leading-relaxed">
-                            {chapterSourceInfo.message}
-                          </div>
-                        )}
-                        {video.keyPoints?.length > 0 && (
-                          <div className="text-right" dir="rtl">
-                            <h4 className="text-sm font-semibold text-gray-800 mb-3">נקודות מפתח</h4>
-                            <ul className="space-y-2.5" dir="rtl">
-                              {video.keyPoints.map((point, i) => (
-                                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-800">
-                                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                                  <span className="leading-relaxed flex-1">{point}</span>
+                        </PCard>}
+
+                        {/* 5 & 6 — טיעונים / חולשות side by side */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {ps.supportingArguments?.length > 0 && <PCard title="טיעונים בעד" icon="✅" cn="border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20" saveKey="supportingArguments" saveContent={ps.supportingArguments}>
+                            <ul className="space-y-1">
+                              {ps.supportingArguments.map((a, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-emerald-800 dark:text-emerald-200 leading-snug">
+                                  <span className="shrink-0 mt-0.5">•</span><span>{safeStr(a)}</span>
                                 </li>
                               ))}
                             </ul>
+                          </PCard>}
+                          {ps.weaknessesAndCounterpoints?.length > 0 && <PCard title="נקודות חולשה" icon="⚠️" cn="border-orange-200 bg-orange-50/60 dark:border-orange-800/40 dark:bg-orange-950/20" saveKey="weaknesses" saveContent={ps.weaknessesAndCounterpoints}>
+                            <ul className="space-y-1">
+                              {ps.weaknessesAndCounterpoints.map((w, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-orange-800 dark:text-orange-200 leading-snug">
+                                  <span className="shrink-0 mt-0.5">•</span><span>{safeStr(w)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </PCard>}
+                        </div>
+
+                        {/* 7. ציטוטים חזקים */}
+                        {ps.usefulQuotes?.length > 0 && <PCard title="ציטוטים חזקים לשימוש" icon="💬" cn="border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20" saveKey="usefulQuotes" saveContent={ps.usefulQuotes}>
+                          <div className="space-y-2">
+                            {ps.usefulQuotes.map((q, i) => {
+                              const qStr = safeStr(q);
+                              return (
+                                <div key={i} className="flex items-start gap-2">
+                                  <button type="button" onClick={() => { navigator.clipboard.writeText(qStr); toast.success('הציטוט הועתק'); }} className="shrink-0 h-7 w-7 rounded-lg border border-violet-300 bg-white flex items-center justify-center text-violet-600 hover:bg-violet-100 dark:border-violet-700 dark:bg-zinc-800 dark:hover:bg-violet-900/30">
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                  <div className="flex-1 rounded-lg bg-violet-100/80 px-3 py-2 text-sm text-violet-900 dark:bg-violet-900/20 dark:text-violet-100 leading-snug border-r-2 border-violet-400">&quot;{qStr}&quot;</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </PCard>}
+
+                        {/* 8. מסגור רגשי */}
+                        {ps.emotionalFraming?.length > 0 && <PCard title="מסגור רגשי" icon="🎭" cn="border-pink-200 bg-pink-50/60 dark:border-pink-800/40 dark:bg-pink-950/20">
+                          <div className="flex flex-wrap gap-1.5">
+                            {ps.emotionalFraming.map((e, i) => {
+                              const eStr = safeStr(e);
+                              const matched = Object.entries(emotionColorMap).find(([k]) => eStr.includes(k));
+                              return <span key={i} className={`rounded-full border px-3 py-1 text-xs font-semibold ${matched ? matched[1] : 'bg-slate-100 text-slate-700 border-slate-200'}`}>{eStr}</span>;
+                            })}
+                          </div>
+                        </PCard>}
+
+                        {/* 9. שימוש פרקטי */}
+                        {ps.practicalUse?.length > 0 && <PCard title="שימוש פרקטי" icon="🛠️" cn="border-teal-200 bg-teal-50/60 dark:border-teal-800/40 dark:bg-teal-950/20">
+                          <div className="space-y-2">
+                            {ps.practicalUse.map((item, i) => {
+                              const itemStr = safeStr(item);
+                              return (
+                                <div key={i} className="rounded-lg bg-teal-100/60 px-3 py-2 dark:bg-teal-900/20">
+                                  <div className="flex items-start gap-2">
+                                    <button type="button" onClick={() => { navigator.clipboard.writeText(itemStr); toast.success('הועתק'); }} className="shrink-0 h-5 w-5 rounded border border-teal-300 bg-white flex items-center justify-center text-teal-600 hover:bg-teal-100 dark:border-teal-700 dark:bg-zinc-800">
+                                      <Copy className="h-3 w-3" />
+                                    </button>
+                                    <div className="flex-1 text-xs text-teal-900 dark:text-teal-100 leading-snug">{itemStr}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </PCard>}
+
+                        {/* 10. שורה תחתונה */}
+                        {ps.bottomLine && (
+                          <div className="rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-3 dark:border-zinc-200 dark:bg-zinc-100" dir="rtl">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">⬇️ שורה תחתונה</div>
+                              {savedPsSections['bottomLine']
+                                ? <span className="text-[10px] font-semibold text-emerald-400 dark:text-emerald-600">✅ נשמר</span>
+                                : <button type="button" onClick={() => handleSavePsSection('bottomLine', 'שורה תחתונה', ps.bottomLine)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-300 px-1.5 py-0.5 rounded border border-transparent hover:border-indigo-500/50 hover:bg-indigo-950/30 transition-colors">🧠 שמור</button>
+                              }
+                            </div>
+                            <p className="text-sm font-bold text-white dark:text-slate-900 leading-relaxed">{ps.bottomLine}</p>
                           </div>
                         )}
+                      </div>
+                      </PoliticalTabBoundary>
+                    );
+                  }
 
-                        {/* תובנות מרכזיות */}
-                        {(() => {
-                          const bh = brainHighlights;
-                          if (bh.length === 0) return null;
-                          return (
-                            <div dir="rtl">
-                              <div className="flex items-center gap-2 mb-3">
-                                <Zap className="h-4 w-4 text-amber-500 shrink-0" />
-                                <h4 className="text-sm font-bold text-gray-900 flex-1 min-w-0">תובנות מרכזיות</h4>
-                                <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium shrink-0">{bh.length}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                {bh.map((point, i) => {
-                                  const itemKey = `brainHighlights:${i}`;
-                                  const isSelected = !!selectedItems[itemKey];
-                                  return (
-                                    <button
-                                      key={itemKey}
-                                      type="button"
-                                      onClick={() => {
-                                        const next = { ...selectedItems, [itemKey]: !isSelected };
-                                        persistSelectedItems(next);
-                                      }}
-                                      className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 shadow-sm text-right transition-all ${
-                                        isSelected
-                                          ? "border-blue-300 bg-blue-50/80 text-blue-950"
-                                          : "border-amber-200 bg-amber-50/70 text-gray-800 hover:border-blue-200 hover:bg-blue-50/40"
-                                      }`}
-                                      dir="rtl"
-                                      aria-pressed={isSelected}
-                                    >
-                                      <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 text-[9px] font-bold ${
-                                        isSelected ? "border-blue-500 bg-blue-500 text-white" : "border-amber-300 bg-white text-transparent"
-                                      }`}>
-                                        ✓
-                                      </span>
-                                      <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${isSelected ? "bg-blue-400" : "bg-amber-400"}`} aria-hidden />
-                                      <span className="min-w-0 flex-1 text-sm leading-relaxed">{point}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Chapters */}
-                        {(() => {
-                          const hasOldChapters = chapters?.some(
-                            (c) => c.timeSource === "estimated" && !Number.isFinite(c.startSeconds)
-                          );
-                          const allClickable = chapters?.length > 0 && chapters.every(
-                            (c) => Number.isFinite(c.startSeconds)
-                          );
-                          return (
-                            <div className="text-right">
-                              <div className="flex items-center justify-between flex-row-reverse mb-3">
-                                <div className="flex items-center gap-2 flex-row-reverse">
-                                  <h4 className="text-sm font-bold text-gray-900">פרקי הסרטון</h4>
-                                  {chapterSourceBadge && (
-                                    <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
-                                      {chapterSourceBadge}
-                                    </span>
-                                  )}
-                                  {allClickable && (
-                                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-full">
-                                      ניווט זמין
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-gray-400 leading-snug text-left max-w-[200px]">
-                                  ניווט לפי timestamp כאשר זמין
-                                </span>
-                              </div>
-
-                              {/* Old chapters banner */}
-                              {hasOldChapters && !isReanalyzing && (
-                                <div className="flex items-center justify-between gap-2 px-3 py-2 mb-3 rounded-lg bg-blue-50 border border-blue-200" dir="rtl">
-                                  <span className="text-xs text-blue-700">פרקים ישנים — ניווט לא זמין</span>
-                                  <button
-                                    onClick={handleReanalyzeLocal}
-                                    className="text-xs px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shrink-0"
-                                  >
-                                    עדכן ניווט
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Chapter list or loading */}
-                              {isReanalyzing ? (
-                                <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
-                                  <div className="h-4 w-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
-                                  <span className="text-xs">מעדכן פרקים...</span>
-                                </div>
-                              ) : chapters?.length > 0 ? (
-                                <div className="chapters-list">
-                                  {chapters.map((chapter, index) => (
-                                    <ChapterItem
-                                      key={`ch-${index}-${String(chapter.startSeconds ?? "na")}-${String(chapter.title || "")}`}
-                                      section={chapter}
-                                      playerRef={undefined}
-                                      videoUrl={watchUrl}
-                                    />
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-gray-400">עדיין לא נוצרו פרקים</p>
-                              )}
-                            </div>
-                          );
-                        })()}
-
-                        {claudeMissingMessage && (
-                          <div className="w-full rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700 text-right leading-relaxed">{claudeMissingMessage}</div>
+                  // ── Non-political: existing summary logic ─────────────
+                  const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
+                  if (summaryShort) {
+                    return (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 text-right">{summaryShort}</p>
+                        {(claudeMissingMessage || analyzeError) && (
+                          <div className="w-full rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700 text-right leading-relaxed dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-300">
+                            {claudeMissingMessage || analyzeError}
+                          </div>
                         )}
-                        {analyzeError && (
-                          <div className="w-full rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700 text-right leading-relaxed">{analyzeError}</div>
-                        )}
-                      </>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("ai-analysis")}
+                          className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300 transition-colors"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          🧠 עבור לניתוח AI מלא
+                        </button>
+                      </div>
                     );
                   }
                   return (
-                    <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-10 text-center dark:border-zinc-800 dark:bg-zinc-950/40">
-                      <div className="rounded-2xl bg-indigo-50 p-3 dark:bg-indigo-500/10">
-                        <Sparkles className="h-6 w-6 text-indigo-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">אין עדיין תוצאות ניתוח</p>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          כדי להתחיל, לחץ על <span className="font-semibold">"נתח עם קלוד"</span> בכרטיס <span className="font-semibold">"ניתוח AI"</span> למעלה.
-                        </p>
+                    <div className="mt-3 flex min-h-[180px] flex-col items-end gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-8 px-4 text-right dark:border-zinc-800 dark:bg-zinc-950/40" dir="rtl">
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">אין עדיין סיכום לסרטון הזה</p>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500">התחל ניתוח AI כדי לקבל סיכום ותובנות</p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          scrollToAnalysisTabs();
-                        }}
-                        className="text-xs font-medium text-slate-600 hover:text-slate-800 underline underline-offset-2"
+                        onClick={() => setActiveTab("ai-analysis")}
+                        className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300 transition-colors"
                       >
-                        גלול לאזור הניתוח
+                        <Sparkles className="h-3.5 w-3.5" />
+                        🧠 עבור לניתוח AI מלא
                       </button>
                     </div>
                   );
@@ -4563,15 +4671,991 @@ export function VideoDetailPanel({
                     </div>
                   </div>
                 </TabsContent>
+
+                {/* ── Transcript tab ── */}
+                <TabsContent value="transcript" className="mt-4 min-h-[320px]" dir="rtl">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    {hasStoredTranscript ? (
+                      <>
+                        {/* Header row */}
+                        <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">תמלול</h4>
+                          <div className="flex items-center gap-2">
+                            {transcriptWordCount > 0 && (
+                              <span className="text-[11px] text-slate-400 dark:text-zinc-500">~{transcriptWordCount} מילים</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success('התמלול הועתק')).catch(() => toast.error('לא ניתן להעתיק'))}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              העתק
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Search bar */}
+                        <div className="mb-3 flex items-center gap-2 flex-row-reverse" dir="rtl">
+                          <input
+                            type="text"
+                            value={transcriptSearch}
+                            onChange={e => setTranscriptSearch(e.target.value)}
+                            placeholder="חפש בתמלול..."
+                            className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-right text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder:text-zinc-500"
+                            dir="rtl"
+                          />
+                          {transcriptSearch.trim() && (
+                            <div className="flex items-center gap-1.5 flex-row-reverse shrink-0">
+                              {transcriptSearchMatches.length > 0 ? (
+                                <span className="text-[11px] text-slate-500 dark:text-zinc-400 whitespace-nowrap">
+                                  {transcriptSearchIndex + 1} / {transcriptSearchMatches.length} תוצאות
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-red-400 whitespace-nowrap">לא נמצאו תוצאות בתמלול</span>
+                              )}
+                              <button
+                                type="button"
+                                disabled={transcriptSearchMatches.length === 0}
+                                onClick={() => {
+                                  const next = (transcriptSearchIndex + 1) % transcriptSearchMatches.length;
+                                  setTranscriptSearchIndex(next);
+                                  document.getElementById(`ts-match-${next}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                title="תוצאה הבאה"
+                              >▼</button>
+                              <button
+                                type="button"
+                                disabled={transcriptSearchMatches.length === 0}
+                                onClick={() => {
+                                  const prev = (transcriptSearchIndex - 1 + transcriptSearchMatches.length) % transcriptSearchMatches.length;
+                                  setTranscriptSearchIndex(prev);
+                                  document.getElementById(`ts-match-${prev}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                title="תוצאה קודמת"
+                              >▲</button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Transcript with optional search highlighting */}
+                        <div className="max-h-[480px] overflow-auto rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 dark:bg-zinc-950 dark:border-zinc-800">
+                          <pre className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans" dir="auto">
+                            {(() => {
+                              const q = transcriptSearch.trim();
+                              if (!q || transcriptSearchMatches.length === 0) return fullTranscriptText;
+                              const qLen = q.length;
+                              const parts = [];
+                              let lastIdx = 0;
+                              transcriptSearchMatches.forEach((matchIdx, i) => {
+                                if (matchIdx > lastIdx) parts.push(fullTranscriptText.slice(lastIdx, matchIdx));
+                                const isCurrent = i === transcriptSearchIndex;
+                                parts.push(
+                                  <mark
+                                    key={`ts-m-${matchIdx}`}
+                                    id={`ts-match-${i}`}
+                                    style={{ background: isCurrent ? '#fb923c' : '#fef08a', color: '#1e293b', borderRadius: '2px' }}
+                                  >
+                                    {fullTranscriptText.slice(matchIdx, matchIdx + qLen)}
+                                  </mark>
+                                );
+                                lastIdx = matchIdx + qLen;
+                              });
+                              if (lastIdx < fullTranscriptText.length) parts.push(fullTranscriptText.slice(lastIdx));
+                              return parts;
+                            })()}
+                          </pre>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-end gap-3 py-8 text-right" dir="rtl">
+                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין תמלול זמין לסרטון הזה</p>
+                        <div className="flex flex-col gap-2 w-full max-w-xs">
+                          <button
+                            type="button"
+                            onClick={() => setIsManualTranscriptOpen(true)}
+                            className="w-full h-9 text-xs font-medium rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5 flex-row-reverse dark:bg-indigo-950/30 dark:border-indigo-800/50 dark:text-indigo-300"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            הדבק תמלול ידני
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleYtApiTranscript}
+                            disabled={isFetchingYtApiTranscript}
+                            className="w-full h-9 text-xs font-medium rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5 dark:bg-emerald-950/30 dark:border-emerald-800/50 dark:text-emerald-300"
+                          >
+                            {isFetchingYtApiTranscript ? "מביא תמלול..." : "נסה תמלול YouTube"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* ── AI Analysis tab ── */}
+                <TabsContent value="ai-analysis" className="mt-4 min-h-[320px]" dir="rtl">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
+                    {isClaudeAnalysisRunning && (
+                      <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 flex items-center gap-3 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+                        <div className="h-4 w-4 border-2 border-indigo-300 border-t-indigo-700 animate-spin rounded-full shrink-0" />
+                        <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">ניתוח AI מתבצע...</span>
+                      </div>
+                    )}
+                    {hasSavedAnalysis ? (() => {
+                      const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
+                      const summaryLong  = (video.fullSummary  || enrichedVideo.aiSummaryLong)?.replace(/\[MOCK\]\s*/g, '');
+                      return (
+                        <>
+                          <div className="flex items-center justify-between flex-row-reverse">
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                              {savedAnalysisMeta?.providerLabel && `ניתוח: ${savedAnalysisMeta.providerLabel}`}
+                              {savedAnalysisMeta?.savedAt && ` · ${format(new Date(savedAnalysisMeta.savedAt), "dd/MM/yyyy HH:mm", { locale: he })}`}
+                              {gemsJsonApplied && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/30 dark:text-violet-300">
+                                  💎 מקור: GEMS JSON
+                                </span>
+                              )}
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 border rounded-md px-2 py-0.5 text-[11px] ${analysisQualityUi.className}`}>
+                              <span className={`h-2 w-2 rounded-full ${analysisQualityUi.dotClass}`} />
+                              {analysisQualityUi.label}
+                            </span>
+                          </div>
+                          {summaryShort && (
+                            <div className="text-right">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">סיכום קצר</h4>
+                              <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7">{summaryShort}</p>
+                            </div>
+                          )}
+                          {summaryLong && (
+                            <div className="text-right">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">סיכום מלא</h4>
+                              <p className="text-sm text-slate-700 dark:text-zinc-300 leading-7 whitespace-pre-line">{summaryLong}</p>
+                            </div>
+                          )}
+                          {Array.isArray(video.keyInsights) && video.keyInsights.length > 0 && (
+                            <div className="text-right">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-2">⚡ תובנות מרכזיות</h4>
+                              <ul className="space-y-1.5" dir="rtl">
+                                {video.keyInsights.map((insight, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-zinc-300">
+                                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                    <span className="leading-relaxed flex-1">{insight}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(video.actionItems) && video.actionItems.length > 0 && (
+                            <div className="text-right">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-2">🔁 פעולות</h4>
+                              <ul className="space-y-1.5" dir="rtl">
+                                {video.actionItems.map((action, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-zinc-300">
+                                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                                    <span className="leading-relaxed flex-1">{action}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(video.rules) && video.rules.length > 0 && (
+                            <div className="text-right">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-2">✅ כללים</h4>
+                              <ul className="space-y-1.5" dir="rtl">
+                                {video.rules.map((rule, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-zinc-300">
+                                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                    <span className="leading-relaxed flex-1">{rule}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {video.mainLesson && (
+                            <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-right dark:border-indigo-800/50 dark:bg-indigo-950/30">
+                              <h4 className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">🎯 לקח מרכזי</h4>
+                              <p className="text-sm text-indigo-900 dark:text-indigo-200 leading-relaxed">{video.mainLesson}</p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })() : (
+                      <div className="flex flex-col items-end gap-4 py-6 text-right" dir="rtl">
+                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין ניתוח AI לסרטון הזה</p>
+                        <div className="flex flex-col gap-2 w-full max-w-xs">
+                          <div className="flex items-center gap-1 justify-end" dir="rtl">
+                            {[
+                              { id: 'smart', label: 'חכם ✨' },
+                              { id: 'url_only', label: 'URL' },
+                              { id: 'transcript_only', label: 'תמלול' },
+                            ].map(({ id, label }) => (
+                              <button key={id} type="button" onClick={() => setGeminiAnalysisMode(id)}
+                                className={`px-2 py-0.5 text-[10px] rounded-md border transition-colors ${geminiAnalysisMode === id ? 'bg-pink-100 border-pink-300 text-pink-800 font-semibold dark:bg-pink-950/40 dark:border-pink-700 dark:text-pink-300' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-700 dark:text-zinc-400'}`}
+                              >{label}</button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleGeminiContent}
+                            disabled={geminiStatus === "loading"}
+                            className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
+                          >
+                            {geminiStatus === "loading" ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                            נתח עם Gemini
+                          </button>
+                          <button
+                            type="button"
+                            onClick={runClaudeAnalysisFromCard}
+                            disabled={isClaudeAnalysisRunning}
+                            className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shadow-sm flex-row-reverse"
+                          >
+                            {isClaudeAnalysisRunning ? <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                            נתח עם Claude
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* ── Brain select tab ── */}
+                <TabsContent value="brain-select" className="mt-4 min-h-[320px]" dir="rtl">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    {selectableAtomicFields.length === 0 ? (
+                      <div className="flex flex-col items-end gap-3 py-8 text-right" dir="rtl">
+                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">עדיין אין פריטי ידע — יש לבצע ניתוח AI תחילה</p>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("ai-analysis")}
+                          className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          עבור לניתוח AI
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                          <div className="flex items-center gap-2 flex-row-reverse">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">💾 שמור ידע למוח</h4>
+                            {totalSelectedKnowledgeItems > 0 && (
+                              <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-medium">{totalSelectedKnowledgeItems}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = {};
+                                selectableAtomicFields.forEach(({ key, items }) => {
+                                  items.forEach((_, idx) => { next[`${key}:${idx}`] = true; });
+                                });
+                                persistSelectedItems(next);
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
+                            >
+                              בחר הכל
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => persistSelectedItems({})}
+                              className="text-xs text-slate-400 hover:text-slate-600"
+                            >
+                              נקה
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500 text-right mb-3">
+                          {totalSelectedKnowledgeItems > 0
+                            ? `נבחרו ${totalSelectedKnowledgeItems} מתוך ${totalSelectableKnowledgeItems}`
+                            : 'בחר פריטים כדי לשמור למוח'}
+                        </p>
+                        <div className="space-y-4 max-h-[420px] overflow-auto pr-1">
+                          {selectableAtomicFields.map(({ key: fieldKey, emoji, label, items }) => {
+                            const sectionSelected = items.filter((_, idx) => !!selectedItems[`${fieldKey}:${idx}`]).length;
+                            return (
+                              <div key={fieldKey}>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">{emoji} {label}</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">({sectionSelected}/{items.length})</span>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {items.map((item, idx) => {
+                                    const itemKey = `${fieldKey}:${idx}`;
+                                    const isSelected = !!selectedItems[itemKey];
+                                    return (
+                                      <button
+                                        key={itemKey}
+                                        type="button"
+                                        onClick={() => persistSelectedItems({ ...selectedItems, [itemKey]: !isSelected })}
+                                        className={`w-full flex items-start gap-2 rounded-xl border px-3 py-2.5 shadow-sm text-right transition-all ${isSelected ? 'border-indigo-300 bg-indigo-50/80 dark:border-indigo-700 dark:bg-indigo-950/40' : 'border-slate-200 bg-slate-50/70 dark:border-zinc-700 dark:bg-zinc-900 hover:border-indigo-200'}`}
+                                        dir="rtl"
+                                      >
+                                        <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 text-[9px] font-bold ${isSelected ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-300 bg-white text-transparent dark:border-zinc-600 dark:bg-zinc-800'}`}>✓</span>
+                                        <span className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700 dark:text-zinc-300">{item}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {totalSelectedKnowledgeItems > 0 && (
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleSaveAllToBrain}
+                              className="inline-flex items-center gap-2 flex-row-reverse rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+                            >
+                              💾 שמור {totalSelectedKnowledgeItems} פריטים למוח
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+
+              {/* ── Political v2.1 Tabs ── */}
+              {effectiveGemInfo?.gemKey === 'political' && (() => {
+                console.log('[Tabs] available political tabs:', [
+                  (politicalSummary?.viralQuotes || politicalSummary?.politicalSummary?.viralQuotes)?.length ? 'virals' : null,
+                  (politicalSummary?.opponentView || politicalSummary?.politicalSummary?.opponentView) ? 'opponent' : null,
+                  (politicalSummary?.theologyAnalysis || politicalSummary?.politicalSummary?.theologyAnalysis) ? 'theology' : null,
+                  (politicalSummary?.ideologyAnalysis || politicalSummary?.politicalSummary?.ideologyAnalysis) ? 'ideology' : null,
+                ].filter(Boolean).join(', ') || '(none yet)');
+                const _psCopy = (text) => {
+                  navigator.clipboard.writeText(String(text))
+                    .then(() => toast.success('הועתק'))
+                    .catch(() => toast.error('שגיאה בהעתקה'));
+                };
+                const _psSave = (key, label, val) => {
+                  const sectionType =
+                    (key.startsWith('viral')    || key === 'viralQuotes')              ? 'viralQuotes' :
+                    (key.startsWith('opponent') || key === 'opponentView')             ? 'opponentView' :
+                    (key.startsWith('theology'))                                        ? 'theologyAnalysis' :
+                    (key.startsWith('liberal')  || key === 'liberalJewishPerspective') ? 'liberalJewishPerspective' :
+                    (key.startsWith('slogan')   || key === 'politicalSlogans')          ? 'politicalSlogans' :
+                    (key.startsWith('debate')   || key === 'debateResponses')           ? 'debateResponses' :
+                    (key.startsWith('comment')  || key === 'commentBank')               ? 'commentBank' :
+                    (key.startsWith('campaign') || key === 'campaignKit')               ? 'campaignKit' :
+                    (key.startsWith('reusable') || key === 'reusableKnowledge')         ? 'reusableKnowledge' :
+                    (key.startsWith('brain')    || key === 'brainHighlights')           ? 'brainHighlights' :
+                    (key.startsWith('ideology') || key === 'ideologyAnalysis')          ? 'ideologyAnalysis' :
+                    'politicalSummary';
+                  handleSavePsSection(key, label, val, sectionType);
+                };
+                // Dual-structure support: flat (v2.1) with fallback to nested (legacy)
+                const _vq  = politicalSummary?.viralQuotes           || politicalSummary?.politicalSummary?.viralQuotes           || [];
+                const _ov  = politicalSummary?.opponentView          || politicalSummary?.politicalSummary?.opponentView          || null;
+                const _ta  = politicalSummary?.theologyAnalysis      || politicalSummary?.politicalSummary?.theologyAnalysis      || null;
+                const _ljp = politicalSummary?.liberalJewishPerspective
+                  || politicalSummary?.politicalSummary?.liberalJewishPerspective
+                  || politicalSummary?.theologyAnalysis?.liberalJewishPerspective
+                  || politicalSummary?.politicalSummary?.theologyAnalysis?.liberalJewishPerspective
+                  || _ta?.liberalJewishPerspective
+                  || null;
+                const _sl  = politicalSummary?.politicalSlogans   || politicalSummary?.politicalSummary?.politicalSlogans   || [];
+                const _dr  = politicalSummary?.debateResponses    || politicalSummary?.politicalSummary?.debateResponses    || [];
+                const _cb  = politicalSummary?.commentBank        || politicalSummary?.politicalSummary?.commentBank        || [];
+                const _ck  = politicalSummary?.campaignKit        || politicalSummary?.politicalSummary?.campaignKit        || null;
+                const _rk  = politicalSummary?.reusableKnowledge  || politicalSummary?.politicalSummary?.reusableKnowledge  || null;
+                const _bh  = politicalSummary?.brainHighlights    || politicalSummary?.politicalSummary?.brainHighlights    || null;
+                const _ia  = politicalSummary?.ideologyAnalysis   || politicalSummary?.politicalSummary?.ideologyAnalysis   || null;
+
+                return (
+                  <PoliticalTabBoundary>
+                  <>
+                    {/* ── 🔥 Viral Quotes Tab ── */}
+                    <TabsContent value="virals" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_vq?.length ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">🔥</span>
+                          <p className="text-sm">אין ציטוטים ויראליים עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🔥 ציטוטים ויראליים</h4>
+                            <button
+                              type="button"
+                              onClick={() => _psSave('viralQuotes', 'ציטוטים ויראליים',
+                                _vq.map(q => typeof q === 'string' ? q : (q.quote || String(q)))
+                              )}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
+                            >🧠 שמור הכל</button>
+                          </div>
+                          <div className="space-y-2">
+                            {_vq.map((item, i) => {
+                              const quote = typeof item === 'string' ? item : (item.quote || String(item));
+                              const context = (typeof item === 'object' && item !== null) ? item.context : null;
+                              return (
+                                <div key={i} className="rounded-xl border border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20 px-4 py-3">
+                                  <div className="flex items-start gap-2 justify-between">
+                                    <div className="flex gap-1.5 items-center shrink-0">
+                                      <button type="button" onClick={() => _psCopy(quote)} className="text-slate-400 hover:text-indigo-600">
+                                        <Copy className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button type="button" onClick={() => _psSave(`viral_${i}`, 'ציטוט ויראלי', quote)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
+                                    </div>
+                                    <blockquote className="flex-1 text-sm text-orange-900 dark:text-orange-100 text-right leading-relaxed italic">&quot;{quote}&quot;</blockquote>
+                                  </div>
+                                  {context && <p className="mt-1 text-[10px] text-orange-700/70 dark:text-orange-300/70 text-right">{context}</p>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 🗣️ Opponent View Tab ── */}
+                    <TabsContent value="opponent" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_ov ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">🗣️</span>
+                          <p className="text-sm">אין ניתוח דעת הצד השני עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🗣️ דעת הצד השני</h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const ov = _ov;
+                                const allContent = [ov.summary, ...(ov.strongestArguments || []), ...(ov.basicAssumptions || []), ...(ov.recommendedResponses || [])].filter(Boolean);
+                                _psSave('opponentView', 'דעת הצד השני', allContent);
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
+                            >🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'summary',              label: 'סיכום הצד השני',       icon: '📋', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
+                            { key: 'strongestArguments',   label: 'הטיעונים החזקים ביותר', icon: '💪', color: 'border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20' },
+                            { key: 'basicAssumptions',     label: 'הנחות יסוד',            icon: '🔍', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
+                            { key: 'recommendedResponses', label: 'תגובות מומלצות',         icon: '✍️', color: 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-900/20' },
+                          ].map(({ key, label, icon, color }) => {
+                            const val = _ov[key];
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            return (
+                              <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{icon}</span>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
+                                  </div>
+                                  <button type="button" onClick={() => _psSave(`opponent_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
+                                </div>
+                                {Array.isArray(val) ? (
+                                  <ul className="space-y-1.5">
+                                    {val.map((v, idx) => (
+                                      <li key={idx} className="flex items-start gap-2">
+                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
+                                          <Copy className="h-3 w-3" />
+                                        </button>
+                                        <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{v}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-slate-700 dark:text-zinc-300 leading-7">{String(val)}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── ✡️ Theology Tab ── */}
+                    <TabsContent value="theology" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_ta ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">✡️</span>
+                          <p className="text-sm">אין ניתוח דתי/תיאולוגי עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          {_ta.religiousContentDetected === false ? (
+                            <p className="text-sm text-slate-500 dark:text-zinc-400 text-right py-6">לא זוהו רכיבים דתיים או תיאולוגיים משמעותיים בסרטון.</p>
+                          ) : (
+                            <>
+                              {[
+                                { key: 'religiousTopics',        label: 'נושאים דתיים',            icon: '📖', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
+                                { key: 'jewishSources',          label: 'מקורות יהודיים',           icon: '📜', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
+                                { key: 'messianism',             label: 'משיחיות',                 icon: '✨', color: 'border-violet-200 bg-violet-50/60 dark:border-violet-800 dark:bg-violet-900/20' },
+                                { key: 'religiousZionism',       label: 'ציונות דתית',              icon: '🏛️', color: 'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20' },
+                                { key: 'jewishValues',           label: 'ערכים יהודיים',             icon: '⭐', color: 'border-yellow-200 bg-yellow-50/60 dark:border-yellow-800 dark:bg-yellow-900/20' },
+                                { key: 'conflictingValues',      label: 'ערכים בסתירה',             icon: '⚡', color: 'border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20' },
+                                { key: 'universalVsParticular',  label: 'אוניברסלי מול פרטיקולרי', icon: '🌍', color: 'border-teal-200 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-900/20' },
+                                { key: 'theologicalAssumptions', label: 'הנחות תיאולוגיות',         icon: '🔮', color: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20' },
+                                { key: 'summary',                label: 'סיכום',                   icon: '📋', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
+                              ].map(({ key, label, icon, color }) => {
+                                const val = _ta[key];
+                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                                return (
+                                  <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <span>{icon}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
+                                      </div>
+                                      <button type="button" onClick={() => _psSave(`theology_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
+                                    </div>
+                                    {Array.isArray(val) ? (
+                                      <ul className="space-y-1">
+                                        {val.map((v, idx) => (
+                                          <li key={idx} className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">• {v}</li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="text-sm text-slate-700 dark:text-zinc-300 leading-7">{String(val)}</p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 🕊️ Liberal Jewish Perspective Tab ── */}
+                    <TabsContent value="liberal-jewish" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_ljp ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">🕊️</span>
+                          <p className="text-sm">אין ניתוח יהדות ליברלית עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-4 shadow-sm dark:border-blue-800/50 dark:bg-blue-950/20 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">🕊️ יהדות ליברלית</h4>
+                            <button type="button" onClick={() => _psSave('liberalJewishPerspective', 'יהדות ליברלית', Object.values(_ljp).flat().filter(Boolean))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'supportedValues',       label: 'ערכים נתמכים' },
+                            { key: 'concerns',              label: 'חששות' },
+                            { key: 'ethicalQuestions',      label: 'שאלות אתיות' },
+                            { key: 'relevantJewishSources', label: 'מקורות יהודיים רלוונטיים' },
+                            { key: 'bottomLine',            label: 'שורה תחתונה' },
+                          ].map(({ key, label }) => {
+                            const val = _ljp[key];
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            return (
+                              <div key={key} className="rounded-xl border border-blue-200 bg-white/70 dark:border-blue-800 dark:bg-blue-900/30 px-3 py-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <button type="button" onClick={() => _psSave(`liberal_${key}`, label, val)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
+                                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">{label}</span>
+                                </div>
+                                {Array.isArray(val) ? (
+                                  <ul className="space-y-0.5">
+                                    {val.map((v, idx) => <li key={idx} className="text-xs text-blue-900 dark:text-blue-200">• {v}</li>)}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">{String(val)}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 📢 Slogans Tab ── */}
+                    <TabsContent value="slogans" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_sl?.length ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">📢</span>
+                          <p className="text-sm">אין סיסמאות פוליטיות עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📢 סיסמאות פוליטיות</h4>
+                            <button type="button" onClick={() => _psSave('politicalSlogans', 'סיסמאות', _sl.map(s => typeof s === 'string' ? s : (s.slogan || String(s))))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          <div className="space-y-2">
+                            {_sl.map((item, i) => {
+                              const slogan     = typeof item === 'string' ? item : (item.slogan || String(item));
+                              const tone       = (typeof item === 'object' && item !== null) ? item.tone       : null;
+                              const confidence = (typeof item === 'object' && item !== null) ? item.confidence : null;
+                              const sourceIdea = (typeof item === 'object' && item !== null) ? item.sourceIdea : null;
+                              return (
+                                <div key={i} className="rounded-xl border border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20 px-4 py-3">
+                                  <div className="flex items-start gap-2 justify-between">
+                                    <div className="flex gap-1.5 items-center shrink-0">
+                                      <button type="button" onClick={() => _psCopy(slogan)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
+                                      <button type="button" onClick={() => _psSave(`slogan_${i}`, 'סיסמה', slogan)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
+                                    </div>
+                                    <p className="flex-1 text-sm font-semibold text-purple-900 dark:text-purple-100 text-right leading-snug">{slogan}</p>
+                                  </div>
+                                  {(tone || confidence || sourceIdea) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
+                                      {tone       && <span className="rounded-full border border-purple-300 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-800 dark:text-purple-200">{tone}</span>}
+                                      {confidence && <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">{Math.round(Number(confidence) * 100)}%</span>}
+                                      {sourceIdea && <span className="text-[10px] text-slate-400 dark:text-zinc-500 italic">{sourceIdea}</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── ⚔️ Debate Responses Tab ── */}
+                    <TabsContent value="debates" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_dr?.length ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">⚔️</span>
+                          <p className="text-sm">אין תגובות לוויכוחים עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">⚔️ תגובות לוויכוחים</h4>
+                            <button type="button" onClick={() => _psSave('debateResponses', 'תגובות לוויכוחים', _dr.map(d => typeof d === 'string' ? d : (`${d.claim ? d.claim + ': ' : ''}${d.response || ''}`)).filter(Boolean))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          <div className="space-y-3">
+                            {_dr.map((item, i) => {
+                              const claim    = typeof item === 'string' ? '' : (item.claim    || '');
+                              const response = typeof item === 'string' ? item : (item.response || String(item));
+                              return (
+                                <div key={i} className="rounded-xl border border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20 px-4 py-3 space-y-2">
+                                  {claim && (
+                                    <div className="rounded-lg bg-red-100/80 dark:bg-red-900/40 px-3 py-2">
+                                      <span className="text-[10px] font-bold text-red-600 dark:text-red-400">טענה: </span>
+                                      <span className="text-xs text-red-900 dark:text-red-200 leading-snug">{claim}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-start gap-2 justify-between">
+                                    <div className="flex gap-1.5 items-center shrink-0">
+                                      <button type="button" onClick={() => _psCopy(response)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
+                                      <button type="button" onClick={() => _psSave(`debate_${i}`, 'תגובה לוויכוח', response)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
+                                    </div>
+                                    <div className="flex-1 text-right">
+                                      {claim && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">תגובה: </span>}
+                                      <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{response}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 💬 Comment Bank Tab ── */}
+                    {!_cb?.length ? (
+                      <TabsContent value="comments" className="mt-4 min-h-[320px]" dir="rtl">
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">💬</span>
+                          <p className="text-sm">אין בנק תגובות עדיין</p>
+                        </div>
+                      </TabsContent>
+                    ) : (() => {
+                      const toneColors = {
+                        analytical:  'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20',
+                        emotional:   'border-pink-200 bg-pink-50/60 dark:border-pink-800 dark:bg-pink-900/20',
+                        sarcastic:   'border-yellow-200 bg-yellow-50/60 dark:border-yellow-800 dark:bg-yellow-900/20',
+                        factual:     'border-green-200 bg-green-50/60 dark:border-green-800 dark:bg-green-900/20',
+                        ideological: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20',
+                      };
+                      const toneLabels = { analytical: 'אנליטי', emotional: 'רגשי', sarcastic: 'סרקסטי', factual: 'עובדתי', ideological: 'אידיאולוגי' };
+                      const grouped = {};
+                      _cb.forEach((item, idx) => {
+                        const tone    = (typeof item === 'object' && item !== null ? (item.tone || '') : '').toLowerCase();
+                        const comment = typeof item === 'string' ? item : (item.comment || String(item));
+                        if (!grouped[tone]) grouped[tone] = [];
+                        grouped[tone].push({ comment, idx });
+                      });
+                      return (
+                        <TabsContent value="comments" className="mt-4 min-h-[320px]" dir="rtl">
+                          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">💬 בנק תגובות</h4>
+                              <button type="button" onClick={() => _psSave('commentBank', 'בנק תגובות', _cb.map(c => typeof c === 'string' ? c : (c.comment || String(c))))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                            </div>
+                            <div className="space-y-4">
+                              {Object.entries(grouped).map(([tone, items]) => (
+                                <div key={tone}>
+                                  {tone && toneLabels[tone] && (
+                                    <div className="flex items-center gap-2 mb-2 flex-row-reverse">
+                                      <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${toneColors[tone] || 'border-slate-200 bg-slate-50'}`}>{toneLabels[tone]}</span>
+                                    </div>
+                                  )}
+                                  <div className="space-y-2">
+                                    {items.map(({ comment, idx }) => (
+                                      <div key={idx} className={`rounded-xl border px-4 py-3 ${toneColors[tone] || 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800'}`}>
+                                        <div className="flex items-start gap-2 justify-between">
+                                          <div className="flex gap-1.5 items-center shrink-0">
+                                            <button type="button" onClick={() => _psCopy(comment)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
+                                            <button type="button" onClick={() => _psSave(`comment_${idx}`, 'תגובה', comment)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
+                                          </div>
+                                          <p className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-relaxed">{comment}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </TabsContent>
+                      );
+                    })()}
+
+                    {/* ── 📦 Campaign Kit Tab ── */}
+                    <TabsContent value="campaign" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_ck ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">📦</span>
+                          <p className="text-sm">אין קיט קמפיין עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📦 קיט קמפיין</h4>
+                            <button type="button" onClick={() => {
+                              const allItems = Object.values(_ck).flat().filter(v => typeof v === 'string' && v.trim());
+                              _psSave('campaignKit', 'קיט קמפיין', allItems);
+                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'topSlogans',         label: '📢 סיסמאות מובילות' },
+                            { key: 'topQuotes',          label: '💬 ציטוטים מובילים' },
+                            { key: 'topComments',        label: '📝 תגובות מובילות' },
+                            { key: 'topDebateResponses', label: '⚔️ תגובות ויכוח מובילות' },
+                            { key: 'keyIdeas',           label: '💡 רעיונות מרכזיים' },
+                          ].map(({ key, label }) => {
+                            const val = _ck[key];
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            return (
+                              <div key={key} className="rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800 dark:bg-indigo-900/20 px-4 py-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <button type="button" onClick={() => _psSave(`campaign_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
+                                  <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{label}</span>
+                                </div>
+                                {Array.isArray(val) ? (
+                                  <ul className="space-y-1.5">
+                                    {val.map((v, vIdx) => (
+                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
+                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600"><Copy className="h-3 w-3" /></button>
+                                        <span className="flex-1 text-sm text-indigo-900 dark:text-indigo-100 text-right leading-snug">{v}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-indigo-900 dark:text-indigo-100 text-right">{String(val)}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 📚 Reusable Knowledge Tab ── */}
+                    <TabsContent value="reusable" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_rk ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">📚</span>
+                          <p className="text-sm">אין ידע רב פעמי עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📚 ידע רב פעמי</h4>
+                            <button type="button" onClick={() => {
+                              const allItems = Object.values(_rk).flat().filter(v => typeof v === 'string' && v.trim());
+                              _psSave('reusableKnowledge', 'ידע רב פעמי', allItems);
+                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'principles',         label: '🧩 עקרונות' },
+                            { key: 'mentalModels',       label: '🧠 מודלים מנטליים' },
+                            { key: 'historicalPatterns', label: '📜 דפוסים היסטוריים' },
+                            { key: 'strategicLessons',   label: '♟️ לקחים אסטרטגיים' },
+                            { key: 'reusableArguments',  label: '🔄 טיעונים רב פעמיים' },
+                          ].map(({ key, label }) => {
+                            const val = _rk[key];
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            return (
+                              <div key={key} className="rounded-xl border border-teal-200 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-900/20 px-4 py-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <button type="button" onClick={() => _psSave(`reusable_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
+                                  <span className="text-xs font-bold text-teal-700 dark:text-teal-300">{label}</span>
+                                </div>
+                                {Array.isArray(val) ? (
+                                  <ul className="space-y-1.5">
+                                    {val.map((v, vIdx) => (
+                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
+                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-teal-600"><Copy className="h-3 w-3" /></button>
+                                        <span className="flex-1 text-sm text-teal-900 dark:text-teal-100 text-right leading-snug">{v}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-teal-900 dark:text-teal-100 text-right">{String(val)}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── 🧠 תובנות מרכזיות Tab ── */}
+                    <TabsContent value="brain-hi" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_bh ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">🧠</span>
+                          <p className="text-sm">אין תובנות מרכזיות עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🧠 תובנות מרכזיות</h4>
+                            <button type="button" onClick={() => {
+                              const allItems = Object.values(_bh).flat().filter(v => typeof v === 'string' && v.trim());
+                              _psSave('brainHighlights', 'תובנות מרכזיות', allItems);
+                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'topInsights',  label: '⚡ תובנות מובילות' },
+                            { key: 'topArguments', label: '💪 טיעונים מובילים' },
+                            { key: 'topWarnings',  label: '⚠️ אזהרות' },
+                            { key: 'topQuotes',    label: '💬 ציטוטים' },
+                            { key: 'savePriority', label: '⭐ עדיפות שמירה' },
+                          ].map(({ key, label }) => {
+                            const val = _bh[key];
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            return (
+                              <div key={key} className="rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20 px-4 py-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <button type="button" onClick={() => _psSave(`brain_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
+                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{label}</span>
+                                </div>
+                                {Array.isArray(val) ? (
+                                  <ul className="space-y-1.5">
+                                    {val.map((v, vIdx) => (
+                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
+                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-amber-600"><Copy className="h-3 w-3" /></button>
+                                        <span className="flex-1 text-sm text-amber-900 dark:text-amber-100 text-right leading-snug">{v}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-amber-900 dark:text-amber-100 text-right">{String(val)}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ── ⚖️ Ideology Analysis Tab ── */}
+                    <TabsContent value="ideology" className="mt-4 min-h-[320px]" dir="rtl">
+                      {!_ia ? (
+                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl">⚖️</span>
+                          <p className="text-sm">אין ניתוח אידיאולוגי עדיין</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+                          <div className="flex items-center justify-between flex-row-reverse mb-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">⚖️ אידיאולוגיה וערכים</h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const parts = [
+                                  _ia.politicalCamp     && `מחנה פוליטי: ${_ia.politicalCamp}`,
+                                  ...(_ia.coreValues          || []),
+                                  ...(_ia.persuasionTechniques || []),
+                                  ...(_ia.hiddenAssumptions    || []),
+                                  ...(_ia.logicalWeaknesses    || []),
+                                  ...(_ia.emotionalTriggers    || []),
+                                ].filter(Boolean);
+                                _psSave('ideologyAnalysis', 'אידיאולוגיה וערכים', parts);
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
+                            >🧠 שמור הכל</button>
+                          </div>
+                          {[
+                            { key: 'politicalCamp',        label: 'מחנה פוליטי',        icon: '🏛️', color: 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-800 dark:bg-indigo-900/20', isString: true },
+                            { key: 'coreValues',           label: 'ערכי ליבה',           icon: '⭐', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
+                            { key: 'targetAudience',       label: 'קהל יעד',             icon: '👥', color: 'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20' },
+                            { key: 'emotionalTriggers',    label: 'טריגרים רגשיים',      icon: '💥', color: 'border-pink-200 bg-pink-50/60 dark:border-pink-800 dark:bg-pink-900/20' },
+                            { key: 'persuasionTechniques', label: 'טכניקות שכנוע',       icon: '🎯', color: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20' },
+                            { key: 'hiddenAssumptions',    label: 'הנחות נסתרות',        icon: '🔍', color: 'border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20' },
+                            { key: 'logicalWeaknesses',    label: 'חולשות לוגיות',       icon: '⚠️', color: 'border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20' },
+                          ].map(({ key, label, icon, color, isString }) => {
+                            const raw = _ia[key];
+                            if (!raw || (Array.isArray(raw) && raw.length === 0)) return null;
+                            // Normalize: string → wrap in array; object with segments → flatten
+                            const items = isString
+                              ? (typeof raw === 'string' ? [raw] : (Array.isArray(raw) ? raw : [String(raw)]))
+                              : (Array.isArray(raw) ? raw
+                                : (raw?.segments ? raw.segments
+                                : (typeof raw === 'string' ? [raw] : [String(raw)])));
+                            const displayItems = items.filter(v => v && String(v).trim());
+                            if (displayItems.length === 0) return null;
+                            return (
+                              <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{icon}</span>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => _psSave(`ideology_${key}`, label, displayItems)}
+                                    className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600"
+                                  >🧠 שמור</button>
+                                </div>
+                                {displayItems.length === 1 && isString ? (
+                                  <div className="flex items-start gap-2 justify-between">
+                                    <button type="button" onClick={() => _psCopy(displayItems[0])} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                    <p className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-relaxed font-semibold">{displayItems[0]}</p>
+                                  </div>
+                                ) : (
+                                  <ul className="space-y-1.5">
+                                    {displayItems.map((v, idx) => (
+                                      <li key={idx} className="flex items-start gap-2 justify-between">
+                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
+                                          <Copy className="h-3 w-3" />
+                                        </button>
+                                        <span className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-snug">{String(v)}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </>
+                  </PoliticalTabBoundary>
+                );
+              })()}
               </Tabs>
-
-              {/* Debug section removed for dense UI */}
-            </div>{/* closes max-w-3xl */}
-              </div>{/* closes flex justify-center */}
-
-            </div>{/* closes main grid */}
-
-          </div>{/* closes w-full px-5 py-6 */}
+              </div>{/* closes main content */}
+            </div>{/* closes main content row */}
+          </div>{/* closes max-w-[1400px] wrapper */}
         </ScrollArea>
       </DialogContent>
     </Dialog>
@@ -4828,30 +5912,35 @@ export function VideoDetailPanel({
 
     {/* ── Transcript Viewer ───────────────────────────────── */}
     <Dialog open={isTranscriptViewerOpen} onOpenChange={setIsTranscriptViewerOpen}>
-      <DialogContent dir="rtl" className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="text-right text-base font-bold truncate">
-            📄 תמלול — {video?.title || 'סרטון'}
+          <DialogTitle className="text-right text-base font-bold">
+            תמלול הסרטון
           </DialogTitle>
         </DialogHeader>
-        <div className="flex items-center justify-between gap-3 px-1 py-1 shrink-0">
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400">
-            {transcriptSourceLabel && <span>מקור: <strong>{transcriptSourceLabel}</strong></span>}
-            {storedTranscriptSegments.length > 0 && <span>מקטעים: <strong>{storedTranscriptSegments.length}</strong></span>}
-            {transcriptWordCount > 0 && <span>מילים: <strong>{transcriptWordCount.toLocaleString()}</strong></span>}
-          </div>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard.writeText(fullTranscriptText).then(() => toast.success('התמלול הועתק ללוח')).catch(() => {})}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors flex items-center gap-1 shrink-0"
-          >
-            📋 העתק
-          </button>
+        <div className="shrink-0">
+          <GeminiActionsPanel
+            video={video}
+            fullTranscriptText={fullTranscriptText}
+            transcriptWordCount={transcriptWordCount}
+            storedTranscriptSegments={storedTranscriptSegments}
+            transcriptSourceLabel={transcriptSourceLabel}
+            handleQuickCopy={handleQuickCopy}
+          />
         </div>
-        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-900/80 min-h-0">
+        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-900/80 min-h-0 mt-2">
           <pre className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-7 text-slate-800 dark:text-zinc-100 text-right" dir="rtl">
             {fullTranscriptText || 'אין תמלול זמין'}
           </pre>
+        </div>
+        <div className="shrink-0 pt-3">
+          <button
+            type="button"
+            onClick={() => setIsTranscriptViewerOpen(false)}
+            className="w-full h-10 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+          >
+            סגור
+          </button>
         </div>
       </DialogContent>
     </Dialog>
@@ -4907,8 +5996,8 @@ export function VideoDetailPanel({
     </Dialog>
 
     {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}
-    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteInput(""); setGemsPasteError(""); } }}>
-      <DialogContent dir="rtl" className="max-w-xl z-[200]">
+    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); } }}>
+      <DialogContent dir="rtl" className="max-w-3xl w-[90vw] z-[200]">
         <DialogHeader>
           <DialogTitle className="text-right text-base font-bold">📥 הדבק JSON מ-GEMS</DialogTitle>
           <DialogDescription className="text-right text-sm text-slate-500">
@@ -4916,21 +6005,110 @@ export function VideoDetailPanel({
           </DialogDescription>
         </DialogHeader>
         <textarea
-          className="w-full h-52 rounded-lg border border-slate-200 p-3 text-xs text-slate-800 resize-y font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-300 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+          className={`w-full h-72 rounded-lg border p-3 text-xs text-slate-800 resize-y font-mono leading-relaxed focus:outline-none focus:ring-2 dark:bg-zinc-900 dark:text-zinc-100 ${
+            gemsPasteError
+              ? 'border-red-300 focus:ring-red-300 dark:border-red-700'
+              : gemsRepairApplied
+                ? 'border-emerald-300 focus:ring-emerald-300 dark:border-emerald-700'
+                : 'border-slate-200 focus:ring-violet-300 dark:border-zinc-700'
+          }`}
           placeholder='{ "allPoints": [...], "chapters": [...], ... }'
           value={gemsPasteInput}
-          onChange={(e) => { setGemsPasteInput(e.target.value); setGemsPasteError(""); }}
+          onChange={(e) => {
+            const val = e.target.value;
+            setGemsPasteInput(val);
+            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null);
+            if (video?.id) localStorage.setItem(`gems-paste-${video.id}`, val);
+          }}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text');
+            if (!pasted.trim()) return;
+            try { JSON.parse(pasted.trim()); } catch {
+              const repaired = repairGemsJson(pasted.trim());
+              try {
+                JSON.parse(repaired);
+                e.preventDefault();
+                setGemsPasteInput(repaired);
+                setGemsRepairApplied(true);
+                setGemsPasteError("");
+                setGemsParsedErrorInfo(null);
+                setGemsErrorContext(null);
+                if (video?.id) localStorage.setItem(`gems-paste-${video.id}`, repaired);
+              } catch { /* repair failed — let normal paste proceed */ }
+            }
+          }}
           dir="ltr"
         />
+        {gemsRepairApplied && !gemsPasteError && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 text-right flex items-center gap-1 justify-end">
+            <span>✅</span>
+            <span>JSON תוקן אוטומטית — ניתן להחיל</span>
+          </p>
+        )}
         {gemsPasteError && (
-          <p className="text-xs text-red-600 dark:text-red-400 text-right">{gemsPasteError}</p>
+          <div className="space-y-1.5 text-right">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={handleCopyGemsError}
+                disabled={!gemsParsedErrorInfo}
+                className="text-[11px] px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-40 shrink-0"
+              >
+                📋 העתק שגיאה
+              </button>
+              <p className="text-xs text-red-600 dark:text-red-400 font-medium">{gemsPasteError}</p>
+            </div>
+            {gemsParsedErrorInfo && (
+              <>
+                <p className="text-[11px] text-red-400 dark:text-red-500 font-mono">
+                  שורה {gemsParsedErrorInfo.line} · עמודה {gemsParsedErrorInfo.col} · תו: &quot;{gemsParsedErrorInfo.char}&quot;
+                </p>
+                {gemsParsedErrorInfo.translation && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    {gemsParsedErrorInfo.translation.en} — {gemsParsedErrorInfo.translation.he}
+                  </p>
+                )}
+              </>
+            )}
+            {gemsErrorContext && gemsErrorContext.length > 0 && (
+              <div className="mt-1 rounded border border-red-200 dark:border-red-800 overflow-hidden text-left" dir="ltr">
+                {gemsErrorContext.map((ln) => (
+                  <div
+                    key={ln.lineNum}
+                    className={`flex gap-2 px-2 py-0.5 font-mono text-[10px] leading-5 ${
+                      ln.isError
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 font-bold'
+                        : 'bg-zinc-50 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500'
+                    }`}
+                  >
+                    <span className="w-8 text-right shrink-0 select-none opacity-60">{ln.lineNum}</span>
+                    <span className="truncate">{ln.text || ' '}</span>
+                    {ln.isError && <span className="ml-1 text-red-400 shrink-0">◀</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         <div className="flex gap-2 justify-start flex-row-reverse">
           <button
-            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteInput(""); setGemsPasteError(""); }}
+            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); }}
             className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
           >
             ביטול
+          </button>
+          <button
+            onClick={handleClearGemsPaste}
+            disabled={!gemsPasteInput.trim()}
+            className="px-4 py-2 text-sm border border-rose-200 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 disabled:opacity-50 font-medium dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-400"
+          >
+            🗑️ מחק מלל
+          </button>
+          <button
+            onClick={handleRepairGemsJson}
+            disabled={!gemsPasteInput.trim()}
+            className="px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 disabled:opacity-50 font-medium dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+          >
+            🔧 תקן JSON
           </button>
           <button
             onClick={handleApplyGemsJson}
