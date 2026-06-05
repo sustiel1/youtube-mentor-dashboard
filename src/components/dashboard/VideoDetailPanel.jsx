@@ -6305,6 +6305,19 @@ export function VideoDetailPanel({
           </div>
         )}
 
+        {/* ── Multi-select floating action bar ── */}
+        {multiSelected.size > 0 && (
+          <div dir="rtl" className="flex-shrink-0 flex items-center gap-3 justify-between border-t border-zinc-800 bg-zinc-900 px-5 py-3">
+            <button type="button" onClick={multiSelectClear} className="flex items-center gap-1.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 px-3 py-2 text-sm font-semibold text-white transition-colors active:scale-95">❌ נקה</button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-white whitespace-nowrap">נבחרו {multiSelected.size} פריטים</span>
+              <div className="w-px h-5 bg-white/20 shrink-0" />
+              <button type="button" onClick={handleSaveSelectedToObsidian} className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-2 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">💾 שמור ל-Obsidian</button>
+              <button type="button" onClick={handleSaveSelectedToBrain} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-2 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">🧠 שמור למוח</button>
+            </div>
+          </div>
+        )}
+
       </DialogContent>
     </Dialog>
 
@@ -6769,16 +6782,6 @@ export function VideoDetailPanel({
       </DialogContent>
     </Dialog>
 
-    {/* ── Multi-select floating action bar ── */}
-    {multiSelected.size > 0 && (
-      <div dir="rtl" className="fixed bottom-6 left-1/2 z-[9999] -translate-x-1/2 flex items-center gap-3 rounded-2xl bg-zinc-900/95 px-5 py-3 shadow-2xl ring-1 ring-white/10 backdrop-blur-sm">
-        <span className="text-sm font-semibold text-white whitespace-nowrap">נבחרו {multiSelected.size} פריטים</span>
-        <div className="w-px h-5 bg-white/20 shrink-0" />
-        <button type="button" onClick={handleSaveSelectedToObsidian} className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">💾 שמור ל-Obsidian</button>
-        <button type="button" onClick={handleSaveSelectedToBrain} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">🧠 שמור למוח</button>
-        <button type="button" onClick={multiSelectClear} className="flex items-center gap-1.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95">❌ נקה</button>
-      </div>
-    )}
     </>
   );
 }
