@@ -30,6 +30,7 @@ import {
   validateChaptersForSave,
 } from "@/services/videoAnalytics";
 import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache } from "@/services/youtubeTranscript";
+import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
 import { clearSegments } from "@/lib/localSegmentStore";
 import { deleteChunks } from "@/lib/localChunkStore";
 import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
@@ -70,6 +71,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 import { ObsidianExportButton } from "./ObsidianExportButton";
 import { buildVideoFullNote, buildObsidianUrl, openObsidianUrl, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
+import { buildObsidianOpenUrl, getConfiguredObsidianVaultName, getConfiguredObsidianVaultPath } from "@/lib/obsidianVaultConfig";
 import { getManualNotesByTopic } from "@/lib/localManualNoteStore";
 import { createKnowledgeItemFromVideo, getKnowledgeItems, upsertKnowledgeItem } from "@/lib/localKnowledgeItemStore";
 import { CategoryBadge } from "./CategoryBadge";
@@ -78,15 +80,20 @@ import { SaveButton } from "./SaveButton";
 import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
+import { GemSelectionModal } from "./GemSelectionModal";
+import { GemsSettingsModal } from "./GemsSettingsModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
-import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
-import { resolveChannelToMentor } from "@/lib/channelMentorResolver";
+import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
+import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
+import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
+import { updateLocalVideo } from "@/lib/localVideoStore";
+import { PdfUploader } from "@/components/upload/PdfUploader";
 
 // ── PanelThumbnail — uses full fallback chain + gray-placeholder detection ────
 function PanelThumbnail({ video }) {
@@ -145,6 +152,64 @@ function PanelThumbnail({ video }) {
       onError={handleError}
       onLoad={handleLoad}
     />
+  );
+}
+
+// ── PdfDocumentCard ──────────────────────────────────────────────────────────
+// Shown in the sidebar when contentType === "pdf".
+// Replaces PanelThumbnail — shows icon, filename, page count, and a collapsible
+// transcript preview. YouTube player/thumbnail is never rendered for PDFs.
+function PdfDocumentCard({ video }) {
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const filename  = video?.originalFileName || `${video?.title || "מסמך"}.pdf`;
+  const pages     = video?.pdfPages;
+  const transcript = video?.transcript || video?.manualTranscript || "";
+
+  return (
+    <div
+      className="rounded-2xl border border-orange-200 bg-orange-50/60 shadow-sm overflow-hidden dark:border-orange-900/40 dark:bg-zinc-900/80"
+      dir="rtl"
+    >
+      {/* Icon + filename + page count */}
+      <div className="px-4 pt-4 pb-3 flex flex-col items-center gap-2 text-center">
+        <span className="text-5xl select-none leading-none">📄</span>
+        <p className="text-sm font-bold text-slate-800 dark:text-zinc-100 break-all leading-snug">
+          {filename}
+        </p>
+        {pages && (
+          <p className="text-xs text-slate-500 dark:text-zinc-400">{pages} עמודים</p>
+        )}
+        {/* Status badge */}
+        <span className="inline-flex items-center gap-1 rounded-full border border-orange-300 bg-orange-100 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700 dark:border-orange-700/50 dark:bg-orange-950/30 dark:text-orange-300">
+          📄 PDF נטען
+        </span>
+      </div>
+
+      {/* Transcript toggle */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={() => setTranscriptOpen((p) => !p)}
+          className="w-full h-8 inline-flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 active:scale-95 transition-all shadow-sm"
+        >
+          {transcriptOpen ? "▲ הסתר טקסט" : "📖 הצג תמלול / טקסט שחולץ"}
+        </button>
+      </div>
+
+      {/* Collapsible transcript preview — first 2000 chars */}
+      {transcriptOpen && (
+        <div className="border-t border-orange-200 dark:border-orange-900/40 px-3 pb-3 pt-2 max-h-[200px] overflow-auto">
+          {transcript ? (
+            <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-300 whitespace-pre-wrap text-right">
+              {transcript.slice(0, 2000)}
+              {transcript.length > 2000 ? "…" : ""}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-zinc-400 text-center py-2">אין טקסט חולץ</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -585,6 +650,100 @@ function buildAnalysisQualityExplanation({
 }
 
 const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2", gems: "GEMS JSON" };
+const MARKET_GEM_KEYS = new Set(["fundamental", "technical", "news", "macro"]);
+const POLITICS_CATEGORY = "פוליטיקה";
+const MARKET_CATEGORY = "שוק ההון";
+const BRAIN_CUSTOM_DESTS_KEY = "brain_custom_dests_v1";
+const NEW_SUBTOPIC_SENTINEL = "__NEW_SUBTOPIC__";
+const FORBIDDEN_MARKET_SUBTOPICS = new Set([
+  "פוליטי",
+  "פוליטיקה",
+  "הכיבוש",
+  "משיחיות",
+  "מערכת המשפט",
+  "ערבים ויהודים",
+]);
+
+function normalizeLooseName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function loadCustomBrainDests() {
+  try {
+    const raw = localStorage.getItem(BRAIN_CUSTOM_DESTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && Array.isArray(parsed.mains) && typeof parsed.subs === "object" && parsed.subs) {
+      return parsed;
+    }
+  } catch {}
+  return { mains: [], subs: {} };
+}
+
+function persistCustomBrainSub(parentId, name) {
+  const store = loadCustomBrainDests();
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return null;
+  if (!store.subs[parentId]) store.subs[parentId] = [];
+  const existing = store.subs[parentId].find((item) => normalizeLooseName(item?.name) === normalizeLooseName(trimmed));
+  if (existing) return existing.id;
+  const id = `custom_sub_${Date.now()}`;
+  store.subs[parentId].push({ id, name: trimmed });
+  try {
+    localStorage.setItem(BRAIN_CUSTOM_DESTS_KEY, JSON.stringify(store));
+  } catch {}
+  return id;
+}
+
+function findExistingSubTopic(candidates, subtopics) {
+  const normalizedCandidates = Array.isArray(candidates)
+    ? candidates.map((candidate) => normalizeLooseName(candidate)).filter(Boolean)
+    : [];
+  const list = Array.isArray(subtopics) ? subtopics : [];
+  if (!normalizedCandidates.length || !list.length) return null;
+
+  for (const candidate of normalizedCandidates) {
+    const exactMatch = list.find((topic) => normalizeLooseName(topic?.name) === candidate);
+    if (exactMatch) return exactMatch;
+  }
+
+  for (const candidate of normalizedCandidates) {
+    const partialMatch = list.find((topic) => {
+      const normalizedName = normalizeLooseName(topic?.name);
+      return normalizedName.includes(candidate) || candidate.includes(normalizedName);
+    });
+    if (partialMatch) return partialMatch;
+  }
+
+  return null;
+}
+
+function getMarketSubTopicCandidates(gemKey, gemLabel, fallbackSubCategory) {
+  const normalizedGemLabel = normalizeLooseName(gemLabel);
+  const candidateMap = {
+    technical: ["ניתוח טכני", "טכני", "מסחר טכני", "אינדיקטורים"],
+    fundamental: ["ניתוח פונדמנטלי", "פונדמנטלי", "דוחות ורווחים", "דוחות כספיים"],
+    news: ["מבט בוקר", "סקירת שוק", "רשימות מעקב", "דוחות ורווחים"],
+    macro: ["מאקרו", "סקירת שוק"],
+  };
+
+  if (gemKey === "technical" || normalizedGemLabel.includes("טכני")) {
+    return candidateMap.technical;
+  }
+  if (gemKey === "fundamental" || normalizedGemLabel.includes("פונדמנטלי")) {
+    return candidateMap.fundamental;
+  }
+  if (gemKey === "news" || normalizedGemLabel.includes("מבט בוקר")) {
+    return candidateMap.news;
+  }
+  if (gemKey === "macro" || normalizedGemLabel.includes("מאקרו")) {
+    return candidateMap.macro;
+  }
+
+  return [fallbackSubCategory, gemLabel].filter(Boolean);
+}
 
 const POLITICAL_TABS_DEFS = [
   // ── Primary 4 (always visible) ──────────────────────────────────────────────
@@ -658,8 +817,80 @@ const MARKET_DROPDOWN_ITEMS = [
   { id: 'gemini-macro',       icon: '🌍', label: 'מאקרו', soon: true },
 ];
 
-function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, storedTranscriptSegments, transcriptSourceLabel, handleQuickCopy }) {
+const TRANSCRIPT_GEM_SETTINGS_FIELDS = [
+  { key: "general", label: "כללי" },
+  { key: "political", label: "פוליטי" },
+  { key: "market", label: "שוק ההון" },
+  { key: "technical", label: "טכני" },
+  { key: "fundamental", label: "פונדמנטלי" },
+  { key: "appBuilder", label: "App Builder" },
+];
+
+const TRANSCRIPT_GEM_BUTTONS = [
+  { key: "general",    label: "כללי",        icon: "✨" },
+  { key: "political",  label: "פוליטי",      icon: "🏛️" },
+  { key: "fundamental",label: "פונדמנטלי",   icon: "📊" },
+  { key: "technical",  label: "טכני",        icon: "📉" },
+  { key: "macro",      label: "מאקרו",       icon: "🌐" },
+  { key: "news",       label: "מבזק בוקר",  icon: "📰" },
+  { key: "appBuilder", label: "App Builder", icon: "🏗️" },
+];
+
+function resolveTranscriptGemRecommendation(video, recommendedGemInfo) {
+  const category = normalizeCategoryName(video?.category || "");
+  const gemKey = String(recommendedGemInfo?.gemKey || video?.recommendedGem || "").trim();
+  const gemLabel = String(recommendedGemInfo?.gemLabel || video?.recommendedGem || "").trim();
+
+  if (category === MARKET_CATEGORY) {
+    if (gemKey === "technical" || gemLabel.includes("טכני")) return "technical";
+    if (gemKey === "fundamental" || gemLabel.includes("פונדמנטלי")) return "fundamental";
+    return "market";
+  }
+
+  if (category === POLITICS_CATEGORY) {
+    return "political";
+  }
+
+  if (gemKey === "appBuilder" || /app/i.test(gemLabel)) {
+    return "appBuilder";
+  }
+
+  if (gemKey === "technical") return "technical";
+  if (gemKey === "fundamental") return "fundamental";
+  if (gemKey === "political") return "political";
+  return "general";
+}
+
+function buildTranscriptGemPayload({ video, fullTranscriptText, durationLabel }) {
+  const lines = [
+    `Title: ${String(video?.title || "").trim()}`,
+    `Channel: ${String(video?.channelTitle || video?.channelName || video?.channel || "").trim()}`,
+    `URL: ${String(getWatchUrl(video) || "").trim()}`,
+    `Duration: ${String(durationLabel || "").trim()}`,
+    `Category: ${String(video?.category || "").trim()}`,
+    `SubCategory: ${String(video?.subCategory || "").trim()}`,
+    "",
+    "Transcript:",
+    fullTranscriptText,
+  ];
+
+  return lines.join("\n");
+}
+
+function GeminiActionsPanel({
+  video,
+  fullTranscriptText,
+  transcriptWordCount,
+  storedTranscriptSegments,
+  transcriptSourceLabel,
+  handleQuickCopy,
+  recommendedGemInfo,
+  selectedGemKey = null,
+  onGemSelect = null,
+}) {
   const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
+  const [isGemSettingsOpen, setIsGemSettingsOpen] = useState(false);
+  const [gemSettingsDraft, setGemSettingsDraft] = useState(() => getGemConfigSnapshot());
   const marketRef = useRef(null);
 
   useEffect(() => {
@@ -670,6 +901,11 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [marketDropdownOpen]);
+
+  useEffect(() => {
+    if (!isGemSettingsOpen) return;
+    setGemSettingsDraft(getGemConfigSnapshot());
+  }, [isGemSettingsOpen]);
 
   const durationDisplay = (() => {
     const d = video?.duration;
@@ -691,6 +927,15 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
   ];
 
   const mainActions = QUICK_COPY_ACTIONS.filter(a => !MARKET_SUB_IDS.has(a.id));
+  const recommendedGemKey = resolveTranscriptGemRecommendation(video, recommendedGemInfo);
+  const recommendedGemButton = TRANSCRIPT_GEM_BUTTONS.find((button) => button.key === recommendedGemKey) || null;
+
+  // Local selection state — starts from saved override or AI recommendation
+  const [localGem, setLocalGem] = useState(() => selectedGemKey || recommendedGemKey || 'general');
+  useEffect(() => {
+    setLocalGem(selectedGemKey || recommendedGemKey || 'general');
+  }, [selectedGemKey, recommendedGemKey]);
+  const hasUnsavedChange = onGemSelect && localGem !== (selectedGemKey || recommendedGemKey || 'general');
 
   function handleMarketItem(item) {
     if (item.soon) return;
@@ -704,6 +949,43 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
     if (action) { handleQuickCopy(action); setMarketDropdownOpen(false); }
   }
 
+  const handleGemButtonClick = async (gemKey) => {
+    if (!fullTranscriptText) {
+      toast.error("אין תמלול זמין לשליחה");
+      return;
+    }
+
+    const clipboardPayload = buildTranscriptGemPayload({
+      video,
+      fullTranscriptText,
+      durationLabel: durationDisplay,
+    });
+
+    try {
+      await navigator.clipboard.writeText(clipboardPayload);
+    } catch {
+      toast.error("לא ניתן לגשת ללוח");
+      return;
+    }
+
+    toast.success("✓ התמלול הועתק ללוח");
+
+    const gemUrl = getGemUrl(gemKey);
+    if (!gemUrl) {
+      setIsGemSettingsOpen(true);
+      toast.info("יש להגדיר כתובת Gem בהגדרות");
+      return;
+    }
+
+    openGeminiGemUrl(gemUrl);
+  };
+
+  const handleSaveGemSettings = () => {
+    saveGemConfigSnapshot(gemSettingsDraft);
+    setIsGemSettingsOpen(false);
+    toast.success("הגדרות GEMS נשמרו");
+  };
+
   return (
     <div dir="rtl" className="space-y-2">
       {/* Stats row */}
@@ -714,6 +996,123 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
             <div className="text-xs font-semibold text-slate-700 dark:text-zinc-200 truncate tabular-nums">{stat.value}</div>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/20 px-3 py-3 space-y-2.5">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs font-bold text-indigo-800 dark:text-indigo-200">בחירת GEM לתמלול</div>
+          <button
+            type="button"
+            onClick={() => setIsGemSettingsOpen(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-zinc-900 dark:text-indigo-300"
+          >
+            ⚙ הגדרות
+          </button>
+        </div>
+
+        {/* Live status line */}
+        <div className="flex items-center gap-3 text-[11px] leading-none" dir="rtl">
+          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span>AI מומלץ:</span>
+            <span className="font-semibold text-slate-700 dark:text-zinc-200">
+              {TRANSCRIPT_GEM_BUTTONS.find(b => b.key === recommendedGemKey)?.label || recommendedGemKey || 'כללי'}
+            </span>
+          </span>
+          <span className="text-slate-300 dark:text-zinc-600 select-none">|</span>
+          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
+            <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+            <span>נבחר:</span>
+            <span className="font-semibold text-slate-700 dark:text-zinc-200">
+              {TRANSCRIPT_GEM_BUTTONS.find(b => b.key === localGem)?.label || localGem || 'כללי'}
+            </span>
+          </span>
+          {hasUnsavedChange && (
+            <span className="text-amber-600 dark:text-amber-400 text-[10px] font-medium">• לא נשמר</span>
+          )}
+        </div>
+
+        {/* GEM cards */}
+        <div className="flex flex-wrap gap-1.5">
+          {TRANSCRIPT_GEM_BUTTONS.map((button) => {
+            const isRecommended = button.key === recommendedGemKey;
+            const isSelected    = button.key === localGem;
+            const isBoth        = isSelected && isRecommended;
+            const hasUrl        = Boolean(getGemUrl(button.key));
+            return (
+              <button
+                key={button.key}
+                type="button"
+                onClick={() => setLocalGem(button.key)}
+                title={hasUrl ? `בחר: ${button.label}` : `אין כתובת Gem — ${button.label}`}
+                className={`relative inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-semibold transition-all ${
+                  isSelected
+                    ? "border-indigo-500 bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40"
+                    : isRecommended
+                      ? "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-200"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700"
+                }`}
+              >
+                <span className="text-sm leading-none">{button.icon}</span>
+                <span>{button.label}</span>
+                {isBoth && (
+                  <span className="absolute -top-1.5 -left-1.5 inline-block rounded-full bg-amber-400 text-[8px] font-bold text-white leading-none px-1 py-0.5">AI</span>
+                )}
+                {isRecommended && !isSelected && (
+                  <span className="text-[9px] bg-amber-200 dark:bg-amber-800/60 text-amber-700 dark:text-amber-300 px-1 rounded leading-4">AI</span>
+                )}
+                {!hasUrl && (
+                  <span className="text-[10px] opacity-60" title="אין URL מוגדר">⚠</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Missing URL warning for the currently selected GEM */}
+        {!getGemUrl(localGem) && (
+          <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-[11px]" dir="rtl">
+            <span className="text-amber-600 dark:text-amber-400 shrink-0">⚠</span>
+            <span className="text-amber-700 dark:text-amber-300 flex-1">
+              ל-GEM הנבחר אין כתובת URL מוגדרת.
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsGemSettingsOpen(true)}
+              className="text-amber-600 dark:text-amber-400 underline text-[10px] font-semibold shrink-0"
+            >
+              הגדר עכשיו
+            </button>
+          </div>
+        )}
+
+        {/* Action row */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleGemButtonClick(localGem)}
+            disabled={!fullTranscriptText || !getGemUrl(localGem)}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600 text-white px-3 py-2.5 text-xs font-semibold transition-colors"
+          >
+            ✦ פתח Gem נבחר
+          </button>
+          {onGemSelect && (
+            <button
+              type="button"
+              onClick={() => onGemSelect(localGem)}
+              disabled={!hasUnsavedChange}
+              className={`inline-flex items-center justify-center gap-1 rounded-lg border px-4 py-2.5 text-xs font-semibold transition-colors ${
+                hasUnsavedChange
+                  ? "border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-slate-200 bg-white text-slate-400 cursor-default dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500"
+              }`}
+              title={hasUnsavedChange ? "שמור בחירת Gem לסרטון" : "הבחירה נשמרה"}
+            >
+              {hasUnsavedChange ? "💾 שמור" : "✓ נשמר"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Action cards — 4 per row */}
@@ -792,6 +1191,51 @@ function GeminiActionsPanel({ video, fullTranscriptText, transcriptWordCount, st
           );
         })}
       </div>
+
+      <Dialog open={isGemSettingsOpen} onOpenChange={setIsGemSettingsOpen}>
+        <DialogContent dir="rtl" className="max-w-lg z-[220]">
+          <DialogHeader>
+            <DialogTitle className="text-right text-base font-bold">⚙ הגדרות GEMS</DialogTitle>
+            <DialogDescription className="text-right text-sm text-slate-500">
+              אפשר לערוך ולשמור כתובות Gem לשימוש מהיר מתוך מודאל התמלול.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {TRANSCRIPT_GEM_SETTINGS_FIELDS.map((field) => (
+              <label key={field.key} className="block space-y-1.5">
+                <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300">{field.label}</span>
+                <input
+                  type="url"
+                  dir="ltr"
+                  value={gemSettingsDraft[field.key] || ""}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setGemSettingsDraft((prev) => ({ ...prev, [field.key]: value }));
+                  }}
+                  placeholder="https://gemini.google.com/gem/..."
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-left text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-indigo-500/20"
+                />
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-start gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsGemSettingsOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              ביטול
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveGemSettings}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              שמור
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -849,23 +1293,16 @@ function repairGemsJson(raw) {
     }
     if (_hasEsc) {
       let out = '';
-      _inS = false; _esc = false;
       for (let i = 0; i < s.length; i++) {
-        const c = s[i];
-        if (_esc) { out += c; _esc = false; continue; }
-        if (c === '\\' && _inS) { out += c; _esc = true; continue; }
-        if (c === '"') { _inS = !_inS; out += c; continue; }
-        if (_inS) { out += c; continue; }
-        // Outside string: convert structural escape sequences to real chars
-        if (c === '\\' && i + 1 < s.length) {
+        if (s[i] === '\\' && i + 1 < s.length) {
           const nx = s[i + 1];
+          if (nx === '"')  { out += '"';  i++; continue; }
           if (nx === 'n')  { out += '\n'; i++; continue; }
           if (nx === 'r')  { out += '\r'; i++; continue; }
           if (nx === 't')  { out += '\t'; i++; continue; }
-          if (nx === '"')  { out += '"';  i++; continue; }
           if (nx === '\\') { out += '\\'; i++; continue; }
         }
-        out += c;
+        out += s[i];
       }
       s = out;
       if (s !== before) fixes.push('Unescaped structural \\n/\\" (double-stringified JSON)');
@@ -1058,6 +1495,7 @@ export function VideoDetailPanel({
   const [manualTranscriptInput, setManualTranscriptInput] = useState("");
   const [isSavingManualTranscript, setIsSavingManualTranscript] = useState(false);
   const [isFetchingYtApiTranscript, setIsFetchingYtApiTranscript] = useState(false);
+  const [isFreshImportRunning, setIsFreshImportRunning] = useState(false);
   const [geminiStatus, setGeminiStatus] = useState("idle");
   const [geminiMessage, setGeminiMessage] = useState(null);
   const [geminiAnalysisMode, setGeminiAnalysisMode] = useState("smart");
@@ -1077,7 +1515,14 @@ export function VideoDetailPanel({
   const [isSubtitleEditing, setIsSubtitleEditing] = useState(false);
   const [subtitleDraft, setSubtitleDraft] = useState("");
   const [isSubtitleSaving, setIsSubtitleSaving] = useState(false);
+  const [subTopicRec, setSubTopicRec] = useState(null);
+  const [subTopicRecDismissed, setSubTopicRecDismissed] = useState(false);
+  const [isSubTopicEditing, setIsSubTopicEditing] = useState(false);
+  const [subTopicDraft, setSubTopicDraft] = useState("");
+  const [isCreatingSubTopic, setIsCreatingSubTopic] = useState(false);
+  const [newSubTopicDraft, setNewSubTopicDraft] = useState("");
   const restoredAnalysisRef = useRef(null);
+  const freshImportAutoRunRef = useRef(null);
   const ollamaStatusRequestRef = useRef(false);
   const updateSummary = useUpdateSummary();
   const { video: persistedVideo, patch: patchVideo, setVideo: setVideoState } = usePersistedVideo(videoProp?.id, videoProp);
@@ -1107,19 +1552,41 @@ export function VideoDetailPanel({
   const [recApplied, setRecApplied] = useState(false);
   const [vaultSubtopics, setVaultSubtopics] = useState([]);
   const [gemOverride, setGemOverride] = useState(null);
+  const [showGemModal, setShowGemModal] = useState(false);
+  const [showGemsSettings, setShowGemsSettings] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState("");
   const [transcriptSearchIndex, setTranscriptSearchIndex] = useState(0);
+  const [transcriptSearchMode, setTranscriptSearchMode] = useState("highlight"); // "highlight" | "filter"
   const [brainSelections, setBrainSelections] = useState({});
   const hasSavedAnalysis = !!savedAnalysisMeta;
+  const [attachedDocuments, setAttachedDocuments] = useState(() => Array.isArray(video?.attachedDocuments) ? video.attachedDocuments : []);
+  const [includeDocsInAnalysis, setIncludeDocsInAnalysis] = useState(false);
+  const [attachedDocsExpanded, setAttachedDocsExpanded] = useState(false);
+  const [attachedDocumentsInsights, setAttachedDocumentsInsights] = useState(() => video?.attachedDocumentsInsights ?? null);
   const queryClient = useQueryClient();
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
+  useEffect(() => {
+    setAttachedDocuments(Array.isArray(video?.attachedDocuments) ? video.attachedDocuments : []);
+    setIncludeDocsInAnalysis(false);
+    setAttachedDocsExpanded(false);
+    setAttachedDocumentsInsights(video?.attachedDocumentsInsights ?? null);
+  }, [video?.id]);
   useEffect(() => {
     const loadedSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
     setSubtitleDraft(loadedSubtitle);
     setIsSubtitleEditing(false);
     console.log("[VideoHeader] Subtitle loaded:", loadedSubtitle || null);
   }, [video?.id, video?.customSubtitle]);
+  // Reset subtopic recommendation state when switching videos
+  useEffect(() => {
+    setSubTopicRec(null);
+    setSubTopicRecDismissed(false);
+    setIsSubTopicEditing(false);
+    setIsCreatingSubTopic(false);
+    setNewSubTopicDraft("");
+    setSubTopicDraft(typeof video?.subCategory === "string" ? video.subCategory.trim() : "");
+  }, [video?.id]);
   useEffect(() => {
     const extraTabs = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value);
     if (extraTabs.includes(activePoliticalTab)) setShowMorePoliticalTabs(true);
@@ -1207,15 +1674,117 @@ export function VideoDetailPanel({
     () => selectableAtomicFields.reduce((sum, field) => sum + field.items.length, 0),
     [selectableAtomicFields]
   );
+  const selectedSubTopicName = typeof (subCategoryOverride ?? video?.subCategory) === "string"
+    ? String(subCategoryOverride ?? video?.subCategory).trim()
+    : "";
+  const marketRootTopic = useMemo(
+    () => topics.find((topic) => (!topic.parentId || topic.isMainCategory) && normalizeCategoryName(topic?.name) === MARKET_CATEGORY) || null,
+    [topics]
+  );
+
+  const resolvedVideoMode = useMemo(() => {
+    const mentorResolved = resolveChannelToMentor(video);
+    const mentorByName = !mentorResolved && mentorName ? resolveMentorByName(mentorName) : null;
+    const resolvedMentor = mentorResolved ?? mentorByName;
+    const normalizedCategoryCandidates = [
+      video?.category,
+      videoProp?.category,
+      resolvedMentor?.categoryLabel,
+      video?.obsidianTopic,
+      videoProp?.obsidianTopic,
+    ]
+      .map((value) => normalizeCategoryName(value))
+      .filter((value) => typeof value === "string" && value.trim().length > 0);
+
+    const lockedCategory = normalizedCategoryCandidates[0] || null;
+    const normalizedSubCategory =
+      typeof (video?.subCategory ?? videoProp?.subCategory) === "string"
+        ? String(video?.subCategory ?? videoProp?.subCategory).trim() || null
+        : null;
+
+    if (lockedCategory === MARKET_CATEGORY) {
+      return {
+        mode: "market",
+        category: MARKET_CATEGORY,
+        subCategory: normalizedSubCategory,
+        analysisType: "market",
+        gemType: "fundamental",
+        tabsPreset: "market",
+      };
+    }
+
+    if (lockedCategory === POLITICS_CATEGORY) {
+      return {
+        mode: "politics",
+        category: POLITICS_CATEGORY,
+        subCategory: normalizedSubCategory,
+        analysisType: "political",
+        gemType: "political",
+        tabsPreset: "politics",
+      };
+    }
+
+    return {
+      mode: "general",
+      category: lockedCategory,
+      subCategory: normalizedSubCategory,
+      analysisType: null,
+      gemType: null,
+      tabsPreset: null,
+    };
+  }, [
+    mentorName,
+    video,
+    videoProp?.category,
+    videoProp?.obsidianTopic,
+    videoProp?.subCategory,
+  ]);
 
   const gemRec = useMemo(() => {
     if (!video) return null;
     const transcriptText = String(video?.transcript || '');
     const mentorResolved = resolveChannelToMentor(video);
-    const forcedCategoryLabel = mentorResolved?.categoryLabel ?? null;
+    // Fallback: if no channel metadata match, try matching the mentor display name prop
+    const mentorByName = !mentorResolved && mentorName ? resolveMentorByName(mentorName) : null;
+    const resolvedMentor = mentorResolved ?? mentorByName;
+    // Priority: mentor channel → mentor name prop → stored video.category → AI
+    const forcedCategoryLabel = resolvedMentor?.categoryLabel ?? (video?.category || null);
     const firstTopicId = Array.isArray(video.topicIds) ? video.topicIds[0] : null;
     const forcedTopicName = firstTopicId ? (topics.find(t => t.id === firstTopicId)?.name ?? null) : null;
     const result = classifyVideoForGem(video, transcriptText, { forcedCategoryLabel, forcedTopicName });
+    if (resolvedVideoMode.mode === "market" && !MARKET_GEM_KEYS.has(result.gemKey)) {
+      const fallbackGemKey = "fundamental";
+      const fallbackCategory = GEM_CATEGORY_MAP[fallbackGemKey];
+      console.log("[TranscriptGuard] forcing market gem", {
+        videoId: video?.id,
+        previousGem: result.gemKey,
+        nextGem: fallbackGemKey,
+        category: resolvedVideoMode.category,
+      });
+      return {
+        ...result,
+        gemKey: fallbackGemKey,
+        gemLabel: "פונדמנטלי",
+        gemIcon: "📊",
+        recommendedCategoryCode: fallbackCategory?.categoryCode ?? result.recommendedCategoryCode,
+        recommendedCategoryLabel: MARKET_CATEGORY,
+        recommendedSubCategory: result.recommendedSubCategory || "ניתוח שוק",
+        reason: "מצב שוק ההון נעול לפי קטגוריית הסרטון הקיימת, לכן לא מבוצע מעבר למסלול פוליטי אחרי יבוא תמלול.",
+      };
+    }
+    if (resolvedVideoMode.mode === "politics" && result.gemKey !== "political") {
+      const fallbackCategory = GEM_CATEGORY_MAP.political;
+      return {
+        ...result,
+        gemKey: "political",
+        gemLabel: "פוליטי",
+        gemIcon: "🏛️",
+        recommendedCategoryCode: fallbackCategory?.categoryCode ?? result.recommendedCategoryCode,
+        recommendedCategoryLabel: POLITICS_CATEGORY,
+        recommendedSubCategory: result.recommendedSubCategory || "פוליטיקה פנימית",
+        reason: "מצב פוליטיקה נעול לפי קטגוריית הסרטון הקיימת.",
+      };
+    }
     console.log('[GemDecision]', {
       channel: video?.channelTitle || video?.channelName || video?.channel || '',
       mentorCategory: forcedCategoryLabel ?? 'none',
@@ -1223,12 +1792,14 @@ export function VideoDetailPanel({
       subTopic: result.recommendedSubCategory,
       aiCategory: result.recommendedCategoryLabel,
       selectedGem: result.gemKey,
-      decisionSource: mentorResolved
-        ? (forcedTopicName ? 'topic_hard_rule' : 'channel_hard_rule')
+      decisionSource: mentorResolved ? 'channel_hard_rule'
+        : mentorByName ? 'mentor_name_hard_rule'
+        : forcedTopicName ? 'topic_hard_rule'
+        : forcedCategoryLabel ? 'stored_category_hard_rule'
         : 'ai_classification',
     });
     return result;
-  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds, topics, mentorName, resolvedVideoMode.mode, resolvedVideoMode.category]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveGemInfo = useMemo(() => {
     if (!gemRec) return null;
@@ -1250,6 +1821,77 @@ export function VideoDetailPanel({
   }, [gemRec, gemOverride]);
 
   useEffect(() => {
+    if (!video?.id || resolvedVideoMode.mode !== "market" || !marketRootTopic?.id) {
+      setVaultSubtopics([]);
+      setSubTopicRec(null);
+      return;
+    }
+
+    const systemSubtopics = topics
+      .filter((topic) => topic.parentId === marketRootTopic.id)
+      .map((topic) => ({ id: topic.id, name: String(topic.name || "").trim(), isCustom: false }))
+      .filter((topic) => topic.name && !FORBIDDEN_MARKET_SUBTOPICS.has(topic.name));
+
+    const customSubtopics = ((loadCustomBrainDests().subs?.[marketRootTopic.id]) || [])
+      .map((topic) => ({ id: topic.id, name: String(topic?.name || "").trim(), isCustom: true }))
+      .filter((topic) => topic.name && !FORBIDDEN_MARKET_SUBTOPICS.has(topic.name));
+
+    const mergedSubtopics = [...systemSubtopics, ...customSubtopics].filter((topic, index, list) => {
+      const normalized = normalizeLooseName(topic.name);
+      return normalized && list.findIndex((candidate) => normalizeLooseName(candidate.name) === normalized) === index;
+    });
+
+    setVaultSubtopics(mergedSubtopics);
+
+    const candidateNames = getMarketSubTopicCandidates(
+      effectiveGemInfo?.gemKey,
+      effectiveGemInfo?.gemLabel,
+      gemRec?.recommendedSubCategory
+    );
+    const matchedSubTopic = findExistingSubTopic(candidateNames, mergedSubtopics);
+    const dismissedRecommendation = normalizeLooseName(video?.dismissedSubTopicRec);
+    const selectedNormalized = normalizeLooseName(selectedSubTopicName);
+
+    if (!matchedSubTopic) {
+      setSubTopicRec(null);
+      return;
+    }
+
+    const recommendedNormalized = normalizeLooseName(matchedSubTopic.name);
+    if (!subTopicDraft) {
+      setSubTopicDraft(selectedSubTopicName || matchedSubTopic.name);
+    }
+
+    if (dismissedRecommendation && dismissedRecommendation === recommendedNormalized) {
+      setSubTopicRecDismissed(true);
+    }
+
+    if (selectedNormalized && selectedNormalized === recommendedNormalized) {
+      setSubTopicRec(null);
+      return;
+    }
+
+    setSubTopicRec({
+      recommended: matchedSubTopic.name,
+      confidence: effectiveGemInfo?.gemKey === "technical" || effectiveGemInfo?.gemKey === "fundamental" ? 0.94 : 0.88,
+      reason: `Gem מומלץ: ${effectiveGemInfo?.gemLabel || gemRec?.gemLabel || "שוק ההון"} — לכן מומלץ תת-נושא תואם מתוך רשימת Obsidian הקיימת.`,
+      source: effectiveGemInfo?.gemKey || gemRec?.gemKey || null,
+    });
+  }, [
+    effectiveGemInfo?.gemKey,
+    effectiveGemInfo?.gemLabel,
+    gemRec?.gemKey,
+    gemRec?.recommendedSubCategory,
+    marketRootTopic?.id,
+    resolvedVideoMode.mode,
+    selectedSubTopicName,
+    subTopicDraft,
+    topics,
+    video?.dismissedSubTopicRec,
+    video?.id,
+  ]);
+
+  useEffect(() => {
     if (!open || initialChapterIndex == null) {
       setHighlightedChapterIndex(null);
       return;
@@ -1257,6 +1899,12 @@ export function VideoDetailPanel({
     setHighlightedChapterIndex(initialChapterIndex);
     setActiveTab("chapters");
   }, [open, initialChapterIndex]);
+
+  useEffect(() => {
+    if (resolvedVideoMode.mode === "politics" || activeTab !== "political") return;
+    console.log("[TranscriptGuard] leaving political tab because resolved mode is", resolvedVideoMode.mode);
+    setActiveTab("summary");
+  }, [activeTab, resolvedVideoMode.mode]);
 
   useEffect(() => {
     if (highlightedChapterIndex == null) return;
@@ -1589,6 +2237,7 @@ export function VideoDetailPanel({
       duration: savedAnalysis.duration ?? undefined,
       viewCount: savedAnalysis.viewCount ?? undefined,
       customSubtitle: savedAnalysis.customSubtitle ?? undefined,
+      attachedDocumentsInsights: savedAnalysis.attachedDocumentsInsights ?? undefined,
     });
 
     const savedVideo = patchVideo(patch);
@@ -1958,8 +2607,8 @@ export function VideoDetailPanel({
   // Auto-generate political summary when video opens and has transcript but no stored summary.
   // Deps: video id + gem key only — does NOT trigger on manual delete (by design).
   useEffect(() => {
-    const isPolitical = effectiveGemInfo?.gemKey === 'political';
-    const videoId = video?.youtubeId || video?.id;
+    const isPolitical = resolvedVideoMode.mode === "politics" && effectiveGemInfo?.gemKey === 'political';
+    const videoId = video?.id || video?.youtubeId;
     if (!isPolitical || !videoId) return;
 
     // If already stored in localStorage, the load-effect will restore state — skip
@@ -2006,7 +2655,7 @@ export function VideoDetailPanel({
     console.log(`[PoliticalSummary] auto generation started for videoId=${videoId}`);
     handleGeneratePoliticalSummary();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video?.id, video?.youtubeId, effectiveGemInfo?.gemKey]);
+  }, [video?.id, video?.youtubeId, effectiveGemInfo?.gemKey, resolvedVideoMode.mode]);
 
   const handleSavePsSection = useCallback((sectionKey, sectionLabel, content, sectionTypeOverride) => {
     const videoId = video?.youtubeId || video?.id;
@@ -2066,17 +2715,8 @@ export function VideoDetailPanel({
   }, [video]);
 
   const handleSaveAllToBrain = useCallback(() => {
-    const content = buildSaveAllContent();
-    const cleanStr = (s) => String(s || '').replace(/[/\\?*:|"<>]/g, '').trim();
-    const topicPart = cleanStr(video?.category || 'כללי').slice(0, 40);
-    const subPart = cleanStr(video?.subCategory || '');
-    const titlePart = cleanStr(video?.title || 'סרטון').slice(0, 60);
-    const path = subPart && subPart !== 'כללי'
-      ? `${topicPart}/${subPart}/${titlePart}.md`
-      : `${topicPart}/${titlePart}.md`;
-    setSaveAllContent({ ...content, path });
-    setSaveAllConfirmOpen(true);
-  }, [buildSaveAllContent, video]);
+    setBrainPickerOpen(true);
+  }, []);
 
   const handleSaveAllConfirmed = useCallback(async () => {
     if (!saveAllContent) return;
@@ -2144,9 +2784,106 @@ export function VideoDetailPanel({
     } finally {
       setIsSubtitleSaving(false);
     }
-  }, [buildAnalysisSnapshot, isSubtitleSaving, saveVideoFields, subtitleDraft, video]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSubtitleSaving, saveVideoFields, subtitleDraft, video]);
 
-  if (!video) return null;
+  const handleApproveSubTopicRec = useCallback(async () => {
+    if (!subTopicRec?.recommended || !video?.id) return;
+    const newSubCat = subTopicRec.recommended;
+    setSubCategoryOverride(newSubCat);
+    setSubTopicDraft(newSubCat);
+    setSubTopicRecDismissed(true);
+    setIsSubTopicEditing(false);
+    console.log('[SubTopicRecommendation] accepted:', newSubCat);
+    try {
+      await saveVideoFields({ subCategory: newSubCat, dismissedSubTopicRec: null });
+      toast.success(`תת-נושא נשמר: ${newSubCat}`);
+    } catch (err) {
+      console.warn("[SubTopicRec] save failed:", err?.message);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subTopicRec, video?.id, saveVideoFields]);
+
+  const handleDismissSubTopicRec = useCallback(async () => {
+    if (!subTopicRec?.recommended || !video?.id) return;
+    const dismissed = subTopicRec.recommended;
+    setSubTopicRecDismissed(true);
+    console.log('[SubTopicRecommendation] dismissed:', dismissed);
+    try {
+      await saveVideoFields({ dismissedSubTopicRec: dismissed });
+    } catch (err) {
+      console.warn("[SubTopicRec] dismiss save failed:", err?.message);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subTopicRec, video?.id, saveVideoFields]);
+
+  const handleSaveSubTopicSelection = useCallback(async () => {
+    if (!video?.id) return;
+    const normalizedSubTopic = subTopicDraft === NEW_SUBTOPIC_SENTINEL ? "" : subTopicDraft.trim();
+    if (!normalizedSubTopic) {
+      toast.error("בחר תת-נושא מהרשימה או צור חדש");
+      return;
+    }
+
+    setSubCategoryOverride(normalizedSubTopic);
+    setSubTopicRecDismissed(false);
+    setIsSubTopicEditing(false);
+    setIsCreatingSubTopic(false);
+    setNewSubTopicDraft("");
+    console.log("[SubTopicRecommendation] manual selection:", normalizedSubTopic);
+    try {
+      await saveVideoFields({ subCategory: normalizedSubTopic, dismissedSubTopicRec: null });
+      toast.success(`תת-נושא עודכן: ${normalizedSubTopic}`);
+    } catch (err) {
+      console.warn("[SubTopicManual] save failed:", err?.message);
+      toast.error("לא ניתן היה לעדכן תת-נושא");
+    }
+  }, [saveVideoFields, subTopicDraft, video?.id]);
+
+  const handleCreateCustomSubTopic = useCallback(async () => {
+    if (!video?.id || !marketRootTopic?.id) return;
+    const trimmedName = newSubTopicDraft.trim();
+    if (!trimmedName) {
+      toast.error("יש להזין שם לתת-נושא חדש");
+      return;
+    }
+    if (FORBIDDEN_MARKET_SUBTOPICS.has(trimmedName)) {
+      toast.error("תת-הנושא הזה לא תקין עבור שוק ההון");
+      return;
+    }
+
+    persistCustomBrainSub(marketRootTopic.id, trimmedName);
+    setVaultSubtopics((prev) => {
+      const exists = prev.some((topic) => normalizeLooseName(topic?.name) === normalizeLooseName(trimmedName));
+      if (exists) return prev;
+      return [...prev, { id: `custom_sub_runtime_${Date.now()}`, name: trimmedName, isCustom: true }];
+    });
+    setSubTopicDraft(trimmedName);
+    setSubCategoryOverride(trimmedName);
+    setIsCreatingSubTopic(false);
+    setNewSubTopicDraft("");
+    setIsSubTopicEditing(false);
+    setSubTopicRecDismissed(false);
+
+    try {
+      await saveVideoFields({ subCategory: trimmedName, dismissedSubTopicRec: null });
+      toast.success(`תת-נושא חדש נשמר: ${trimmedName}`);
+    } catch (err) {
+      console.warn("[SubTopicManual] custom create save failed:", err?.message);
+      toast.error("לא ניתן היה לשמור תת-נושא חדש");
+    }
+  }, [marketRootTopic?.id, newSubTopicDraft, saveVideoFields, video?.id]);
+
+  // Debug log for PDF items (helps verify contentType is propagated correctly)
+  if (video?.contentType === "pdf") {
+    console.log("[VideoDetailPanel] Rendering PDF content item:", {
+      id: video.id,
+      title: video.title,
+      pages: video.pdfPages,
+      originalFileName: video.originalFileName,
+      transcriptLength: (video.transcript || video.manualTranscript || "").length,
+    });
+  }
 
   const toggleBrainItem = (id, text, sourceTab, tabLabel) => {
     setBrainSelections(prev => {
@@ -2317,6 +3054,63 @@ export function VideoDetailPanel({
       Object.entries(patch).filter(([, value]) => value !== undefined)
     );
 
+  const persistFreshImportRecord = useCallback(async (record, { syncRemote = true } = {}) => {
+    if (!record?.id) return record ?? null;
+
+    const localSaved = saveFreshImportRecordLocally(record) || record;
+    setVideoState(localSaved);
+    onVideoPatch?.(localSaved);
+    queryClient.invalidateQueries({ queryKey: ["videos"] });
+
+    if (syncRemote && isBase44Enabled()) {
+      try {
+        await Video.update(localSaved.id, stripFreshImportFlags(localSaved));
+        queryClient.invalidateQueries({ queryKey: ["videos"] });
+      } catch (err) {
+        console.warn("[FreshImport] Base44 sync failed (non-blocking):", err?.message);
+      }
+    }
+
+    return localSaved;
+  }, [onVideoPatch, queryClient, setVideoState]);
+
+  const resetFreshImportUiState = useCallback(() => {
+    restoredAnalysisRef.current = null;
+    setSavedAnalysisMeta(null);
+    setAnalyzeError(null);
+    setAnalysisStage(null);
+    setShowLowQualityWarning(false);
+    setCategoryOverride(null);
+    setSubCategoryOverride(null);
+    setGemOverride(null);
+    setSubTopicRec(null);
+    setSubTopicRecDismissed(false);
+    setIsSubTopicEditing(false);
+    setSubTopicDraft("");
+    setIsCreatingSubTopic(false);
+    setNewSubTopicDraft("");
+    setSelectedItems({});
+    setMultiSelected(new Map());
+    setPoliticalSummary(null);
+    setPoliticalSummaryError(null);
+    setActivePoliticalTab("brain-hi");
+    setShowMorePoliticalTabs(false);
+    setGemsJsonApplied(false);
+    setGemsPasteInput("");
+    setGemsPasteError("");
+    setGemsParsedErrorInfo(null);
+    setGemsRepairApplied(false);
+    setGemsErrorContext(null);
+    setTranscriptSearch("");
+    setTranscriptSearchIndex(0);
+    setGeminiStatus("idle");
+    setGeminiMessage(null);
+    setGeminiAnalysisSource(null);
+    setLlamaStatus("idle");
+    setLlamaMessage(null);
+    setAttachedDocumentsInsights(null);
+  }, []);
+
   const buildAnalysisSnapshot = (videoOverride) => {
     const v = videoOverride ?? video;
     return {
@@ -2363,6 +3157,7 @@ export function VideoDetailPanel({
       duration: v.duration ?? null,
       viewCount: v.viewCount ?? null,
       customSubtitle: v.customSubtitle ?? null,
+      attachedDocumentsInsights: v.attachedDocumentsInsights ?? null,
       analysisSavedAt: new Date().toISOString(),
       notes: Array.isArray(videoNotes)
         ? videoNotes.map((note) => ({
@@ -2417,7 +3212,7 @@ export function VideoDetailPanel({
         (Array.isArray(parsed.debateResponses) && parsed.debateResponses.length > 0) ||
         (Array.isArray(parsed.politicalSlogans) && parsed.politicalSlogans.length > 0);
       if (isPoliticalGems) {
-        const videoId = video?.youtubeId || video?.id;
+        const videoId = video?.id || video?.youtubeId;
         if (videoId) {
           const savedKey = `political_summary_${videoId}`;
           localStorage.setItem(savedKey, JSON.stringify(parsed));
@@ -2872,17 +3667,25 @@ export function VideoDetailPanel({
   };
 
   // תאריך יחסי — "לפני X שעות/ימים", ועבור ישנים: תאריך מלא
-  const runAiAnalysis = async ({ force = false, manualTranscriptOverride = null } = {}) => {
+  const runAiAnalysis = async ({
+    force = false,
+    manualTranscriptOverride = null,
+    videoOverride = null,
+    transcriptPayloadOverride = null,
+  } = {}) => {
     if (isAnalyzing || isReanalyzing) return;
+
+    const workingVideo = videoOverride ?? video;
+    if (!workingVideo?.id) return;
 
     if (force) setIsReanalyzing(true);
     else setIsAnalyzing(true);
 
     setAnalyzeError(null);
-    console.log("[analyze-button] handler", force ? "reanalyze" : "analyze", video.id);
-    console.log("[ai-reanalyze] start", video.id);
-    console.log("[analysis] videoId", video.id);
-    console.log("[analysis] transcriptStatus", video.transcriptStatus);
+    console.log("[analyze-button] handler", force ? "reanalyze" : "analyze", workingVideo.id);
+    console.log("[ai-reanalyze] start", workingVideo.id);
+    console.log("[analysis] videoId", workingVideo.id);
+    console.log("[analysis] transcriptStatus", workingVideo.transcriptStatus);
 
     persistAnalysisState({
       analysisStatus: "analyzing",
@@ -2890,14 +3693,14 @@ export function VideoDetailPanel({
     });
 
     try {
-      const watchUrl = getWatchUrl(video);
+      const watchUrl = getWatchUrl(workingVideo);
       const ytId = getVideoIdFromUrl(watchUrl);
 
       const manualTranscriptText =
         typeof manualTranscriptOverride === 'string' && manualTranscriptOverride.trim().length > 40
           ? manualTranscriptOverride.trim()
-          : typeof video.manualTranscript === 'string' && video.manualTranscript.trim().length > 40
-            ? video.manualTranscript.trim()
+          : typeof workingVideo.manualTranscript === 'string' && workingVideo.manualTranscript.trim().length > 40
+            ? workingVideo.manualTranscript.trim()
             : null;
 
       let transcriptRaw = null;
@@ -2912,21 +3715,34 @@ export function VideoDetailPanel({
         isManualTranscript = true;
         manualHasTimestamps = parsed.hasTimestamps;
         console.log("[manual-transcript] hasTimestamps", manualHasTimestamps, "segments", parsed.segments.length);
+      } else if (transcriptPayloadOverride?.ok) {
+        transcriptRaw =
+          typeof transcriptPayloadOverride.body === "string" && transcriptPayloadOverride.body.trim().length > 0
+            ? transcriptPayloadOverride.body
+            : null;
+        transcriptPayload = {
+          ...transcriptPayloadOverride,
+          source: transcriptPayloadOverride.source || "youtube",
+          language: transcriptPayloadOverride.language ?? transcriptPayloadOverride.lang ?? null,
+          transcriptStatus: transcriptPayloadOverride.transcriptStatus || "youtube",
+          transcriptQuality: transcriptPayloadOverride.transcriptQuality || null,
+          segments: Array.isArray(transcriptPayloadOverride.segments) ? transcriptPayloadOverride.segments : [],
+        };
       } else {
         transcriptRaw =
-          typeof video.transcript === "string" && video.transcript.trim().length > 40
-            ? video.transcript.trim()
+          typeof workingVideo.transcript === "string" && workingVideo.transcript.trim().length > 40
+            ? workingVideo.transcript.trim()
             : null;
         const storedSegments =
-          Array.isArray(video.transcriptSegments) && video.transcriptSegments.length > 0
-            ? video.transcriptSegments
+          Array.isArray(workingVideo.transcriptSegments) && workingVideo.transcriptSegments.length > 0
+            ? workingVideo.transcriptSegments
             : null;
         transcriptPayload = transcriptRaw
           ? {
               ok: true,
               body: transcriptRaw,
-              source: video.transcriptSource || "stored",
-              language: video.transcriptLanguage || null,
+              source: workingVideo.transcriptSource || "stored",
+              language: workingVideo.transcriptLanguage || null,
               segments: storedSegments || parseTranscript(transcriptRaw).lines,
             }
           : null;
@@ -2990,7 +3806,7 @@ export function VideoDetailPanel({
         toast.error(manualTranscriptCta);
         return;
 
-        const descText = typeof video.description === "string" ? video.description : "";
+        const descText = typeof workingVideo.description === "string" ? workingVideo.description : "";
         const descChaptersRaw = descText ? extractTimestampsFromDescription(descText) : [];
         const descChapters = Array.isArray(descChaptersRaw)
           ? descChaptersRaw
@@ -3017,7 +3833,7 @@ export function VideoDetailPanel({
           }
 
           const patch = {
-            id: video.id,
+            id: workingVideo.id,
             aiChapters: descChapters,
             chapters: descChapters,
             videoTopics: chaptersToVideoTopics(descChapters),
@@ -3029,7 +3845,7 @@ export function VideoDetailPanel({
             transcriptStatus: "description_timestamps",
             transcriptError: failureMessage,
             analyzedAt: new Date().toISOString(),
-            _fullVideo: video,
+            _fullVideo: workingVideo,
           };
 
           console.log("[analysis] fallback source", "description_timestamps");
@@ -3037,7 +3853,7 @@ export function VideoDetailPanel({
           console.log("[analysis] chapters count", descChapters.length);
 
           const saved = await updateSummary.mutateAsync(patch);
-          const nextVideo = saved || { ...video, ...patch };
+          const nextVideo = saved || { ...workingVideo, ...patch };
           onVideoPatch?.(nextVideo);
           onAnalyzeDone?.(nextVideo);
           toast.success("נוצרו פרקים מתוך תיאור הסרטון (ללא תמלול)");
@@ -3045,7 +3861,7 @@ export function VideoDetailPanel({
         }
 
         // Fallback 2: native chapters already stored on video (only if seekable)
-        const native = Array.isArray(video.chapters) ? video.chapters : Array.isArray(video.aiChapters) ? video.aiChapters : [];
+        const native = Array.isArray(workingVideo.chapters) ? workingVideo.chapters : Array.isArray(workingVideo.aiChapters) ? workingVideo.aiChapters : [];
         const nativeSeekable = native
           .map((c, idx) => ({
             title: String(c?.title || c?.name || `פרק ${idx + 1}`).trim() || `פרק ${idx + 1}`,
@@ -3066,7 +3882,7 @@ export function VideoDetailPanel({
           }
 
           const patch = {
-            id: video.id,
+            id: workingVideo.id,
             aiChapters: nativeSeekable,
             chapters: nativeSeekable,
             videoTopics: chaptersToVideoTopics(nativeSeekable),
@@ -3078,7 +3894,7 @@ export function VideoDetailPanel({
             transcriptStatus: "native_chapters",
             transcriptError: failureMessage,
             analyzedAt: new Date().toISOString(),
-            _fullVideo: video,
+            _fullVideo: workingVideo,
           };
 
           console.log("[analysis] fallback source", "native_chapters");
@@ -3086,7 +3902,7 @@ export function VideoDetailPanel({
           console.log("[analysis] chapters count", nativeSeekable.length);
 
           const saved = await updateSummary.mutateAsync(patch);
-          const nextVideo = saved || { ...video, ...patch };
+          const nextVideo = saved || { ...workingVideo, ...patch };
           onVideoPatch?.(nextVideo);
           onAnalyzeDone?.(nextVideo);
           toast.success("נמצאו פרקים קיימים (ללא תמלול)");
@@ -3107,10 +3923,10 @@ export function VideoDetailPanel({
       setAnalysisStage("שולח ל־Claude");
       toast.info("מנתח עם Claude...");
       const ai = await analyzeVideoWithProvider({
-        videoId: video.id,
-        title: video.title,
+        videoId: workingVideo.id,
+        title: workingVideo.title,
         transcript: transcriptText,
-        durationSeconds: getVideoDurationSeconds(video),
+        durationSeconds: getVideoDurationSeconds(workingVideo),
         mentor: mentorName || null,
         category: null,
         transcriptStatus: effectiveTranscriptStatus,
@@ -3128,7 +3944,7 @@ export function VideoDetailPanel({
         : normalizeTranscriptBackedChapters(normalized.chapters, transcriptSegments);
       console.log("[ai-reanalyze] chapters", normalizedChapters.length);
 
-      const videoDurationSeconds = getVideoDurationSeconds(video);
+      const videoDurationSeconds = getVideoDurationSeconds(workingVideo);
       const enforceCoverage75 = (chapters) => {
         const list = Array.isArray(chapters) ? chapters : [];
         if (list.length === 0) return list;
@@ -3190,9 +4006,9 @@ export function VideoDetailPanel({
           : undefined;
       console.log("[transcript] store length", transcriptToStore?.length ?? 0);
 
-      const analysisVersion = Number(video.analysisVersion || 0) + 1;
+      const analysisVersion = Number(workingVideo.analysisVersion || 0) + 1;
       const patch = {
-        id: video.id,
+        id: workingVideo.id,
         shortSummary: normalized.shortSummary,
         fullSummary: normalized.fullSummary,
         keyPoints: normalized.keyPoints,
@@ -3230,17 +4046,17 @@ export function VideoDetailPanel({
         analysisVersion,
         ...(transcriptToStore ? { transcript: transcriptToStore } : {}),
         brainSummary: normalized.brainSummary || null,
-        _fullVideo: video,
+        _fullVideo: workingVideo,
       };
 
       const saved = await updateSummary.mutateAsync(patch);
-      const nextVideo = saved || { ...video, ...patch };
+      const nextVideo = saved || { ...workingVideo, ...patch };
 
       setVideoState(nextVideo);
 
       // Auto-save analysis on every successful completion
       const snapshot = buildAnalysisSnapshot(nextVideo);
-      saveSavedAnalysis(video.id, snapshot);
+      saveSavedAnalysis(workingVideo.id, snapshot);
       setSavedAnalysisMeta(extractSavedAnalysisMeta({
         analysisProvider: nextVideo.analysisProvider || null,
         analysisSavedAt: snapshot.analysisSavedAt,
@@ -3248,11 +4064,12 @@ export function VideoDetailPanel({
 
       onVideoPatch?.(nextVideo);
       onAnalyzeDone?.(nextVideo);
-      console.log("[ai-reanalyze] saved", video.id);
+      console.log("[ai-reanalyze] saved", workingVideo.id);
       console.log(`[AI Analysis] analysis completed`);
-      console.log(`[AI Analysis] saved for videoId=${video.id}`);
+      console.log(`[AI Analysis] saved for videoId=${workingVideo.id}`);
       toast.success("הניתוח הושלם בהצלחה");
       toast.success("הניתוח נשמר בהצלחה ✓");
+      return nextVideo;
     } catch (err) {
       const code = err?.code;
       // Log raw error for debugging — never show raw err.message in toast
@@ -3292,6 +4109,120 @@ export function VideoDetailPanel({
     }
   };
 
+  const runFreshImportPipeline = useCallback(async ({
+    resetBeforeAnalysis = false,
+    consumePending = false,
+    triggerSource = "panel",
+  } = {}) => {
+    if (isFreshImportRunning) return;
+
+    const baseVideo = video;
+    if (!baseVideo?.id) return;
+
+    const ytId = baseVideo.videoId || baseVideo.youtubeId || getVideoIdFromUrl(getWatchUrl(baseVideo));
+    if (!ytId) {
+      toast.error("לא ניתן לזהות את מזהה הסרטון לייבוא מחדש");
+      return;
+    }
+
+    setIsFreshImportRunning(true);
+    setActiveTab("summary");
+    resetFreshImportUiState();
+
+    try {
+      let workingVideo = baseVideo;
+
+      if (consumePending && baseVideo.pendingFreshImport) {
+        workingVideo = await persistFreshImportRecord(consumeFreshImportFlag(baseVideo), { syncRemote: false });
+      }
+
+      if (resetBeforeAnalysis) {
+        const freshMetadata = await buildExternalVideoObject(ytId, {
+          mentorId: baseVideo.mentorId ?? null,
+          topicIds: Array.isArray(baseVideo.topicIds) ? baseVideo.topicIds : [],
+          source: baseVideo.source || "manual",
+        });
+        clearVideoGeneratedCaches(baseVideo);
+        const rebuilt = buildFreshImportRecord(baseVideo, freshMetadata, {
+          requestFreshAnalysis: false,
+          requestSource: triggerSource,
+        });
+        workingVideo = await persistFreshImportRecord(rebuilt);
+      }
+
+      let transcriptPayload = null;
+      try {
+        const payload = await fetchTranscriptPayload(ytId);
+        const segments = Array.isArray(payload?.segments) ? payload.segments : [];
+        const body = typeof payload?.body === "string" ? payload.body : "";
+
+        if (segments.length > 0 || body.trim().length >= 40) {
+          const qualityResult = (() => {
+            try {
+              return validateTranscriptUsable({ segments });
+            } catch {
+              return {};
+            }
+          })();
+
+          transcriptPayload = {
+            ok: true,
+            body,
+            source: "youtube-timedtext",
+            language: payload?.lang || null,
+            lang: payload?.lang || null,
+            segments,
+            transcriptStatus: "youtube",
+            transcriptQuality: qualityResult.transcriptQuality || "low",
+          };
+
+          const transcriptPatch = buildDefinedPatch({
+            transcript: body,
+            transcriptSegments: segments,
+            transcriptSource: "youtube-timedtext",
+            transcriptLanguage: payload?.lang || null,
+            transcriptStatus: "youtube",
+            transcriptQuality: qualityResult.transcriptQuality || "low",
+            transcriptError: null,
+            transcriptImportedAt: new Date().toISOString(),
+            pendingFreshImport: false,
+          });
+
+          workingVideo = await persistFreshImportRecord({
+            ...workingVideo,
+            ...transcriptPatch,
+          });
+          toast.success("התמלול יובא מחדש");
+        }
+      } catch (err) {
+        console.warn("[FreshImport] transcript prefetch failed:", err?.message);
+      }
+
+      if (workingVideo?.pendingFreshImport) {
+        workingVideo = await persistFreshImportRecord(consumeFreshImportFlag(workingVideo), { syncRemote: false });
+      }
+
+      const analysisResult = await runAiAnalysis({
+        force: true,
+        videoOverride: workingVideo,
+        transcriptPayloadOverride: transcriptPayload,
+      });
+
+      if (analysisResult) {
+        toast.success("הסרטון נותח מחדש מאפס");
+      }
+    } finally {
+      setIsFreshImportRunning(false);
+    }
+  }, [
+    buildDefinedPatch,
+    isFreshImportRunning,
+    persistFreshImportRecord,
+    resetFreshImportUiState,
+    runAiAnalysis,
+    video,
+  ]);
+
   const handleAnalyze = async () => {
     const ytId = getVideoIdFromUrl(getWatchUrl(video));
     const disabledReason =
@@ -3321,6 +4252,30 @@ export function VideoDetailPanel({
   const handleReanalyzeLocal = async () => {
     await legacyHandleReanalyzeLocal();
   };
+
+  useEffect(() => {
+    if (!open || !video?.id || !video?.pendingFreshImport) return;
+    const token = `${video.id}:${video.freshImportRequestedAt || "pending"}`;
+    if (freshImportAutoRunRef.current === token) return;
+    freshImportAutoRunRef.current = token;
+    runFreshImportPipeline({
+      resetBeforeAnalysis: false,
+      consumePending: true,
+      triggerSource: video.freshImportSource || "duplicate_modal",
+    }).catch((err) => {
+      console.error("[FreshImport] auto run failed:", err?.message);
+      toast.error(err?.message || "ייבוא מחדש מאפס נכשל");
+    });
+  }, [
+    open,
+    runFreshImportPipeline,
+    video?.freshImportRequestedAt,
+    video?.freshImportSource,
+    video?.id,
+    video?.pendingFreshImport,
+  ]);
+
+  if (!video) return null;
 
   const relativeDate = (() => {
     if (!video.publishedAt) return null;
@@ -3434,7 +4389,7 @@ export function VideoDetailPanel({
         try { return validateTranscriptUsable({ segments }); } catch { return {}; }
       })();
 
-      const patch = {
+      const patch = buildDefinedPatch({
         transcript: body,
         transcriptSegments: segments,
         transcriptSource: "youtube-timedtext",
@@ -3442,8 +4397,25 @@ export function VideoDetailPanel({
         transcriptStatus: "youtube",
         transcriptQuality: qualityResult.transcriptQuality || "low",
         transcriptError: null,
-      };
+        transcriptImportedAt: new Date().toISOString(),
+        category: video?.category ?? videoProp?.category ?? resolvedVideoMode.category ?? undefined,
+        subCategory: video?.subCategory ?? videoProp?.subCategory ?? resolvedVideoMode.subCategory ?? undefined,
+        uiMode: video?.uiMode ?? videoProp?.uiMode ?? resolvedVideoMode.mode ?? undefined,
+        tabsPreset: video?.tabsPreset ?? videoProp?.tabsPreset ?? resolvedVideoMode.tabsPreset ?? undefined,
+        gemType: video?.gemType ?? videoProp?.gemType ?? resolvedVideoMode.gemType ?? undefined,
+        recommendedGem: video?.recommendedGem ?? videoProp?.recommendedGem ?? undefined,
+        analysisType: video?.analysisType ?? videoProp?.analysisType ?? resolvedVideoMode.analysisType ?? undefined,
+      });
 
+      console.log("[transcript-handler] preserving mode", {
+        videoId: video?.id,
+        category: patch.category ?? null,
+        subCategory: patch.subCategory ?? null,
+        uiMode: patch.uiMode ?? null,
+        tabsPreset: patch.tabsPreset ?? null,
+        gemType: patch.gemType ?? null,
+        analysisType: patch.analysisType ?? null,
+      });
       persistAnalysisState(patch);
       console.log("[transcript] success lang=" + (payload?.lang || "?") + " segments=" + segments.length);
       setAnalyzeError(null);
@@ -3493,6 +4465,22 @@ export function VideoDetailPanel({
     toast.success(`🧹 נמחקו ${cleared} רשומות מהזיכרון עבור: ${ytId || video?.id}`);
   };
 
+  const handleFreshImportReset = async () => {
+    try {
+      toast.message("מוחק היסטוריה ומנתח מחדש...", {
+        description: "ההערות הידניות וקבצי Obsidian נשארים ללא שינוי",
+      });
+      await runFreshImportPipeline({
+        resetBeforeAnalysis: true,
+        consumePending: true,
+        triggerSource: "panel_reset",
+      });
+    } catch (err) {
+      console.error("[FreshImport] manual reset failed:", err?.message);
+      toast.error(err?.message || "מחק היסטוריה ונתח מחדש נכשל");
+    }
+  };
+
   const handleGeminiContent = async () => {
     const ytId = getVideoIdFromUrl(getWatchUrl(video));
     const ytUrl = ytId ? `https://www.youtube.com/watch?v=${ytId}` : null;
@@ -3505,10 +4493,27 @@ export function VideoDetailPanel({
       const chapterHints = resolveVideoChapters(video || {});
       const durationSec = getVideoDurationSeconds(video);
       const chaptersTarget = durationSec <= 8 * 60 ? 4 : durationSec <= 14 * 60 ? 5 : durationSec <= 22 * 60 ? 7 : 8;
-      const txText = typeof video?.transcript === 'string' && video.transcript.trim().length > 40 ? video.transcript.trim() : null;
+      let txText = typeof video?.transcript === 'string' && video.transcript.trim().length > 40 ? video.transcript.trim() : null;
       const txSegments = Array.isArray(video?.transcriptSegments) && video.transcriptSegments.length > 0
         ? video.transcriptSegments
         : storedTranscriptSegments?.length > 0 ? storedTranscriptSegments : null;
+
+      // Merge attached PDF transcripts when user opted in
+      let attachedDocumentsMetadata = null;
+      if (includeDocsInAnalysis && attachedDocuments.length > 0) {
+        const pdfParts = attachedDocuments
+          .filter(d => d.transcript?.length > 50)
+          .map(d => `\n\n--- מסמך מצורף: ${d.name} ---\n${d.transcript}`);
+        if (pdfParts.length > 0) {
+          txText = (txText || '') + pdfParts.join('');
+          attachedDocumentsMetadata = attachedDocuments.map(d => ({
+            name: d.name,
+            pages: d.pages,
+            transcriptLength: d.transcript?.length || 0,
+          }));
+          console.log('[VideoPDF] Included in AI analysis:', attachedDocumentsMetadata);
+        }
+      }
 
       const result = await fetchGeminiVideoContent({
         videoId: video.id,
@@ -3524,6 +4529,7 @@ export function VideoDetailPanel({
         youtubeUrl: ytUrl,
         transcriptText: txText,
         transcriptSegments: txSegments,
+        attachedDocumentsMetadata,
       });
 
       const analysisSource = result?.analysisSource || 'unknown';
@@ -3553,6 +4559,7 @@ export function VideoDetailPanel({
 
       const chaptersToSave = chaptersValidation.ok ? chaptersValidation.chapters : normalizedChapters;
       const analysisSavedAt = Date.now();
+      const rawAttachedInsights = result?.attachedDocumentsInsights || null;
       const patch = {
         shortSummary: normalized.shortSummary,
         fullSummary: normalized.fullSummary,
@@ -3568,6 +4575,7 @@ export function VideoDetailPanel({
         mainLesson: normalized.mainLesson,
         strategyOrMethod: normalized.strategyOrMethod || null,
         rules: normalized.rules,
+        attachedDocumentsInsights: rawAttachedInsights,
         analysisProvider: 'gemini',
         analysisSource,
         analysisMode: result?.analysisMode || 'transcript',
@@ -3591,6 +4599,7 @@ export function VideoDetailPanel({
       const saved = persistAnalysisState(patch);
       const nextVideo = { ...(saved || video), ...patch };
       setVideoState(nextVideo);
+      setAttachedDocumentsInsights(rawAttachedInsights);
       const snapshot = { ...buildAnalysisSnapshot(nextVideo), analysisSavedAt };
       saveSavedAnalysis(video.id, snapshot);
       setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gemini', analysisSavedAt }));
@@ -3672,6 +4681,24 @@ export function VideoDetailPanel({
       if (idx === -1) break;
       results.push(idx);
       pos = idx + 1;
+    }
+    return results;
+  })();
+
+  // Filter mode: split transcript into sentences and keep only those containing the query
+  const filteredSentences = (() => {
+    const q = transcriptSearch.trim();
+    if (!q || !fullTranscriptText) return [];
+    const qLower = q.toLowerCase();
+    // Split on sentence-ending punctuation or newlines, keeping delimiter attached
+    const sentences = fullTranscriptText.split(/(?<=[.!?\n])\s*/);
+    const results = [];
+    let charOffset = 0;
+    for (const sentence of sentences) {
+      if (sentence.toLowerCase().includes(qLower)) {
+        results.push({ text: sentence.trim(), offset: charOffset });
+      }
+      charOffset += sentence.length;
     }
     return results;
   })();
@@ -3825,6 +4852,40 @@ export function VideoDetailPanel({
     } catch {
       toast.error("לא ניתן היה להעתיק את הקישור");
     }
+  };
+
+  const handleAttachPdf = (doc) => {
+    if (!video?.id) {
+      console.warn('[VideoPDF] Cannot persist attached document: missing video.id');
+      toast.error('לא ניתן לצרף — חסר מזהה סרטון');
+      return;
+    }
+    const newDoc = {
+      id: doc.id,
+      name: doc.title || doc.originalFileName || 'מסמך PDF',
+      contentType: 'pdf',
+      pages: doc.pdfPages,
+      transcript: doc.transcript || '',
+      importedAt: new Date().toISOString(),
+    };
+    const updated = [...attachedDocuments, newDoc];
+    setAttachedDocuments(updated);
+    updateLocalVideo(video.id, { attachedDocuments: updated });
+    setAttachedDocsExpanded(true);
+    console.log('[VideoPDF] Document attached:', { id: newDoc.id, name: newDoc.name, pages: newDoc.pages, transcriptLength: newDoc.transcript.length });
+    console.log('[VideoPDF] Total attached documents:', updated.length);
+    toast.success(`📎 ${newDoc.name} צורף לסרטון`);
+  };
+
+  const handleRemoveAttachedDoc = (docId) => {
+    const updated = attachedDocuments.filter(d => d.id !== docId);
+    setAttachedDocuments(updated);
+    const storageUpdate = { attachedDocuments: updated };
+    if (updated.length === 0 && attachedDocumentsInsights) {
+      setAttachedDocumentsInsights(null);
+      storageUpdate.attachedDocumentsInsights = null;
+    }
+    updateLocalVideo(video.id, storageUpdate);
   };
 
   const findGoldenExample = () => {
@@ -4134,6 +5195,20 @@ export function VideoDetailPanel({
                 const BASE = "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium leading-none whitespace-nowrap transition-all duration-150 shadow-sm";
                 const DEF  = "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
                 const MUTED = "border-slate-200 bg-slate-50/80 text-slate-600 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300";
+                // Hide gem chip when main category already conveys the same information
+                const gemHiddenByCategory = (() => {
+                  const cat = videoTopics[0]?.name || '';
+                  if (!cat || !effectiveGemInfo?.gemKey) return false;
+                  const kmap = {
+                    political:   ['פוליטי', 'פוליטיקה'],
+                    fundamental: ['שוק', 'פיננסי', 'FinTech'],
+                    technical:   ['שוק', 'טכני'],
+                    macro:       ['שוק', 'מאקרו'],
+                    appBuilder:  ['AI', 'טכנולוגיה', 'פיתוח'],
+                    news:        ['חדשות', 'מבזק'],
+                  };
+                  return (kmap[effectiveGemInfo.gemKey] || []).some(kw => cat.includes(kw));
+                })();
                 const hasAnyChip = !!(effectiveGemInfo || video.publishedAt || currentCustomSubtitle || videoDuration || viewCountShort || videoYtId || transcriptChip || videoTopics[0]?.name);
                 if (!hasAnyChip && !hasStoredTranscript) return null;
                 return (
@@ -4147,13 +5222,57 @@ export function VideoDetailPanel({
                     )}
                     {/* Sub-topic */}
                     {(subCategoryOverride ?? video.subCategory) && (
-                      <span className={`${BASE} ${MUTED}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!vaultSubtopics.length) return;
+                          setSubTopicDraft(selectedSubTopicName || subTopicRec?.recommended || "");
+                          setIsSubTopicEditing(true);
+                        }}
+                        className={`${BASE} ${MUTED}`}
+                        title={vaultSubtopics.length ? "ערוך תת-נושא Obsidian" : undefined}
+                      >
                         <span className="text-[10px] leading-none">🏷️</span>
                         <span>{subCategoryOverride ?? video.subCategory}</span>
+                      </button>
+                    )}
+                    {/* Recommended sub-topic chip */}
+                    {subTopicRec && !subTopicRecDismissed && normalizeLooseName(selectedSubTopicName) !== normalizeLooseName(subTopicRec.recommended) && (
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                          subTopicRec.confidence >= 0.8
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/30 dark:text-emerald-300"
+                            : "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-300"
+                        }`}
+                        title={subTopicRec.reason}
+                      >
+                        <span className="text-[10px]">💡</span>
+                        <span className="max-w-[180px] truncate">תת-כותרת מומלצת: {subTopicRec.recommended}</span>
+                        <button
+                          type="button"
+                          onClick={handleApproveSubTopicRec}
+                          title={`אשר תת-נושא: ${subTopicRec.recommended}`}
+                          className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-2 py-0.5 text-white text-[10px] font-bold hover:bg-emerald-600 transition-colors shrink-0"
+                        >✓ אשר</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubTopicDraft(subTopicRec.recommended);
+                            setIsSubTopicEditing(true);
+                          }}
+                          className="inline-flex items-center justify-center rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-semibold hover:bg-white/60 dark:hover:bg-zinc-900/40"
+                          title="ערוך תת-נושא"
+                        >ערוך</button>
+                        <button
+                          type="button"
+                          onClick={handleDismissSubTopicRec}
+                          className="text-[9px] opacity-50 hover:opacity-100 transition-opacity ml-0.5"
+                          title="דחה המלצה"
+                        >✕</button>
                       </span>
                     )}
-                    {/* Gem */}
-                    {effectiveGemInfo && (
+                    {/* Gem — hidden when category already conveys same info */}
+                    {effectiveGemInfo && !gemHiddenByCategory && (
                       <span className={`${BASE} border-indigo-200/80 bg-indigo-50/50 text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/30 dark:text-indigo-300`}>
                         <span className="text-xs leading-none">{effectiveGemInfo.gemIcon}</span>
                         <span className="font-semibold">{effectiveGemInfo.gemLabel}</span>
@@ -4275,6 +5394,18 @@ export function VideoDetailPanel({
                         <span>Obsidian</span>
                       </span>
                     )}
+                    {/* Attached Documents badge */}
+                    {attachedDocuments.length > 0 && video.contentType !== "pdf" && (
+                      <button
+                        type="button"
+                        onClick={() => setAttachedDocsExpanded(v => !v)}
+                        className={`${BASE} border-orange-200/80 bg-orange-50/50 text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-300`}
+                      >
+                        <span className="text-xs leading-none">📎</span>
+                        <span className="font-semibold">{attachedDocuments.length} {attachedDocuments.length === 1 ? 'מסמך מצורף' : 'מסמכים מצורפים'}</span>
+                        <span className="text-[10px] opacity-60">{attachedDocsExpanded ? '▲' : '▼'}</span>
+                      </button>
+                    )}
                     {/* Delete transcript — soft red, always last */}
                     {hasStoredTranscript && (
                       <button
@@ -4290,6 +5421,123 @@ export function VideoDetailPanel({
                 );
               })()}
             </div>
+            {(resolvedVideoMode.mode === "market" && (vaultSubtopics.length > 0 || isSubTopicEditing)) && (
+              <div className="px-4 pb-2" dir="rtl">
+                {isSubTopicEditing ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300">תת-נושא Obsidian</span>
+                      <select
+                        value={subTopicDraft || ""}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setSubTopicDraft(nextValue);
+                          setIsCreatingSubTopic(nextValue === NEW_SUBTOPIC_SENTINEL);
+                        }}
+                        className="min-w-[180px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-300 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                      >
+                        <option value="">בחר תת-נושא...</option>
+                        {vaultSubtopics.map((topic) => (
+                          <option key={topic.id} value={topic.name}>
+                            {topic.name}{topic.isCustom ? " ✦" : ""}
+                          </option>
+                        ))}
+                        <option value={NEW_SUBTOPIC_SENTINEL}>+ צור תת-נושא חדש</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleSaveSubTopicSelection}
+                        className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
+                      >
+                        שמור
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSubTopicEditing(false);
+                          setIsCreatingSubTopic(false);
+                          setNewSubTopicDraft("");
+                          setSubTopicDraft(selectedSubTopicName || "");
+                        }}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+                      >
+                        בטל
+                      </button>
+                    </div>
+                    {isCreatingSubTopic && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <input
+                          type="text"
+                          value={newSubTopicDraft}
+                          onChange={(event) => setNewSubTopicDraft(event.target.value)}
+                          placeholder="הקלד תת-נושא חדש..."
+                          className="min-w-[180px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateCustomSubTopic}
+                          className="rounded-xl bg-violet-500 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-600"
+                        >
+                          צור ושמור
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
+                    <span>תת-נושא לשמירה ב-Obsidian:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubTopicDraft(selectedSubTopicName || subTopicRec?.recommended || vaultSubtopics[0]?.name || "");
+                        setIsSubTopicEditing(true);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                    >
+                      {selectedSubTopicName || "בחר תת-נושא"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* ── Attached Documents Panel (expandable, YouTube-only) ── */}
+            {attachedDocsExpanded && video.contentType !== "pdf" && (
+              <div className="px-4 py-3 border-b border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10" dir="rtl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+                    <span>📎</span>
+                    <span>מסמכים מצורפים ({attachedDocuments.length})</span>
+                  </span>
+                  <PdfUploader onDocumentCreated={handleAttachPdf} />
+                </div>
+                {attachedDocuments.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">אין מסמכים מצורפים עדיין</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {attachedDocuments.map(doc => (
+                      <div key={doc.id} className="flex items-center gap-2 rounded-xl border border-orange-200 bg-white/80 px-2.5 py-1.5 dark:border-orange-800/30 dark:bg-zinc-900/60">
+                        <span className="text-sm shrink-0">📄</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 truncate">{doc.name}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-zinc-400">
+                            {doc.pages ? `${doc.pages} עמ׳` : ''}{doc.pages && doc.transcript ? ' · ' : ''}{doc.transcript ? `${Math.round(doc.transcript.length / 1000)}K תווים` : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachedDoc(doc.id)}
+                          className="shrink-0 text-slate-400 hover:text-red-500 transition-colors"
+                          title="הסר מסמך"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── Quick Actions ── */}
             <div className="px-4 py-2 border-b border-slate-100 dark:border-zinc-800">
               <div className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80" dir="rtl">
@@ -4323,26 +5571,7 @@ export function VideoDetailPanel({
                       labelCn: 'text-[11px] font-bold leading-snug',
                       subCn: 'text-[10px] font-semibold leading-snug opacity-80',
                       cn: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300',
-                      onClick: async () => {
-                        if (!fullTranscriptText) {
-                          toast.error("אין תמלול להעתקה — ייבא או הדבק תמלול קודם");
-                          return;
-                        }
-                        const gemKey = effectiveGemInfo?.gemKey;
-                        const gemUrl = gemKey ? getGemUrl(gemKey) : null;
-                        if (!gemUrl) {
-                          toast.error("לא הוגדר קישור ל-Gem הזה");
-                          return;
-                        }
-                        try {
-                          await navigator.clipboard.writeText(fullTranscriptText);
-                          toast.success("התמלול הועתק — הדבק אותו ב-Gemini עם Ctrl+V");
-                        } catch {
-                          toast.error("לא ניתן להעתיק ללוח");
-                          return;
-                        }
-                        openGeminiGemUrl(gemUrl);
-                      },
+                      onClick: () => setShowGemModal(true),
                       status: { ok: !!(effectiveGemInfo && getGemUrl(effectiveGemInfo.gemKey)), okLabel: 'מוגדר', failLabel: 'לא מוגדר' },
                     },
                     {
@@ -4425,6 +5654,14 @@ export function VideoDetailPanel({
                 <div className="flex flex-wrap gap-1.5 border-t border-slate-100 dark:border-zinc-800 pt-2">
                   {[
                     {
+                      id: 'fresh-reimport',
+                      emoji: '🧹',
+                      label: isFreshImportRunning ? 'מייבא מחדש...' : 'מחק היסטוריה ונתח מחדש',
+                      cn: 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-300',
+                      onClick: handleFreshImportReset,
+                      disabled: isFreshImportRunning || isAnalyzing || isReanalyzing,
+                    },
+                    {
                       id: 'markdown',
                       emoji: '📄',
                       label: 'יצוא MD',
@@ -4441,6 +5678,10 @@ export function VideoDetailPanel({
                       <span>{label}</span>
                     </button>
                   ))}
+                  {/* Attach PDF button — for YouTube videos only */}
+                  {video.contentType !== "pdf" && (
+                    <PdfUploader onDocumentCreated={handleAttachPdf} />
+                  )}
                 </div>
               </div>
             </div>
@@ -4451,23 +5692,27 @@ export function VideoDetailPanel({
 
               {/* ── SIDEBAR ── */}
               <div className="w-[340px] shrink-0 flex flex-col gap-3 self-start sticky top-0">
-              {/* ── Video Thumbnail Card ── */}
-              <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
-                <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
-                  <PanelThumbnail video={video} />
-                  <a
-                    href={getWatchUrl(video) || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
-                    onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
-                  >
-                    <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                      <ExternalLink className="h-5 w-5 text-slate-800" />
-                    </div>
-                  </a>
+              {/* ── Video Thumbnail Card / PDF Document Card ── */}
+              {video.contentType === "pdf" ? (
+                <PdfDocumentCard video={video} />
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
+                  <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
+                    <PanelThumbnail video={video} />
+                    <a
+                      href={getWatchUrl(video) || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
+                      onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
+                    >
+                      <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                        <ExternalLink className="h-5 w-5 text-slate-800" />
+                      </div>
+                    </a>
+                  </div>
                 </div>
-              </div>
+              )}
               {/* ── Notes Card ── */}
               <div className="rounded-2xl border border-amber-200 bg-white/90 shadow-sm dark:border-amber-900/40 dark:bg-zinc-900/80 text-right overflow-hidden" dir="rtl">
                 <div className="px-4 pt-3 pb-1 text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
@@ -4607,6 +5852,18 @@ export function VideoDetailPanel({
                   <span>{savedAnalysisMeta ? (savedAnalysisMeta.providerLabel || "ניתוח קיים") : "אין ניתוח"}</span>
                 </div>
                 <div className="px-4 py-3 flex flex-col gap-2">
+                  {/* Include attached PDFs checkbox */}
+                  {attachedDocuments.length > 0 && video.contentType !== "pdf" && (
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300 select-none flex-row-reverse" dir="rtl">
+                      <input
+                        type="checkbox"
+                        checked={includeDocsInAnalysis}
+                        onChange={e => setIncludeDocsInAnalysis(e.target.checked)}
+                        className="accent-indigo-600 h-3.5 w-3.5"
+                      />
+                      <span>הכלל {attachedDocuments.length} {attachedDocuments.length === 1 ? 'מסמך מצורף' : 'מסמכים מצורפים'} בניתוח AI</span>
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => { setActiveTab("ai-analysis"); handleGeminiContent(); }}
@@ -4709,6 +5966,9 @@ export function VideoDetailPanel({
                 </div>
                 {(() => {
                   const isPoliticalVideo = effectiveGemInfo?.gemKey === 'political';
+                  console.log('[SummaryTab] active video id:', video?.id || video?.youtubeId);
+                  console.log('[SummaryTab] political summary exists:', !!politicalSummary);
+                  console.log('[SummaryTab] summary candidates:', JSON.stringify({ shortSummary: !!video?.shortSummary, summary: !!video?.summary, aiSummary: !!video?.aiSummary, aiSummaryShort: !!enrichedVideo?.aiSummaryShort }));
 
                   // ── Political summary branch ──────────────────────────────
                   if (isPoliticalVideo) {
@@ -4746,17 +6006,36 @@ export function VideoDetailPanel({
                     }
 
                     if (!politicalSummary) {
+                      const _genSummary = (
+                        video?.shortSummary ||
+                        video?.summary ||
+                        video?.aiSummary ||
+                        video?.brainSummary ||
+                        video?.analysisSummary ||
+                        enrichedVideo?.aiSummaryShort
+                      )?.replace(/\[MOCK\]\s*/g, '');
+                      console.log('[SummaryTab] selected summary source:', _genSummary ? 'general' : 'none');
+                      console.log('[SummaryTab] selected summary content length:', _genSummary?.length ?? 0);
+                      console.log('[SummaryTab] rendering empty state:', !_genSummary);
                       return (
-                        <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-blue-300 bg-blue-50/60 py-8 text-center dark:border-blue-700/40 dark:bg-blue-950/20" dir="rtl">
-                          <span className="text-3xl">🏛️</span>
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold text-blue-900 dark:text-blue-200">סרטון פוליטי זוהה</p>
-                            <p className="text-xs text-blue-600/80 dark:text-blue-400/70">צור סיכום פוליטי מובנה מתוך התמלול</p>
+                        <div className="mt-3 space-y-3" dir="rtl">
+                          {_genSummary && (
+                            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                              <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 mb-2 text-right">סיכום כללי</p>
+                              <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 text-right">{_genSummary}</p>
+                            </div>
+                          )}
+                          <div className="flex min-h-[140px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-blue-300 bg-blue-50/60 py-6 text-center dark:border-blue-700/40 dark:bg-blue-950/20">
+                            <span className="text-3xl">🏛️</span>
+                            <div className="space-y-1">
+                              <p className="text-sm font-bold text-blue-900 dark:text-blue-200">סרטון פוליטי זוהה</p>
+                              <p className="text-xs text-blue-600/80 dark:text-blue-400/70">צור סיכום פוליטי מובנה מתוך התמלול</p>
+                            </div>
+                            <button type="button" onClick={handleGeneratePoliticalSummary} className="inline-flex items-center gap-2 flex-row-reverse rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm">
+                              <span className="text-base">🏛️</span>
+                              צור סיכום פוליטי
+                            </button>
                           </div>
-                          <button type="button" onClick={handleGeneratePoliticalSummary} className="inline-flex items-center gap-2 flex-row-reverse rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm">
-                            <span className="text-base">🏛️</span>
-                            צור סיכום פוליטי
-                          </button>
                         </div>
                       );
                     }
@@ -4820,12 +6099,20 @@ export function VideoDetailPanel({
                       _psDisplay = null;
                     }
                     // Normalize: merge alternate field names from any branch
+                    // _toArr ensures any field that should be an array actually is one (AI sometimes returns strings)
+                    const _toArr = (v) => Array.isArray(v) ? v : (v ? (typeof v === 'string' ? v.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean) : [v]) : []);
                     const ps = _psDisplay ? {
                       ..._psDisplay,
                       mainClaim: _psDisplay.mainClaim || _psDisplay.mainArgument || '',
                       context: _psDisplay.context || '',
                       conclusion: _psDisplay.conclusion || '',
-                      implications: Array.isArray(_psDisplay.implications) ? _psDisplay.implications : [],
+                      keyPoints: _toArr(_psDisplay.keyPoints),
+                      supportingArguments: _toArr(_psDisplay.supportingArguments),
+                      weaknessesAndCounterpoints: _toArr(_psDisplay.weaknessesAndCounterpoints),
+                      usefulQuotes: _toArr(_psDisplay.usefulQuotes),
+                      emotionalFraming: _toArr(_psDisplay.emotionalFraming),
+                      practicalUse: _toArr(_psDisplay.practicalUse),
+                      implications: _toArr(_psDisplay.implications),
                     } : null;
                     // Safely extract a display string from any value (guards against AI returning objects instead of strings)
                     const safeStr = (v) => {
@@ -5301,79 +6588,196 @@ export function VideoDetailPanel({
                           </div>
                         </div>
 
-                        {/* Search bar */}
-                        <div className="mb-3 flex items-center gap-2 flex-row-reverse" dir="rtl">
-                          <input
-                            type="text"
-                            value={transcriptSearch}
-                            onChange={e => setTranscriptSearch(e.target.value)}
-                            placeholder="חפש בתמלול..."
-                            className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-right text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder:text-zinc-500"
-                            dir="rtl"
-                          />
-                          {transcriptSearch.trim() && (
-                            <div className="flex items-center gap-1.5 flex-row-reverse shrink-0">
-                              {transcriptSearchMatches.length > 0 ? (
-                                <span className="text-[11px] text-slate-500 dark:text-zinc-400 whitespace-nowrap">
-                                  {transcriptSearchIndex + 1} / {transcriptSearchMatches.length} תוצאות
-                                </span>
-                              ) : (
-                                <span className="text-[11px] text-red-400 whitespace-nowrap">לא נמצאו תוצאות בתמלול</span>
-                              )}
-                              <button
-                                type="button"
-                                disabled={transcriptSearchMatches.length === 0}
-                                onClick={() => {
-                                  const next = (transcriptSearchIndex + 1) % transcriptSearchMatches.length;
-                                  setTranscriptSearchIndex(next);
-                                  document.getElementById(`ts-match-${next}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-                                }}
-                                className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                                title="תוצאה הבאה"
-                              >▼</button>
-                              <button
-                                type="button"
-                                disabled={transcriptSearchMatches.length === 0}
-                                onClick={() => {
-                                  const prev = (transcriptSearchIndex - 1 + transcriptSearchMatches.length) % transcriptSearchMatches.length;
-                                  setTranscriptSearchIndex(prev);
-                                  document.getElementById(`ts-match-${prev}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-                                }}
-                                className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                                title="תוצאה קודמת"
-                              >▲</button>
-                            </div>
-                          )}
+                        {/* GEM bar — current GEM + open GEM modal */}
+                        <div className="flex items-center justify-between gap-2 mb-3 rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/20 px-3 py-2" dir="rtl">
+                          <div className="flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300 min-w-0">
+                            <span className="text-base leading-none shrink-0">{effectiveGemInfo?.gemIcon || '✨'}</span>
+                            <span className="font-semibold truncate">{effectiveGemInfo?.gemLabel || 'כללי'}</span>
+                            {gemOverride && (
+                              <span className="text-[10px] text-indigo-400 dark:text-indigo-500 shrink-0">(ידני)</span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowGemModal(true)}
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                          >
+                            💎 ניהול GEMS
+                          </button>
                         </div>
 
-                        {/* Transcript with optional search highlighting */}
-                        <div className="max-h-[480px] overflow-auto rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 dark:bg-zinc-950 dark:border-zinc-800">
-                          <pre className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans" dir="auto">
-                            {(() => {
-                              const q = transcriptSearch.trim();
-                              if (!q || transcriptSearchMatches.length === 0) return fullTranscriptText;
-                              const qLen = q.length;
-                              const parts = [];
-                              let lastIdx = 0;
-                              transcriptSearchMatches.forEach((matchIdx, i) => {
-                                if (matchIdx > lastIdx) parts.push(fullTranscriptText.slice(lastIdx, matchIdx));
-                                const isCurrent = i === transcriptSearchIndex;
-                                parts.push(
-                                  <mark
-                                    key={`ts-m-${matchIdx}`}
-                                    id={`ts-match-${i}`}
-                                    style={{ background: isCurrent ? '#fb923c' : '#fef08a', color: '#1e293b', borderRadius: '2px' }}
-                                  >
-                                    {fullTranscriptText.slice(matchIdx, matchIdx + qLen)}
-                                  </mark>
-                                );
-                                lastIdx = matchIdx + qLen;
-                              });
-                              if (lastIdx < fullTranscriptText.length) parts.push(fullTranscriptText.slice(lastIdx));
-                              return parts;
-                            })()}
-                          </pre>
+                        {/* Search bar + mode toggle */}
+                        <div className="mb-2 flex flex-col gap-2" dir="rtl">
+                          <div className="flex items-center gap-2 flex-row-reverse">
+                            <input
+                              type="text"
+                              value={transcriptSearch}
+                              onChange={e => setTranscriptSearch(e.target.value)}
+                              placeholder="חפש בתמלול..."
+                              className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-right text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder:text-zinc-500"
+                              dir="rtl"
+                            />
+                            {transcriptSearch.trim() && transcriptSearchMode === "highlight" && (
+                              <div className="flex items-center gap-1.5 flex-row-reverse shrink-0">
+                                {transcriptSearchMatches.length > 0 ? (
+                                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 whitespace-nowrap">
+                                    {transcriptSearchIndex + 1} / {transcriptSearchMatches.length} תוצאות
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-red-400 whitespace-nowrap">לא נמצאו תוצאות</span>
+                                )}
+                                <button
+                                  type="button"
+                                  disabled={transcriptSearchMatches.length === 0}
+                                  onClick={() => {
+                                    const next = (transcriptSearchIndex + 1) % transcriptSearchMatches.length;
+                                    setTranscriptSearchIndex(next);
+                                    document.getElementById(`ts-match-${next}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  }}
+                                  className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                  title="תוצאה הבאה"
+                                >▼</button>
+                                <button
+                                  type="button"
+                                  disabled={transcriptSearchMatches.length === 0}
+                                  onClick={() => {
+                                    const prev = (transcriptSearchIndex - 1 + transcriptSearchMatches.length) % transcriptSearchMatches.length;
+                                    setTranscriptSearchIndex(prev);
+                                    document.getElementById(`ts-match-${prev}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  }}
+                                  className="h-7 w-7 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                  title="תוצאה קודמת"
+                                >▲</button>
+                              </div>
+                            )}
+                            {transcriptSearch.trim() && transcriptSearchMode === "filter" && (
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 whitespace-nowrap shrink-0">
+                                {filteredSentences.length > 0
+                                  ? `נמצאו ${filteredSentences.length} משפטים`
+                                  : "לא נמצאו תוצאות"}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Mode toggle */}
+                          <div className="flex items-center gap-0 self-end rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setTranscriptSearchMode("highlight")}
+                              className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                                transcriptSearchMode === "highlight"
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-white text-slate-500 hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                              }`}
+                            >
+                              סימון בתמלול
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTranscriptSearchMode("filter")}
+                              className={`px-2.5 py-1 text-[11px] font-medium transition-colors border-r border-slate-200 dark:border-zinc-700 ${
+                                transcriptSearchMode === "filter"
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-white text-slate-500 hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                              }`}
+                            >
+                              רק משפטים תואמים
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Transcript display: highlight mode */}
+                        {(transcriptSearchMode === "highlight" || !transcriptSearch.trim()) && (
+                          <div className="max-h-[480px] overflow-auto rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 dark:bg-zinc-950 dark:border-zinc-800">
+                            <pre className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans" dir="auto">
+                              {(() => {
+                                const q = transcriptSearch.trim();
+                                if (!q || transcriptSearchMatches.length === 0) return fullTranscriptText;
+                                const qLen = q.length;
+                                const parts = [];
+                                let lastIdx = 0;
+                                transcriptSearchMatches.forEach((matchIdx, i) => {
+                                  if (matchIdx > lastIdx) parts.push(fullTranscriptText.slice(lastIdx, matchIdx));
+                                  const isCurrent = i === transcriptSearchIndex;
+                                  parts.push(
+                                    <mark
+                                      key={`ts-m-${matchIdx}`}
+                                      id={`ts-match-${i}`}
+                                      style={{ background: isCurrent ? '#fb923c' : '#fef08a', color: '#1e293b', borderRadius: '2px' }}
+                                    >
+                                      {fullTranscriptText.slice(matchIdx, matchIdx + qLen)}
+                                    </mark>
+                                  );
+                                  lastIdx = matchIdx + qLen;
+                                });
+                                if (lastIdx < fullTranscriptText.length) parts.push(fullTranscriptText.slice(lastIdx));
+                                return parts;
+                              })()}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Transcript display: filter mode */}
+                        {transcriptSearchMode === "filter" && transcriptSearch.trim() && (
+                          <div className="flex flex-col gap-2">
+                            {filteredSentences.length === 0 ? (
+                              <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-6 text-center text-sm text-slate-400 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-500">
+                                לא נמצאו משפטים תואמים
+                              </div>
+                            ) : (
+                              filteredSentences.map((item, idx) => {
+                                const q = transcriptSearch.trim();
+                                const qLower = q.toLowerCase();
+                                const sentLower = item.text.toLowerCase();
+                                // Build highlighted sentence parts
+                                const parts = [];
+                                let pos = 0;
+                                while (pos < item.text.length) {
+                                  const found = sentLower.indexOf(qLower, pos);
+                                  if (found === -1) { parts.push(item.text.slice(pos)); break; }
+                                  if (found > pos) parts.push(item.text.slice(pos, found));
+                                  parts.push(
+                                    <mark
+                                      key={`fs-${idx}-${found}`}
+                                      style={{ background: '#fef08a', color: '#1e293b', borderRadius: '2px' }}
+                                    >
+                                      {item.text.slice(found, found + q.length)}
+                                    </mark>
+                                  );
+                                  pos = found + q.length;
+                                }
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="group rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 dark:bg-zinc-950 dark:border-zinc-800"
+                                    dir="rtl"
+                                  >
+                                    <p className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed font-sans" dir="auto">
+                                      {parts}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        type="button"
+                                        onClick={() => navigator.clipboard.writeText(item.text)}
+                                        className="text-[10px] text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                                        title="העתק משפט"
+                                      >
+                                        העתק משפט
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setTranscriptSearchMode("highlight")}
+                              className="self-center mt-1 text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-200 transition-colors"
+                            >
+                              ← חזור לתמלול מלא
+                            </button>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="flex flex-col items-end gap-3 py-8 text-right" dir="rtl">
@@ -5485,6 +6889,70 @@ export function VideoDetailPanel({
                             <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-right dark:border-indigo-800/50 dark:bg-indigo-950/30">
                               <h4 className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">🎯 לקח מרכזי</h4>
                               <p className="text-sm text-indigo-900 dark:text-indigo-200 leading-relaxed">{video.mainLesson}</p>
+                            </div>
+                          )}
+                          {/* ── Attached Documents Insights ── */}
+                          {attachedDocumentsInsights && (
+                            <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-right dark:border-orange-800/40 dark:bg-orange-950/20 space-y-3" dir="rtl">
+                              <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
+                                <span>📚</span>
+                                <span>תובנות ממסמכים מצורפים</span>
+                              </h4>
+                              {attachedDocumentsInsights.overallSummary && (
+                                <p className="text-sm text-orange-900 dark:text-orange-200 leading-relaxed">{attachedDocumentsInsights.overallSummary}</p>
+                              )}
+                              {Array.isArray(attachedDocumentsInsights.keyFindings) && attachedDocumentsInsights.keyFindings.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">🔍 ממצאים מרכזיים</div>
+                                  <ul className="space-y-1" dir="rtl">
+                                    {attachedDocumentsInsights.keyFindings.map((f, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-orange-800 dark:text-orange-200">
+                                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                                        <span className="leading-relaxed flex-1">{f}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {Array.isArray(attachedDocumentsInsights.supportingEvidence) && attachedDocumentsInsights.supportingEvidence.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">✅ ראיות תומכות</div>
+                                  <ul className="space-y-1" dir="rtl">
+                                    {attachedDocumentsInsights.supportingEvidence.map((e, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-orange-800 dark:text-orange-200">
+                                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                        <span className="leading-relaxed flex-1">{e}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {Array.isArray(attachedDocumentsInsights.contradictions) && attachedDocumentsInsights.contradictions.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">⚠️ סתירות עם הסרטון</div>
+                                  <ul className="space-y-1" dir="rtl">
+                                    {attachedDocumentsInsights.contradictions.map((c, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-orange-800 dark:text-orange-200">
+                                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                                        <span className="leading-relaxed flex-1">{c}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {Array.isArray(attachedDocumentsInsights.additionalConcepts) && attachedDocumentsInsights.additionalConcepts.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">💡 מושגים נוספים</div>
+                                  <ul className="space-y-1" dir="rtl">
+                                    {attachedDocumentsInsights.additionalConcepts.map((c, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-orange-800 dark:text-orange-200">
+                                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                                        <span className="leading-relaxed flex-1">{c}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           )}
                         </>
@@ -6686,22 +8154,64 @@ export function VideoDetailPanel({
     </Dialog>
 
     {/* ── Transcript Viewer ───────────────────────────────── */}
-    <Dialog open={isTranscriptViewerOpen} onOpenChange={setIsTranscriptViewerOpen}>
+    <Dialog
+      open={isTranscriptViewerOpen}
+      onOpenChange={(v) => {
+        if (import.meta.env.DEV && v) {
+          const recKey = resolveTranscriptGemRecommendation(video, effectiveGemInfo);
+          console.group('%c[TranscriptModal] opened', 'color:#6366f1;font-weight:bold');
+          console.log('video.id:', video?.id);
+          console.log('gemOverride (savedGem):', gemOverride ?? '—');
+          console.log('recommendedGemKey:', recKey ?? '—');
+          console.log('effectiveGemInfo.gemKey:', effectiveGemInfo?.gemKey ?? '—');
+          console.log('TRANSCRIPT_GEM_BUTTONS count:', TRANSCRIPT_GEM_BUTTONS.length);
+          const gemSelectorPresent = typeof GeminiActionsPanel === 'function';
+          console.log('GeminiActionsPanel rendered:', gemSelectorPresent);
+          if (!gemSelectorPresent) {
+            console.warn('[TranscriptModal] ⚠ Transcript GEM selector is not rendered — possible stale UI or conditional render issue.');
+          }
+          console.groupEnd();
+        }
+        setIsTranscriptViewerOpen(v);
+      }}
+    >
       <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
           <DialogTitle className="text-right text-base font-bold">
             תמלול הסרטון
           </DialogTitle>
+          {import.meta.env.DEV && (
+            <div className="flex items-center justify-end gap-2 mt-1">
+              <span className="rounded px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-mono font-bold">
+                DEV · gem-selector · {TRANSCRIPT_GEM_BUTTONS.length} gems
+              </span>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="rounded px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-mono hover:bg-slate-200"
+                title="Force reload (clear stale UI)"
+              >
+                ↺ refresh
+              </button>
+            </div>
+          )}
         </DialogHeader>
-        <div className="shrink-0">
-          <GeminiActionsPanel
-            video={video}
-            fullTranscriptText={fullTranscriptText}
-            transcriptWordCount={transcriptWordCount}
-            storedTranscriptSegments={storedTranscriptSegments}
-            transcriptSourceLabel={transcriptSourceLabel}
-            handleQuickCopy={handleQuickCopy}
-          />
+        {/* GEM indicator + link to GEM modal */}
+        <div className="shrink-0 flex items-center justify-between gap-3 rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/20 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-indigo-700 dark:text-indigo-300">
+            <span className="text-sm leading-none">{effectiveGemInfo?.gemIcon || '✨'}</span>
+            <span className="font-semibold">{effectiveGemInfo?.gemLabel || 'כללי'}</span>
+            {gemOverride && (
+              <span className="text-[10px] text-indigo-500 dark:text-indigo-400">(בחירה ידנית)</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => { setIsTranscriptViewerOpen(false); setShowGemModal(true); }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+          >
+            🔀 שנה GEM
+          </button>
         </div>
         <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-900/80 min-h-0 mt-2">
           <pre className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-7 text-slate-800 dark:text-zinc-100 text-right" dir="rtl">
@@ -6720,6 +8230,28 @@ export function VideoDetailPanel({
       </DialogContent>
     </Dialog>
 
+    {/* ── GEM Selection Modal ──────────────────────────────── */}
+    <GemSelectionModal
+      open={showGemModal}
+      onOpenChange={setShowGemModal}
+      video={video}
+      topics={videoTopics}
+      recommendedGemKey={effectiveGemInfo?.gemKey || null}
+      savedGemKey={gemOverride || null}
+      fullTranscriptText={fullTranscriptText}
+      onSave={async (key) => {
+        setGemOverride(key);
+        try { await saveVideoFields({ gemOverride: key }); } catch {}
+        toast.success(`Gem נשמר: ${GEM_ALT_OPTIONS.find(g => g.key === key)?.label || key}`);
+      }}
+    />
+
+    {/* ── GEMS Settings Modal (global URL management) ──────── */}
+    <GemsSettingsModal
+      open={showGemsSettings}
+      onOpenChange={setShowGemsSettings}
+    />
+
     {/* ── Brain Destination Picker ─────────────────────────── */}
     <BrainDestinationPicker
       open={brainPickerOpen}
@@ -6731,20 +8263,93 @@ export function VideoDetailPanel({
         }
       }}
       video={video}
-      onConfirm={({ brainId, subBrainId, customBrainName, customSubName }) => {
+      onConfirm={async ({ brainId, subBrainId, customBrainName, customSubName, subtitle, filename, path: pickerPath }) => {
         setBrainPickerOpen(false);
         if (multiObsidianPickerMode) {
           setMultiObsidianPickerMode(false);
           const folder = customBrainName || brainId || 'כללי';
           const subFolder = customSubName || subBrainId || '';
           const md = buildMultiSelectMarkdown({ folder, subFolder });
-          const filename = `selected-${(video?.title || 'items').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40)}.md`;
-          downloadMarkdown(md, filename);
+          const safeFilename = `${(filename || (video?.title || 'selected').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40))}.md`;
+          downloadMarkdown(md, safeFilename);
           toast.success(`${multiSelected.size} פריטים יוצאו ל-Obsidian`);
           multiSelectClear();
         } else {
+          // ── Save all content to brain using picker's chosen path ──
           setPendingBrainSave(null);
-          handleSaveAllToBrain();
+          const content = buildSaveAllContent();
+          const savePath = pickerPath || `ידע/${filename || 'סרטון'}.md`;
+          const _vaultPath = (() => { try { return getConfiguredObsidianVaultPath(); } catch { return ''; } })();
+          const _vaultName = getConfiguredObsidianVaultName();
+          console.log('[SaveToBrain] mode: save-to-vault');
+          console.log('[SaveToBrain] shouldDownload: false');
+          console.log('[SaveToBrain] vaultPath:', _vaultPath || '(not set)');
+          console.log('[SaveToBrain] savePath:', savePath);
+          try {
+            const res = await fetch('/api/vault/write', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                path: savePath,
+                content: content.markdown,
+                vaultPath: _vaultPath,
+                vaultName: _vaultName,
+                videoTitle: video?.title,
+                videoUrl: getWatchUrl(video),
+                channelTitle: video?.channelTitle,
+                duration: video?.duration,
+                subtitle: subtitle || '',
+              }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data.ok) {
+              const savedPath = data.savedPath || savePath;
+              const fileObsUrl = data.obsidianUri || buildObsidianOpenUrl(savedPath, _vaultName);
+              const folderPath = savedPath.includes('/')
+                ? savedPath.substring(0, savedPath.lastIndexOf('/'))
+                : '';
+              const folderObsUrl = folderPath
+                ? `obsidian://open?vault=${encodeURIComponent(_vaultName)}&file=${encodeURIComponent(folderPath)}`
+                : fileObsUrl;
+
+              console.log('[SaveToBrain] savedPath:', savedPath);
+              console.log('[SaveToBrain] obsidianUri:', fileObsUrl);
+              console.log('[Obsidian Save] folderPath:', folderPath);
+              console.log('[Obsidian Save] opening Obsidian...');
+
+              try { openObsidianUrl(fileObsUrl, { bypassDedupe: true }); } catch {}
+
+              toast.success(`✅ נשמר למוח — ${content.totalItems} פריטים`, {
+                description: savedPath,
+                duration: 10000,
+                action: fileObsUrl ? {
+                  label: '📂 פתח ב-Obsidian',
+                  onClick: () => { try { openObsidianUrl(fileObsUrl, { bypassDedupe: true }); } catch {} }
+                } : undefined,
+                cancel: (folderPath && folderObsUrl) ? {
+                  label: '📁 פתח תיקייה',
+                  onClick: () => { try { openObsidianUrl(folderObsUrl, { bypassDedupe: true }); } catch {} }
+                } : undefined,
+              });
+            } else if (data.error === 'NO_VAULT_PATH') {
+              toast.error('נתיב ה-vault לא מוגדר', {
+                description: 'פתח הגדרות Obsidian כדי לקבוע את הנתיב המלא של ה-vault',
+                duration: 8000,
+              });
+            } else if (data.error) {
+              toast.error(`שגיאה בשמירה: ${data.message || data.error}`);
+            } else {
+              // Vault API not available — fallback: download markdown
+              const safeFilename = `${filename || 'ידע'}.md`;
+              downloadMarkdown(content.markdown, safeFilename);
+              toast.success(`✅ ${content.totalItems} פריטים יוצאו — ${safeFilename}`);
+            }
+          } catch (err) {
+            // Network/API error — fallback: download markdown
+            const safeFilename = `${filename || 'ידע'}.md`;
+            downloadMarkdown(content.markdown, safeFilename);
+            toast.success(`✅ ${content.totalItems} פריטים יוצאו — ${safeFilename}`);
+          }
         }
       }}
     />
@@ -6835,7 +8440,7 @@ export function VideoDetailPanel({
           </p>
         )}
         {gemsPasteError && (
-          <div className="space-y-1.5 text-right">
+          <div className="space-y-1.5 text-right" dir="rtl">
             <div className="flex items-center justify-between gap-2">
               <button
                 onClick={handleCopyGemsError}
@@ -6859,7 +8464,7 @@ export function VideoDetailPanel({
               </>
             )}
             {gemsErrorContext && gemsErrorContext.length > 0 && (
-              <div className="mt-1 rounded border border-red-200 dark:border-red-800 overflow-hidden text-left" dir="ltr">
+              <div className="mt-1 rounded border border-red-200 dark:border-red-800 overflow-hidden" dir="ltr">
                 {gemsErrorContext.map((ln) => (
                   <div
                     key={ln.lineNum}
@@ -6870,8 +8475,8 @@ export function VideoDetailPanel({
                     }`}
                   >
                     <span className="w-8 text-right shrink-0 select-none opacity-60">{ln.lineNum}</span>
-                    <span className="truncate">{ln.text || ' '}</span>
-                    {ln.isError && <span className="ml-1 text-red-400 shrink-0">◀</span>}
+                    <span className="flex-1 text-right truncate" dir="rtl">{ln.text || ' '}</span>
+                    {ln.isError && <span className="mr-1 text-red-400 shrink-0">◀</span>}
                   </div>
                 ))}
               </div>
