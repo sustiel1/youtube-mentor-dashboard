@@ -37,6 +37,10 @@ import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { buildBrainStructureZip, countBrainStructure } from "@/lib/buildBrainStructureZip";
 import { getFrozenMentorIds, toggleMentorFreeze } from "@/services/mentorScanStorage";
 import StorageManager from "@/components/admin/StorageManager";
+import { getMentorTopicOverride } from "@/lib/mentorTopicOverrides";
+import { updateChannelCollectionByChannelId, updateChannelCollectionByChannelName } from "@/lib/localChannelCollectionsStore";
+import { GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
+import { CATEGORY_TO_NAME } from "@/config/topicConfig";
 
 
 const SOURCE_TYPE_ICON = {
@@ -3970,6 +3974,8 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   }
   const mainTopics = topics.filter((t) => !t.parentId);
   const [editingTopicFor, setEditingTopicFor] = useState(null);
+  const [topicSaveStatus, setTopicSaveStatus] = useState({}); // { mentorId: "saved" | "saving" }
+  const [syncPanelFor, setSyncPanelFor] = useState(null); // mentorId whose sync panel is open
 
   const filteredChannels = useMemo(() => {
     if (!channelSearch.trim()) return channels;
@@ -4124,11 +4130,32 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   async function handleTopicChange(mentorId, topicId) {
     const topic = mainTopics.find((t) => t.id === topicId);
     const categoryCode = getCategoryCodeForTopicName(topic?.name) ?? null;
-    await updateMentor.mutateAsync({
-      id: mentorId,
-      topicIds: topicId ? [topicId] : [],
-      ...(categoryCode && { category: categoryCode }),
-    });
+    setTopicSaveStatus((p) => ({ ...p, [mentorId]: "saving" }));
+    try {
+      await updateMentor.mutateAsync({
+        id: mentorId,
+        topicIds: topicId ? [topicId] : [],
+        ...(categoryCode && { category: categoryCode }),
+      });
+      // Propagate to channel collection (so future video imports inherit the new topic)
+      const ch = channels.find((c) => c.mentorId === mentorId);
+      const collectionPatch = {
+        topicId,
+        topic: topic?.name ?? null,
+        mainTopicId: topicId,
+        mainTopic: topic?.name ?? null,
+      };
+      if (ch?.channelId) {
+        updateChannelCollectionByChannelId(ch.channelId, collectionPatch);
+      } else if (ch?.name) {
+        updateChannelCollectionByChannelName(ch.name, collectionPatch);
+      }
+      setTopicSaveStatus((p) => ({ ...p, [mentorId]: "saved" }));
+      setTimeout(() => setTopicSaveStatus((p) => ({ ...p, [mentorId]: null })), 2500);
+    } catch (e) {
+      toast.error(`שגיאה בשמירת נושא: ${e?.message || "שגיאה לא ידועה"}`);
+      setTopicSaveStatus((p) => ({ ...p, [mentorId]: null }));
+    }
     setEditingTopicFor(null);
   }
 
@@ -4618,16 +4645,70 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       </p>
                       <div className="mt-1 flex items-center gap-2 flex-wrap justify-end">
                         {/* Category pill */}
-                        <select
-                          value={mainTopics.find((t) => getCategoryCodeForTopicName(t.name) === ch.category)?.id ?? ""}
-                          onChange={(e) => handleTopicChange(ch.mentorId, e.target.value)}
-                          className="h-8 text-xs rounded-full px-3 border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 cursor-pointer"
-                        >
-                          <option value="">— בחר נושא —</option>
-                          {mainTopics.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
+                        {(() => {
+                          const ov = getMentorTopicOverride(ch.mentorId);
+                          const mentor = mentors.find((m) => m.id === ch.mentorId);
+                          const effectiveTopicIds = ov?.topicIds ?? mentor?.topicIds ?? [];
+                          const selectedTopicId = effectiveTopicIds[0] ?? "";
+                          const selectedTopic = mainTopics.find((t) => t.id === selectedTopicId);
+                          const effectiveCategory = ov?.category ?? ch.category;
+                          const gemKeys = Object.entries(GEM_CATEGORY_MAP)
+                            .filter(([, v]) => v.categoryCode === effectiveCategory)
+                            .map(([k]) => k);
+                          const gemLabel = gemKeys.length ? gemKeys.join(", ") : null;
+                          const ovUpdatedAt = ov?.updatedAt;
+                          const saveStatus = topicSaveStatus[ch.mentorId];
+                          return (
+                            <>
+                              <select
+                                value={selectedTopicId}
+                                onChange={(e) => handleTopicChange(ch.mentorId, e.target.value)}
+                                className="h-8 text-xs rounded-full px-3 border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 cursor-pointer"
+                              >
+                                <option value="">— בחר נושא —</option>
+                                {mainTopics.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                              </select>
+
+                              {/* Save feedback */}
+                              {saveStatus === "saving" && (
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap flex items-center gap-1">
+                                  <Loader2 className="h-3 w-3 animate-spin" />שומר...
+                                </span>
+                              )}
+                              {saveStatus === "saved" && (
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 whitespace-nowrap flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3" />נשמר
+                                </span>
+                              )}
+
+                              {/* GEM mapping */}
+                              {gemLabel && (
+                                <span className="rounded-full border border-violet-200/80 bg-violet-50 px-2 py-0.5 text-[10px] text-violet-700 dark:border-violet-800/50 dark:bg-violet-950/30 dark:text-violet-300" title="Gems מומלצים לערוץ זה">
+                                  💎 {gemLabel}
+                                </span>
+                              )}
+
+                              {/* Last updated */}
+                              {ovUpdatedAt && (
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 whitespace-nowrap" title={`עודכן: ${ovUpdatedAt}`}>
+                                  עודכן {new Date(ovUpdatedAt).toLocaleDateString("he-IL")}
+                                </span>
+                              )}
+
+                              {/* Audit button */}
+                              <button
+                                type="button"
+                                onClick={() => setSyncPanelFor((prev) => prev === ch.mentorId ? null : ch.mentorId)}
+                                className="text-[10px] rounded-full border border-slate-200 bg-white px-2 py-0.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                title="בדוק סנכרון ערוץ"
+                              >
+                                🔍 בדוק סנכרון
+                              </button>
+                            </>
+                          );
+                        })()}
 
                         {/* Channel ID badge */}
                         {ch.isConfigured ? (
@@ -4856,6 +4937,52 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                       </div>
                     )}
                   </div>
+
+                  {/* ── Sync Audit Panel ── */}
+                  {syncPanelFor === ch.mentorId && (() => {
+                    const ov = getMentorTopicOverride(ch.mentorId);
+                    const mentor = mentors.find((m) => m.id === ch.mentorId);
+                    const effectiveCategory = ov?.category ?? mentor?.category ?? ch.category;
+                    const effectiveTopicIds = ov?.topicIds ?? mentor?.topicIds ?? [];
+                    const topicName = mainTopics.find((t) => t.id === effectiveTopicIds[0])?.name ?? "—";
+                    const subTopic = ov?.subTopic ?? mentor?.topic ?? "—";
+                    const gemKeys = Object.entries(GEM_CATEGORY_MAP)
+                      .filter(([, v]) => v.categoryCode === effectiveCategory)
+                      .map(([k]) => k);
+                    const obsidianCategory = CATEGORY_TO_NAME[effectiveCategory] ?? "—";
+                    const videoCount = videos.filter((v) => {
+                      const vid = v?.channelId || v?.youtubeChannelId;
+                      const mName = v?._channelName || v?.channelTitle || v?.channelName;
+                      return (ch.channelId && vid === ch.channelId) || mName === ch.name;
+                    }).length;
+                    return (
+                      <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-right dark:border-indigo-900/40 dark:bg-indigo-950/20" dir="rtl">
+                        <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-200 mb-2">🔍 בדיקת סנכרון ערוץ — {ch.name}</p>
+                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <dt className="text-slate-500 dark:text-zinc-400">נושא ראשי</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{topicName}</dd>
+                          <dt className="text-slate-500 dark:text-zinc-400">קטגוריה</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{effectiveCategory ?? "—"}</dd>
+                          <dt className="text-slate-500 dark:text-zinc-400">תת-נושא</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{subTopic}</dd>
+                          <dt className="text-slate-500 dark:text-zinc-400">Gems ממופים</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{gemKeys.length ? gemKeys.join(", ") : "—"}</dd>
+                          <dt className="text-slate-500 dark:text-zinc-400">תיקיית Obsidian</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{obsidianCategory}</dd>
+                          <dt className="text-slate-500 dark:text-zinc-400">סרטונים משויכים</dt>
+                          <dd className="font-medium text-slate-800 dark:text-zinc-100">{videoCount}</dd>
+                          {ov?.updatedAt && (
+                            <>
+                              <dt className="text-slate-500 dark:text-zinc-400">עדכון אחרון</dt>
+                              <dd className="font-medium text-slate-800 dark:text-zinc-100">
+                                {new Date(ov.updatedAt).toLocaleString("he-IL")}
+                              </dd>
+                            </>
+                          )}
+                        </dl>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

@@ -226,6 +226,55 @@ export function appendChannelCollection(payload) {
   return row;
 }
 
+/**
+ * Update the channel collection whose channelId matches, propagating a new topic.
+ * Returns the updated row, or null if no matching collection found.
+ */
+export function updateChannelCollectionByChannelId(channelId, updates) {
+  const normId = normalizeChannelId(channelId);
+  if (!normId) return null;
+  const list = getChannelCollections();
+  const idx = list.findIndex((r) => normalizeChannelId(r.channelId) === normId);
+  if (idx === -1) return null;
+  const now = new Date().toISOString();
+  const existing = list[idx];
+  const topicId = normalizeString(updates?.topicId ?? updates?.mainTopicId ?? existing.topicId);
+  const topic = normalizeString(updates?.topic ?? updates?.mainTopic ?? existing.topic);
+  const subTopicId = normalizeString(updates?.subTopicId ?? existing.subTopicId);
+  const subTopic = normalizeString(updates?.subTopic ?? existing.subTopic) || "כללי";
+  const updated = {
+    ...existing,
+    topicId,
+    mainTopicId: topicId,
+    topic,
+    mainTopic: topic,
+    subTopicId,
+    subTopic,
+    subtitle: subTopic,
+    topicIds: normalizeTopicIds([topicId, subTopicId]),
+    updatedAt: now,
+  };
+  const next = [...list];
+  next[idx] = updated;
+  writeAll(next);
+  return updated;
+}
+
+/**
+ * Update collection by channel name (fallback when channelId unavailable).
+ */
+export function updateChannelCollectionByChannelName(channelName, updates) {
+  const nameKey = normalizeChannelNameKey(channelName);
+  if (!nameKey) return null;
+  const list = getChannelCollections();
+  const idx = list.findIndex((r) => {
+    const rn = normalizeChannelNameKey(r?.channelName || r?.channelTitle);
+    return rn && rn === nameKey;
+  });
+  if (idx === -1) return null;
+  return updateChannelCollectionByChannelId(list[idx].channelId, updates);
+}
+
 export function getChannelCollectionForVideo(video) {
   const { channelId, channelUrl, channelName } = getVideoChannelIdentifiers(video);
   return resolveChannelCollectionMatch({

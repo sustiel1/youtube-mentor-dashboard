@@ -13,6 +13,7 @@ import { repairChannelId } from '@/services/channelResolver';
 import { loadTopics } from '@/services/topicStorage';
 import { getMainTopicForTopic } from '@/lib/topicFilters';
 import { appendChannelCollection } from '@/lib/localChannelCollectionsStore';
+import { applyTopicOverridesToMentors, setMentorTopicOverride } from '@/lib/mentorTopicOverrides';
 import {
   hideMentor,
   restoreMentor,
@@ -21,7 +22,7 @@ import {
 } from '@/services/mentorStorage';
 
 function mergeAllMentors() {
-  return [...MENTORS, ...getLocalCustomMentors()];
+  return applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
 }
 
 function normalizeChannelId(value) {
@@ -29,7 +30,7 @@ function normalizeChannelId(value) {
   return id.startsWith('UC') && id.length === 24 ? id : '';
 }
 
-/** Map selected topic (or its parent main topic) to mock mentor category ids. */
+/** Map selected topic (or its parent main topic) to mentor category codes. */
 function resolveCategoryFromTopicIds(topicIds) {
   const topics = loadTopics();
   const tid = topicIds?.[0];
@@ -42,14 +43,20 @@ function resolveCategoryFromTopicIds(topicIds) {
     seen.add(cur.id);
     cur = byId[cur.parentId];
   }
+  // Try well-known root IDs first
   const rootId = cur.id;
   if (rootId === 't2') return 'Markets';
   if (rootId === 't9') return 'Dev';
   if (rootId === 't1') return 'AI';
+  // Keyword fallback covering all category codes
   const name = String(cur.name || '').toLowerCase();
   if (name.includes('שוק') && name.includes('הון')) return 'Markets';
   if (name.includes('פיתוח')) return 'Dev';
-  if (name.includes('בינה')) return 'AI';
+  if (name.includes('בינה') || name.includes('ai') || name.includes('אוטומציה')) return 'AI';
+  if (name.includes('פוליטיקה') || name.includes('politics')) return 'Politics';
+  if (name.includes('בריאות') || name.includes('health') || name.includes('תזונה') || name.includes('כושר')) return 'Health';
+  if (name.includes('מוזיקה') || name.includes('music')) return 'Music';
+  if (name.includes('אוכל') || name.includes('בישול') || name.includes('food')) return 'Food';
   return 'AI';
 }
 
@@ -238,12 +245,17 @@ export function useUpdateMentor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }) => {
+      // Always persist topic-related fields to the override store (works for mock + custom mentors).
+      const topicFields = {};
+      if (data.topicIds !== undefined) topicFields.topicIds = data.topicIds;
+      if (data.category !== undefined) topicFields.category = data.category;
+      if (data.subTopic !== undefined) topicFields.subTopic = data.subTopic;
+      if (data.subTopicId !== undefined) topicFields.subTopicId = data.subTopicId;
+      if (Object.keys(topicFields).length) setMentorTopicOverride(id, topicFields);
+
       if (!isBase44Enabled()) {
-        // In local-first mode, update custom mentors (id starts with "lm_") directly.
-        // Mock mentors (numeric ids) cannot be mutated but resolution still writes to the custom store.
-        const updated = updateLocalCustomMentorById(id, data);
-        if (updated) return Promise.resolve(updated);
-        // Non-custom mentor (mock data) — silently ignore; not an error.
+        // In local-first mode, also try updating custom mentors store directly.
+        updateLocalCustomMentorById(id, data);
         return Promise.resolve({ id, ...data });
       }
       return Mentor.update(id, data);
