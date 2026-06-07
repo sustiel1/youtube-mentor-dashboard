@@ -86,7 +86,7 @@ import { GemsSettingsModal } from "./GemsSettingsModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
 import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent } from "./LearningTabContent";
-import { detectVideoType, getTabsForVideo, extractVideoTabItems, getTabBadge } from "@/config/videoTabsConfig";
+import { detectVideoType, getTabsForVideo, extractVideoTabItems, getTabBadge, LEARNING_GROUP_MAIN_TABS, LEARNING_SUB_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
@@ -1510,6 +1510,7 @@ export function VideoDetailPanel({
   const [isAutoTranscriptModalOpen, setIsAutoTranscriptModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("chapters");
   const prevTabRef = useRef("chapters");
+  const learningSubTabRef = useRef("chapters"); // tracks last selected learning sub-tab
   const [activePoliticalTab, setActivePoliticalTab] = useState("brain-hi");
   const [showMorePoliticalTabs, setShowMorePoliticalTabs] = useState(false);
   const [multiSelected, setMultiSelected] = useState(new Map()); // id → { text, sectionLabel, type, timestamp? }
@@ -2365,6 +2366,16 @@ export function VideoDetailPanel({
       thesis: Array.isArray(savedAnalysis.thesis) ? savedAnalysis.thesis : undefined,
       questions: Array.isArray(savedAnalysis.questions) ? savedAnalysis.questions : undefined,
       checklists: Array.isArray(savedAnalysis.checklists) ? savedAnalysis.checklists : undefined,
+      // Learning tab fields (technical GEM)
+      definitions: Array.isArray(savedAnalysis.definitions) ? savedAnalysis.definitions : undefined,
+      indicators: Array.isArray(savedAnalysis.indicators) ? savedAnalysis.indicators : undefined,
+      setups: Array.isArray(savedAnalysis.setups) ? savedAnalysis.setups : undefined,
+      patterns: Array.isArray(savedAnalysis.patterns) ? savedAnalysis.patterns : undefined,
+      tradingPrinciples: Array.isArray(savedAnalysis.tradingPrinciples) ? savedAnalysis.tradingPrinciples : undefined,
+      mentalModels: Array.isArray(savedAnalysis.mentalModels) ? savedAnalysis.mentalModels : undefined,
+      brainHighlights: Array.isArray(savedAnalysis.brainHighlights) ? savedAnalysis.brainHighlights : undefined,
+      usefulKnowledge: Array.isArray(savedAnalysis.usefulKnowledge) ? savedAnalysis.usefulKnowledge : undefined,
+      keyTakeaways: Array.isArray(savedAnalysis.keyTakeaways) ? savedAnalysis.keyTakeaways : undefined,
       brainSummary: savedAnalysis.brainSummary ?? undefined,
       contentType: savedAnalysis.contentType ?? undefined,
       mainClaim: savedAnalysis.mainClaim ?? undefined,
@@ -3544,6 +3555,16 @@ export function VideoDetailPanel({
       thesis: Array.isArray(v.thesis) ? v.thesis : [],
       questions: Array.isArray(v.questions) ? v.questions : [],
       checklists: Array.isArray(v.checklists) ? v.checklists : [],
+      // Learning tab fields (technical GEM)
+      definitions: Array.isArray(v.definitions) ? v.definitions : [],
+      indicators: Array.isArray(v.indicators) ? v.indicators : [],
+      setups: Array.isArray(v.setups) ? v.setups : [],
+      patterns: Array.isArray(v.patterns) ? v.patterns : [],
+      tradingPrinciples: Array.isArray(v.tradingPrinciples) ? v.tradingPrinciples : [],
+      mentalModels: Array.isArray(v.mentalModels) ? v.mentalModels : [],
+      brainHighlights: Array.isArray(v.brainHighlights) ? v.brainHighlights : [],
+      usefulKnowledge: Array.isArray(v.usefulKnowledge) ? v.usefulKnowledge : [],
+      keyTakeaways: Array.isArray(v.keyTakeaways) ? v.keyTakeaways : [],
       brainSummary: v.brainSummary ?? null,
       contentType: v.contentType ?? null,
       mainClaim: v.mainClaim ?? null,
@@ -3581,8 +3602,11 @@ export function VideoDetailPanel({
   };
 
   const _applyParsedGems = (parsed) => {
-    console.log('[GEMS JSON] apply started');
-    console.log('[GEMS Parse] parsed keys:', Object.keys(parsed || {}).join(', '));
+    if (import.meta.env.DEV) {
+      console.debug('[GEMS JSON] apply started');
+      console.debug('[GEMS Parse] raw keys:', Object.keys(parsed || {}).join(', '));
+      console.debug('[GEMS Parse] contentType:', parsed?.contentType);
+    }
 
     // ── Market Brief — handle separately before generic pipeline ──────────
     if (parsed?.contentType === 'marketBrief') {
@@ -3602,25 +3626,31 @@ export function VideoDetailPanel({
       return true;
     }
 
-    console.log('[GEMS Parse] has politicalSummary:', !!parsed?.politicalSummary);
-    console.log('[GEMS Parse] has theologyAnalysis:', !!(parsed?.theologyAnalysis || parsed?.politicalSummary?.theologyAnalysis));
-    console.log('[GEMS Parse] has opponentView:', !!(parsed?.opponentView || parsed?.politicalSummary?.opponentView));
-    console.log('[GEMS Parse] has viralQuotes:', !!(parsed?.viralQuotes?.length || parsed?.politicalSummary?.viralQuotes?.length));
+    if (import.meta.env.DEV) {
+      console.debug('[GEMS Parse] has politicalSummary:', !!parsed?.politicalSummary);
+      console.debug('[GEMS Parse] has opponentView:', !!(parsed?.opponentView || parsed?.politicalSummary?.opponentView));
+    }
     const normalized = normalizeAiAnalysisResult(parsed);
     if (!normalized) { setGemsPasteError("לא זוהה פורמט ניתוח תקין"); return false; }
-    console.log('[GEMS JSON] parse success');
+    if (import.meta.env.DEV) {
+      const learningFields = ['definitions','indicators','setups','patterns','checklists','mistakesToAvoid','tradingPrinciples','mentalModels','brainHighlights','usefulKnowledge'];
+      const filled = learningFields.filter(k => Array.isArray(normalized[k]) && normalized[k].length > 0);
+      console.debug('[GEMS JSON] normalized learning fields populated:', filled.join(', ') || '(none)');
+      console.debug('[GEMS JSON] normalized keys:', Object.keys(normalized).join(', '));
+    }
     const gemsPatched = persistAnalysisState({ ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() });
-    console.log('[GEMS JSON] data mapped to app state');
+    if (import.meta.env.DEV) console.debug('[GEMS JSON] data mapped to app state, patched:', !!gemsPatched);
 
-    // Persist political summary — triggered by any political data field OR by the gem key
+    // Persist political summary — triggered by political data fields OR by the gem key
+    // NOTE: brainHighlights is intentionally excluded — it appears in technical GEMs too
     {
       const isPoliticalGems =
+        parsed.contentType === 'political' ||
         effectiveGemInfo?.gemKey === 'political' ||
         !!(parsed.politicalSummary) ||
         !!(parsed.ideologyAnalysis) ||
         !!(parsed.opponentView) ||
         !!(parsed.theologyAnalysis) ||
-        !!(parsed.brainHighlights) ||
         (Array.isArray(parsed.viralQuotes) && parsed.viralQuotes.length > 0) ||
         (Array.isArray(parsed.debateResponses) && parsed.debateResponses.length > 0) ||
         (Array.isArray(parsed.politicalSlogans) && parsed.politicalSlogans.length > 0);
@@ -3630,7 +3660,7 @@ export function VideoDetailPanel({
           const savedKey = `political_summary_${videoId}`;
           localStorage.setItem(savedKey, JSON.stringify(parsed));
           setPoliticalSummary(parsed);
-          console.log(`[PoliticalSummary] saved from GEMS JSON for videoId=${videoId}`);
+          if (import.meta.env.DEV) console.debug(`[PoliticalSummary] saved from GEMS JSON for videoId=${videoId}`);
         }
       }
     }
@@ -3641,22 +3671,24 @@ export function VideoDetailPanel({
       saveSavedAnalysis(video.id, snapshot);
       setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gems', analysisSavedAt: snapshot.analysisSavedAt }));
       localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      console.log(`[GEMS JSON] saved for videoId=${video.id}`);
-      console.log(`[AI Analysis] saved for videoId=${video.id}`);
+      if (import.meta.env.DEV) console.debug(`[GEMS JSON] snapshot saved for videoId=${video.id}`);
     }
     setGemsJsonApplied(true);
-    console.log('[GEMS JSON] status updated to valid');
-
     setGemsPasteError("");
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
-    console.log('[GEMS JSON] render-safe data ready');
-    // Close modal first, then switch tabs after React flushes state
+    // Close modal first, then switch to the most relevant tab based on contentType
     setIsGemsPasteOpen(false);
     setTimeout(() => {
-      setActiveTab("political");
-      setActivePoliticalTab("brain-hi");
-      console.log('[Tabs] active tab after analysis: political/brain-hi');
+      const ct = parsed.contentType;
+      if (ct === 'technical' || ct === 'market' || ct === 'learning') {
+        setActiveTab("definitions");
+        if (import.meta.env.DEV) console.debug('[Tabs] switched to definitions tab after technical GEM import');
+      } else {
+        setActiveTab("political");
+        setActivePoliticalTab("brain-hi");
+        if (import.meta.env.DEV) console.debug('[Tabs] switched to political tab after GEM import');
+      }
     }, 50);
     toast.success("GEMS JSON נקלט בהצלחה ✓ הנתונים עודכנו");
     toast.success("הניתוח נשמר בהצלחה ✓");
@@ -6205,34 +6237,6 @@ export function VideoDetailPanel({
                   ))}
                 </div>
 
-                {/* Morning Briefing GEM status row */}
-                {(newsGemOpened || video?.gemSummary) && (
-                  <div className={`mt-2 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs font-medium ${
-                    video?.gemSummary
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700/50 dark:bg-emerald-950/30 dark:text-emerald-300'
-                      : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-300'
-                  }`}>
-                    <span>{video?.gemSummary ? '🟢 סיכום GEM התקבל' : '⏳ ממתין לסיכום מה-GEM'}</span>
-                    {video?.gemSummary ? (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("summary")}
-                        className="rounded-lg border border-emerald-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-                      >
-                        צפה בסיכום ←
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setGemPasteOpen(true); setGemPasteText(""); }}
-                        className="rounded-lg border border-amber-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
-                      >
-                        📋 הדבק סיכום מה-GEM
-                      </button>
-                    )}
-                  </div>
-                )}
-
                 {/* Secondary actions */}
                 <div className="flex flex-wrap gap-1.5 border-t border-slate-100 dark:border-zinc-800 pt-2">
                   {[
@@ -6485,13 +6489,86 @@ export function VideoDetailPanel({
             )}
 
             {/* ── טאבים ── */}
-            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+            <Tabs id="analysis-tabs" value={activeTab} onValueChange={(v) => { setActiveTab(v); if (LEARNING_SUB_TAB_VALUES.has(v)) learningSubTabRef.current = v; }} className="w-full" dir="rtl">
               {/* ── Main tabs row — dynamic per videoType ── */}
               {(() => {
                 const _hasPolitical   = effectiveGemInfo?.gemKey === 'political' || !!politicalSummary;
                 const _hasMarketBrief = !!marketBriefData;
                 const _hasAppBuilder  = APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id);
-                const _dynamicTabs    = getTabsForVideo(video, {
+                const _type = detectVideoType(video);
+
+                // ── Learning type: two-level tab hierarchy ──────────────────
+                if (_type === 'learning') {
+                  const _mainTabs = [...LEARNING_GROUP_MAIN_TABS];
+                  if (_hasAppBuilder) _mainTabs.push({ value: 'app-builder', label: 'בונה', emoji: '🏗️', isGroup: false });
+                  const _isLearningActive = LEARNING_SUB_TAB_VALUES.has(activeTab);
+
+                  return (
+                    <div className="space-y-1.5">
+                      {/* Row 1 — 5 high-level group tabs */}
+                      <div
+                        className="flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 w-full"
+                        dir="rtl"
+                        role="tablist"
+                      >
+                        {_mainTabs.map(({ value, label, emoji, isGroup }) => {
+                          const isActive = isGroup ? _isLearningActive : activeTab === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              role="tab"
+                              aria-selected={isActive}
+                              onClick={() => setActiveTab(isGroup ? learningSubTabRef.current : value)}
+                              className={`shrink-0 flex-1 inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150 ${
+                                isActive
+                                  ? 'bg-white text-slate-900 shadow-sm font-semibold dark:bg-zinc-700 dark:text-white'
+                                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                              }`}
+                            >
+                              <span>{emoji}</span>
+                              <span>{label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Row 2 — Learning sub-tabs (visible when למידה group is active) */}
+                      {_isLearningActive && (
+                        <TabsList
+                          className="flex rounded-xl bg-indigo-50/60 border border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 p-1 gap-0 overflow-x-auto w-full"
+                          dir="rtl"
+                        >
+                          {LEARNING_SUB_TABS.map(({ value, label, emoji }) => {
+                            const badge = getTabBadge(video, value, marketBriefData);
+                            return (
+                              <TabsTrigger
+                                key={value}
+                                value={value}
+                                className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-lg py-1.5 px-2 text-xs font-medium transition-all duration-150
+                                  text-indigo-400 dark:text-indigo-500
+                                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm data-[state=active]:font-semibold
+                                  dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-indigo-300
+                                  hover:text-indigo-600 dark:hover:text-indigo-400"
+                              >
+                                <span>{emoji}</span>
+                                <span>{label}</span>
+                                {badge > 0 && (
+                                  <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-px text-[9px] font-bold leading-none text-indigo-500 dark:text-indigo-400 ml-0.5">
+                                    {badge}
+                                  </span>
+                                )}
+                              </TabsTrigger>
+                            );
+                          })}
+                        </TabsList>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── Other types: existing single-row rendering ──────────────
+                const _dynamicTabs = getTabsForVideo(video, {
                   hasPolitical:   _hasPolitical,
                   hasMarketBrief: _hasMarketBrief,
                   hasAppBuilder:  _hasAppBuilder,
