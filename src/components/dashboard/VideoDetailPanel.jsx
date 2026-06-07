@@ -85,6 +85,8 @@ import { GemSelectionModal } from "./GemSelectionModal";
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
 import { MarketBriefView } from "./MarketBriefView";
+import { LearningTabContent } from "./LearningTabContent";
+import { detectVideoType, getTabsForVideo, extractVideoTabItems, getTabBadge } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
@@ -1860,6 +1862,8 @@ export function VideoDetailPanel({
     });
     return result;
   }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds, topics, mentorName, resolvedVideoMode.mode, resolvedVideoMode.category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const videoType = useMemo(() => detectVideoType(video), [video?.id, video?.category, video?.contentType, video?.title]);
 
   const effectiveGemInfo = useMemo(() => {
     if (!gemRec) return null;
@@ -6482,30 +6486,47 @@ export function VideoDetailPanel({
 
             {/* ── טאבים ── */}
             <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-              {/* ── Main tabs row ── */}
-              <TabsList className="flex w-full rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 no-scrollbar" dir="rtl">
-                {[
-                  { value: "summary",     label: "📝 סיכום" },
-                  { value: "keypoints",   label: "📌 נקודות מפתח" },
-                  { value: "chapters",    label: "📚 פרקים" },
-                  { value: "ai-analysis", label: "🧠 ניתוח AI" },
-                  ...(effectiveGemInfo?.gemKey === 'political' ? [{ value: "political", label: "🏛️ פוליטי" }] : []),
-                  ...(marketBriefData ? [{ value: "market-brief", label: "📈 מבזק שוק" }] : []),
-                  ...(APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id) ? [{ value: "app-builder", label: "🏗️ בונה אפליקציות" }] : []),
-                ].map(({ value, label }) => (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-sm font-medium transition-all duration-150
-                      text-slate-500 dark:text-zinc-400
-                      data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
-                      dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
-                      hover:text-slate-700 dark:hover:text-zinc-200"
+              {/* ── Main tabs row — dynamic per videoType ── */}
+              {(() => {
+                const _hasPolitical   = effectiveGemInfo?.gemKey === 'political' || !!politicalSummary;
+                const _hasMarketBrief = !!marketBriefData;
+                const _hasAppBuilder  = APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id);
+                const _dynamicTabs    = getTabsForVideo(video, {
+                  hasPolitical:   _hasPolitical,
+                  hasMarketBrief: _hasMarketBrief,
+                  hasAppBuilder:  _hasAppBuilder,
+                });
+                const _manyTabs = _dynamicTabs.length > 5;
+                return (
+                  <TabsList
+                    className={`flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 ${_manyTabs ? 'overflow-x-auto w-full' : 'w-full no-scrollbar'}`}
+                    dir="rtl"
                   >
-                    {label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+                    {_dynamicTabs.map(({ value, label, emoji }) => {
+                      const badge = getTabBadge(video, value, marketBriefData);
+                      return (
+                        <TabsTrigger
+                          key={value}
+                          value={value}
+                          className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150
+                            text-slate-500 dark:text-zinc-400
+                            data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
+                            dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
+                            hover:text-slate-700 dark:hover:text-zinc-200"
+                        >
+                          <span>{emoji}</span>
+                          <span>{label}</span>
+                          {badge > 0 && (
+                            <span className="rounded-full bg-slate-200/80 dark:bg-zinc-700 px-1.5 py-px text-[9px] font-bold leading-none text-slate-500 dark:text-zinc-400 ml-0.5">
+                              {badge}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                );
+              })()}
 
               {/* ── Summary tab ── */}
               <TabsContent value="summary" className="mt-5 min-h-[320px]" dir="rtl">
@@ -8809,6 +8830,58 @@ export function VideoDetailPanel({
                   />
                 </TabsContent>
               )}
+
+              {/* ── Learning video tabs ──────────────────────────────── */}
+              {videoType === 'learning' && (() => {
+                const wrapTab = (value, emptyLabel) => (
+                  <TabsContent key={value} value={value} className="mt-3 min-h-[260px]" dir="rtl">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-3">
+                      <LearningTabContent
+                        items={extractVideoTabItems(video, value, marketBriefData)}
+                        emptyLabel={emptyLabel}
+                        onSaveToBrain={(text) => saveSingleItemToBrain(text, value, emptyLabel, '')}
+                      />
+                    </div>
+                  </TabsContent>
+                );
+                return (
+                  <>
+                    {wrapTab('useful-knowledge', 'אין עדיין ידע שימושי — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('definitions',      'אין עדיין מושגים — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('indicators',       'אין עדיין אינדיקטורים — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('setups',           'אין עדיין סטאפים — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('patterns',         'אין עדיין פטרנים — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('checklists',       "אין עדיין צ'קליסטים — נתח את הסרטון כדי להפיק")}
+                    {wrapTab('mistakes',         'אין עדיין טעויות — נתח את הסרטון כדי להפיק')}
+                    {wrapTab('trading-brain',    'אין עדיין ידע למוח המסחר — נתח את הסרטון כדי להפיק')}
+                  </>
+                );
+              })()}
+
+              {/* ── Brief (morning/evening) tabs ─────────────────────── */}
+              {(videoType === 'morningBrief' || videoType === 'eveningBrief') && (() => {
+                const wrapBrief = (value, emptyLabel) => (
+                  <TabsContent key={value} value={value} className="mt-3 min-h-[260px]" dir="rtl">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-3">
+                      <LearningTabContent
+                        items={extractVideoTabItems(video, value, marketBriefData)}
+                        emptyLabel={emptyLabel}
+                        onSaveToBrain={(text) => saveSingleItemToBrain(text, value, emptyLabel, '')}
+                      />
+                    </div>
+                  </TabsContent>
+                );
+                return (
+                  <>
+                    {wrapBrief('market-news',         'אין עדיין חדשות שוק')}
+                    {wrapBrief('indices',              'אין עדיין נתוני מדדים')}
+                    {wrapBrief('stocks-mentioned',     'אין עדיין מניות מוזכרות')}
+                    {wrapBrief('brief-risks',          'אין עדיין סיכונים')}
+                    {wrapBrief('brief-opportunities',  'אין עדיין הזדמנויות')}
+                    {wrapBrief('brief-conclusions',    'אין עדיין מסקנות למסחר')}
+                  </>
+                );
+              })()}
 
               {/* ── APP Builder tab (§26) — shown for educational topics or existing draft ── */}
               {(APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id)) && (
