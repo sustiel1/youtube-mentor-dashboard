@@ -8,7 +8,7 @@ import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { analyzeVideoWithProvider } from "@/services/aiVideoAnalyzer";
 import { getClaudeAnalyzerStatus } from "@/services/claudeVideoAnalyzer";
-import { fetchGeminiVideoContent } from "@/services/geminiVideoContent";
+import { fetchGeminiVideoContent, fetchHebrewChapterTitles } from "@/services/geminiVideoContent";
 import {
   analyzeVideoWithOllama,
   checkOllamaStatus,
@@ -70,8 +70,10 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 import { ObsidianExportButton } from "./ObsidianExportButton";
-import { buildVideoFullNote, buildObsidianUrl, openObsidianUrl, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
-import { buildObsidianOpenUrl, getConfiguredObsidianVaultName, getConfiguredObsidianVaultPath } from "@/lib/obsidianVaultConfig";
+import { ObsidianSettingsDialog } from "./ObsidianSettingsDialog";
+import { buildVideoFullNote, openObsidianUrl, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
+import { buildObsidianOpenUrl, hasUsableObsidianVaultName, resolveObsidianVaultName, useObsidianSettingsState } from "@/lib/obsidianVaultConfig";
+import { buildObsidianRoutingDebugInfo, resolveVideoObsidianRoute } from "@/lib/obsidianRouting";
 import { getManualNotesByTopic } from "@/lib/localManualNoteStore";
 import { createKnowledgeItemFromVideo, getKnowledgeItems, upsertKnowledgeItem, updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
 import { getOpponentSentences, toggleOpponentSentence, setOpponentSentenceResponse } from "@/lib/opponentSentenceStore";
@@ -83,15 +85,18 @@ import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
 import { GemSelectionModal } from "./GemSelectionModal";
 import { GemsSettingsModal } from "./GemsSettingsModal";
+import { AiMappingModal } from "./AiMappingModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
 import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent } from "./LearningTabContent";
-import { detectVideoType, getTabsForVideo, extractVideoTabItems, getTabBadge, LEARNING_GROUP_MAIN_TABS, LEARNING_SUB_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
+import { MarketIndicesTable } from "./MarketIndicesTable";
+import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
+import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
-import { hasObsidianSavedStatus, getBrainSaveButtonLabel } from "@/lib/obsidianSavedStatus";
+import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatus } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
@@ -99,7 +104,7 @@ import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGenerat
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
-import { isVideoInWorkspaceLibrary, updateWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
+import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
 import { SubTopicPillDropdown } from "@/components/dashboard/SubTopicPillDropdown";
 import { SummaryTextSaveMenu } from "@/components/dashboard/SummaryTextSaveMenu";
 import { AppBuilderTab } from "@/components/dashboard/AppBuilderTab";
@@ -107,13 +112,10 @@ import { hasAppBuilderDraft } from "@/lib/appBuilderStore";
 
 // §26 — APP Builder tab is shown only for these educational topic categories
 const APP_BUILDER_TOPICS = new Set([
-  'שוק ההון',
-  'פוליטיקה',
-  'טכנולוגיה ו-AI',
-  'בריאות ותזונה',
-  'פיתוח',
-  'ידע אישי',
-  'דרופשיפינג',
+  "שוק ההון",
+  "פוליטיקה",
+  "טכנולוגיה ו-AI",
+  "בריאות ותזונה",
 ]);
 
 // ── PanelThumbnail — uses full fallback chain + gray-placeholder detection ────
@@ -766,23 +768,71 @@ function getMarketSubTopicCandidates(gemKey, gemLabel, fallbackSubCategory) {
   return [fallbackSubCategory, gemLabel].filter(Boolean);
 }
 
-const POLITICAL_TABS_DEFS = [
-  // ── Primary 4 (always visible) ──────────────────────────────────────────────
-  { value: "brain-hi",       label: "תובנות",            emoji: "🧠", bg: "bg-violet-50",  border: "border-violet-200",  text: "text-violet-700",  active: "bg-violet-600"  },
-  { value: "ideology",       label: "אידיאולוגיה",      emoji: "⚖️", bg: "bg-indigo-50",  border: "border-indigo-200",  text: "text-indigo-700",  active: "bg-indigo-600"  },
-  { value: "opponent",       label: "צד שני",            emoji: "🗣️", bg: "bg-rose-50",    border: "border-rose-200",    text: "text-rose-700",    active: "bg-rose-600"    },
-  { value: "slogans",        label: "סיסמאות",           emoji: "📢", bg: "bg-purple-50",  border: "border-purple-200",  text: "text-purple-700",  active: "bg-purple-600"  },
-  // ── Extra (behind "עוד ▼") ──────────────────────────────────────────────────
-  { value: "theology",       label: "דת ותיאולוגיה",    emoji: "✡️", bg: "bg-amber-50",   border: "border-amber-200",   text: "text-amber-700",   active: "bg-amber-600"   },
-  { value: "liberal-jewish", label: "יהדות ליברלית",    emoji: "🕊️", bg: "bg-sky-50",     border: "border-sky-200",     text: "text-sky-700",     active: "bg-sky-600"     },
-  { value: "virals",         label: "ציטוטים",           emoji: "🔥", bg: "bg-orange-50",  border: "border-orange-200",  text: "text-orange-700",  active: "bg-orange-500"  },
-  { value: "debates",        label: "ויכוחים",           emoji: "⚔️", bg: "bg-red-50",     border: "border-red-200",     text: "text-red-700",     active: "bg-red-600"     },
-  { value: "comments",       label: "תגובות",            emoji: "💬", bg: "bg-teal-50",    border: "border-teal-200",    text: "text-teal-700",    active: "bg-teal-600"    },
-  { value: "campaign",       label: "קיט קמפיין",        emoji: "📦", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", active: "bg-emerald-600" },
-  { value: "reusable",       label: "ידע רב פעמי",       emoji: "📚", bg: "bg-cyan-50",    border: "border-cyan-200",    text: "text-cyan-700",    active: "bg-cyan-600"    },
-];
-const POLITICAL_TABS_PRIMARY = 4;
-const POLITICAL_TAB_VALUES = new Set(POLITICAL_TABS_DEFS.map(t => t.value));
+const SUBCATEGORY_GEM_META = {
+  technical: { label: "טכני", icon: "📈" },
+  fundamental: { label: "פונדמנטלי", icon: "📊" },
+  macro: { label: "מאקרו", icon: "🌍" },
+  news: { label: "מבזק שוק", icon: "📰" },
+  political: { label: "פוליטי", icon: "🏛️" },
+};
+
+const DYNAMIC_TAB_EMPTY_LABELS = {
+  // useful-knowledge removed — handled by standalone universal TabsContent (Phase 2)
+  definitions: "אין עדיין מושגים — נתח את הסרטון כדי להפיק",
+  indicators: "אין עדיין אינדיקטורים — נתח את הסרטון כדי להפיק",
+  setups: "אין עדיין סטאפים — נתח את הסרטון כדי להפיק",
+  patterns: "אין עדיין פטרנים — נתח את הסרטון כדי להפיק",
+  checklists: "אין עדיין צ'קליסטים — נתח את הסרטון כדי להפיק",
+  mistakes: "אין עדיין טעויות — נתח את הסרטון כדי להפיק",
+  "trading-brain": "אין עדיין ידע למוח המסחר — נתח את הסרטון כדי להפיק",
+  "financial-metrics": "אין עדיין מדדים פיננסיים",
+  valuation: "אין עדיין הערכת שווי",
+  "analysis-frameworks": "אין עדיין מסגרות ניתוח",
+  "investment-checklist": "אין עדיין צ'קליסט השקעה",
+  "cause-effect": "אין עדיין קשרי סיבה ותוצאה",
+  "market-impact": "אין עדיין השפעה על השוק",
+  "market-news": "אין עדיין חדשות שוק",
+  indices: "אין עדיין נתוני מדדים",
+  "stocks-mentioned": "אין עדיין מניות מוזכרות",
+  "brief-risks": "אין עדיין סיכונים",
+  "brief-opportunities": "אין עדיין הזדמנויות",
+  "brief-conclusions": "אין עדיין מסקנות למסחר",
+  "brief-macro": "אין עדיין אירועי מאקרו",
+  "brief-sentiment": "אין עדיין סנטימנט שוק",
+  "brief-calendar": "אין עדיין אירועים בלוח הכלכלי",
+  "brief-sectors": "אין עדיין ביצועי סקטורים",
+  "brief-changes": "אין עדיין שינויים בולטים",
+  "brief-tomorrow": "אין עדיין אירועי מחר",
+  "brief-highlights": "אין עדיין כותרות שבועיות",
+  "brief-winners": "אין עדיין מנצחים",
+  "brief-losers": "אין עדיין מפסידים",
+  "brief-outlook": "אין עדיין תחזית לשבוע הבא",
+  "earnings-guidance": "אין עדיין תחזיות",
+  "earnings-commentary": "אין עדיין פרשנות הנהלה",
+};
+
+const SUPPLEMENTARY_ALLOWED_TABS = new Set(["notes", "transcript", "brain-select"]);
+
+function resolveGemKeyFromSubCategory(subCategory) {
+  switch (normalizeSubCategory(subCategory)) {
+    case "technical-analysis":
+      return "technical";
+    case "fundamental-analysis":
+      return "fundamental";
+    case "macro":
+      return "macro";
+    case "morning-brief":
+    case "evening-brief":
+    case "weekly-brief":
+    case "earnings-brief":
+      return "news";
+    case "political":
+      return "political";
+    default:
+      return null;
+  }
+}
+
 
 function extractSavedAnalysisMeta(saved) {
   if (!saved) return null;
@@ -1508,9 +1558,9 @@ export function VideoDetailPanel({
   const [transcriptDiagnostics, setTranscriptDiagnostics] = useState(null);
   const [isCheckingTranscript, setIsCheckingTranscript] = useState(false);
   const [isAutoTranscriptModalOpen, setIsAutoTranscriptModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("chapters");
-  const prevTabRef = useRef("chapters");
-  const learningSubTabRef = useRef("chapters"); // tracks last selected learning sub-tab
+  const [activeTab, setActiveTab] = useState("summary");
+  const prevTabRef = useRef("summary");
+  const learningSubTabRef = useRef("chapters"); // tracks last selected learning sub-tab (Phase 5: remove)
   const [activePoliticalTab, setActivePoliticalTab] = useState("brain-hi");
   const [showMorePoliticalTabs, setShowMorePoliticalTabs] = useState(false);
   const [multiSelected, setMultiSelected] = useState(new Map()); // id → { text, sectionLabel, type, timestamp? }
@@ -1535,6 +1585,14 @@ export function VideoDetailPanel({
   const [goldenFindError, setGoldenFindError] = useState(null);
   const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
   const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
+  const [hebrewTitlesMap, setHebrewTitlesMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hebrew_chapter_titles_' + (video?.id || ''));
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  const [isGeneratingHebrewTitles, setIsGeneratingHebrewTitles] = useState(false);
+  const [hebrewTitlesError, setHebrewTitlesError] = useState(null);
   const [savedAnalysisMeta, setSavedAnalysisMeta] = useState(null);
   const [isSubtitleEditing, setIsSubtitleEditing] = useState(false);
   const [subtitleDraft, setSubtitleDraft] = useState("");
@@ -1572,6 +1630,9 @@ export function VideoDetailPanel({
   const [psCardDropOpen, setPsCardDropOpen] = useState(null); // saveKey of open card dropdown
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [workspaceSaveOpen, setWorkspaceSaveOpen] = useState(false);
+  const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
+  const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
+  const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
   const [multiObsidianPickerMode, setMultiObsidianPickerMode] = useState(false);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
@@ -1586,6 +1647,7 @@ export function VideoDetailPanel({
   const [gemOverride, setGemOverride] = useState(null);
   const [showGemModal, setShowGemModal] = useState(false);
   const [showGemsSettings, setShowGemsSettings] = useState(false);
+  const [showAiMapping, setShowAiMapping] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState("");
   const [transcriptSearchIndex, setTranscriptSearchIndex] = useState(0);
   const [transcriptSearchMode, setTranscriptSearchMode] = useState("highlight"); // "highlight" | "filter"
@@ -1627,10 +1689,6 @@ export function VideoDetailPanel({
     setNewSubTopicDraft("");
     setSubTopicDraft(typeof video?.subCategory === "string" ? video.subCategory.trim() : "");
   }, [video?.id]);
-  useEffect(() => {
-    const extraTabs = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value);
-    if (extraTabs.includes(activePoliticalTab)) setShowMorePoliticalTabs(true);
-  }, [activePoliticalTab]);
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
   useEffect(() => {
     if (!video?.id && !video?.youtubeId) { setMarketBriefData(null); return; }
@@ -1727,12 +1785,75 @@ export function VideoDetailPanel({
     () => selectableAtomicFields.reduce((sum, field) => sum + field.items.length, 0),
     [selectableAtomicFields]
   );
-  const selectedSubTopicName = typeof (subCategoryOverride ?? video?.subCategory) === "string"
-    ? String(subCategoryOverride ?? video?.subCategory).trim()
-    : "";
-  // Effective sub-topic for the hierarchy header (3-level: נושא / תת-נושא / כותרת)
-  const effectiveSubTopicDisplay = subCategoryOverride ?? subTopicRec?.recommended ?? video?.subCategory ?? "";
-  const isSubTopicAiRec = !subCategoryOverride && Boolean(subTopicRec?.recommended) && effectiveSubTopicDisplay === subTopicRec?.recommended;
+  const mentorResolution = useMemo(() => {
+    const mentorResolved = resolveChannelToMentor(video);
+    const mentorByName = !mentorResolved && mentorName ? resolveMentorByName(mentorName) : null;
+    return mentorResolved ?? mentorByName ?? null;
+  }, [mentorName, video]);
+
+  const effectiveCategory = useMemo(() => {
+    const normalizedCategoryCandidates = [
+      categoryOverride,
+      video?.category,
+      videoProp?.category,
+      mentorResolution?.categoryLabel,
+      video?.obsidianTopic,
+      videoProp?.obsidianTopic,
+    ]
+      .map((value) => normalizeCategoryName(value))
+      .filter((value) => typeof value === "string" && value.trim().length > 0);
+
+    return normalizedCategoryCandidates[0] || null;
+  }, [
+    categoryOverride,
+    mentorResolution?.categoryLabel,
+    video?.category,
+    video?.obsidianTopic,
+    videoProp?.category,
+    videoProp?.obsidianTopic,
+  ]);
+
+  const effectiveSubCategory = useMemo(() => {
+    const rawValue = subCategoryOverride ?? video?.subCategory ?? videoProp?.subCategory;
+    return typeof rawValue === "string" ? String(rawValue).trim() : "";
+  }, [subCategoryOverride, video?.subCategory, videoProp?.subCategory]);
+
+  const effectiveVideo = useMemo(() => {
+    if (!video) return video;
+    return {
+      ...video,
+      category: effectiveCategory ?? video?.category ?? videoProp?.category ?? undefined,
+      subCategory: effectiveSubCategory,
+    };
+  }, [effectiveCategory, effectiveSubCategory, video, videoProp?.category]);
+
+  const obsidianSettings = useObsidianSettingsState();
+
+  const normalizedSubCategory = useMemo(
+    () => normalizeSubCategory(effectiveSubCategory),
+    [effectiveSubCategory]
+  );
+
+  const obsidianRoute = useMemo(
+    () => resolveVideoObsidianRoute(effectiveVideo || {}, {
+      vaultName: obsidianSettings.vaultName,
+      vaultPath: obsidianSettings.vaultPath,
+    }),
+    [effectiveVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
+  );
+
+  const obsidianRoutingDebug = useMemo(
+    () => buildObsidianRoutingDebugInfo(effectiveVideo || {}, {
+      vaultName: obsidianSettings.vaultName,
+      vaultPath: obsidianSettings.vaultPath,
+    }),
+    [effectiveVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
+  );
+
+  const selectedSubTopicName = effectiveSubCategory;
+  // Visible header labels should follow the effective video mapping first, then optional AI suggestion.
+  const effectiveSubTopicDisplay = effectiveSubCategory || subTopicRec?.recommended || "";
+  const isSubTopicAiRec = !effectiveSubCategory && Boolean(subTopicRec?.recommended) && effectiveSubTopicDisplay === subTopicRec?.recommended;
   const marketRootTopic = useMemo(
     () => topics.find((topic) => (!topic.parentId || topic.isMainCategory) && normalizeCategoryName(topic?.name) === MARKET_CATEGORY) || null,
     [topics]
@@ -1746,30 +1867,14 @@ export function VideoDetailPanel({
   const [isCategoryPillEditing, setIsCategoryPillEditing] = useState(false);
 
   const resolvedVideoMode = useMemo(() => {
-    const mentorResolved = resolveChannelToMentor(video);
-    const mentorByName = !mentorResolved && mentorName ? resolveMentorByName(mentorName) : null;
-    const resolvedMentor = mentorResolved ?? mentorByName;
-    const normalizedCategoryCandidates = [
-      video?.category,
-      videoProp?.category,
-      resolvedMentor?.categoryLabel,
-      video?.obsidianTopic,
-      videoProp?.obsidianTopic,
-    ]
-      .map((value) => normalizeCategoryName(value))
-      .filter((value) => typeof value === "string" && value.trim().length > 0);
-
-    const lockedCategory = normalizedCategoryCandidates[0] || null;
-    const normalizedSubCategory =
-      typeof (video?.subCategory ?? videoProp?.subCategory) === "string"
-        ? String(video?.subCategory ?? videoProp?.subCategory).trim() || null
-        : null;
+    const lockedCategory = effectiveCategory || null;
+    const lockedSubCategory = effectiveSubCategory || null;
 
     if (lockedCategory === MARKET_CATEGORY) {
       return {
         mode: "market",
         category: MARKET_CATEGORY,
-        subCategory: normalizedSubCategory,
+        subCategory: lockedSubCategory,
         analysisType: "market",
         gemType: "fundamental",
         tabsPreset: "market",
@@ -1780,7 +1885,7 @@ export function VideoDetailPanel({
       return {
         mode: "politics",
         category: POLITICS_CATEGORY,
-        subCategory: normalizedSubCategory,
+        subCategory: lockedSubCategory,
         analysisType: "political",
         gemType: "political",
         tabsPreset: "politics",
@@ -1790,36 +1895,47 @@ export function VideoDetailPanel({
     return {
       mode: "general",
       category: lockedCategory,
-      subCategory: normalizedSubCategory,
+      subCategory: lockedSubCategory,
       analysisType: null,
       gemType: null,
       tabsPreset: null,
     };
-  }, [
-    mentorName,
-    video,
-    videoProp?.category,
-    videoProp?.obsidianTopic,
-    videoProp?.subCategory,
-  ]);
+  }, [effectiveCategory, effectiveSubCategory]);
 
   const gemRec = useMemo(() => {
-    if (!video) return null;
-    const transcriptText = String(video?.transcript || '');
-    const mentorResolved = resolveChannelToMentor(video);
-    // Fallback: if no channel metadata match, try matching the mentor display name prop
-    const mentorByName = !mentorResolved && mentorName ? resolveMentorByName(mentorName) : null;
-    const resolvedMentor = mentorResolved ?? mentorByName;
+    if (!effectiveVideo) return null;
+    const transcriptText = String(effectiveVideo?.transcript || '');
     // Priority: mentor channel → mentor name prop → stored video.category → AI
-    const forcedCategoryLabel = resolvedMentor?.categoryLabel ?? (video?.category || null);
-    const firstTopicId = Array.isArray(video.topicIds) ? video.topicIds[0] : null;
+    const forcedCategoryLabel = mentorResolution?.categoryLabel ?? (effectiveVideo?.category || null);
+    const firstTopicId = Array.isArray(effectiveVideo.topicIds) ? effectiveVideo.topicIds[0] : null;
     const forcedTopicName = firstTopicId ? (topics.find(t => t.id === firstTopicId)?.name ?? null) : null;
-    const result = classifyVideoForGem(video, transcriptText, { forcedCategoryLabel, forcedTopicName });
+    const result = classifyVideoForGem(effectiveVideo, transcriptText, { forcedCategoryLabel, forcedTopicName });
+    const subCategoryGemKey = resolveGemKeyFromSubCategory(effectiveSubCategory);
+    if (subCategoryGemKey) {
+      const fallbackMeta = SUBCATEGORY_GEM_META[subCategoryGemKey] || SUBCATEGORY_GEM_META.fundamental;
+      const mappedCategory = GEM_CATEGORY_MAP[subCategoryGemKey];
+      const gemLabel = subCategoryGemKey === "news" && effectiveSubCategory
+        ? effectiveSubCategory
+        : fallbackMeta.label;
+      return {
+        ...result,
+        gemKey: subCategoryGemKey,
+        gemLabel,
+        gemIcon: fallbackMeta.icon,
+        recommendedCategoryCode: mappedCategory?.categoryCode ?? result.recommendedCategoryCode,
+        recommendedCategoryLabel: effectiveCategory || mappedCategory?.categoryLabel || result.recommendedCategoryLabel,
+        recommendedSubCategory: effectiveSubCategory || result.recommendedSubCategory,
+        confidence: "high",
+        confidenceLabel: "ביטחון גבוה",
+        confidencePct: Math.max(result.confidencePct || 0, 95),
+        reason: `תת-הנושא "${effectiveSubCategory}" הוא מקור האמת הנוכחי, ולכן המלצת ה-Gem מחושבת ממנו מחדש.`,
+      };
+    }
     if (resolvedVideoMode.mode === "market" && !MARKET_GEM_KEYS.has(result.gemKey)) {
       const fallbackGemKey = "fundamental";
       const fallbackCategory = GEM_CATEGORY_MAP[fallbackGemKey];
       console.log("[TranscriptGuard] forcing market gem", {
-        videoId: video?.id,
+        videoId: effectiveVideo?.id,
         previousGem: result.gemKey,
         nextGem: fallbackGemKey,
         category: resolvedVideoMode.category,
@@ -1849,22 +1965,41 @@ export function VideoDetailPanel({
       };
     }
     console.log('[GemDecision]', {
-      channel: video?.channelTitle || video?.channelName || video?.channel || '',
+      channel: effectiveVideo?.channelTitle || effectiveVideo?.channelName || effectiveVideo?.channel || '',
       mentorCategory: forcedCategoryLabel ?? 'none',
       topic: forcedTopicName ?? 'none',
       subTopic: result.recommendedSubCategory,
       aiCategory: result.recommendedCategoryLabel,
       selectedGem: result.gemKey,
-      decisionSource: mentorResolved ? 'channel_hard_rule'
-        : mentorByName ? 'mentor_name_hard_rule'
+      decisionSource: mentorResolution ? 'channel_hard_rule'
         : forcedTopicName ? 'topic_hard_rule'
         : forcedCategoryLabel ? 'stored_category_hard_rule'
         : 'ai_classification',
     });
     return result;
-  }, [video?.id, video?.title, video?.channelTitle, video?.category, video?.contentType, video?.tags, video?.topicIds, topics, mentorName, resolvedVideoMode.mode, resolvedVideoMode.category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    effectiveCategory,
+    effectiveSubCategory,
+    effectiveVideo,
+    mentorResolution,
+    resolvedVideoMode.category,
+    resolvedVideoMode.mode,
+    topics,
+  ]);
 
-  const videoType = useMemo(() => detectVideoType(video), [video?.id, video?.category, video?.contentType, video?.title]);
+  const videoType = useMemo(
+    () => detectVideoType(effectiveVideo),
+    [
+      effectiveVideo?.category,
+      effectiveVideo?.channelName,
+      effectiveVideo?.channelTitle,
+      effectiveVideo?.contentType,
+      effectiveVideo?.mentorName,
+      effectiveVideo?.subCategory,
+      effectiveVideo?.tags,
+      effectiveVideo?.title,
+    ]
+  );
 
   const effectiveGemInfo = useMemo(() => {
     if (!gemRec) return null;
@@ -1884,6 +2019,65 @@ export function VideoDetailPanel({
     }
     return { ...gemRec, isManual: false };
   }, [gemRec, gemOverride]);
+
+  const hasPoliticalTabSet = effectiveGemInfo?.gemKey === "political" || !!politicalSummary;
+  const hasMarketBriefTabSet = !!marketBriefData;
+  const hasAppBuilderTabSet = APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(effectiveVideo?.videoId || effectiveVideo?.id);
+
+  const visibleTabDefinitions = UNIVERSAL_TABS;
+
+  const selectedTabsConfigKey = normalizedSubCategory || videoType;
+  const isLegacyLearningLayout = !normalizedSubCategory && videoType === "learning";
+  const firstAvailableDerivedTab = visibleTabDefinitions[0]?.value || "summary";
+  const activeTabItems = useMemo(
+    () => extractVideoTabItems(effectiveVideo, activeTab, marketBriefData),
+    [activeTab, effectiveVideo, marketBriefData]
+  );
+
+  useEffect(() => {
+    const allowedTabValues = new Set([
+      ...visibleTabDefinitions.map((tab) => tab.value),
+      ...SUPPLEMENTARY_ALLOWED_TABS,
+      ...(resolvedVideoMode.mode === "politics" ? ["political", ...POLITICAL_TAB_VALUES] : []),
+    ]);
+
+    if (!activeTab || allowedTabValues.has(activeTab)) return;
+
+    const nextTab = firstAvailableDerivedTab;
+    if (!nextTab || nextTab === activeTab) return;
+
+    if (LEARNING_SUB_TAB_VALUES.has(nextTab)) {
+      learningSubTabRef.current = nextTab;
+    }
+
+    setActiveTab(nextTab);
+  }, [activeTab, firstAvailableDerivedTab, resolvedVideoMode.mode, visibleTabDefinitions]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    console.log("[VideoDetailPanel] derived subcategory state", {
+      category: effectiveCategory ?? null,
+      subCategory: effectiveSubCategory || null,
+      normalizedSubCategory: normalizedSubCategory ?? null,
+      detectedVideoType: videoType,
+      selectedTabsConfigKey,
+      activeTab,
+    });
+  }, [activeTab, effectiveCategory, effectiveSubCategory, normalizedSubCategory, selectedTabsConfigKey, videoType]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    console.log("[ObsidianRouting][VideoDetail]", {
+      activeVault: obsidianRoutingDebug.activeVault,
+      sourceOfActiveVault: obsidianRoutingDebug.sourceOfActiveVault,
+      category: obsidianRoutingDebug.category,
+      subCategory: obsidianRoutingDebug.subCategory,
+      normalizedSubCategory: obsidianRoutingDebug.normalizedSubCategory,
+      resolvedFolder: obsidianRoutingDebug.resolvedFolder,
+      finalFilePath: obsidianRoutingDebug.finalFilePath,
+      obsidianUrl: obsidianRoutingDebug.obsidianUrl,
+    });
+  }, [obsidianRoutingDebug]);
 
   useEffect(() => {
     if (!video?.id || resolvedVideoMode.mode !== "market" || !marketRootTopic?.id) {
@@ -2652,7 +2846,57 @@ export function VideoDetailPanel({
     await handleFetchYoutubeChapters();
   };
 
-  const handleGenerateTranscriptChapters = () => {
+  const handleGenerateHebrewTitles = async () => {
+    const chapters = baseChapters;
+    if (!chapters || chapters.length === 0) {
+      toast.error('אין פרקים לעיבוד');
+      return;
+    }
+    setIsGeneratingHebrewTitles(true);
+    setHebrewTitlesError(null);
+    try {
+      const chapterPayload = chapters.map(ch => ({
+        title: ch.title || '',
+        startSeconds: ch.startSeconds ?? null,
+        endSeconds: ch.endSeconds ?? null,
+        transcriptText: typeof ch.transcriptText === 'string' ? ch.transcriptText.slice(0, 400) : '',
+      }));
+      const { hebrewTitles } = await fetchHebrewChapterTitles({
+        videoTitle: video?.title || '',
+        category: effectiveCategory || '',
+        subCategory: effectiveSubCategory || '',
+        chapters: chapterPayload,
+      });
+      const generatedAt = new Date().toISOString();
+      const newMap = {};
+      hebrewTitles.forEach((hebrewTitle, i) => {
+        if (hebrewTitle && chapters[i]) {
+          newMap[i] = {
+            hebrewTitle,
+            originalTitle: chapters[i].title || '',
+            startSeconds: chapters[i].startSeconds ?? null,
+            source: 'ai-hebrew-title',
+            generatedAt,
+          };
+        }
+      });
+      setHebrewTitlesMap(newMap);
+      try {
+        localStorage.setItem('hebrew_chapter_titles_' + (video?.id || ''), JSON.stringify(newMap));
+      } catch {}
+      toast.success('כותרות עבריות נוצרו בהצלחה');
+    } catch (err) {
+      const msg = err.code === 'GEMINI_API_KEY_MISSING'
+        ? 'נדרש חיבור AI כדי ליצור כותרות עבריות.'
+        : 'שגיאה ביצירת כותרות עבריות';
+      setHebrewTitlesError(msg);
+      toast.error(msg);
+    } finally {
+      setIsGeneratingHebrewTitles(false);
+    }
+  };
+
+    const handleGenerateTranscriptChapters = () => {
     // storedTranscriptSegments is defined later in the render scope — safely accessible here as a closure
     const segs = storedTranscriptSegments;
     if (!segs?.length) {
@@ -3021,6 +3265,16 @@ export function VideoDetailPanel({
     setTextSaveMenu(null);
   }, [video]);
 
+  const openObsidianSettingsForPath = useCallback((filePath = "", options = {}) => {
+    const { autoOpenAfterSave = true, toastMessage = "יש להשלים את הגדרות Obsidian לפני פתיחת הקובץ" } = options || {};
+    setObsidianSettingsTargetPath(String(filePath || "").trim());
+    setObsidianSettingsAutoOpenTarget(Boolean(autoOpenAfterSave));
+    setObsidianSettingsOpen(true);
+    if (toastMessage) {
+      toast.warning(toastMessage);
+    }
+  }, []);
+
   const handleSaveAllToBrain = useCallback(() => {
     setBrainPickerOpen(true);
   }, []);
@@ -3048,13 +3302,18 @@ export function VideoDetailPanel({
         });
         setSaveAllConfirmOpen(false);
         setSaveAllContent(null);
+      } else if (data.error === "NO_VAULT_PATH") {
+        openObsidianSettingsForPath(saveAllContent.path, {
+          autoOpenAfterSave: false,
+          toastMessage: "יש להגדיר קודם את נתיב ה-vault של Obsidian",
+        });
       } else {
         toast.error(`שגיאה בשמירה: ${data.error || 'לא ידוע'}`);
       }
     } catch (err) {
       toast.error(`שגיאה: ${err.message}`);
     }
-  }, [saveAllContent, video]);
+  }, [openObsidianSettingsForPath, saveAllContent, video]);
 
   const knowledgeItemId = useMemo(() => {
     const sourceId = String(video?.videoId || video?.id || "");
@@ -3070,12 +3329,154 @@ export function VideoDetailPanel({
     }
   }, [knowledgeItemId]);
 
-  const isInWorkspaceLib = useMemo(() => {
+  const workspaceLibraryItem = useMemo(() => {
     const vid = video?.id || video?.videoId;
-    if (!vid) return false;
-    try { return isVideoInWorkspaceLibrary(vid); } catch { return false; }
+    if (!vid) return null;
+    try { return getWorkspaceItemByVideoId(vid); } catch { return null; }
   // workspaceSaveOpen: recompute when dialog closes so card updates immediately after save
   }, [video?.id, video?.videoId, workspaceSaveOpen]);
+
+  const isInWorkspaceLib = Boolean(workspaceLibraryItem);
+  const isWorkspaceMappingCurrent = useMemo(() => {
+    if (!workspaceLibraryItem) return false;
+    const savedCategory = normalizeCategoryName(workspaceLibraryItem?.topicName || workspaceLibraryItem?.category || "");
+    const savedSubCategory = String(workspaceLibraryItem?.subTopicName || workspaceLibraryItem?.subCategory || "").trim().toLowerCase();
+    const currentCategory = normalizeCategoryName(effectiveCategory || resolvedVideoMode.category || "");
+    const currentSubCategory = String(effectiveSubCategory || resolvedVideoMode.subCategory || "").trim().toLowerCase();
+
+    return savedCategory === currentCategory && savedSubCategory === currentSubCategory;
+  }, [
+    effectiveCategory,
+    effectiveSubCategory,
+    resolvedVideoMode.category,
+    resolvedVideoMode.subCategory,
+    workspaceLibraryItem,
+  ]);
+
+  const expectedObsidianFolder = obsidianRoute.resolvedFolder;
+
+  const currentTopicPathLabel = useMemo(() => {
+    const parts = [effectiveCategory, effectiveSubCategory].filter(
+      (value) => typeof value === "string" && value.trim().length > 0
+    );
+    return parts.join(" / ") || effectiveCategory || "ללא מיפוי";
+  }, [effectiveCategory, effectiveSubCategory, normalizedSubCategory, selectedTabsConfigKey]);
+
+  const currentObsidianDestinationLabel = useMemo(() => {
+    if (currentTopicPathLabel) return currentTopicPathLabel;
+    return expectedObsidianFolder ? expectedObsidianFolder.replace(/\//g, " / ") : "ללא יעד";
+  }, [currentTopicPathLabel, expectedObsidianFolder, normalizedSubCategory, selectedTabsConfigKey]);
+
+  const currentWorkspaceDestinationLabel = useMemo(
+    () => currentTopicPathLabel || "ללא יעד",
+    [currentTopicPathLabel, normalizedSubCategory, selectedTabsConfigKey]
+  );
+
+  const currentBrainDestinationLabel = useMemo(
+    () => currentTopicPathLabel || "ללא יעד",
+    [currentTopicPathLabel, normalizedSubCategory, selectedTabsConfigKey]
+  );
+
+  const resolvedObsidianSavedPath = useMemo(() => {
+    const savedPath = String(video?.obsidianSavedStatus?.savedPath || "").trim().replace(/\\/g, "/");
+    if (savedPath) return savedPath;
+
+    const savedFolder = String(video?.obsidianSavedStatus?.folder || "").trim().replace(/\\/g, "/");
+    const savedFile = String(video?.obsidianSavedStatus?.fileName || "").trim().replace(/\\/g, "/");
+    if (savedFolder && savedFile) return `${savedFolder}/${savedFile}`.replace(/\/+/g, "/");
+    return "";
+  }, [video?.obsidianSavedStatus?.fileName, video?.obsidianSavedStatus?.folder, video?.obsidianSavedStatus?.savedPath]);
+
+  const resolvedObsidianVaultName = obsidianRoute.vaultName || resolveObsidianVaultName();
+  const hasResolvedObsidianVaultName = hasUsableObsidianVaultName(obsidianRoute.vaultName);
+
+  const isObsidianMappingCurrent = useMemo(() => {
+    if (!hasObsidianSavedStatus(video)) return false;
+    const savedFolder = String(video?.obsidianSavedStatus?.folder || "").trim().replace(/\\/g, "/");
+    const targetFolder = String(expectedObsidianFolder || "").trim().replace(/\\/g, "/");
+    const savedVault = String(video?.obsidianSavedStatus?.vaultName || "").trim();
+    const currentVault = String(resolvedObsidianVaultName || "").trim();
+    const vaultMatches = !savedVault || !currentVault || savedVault === currentVault;
+    return Boolean(savedFolder) && savedFolder === targetFolder && vaultMatches;
+  }, [expectedObsidianFolder, resolvedObsidianVaultName, video?.obsidianSavedStatus, video?.obsidianSavedStatus?.folder, video?.obsidianSavedStatus?.vaultName]);
+
+  const isCurrentBrainSave = useMemo(
+    () => hasObsidianSavedStatus(video) && isObsidianMappingCurrent,
+    [isObsidianMappingCurrent, video]
+  );
+
+  const recommendedGemCardLabel = useMemo(() => {
+    if (effectiveGemInfo?.gemLabel) return effectiveGemInfo.gemLabel;
+    const fallbackGemKey = resolveGemKeyFromSubCategory(effectiveSubCategory);
+    const fallbackGem = fallbackGemKey ? GEM_ALT_OPTIONS.find((gem) => gem.key === fallbackGemKey) : null;
+    return fallbackGem?.label || "לא זוהה";
+  }, [effectiveGemInfo?.gemLabel, effectiveSubCategory, normalizedSubCategory, selectedTabsConfigKey]);
+
+  const openResolvedObsidianPath = useCallback((filePath) => {
+    const normalizedPath = String(filePath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+    console.debug("[ObsidianOpen][VideoDetail]", {
+      category: effectiveCategory,
+      subCategory: effectiveSubCategory,
+      targetPath: normalizedPath,
+      resolvedVaultName: resolvedObsidianVaultName,
+      hasResolvedObsidianVaultName,
+    });
+
+    if (!normalizedPath) {
+      toast.error("לא נמצא נתיב קובץ לפתיחה ב-Obsidian");
+      return false;
+    }
+
+    if (!hasResolvedObsidianVaultName) {
+      openObsidianSettingsForPath(normalizedPath);
+      return false;
+    }
+
+    const url = buildObsidianOpenUrl(normalizedPath, resolvedObsidianVaultName);
+    if (!url) {
+      openObsidianSettingsForPath(normalizedPath);
+      return false;
+    }
+
+    try {
+      openObsidianUrl(url, { bypassDedupe: true });
+      return true;
+    } catch {
+      toast.error("שגיאה בפתיחת Obsidian");
+      return false;
+    }
+  }, [
+    effectiveCategory,
+    effectiveSubCategory,
+    hasResolvedObsidianVaultName,
+    openObsidianSettingsForPath,
+    resolvedObsidianVaultName,
+  ]);
+
+  const handleObsidianSettingsSaved = useCallback((savedSettings) => {
+    const pendingPath = String(obsidianSettingsTargetPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+    const nextVaultName = resolveObsidianVaultName(savedSettings?.vaultName);
+    const hasNextVaultName = hasUsableObsidianVaultName(savedSettings?.vaultName);
+    const shouldAutoOpen = obsidianSettingsAutoOpenTarget;
+
+    setObsidianSettingsOpen(false);
+    setObsidianSettingsTargetPath("");
+    setObsidianSettingsAutoOpenTarget(false);
+
+    if (!pendingPath || !shouldAutoOpen) return;
+    if (!hasNextVaultName) {
+      toast.warning("יש להגדיר שם vault תקין לפני פתיחת Obsidian");
+      return;
+    }
+
+    const url = buildObsidianOpenUrl(pendingPath, nextVaultName);
+    if (!url) {
+      toast.error("לא הצלחתי לבנות קישור לפתיחת הקובץ ב-Obsidian");
+      return;
+    }
+
+    openObsidianUrl(url, { bypassDedupe: true });
+  }, [obsidianSettingsAutoOpenTarget, obsidianSettingsTargetPath]);
 
   const isOpponentView = video?.opponentView === true;
 
@@ -3621,7 +4022,7 @@ export function VideoDetailPanel({
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
-      setTimeout(() => setActiveTab('market-brief'), 50);
+      setTimeout(() => setActiveTab('specialized'), 50);
       toast.success('📈 מבזק שוק נקלט בהצלחה ✓');
       return true;
     }
@@ -4853,8 +5254,8 @@ export function VideoDetailPanel({
         transcriptQuality: qualityResult.transcriptQuality || "low",
         transcriptError: null,
         transcriptImportedAt: new Date().toISOString(),
-        category: video?.category ?? videoProp?.category ?? resolvedVideoMode.category ?? undefined,
-        subCategory: video?.subCategory ?? videoProp?.subCategory ?? resolvedVideoMode.subCategory ?? undefined,
+        category: effectiveCategory ?? resolvedVideoMode.category ?? undefined,
+        subCategory: effectiveSubCategory || resolvedVideoMode.subCategory || undefined,
         uiMode: video?.uiMode ?? videoProp?.uiMode ?? resolvedVideoMode.mode ?? undefined,
         tabsPreset: video?.tabsPreset ?? videoProp?.tabsPreset ?? resolvedVideoMode.tabsPreset ?? undefined,
         gemType: video?.gemType ?? videoProp?.gemType ?? resolvedVideoMode.gemType ?? undefined,
@@ -5297,9 +5698,11 @@ export function VideoDetailPanel({
   const handleOpenInWorkspace = () => {
     console.log("[Workspace CTA] clicked", {
       hasNavigateTo: !!navigateTo,
-      topicIds: video.topicIds,
-      obsidianTopic: video.obsidianTopic,
+      topicIds: effectiveVideo?.topicIds,
+      obsidianTopic: effectiveVideo?.obsidianTopic,
       topicsLoaded: topics.length,
+      category: effectiveCategory ?? null,
+      subCategory: effectiveSubCategory || null,
     });
 
     if (!navigateTo) {
@@ -5314,31 +5717,31 @@ export function VideoDetailPanel({
     };
 
     // Priority 1: structured topicIds linked to real topic objects
-    if (video.topicIds?.length) {
-      console.log("[Workspace CTA] → topicId:", video.topicIds[0]);
-      try { upsertKnowledgeItem(createKnowledgeItemFromVideo(video, video.topicIds[0])); } catch {}
-      closeAndNavigate("TopicKnowledgePage", { topicId: video.topicIds[0] });
+    if (effectiveVideo?.topicIds?.length) {
+      console.log("[Workspace CTA] → topicId:", effectiveVideo.topicIds[0]);
+      try { upsertKnowledgeItem(createKnowledgeItemFromVideo(effectiveVideo, effectiveVideo.topicIds[0])); } catch {}
+      closeAndNavigate("TopicKnowledgePage", { topicId: effectiveVideo.topicIds[0] });
       return;
     }
 
     // Priority 2: obsidianTopic name → match against topics list
-    if (video.obsidianTopic) {
-      const match = topics.find((t) => t.name?.toLowerCase() === video.obsidianTopic.toLowerCase());
+    if (effectiveVideo?.obsidianTopic) {
+      const match = topics.find((t) => t.name?.toLowerCase() === effectiveVideo.obsidianTopic.toLowerCase());
       if (match) {
         console.log("[Workspace CTA] → obsidianTopic match:", match.id);
-        try { upsertKnowledgeItem(createKnowledgeItemFromVideo(video, match.id)); } catch {}
+        try { upsertKnowledgeItem(createKnowledgeItemFromVideo(effectiveVideo, match.id)); } catch {}
         closeAndNavigate("TopicKnowledgePage", { topicId: match.id });
         return;
       }
     }
 
     // Priority 3: auto-resolved topic name → match against topics list
-    const primaryTopicName = resolvePrimaryTopic(video);
+    const primaryTopicName = resolvePrimaryTopic(effectiveVideo);
     if (primaryTopicName) {
       const match = topics.find((t) => t.name?.toLowerCase() === primaryTopicName.toLowerCase());
       if (match) {
         console.log("[Workspace CTA] → primaryTopic match:", match.id);
-        try { upsertKnowledgeItem(createKnowledgeItemFromVideo(video, match.id)); } catch {}
+        try { upsertKnowledgeItem(createKnowledgeItemFromVideo(effectiveVideo, match.id)); } catch {}
         closeAndNavigate("TopicKnowledgePage", { topicId: match.id });
         return;
       }
@@ -5346,7 +5749,7 @@ export function VideoDetailPanel({
 
     // No topic found → land on Workspace with a hint
     console.log("[Workspace CTA] → no topic match, going to Workspace root");
-    try { upsertKnowledgeItem(createKnowledgeItemFromVideo(video, null)); } catch {}
+    try { upsertKnowledgeItem(createKnowledgeItemFromVideo(effectiveVideo, null)); } catch {}
     closeAndNavigate("Workspace", { hint: "choose-topic" });
   };
 
@@ -5661,7 +6064,7 @@ export function VideoDetailPanel({
                 <button
                   type="button"
                   onClick={() => setWorkspaceSaveOpen(true)}
-                  title={isInWorkspaceLib ? 'עדכן ב-Workspace Library' : 'שמור ל-Workspace Library'}
+                  title={isInWorkspaceLib ? (isWorkspaceMappingCurrent ? 'עדכן ב-Workspace Library' : 'עדכן מיפוי ב-Workspace Library') : 'שמור ל-Workspace Library'}
                   className={cn(
                     'shrink-0 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all whitespace-nowrap',
                     isInWorkspaceLib
@@ -5669,7 +6072,7 @@ export function VideoDetailPanel({
                       : 'border-slate-200 bg-white text-slate-500 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-amber-700/60 dark:hover:bg-amber-950/20 dark:hover:text-amber-300'
                   )}
                 >
-                  {isInWorkspaceLib ? '⭐ נשמר' : '⭐ Workspace'}
+                  {!isInWorkspaceLib ? '⭐ Workspace' : isWorkspaceMappingCurrent ? '⭐ נשמר' : '⭐ עדכן'}
                 </button>
                 {/* ⚔️ Opponent view toggle — politics only */}
                 {resolvedVideoMode.mode === "politics" && (
@@ -5792,6 +6195,7 @@ export function VideoDetailPanel({
                         anchorEl={categoryPillAnchorEl}
                         options={pillCategoriesOptions}
                         value={videoTopics[0]?.name || ""}
+                        vaultPath={obsidianSettings.vaultPath || ""}
                         onSelect={(name) => {
                           const topicRule = getTopicRule(name);
                           const obsidianTopic = topicRule?.obsidianPrimary ?? null;
@@ -5840,7 +6244,8 @@ export function VideoDetailPanel({
                         anchorEl={pillAnchorEl}
                         options={pillSubtopicsWithCounts}
                         value={subTopicDraft}
-                        topicName={resolvedVideoMode.category || normalizeCategoryName(video?.category) || ""}
+                        topicName={effectiveCategory || resolvedVideoMode.category || ""}
+                        vaultPath={obsidianSettings.vaultPath || ""}
                         onSelect={(name) => {
                           setSubTopicDraft(name);
                           setSubCategoryOverride(name);
@@ -5970,7 +6375,7 @@ export function VideoDetailPanel({
                       </span>
                     )}
                     {/* Obsidian saved */}
-                    {hasObsidianSavedStatus(video) && (
+                    {isObsidianMappingCurrent && (
                       <span className={`${BASE} border-emerald-200/80 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300`}>
                         <span className="text-xs leading-none">✅</span>
                         <span>Obsidian</span>
@@ -6067,7 +6472,7 @@ export function VideoDetailPanel({
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
-                    <span>תת-נושא לשמירה ב-Obsidian:</span>
+                    <span>יעד שמירה ב-Obsidian:</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -6076,10 +6481,33 @@ export function VideoDetailPanel({
                       }}
                       className="rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
                     >
-                      {selectedSubTopicName || "בחר תת-נושא"}
+                      {currentObsidianDestinationLabel || "בחר תת-נושא"}
                     </button>
                   </div>
                 )}
+                <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50/60 px-3 py-2.5 text-[11px] text-right dark:border-violet-800/40 dark:bg-violet-950/20" dir="rtl">
+                  <div className="font-semibold text-violet-800 dark:text-violet-200">אבחון ניתוב Obsidian</div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-violet-700 dark:text-violet-300">
+                    <span><strong>קטגוריה:</strong> {obsidianRoutingDebug.category || "לא זוהתה"}</span>
+                    <span><strong>תת-נושא:</strong> {obsidianRoutingDebug.subCategory || "לא זוהה"}</span>
+                    <span><strong>תיקייה:</strong> {obsidianRoutingDebug.resolvedFolder || "לא נפתרה"}</span>
+                    <span><strong>קובץ:</strong> {obsidianRoutingDebug.finalFilePath || "לא תקין"}</span>
+                  </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[10px] font-semibold text-violet-600 dark:text-violet-300">
+                      Obsidian Routing Debug
+                    </summary>
+                    <div className="mt-2 grid gap-1 text-[10px] text-violet-700 dark:text-violet-300">
+                      <span><strong>normalizedSubCategory:</strong> {obsidianRoutingDebug.normalizedSubCategory || "—"}</span>
+                      <span><strong>tabsKey:</strong> {selectedTabsConfigKey || "—"}</span>
+                      <span><strong>activeTab:</strong> {activeTab || "—"}</span>
+                      <span><strong>activeVault:</strong> {obsidianRoutingDebug.activeVault || "—"} ({obsidianRoutingDebug.sourceOfActiveVault || "—"})</span>
+                      <span><strong>vaultName:</strong> {obsidianRoutingDebug.vaultName || "—"}</span>
+                      <span><strong>finalFilePath:</strong> {obsidianRoutingDebug.finalFilePath || "—"}</span>
+                      <span className="break-all"><strong>obsidian:// URL:</strong> {obsidianRoutingDebug.obsidianUrl || "—"}</span>
+                    </div>
+                  </details>
+                </div>
               </div>
             )}
             {/* ── Attached Documents Panel (expandable, YouTube-only) ── */}
@@ -6149,7 +6577,7 @@ export function VideoDetailPanel({
                       id: 'gem-recommended',
                       emoji: effectiveGemInfo?.gemIcon || '✨',
                       label: 'Gem מומלץ',
-                      sub: effectiveGemInfo?.gemLabel || 'לא זוהה',
+                      sub: recommendedGemCardLabel,
                       labelCn: 'text-[11px] font-bold leading-snug',
                       subCn: 'text-[10px] font-semibold leading-snug opacity-80',
                       cn: 'text-amber-700 dark:text-amber-300',
@@ -6171,10 +6599,10 @@ export function VideoDetailPanel({
                       id: 'save-brain',
                       emoji: '💾',
                       label: 'שמור למוח',
-                      sub: 'שמור ידע',
+                      sub: currentBrainDestinationLabel,
                       cn: 'text-emerald-700 dark:text-emerald-300',
                       onClick: handleSaveAllToBrain,
-                      status: { ok: !!video?.savedToBrain, okLabel: 'נשמר', failLabel: 'לא נשמר' },
+                      status: { ok: isCurrentBrainSave, okLabel: 'נשמר', failLabel: 'לא נשמר' },
                     },
                     {
                       id: 'obsidian-primary',
@@ -6188,10 +6616,15 @@ export function VideoDetailPanel({
                         </svg>
                       ),
                       label: 'Obsidian',
-                      sub: 'פתח ב-Obsidian',
+                      sub: currentObsidianDestinationLabel,
                       cn: 'text-purple-700 dark:text-purple-300',
-                      onClick: () => { try { openObsidianUrl(buildObsidianUrl(video)); } catch { toast.error("שגיאה בפתיחת Obsidian"); } },
-                      status: { ok: hasObsidianSavedStatus(video), okLabel: 'נשמר', failLabel: 'לא נשמר' },
+                      onClick: () => {
+                        const isSaved = isObsidianMappingCurrent;
+                        if (!isSaved) { toast.warning('קודם יש לשמור ל-Obsidian לפני פתיחת הקובץ'); return; }
+                        const targetPath = resolvedObsidianSavedPath;
+                        openResolvedObsidianPath(targetPath);
+                      },
+                      status: { ok: isObsidianMappingCurrent, okLabel: 'נשמר', failLabel: 'לא נשמר' },
                     },
                     {
                       id: 'transcript-view',
@@ -6206,10 +6639,10 @@ export function VideoDetailPanel({
                       id: 'workspace',
                       emoji: '💼',
                       label: 'Workspace',
-                      sub: isInWorkspaceLib ? 'פתח' : 'שמור כאן',
+                      sub: currentWorkspaceDestinationLabel,
                       cn: 'text-indigo-700 dark:text-indigo-300',
-                      onClick: isInWorkspaceLib ? handleOpenInWorkspace : () => setWorkspaceSaveOpen(true),
-                      status: { ok: isInWorkspaceLib, okLabel: 'נשמר', failLabel: 'לא נשמר' },
+                      onClick: isInWorkspaceLib && isWorkspaceMappingCurrent ? handleOpenInWorkspace : () => setWorkspaceSaveOpen(true),
+                      status: { ok: isWorkspaceMappingCurrent, okLabel: 'נשמר', failLabel: 'לא נשמר' },
                     },
                   ].map(({ id, emoji, label, sub, cn, onClick, disabled, status, labelCn, subCn }) => (
                     <button key={id} type="button" onClick={onClick} disabled={disabled}
@@ -6268,6 +6701,17 @@ export function VideoDetailPanel({
                   {/* Attach PDF button — for YouTube videos only */}
                   {video.contentType !== "pdf" && (
                     <PdfUploader onDocumentCreated={handleAttachPdf} />
+                  )}
+                  {/* DEV: AI Mapping tool */}
+                  {import.meta.env.DEV && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAiMapping(true)}
+                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 transition-all hover:bg-violet-100 hover:shadow-sm active:scale-95 dark:border-violet-800/40 dark:bg-violet-950/20 dark:text-violet-300"
+                    >
+                      <span className="text-xs leading-none">🗺️</span>
+                      <span>AI Mapping</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -6489,121 +6933,27 @@ export function VideoDetailPanel({
             )}
 
             {/* ── טאבים ── */}
-            <Tabs id="analysis-tabs" value={activeTab} onValueChange={(v) => { setActiveTab(v); if (LEARNING_SUB_TAB_VALUES.has(v)) learningSubTabRef.current = v; }} className="w-full" dir="rtl">
-              {/* ── Main tabs row — dynamic per videoType ── */}
-              {(() => {
-                const _hasPolitical   = effectiveGemInfo?.gemKey === 'political' || !!politicalSummary;
-                const _hasMarketBrief = !!marketBriefData;
-                const _hasAppBuilder  = APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id);
-                const _type = detectVideoType(video);
-
-                // ── Learning type: two-level tab hierarchy ──────────────────
-                if (_type === 'learning') {
-                  const _mainTabs = [...LEARNING_GROUP_MAIN_TABS];
-                  if (_hasAppBuilder) _mainTabs.push({ value: 'app-builder', label: 'בונה', emoji: '🏗️', isGroup: false });
-                  const _isLearningActive = LEARNING_SUB_TAB_VALUES.has(activeTab);
-
-                  return (
-                    <div className="space-y-1.5">
-                      {/* Row 1 — 5 high-level group tabs */}
-                      <div
-                        className="flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 w-full"
-                        dir="rtl"
-                        role="tablist"
-                      >
-                        {_mainTabs.map(({ value, label, emoji, isGroup }) => {
-                          const isActive = isGroup ? _isLearningActive : activeTab === value;
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              role="tab"
-                              aria-selected={isActive}
-                              onClick={() => setActiveTab(isGroup ? learningSubTabRef.current : value)}
-                              className={`shrink-0 flex-1 inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150 ${
-                                isActive
-                                  ? 'bg-white text-slate-900 shadow-sm font-semibold dark:bg-zinc-700 dark:text-white'
-                                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                              }`}
-                            >
-                              <span>{emoji}</span>
-                              <span>{label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Row 2 — Learning sub-tabs (visible when למידה group is active) */}
-                      {_isLearningActive && (
-                        <TabsList
-                          className="flex rounded-xl bg-indigo-50/60 border border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 p-1 gap-0 overflow-x-auto w-full"
-                          dir="rtl"
-                        >
-                          {LEARNING_SUB_TABS.map(({ value, label, emoji }) => {
-                            const badge = getTabBadge(video, value, marketBriefData);
-                            return (
-                              <TabsTrigger
-                                key={value}
-                                value={value}
-                                className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-lg py-1.5 px-2 text-xs font-medium transition-all duration-150
-                                  text-indigo-400 dark:text-indigo-500
-                                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm data-[state=active]:font-semibold
-                                  dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-indigo-300
-                                  hover:text-indigo-600 dark:hover:text-indigo-400"
-                              >
-                                <span>{emoji}</span>
-                                <span>{label}</span>
-                                {badge > 0 && (
-                                  <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-px text-[9px] font-bold leading-none text-indigo-500 dark:text-indigo-400 ml-0.5">
-                                    {badge}
-                                  </span>
-                                )}
-                              </TabsTrigger>
-                            );
-                          })}
-                        </TabsList>
-                      )}
-                    </div>
-                  );
-                }
-
-                // ── Other types: existing single-row rendering ──────────────
-                const _dynamicTabs = getTabsForVideo(video, {
-                  hasPolitical:   _hasPolitical,
-                  hasMarketBrief: _hasMarketBrief,
-                  hasAppBuilder:  _hasAppBuilder,
-                });
-                const _manyTabs = _dynamicTabs.length > 5;
-                return (
-                  <TabsList
-                    className={`flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 ${_manyTabs ? 'overflow-x-auto w-full' : 'w-full no-scrollbar'}`}
-                    dir="rtl"
+            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+              {/* ── Universal 7-tab bar — same for every video (Phase 1) ── */}
+              <TabsList
+                className="flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 w-full"
+                dir="rtl"
+              >
+                {UNIVERSAL_TABS.map(({ value, label, emoji }) => (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150
+                      text-slate-500 dark:text-zinc-400
+                      data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
+                      dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
+                      hover:text-slate-700 dark:hover:text-zinc-200"
                   >
-                    {_dynamicTabs.map(({ value, label, emoji }) => {
-                      const badge = getTabBadge(video, value, marketBriefData);
-                      return (
-                        <TabsTrigger
-                          key={value}
-                          value={value}
-                          className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150
-                            text-slate-500 dark:text-zinc-400
-                            data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
-                            dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
-                            hover:text-slate-700 dark:hover:text-zinc-200"
-                        >
-                          <span>{emoji}</span>
-                          <span>{label}</span>
-                          {badge > 0 && (
-                            <span className="rounded-full bg-slate-200/80 dark:bg-zinc-700 px-1.5 py-px text-[9px] font-bold leading-none text-slate-500 dark:text-zinc-400 ml-0.5">
-                              {badge}
-                            </span>
-                          )}
-                        </TabsTrigger>
-                      );
-                    })}
-                  </TabsList>
-                );
-              })()}
+                    <span>{emoji}</span>
+                    <span>{label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
               {/* ── Summary tab ── */}
               <TabsContent value="summary" className="mt-5 min-h-[320px]" dir="rtl">
@@ -7145,97 +7495,25 @@ export function VideoDetailPanel({
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold text-slate-400 dark:text-zinc-500">📝 סיכום</span>
                             <div className="relative" data-pcard-drop>
-                              <button type="button" onClick={() => setPsCardDropOpen(psCardDropOpen === 'nonPoliticalSummary' ? null : 'nonPoliticalSummary')}
-                                className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-transparent text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:bg-indigo-950/30 transition-colors">
-                                🧠 שמור ▾
-                              </button>
+                              <button type="button" onClick={() => setPsCardDropOpen(psCardDropOpen === 'nonPoliticalSummary' ? null : 'nonPoliticalSummary')} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${psCardDropOpen === 'nonPoliticalSummary' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/30 dark:text-indigo-300' : 'border-transparent text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-950/30'}`}>🧠 שמור ▾</button>
                               {psCardDropOpen === 'nonPoliticalSummary' && (
                                 <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 overflow-hidden">
                                   {[
-                                    { dest: 'brain',     label: '🧠 שמור למוח' },
-                                    { dest: 'obsidian',  label: '📁 שמור ל-Obsidian' },
+                                    { dest: 'brain', label: '🧠 שמור למוח' },
+                                    { dest: 'obsidian', label: '📁 שמור ל-Obsidian' },
                                     { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
                                   ].map(({ dest, label }) => (
-                                    <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalSummary', 'סיכום', summaryShort, dest); setPsCardDropOpen(null); }}
-                                      className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">
-                                      {label}
-                                    </button>
+                                    <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalSummary', 'סיכום', summaryShort, dest); setPsCardDropOpen(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">{label}</button>
                                   ))}
                                 </div>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 text-right">{summaryShort}</p>
+                          <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 text-right" data-section-content="סיכום">{summaryShort}</p>
                         </div>
-                        {(claudeMissingMessage || analyzeError) && (
-                          <div className="w-full rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-700 text-right leading-relaxed dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-300">
-                            {claudeMissingMessage || analyzeError}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("ai-analysis")}
-                          className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300 transition-colors"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          🧠 עבור לניתוח AI מלא
-                        </button>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="mt-3 flex min-h-[180px] flex-col items-end gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-8 px-4 text-right dark:border-zinc-800 dark:bg-zinc-950/40" dir="rtl">
-                      <div className="flex flex-col gap-2">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">אין עדיין סיכום לסרטון הזה</p>
-                        <p className="text-xs text-slate-400 dark:text-zinc-500">התחל ניתוח AI כדי לקבל סיכום ותובנות</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("ai-analysis")}
-                        className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300 transition-colors"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        🧠 עבור לניתוח AI מלא
-                      </button>
-                    </div>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* ── Key Points tab ── */}
-              <TabsContent value="keypoints" className="mt-5 min-h-[320px]" dir="rtl">
-                {video.keyPoints && video.keyPoints.length > 0 ? (
-                  <>
-                    <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                      <span className="text-xs text-slate-400 dark:text-zinc-500">{video.keyPoints.length} נקודות</span>
-                      <div className="flex items-center gap-2">
-                        {effectiveGemInfo?.gemKey === 'political' && (
-                          <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-zinc-700 dark:bg-zinc-900">
-                            {[
-                              { key: 'all',      label: 'הכל' },
-                              { key: 'mine',     label: '🧠 שלי' },
-                              { key: 'opponent', label: '⚔️ האויב' },
-                            ].map(f => (
-                              <button key={f.key} type="button"
-                                onClick={() => setKeyPointsFilter(f.key)}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${
-                                  keyPointsFilter === f.key
-                                    ? f.key === 'opponent'
-                                      ? 'bg-rose-500 text-white'
-                                      : 'bg-indigo-500 text-white'
-                                    : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400'
-                                }`}
-                              >{f.label}</button>
-                            ))}
-                          </div>
-                        )}
-                        <button type="button"
-                          onClick={() => multiSelectAll(video.keyPoints.map((text, i) => ({ id: `keypoints:${i}`, text, sectionLabel: 'נקודות מפתח', type: 'keypoints' })))}
-                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
-                        >בחר הכל</button>
-                      </div>
-                    </div>
-                    <ul className="space-y-3 text-right" dir="rtl">
+                        {Array.isArray(video.keyPoints) && video.keyPoints.length > 0 ? (
+                          <>
+                            <ul className="space-y-3 text-right" dir="rtl">
                       {video.keyPoints.map((point, i) => {
                         const itemId = `keypoints:${i}`;
                         const sentenceIsOpponent = opponentSentences.some(s => s.id === itemId);
@@ -7289,6 +7567,12 @@ export function VideoDetailPanel({
                     </div>
                   </div>
                 )}
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
               </TabsContent>
 
               {/* ── Chapters tab ── */}
@@ -7305,20 +7589,37 @@ export function VideoDetailPanel({
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleAutoDetectChapters}
-                        disabled={isYoutubeChaptersFetch}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                      >
-                        {isYoutubeChaptersFetch ? "⏳ בודק..." : "🔍 בדוק פרקים אוטומטית"}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {baseChapters?.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateHebrewTitles}
+                            disabled={isGeneratingHebrewTitles}
+                            className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-medium text-violet-700 shadow-sm hover:bg-violet-100 disabled:opacity-60 transition-colors dark:border-violet-800/40 dark:bg-violet-950/20 dark:text-violet-300"
+                          >
+                            {isGeneratingHebrewTitles ? "⏳ מייצר..." : "🤖 צור כותרות AI בעברית"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleAutoDetectChapters}
+                          disabled={isYoutubeChaptersFetch}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                        >
+                          {isYoutubeChaptersFetch ? "⏳ בודק..." : "🔍 בדוק פרקים אוטומטית"}
+                        </button>
+                      </div>
                     </div>
 
                     {/* source message */}
                     {chapterSourceInfo.message && (
                       <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right leading-relaxed dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
                         {chapterSourceInfo.message}
+                      </div>
+                    )}
+                    {hebrewTitlesError && (
+                      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                        {hebrewTitlesError}
                       </div>
                     )}
 
@@ -7361,6 +7662,42 @@ export function VideoDetailPanel({
                       </div>
                     )}
 
+                    {/* transcript exists but no chapters yet → offer AI generation */}
+                    {baseChapters?.length === 0 && chapterSourceInfo.source === 'transcript' && !youtubeChaptersHint && (
+                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-right dark:border-zinc-700 dark:bg-zinc-900">
+                        <p className="text-sm font-medium text-slate-700 dark:text-zinc-200">קיים תמלול — ניתן לייצר פרקים בעזרת AI.</p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateTranscriptChapters}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                        >
+                          🤖 צור פרקים בעזרת AI
+                        </button>
+                      </div>
+                    )}
+
+                    {/* no chapters and no transcript → clear empty state */}
+                    {baseChapters?.length === 0 && chapterSourceInfo.source === 'none' && (
+                      <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-right text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                        לא נמצאו פרקים או תמלול. יש לייבא תמלול כדי ליצור פרקים.
+                      </div>
+                    )}
+
+                    {/* debug info — dev only */}
+                    {import.meta.env.DEV && (
+                      <details className="mb-3 rounded-lg border border-slate-100 bg-slate-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 text-[10px]">
+                        <summary className="cursor-pointer select-none px-2 py-1 text-slate-400 dark:text-zinc-500">🔍 chapter debug</summary>
+                        <div className="px-2 pb-2 pt-0.5 space-y-0.5 font-mono text-slate-500 dark:text-zinc-400" dir="ltr">
+                          <div>hasTranscript: {String(hasStoredTranscript)}</div>
+                          <div>transcriptLen: {fullTranscriptText?.length ?? 0}</div>
+                          <div>nativeChapters: {baseChapters?.length ?? 0}</div>
+                          <div>source: {chapterSourceInfo.source}</div>
+                          <div>finalChapters: {baseChapters?.length ?? 0}</div>
+                          <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
+                        </div>
+                      </details>
+                    )}
+
                     {/* chapters list or empty state */}
                     {baseChapters?.length > 0 ? (
                       <>
@@ -7383,7 +7720,9 @@ export function VideoDetailPanel({
                                 />
                                 <div className="flex-1 min-w-0">
                                   <ChapterItem
-                                    section={chapter}
+                                    section={hebrewTitlesMap[index]
+                                      ? { ...chapter, hebrewTitle: hebrewTitlesMap[index].hebrewTitle, originalTitle: hebrewTitlesMap[index].originalTitle || chapter.title }
+                                      : chapter}
                                     playerRef={undefined}
                                     videoUrl={getWatchUrl(video)}
                                     isHighlighted={index === highlightedChapterIndex}
@@ -7394,12 +7733,7 @@ export function VideoDetailPanel({
                           })}
                         </div>
                       </>
-                    ) : (
-                      <div className="flex min-h-[140px] flex-col items-end justify-center gap-2 text-right" dir="rtl">
-                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין חלוקה לפרקים</p>
-                        <p className="text-xs text-slate-400 dark:text-zinc-500">לחץ על 🔍 בדוק פרקים אוטומטית למעלה</p>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
               </TabsContent>
 
@@ -7605,7 +7939,6 @@ export function VideoDetailPanel({
                         {transcriptViewMode === "reading" && (() => {
                           const q = transcriptSearch.trim();
                           const qLower = q.toLowerCase();
-                          // In filter mode, show only paragraphs containing the query
                           const visibleParagraphs = (transcriptSearchMode === "filter" && q)
                             ? transcriptParagraphs.filter(p => p.toLowerCase().includes(qLower))
                             : transcriptParagraphs;
@@ -7622,7 +7955,6 @@ export function VideoDetailPanel({
                                     const parts = highlightInParagraph(para, q);
                                     return (
                                       <div key={idx} className="group relative">
-                                        {/* Paragraph number */}
                                         <span className="absolute -right-4 top-0 text-[10px] font-bold text-slate-300 dark:text-zinc-600 select-none tabular-nums">
                                           {idx + 1}
                                         </span>
@@ -7643,7 +7975,6 @@ export function VideoDetailPanel({
                                             )
                                           )}
                                         </p>
-                                        {/* Copy paragraph on hover */}
                                         <button
                                           type="button"
                                           onClick={() => navigator.clipboard.writeText(para).then(() => toast.success('פסקה הועתקה')).catch(() => {})}
@@ -7674,7 +8005,6 @@ export function VideoDetailPanel({
                                 const q = transcriptSearch.trim();
                                 const qLower = q.toLowerCase();
                                 const sentLower = item.text.toLowerCase();
-                                // Build highlighted sentence parts
                                 const parts = [];
                                 let pos = 0;
                                 while (pos < item.text.length) {
@@ -7863,7 +8193,6 @@ export function VideoDetailPanel({
                               <p className="text-sm text-indigo-900 dark:text-indigo-200 leading-relaxed">{video.mainLesson}</p>
                             </div>
                           )}
-                          {/* ── Attached Documents Insights ── */}
                           {attachedDocumentsInsights && (
                             <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-right dark:border-orange-800/40 dark:bg-orange-950/20 space-y-3" dir="rtl">
                               <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
@@ -7965,6 +8294,26 @@ export function VideoDetailPanel({
                         </div>
                       </div>
                     )}
+                    {/* ── AI Field Mapping (Morning Brief only) ── */}
+                    {marketBriefData && normalizedSubCategory === 'morning-brief' && (() => {
+                      const mapping = getMorningBriefFieldMapping(marketBriefData);
+                      if (!mapping.length) return null;
+                      return (
+                        <details className="rounded-xl border border-slate-200 bg-slate-50/70 dark:border-zinc-800 dark:bg-zinc-900/70">
+                          <summary className="cursor-pointer select-none px-3 py-2 text-xs text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
+                            🗺️ מיפוי שדות JSON לטאבים ▾
+                          </summary>
+                          <div className="px-3 pb-3 pt-1 space-y-1.5" dir="rtl">
+                            {mapping.map(({ tab, emoji, fields }) => (
+                              <div key={tab} className="flex items-baseline gap-2 text-xs">
+                                <span className="font-semibold text-slate-700 dark:text-zinc-200 min-w-[100px] shrink-0">{emoji} {tab}</span>
+                                <span className="text-slate-500 dark:text-zinc-400">{fields.join(' · ')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      );
+                    })()}
                   </div>
                 </TabsContent>
 
@@ -8067,908 +8416,239 @@ export function VideoDetailPanel({
                   </div>
                 </TabsContent>
 
-              {/* ── Political v2.1 Tabs ── */}
-              {effectiveGemInfo?.gemKey === 'political' && (() => {
-                console.log('[Tabs] available political tabs:', [
-                  (politicalSummary?.viralQuotes || politicalSummary?.politicalSummary?.viralQuotes)?.length ? 'virals' : null,
-                  (politicalSummary?.opponentView || politicalSummary?.politicalSummary?.opponentView) ? 'opponent' : null,
-                  (politicalSummary?.theologyAnalysis || politicalSummary?.politicalSummary?.theologyAnalysis) ? 'theology' : null,
-                  (politicalSummary?.ideologyAnalysis || politicalSummary?.politicalSummary?.ideologyAnalysis) ? 'ideology' : null,
-                ].filter(Boolean).join(', ') || '(none yet)');
-                const _psCopy = (text) => {
-                  navigator.clipboard.writeText(String(text))
-                    .then(() => toast.success('הועתק'))
-                    .catch(() => toast.error('שגיאה בהעתקה'));
-                };
-                const _psSave = (key, label, val) => {
-                  const sectionType =
-                    (key.startsWith('viral')    || key === 'viralQuotes')              ? 'viralQuotes' :
-                    (key.startsWith('opponent') || key === 'opponentView')             ? 'opponentView' :
-                    (key.startsWith('theology'))                                        ? 'theologyAnalysis' :
-                    (key.startsWith('liberal')  || key === 'liberalJewishPerspective') ? 'liberalJewishPerspective' :
-                    (key.startsWith('slogan')   || key === 'politicalSlogans')          ? 'politicalSlogans' :
-                    (key.startsWith('debate')   || key === 'debateResponses')           ? 'debateResponses' :
-                    (key.startsWith('comment')  || key === 'commentBank')               ? 'commentBank' :
-                    (key.startsWith('campaign') || key === 'campaignKit')               ? 'campaignKit' :
-                    (key.startsWith('reusable') || key === 'reusableKnowledge')         ? 'reusableKnowledge' :
-                    (key.startsWith('brain')    || key === 'brainHighlights')           ? 'brainHighlights' :
-                    (key.startsWith('ideology') || key === 'ideologyAnalysis')          ? 'ideologyAnalysis' :
-                    'politicalSummary';
-                  handleSavePsSection(key, label, val, sectionType);
-                };
-                // Populates multiSelected (shows bar) instead of direct brain save
-                const _psMultiSelectAll = (key, label, valOrArr) => {
-                  const arr = Array.isArray(valOrArr) ? valOrArr : (valOrArr ? [valOrArr] : []);
-                  const items = arr.map((item, i) => {
-                    const text = typeof item === 'string' ? item
-                      : (item === null || item === undefined) ? ''
-                      : typeof item === 'object' ? (item.text || item.quote || item.slogan || item.comment || item.content || item.response || '')
-                      : String(item);
-                    return text ? { id: `${key}:${i}`, text, sectionLabel: label, type: key } : null;
-                  }).filter(Boolean);
-                  if (items.length) multiSelectAll(items);
-                };
-                // Safe string helper — prevents "Objects are not valid as React child" crash
-                const safeStr = (v) => {
-                  if (v === null || v === undefined) return '';
-                  if (typeof v === 'string') return v;
-                  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-                  if (Array.isArray(v)) return v.map(safeStr).join(', ');
-                  if (typeof v === 'object') return v.text || v.value || v.slogan || v.content || v.description || JSON.stringify(v);
-                  return String(v);
-                };
-                const safeArr = (arr) => (Array.isArray(arr) ? arr : []).map(safeStr).filter(Boolean);
-                // Dual-structure support: flat (v2.1) with fallback to nested (legacy)
-                const _vq  = politicalSummary?.viralQuotes           || politicalSummary?.politicalSummary?.viralQuotes           || [];
-                const _ov  = politicalSummary?.opponentView          || politicalSummary?.politicalSummary?.opponentView          || null;
-                const _ta  = politicalSummary?.theologyAnalysis      || politicalSummary?.politicalSummary?.theologyAnalysis      || null;
-                const _ljp = politicalSummary?.liberalJewishPerspective
-                  || politicalSummary?.politicalSummary?.liberalJewishPerspective
-                  || politicalSummary?.theologyAnalysis?.liberalJewishPerspective
-                  || politicalSummary?.politicalSummary?.theologyAnalysis?.liberalJewishPerspective
-                  || _ta?.liberalJewishPerspective
-                  || null;
-                const _sl  = politicalSummary?.politicalSlogans   || politicalSummary?.politicalSummary?.politicalSlogans   || [];
-                const _dr  = politicalSummary?.debateResponses    || politicalSummary?.politicalSummary?.debateResponses    || [];
-                const _cb  = politicalSummary?.commentBank        || politicalSummary?.politicalSummary?.commentBank        || [];
-                const _ck  = politicalSummary?.campaignKit        || politicalSummary?.politicalSummary?.campaignKit        || null;
-                const _rk  = politicalSummary?.reusableKnowledge  || politicalSummary?.politicalSummary?.reusableKnowledge  || null;
-                const _bh  = politicalSummary?.brainHighlights    || politicalSummary?.politicalSummary?.brainHighlights    || null;
-                const _ia  = politicalSummary?.ideologyAnalysis   || politicalSummary?.politicalSummary?.ideologyAnalysis   || null;
+              {/* ── APP Builder tab — universal, appears for every video ── */}
+              <TabsContent value="app-builder" className="mt-3" dir="rtl">
+                <AppBuilderTab
+                  video={video}
+                  topicName={resolvedVideoMode.category || ''}
+                />
+              </TabsContent>
 
-                const _extraPoliticalValues = new Set(POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY).map(t => t.value));
-                return (
-                  <TabsContent value="political" className="mt-3" dir="rtl">
-                  <PoliticalTabBoundary>
-                  <div dir="rtl">
-                    {/* ── Political secondary nav ── */}
-                    {(() => {
-                      const primary = POLITICAL_TABS_DEFS.slice(0, POLITICAL_TABS_PRIMARY);
-                      const extra = POLITICAL_TABS_DEFS.slice(POLITICAL_TABS_PRIMARY);
-                      const isExtraActive = _extraPoliticalValues.has(activePoliticalTab);
-                      return (
-                        <div className="mb-3" dir="rtl">
-                          <div className="flex items-stretch gap-1 rounded-2xl bg-slate-100/80 dark:bg-zinc-800/60 p-1">
-                            {primary.map(tab => {
-                              const isActive = activePoliticalTab === tab.value;
-                              return (
-                                <button
-                                  key={tab.value}
-                                  type="button"
-                                  onClick={() => { setActivePoliticalTab(tab.value); setShowMorePoliticalTabs(false); }}
-                                  className={cn(
-                                    "flex-1 flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-medium transition-all duration-150 select-none cursor-pointer min-w-0",
-                                    isActive
-                                      ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white"
-                                      : "text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                                  )}
-                                >
-                                  <span className="leading-none shrink-0">{tab.emoji}</span>
-                                  <span className="truncate">{tab.label}</span>
-                                </button>
-                              );
-                            })}
-                            <button
-                              type="button"
-                              onClick={() => setShowMorePoliticalTabs(v => !v)}
-                              className={cn(
-                                "flex items-center justify-center gap-0.5 rounded-xl py-2 px-2.5 text-[11px] font-medium transition-all duration-150 cursor-pointer shrink-0",
-                                (showMorePoliticalTabs || isExtraActive)
-                                  ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white"
-                                  : "text-slate-500 hover:text-slate-700 dark:text-zinc-400"
-                              )}
-                            >
-                              <span>עוד</span>
-                              <span className="text-[9px] leading-none">{showMorePoliticalTabs ? '▲' : '▼'}</span>
-                            </button>
-                          </div>
-                          {showMorePoliticalTabs && (
-                            <div className="mt-1.5 flex flex-wrap gap-1 px-1">
-                              {extra.map(tab => {
-                                const isActive = activePoliticalTab === tab.value;
-                                return (
-                                  <button
-                                    key={tab.value}
-                                    type="button"
-                                    onClick={() => setActivePoliticalTab(tab.value)}
-                                    className={cn(
-                                      "flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-all cursor-pointer",
-                                      isActive
-                                        ? "bg-slate-800 text-white border-transparent dark:bg-slate-200 dark:text-slate-900"
-                                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-700"
-                                    )}
-                                  >
-                                    <span>{tab.emoji}</span>
-                                    <span>{tab.label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    <Tabs value={activePoliticalTab} onValueChange={setActivePoliticalTab} className="w-full" dir="rtl">
-                    <>
-                    {/* ── 🔥 Viral Quotes Tab ── */}
-                    <TabsContent value="virals" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_vq?.length ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">🔥</span>
-                          <p className="text-sm">אין ציטוטים ויראליים עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🔥 ציטוטים ויראליים</h4>
-                            <button
-                              type="button"
-                              onClick={() => _psMultiSelectAll('viralQuotes', 'ציטוטים ויראליים',
-                                _vq.map(q => typeof q === 'string' ? q : (q.quote || String(q)))
-                              )}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
-                            >☑ בחר הכל</button>
-                          </div>
-                          <div className="space-y-2">
-                            {_vq.map((item, i) => {
-                              const quote = typeof item === 'string' ? item : (item.quote || String(item));
-                              const context = (typeof item === 'object' && item !== null) ? item.context : null;
-                              const _vId = `viral:${i}`;
-                              const _vOpp = opponentSentences.some(s => s.id === _vId);
-                              return (
-                                <div key={i} className="rounded-xl border border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20 px-4 py-3">
-                                  <div className="flex items-start gap-2 justify-between">
-                                    <div className="flex gap-1.5 items-center shrink-0">
-                                      <input type="checkbox" checked={multiSelected.has(_vId)} onChange={() => toggleMultiSelect(_vId, { text: quote, sectionLabel: 'ציטוטים ויראליים', type: 'virals' })} className="w-3.5 h-3.5 accent-orange-500 cursor-pointer shrink-0" />
-                                      <button type="button" onClick={() => _psCopy(quote)} className="text-slate-400 hover:text-indigo-600">
-                                        <Copy className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button type="button" onClick={() => _psSave(`viral_${i}`, 'ציטוט ויראלי', quote)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
-                                      <button type="button" onClick={() => handleToggleSentenceOpponent({ id: _vId, text: quote, sourceTab: 'virals', sourceIndex: i })} title={_vOpp ? 'הסר סימון דעת האויב' : 'סמן כדעת האויב'} className={`text-[10px] leading-none transition-colors ${_vOpp ? 'text-rose-500 dark:text-rose-400' : 'text-slate-300 hover:text-rose-500 dark:hover:text-rose-400'}`}>⚔️</button>
-                                    </div>
-                                    <blockquote className="flex-1 text-sm text-orange-900 dark:text-orange-100 text-right leading-relaxed italic">&quot;{quote}&quot;</blockquote>
-                                  </div>
-                                  {context && <p className="mt-1 text-[10px] text-orange-700/70 dark:text-orange-300/70 text-right">{context}</p>}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
+              {/* ── Insights tab — keyInsights, brainHighlights, tradingPrinciples, mentalModels, keyPoints ── */}
+              <TabsContent value="insights" className="mt-5 min-h-[320px]" dir="rtl">
+                {(() => {
+                  const mainLesson   = effectiveVideo?.mainLesson ? [effectiveVideo.mainLesson] : [];
+                  const keyInsights  = [
+                    ...(Array.isArray(effectiveVideo?.keyInsights)             ? effectiveVideo.keyInsights             : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.keyInsights)   ? effectiveVideo.analysis.keyInsights    : []),
+                    ...(marketBriefData ? [...(Array.isArray(marketBriefData?.top5Insights) ? marketBriefData.top5Insights : []), ...(Array.isArray(marketBriefData?.reusableKnowledge) ? marketBriefData.reusableKnowledge : [])] : [
+                      ...(Array.isArray(effectiveVideo?.top5Insights)          ? effectiveVideo.top5Insights            : []),
+                      ...(Array.isArray(effectiveVideo?.reusableKnowledge)     ? effectiveVideo.reusableKnowledge       : []),
+                    ]),
+                  ].filter(Boolean);
+                  const principles = [
+                    ...(Array.isArray(effectiveVideo?.tradingPrinciples)       ? effectiveVideo.tradingPrinciples       : []),
+                    ...(Array.isArray(effectiveVideo?.mentalModels)            ? effectiveVideo.mentalModels            : []),
+                    ...(Array.isArray(effectiveVideo?.brainHighlights)         ? effectiveVideo.brainHighlights         : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.brainHighlights) ? effectiveVideo.analysis.brainHighlights : []),
+                  ].filter(Boolean);
 
-                    {/* ── 🗣️ Opponent View Tab ── */}
-                    <TabsContent value="opponent" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_ov ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">🗣️</span>
-                          <p className="text-sm">אין ניתוח דעת הצד השני עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🗣️ דעת הצד השני</h4>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const ov = _ov;
-                                const allContent = [ov.summary, ...(ov.strongestArguments || []), ...(ov.basicAssumptions || []), ...(ov.recommendedResponses || [])].filter(Boolean);
-                                _psMultiSelectAll('opponentView', 'דעת הצד השני', allContent);
-                              }}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
-                            >☑ בחר הכל</button>
-                          </div>
-                          {[
-                            { key: 'summary',              label: 'סיכום הצד השני',       icon: '📋', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
-                            { key: 'strongestArguments',   label: 'הטיעונים החזקים ביותר', icon: '💪', color: 'border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20' },
-                            { key: 'basicAssumptions',     label: 'הנחות יסוד',            icon: '🔍', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
-                            { key: 'recommendedResponses', label: 'תגובות מומלצות',         icon: '✍️', color: 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-900/20' },
-                          ].map(({ key, label, icon, color }) => {
-                            const val = _ov[key];
-                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                            return (
-                              <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-1.5">
-                                    <span>{icon}</span>
-                                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
-                                  </div>
-                                  <button type="button" onClick={() => _psSave(`opponent_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
-                                </div>
-                                {Array.isArray(val) ? (
-                                  <ul className="space-y-1.5">
-                                    {val.map((v, idx) => (
-                                      <li key={idx} className="flex items-start gap-2">
-                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600">
-                                          <Copy className="h-3 w-3" />
-                                        </button>
-                                        <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{safeStr(v)}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm text-slate-700 dark:text-zinc-300 leading-7">{String(val)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
+                  const sections = [
+                    mainLesson.length > 0    && { key: 'lesson',     label: '🎯 לקח מרכזי',       items: mainLesson,  highlight: true,  tabKey: 'insights' },
+                    keyInsights.length > 0   && { key: 'insights',   label: '💡 תובנות מרכזיות',   items: keyInsights, highlight: false, tabKey: 'insights' },
+                    principles.length > 0    && { key: 'principles', label: '🧠 עקרונות מסחר',     items: principles,  highlight: false, tabKey: 'trading-brain' },
+                  ].filter(Boolean);
 
-                    {/* ── ✡️ Theology Tab ── */}
-                    <TabsContent value="theology" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_ta ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">✡️</span>
-                          <p className="text-sm">אין ניתוח דתי/תיאולוגי עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          {_ta.religiousContentDetected === false ? (
-                            <p className="text-sm text-slate-500 dark:text-zinc-400 text-right py-6">לא זוהו רכיבים דתיים או תיאולוגיים משמעותיים בסרטון.</p>
-                          ) : (
-                            <>
-                              {[
-                                { key: 'religiousTopics',        label: 'נושאים דתיים',            icon: '📖', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
-                                { key: 'jewishSources',          label: 'מקורות יהודיים',           icon: '📜', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
-                                { key: 'messianism',             label: 'משיחיות',                 icon: '✨', color: 'border-violet-200 bg-violet-50/60 dark:border-violet-800 dark:bg-violet-900/20' },
-                                { key: 'religiousZionism',       label: 'ציונות דתית',              icon: '🏛️', color: 'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20' },
-                                { key: 'jewishValues',           label: 'ערכים יהודיים',             icon: '⭐', color: 'border-yellow-200 bg-yellow-50/60 dark:border-yellow-800 dark:bg-yellow-900/20' },
-                                { key: 'conflictingValues',      label: 'ערכים בסתירה',             icon: '⚡', color: 'border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20' },
-                                { key: 'universalVsParticular',  label: 'אוניברסלי מול פרטיקולרי', icon: '🌍', color: 'border-teal-200 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-900/20' },
-                                { key: 'theologicalAssumptions', label: 'הנחות תיאולוגיות',         icon: '🔮', color: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20' },
-                                { key: 'summary',                label: 'סיכום',                   icon: '📋', color: 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800' },
-                              ].map(({ key, label, icon, color }) => {
-                                const val = _ta[key];
-                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                                return (
-                                  <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-1.5">
-                                        <span>{icon}</span>
-                                        <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
-                                      </div>
-                                      <button type="button" onClick={() => _psSave(`theology_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
-                                    </div>
-                                    {Array.isArray(val) ? (
-                                      <ul className="space-y-1">
-                                        {val.map((v, idx) => (
-                                          <li key={idx} className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">• {safeStr(v)}</li>
-                                        ))}
-                                      </ul>
-                                    ) : (
-                                      <p className="text-sm text-slate-700 dark:text-zinc-300 leading-7">{String(val)}</p>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── 🕊️ Liberal Jewish Perspective Tab ── */}
-                    <TabsContent value="liberal-jewish" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_ljp ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">🕊️</span>
-                          <p className="text-sm">אין ניתוח יהדות ליברלית עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-4 shadow-sm dark:border-blue-800/50 dark:bg-blue-950/20 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">🕊️ יהדות ליברלית</h4>
-                            <button type="button" onClick={() => _psMultiSelectAll('liberalJewishPerspective', 'יהדות ליברלית', Object.values(_ljp).flat().filter(Boolean))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                          </div>
-                          {[
-                            { key: 'supportedValues',       label: 'ערכים נתמכים' },
-                            { key: 'concerns',              label: 'חששות' },
-                            { key: 'ethicalQuestions',      label: 'שאלות אתיות' },
-                            { key: 'relevantJewishSources', label: 'מקורות יהודיים רלוונטיים' },
-                            { key: 'bottomLine',            label: 'שורה תחתונה' },
-                          ].map(({ key, label }) => {
-                            const val = _ljp[key];
-                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                            return (
-                              <div key={key} className="rounded-xl border border-blue-200 bg-white/70 dark:border-blue-800 dark:bg-blue-900/30 px-3 py-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <button type="button" onClick={() => _psSave(`liberal_${key}`, label, val)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
-                                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">{label}</span>
-                                </div>
-                                {Array.isArray(val) ? (
-                                  <ul className="space-y-0.5">
-                                    {val.map((v, idx) => <li key={idx} className="text-xs text-blue-900 dark:text-blue-200">• {v}</li>)}
-                                  </ul>
-                                ) : (
-                                  <p className="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">{String(val)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── 📢 Slogans Tab ── */}
-                    <TabsContent value="slogans" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_sl?.length ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">📢</span>
-                          <p className="text-sm">אין סיסמאות פוליטיות עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📢 סיסמאות פוליטיות</h4>
-                            <button type="button" onClick={() => _psMultiSelectAll('politicalSlogans', 'סיסמאות', _sl.map(s => typeof s === 'string' ? s : (s.slogan || String(s))))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                          </div>
-                          <div className="space-y-2">
-                            {_sl.map((item, i) => {
-                              const slogan     = typeof item === 'string' ? item : (item.slogan || String(item));
-                              const tone       = (typeof item === 'object' && item !== null) ? item.tone       : null;
-                              const confidence = (typeof item === 'object' && item !== null) ? item.confidence : null;
-                              const sourceIdea = (typeof item === 'object' && item !== null) ? item.sourceIdea : null;
-                              const _sId = `slogan:${i}`;
-                              const _sOpp = opponentSentences.some(s => s.id === _sId);
-                              return (
-                                <div key={i} className="rounded-xl border border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20 px-4 py-3">
-                                  <div className="flex items-start gap-2 justify-between">
-                                    <div className="flex gap-1.5 items-center shrink-0">
-                                      <input type="checkbox" checked={multiSelected.has(_sId)} onChange={() => toggleMultiSelect(_sId, { text: slogan, sectionLabel: 'סיסמאות', type: 'slogans' })} className="w-3.5 h-3.5 accent-purple-500 cursor-pointer shrink-0" />
-                                      <button type="button" onClick={() => _psCopy(slogan)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
-                                      <button type="button" onClick={() => _psSave(`slogan_${i}`, 'סיסמה', slogan)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
-                                      <button type="button" onClick={() => handleToggleSentenceOpponent({ id: _sId, text: slogan, sourceTab: 'slogans', sourceIndex: i })} title={_sOpp ? 'הסר סימון דעת האויב' : 'סמן כדעת האויב'} className={`text-[10px] leading-none transition-colors ${_sOpp ? 'text-rose-500 dark:text-rose-400' : 'text-slate-300 hover:text-rose-500 dark:hover:text-rose-400'}`}>⚔️</button>
-                                    </div>
-                                    <p className="flex-1 text-sm font-semibold text-purple-900 dark:text-purple-100 text-right leading-snug">{slogan}</p>
-                                  </div>
-                                  {(tone || confidence || sourceIdea) && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
-                                      {tone       && <span className="rounded-full border border-purple-300 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-800 dark:text-purple-200">{String(tone)}</span>}
-                                      {confidence && <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">{Math.round(Number(confidence) * 100)}%</span>}
-                                      {sourceIdea && <span className="text-[10px] text-slate-400 dark:text-zinc-500 italic">{String(sourceIdea)}</span>}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── ⚔️ Debate Responses Tab ── */}
-                    <TabsContent value="debates" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_dr?.length ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">⚔️</span>
-                          <p className="text-sm">אין תגובות לוויכוחים עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                          <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">⚔️ תגובות לוויכוחים</h4>
-                            <button type="button" onClick={() => _psMultiSelectAll('debateResponses', 'תגובות לוויכוחים', _dr.map(d => typeof d === 'string' ? d : (`${d.claim ? d.claim + ': ' : ''}${d.response || ''}`)).filter(Boolean))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                          </div>
-                          <div className="space-y-3">
-                            {_dr.map((item, i) => {
-                              const claim    = typeof item === 'string' ? '' : (item.claim    || '');
-                              const response = typeof item === 'string' ? item : (item.response || String(item));
-                              const _dId = `debate:${i}`;
-                              const _dOpp = opponentSentences.some(s => s.id === _dId);
-                              return (
-                                <div key={i} className="rounded-xl border border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20 px-4 py-3 space-y-2">
-                                  {claim && (
-                                    <div className="rounded-lg bg-red-100/80 dark:bg-red-900/40 px-3 py-2">
-                                      <span className="text-[10px] font-bold text-red-600 dark:text-red-400">טענה: </span>
-                                      <span className="text-xs text-red-900 dark:text-red-200 leading-snug">{claim}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex items-start gap-2 justify-between">
-                                    <div className="flex gap-1.5 items-center shrink-0">
-                                      <button type="button" onClick={() => _psCopy(response)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
-                                      <button type="button" onClick={() => _psSave(`debate_${i}`, 'תגובה לוויכוח', response)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
-                                      <button type="button" onClick={() => handleToggleSentenceOpponent({ id: _dId, text: response, sourceTab: 'debates', sourceIndex: i })} title={_dOpp ? 'הסר סימון דעת האויב' : 'סמן כדעת האויב'} className={`text-[10px] leading-none transition-colors ${_dOpp ? 'text-rose-500 dark:text-rose-400' : 'text-slate-300 hover:text-rose-500 dark:hover:text-rose-400'}`}>⚔️</button>
-                                    </div>
-                                    <div className="flex-1 text-right">
-                                      {claim && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">תגובה: </span>}
-                                      <span className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{response}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── 💬 Comment Bank Tab ── */}
-                    {!_cb?.length ? (
-                      <TabsContent value="comments" className="mt-4 min-h-[320px]" dir="rtl">
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">💬</span>
-                          <p className="text-sm">אין בנק תגובות עדיין</p>
-                        </div>
-                      </TabsContent>
-                    ) : (() => {
-                      const toneColors = {
-                        analytical:  'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20',
-                        emotional:   'border-pink-200 bg-pink-50/60 dark:border-pink-800 dark:bg-pink-900/20',
-                        sarcastic:   'border-yellow-200 bg-yellow-50/60 dark:border-yellow-800 dark:bg-yellow-900/20',
-                        factual:     'border-green-200 bg-green-50/60 dark:border-green-800 dark:bg-green-900/20',
-                        ideological: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20',
-                      };
-                      const toneLabels = { analytical: 'אנליטי', emotional: 'רגשי', sarcastic: 'סרקסטי', factual: 'עובדתי', ideological: 'אידיאולוגי' };
-                      const grouped = {};
-                      _cb.forEach((item, idx) => {
-                        const tone    = (typeof item === 'object' && item !== null ? (item.tone || '') : '').toLowerCase();
-                        const comment = typeof item === 'string' ? item : (item.comment || String(item));
-                        if (!grouped[tone]) grouped[tone] = [];
-                        grouped[tone].push({ comment, idx });
-                      });
-                      return (
-                        <TabsContent value="comments" className="mt-4 min-h-[320px]" dir="rtl">
-                          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">💬 בנק תגובות</h4>
-                              <button type="button" onClick={() => _psMultiSelectAll('commentBank', 'בנק תגובות', _cb.map(c => typeof c === 'string' ? c : (c.comment || String(c))))} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                            </div>
-                            <div className="space-y-4">
-                              {Object.entries(grouped).map(([tone, items]) => (
-                                <div key={tone}>
-                                  {tone && toneLabels[tone] && (
-                                    <div className="flex items-center gap-2 mb-2 flex-row-reverse">
-                                      <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${toneColors[tone] || 'border-slate-200 bg-slate-50'}`}>{toneLabels[tone]}</span>
-                                    </div>
-                                  )}
-                                  <div className="space-y-2">
-                                    {items.map(({ comment, idx }) => {
-                                      const _cId = `comment:${idx}`;
-                                      const _cOpp = opponentSentences.some(s => s.id === _cId);
-                                      return (
-                                        <div key={idx} className={`rounded-xl border px-4 py-3 ${toneColors[tone] || 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800'}`}>
-                                          <div className="flex items-start gap-2 justify-between">
-                                            <div className="flex gap-1.5 items-center shrink-0">
-                                              <button type="button" onClick={() => _psCopy(comment)} className="text-slate-400 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" /></button>
-                                              <button type="button" onClick={() => _psSave(`comment_${idx}`, 'תגובה', comment)} className="text-[10px] text-slate-400 hover:text-indigo-600">🧠</button>
-                                              <button type="button" onClick={() => handleToggleSentenceOpponent({ id: _cId, text: comment, sourceTab: 'comments', sourceIndex: idx })} title={_cOpp ? 'הסר סימון דעת האויב' : 'סמן כדעת האויב'} className={`text-[10px] leading-none transition-colors ${_cOpp ? 'text-rose-500 dark:text-rose-400' : 'text-slate-300 hover:text-rose-500 dark:hover:text-rose-400'}`}>⚔️</button>
-                                            </div>
-                                            <p className="flex-1 text-sm text-slate-700 dark:text-zinc-300 text-right leading-relaxed">{comment}</p>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </TabsContent>
-                      );
-                    })()}
-
-                    {/* ── 📦 Campaign Kit Tab ── */}
-                    <TabsContent value="campaign" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_ck ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">📦</span>
-                          <p className="text-sm">אין קיט קמפיין עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📦 קיט קמפיין</h4>
-                            <button type="button" onClick={() => {
-                              const allItems = Object.values(_ck).flat().filter(v => typeof v === 'string' && v.trim());
-                              _psMultiSelectAll('campaignKit', 'קיט קמפיין', allItems);
-                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                          </div>
-                          {[
-                            { key: 'topSlogans',         label: '📢 סיסמאות מובילות' },
-                            { key: 'topQuotes',          label: '💬 ציטוטים מובילים' },
-                            { key: 'topComments',        label: '📝 תגובות מובילות' },
-                            { key: 'topDebateResponses', label: '⚔️ תגובות ויכוח מובילות' },
-                            { key: 'keyIdeas',           label: '💡 רעיונות מרכזיים' },
-                          ].map(({ key, label }) => {
-                            const val = _ck[key];
-                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                            return (
-                              <div key={key} className="rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800 dark:bg-indigo-900/20 px-4 py-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <button type="button" onClick={() => _psSave(`campaign_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
-                                  <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{label}</span>
-                                </div>
-                                {Array.isArray(val) ? (
-                                  <ul className="space-y-1.5">
-                                    {val.map((v, vIdx) => (
-                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
-                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600"><Copy className="h-3 w-3" /></button>
-                                        <span className="flex-1 text-sm text-indigo-900 dark:text-indigo-100 text-right leading-snug">{safeStr(v)}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm text-indigo-900 dark:text-indigo-100 text-right">{String(val)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── 📚 Reusable Knowledge Tab ── */}
-                    <TabsContent value="reusable" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_rk ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">📚</span>
-                          <p className="text-sm">אין ידע רב פעמי עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">📚 ידע רב פעמי</h4>
-                            <button type="button" onClick={() => {
-                              const allItems = Object.values(_rk).flat().filter(v => typeof v === 'string' && v.trim());
-                              _psMultiSelectAll('reusableKnowledge', 'ידע רב פעמי', allItems);
-                            }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">☑ בחר הכל</button>
-                          </div>
-                          {[
-                            { key: 'principles',         label: '🧩 עקרונות' },
-                            { key: 'mentalModels',       label: '🧠 מודלים מנטליים' },
-                            { key: 'historicalPatterns', label: '📜 דפוסים היסטוריים' },
-                            { key: 'strategicLessons',   label: '♟️ לקחים אסטרטגיים' },
-                            { key: 'reusableArguments',  label: '🔄 טיעונים רב פעמיים' },
-                          ].map(({ key, label }) => {
-                            const val = _rk[key];
-                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                            return (
-                              <div key={key} className="rounded-xl border border-teal-200 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-900/20 px-4 py-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <button type="button" onClick={() => _psSave(`reusable_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
-                                  <span className="text-xs font-bold text-teal-700 dark:text-teal-300">{label}</span>
-                                </div>
-                                {Array.isArray(val) ? (
-                                  <ul className="space-y-1.5">
-                                    {val.map((v, vIdx) => (
-                                      <li key={vIdx} className="flex items-start gap-2 justify-between">
-                                        <button type="button" onClick={() => _psCopy(v)} className="mt-0.5 shrink-0 text-slate-400 hover:text-teal-600"><Copy className="h-3 w-3" /></button>
-                                        <span className="flex-1 text-sm text-teal-900 dark:text-teal-100 text-right leading-snug">{safeStr(v)}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm text-teal-900 dark:text-teal-100 text-right">{String(val)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── 🧠 תובנות מרכזיות Tab ── */}
-                    <TabsContent value="brain-hi" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_bh ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">🧠</span>
-                          <p className="text-sm">אין תובנות מרכזיות עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">🧠 תובנות מרכזיות</h4>
-                            <div className="flex items-center gap-3">
-                              <button type="button"
-                                onClick={() => {
-                                  const allItems = [];
-                                  ['topInsights','topArguments','topWarnings','topQuotes','savePriority'].forEach(key => {
-                                    const arr = _bh[key];
-                                    if (Array.isArray(arr)) arr.forEach((v, vIdx) => {
-                                      const text = safeStr(v);
-                                      if (text) allItems.push({ id: `brain-hi:${key}:${vIdx}`, text, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' });
-                                    });
-                                  });
-                                  multiSelectAll(allItems);
-                                }}
-                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
-                              >בחר הכל</button>
-                              <button type="button" onClick={() => {
-                                const allItems = Object.values(_bh).flat().filter(v => typeof v === 'string' && v.trim());
-                                _psMultiSelectAll('brainHighlights', 'תובנות מרכזיות', allItems);
-                              }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400">🧠 שמור הכל</button>
-                            </div>
-                          </div>
-                          {[
-                            { key: 'topInsights',  label: '⚡ תובנות מובילות' },
-                            { key: 'topArguments', label: '💪 טיעונים מובילים' },
-                            { key: 'topWarnings',  label: '⚠️ אזהרות' },
-                            { key: 'topQuotes',    label: '💬 ציטוטים' },
-                            { key: 'savePriority', label: '⭐ עדיפות שמירה' },
-                          ].map(({ key, label }) => {
-                            const val = _bh[key];
-                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                            return (
-                              <div key={key} className="rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20 px-4 py-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <button type="button" onClick={() => _psSave(`brain_${key}`, label, val)} className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600">🧠 שמור</button>
-                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{label}</span>
-                                </div>
-                                {Array.isArray(val) ? (
-                                  <ul className="space-y-1">
-                                    {val.map((v, vIdx) => {
-                                      const itemId = `brain-hi:${key}:${vIdx}`;
-                                      const itemText = safeStr(v);
-                                      return (
-                                        <li key={vIdx}>
-                                          <BrainSelectableItem
-                                            id={itemId}
-                                            text={itemText}
-                                            isSelected={multiSelected.has(itemId)}
-                                            onToggle={() => toggleMultiSelect(itemId, { text: itemText, sectionLabel: 'תובנות מרכזיות', type: 'brain-hi' })}
-                                            onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'brain-hi', 'תובנות מרכזיות', note)}
-                                            onCopy={() => _psCopy(v)}
-                                            isPolitical={true}
-                                            isOpponent={opponentSentences.some(s => s.id === itemId)}
-                                            onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: itemText, sourceTab: 'brain-hi', sourceIndex: vIdx })}
-                                            opponentResponse={opponentSentences.find(s => s.id === itemId)?.response || null}
-                                            onSaveResponse={handleSaveOpponentResponse}
-                                          />
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm text-amber-900 dark:text-amber-100 text-right">{String(val)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* ── ⚖️ Ideology Analysis Tab ── */}
-                    <TabsContent value="ideology" className="mt-4 min-h-[320px]" dir="rtl">
-                      {!_ia ? (
-                        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl">⚖️</span>
-                          <p className="text-sm">אין ניתוח אידיאולוגי עדיין</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
-                          <div className="flex items-center justify-between flex-row-reverse mb-1">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">⚖️ אידיאולוגיה וערכים</h4>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const parts = [
-                                  _ia.politicalCamp     && `מחנה פוליטי: ${_ia.politicalCamp}`,
-                                  ...(_ia.coreValues          || []),
-                                  ...(_ia.persuasionTechniques || []),
-                                  ...(_ia.hiddenAssumptions    || []),
-                                  ...(_ia.logicalWeaknesses    || []),
-                                  ...(_ia.emotionalTriggers    || []),
-                                ].filter(Boolean);
-                                _psMultiSelectAll('ideologyAnalysis', 'אידיאולוגיה וערכים', parts);
-                              }}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
-                            >☑ בחר הכל</button>
-                          </div>
-                          {[
-                            { key: 'politicalCamp',        label: 'מחנה פוליטי',        icon: '🏛️', color: 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-800 dark:bg-indigo-900/20', isString: true },
-                            { key: 'coreValues',           label: 'ערכי ליבה',           icon: '⭐', color: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-900/20' },
-                            { key: 'targetAudience',       label: 'קהל יעד',             icon: '👥', color: 'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-900/20' },
-                            { key: 'emotionalTriggers',    label: 'טריגרים רגשיים',      icon: '💥', color: 'border-pink-200 bg-pink-50/60 dark:border-pink-800 dark:bg-pink-900/20' },
-                            { key: 'persuasionTechniques', label: 'טכניקות שכנוע',       icon: '🎯', color: 'border-purple-200 bg-purple-50/60 dark:border-purple-800 dark:bg-purple-900/20' },
-                            { key: 'hiddenAssumptions',    label: 'הנחות נסתרות',        icon: '🔍', color: 'border-orange-200 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/20' },
-                            { key: 'logicalWeaknesses',    label: 'חולשות לוגיות',       icon: '⚠️', color: 'border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20' },
-                          ].map(({ key, label, icon, color, isString }) => {
-                            const raw = _ia[key];
-                            if (!raw || (Array.isArray(raw) && raw.length === 0)) return null;
-                            // Normalize: string → wrap in array; object with segments → flatten
-                            const items = isString
-                              ? (typeof raw === 'string' ? [raw] : (Array.isArray(raw) ? raw.map(safeStr) : [String(raw)]))
-                              : (Array.isArray(raw) ? raw.map(safeStr)
-                                : (raw?.segments ? raw.segments.map(safeStr)
-                                : (typeof raw === 'string' ? [raw] : [String(raw)])));
-                            const displayItems = items.filter(v => v && String(v).trim());
-                            if (displayItems.length === 0) return null;
-                            return (
-                              <div key={key} className={`rounded-xl border px-4 py-3 ${color}`}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-1.5">
-                                    <span>{icon}</span>
-                                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => _psSave(`ideology_${key}`, label, displayItems)}
-                                    className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600"
-                                  >🧠 שמור</button>
-                                </div>
-                                {displayItems.length === 1 && isString ? (
-                                  (() => {
-                                    const itemId = `ideology:${key}:0`;
-                                    const itemText = displayItems[0];
-                                    return (
-                                      <BrainSelectableItem
-                                        id={itemId}
-                                        text={itemText}
-                                        isSelected={!!brainSelections[itemId]}
-                                        onToggle={() => toggleBrainItem(itemId, itemText, 'ideology', 'אידיאולוגיה וערכים')}
-                                        onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'ideology', 'אידיאולוגיה וערכים', note)}
-                                        onCopy={() => _psCopy(displayItems[0])}
-                                        isPolitical={true}
-                                        isOpponent={opponentSentences.some(s => s.id === itemId)}
-                                        onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: itemText, sourceTab: 'ideology', sourceIndex: 0 })}
-                                        opponentResponse={opponentSentences.find(s => s.id === itemId)?.response || null}
-                                        onSaveResponse={handleSaveOpponentResponse}
-                                      />
-                                    );
-                                  })()
-                                ) : (
-                                  <ul className="space-y-1">
-                                    {displayItems.map((v, idx) => {
-                                      const itemId = `ideology:${key}:${idx}`;
-                                      const itemText = String(v);
-                                      return (
-                                        <li key={idx}>
-                                          <BrainSelectableItem
-                                            id={itemId}
-                                            text={itemText}
-                                            isSelected={!!brainSelections[itemId]}
-                                            onToggle={() => toggleBrainItem(itemId, itemText, 'ideology', 'אידיאולוגיה וערכים')}
-                                            onSaveSingle={(note) => saveSingleItemToBrain(itemText, 'ideology', 'אידיאולוגיה וערכים', note)}
-                                            onCopy={() => _psCopy(v)}
-                                            isPolitical={true}
-                                            isOpponent={opponentSentences.some(s => s.id === itemId)}
-                                            onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: itemText, sourceTab: 'ideology', sourceIndex: idx })}
-                                            opponentResponse={opponentSentences.find(s => s.id === itemId)?.response || null}
-                                            onSaveResponse={handleSaveOpponentResponse}
-                                          />
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-                    </>
-                    </Tabs>
-                  </div>
-                  </PoliticalTabBoundary>
-                  </TabsContent>
-                );
-              })()}
-
-              {/* ── Market Brief tab ──────────────────────────────── */}
-              {marketBriefData && (
-                <TabsContent value="market-brief" className="mt-3" dir="rtl">
-                  <MarketBriefView
-                    data={marketBriefData}
-                    onSaveToBrain={(text, sectionLabel) =>
-                      saveSingleItemToBrain(text, 'market-brief', `מבזק שוק · ${sectionLabel}`, '')
-                    }
-                    onSaveToObsidian={(text, sectionLabel) => {
-                      downloadMarkdown(
-                        `# ${sectionLabel}\n\n${text}\n\n---\nמקור: ${video?.title || 'מבזק שוק'}\nתאריך: ${marketBriefData?.briefDate || ''}`,
-                        `market-brief-${(sectionLabel || 'item').replace(/\s+/g, '-')}.md`
-                      );
-                      toast.success('קובץ Obsidian הורד ✓');
-                    }}
-                    onSaveToWorkspace={(text, sectionLabel) => {
-                      const videoId = video?.youtubeId || video?.id;
-                      const now = new Date().toISOString();
-                      const slug = String(text).slice(0, 60).replace(/[^a-zA-Zא-ת\d\s]/g, '').trim().replace(/\s+/g, '-') || 'item';
-                      upsertKnowledgeItem({
-                        id: `brain-item:${videoId}:market-brief:${Date.now()}`,
-                        title: String(text).slice(0, 80),
-                        topicId: video?.topicIds?.[0] || null,
-                        videoId,
-                        videoTitle: video?.title || '',
-                        sourceType: 'youtube',
-                        sourceId: videoId,
-                        kind: 'learning',
-                        markdown: `# ${sectionLabel}\n\n${text}\n\n---\nמקור: ${video?.title || ''}\nתאריך: ${marketBriefData?.briefDate || ''}`,
-                        workspacePath: `ידע/מבזק-שוק/${String(video?.title || videoId || 'פריט').slice(0, 40)}/${slug}.md`,
-                        createdAt: now,
-                        updatedAt: now,
-                        metadata: { videoId: videoId || null, videoTitle: video?.title || null, sourceTab: 'market-brief', tabLabel: sectionLabel, category: 'market', savedAt: now },
-                      });
-                      toast.success('✅ נשמר ל-Workspace');
-                    }}
-                  />
-                </TabsContent>
-              )}
-
-              {/* ── Learning video tabs ──────────────────────────────── */}
-              {videoType === 'learning' && (() => {
-                const wrapTab = (value, emptyLabel) => (
-                  <TabsContent key={value} value={value} className="mt-3 min-h-[260px]" dir="rtl">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-3">
-                      <LearningTabContent
-                        items={extractVideoTabItems(video, value, marketBriefData)}
-                        emptyLabel={emptyLabel}
-                        onSaveToBrain={(text) => saveSingleItemToBrain(text, value, emptyLabel, '')}
-                      />
+                  if (sections.length === 0) return (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+                      <span className="text-3xl mb-2 opacity-30">💡</span>
+                      <p className="text-sm">אין עדיין תובנות — נתח את הסרטון כדי להפיק</p>
                     </div>
-                  </TabsContent>
-                );
-                return (
-                  <>
-                    {wrapTab('useful-knowledge', 'אין עדיין ידע שימושי — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('definitions',      'אין עדיין מושגים — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('indicators',       'אין עדיין אינדיקטורים — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('setups',           'אין עדיין סטאפים — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('patterns',         'אין עדיין פטרנים — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('checklists',       "אין עדיין צ'קליסטים — נתח את הסרטון כדי להפיק")}
-                    {wrapTab('mistakes',         'אין עדיין טעויות — נתח את הסרטון כדי להפיק')}
-                    {wrapTab('trading-brain',    'אין עדיין ידע למוח המסחר — נתח את הסרטון כדי להפיק')}
-                  </>
-                );
-              })()}
-
-              {/* ── Brief (morning/evening) tabs ─────────────────────── */}
-              {(videoType === 'morningBrief' || videoType === 'eveningBrief') && (() => {
-                const wrapBrief = (value, emptyLabel) => (
-                  <TabsContent key={value} value={value} className="mt-3 min-h-[260px]" dir="rtl">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-3">
-                      <LearningTabContent
-                        items={extractVideoTabItems(video, value, marketBriefData)}
-                        emptyLabel={emptyLabel}
-                        onSaveToBrain={(text) => saveSingleItemToBrain(text, value, emptyLabel, '')}
-                      />
+                  );
+                  return (
+                    <div className="space-y-3">
+                      {sections.map(({ key, label, items, highlight, tabKey }) => (
+                        <div key={key} className={`rounded-xl border px-3 py-2 ${highlight ? 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20' : 'border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900'}`}>
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5 px-1 text-right">{label}</p>
+                          <LearningTabContent
+                            items={items}
+                            emptyLabel=""
+                            onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  </TabsContent>
-                );
-                return (
-                  <>
-                    {wrapBrief('market-news',         'אין עדיין חדשות שוק')}
-                    {wrapBrief('indices',              'אין עדיין נתוני מדדים')}
-                    {wrapBrief('stocks-mentioned',     'אין עדיין מניות מוזכרות')}
-                    {wrapBrief('brief-risks',          'אין עדיין סיכונים')}
-                    {wrapBrief('brief-opportunities',  'אין עדיין הזדמנויות')}
-                    {wrapBrief('brief-conclusions',    'אין עדיין מסקנות למסחר')}
-                  </>
-                );
-              })()}
+                  );
+                })()}
+              </TabsContent>
 
-              {/* ── APP Builder tab (§26) — shown for educational topics or existing draft ── */}
-              {(APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(video?.videoId || video?.id)) && (
-                <TabsContent value="app-builder" className="mt-3" dir="rtl">
-                  <AppBuilderTab
-                    video={video}
-                    topicName={resolvedVideoMode.category || ''}
-                  />
-                </TabsContent>
-              )}
+              {/* ── Useful Knowledge tab — actionItems, definitions, rules, checklists, mistakes (universal) ── */}
+              <TabsContent value="useful-knowledge" className="mt-5 min-h-[320px]" dir="rtl">
+                {(() => {
+                  const sections = [
+                    {
+                      key: 'practical',
+                      label: '🎯 ידע פרקטי',
+                      items: extractVideoTabItems(effectiveVideo, 'useful-knowledge', marketBriefData),
+                      tabKey: 'useful-knowledge',
+                    },
+                    {
+                      key: 'definitions',
+                      label: '📖 מושגים',
+                      items: extractVideoTabItems(effectiveVideo, 'definitions', marketBriefData),
+                      tabKey: 'definitions',
+                    },
+                    {
+                      key: 'rules',
+                      label: '✅ כללים',
+                      items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData),
+                      tabKey: 'checklists',
+                    },
+                    {
+                      key: 'mistakes',
+                      label: '⚠️ טעויות להימנע',
+                      items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData),
+                      tabKey: 'mistakes',
+                    },
+                  ];
+                  const populated = sections.filter(s => s.items.length > 0);
+                  if (populated.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+                        <span className="text-3xl mb-2 opacity-30">📭</span>
+                        <p className="text-sm">אין עדיין ידע שימושי — נתח את הסרטון כדי להפיק</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {populated.map(({ key, label, items, tabKey }) => (
+                        <div key={key} className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5 px-1 text-right">{label}</p>
+                          <LearningTabContent
+                            items={items}
+                            emptyLabel=""
+                            onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+
+              {/* ── Topics & Subtopics tab ── */}
+              <TabsContent value="topics-subtopics" className="mt-5 min-h-[320px]" dir="rtl">
+                {(() => {
+                  const cat               = effectiveVideo?.category    || '';
+                  const subCat            = effectiveVideo?.subCategory || '';
+                  const tags              = Array.isArray(effectiveVideo?.tags)            ? effectiveVideo.tags            : [];
+                  const topicIds          = Array.isArray(effectiveVideo?.topicIds)        ? effectiveVideo.topicIds        : [];
+                  const obsidianPath      = effectiveVideo?.obsidianTopic || '';
+                  const obsidianTopics    = Array.isArray(effectiveVideo?.obsidianTopics)  ? effectiveVideo.obsidianTopics  : [];
+                  const suggestedSubTopics = [
+                    ...(Array.isArray(effectiveVideo?.suggestedSubTopics)             ? effectiveVideo.suggestedSubTopics             : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.suggestedSubTopics)   ? effectiveVideo.analysis.suggestedSubTopics    : []),
+                    ...(Array.isArray(effectiveVideo?.subTopicSuggestions)            ? effectiveVideo.subTopicSuggestions            : []),
+                  ];
+                  const hasAnything = cat || subCat || tags.length > 0 || topicIds.length > 0 || obsidianPath || obsidianTopics.length > 0;
+
+                  return (
+                    <div className="space-y-3">
+                      {/* Category & SubCategory */}
+                      {(cat || subCat) && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">📂 קטגוריה</p>
+                          <div className="flex flex-wrap gap-2 justify-end">
+                            {cat    && <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">{cat}</span>}
+                            {subCat && <span className="rounded-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-xs font-medium text-indigo-500 dark:text-indigo-400">{subCat}</span>}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {tags.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">🏷️ תגיות</p>
+                          <div className="flex flex-wrap gap-1.5 justify-end">
+                            {tags.map((tag, i) => (
+                              <span key={i} className="rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 text-xs text-slate-600 dark:text-zinc-300">
+                                {typeof tag === 'string' ? tag : (tag?.name || String(tag))}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Topic IDs */}
+                      {topicIds.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">📌 נושאים מקושרים</p>
+                          <div className="flex flex-wrap gap-1.5 justify-end">
+                            {topicIds.map((id, i) => (
+                              <span key={i} className="rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 px-2.5 py-1 text-xs text-emerald-700 dark:text-emerald-300">
+                                {id}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Obsidian Topics (array) */}
+                      {obsidianTopics.length > 0 && (
+                        <div className="rounded-xl border border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20 px-4 py-3">
+                          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 mb-2 text-right">🗂️ Obsidian Topics</p>
+                          <div className="flex flex-wrap gap-1.5 justify-end">
+                            {obsidianTopics.map((topic, i) => (
+                              <span key={i} className="rounded-full bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-800 px-2.5 py-1 text-xs text-violet-700 dark:text-violet-300 font-mono">
+                                {typeof topic === 'string' ? topic : (topic?.path || topic?.name || String(topic))}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Obsidian single path */}
+                      {obsidianPath && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1 text-right">🗂️ Obsidian</p>
+                          <p className="text-sm text-slate-600 dark:text-zinc-300 text-right font-mono">{obsidianPath}</p>
+                        </div>
+                      )}
+
+                      {/* Suggested Subtopics — from AI analysis or placeholder */}
+                      {suggestedSubTopics.length > 0 ? (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20 px-4 py-3">
+                          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-2 text-right">💡 הצעות לתתי-נושאים</p>
+                          <div className="flex flex-wrap gap-1.5 justify-end">
+                            {suggestedSubTopics.map((topic, i) => (
+                              <span key={i} className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs text-emerald-700 dark:text-emerald-300">
+                                {typeof topic === 'string' ? topic : (topic?.name || topic?.label || String(topic))}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 dark:border-zinc-700 px-4 py-3 opacity-60">
+                          <p className="text-xs font-semibold text-slate-400 dark:text-zinc-500 text-right">💡 הצעות לתתי-נושאים</p>
+                          <p className="text-xs text-slate-300 dark:text-zinc-600 text-right mt-1">יופיע לאחר ניתוח AI של הסרטון</p>
+                        </div>
+                      )}
+
+                      {/* Empty state */}
+                      {!hasAnything && (
+                        <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl mb-2 opacity-30">🏷️</span>
+                          <p className="text-sm">אין עדיין נושאים — הוסף קטגוריה או תגיות לסרטון</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+
+              {/* ── Specialized Content tab — Phase 4: SpecializedContentRenderer ── */}
+              <TabsContent value="specialized" className="mt-5 min-h-[320px]" dir="rtl">
+                <SpecializedContentRenderer
+                  effectiveVideo={effectiveVideo}
+                  normalizedSubCategory={normalizedSubCategory}
+                  marketBriefData={marketBriefData}
+                  politicalSummary={politicalSummary}
+                  hasPoliticalTabSet={hasPoliticalTabSet}
+                  onSaveToBrain={(text, tabKey, label) => saveSingleItemToBrain(text, tabKey, label, '')}
+                />
+              </TabsContent>
+
               </Tabs>
               </div>{/* closes main content */}
             </div>{/* closes main content row */}
@@ -9235,7 +8915,7 @@ export function VideoDetailPanel({
                   type="button"
                   disabled={totalSelectedKnowledgeItems === 0}
                   onClick={() => {
-                    const item = createKnowledgeItemFromVideo({ ...video, selectedKnowledgeItems: selectedItems }, video.topicIds?.[0] ?? null);
+                    const item = createKnowledgeItemFromVideo({ ...effectiveVideo, selectedKnowledgeItems: selectedItems }, effectiveVideo?.topicIds?.[0] ?? null);
                     if (!item) { toast.error("אין פריטים נבחרים לשמירה"); return; }
                     upsertKnowledgeItem(item);
                     toast.success(`נשמר לברין — ${totalSelectedKnowledgeItems} פריטים`);
@@ -9252,9 +8932,9 @@ export function VideoDetailPanel({
                   type="button"
                   disabled={totalSelectedKnowledgeItems === 0}
                   onClick={() => {
-                    const item = createKnowledgeItemFromVideo({ ...video, selectedKnowledgeItems: selectedItems }, video.topicIds?.[0] ?? null);
+                    const item = createKnowledgeItemFromVideo({ ...effectiveVideo, selectedKnowledgeItems: selectedItems }, effectiveVideo?.topicIds?.[0] ?? null);
                     if (!item) { toast.error("אין פריטים נבחרים לייצוא"); return; }
-                    downloadMarkdown(item.markdown, `${(video.title || 'knowledge').replace(/[^\w֐-׿\s]/g, '').trim().slice(0, 50)}-selected.md`);
+                    downloadMarkdown(item.markdown, `${(effectiveVideo?.title || 'knowledge').replace(/[^\w֐-׿\s]/g, '').trim().slice(0, 50)}-selected.md`);
                   }}
                   className={`px-4 rounded-xl border text-sm font-medium py-2.5 transition-colors ${
                     totalSelectedKnowledgeItems > 0
@@ -9276,7 +8956,7 @@ export function VideoDetailPanel({
       open={isTranscriptViewerOpen}
       onOpenChange={(v) => {
         if (import.meta.env.DEV && v) {
-          const recKey = resolveTranscriptGemRecommendation(video, effectiveGemInfo);
+          const recKey = resolveTranscriptGemRecommendation(effectiveVideo, effectiveGemInfo);
           console.group('%c[TranscriptModal] opened', 'color:#6366f1;font-weight:bold');
           console.log('video.id:', video?.id);
           console.log('gemOverride (savedGem):', gemOverride ?? '—');
@@ -9352,7 +9032,7 @@ export function VideoDetailPanel({
     <GemSelectionModal
       open={showGemModal}
       onOpenChange={setShowGemModal}
-      video={video}
+      video={effectiveVideo}
       topics={videoTopics}
       recommendedGemKey={effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
@@ -9378,11 +9058,41 @@ export function VideoDetailPanel({
       }}
     />
 
+    <ObsidianSettingsDialog
+      open={obsidianSettingsOpen}
+      onOpenChange={(open) => {
+        setObsidianSettingsOpen(open);
+        if (!open) {
+          setObsidianSettingsTargetPath("");
+          setObsidianSettingsAutoOpenTarget(false);
+        }
+      }}
+      filePath={obsidianSettingsTargetPath || resolvedObsidianSavedPath || ""}
+      onSaved={handleObsidianSettingsSaved}
+    />
+
     {/* ── GEMS Settings Modal (global URL management) ──────── */}
     <GemsSettingsModal
       open={showGemsSettings}
       onOpenChange={setShowGemsSettings}
     />
+
+    {/* ── DEV: AI Mapping Modal ────────────────────────────── */}
+    {import.meta.env.DEV && (
+      <AiMappingModal
+        open={showAiMapping}
+        onOpenChange={setShowAiMapping}
+        video={effectiveVideo}
+        videoType={videoType}
+        visibleTabDefinitions={visibleTabDefinitions}
+        category={effectiveCategory}
+        subCategory={effectiveSubCategory}
+        normalizedSubCategory={normalizedSubCategory}
+        selectedTabsConfigKey={selectedTabsConfigKey}
+        gemRec={gemRec}
+        marketBriefData={marketBriefData}
+      />
+    )}
 
     {/* ── GEM Paste Summary Dialog ─────────────────────────── */}
     <Dialog open={gemPasteOpen} onOpenChange={(v) => { if (!v) { setGemPasteOpen(false); setGemPasteText(""); } }}>
@@ -9434,7 +9144,7 @@ export function VideoDetailPanel({
           setMultiObsidianPickerMode(false);
         }
       }}
-      video={video}
+      video={effectiveVideo}
       onConfirm={async ({ brainId, subBrainId, customBrainName, customSubName, subtitle, filename, path: pickerPath }) => {
         setBrainPickerOpen(false);
         if (multiObsidianPickerMode) {
@@ -9451,12 +9161,20 @@ export function VideoDetailPanel({
           setPendingBrainSave(null);
           const content = buildSaveAllContent();
           const savePath = pickerPath || `ידע/${filename || 'סרטון'}.md`;
-          const _vaultPath = (() => { try { return getConfiguredObsidianVaultPath(); } catch { return ''; } })();
-          const _vaultName = getConfiguredObsidianVaultName();
-          console.log('[SaveToBrain] mode: save-to-vault');
-          console.log('[SaveToBrain] shouldDownload: false');
-          console.log('[SaveToBrain] vaultPath:', _vaultPath || '(not set)');
-          console.log('[SaveToBrain] savePath:', savePath);
+          const _vaultPath = obsidianSettings.vaultPath || "";
+          const _vaultName = obsidianSettings.vaultName || resolveObsidianVaultName();
+          const _hasUsableVaultName = hasUsableObsidianVaultName(obsidianSettings.vaultName);
+          console.debug("OBSIDIAN SAVE START", {
+            videoId: video?.id,
+            title: video?.title,
+            category: video?.category,
+            subCategory: video?.subCategory,
+            hasTranscript: !!(video?.transcript || video?.fullTranscript),
+            hasAnalysis: !!(video?.analysis || video?.shortSummary),
+            savePath,
+            vaultName: _vaultName || null,
+            hasUsableVaultName: _hasUsableVaultName,
+          });
           try {
             const res = await fetch('/api/vault/write', {
               method: 'POST',
@@ -9474,39 +9192,44 @@ export function VideoDetailPanel({
               }),
             });
             const data = await res.json().catch(() => ({}));
+            console.debug("OBSIDIAN SAVE RESULT", data);
             if (data.ok) {
               const savedPath = data.savedPath || savePath;
-              const fileObsUrl = data.obsidianUri || buildObsidianOpenUrl(savedPath, _vaultName);
               const folderPath = savedPath.includes('/')
                 ? savedPath.substring(0, savedPath.lastIndexOf('/'))
                 : '';
-              const folderObsUrl = folderPath
-                ? `obsidian://open?vault=${encodeURIComponent(_vaultName)}&file=${encodeURIComponent(folderPath)}`
-                : fileObsUrl;
+              const savedFileName = savedPath.includes('/')
+                ? savedPath.substring(savedPath.lastIndexOf('/') + 1)
+                : savedPath;
 
-              console.log('[SaveToBrain] savedPath:', savedPath);
-              console.log('[SaveToBrain] obsidianUri:', fileObsUrl);
-              console.log('[Obsidian Save] folderPath:', folderPath);
-              console.log('[Obsidian Save] opening Obsidian...');
+              // Persist the saved status so the Obsidian card turns green
+              const obsidianStatus = buildObsidianSavedStatus({ folder: folderPath || savedPath, file: savedFileName, vaultName: _vaultName });
+              if (obsidianStatus) {
+                try { await saveVideoFields({ obsidianSavedStatus: obsidianStatus }); } catch {}
+              }
 
-              try { openObsidianUrl(fileObsUrl, { bypassDedupe: true }); } catch {}
+              if (_hasUsableVaultName) {
+                openResolvedObsidianPath(savedPath);
+              } else {
+                openObsidianSettingsForPath(savedPath);
+              }
 
               toast.success(`✅ נשמר למוח — ${content.totalItems} פריטים`, {
                 description: savedPath,
                 duration: 10000,
-                action: fileObsUrl ? {
+                action: savedPath ? {
                   label: '📂 פתח ב-Obsidian',
-                  onClick: () => { try { openObsidianUrl(fileObsUrl, { bypassDedupe: true }); } catch {} }
+                  onClick: () => { openResolvedObsidianPath(savedPath); }
                 } : undefined,
-                cancel: (folderPath && folderObsUrl) ? {
+                cancel: folderPath ? {
                   label: '📁 פתח תיקייה',
-                  onClick: () => { try { openObsidianUrl(folderObsUrl, { bypassDedupe: true }); } catch {} }
+                  onClick: () => { openResolvedObsidianPath(folderPath); }
                 } : undefined,
               });
             } else if (data.error === 'NO_VAULT_PATH') {
-              toast.error('נתיב ה-vault לא מוגדר', {
-                description: 'פתח הגדרות Obsidian כדי לקבוע את הנתיב המלא של ה-vault',
-                duration: 8000,
+              openObsidianSettingsForPath(savePath, {
+                autoOpenAfterSave: false,
+                toastMessage: 'יש להגדיר קודם את נתיב ה-vault של Obsidian',
               });
             } else if (data.error) {
               toast.error(`שגיאה בשמירה: ${data.message || data.error}`);
@@ -9517,6 +9240,7 @@ export function VideoDetailPanel({
               toast.success(`✅ ${content.totalItems} פריטים יוצאו — ${safeFilename}`);
             }
           } catch (err) {
+            console.error("OBSIDIAN SAVE ERROR", err);
             // Network/API error — fallback: download markdown
             const safeFilename = `${filename || 'ידע'}.md`;
             downloadMarkdown(content.markdown, safeFilename);
@@ -9565,7 +9289,7 @@ export function VideoDetailPanel({
     <SaveToWorkspaceDialog
       open={workspaceSaveOpen}
       onOpenChange={setWorkspaceSaveOpen}
-      video={video}
+      video={effectiveVideo}
       onSaved={({ topicName, subTopicName } = {}) => {
         setWorkspaceSaveOpen(false);
         // Propagate topic change through React Query so video cards + header refresh

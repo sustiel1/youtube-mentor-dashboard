@@ -97,6 +97,43 @@ export function upsertKnowledgeItem(item) {
   return normalizedItem;
 }
 
+/** §22 Bulk save — writes all items in one pass, fires one event. */
+export function upsertKnowledgeItemsBulk(items = []) {
+  if (!items.length) return { saved: 0, failed: 0 };
+  const all = readAll();
+  let saved = 0;
+  let failed = 0;
+  const next = [...all];
+  items.forEach((item) => {
+    if (!item || !item.id) { failed++; return; }
+    const normalized = normalizeKnowledgeItem(item);
+    const idx = next.findIndex((i) => i.id === item.id);
+    if (idx === -1) next.unshift(normalized);
+    else next[idx] = normalized;
+    saved++;
+  });
+  writeAll(next);
+  try { window.dispatchEvent(new CustomEvent("knowledge-items-updated")); } catch { /* non-browser env */ }
+  return { saved, failed };
+}
+
+/** Patch metadata fields on all knowledge items that belong to a given videoId. */
+export function updateKnowledgeItemsForVideo(videoId, metadataUpdates) {
+  if (!videoId || !metadataUpdates || typeof metadataUpdates !== "object") return 0;
+  const all = readAll();
+  let count = 0;
+  const next = all.map((item) => {
+    if (item.metadata?.videoId !== videoId) return item;
+    count++;
+    return { ...item, metadata: { ...item.metadata, ...metadataUpdates }, updatedAt: nowIso() };
+  });
+  if (count > 0) {
+    writeAll(next);
+    try { window.dispatchEvent(new CustomEvent("knowledge-items-updated")); } catch { /* non-browser */ }
+  }
+  return count;
+}
+
 export function removeKnowledgeItem(id) {
   const all = readAll();
   const next = all.filter((i) => i.id !== id);

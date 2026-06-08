@@ -9,7 +9,7 @@ import {
 import { useTopics } from "@/hooks/useTopics";
 import { cn } from "@/lib/utils";
 import { getBrainSaveButtonLabel, hasObsidianSavedStatus } from "@/lib/obsidianSavedStatus";
-import { normalizeCategoryName } from "@/lib/gemRecommender";
+import { normalizeCategoryName, GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 const LAST_SUBS_KEY = "brain_dest_subs_v1";
@@ -105,6 +105,18 @@ function sanitizeFilename(title) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 80);
+}
+
+// ─── Subtitle auto-detection ─────────────────────────────────────────────────
+
+function detectSubtitle(video) {
+  if (video?.customSubtitle?.trim()) return video.customSubtitle.trim();
+  const title = video?.title || "";
+  let candidate = title;
+  if (title.includes(" | ")) candidate = title.split(" | ")[0].trim();
+  else if (title.includes(" - ")) candidate = title.split(" - ")[0].trim();
+  const words = candidate.split(/\s+/).filter(Boolean);
+  return words.length <= 8 ? candidate : words.slice(0, 7).join(" ");
 }
 
 // ─── Video-to-brain detection helpers ─────────────────────────────────────────
@@ -250,7 +262,7 @@ function suggestSubBrain(brainId, video) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm }) {
+export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, gemKey }) {
   const [brainId, setBrainId] = useState("");
   const [subBrainId, setSubBrainId] = useState("");
   const [changingBrain, setChangingBrain] = useState(false);
@@ -261,6 +273,9 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
   const [isNewSub, setIsNewSub] = useState(false);
   const [newSubName, setNewSubName] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [subtitleDraft, setSubtitleDraft] = useState("");
+  const [filenameDraft, setFilenameDraft] = useState("");
+  const [isFilenameEditing, setIsFilenameEditing] = useState(false);
 
   // Custom destinations persisted in localStorage
   const [customDests, setCustomDests] = useState(() => loadCustomDests());
@@ -307,14 +322,14 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
     ? selectedSub.name
     : selectedSub?.name ?? "";
 
-  // Video filename preview
-  const videoFileName = sanitizeFilename(video?.title || "");
+  // Effective filename (user-edited or derived from title)
+  const effectiveFilename = (filenameDraft || sanitizeFilename(video?.title || "") || "ידע").slice(0, 80);
 
   // Full path preview: MainCategory/SubCategory/filename.md
   const pathParts = [
     effectiveBrainName || null,
     effectiveSubName || null,
-    videoFileName ? `${videoFileName}.md` : null,
+    effectiveFilename ? `${effectiveFilename}.md` : null,
   ].filter(Boolean);
   const pathPreview = pathParts.length > 0 ? pathParts.join("/") : null;
 
@@ -326,11 +341,29 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
     setIsNewSub(false);
     setNewSubName("");
     setValidationError("");
+    setSubtitleDraft(detectSubtitle(video));
+    setFilenameDraft(sanitizeFilename(video?.title || ""));
+    setIsFilenameEditing(false);
 
     const freshDests = loadCustomDests();
     setCustomDests(freshDests);
 
-    const detected = detectBrainFromVideo(video, topics) || "";
+    let detected = detectBrainFromVideo(video, topics) || "";
+
+    // Fallback: direct category name match (handles mismatched IDs / unindexed topics)
+    if (!detected && video?.category) {
+      const catLower = String(video.category).trim().toLowerCase();
+      const mainTopics = topics.filter(t => !t.parentId || t.isMainCategory);
+      const allMains = [
+        ...mainTopics,
+        ...(freshDests.mains || []).map(m => ({ id: m.id, name: m.name })),
+      ];
+      const directMatch = allMains.find(t =>
+        String(t.name || '').trim().toLowerCase() === catLower
+      );
+      if (directMatch) detected = directMatch.id;
+    }
+
     const systemExplicitSub = detected ? detectSubBrainFromVideo(detected, video, topics) : "";
     setBrainId(detected);
     setChangingBrain(!detected);
@@ -346,9 +379,19 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
     if (!resolvedSub) {
       const videoSubName = (video?.subCategory || video?.subTopic || "").trim();
       if (videoSubName) {
+        // 1. Try custom destinations
         const customSubs = freshDests.subs?.[detected] || [];
         const customMatch = customSubs.find(s => normalizeValue(s.name) === normalizeValue(videoSubName));
         if (customMatch) resolvedSub = customMatch.id;
+
+        // 2. Fallback: direct name match in system topics
+        if (!resolvedSub) {
+          const subTopics = topics.filter(t => t.parentId === detected);
+          const directSubMatch = subTopics.find(t =>
+            String(t.name || '').trim().toLowerCase() === String(videoSubName).toLowerCase()
+          );
+          if (directSubMatch) resolvedSub = directSubMatch.id;
+        }
       }
     }
 
@@ -500,6 +543,9 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
       subBrainId: resolvedSubBrainId,
       customBrainName,
       customSubName,
+      subtitle: subtitleDraft.trim(),
+      filename: effectiveFilename,
+      path: pathPreview,
     });
     onOpenChange(false);
   }
@@ -511,10 +557,10 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="w-[min(92vw,880px)] max-w-2xl border-violet-100 bg-white/95 p-0 shadow-[0_24px_80px_rgba(79,70,229,0.18)] backdrop-blur dark:border-violet-900/40 dark:bg-zinc-950/95"
+        className="flex flex-col w-[min(92vw,880px)] max-w-2xl max-h-[90vh] border-violet-100 bg-white/95 p-0 shadow-[0_24px_80px_rgba(79,70,229,0.18)] backdrop-blur dark:border-violet-900/40 dark:bg-zinc-950/95"
         aria-describedby={undefined}
       >
-        <DialogHeader className="border-b border-slate-200/80 px-7 py-6 dark:border-zinc-800 sm:px-9 sm:py-7">
+        <DialogHeader className="shrink-0 border-b border-slate-200/80 px-7 py-6 dark:border-zinc-800 sm:px-9 sm:py-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25">
               <Sparkles className="h-5 w-5" />
@@ -530,7 +576,7 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
           </div>
         </DialogHeader>
 
-        <div className="space-y-7 px-7 py-7 sm:px-9 sm:py-8">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-7 px-7 py-7 sm:px-9 sm:py-8">
           {suggestedSub && (
             <button
               type="button"
@@ -708,6 +754,61 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
             )}
           </section>
 
+          {/* ── Subtitle field ── */}
+          <section className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+              <span className="text-base">📝</span>
+              <span>תת-כותרת</span>
+              <span className="text-xs font-normal text-slate-400 dark:text-zinc-500">(תופיע בתוכן הקובץ)</span>
+            </div>
+            <input
+              type="text"
+              value={subtitleDraft}
+              onChange={(e) => setSubtitleDraft(e.target.value)}
+              placeholder="תיאור קצר של הסרטון..."
+              dir="rtl"
+              className={cn(inputCls, "text-sm py-3")}
+            />
+          </section>
+
+          {/* ── Filename field ── */}
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                <span className="text-base">📄</span>
+                <span>שם הקובץ</span>
+              </div>
+              {!isFilenameEditing && (
+                <button type="button" onClick={() => setIsFilenameEditing(true)}
+                  className="text-xs font-semibold text-violet-600 hover:text-violet-800 dark:text-violet-300 px-2 py-1 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/30">
+                  ✏️ ערוך
+                </button>
+              )}
+            </div>
+            {isFilenameEditing ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={filenameDraft}
+                  onChange={(e) => setFilenameDraft(sanitizeFilename(e.target.value))}
+                  placeholder="שם הקובץ (ללא .md)"
+                  dir="rtl"
+                  autoFocus
+                  className={cn(inputCls, "flex-1 text-sm py-3")}
+                  onKeyDown={(e) => { if (e.key === "Escape") { setIsFilenameEditing(false); } if (e.key === "Enter") { setIsFilenameEditing(false); } }}
+                />
+                <button type="button" onClick={() => setIsFilenameEditing(false)}
+                  className="flex h-[50px] w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
+                <span className="font-mono text-sm text-slate-700 dark:text-zinc-200 truncate flex-1">{effectiveFilename}.md</span>
+              </div>
+            )}
+          </section>
+
           {/* ── Validation error ── */}
           {validationError && (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-800/60 dark:bg-red-950/30 dark:text-red-300">
@@ -715,51 +816,54 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm })
             </div>
           )}
 
-          {/* ── Live path preview ── */}
+          {/* ── Live path preview (tree format) ── */}
           {pathPreview && (
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300">
-                <Info className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
-                  נתיב שמירה סופי ב-Obsidian
-                </p>
-                <p className="break-all font-mono text-sm leading-6 text-slate-700 dark:text-zinc-200">
-                  {pathPreview}
-                </p>
-                {(isNewBrain || isNewSub) && (
-                  <p className="mt-1 text-xs text-violet-500 dark:text-violet-400">
-                    תיקיות חסרות יווצרו אוטומטית
-                  </p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500 flex items-center gap-2">
+                <Info className="h-3.5 w-3.5" />
+                נתיב שמירה ב-Obsidian
+              </p>
+              <div className="font-mono text-sm text-slate-700 dark:text-zinc-200 space-y-0.5">
+                {effectiveBrainName && (
+                  <div className="flex items-center gap-1.5"><span className="text-slate-400">📁</span><span className="font-semibold">{effectiveBrainName}/</span></div>
+                )}
+                {effectiveSubName && (
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-slate-400">📂</span><span>{effectiveSubName}/</span></div>
+                )}
+                {effectiveFilename && (
+                  <div className="flex items-center gap-1.5 pl-8"><span className="text-violet-500">📄</span><span className="text-violet-700 dark:text-violet-300 font-semibold">{effectiveFilename}.md</span></div>
                 )}
               </div>
+              {(isNewBrain || isNewSub) && (
+                <p className="mt-2 text-xs text-violet-500 dark:text-violet-400">תיקיות חסרות יווצרו אוטומטית</p>
+              )}
             </div>
           )}
 
-          {/* ── Actions ── */}
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 dark:border-zinc-800 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={!brainId && !isNewBrain}
-              className={cn(
-                "order-1 flex-1 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40",
-                hasObsidianSavedStatus(video)
-                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-700 hover:to-teal-700"
-                  : "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-violet-500/20 hover:from-violet-700 hover:to-indigo-700"
-              )}
-            >
-              {getBrainSaveButtonLabel(video)}
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="order-2 rounded-2xl border border-violet-200 px-6 py-4 text-base font-semibold text-violet-600 transition-colors hover:bg-violet-50 dark:border-violet-800/60 dark:text-violet-300 dark:hover:bg-violet-900/20"
-            >
-              ביטול
-            </button>
-          </div>
+        </div>
+
+        {/* ── Sticky footer (actions) ── */}
+        <div className="shrink-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-7 py-5 dark:border-zinc-800 dark:bg-zinc-950/95 sm:flex-row sm:items-center sm:px-9">
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={!brainId && !isNewBrain}
+            className={cn(
+              "order-1 flex-1 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40",
+              hasObsidianSavedStatus(video)
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-700 hover:to-teal-700"
+                : "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-violet-500/20 hover:from-violet-700 hover:to-indigo-700"
+            )}
+          >
+            {getBrainSaveButtonLabel(video)}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="order-2 rounded-2xl border border-violet-200 px-6 py-4 text-base font-semibold text-violet-600 transition-colors hover:bg-violet-50 dark:border-violet-800/60 dark:text-violet-300 dark:hover:bg-violet-900/20"
+          >
+            ביטול
+          </button>
         </div>
       </DialogContent>
     </Dialog>

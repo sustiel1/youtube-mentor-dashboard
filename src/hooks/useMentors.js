@@ -251,6 +251,8 @@ export function useUpdateMentor() {
       if (data.category !== undefined) topicFields.category = data.category;
       if (data.subTopic !== undefined) topicFields.subTopic = data.subTopic;
       if (data.subTopicId !== undefined) topicFields.subTopicId = data.subTopicId;
+      if (data.defaultSubTopic !== undefined) topicFields.defaultSubTopic = data.defaultSubTopic;
+      if (data.defaultGem !== undefined) topicFields.defaultGem = data.defaultGem;
       if (Object.keys(topicFields).length) setMentorTopicOverride(id, topicFields);
 
       if (!isBase44Enabled()) {

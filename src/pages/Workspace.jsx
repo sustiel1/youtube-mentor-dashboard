@@ -10,8 +10,9 @@ import {
   logWorkspaceZipExportSummary,
 } from "@/lib/buildWorkspaceZip";
 import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
-import { Archive, Download, BookMarked, Play, FileText, FolderOpen, X } from "lucide-react";
+import { Archive, Download, BookMarked, Play, FileText, FolderOpen, X, Star } from "lucide-react";
 import { toast } from "sonner";
+import { getWorkspaceItems } from "@/lib/workspaceLibraryStore";
 
 export default function Workspace({ navigateTo, pageParams }) {
   const { data: topics = [], isLoading } = useTopics();
@@ -56,6 +57,10 @@ export default function Workspace({ navigateTo, pageParams }) {
     () => topicStats.reduce((sum, t) => sum + (t.learningCount || 0), 0),
     [topicStats]
   );
+
+  const workspaceLibCount = useMemo(() => {
+    try { return getWorkspaceItems().length; } catch { return 0; }
+  }, []);
 
   const handleExportAll = async () => {
     setExportingAll(true);
@@ -126,14 +131,23 @@ export default function Workspace({ navigateTo, pageParams }) {
           </p>
         </div>
 
-        <button
-          onClick={handleExportAll}
-          disabled={exportingAll}
-          className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
-        >
-          <Archive className="h-4 w-4" />
-          {exportingAll ? "מייצא..." : "ייצוא מלא ZIP"}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigateTo?.("WorkspaceLibrary")}
+            className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-300 dark:hover:bg-amber-950/40"
+          >
+            <Star className="h-4 w-4 fill-amber-400" />
+            ספריית הסרטונים {workspaceLibCount > 0 && `(${workspaceLibCount})`}
+          </button>
+          <button
+            onClick={handleExportAll}
+            disabled={exportingAll}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+          >
+            <Archive className="h-4 w-4" />
+            {exportingAll ? "מייצא..." : "ייצוא מלא ZIP"}
+          </button>
+        </div>
       </div>
 
       {/* Summary bar */}
@@ -149,6 +163,9 @@ export default function Workspace({ navigateTo, pageParams }) {
         </span>
         <span className="text-xs text-slate-500 dark:text-zinc-400">
           <span className="font-semibold text-slate-800 dark:text-zinc-200">{totalNotes}</span> הערות ידע
+        </span>
+        <span className="text-xs text-slate-500 dark:text-zinc-400">
+          <span className="font-semibold text-slate-800 dark:text-zinc-200">{workspaceLibCount}</span> סרטוני ספרייה
         </span>
       </div>
 

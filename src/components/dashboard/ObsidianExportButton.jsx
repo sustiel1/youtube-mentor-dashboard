@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Copy, Download, Check, ChevronDown, FolderOpen, ExternalLink } from "lucide-react";
 import {
   buildVideoLearningNote,
-  resolvePrimaryTopic,
+  resolveObsidianFolderForVideo,
   copyToClipboard,
   downloadMarkdown,
   buildObsidianUrl,
@@ -10,7 +10,7 @@ import {
   getFolderOptionsForVideo,
   getMainCategoryFromPath,
 } from "@/lib/obsidianExport";
-import { getConfiguredObsidianVaultName } from "@/lib/obsidianVaultConfig";
+import { getActiveObsidianVaultConfig } from "@/lib/obsidianVaultConfig";
 
 export function ObsidianExportButton({
   video,
@@ -24,7 +24,7 @@ export function ObsidianExportButton({
   const [copied, setCopied] = useState(false);
   const [topicOpen, setTopicOpen] = useState(false);
 
-  const autoTopic = useMemo(() => resolvePrimaryTopic(video || {}), [video]);
+  const autoTopic = useMemo(() => resolveObsidianFolderForVideo(video || {}), [video]);
   const folderOptions = useMemo(() => getFolderOptionsForVideo(video || {}), [video]);
   const detectedMainCategory = useMemo(
     () => getMainCategoryFromPath(autoTopic) || getMainCategoryFromPath(folderOptions[0]) || null,
@@ -46,7 +46,7 @@ export function ObsidianExportButton({
 
   const note = buildVideoLearningNote(video, mentorName, activeTopic, notes);
   const isAutoTopic = primaryTopic === null;
-  const configuredVaultName = getConfiguredObsidianVaultName();
+  const configuredVaultName = getActiveObsidianVaultConfig().vaultName;
 
   const handleTopicSelect = (topic) => {
     setPrimaryTopic(topic);

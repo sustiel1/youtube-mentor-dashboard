@@ -11,6 +11,7 @@ import KnowledgeLibrary from './pages/KnowledgeLibrary';
 import KnowledgeSearch from './pages/KnowledgeSearch';
 import TopicKnowledgePage from './pages/TopicKnowledgePage';
 import Workspace from './pages/Workspace';
+import WorkspaceLibrary from './pages/WorkspaceLibrary';
 import CloudBackups from './pages/CloudBackups';
 
 export const PAGES = {
@@ -27,6 +28,7 @@ export const PAGES = {
     "KnowledgeSearch": KnowledgeSearch,
     "TopicKnowledgePage": TopicKnowledgePage,
     "Workspace": Workspace,
+    "WorkspaceLibrary": WorkspaceLibrary,
     "CloudBackups": CloudBackups,
 }
 

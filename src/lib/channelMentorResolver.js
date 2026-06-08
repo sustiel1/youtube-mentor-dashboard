@@ -3,11 +3,18 @@
 
 import { MENTORS } from '@/data/mockData';
 import { getLocalCustomMentors } from '@/lib/localCustomMentorsStore';
+import { applyTopicOverridesToMentors } from '@/lib/mentorTopicOverrides';
+import { loadTopics } from '@/services/topicStorage';
+import { getMainTopicForTopic } from '@/lib/topicFilters';
 
 const CATEGORY_CODE_TO_LABEL = {
   Markets: 'שוק ההון',
   AI: 'בינה מלאכותית ואוטומציה',
   Dev: 'פיתוח תוכנה',
+  Politics: 'פוליטיקה',
+  Health: 'בריאות ותזונה',
+  Music: 'מוזיקה',
+  Food: 'אוכל ובישול',
 };
 
 function normalizeChannelId(v) {
@@ -27,10 +34,23 @@ function normalizeName(v) {
  * Matches video channel fields against all known mentors (mock + custom).
  * Returns { mentor, matchType, categoryCode, categoryLabel, topicIds } or null.
  */
+function deriveCategoryLabel(mentor) {
+  const code = mentor.category || null;
+  if (code && CATEGORY_CODE_TO_LABEL[code]) return CATEGORY_CODE_TO_LABEL[code];
+  // Fallback: derive from topicIds (mentor topic overrides store topicIds, not always category)
+  const topicIds = Array.isArray(mentor.topicIds) ? mentor.topicIds : [];
+  if (!topicIds.length) return code ?? null;
+  const topics = loadTopics();
+  const leafId = topicIds[0];
+  const main = getMainTopicForTopic(leafId, topics);
+  if (main) return CATEGORY_CODE_TO_LABEL[main.category ?? ''] ?? main.name ?? null;
+  return code ?? null;
+}
+
 export function resolveChannelToMentor(video) {
   if (!video) return null;
 
-  const allMentors = [...MENTORS, ...getLocalCustomMentors()];
+  const allMentors = applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
   const videoChannelId  = normalizeChannelId(video.channelId);
   const videoChannelUrl = normalizeUrl(video.channelUrl || '');
   const videoChannelName = normalizeName(
@@ -76,7 +96,7 @@ export function resolveChannelToMentor(video) {
   }
 
   const categoryCode  = matched.category || null;
-  const categoryLabel = CATEGORY_CODE_TO_LABEL[categoryCode] ?? categoryCode ?? null;
+  const categoryLabel = deriveCategoryLabel(matched);
   const topicIds      = Array.isArray(matched.topicIds) ? matched.topicIds : [];
 
   console.log('[ChannelResolver] resolved mentor:', {
@@ -88,4 +108,22 @@ export function resolveChannelToMentor(video) {
   });
 
   return { mentor: matched, matchType, categoryCode, categoryLabel, topicIds };
+}
+
+/**
+ * Looks up a mentor by display name (for cases where video has no channel metadata
+ * but the parent component knows the mentor name via props).
+ * Uses the same normalization as resolveChannelToMentor step 3.
+ */
+export function resolveMentorByName(displayName) {
+  if (!displayName) return null;
+  const allMentors = applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
+  const normalized = normalizeName(displayName);
+  const matched = allMentors.find(m => normalizeName(m.name) === normalized);
+  if (!matched) return null;
+  const categoryCode  = matched.category || null;
+  const categoryLabel = deriveCategoryLabel(matched);
+  const topicIds      = Array.isArray(matched.topicIds) ? matched.topicIds : [];
+  console.log('[ChannelResolver] resolved mentor by name prop:', { displayName, categoryCode, categoryLabel });
+  return { mentor: matched, matchType: 'nameByProp', categoryCode, categoryLabel, topicIds };
 }

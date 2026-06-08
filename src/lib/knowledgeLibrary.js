@@ -1,7 +1,7 @@
 // Knowledge Library — fixed per-tab accumulation pages in localStorage + Obsidian vault.
 // Parallel to the Brain save workflow; does NOT replace it.
 
-import { buildObsidianOpenUrl, getConfiguredObsidianVaultName } from "@/lib/obsidianVaultConfig";
+import { buildObsidianOpenUrl, getConfiguredObsidianVaultName, getActiveObsidianVaultConfig } from "@/lib/obsidianVaultConfig";
 import { openObsidianUrl } from "@/lib/obsidianExport";
 
 const STORAGE_KEY = "yt_knowledge_library_v1";
@@ -385,7 +385,16 @@ export function ensureKnowledgeLibraryVaultFiles() {
     return Promise.resolve({ ok: false, skipped: true });
   }
   if (!ensureVaultFilesPromise) {
-    ensureVaultFilesPromise = fetch("/api/vault/knowledge-library/ensure", { method: "POST" })
+    const { vaultName, vaultPath } = getActiveObsidianVaultConfig();
+    ensureVaultFilesPromise = fetch("/api/vault/knowledge-library/ensure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vaultName,
+        vaultPath,
+        paths: FIXED_LIBRARY_PATHS,
+      }),
+    })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         console.log("[KnowledgeLibrary] ensure fixed files", data);

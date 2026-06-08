@@ -24,7 +24,7 @@ function copyText(text) {
 function ItemRow({ text, onBrain }) {
   return (
     <div className="group flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors">
-      <span className="flex-1 text-sm text-slate-700 dark:text-zinc-300 leading-relaxed text-right">
+      <span className="flex-1 text-sm text-slate-700 dark:text-zinc-300 leading-relaxed text-right whitespace-pre-line">
         {text}
       </span>
       <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

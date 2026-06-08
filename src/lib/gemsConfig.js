@@ -1,38 +1,107 @@
 export const GEMS_CONFIG_KEY = "gems_config";
 
+export const GEM_STORAGE_KEYS = {
+  general: "gemUrl.general",
+  political: "gemUrl.political",
+  market: "gemUrl.market",
+  technical: "gemUrl.technical",
+  fundamental: "gemUrl.fundamental",
+  appBuilder: "gemUrl.appBuilder",
+  macro: "gemUrl.macro",
+  news: "gemUrl.news",
+  dayTrading: "gemUrl.dayTrading",
+};
+
 export const defaultGems = {
   fundamental: "https://gemini.google.com/gem/593021ea2734",
   appBuilder: "https://gemini.google.com/gem/c195e8991418",
   political: "https://gemini.google.com/gem/99b982aa44b6",
   general: "",
+  market: "",
   technical: "",
   macro: "",
   news: "https://gemini.google.com/gem/0e687d497bd3",
+  dayTrading: "",
 };
 
 function normalizeGemUrl(url) {
-  const s = String(url || "").trim();
-  if (!s) return "";
+  const value = String(url || "").trim();
+  if (!value) return "";
+
   try {
-    const u = new URL(s);
-    if (u.hostname === "gemini.google.com" && u.pathname.startsWith("/gem/")) {
-      u.searchParams.delete("usp");
-      return u.toString().replace(/\?$/, "");
+    const parsed = new URL(value);
+    if (parsed.hostname === "gemini.google.com" && parsed.pathname.startsWith("/gem/")) {
+      parsed.searchParams.delete("usp");
+      return parsed.toString().replace(/\?$/, "");
     }
   } catch {}
-  return s;
+
+  return value;
+}
+
+function readLegacyConfig() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(GEMS_CONFIG_KEY) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getGemConfigSnapshot() {
+  const legacy = readLegacyConfig();
+  const snapshot = {};
+
+  Object.entries(GEM_STORAGE_KEYS).forEach(([key, storageKey]) => {
+    let value = "";
+
+    try {
+      value = localStorage.getItem(storageKey) || "";
+    } catch {
+      value = "";
+    }
+
+    if (!value && typeof legacy[key] === "string") {
+      value = legacy[key];
+    }
+
+    snapshot[key] = normalizeGemUrl(value || defaultGems[key] || "");
+  });
+
+  return snapshot;
+}
+
+export function saveGemConfigSnapshot(nextConfig) {
+  const current = getGemConfigSnapshot();
+  const merged = {
+    ...current,
+    ...(nextConfig && typeof nextConfig === "object" ? nextConfig : {}),
+  };
+
+  const normalized = Object.fromEntries(
+    Object.keys({ ...defaultGems, ...merged }).map((key) => [key, normalizeGemUrl(merged[key] || "")])
+  );
+
+  try {
+    localStorage.setItem(GEMS_CONFIG_KEY, JSON.stringify(normalized));
+  } catch {}
+
+  Object.entries(GEM_STORAGE_KEYS).forEach(([key, storageKey]) => {
+    try {
+      localStorage.setItem(storageKey, normalized[key] || "");
+    } catch {}
+  });
+
+  return normalized;
+}
+
+export function setGemUrl(key, url) {
+  return saveGemConfigSnapshot({ [key]: url });
 }
 
 export function getGemUrl(key) {
-  let saved = {};
-
-  try {
-    saved = JSON.parse(localStorage.getItem(GEMS_CONFIG_KEY) || "{}");
-  } catch {
-    saved = {};
-  }
-
-  return normalizeGemUrl(saved[key] || defaultGems[key] || "");
+  const snapshot = getGemConfigSnapshot();
+  return normalizeGemUrl(snapshot[key] || "");
 }
 
 export function openGeminiGemUrl(url) {

@@ -5,6 +5,7 @@ import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG, getCategoryCodeForTopi
 import { useMentors, useUpdateMentor, useDeleteMentor, useHiddenMentors, useRestoreMentor } from "@/hooks/useMentors";
 import { useTopics, useCreateTopic, useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
 import { isUserTopic } from "@/services/topicStorage";
+import { detectDuplicateTopics, countVideosByTopic, countSubTopics, mergeTopics } from "@/services/topicMerge";
 import { useSources, useUpdateSource, useCreateSource } from "@/hooks/useSources";
 import { useVideos, useCreateVideo } from "@/hooks/useVideos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +42,7 @@ import { getMentorTopicOverride } from "@/lib/mentorTopicOverrides";
 import { updateChannelCollectionByChannelId, updateChannelCollectionByChannelName } from "@/lib/localChannelCollectionsStore";
 import { GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
 import { CATEGORY_TO_NAME } from "@/config/topicConfig";
+import { getAllScanHistory, setScanHistory as persistScanHistory } from "@/lib/localScanHistoryStore";
 
 
 const SOURCE_TYPE_ICON = {
@@ -131,31 +133,94 @@ function MentorSearchInput({ value, onChange, className }) {
 // ────────────────────────────────────────────
 // ניהול מנטורים
 // ────────────────────────────────────────────
+const MARKET_GEM_OPTIONS = [
+  { value: "", label: "אוטומטי (AI)" },
+  { value: "fundamental", label: "פונדמנטלי" },
+  { value: "technical",   label: "טכני" },
+  { value: "news",        label: "חדשות שוק" },
+  { value: "macro",       label: "מאקרו" },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: "Markets",   label: "שוק ההון" },
+  { value: "AI",        label: "בינה מלאכותית ואוטומציה" },
+  { value: "Dev",       label: "פיתוח תוכנה" },
+  { value: "Politics",  label: "פוליטיקה" },
+  { value: "Health",    label: "בריאות ותזונה" },
+  { value: "",          label: "כללי / אחר" },
+];
+
 function EditMentorDialog({ mentor, topics, onClose }) {
   const [form, setForm] = useState({
     name: mentor.name,
     active: mentor.active ?? true,
     topicIds: mentor.topicIds || [],
     isOpponentView: mentor.isOpponentView ?? false,
+    category: mentor.category || "",
+    defaultSubTopic: mentor.defaultSubTopic || mentor.subTopic || "",
+    defaultGem: mentor.defaultGem || "",
   });
   const updateMentor = useUpdateMentor();
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleTopic = (id) => set("topicIds", form.topicIds.includes(id) ? form.topicIds.filter((t) => t !== id) : [...form.topicIds, id]);
 
   const handleSave = async () => {
-    await updateMentor.mutateAsync({ id: mentor.id, name: form.name, active: form.active, topicIds: form.topicIds, isOpponentView: form.isOpponentView });
+    await updateMentor.mutateAsync({
+      id: mentor.id,
+      name: form.name,
+      active: form.active,
+      topicIds: form.topicIds,
+      isOpponentView: form.isOpponentView,
+      category: form.category || undefined,
+      subTopic: form.defaultSubTopic || undefined,
+      defaultSubTopic: form.defaultSubTopic || undefined,
+      defaultGem: form.defaultGem || undefined,
+    });
     onClose();
   };
 
+  const isMarket = form.category === "Markets";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-80 space-y-4" onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
         <h3 className="text-base font-semibold text-gray-900">עריכת מנטור</h3>
+
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-gray-600">שם</label>
           <input value={form.name} onChange={(e) => set("name", e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
         </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">קטגוריה ראשית</label>
+          <select value={form.category} onChange={(e) => set("category", e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white">
+            {CATEGORY_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-600">תת-נושא ברירת מחדל</label>
+          <input value={form.defaultSubTopic} onChange={(e) => set("defaultSubTopic", e.target.value)}
+            placeholder="לדוגמה: ניתוח טכני, אסטרטגיות מסחר..."
+            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+        </div>
+
+        {isMarket && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-600">GEM ברירת מחדל</label>
+            <select value={form.defaultGem} onChange={(e) => set("defaultGem", e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white">
+              {MARKET_GEM_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={form.active} onChange={(e) => set("active", e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 text-indigo-600" />
@@ -171,7 +236,7 @@ function EditMentorDialog({ mentor, topics, onClose }) {
             <label className="text-xs font-medium text-gray-600">נושאים</label>
             <div className="flex flex-wrap gap-1.5">
               {topics.map((t) => (
-                <button key={t.id} onClick={() => toggleTopic(t.id)}
+                <button key={t.id} type="button" onClick={() => toggleTopic(t.id)}
                   className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                     form.topicIds.includes(t.id) ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-200 text-gray-500 hover:bg-gray-50"
                   }`}>
@@ -566,6 +631,148 @@ const TOPIC_COLOR_BG = {
   orange:  "bg-orange-400",
 };
 
+// ── Topic Integrity Report ──────────────────────────────────────────────────
+function TopicIntegrityReport({ topics, videos, onMerged }) {
+  const [mergeState, setMergeState] = useState(null); // { keepId, mergeId, label }
+  const [merging, setMerging] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+
+  const duplicates = useMemo(() => detectDuplicateTopics(topics), [topics]);
+
+  if (!duplicates.length && !lastResult) return null;
+
+  const handleConfirmMerge = () => {
+    if (!mergeState) return;
+    setMerging(true);
+    try {
+      const stats = mergeTopics(mergeState.keepId, mergeState.mergeId);
+      setLastResult({ ...stats, label: mergeState.label });
+      setMergeState(null);
+      onMerged?.();
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  return (
+    <div className="mb-5 rounded-2xl border border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/20 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-orange-200 dark:border-orange-800/40">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
+          <span className="text-sm font-bold text-orange-800 dark:text-orange-300">
+            בדיקת תקינות נושאים
+          </span>
+          {duplicates.length > 0 && (
+            <span className="rounded-full bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5">
+              {duplicates.length} כפילויות
+            </span>
+          )}
+        </div>
+        {lastResult && (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            ✅ מוזג — {lastResult.videos} סרטונים, {lastResult.knowledgeItems} פריטי מוח, {lastResult.subTopics} תת-נושאים
+          </span>
+        )}
+      </div>
+
+      {duplicates.length === 0 && lastResult && (
+        <p className="px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+          אין כפילויות נוספות — כל הנושאים תקינים.
+        </p>
+      )}
+
+      {duplicates.map((group) => (
+        <div key={group[0].name.toLowerCase()} className="px-4 py-3 border-b border-orange-100 dark:border-orange-800/30 last:border-0">
+          <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2">
+            ⚠️ &quot;{group[0].name}&quot; — {group.length} כפולים
+          </p>
+          <div className="space-y-1.5">
+            {group.map(t => {
+              const vCount  = countVideosByTopic(t.id, videos);
+              const subCount = countSubTopics(t.id, topics);
+              const isMock  = !isUserTopic(t.id);
+              return (
+                <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-orange-200 bg-white dark:border-orange-800/40 dark:bg-zinc-900 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isMock ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                      {isMock ? 'מובנה' : 'מותאם'}
+                    </span>
+                    <code className="text-[10px] text-slate-500 dark:text-zinc-500 font-mono truncate">{t.id}</code>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 text-xs text-slate-500 dark:text-zinc-400">
+                    <span title="סרטונים">🎬 {vCount}</span>
+                    <span title="תת-נושאים">📂 {subCount}</span>
+                    {group.length === 2 && (
+                      <button
+                        type="button"
+                        disabled={merging}
+                        onClick={() => {
+                          // Always keep the mock/built-in topic or the one with more data
+                          const other = group.find(x => x.id !== t.id);
+                          setMergeState({
+                            keepId: t.id,
+                            mergeId: other.id,
+                            label: t.name,
+                            keepLabel: isMock ? `${t.id} (מובנה)` : t.id,
+                            mergeLabel: other.id,
+                          });
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 text-[10px] font-bold transition-colors"
+                      >
+                        <GitMerge className="h-3 w-3" />
+                        <span>שמור זה, מחק שני</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {group.length > 2 && (
+            <p className="mt-1.5 text-[10px] text-orange-600 dark:text-orange-400">
+              יש {group.length} כפולים — בחר ידנית בכל זוג
+            </p>
+          )}
+        </div>
+      ))}
+
+      {/* Merge confirmation modal */}
+      {mergeState && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50" dir="rtl">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-6 w-96 space-y-4">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">אשר מיזוג נושאים</h3>
+            <div className="rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 px-4 py-3 space-y-1 text-sm">
+              <p><span className="font-semibold text-green-700 dark:text-green-400">שומרים:</span> <code className="text-xs">{mergeState.keepLabel}</code></p>
+              <p><span className="font-semibold text-red-600 dark:text-red-400">מוחקים:</span> <code className="text-xs">{mergeState.mergeLabel}</code></p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1.5">
+                כל הסרטונים, פריטי המוח ותת-הנושאים של הנושא שנמחק יועברו לנושא שנשמר.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleConfirmMerge}
+                disabled={merging}
+                className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors"
+              >
+                {merging ? "מזג..." : "אשר מיזוג"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMergeState(null)}
+                className="flex-1 py-2 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopicsTab({ topics, videos, mentors = [] }) {
   const [orderedTopics, setOrderedTopics] = useState(topics);
   const [editingTopic, setEditingTopic]   = useState(null);
@@ -574,10 +781,19 @@ function TopicsTab({ topics, videos, mentors = [] }) {
   const [newName, setNewName]             = useState("");
   const [newColor, setNewColor]           = useState("blue");
   const [newError, setNewError]           = useState("");
+  const [integrityKey, setIntegrityKey]   = useState(0);
 
   const updateTopic = useUpdateTopic();
   const deleteTopic = useDeleteTopic();
   const createTopic = useCreateTopic();
+  const queryClient  = useQueryClient();
+
+  const handleMerged = () => {
+    queryClient.invalidateQueries({ queryKey: ['topics'] });
+    queryClient.invalidateQueries({ queryKey: ['videos'] });
+    queryClient.invalidateQueries({ queryKey: ['mentors'] });
+    setIntegrityKey(k => k + 1);
+  };
 
   // Sync orderedTopics whenever the topics prop changes (initial load + after mutations)
   useEffect(() => {
@@ -615,6 +831,9 @@ function TopicsTab({ topics, videos, mentors = [] }) {
   const displayTopics = orderedTopics.length ? orderedTopics : topics;
   return (
     <div dir="rtl">
+      {/* ── Integrity Report ── */}
+      <TopicIntegrityReport key={integrityKey} topics={topics} videos={videos} onMerged={handleMerged} />
+
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-semibold text-slate-800 dark:text-white">נושאים ({displayTopics.length})</h2>
@@ -3796,6 +4015,7 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
   const [deletingAll, setDeletingAll] = useState(false);
   const [fetchingFor, setFetchingFor] = useState({});
   const [fetchResultFor, setFetchResultFor] = useState({});
+  const [scanHistory, setScanHistoryState] = useState(() => getAllScanHistory());
   const [channelSearch, setChannelSearch] = useState("");
   const [syncInfo] = useState(() => ({
     lastAt: getLastSyncAt(),
@@ -4381,12 +4601,28 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
           failed: chaptersFailed,
         },
       }));
+      persistScanHistory(mentorId, {
+        lastScanStatus: added.length > 0 ? "ok" : "no_new",
+        lastScanFoundCount: fetched.length,
+        lastScanImportedCount: added.length,
+        lastScanError: null,
+        lastScanSource: "RSS",
+      });
+      setScanHistoryState(getAllScanHistory());
       if (added.length > 0) setStoredCount(getVideoCount());
       toast.success(`יובאו ${added.length} · נוצרו פרקים ל-${chaptersUpdated} · נכשלו ${chaptersFailed}`);
     } catch (err) {
       console.warn(`[RssTab] ${mentor.name}: שגיאה — ${err.message}`);
       console.groupEnd();
       setFetchResultFor((prev) => ({ ...prev, [mentorId]: { error: err.message } }));
+      persistScanHistory(mentorId, {
+        lastScanStatus: "error",
+        lastScanFoundCount: 0,
+        lastScanImportedCount: 0,
+        lastScanError: err.message,
+        lastScanSource: "RSS",
+      });
+      setScanHistoryState(getAllScanHistory());
     } finally {
       setFetchingFor((prev) => ({ ...prev, [mentorId]: false }));
     }
@@ -4899,6 +5135,38 @@ function RssTab({ videos, mentors = [], sources = [], topics = [] }) {
                   <div className="mt-2 flex items-start justify-between gap-3 flex-row-reverse">
                     <div className="text-right">
                       <ChannelStatus status={status} channelId={ch.channelId} />
+                      {/* Persistent scan history badge */}
+                      {(() => {
+                        const h = scanHistory[ch.mentorId];
+                        if (!h) return (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-[10px] text-yellow-600 dark:border-yellow-800/50 dark:bg-yellow-950/20 dark:text-yellow-400" title="ערוץ זה טרם נסרק">
+                            ⚪ טרם נסרק
+                          </span>
+                        );
+                        const dateStr = new Date(h.lastScannedAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" });
+                        const tooltip = [
+                          `סריקה אחרונה: ${dateStr}`,
+                          h.lastScanFoundCount != null ? `נמצאו: ${h.lastScanFoundCount}` : null,
+                          h.lastScanImportedCount != null ? `יובאו: ${h.lastScanImportedCount}` : null,
+                          h.lastScanError ? `שגיאה: ${h.lastScanError}` : null,
+                          h.lastScanSource ? `מקור: ${h.lastScanSource}` : null,
+                        ].filter(Boolean).join("\n");
+                        if (h.lastScanStatus === "error") return (
+                          <span title={tooltip} className="mt-1 inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">
+                            🔴 נכשל · {dateStr}
+                          </span>
+                        );
+                        if (h.lastScanImportedCount > 0) return (
+                          <span title={tooltip} className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300">
+                            🟢 נוספו {h.lastScanImportedCount} · {dateStr}
+                          </span>
+                        );
+                        return (
+                          <span title={tooltip} className="mt-1 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                            ⚫ אין חדשים · {dateStr}
+                          </span>
+                        );
+                      })()}
                       {hasPreview && (
                         <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-300">
                           {status.preview.length} סרטונים חדשים מוכנים לייבוא
@@ -5515,7 +5783,7 @@ export default function Admin({ navigateTo = null }) {
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">ניהול</h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">
-              הגדרות מערכת, ייצוא נתונים וסנכרון ערוצים
+              מרכז השליטה של YouTube Mentor — כל הכלים לניהול הערוצים, הידע והאוטומציות במקום אחד.
             </p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:items-end">

@@ -247,6 +247,15 @@ function parseVttTime(s) {
   return h * 3600 + m * 60 + sec;
 }
 
+export function clearTranscriptCache(videoId) {
+  if (!videoId) return false;
+  const cache = readCache();
+  if (!(videoId in cache)) return false;
+  delete cache[videoId];
+  writeCache(cache);
+  return true;
+}
+
 export async function fetchTranscriptPayload(videoId) {
   if (!videoId) return null;
 

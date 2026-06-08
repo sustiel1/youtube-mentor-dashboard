@@ -832,6 +832,22 @@ export function SummaryTabView({
         <NarrativeBodySection summaryLong={summaryLong} summaryShort={summaryShort && summaryLong ? null : summaryShort} />
       )}
 
+      {/* GEM summary — pasted manually from Gemini Gem */}
+      {video?.gemSummary && (
+        <section className="space-y-3" dir="rtl">
+          <div className="flex items-center gap-2">
+            <SummaryBadge className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+              📰 סיכום GEM — מבזק בוקר
+            </SummaryBadge>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-800/30 dark:bg-amber-950/20">
+            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800 dark:text-zinc-100">
+              {video.gemSummary}
+            </p>
+          </div>
+        </section>
+      )}
+
       {(variant === "political" || variant === "fundamental") && summaryLong && (
         <NarrativeBodySection summaryLong={summaryLong} summaryShort={null} />
       )}

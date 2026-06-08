@@ -83,13 +83,34 @@ function TranscriptPreview({ section }) {
 }
 
 function ChapterContent({ section, timestampLabel, muted = false }) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const hasHebrew = Boolean(section.hebrewTitle);
+  const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
+  const originalTitle = hasHebrew ? (section.originalTitle || section.title) : null;
+
   return (
     <div className="flex flex-row-reverse items-start justify-between gap-3" dir="rtl">
       <div className="min-w-0 flex-1 items-start text-right">
         <div className={`w-full text-right text-base font-bold leading-snug ${muted ? "text-slate-700 dark:text-zinc-200" : "text-blue-900 dark:text-blue-200"}`}>
-          {section.title}
+          {displayTitle}
         </div>
-        {section.translatedTitleHe && section.translatedTitleHe !== section.title && (
+        {hasHebrew && (
+          <div className="mt-1 flex items-center gap-1.5" dir="rtl">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowOriginal(p => !p); }}
+              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+            >
+              {showOriginal ? "הסתר מקור ▲" : "הצג מקור ▼"}
+            </button>
+          </div>
+        )}
+        {hasHebrew && showOriginal && originalTitle && (
+          <div className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500 text-right italic" dir="ltr">
+            {originalTitle}
+          </div>
+        )}
+        {!hasHebrew && section.translatedTitleHe && section.translatedTitleHe !== section.title && (
           <div className="mt-0.5 text-sm font-medium text-slate-500 dark:text-zinc-400 text-right" dir="rtl">
             {section.translatedTitleHe}
           </div>

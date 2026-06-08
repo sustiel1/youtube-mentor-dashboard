@@ -37,6 +37,7 @@ function mergeSelectedVideoState(fresh, prev) {
 export default function SavedVideos({ filters = { search: "", mentor: "all", category: "all" }, setFilters, isDark, toggleTheme }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [opponentOnly, setOpponentOnly] = useState(false);
 
   const { data: videos = [], isLoading: videosLoading } = useVideos();
   const { data: mentors = [], isLoading: mentorsLoading } = useMentors();
@@ -64,9 +65,10 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
         if (filters.search && !v.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
         if (filters.mentor !== "all" && v.mentorId !== filters.mentor) return false;
         if (filters.category !== "all" && !videoBelongsToTopicFamily(v, filters.category, topics)) return false;
+        if (opponentOnly && v.opponentView !== true) return false;
         return true;
       });
-  }, [videos, filters, topics]);
+  }, [videos, filters, topics, opponentOnly]);
 
   const getMentorName = (mentorId) => mentors.find((m) => m.id === mentorId)?.name || "";
 
@@ -131,6 +133,20 @@ export default function SavedVideos({ filters = { search: "", mentor: "all", cat
               mentors={mentors.filter((m) => m.active)}
               topics={topics}
             />
+            <div className="flex items-center gap-2 mt-2 mb-1">
+              <button
+                type="button"
+                onClick={() => setOpponentOnly((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                  opponentOnly
+                    ? 'bg-rose-50 border-rose-300 text-rose-700 dark:bg-rose-950/30 dark:border-rose-800/60 dark:text-rose-300'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-rose-300 hover:text-rose-600 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-400'
+                }`}
+              >
+                <span>⚔️</span>
+                <span>{opponentOnly ? 'מציג רק דעת האויב' : 'הצג רק דעת האויב'}</span>
+              </button>
+            </div>
 
             {savedVideos.length === 0 ? (
               <div className="text-center py-16">

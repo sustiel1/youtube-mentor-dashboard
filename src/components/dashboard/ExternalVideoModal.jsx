@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from "react";
-import { Link2, Loader2, AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, CheckCircle2, Link2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { Video } from "@/api/entities";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -16,19 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseYouTubeVideoId, isValidYouTubeUrl } from "@/lib/youtubeUrlParser";
-import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
-import {
-  getLocalVideos,
-  saveLocalVideo,
-  getDeletedVideoRestoreInfo,
-  restoreDeletedVideo,
-  isVideoDeleted,
-} from "@/lib/localVideoStore";
-import { mergeRestoredVideoWithFreshMetadata } from "@/lib/videoRestoreMerge";
-import { loadTopics } from "@/services/topicStorage";
+import { isBase44Enabled } from "@/config/base44Flags";
 import { useCreateTopic } from "@/hooks/useTopics";
+import {
+  getDeletedVideoRestoreInfo,
+  getLocalVideos,
+  isVideoDeleted,
+  restoreDeletedVideo,
+  saveLocalVideo,
+} from "@/lib/localVideoStore";
 import { formatTopicLabel } from "@/lib/topicFilters";
+import { buildFreshImportRecord, clearVideoGeneratedCaches, saveFreshImportRecordLocally, stripFreshImportFlags } from "@/lib/videoFreshImport";
+import { mergeRestoredVideoWithFreshMetadata } from "@/lib/videoRestoreMerge";
+import { isValidYouTubeUrl, parseYouTubeVideoId } from "@/lib/youtubeUrlParser";
+import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
+import { loadTopics } from "@/services/topicStorage";
 
 const STATE = {
   idle: "idle",
@@ -37,33 +40,42 @@ const STATE = {
   loading: "loading",
   error: "error",
   restore_prompt: "restore_prompt",
+  duplicate_prompt: "duplicate_prompt",
 };
+
 const TOPIC_CHOICE_NEW = "__new_topic__";
 
 function mergedVideoListForDedup(queryClient) {
-  const q = queryClient.getQueryData(["videos"]);
-  const local = getLocalVideos();
+  const queryVideos = queryClient.getQueryData(["videos"]);
+  const localVideos = getLocalVideos();
   const out = [];
   const seen = new Set();
-  for (const list of [Array.isArray(q) ? q : [], local]) {
-    for (const v of list) {
-      if (!v?.id || seen.has(v.id)) continue;
-      if (v.url && isVideoDeleted(v.url)) continue;
-      if (v.deleted === true || v.isDeleted === true) continue;
-      seen.add(v.id);
-      out.push(v);
+
+  for (const list of [Array.isArray(queryVideos) ? queryVideos : [], localVideos]) {
+    for (const video of list) {
+      if (!video?.id || seen.has(video.id)) continue;
+      if (video.url && isVideoDeleted(video.url)) continue;
+      if (video.deleted === true || video.isDeleted === true) continue;
+      seen.add(video.id);
+      out.push(video);
     }
   }
+
   return out;
 }
 
 function findVideoByYoutubeId(videos, ytId) {
   if (!ytId || !Array.isArray(videos)) return null;
   return (
-    videos.find((v) => {
-      const fromUrl = v.url ? parseYouTubeVideoId(v.url) : null;
-      const legacyId = v._videoId ? String(v._videoId).trim() : null;
-      return v.videoId === ytId || v.youtubeId === ytId || fromUrl === ytId || legacyId === ytId;
+    videos.find((video) => {
+      const fromUrl = video.url ? parseYouTubeVideoId(video.url) : null;
+      const legacyId = video._videoId ? String(video._videoId).trim() : null;
+      return (
+        video.videoId === ytId ||
+        video.youtubeId === ytId ||
+        fromUrl === ytId ||
+        legacyId === ytId
+      );
     }) ?? null
   );
 }
@@ -76,9 +88,10 @@ async function resolveTopicIds(topicChoice, newTopicName, createTopic) {
   if (!trimmed) {
     throw new Error("TOPIC_NAME_REQUIRED");
   }
+
   const allTopics = loadTopics();
   const existing = allTopics.find(
-    (t) => String(t.name || "").trim().toLowerCase() === trimmed.toLowerCase()
+    (topic) => String(topic.name || "").trim().toLowerCase() === trimmed.toLowerCase()
   );
   if (existing) return [existing.id];
 
@@ -88,7 +101,7 @@ async function resolveTopicIds(topicChoice, newTopicName, createTopic) {
   } catch {
     const after = loadTopics();
     const fallback = after.find(
-      (t) => String(t.name || "").trim().toLowerCase() === trimmed.toLowerCase()
+      (topic) => String(topic.name || "").trim().toLowerCase() === trimmed.toLowerCase()
     );
     if (fallback) return [fallback.id];
     throw new Error("TOPIC_CREATE_FAILED");
@@ -105,42 +118,56 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
   const [phase, setPhase] = useState(STATE.idle);
   const [errorMsg, setErrorMsg] = useState("");
   const [restoreInfo, setRestoreInfo] = useState(null);
+  const [duplicateVideo, setDuplicateVideo] = useState(null);
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
   const createTopic = useCreateTopic();
 
   useEffect(() => {
-    if (open) {
-      setUrl("");
-      setOptionalTitle("");
-      setMentorChoice("all");
-      setTopicChoice("all");
-      setNewTopicName("");
-      setTopicFieldError("");
-      setPhase(STATE.idle);
-      setErrorMsg("");
-      setRestoreInfo(null);
-      setTimeout(() => inputRef.current?.focus(), 80);
-    }
-  }, [open]);
-
-  const handleUrlChange = (e) => {
-    const val = e.target.value;
-    setUrl(val);
+    if (!open) return;
+    setUrl("");
+    setOptionalTitle("");
+    setMentorChoice("all");
+    setTopicChoice("all");
+    setNewTopicName("");
+    setTopicFieldError("");
+    setPhase(STATE.idle);
     setErrorMsg("");
     setRestoreInfo(null);
-    if (phase === STATE.restore_prompt) setPhase(STATE.idle);
-    if (!val.trim()) {
-      setPhase(STATE.idle);
-      return;
-    }
-    setPhase(isValidYouTubeUrl(val) ? STATE.valid : STATE.invalid);
-  };
+    setDuplicateVideo(null);
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }, [open]);
 
   const buildAddOptions = async () => {
     const topicIds = await resolveTopicIds(topicChoice, newTopicName, createTopic);
     const mentorId = mentorChoice !== "all" ? mentorChoice : null;
     return { topicIds, mentorId };
+  };
+
+  const openExistingVideo = (existingVideo) => {
+    if (!existingVideo) return;
+    toast.message("הסרטון כבר קיים במערכת", {
+      description: "נטענת הגרסה הקיימת של הסרטון",
+    });
+    queryClient.invalidateQueries({ queryKey: ["videos"] });
+    onVideoAdded?.(existingVideo);
+    onClose?.();
+  };
+
+  const handleUrlChange = (event) => {
+    const value = event.target.value;
+    setUrl(value);
+    setErrorMsg("");
+    setRestoreInfo(null);
+    setDuplicateVideo(null);
+    if (phase === STATE.restore_prompt || phase === STATE.duplicate_prompt) {
+      setPhase(STATE.idle);
+    }
+    if (!value.trim()) {
+      setPhase(STATE.idle);
+      return;
+    }
+    setPhase(isValidYouTubeUrl(value) ? STATE.valid : STATE.invalid);
   };
 
   const handleRestore = async () => {
@@ -159,6 +186,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
         topicIds,
         source: "manual",
       });
+
       const merged = mergeRestoredVideoWithFreshMetadata(restoreInfo.archived, fresh);
       const restored = restoreDeletedVideo({
         ytId: videoId,
@@ -191,10 +219,67 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     }
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
+  const handleDuplicateReimport = async () => {
+    const videoId = parseYouTubeVideoId(url);
+    if (!videoId || !duplicateVideo) return;
+
+    setPhase(STATE.loading);
+    setErrorMsg("");
+    setTopicFieldError("");
+
+    try {
+      const { topicIds, mentorId } = await buildAddOptions();
+      const fresh = await buildExternalVideoObject(videoId, {
+        titleOverride: optionalTitle,
+        mentorId,
+        topicIds,
+        source: "manual",
+      });
+
+      clearVideoGeneratedCaches(duplicateVideo);
+      const reimported = buildFreshImportRecord(duplicateVideo, fresh, {
+        requestFreshAnalysis: true,
+        requestedAt: new Date().toISOString(),
+        requestSource: "duplicate_modal",
+      });
+      const localSaved = saveFreshImportRecordLocally(reimported) || reimported;
+
+      if (isBase44Enabled()) {
+        try {
+          await Video.update(duplicateVideo.id, stripFreshImportFlags(localSaved));
+        } catch (err) {
+          console.warn("[FreshImport] Base44 sync failed (non-blocking):", err?.message);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+      toast.success("הסרטון אופס וייובא מחדש מאפס");
+      onVideoAdded?.(localSaved);
+      onClose?.();
+    } catch (err) {
+      if (err?.message === "TOPIC_NAME_REQUIRED") {
+        setTopicFieldError("יש להזין שם לנושא החדש");
+        setPhase(STATE.duplicate_prompt);
+        return;
+      }
+      if (err?.message === "TOPIC_CREATE_FAILED") {
+        toast.error("לא ניתן ליצור את הנושא — נסה שוב");
+        setPhase(STATE.duplicate_prompt);
+        return;
+      }
+      setPhase(STATE.error);
+      setErrorMsg(err?.message || "שגיאה בייבוא מחדש של הסרטון");
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event?.preventDefault();
     if (phase === STATE.restore_prompt) {
       await handleRestore();
+      return;
+    }
+    if (phase === STATE.duplicate_prompt) {
       return;
     }
     if (phase !== STATE.valid) return;
@@ -208,12 +293,8 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     const combined = mergedVideoListForDedup(queryClient);
     const activeDuplicate = findVideoByYoutubeId(combined, videoId);
     if (activeDuplicate) {
-      toast.message("הסרטון כבר קיים במערכת", {
-        description: "נפתח הכרטיס הקיים כדי להמשיך צפייה או ניתוח",
-      });
-      queryClient.invalidateQueries({ queryKey: ["videos"] });
-      onVideoAdded?.(activeDuplicate);
-      onClose?.();
+      setDuplicateVideo(activeDuplicate);
+      setPhase(STATE.duplicate_prompt);
       return;
     }
 
@@ -245,17 +326,15 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
           setPhase(STATE.restore_prompt);
           return;
         }
+
         const after = mergedVideoListForDedup(queryClient);
         const dup = findVideoByYoutubeId(after, videoId);
         if (dup) {
-          toast.message("הסרטון כבר קיים במערכת", {
-            description: "נפתח הכרטיס הקיים",
-          });
-          queryClient.invalidateQueries({ queryKey: ["videos"] });
-          onVideoAdded?.(dup);
-          onClose?.();
+          setDuplicateVideo(dup);
+          setPhase(STATE.duplicate_prompt);
           return;
         }
+
         setPhase(STATE.error);
         setErrorMsg("לא ניתן להוסיף את הסרטון — נסה שוב");
         return;
@@ -280,15 +359,17 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleSubmit();
-    if (e.key === "Escape") onClose?.();
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") handleSubmit();
+    if (event.key === "Escape") onClose?.();
   };
 
   const videoId = url.trim() ? parseYouTubeVideoId(url) : null;
   const isLoading = phase === STATE.loading;
   const isBusy = isLoading || createTopic.isPending;
   const isRestorePrompt = phase === STATE.restore_prompt;
+  const isDuplicatePrompt = phase === STATE.duplicate_prompt;
+  const isReadyState = phase === STATE.valid || isRestorePrompt || isDuplicatePrompt;
   const canSubmit =
     (phase === STATE.valid || isRestorePrompt) &&
     !isBusy &&
@@ -307,12 +388,18 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
             </div>
             <div>
               <DialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
-                {isRestorePrompt ? "שחזור סרטון שנמחק" : "הוסף סרטון לפי קישור"}
+                {isRestorePrompt
+                  ? "שחזור סרטון שנמחק"
+                  : isDuplicatePrompt
+                    ? "הסרטון כבר קיים"
+                    : "הוסף סרטון לפי קישור"}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
                 {isRestorePrompt
                   ? "הסרטון נמצא במערכת אך הוסר מהרשימה הפעילה — ניתן לשחזר אותו עם הנתונים השמורים"
-                  : "הדבק קישור YouTube והסרטון יתווסף לדשבורד כווידאו רגיל עם כל יכולות הלמידה והמוח"}
+                  : isDuplicatePrompt
+                    ? "אפשר לטעון את הגרסה הקיימת, או לייבא מחדש מאפס עם ניקוי של הניתוחים והקאש"
+                    : "הדבק קישור YouTube והסרטון יתווסף לדשבורד כווידאו רגיל עם כל יכולות הלמידה והמוח"}
               </DialogDescription>
             </div>
           </div>
@@ -357,6 +444,45 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
             </div>
           )}
 
+          {isDuplicatePrompt && (
+            <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-right dark:border-orange-800/50 dark:bg-orange-950/30">
+              <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                ⚠ הסרטון כבר קיים במערכת
+              </p>
+              {duplicateVideo?.title && (
+                <p className="mt-1 text-xs text-orange-800/90 dark:text-orange-300/90 line-clamp-2">
+                  {duplicateVideo.title}
+                </p>
+              )}
+              <p className="mt-2 text-[11px] text-orange-700/90 dark:text-orange-300/80">
+                ייבוא מחדש מאפס ינקה קטגוריה, המלצות, תמלול, ניתוח AI וקאש מקומי — בלי למחוק הערות ידניות או קבצי Obsidian.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 justify-end">
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => openExistingVideo(duplicateVideo)}
+                  className="inline-flex items-center justify-center rounded-lg border border-orange-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-orange-50 disabled:opacity-50 dark:border-orange-800 dark:bg-zinc-900 dark:text-zinc-200"
+                >
+                  טען גרסה קיימת
+                </button>
+                <button
+                  type="button"
+                  disabled={!videoId || isBusy}
+                  onClick={handleDuplicateReimport}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+                >
+                  {isBusy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  )}
+                  ייבא מחדש מאפס
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600 dark:text-zinc-400 block">
               קישור YouTube
@@ -376,7 +502,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
                   "placeholder:text-slate-400 dark:placeholder:text-zinc-600",
                   "focus:outline-none focus:ring-2 transition-all",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
-                  phase === STATE.valid || isRestorePrompt
+                  isReadyState
                     ? "border-emerald-300 focus:ring-emerald-200/60 dark:border-emerald-600/50 dark:focus:ring-emerald-500/20 text-slate-900 dark:text-zinc-100"
                     : phase === STATE.invalid || phase === STATE.error
                       ? "border-red-300 focus:ring-red-200/60 dark:border-red-600/50 dark:focus:ring-red-500/20 text-slate-900 dark:text-zinc-100"
@@ -384,7 +510,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
                 ].join(" ")}
               />
 
-              {(phase === STATE.valid || isRestorePrompt) && (
+              {isReadyState && (
                 <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 dark:text-emerald-400 pointer-events-none" />
               )}
               {(phase === STATE.invalid || phase === STATE.error) && (
@@ -407,7 +533,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
                 {errorMsg}
               </p>
             )}
-            {(phase === STATE.valid || isRestorePrompt) && videoId && (
+            {isReadyState && videoId && (
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3 shrink-0" />
                 זוהה ID: {videoId}
@@ -422,7 +548,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
             <input
               type="text"
               value={optionalTitle}
-              onChange={(e) => setOptionalTitle(e.target.value)}
+              onChange={(event) => setOptionalTitle(event.target.value)}
               disabled={isBusy}
               placeholder="אם ריק, הכותרת תיטען מ-YouTube"
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-right text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200/60 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:ring-indigo-500/20"
@@ -450,8 +576,8 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
               <span className="text-xs font-medium text-slate-600 dark:text-zinc-400 block">נושא (אופציונלי)</span>
               <Select
                 value={topicChoice}
-                onValueChange={(v) => {
-                  setTopicChoice(v);
+                onValueChange={(value) => {
+                  setTopicChoice(value);
                   setTopicFieldError("");
                 }}
                 disabled={isBusy}
@@ -471,6 +597,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
               </Select>
             </div>
           </div>
+
           {topicChoice === TOPIC_CHOICE_NEW && (
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block">
@@ -479,8 +606,8 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
               <input
                 type="text"
                 value={newTopicName}
-                onChange={(e) => {
-                  setNewTopicName(e.target.value);
+                onChange={(event) => {
+                  setNewTopicName(event.target.value);
                   if (topicFieldError) setTopicFieldError("");
                 }}
                 disabled={isBusy}
@@ -496,31 +623,31 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
             </div>
           )}
 
-          {(phase === STATE.valid || isRestorePrompt) && videoId && !isRestorePrompt && (
+          {isReadyState && videoId && !isRestorePrompt && (
             <div className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-2.5">
               <img
                 src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                 alt="תצוגה מקדימה"
                 className="w-24 h-14 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-zinc-700"
-                onError={(e) => {
-                  if (!e.target.dataset.triedHq) {
-                    e.target.dataset.triedHq = "1";
-                    e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                onError={(event) => {
+                  if (!event.target.dataset.triedHq) {
+                    event.target.dataset.triedHq = "1";
+                    event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                   } else {
-                    e.target.style.display = "none";
+                    event.target.style.display = "none";
                   }
                 }}
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">youtube.com/watch?v={videoId}</p>
                 <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
-                  אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, Brain Highlights וייצוא
+                  אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, תובנות מרכזיות וייצוא.
                 </p>
               </div>
             </div>
           )}
 
-          {!isRestorePrompt && (
+          {!isRestorePrompt && !isDuplicatePrompt && (
             <button
               type="submit"
               disabled={!canSubmit}
@@ -547,8 +674,10 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
 
           <p className="text-[11px] text-slate-400 dark:text-zinc-600 text-center">
             {isRestorePrompt
-              ? "שחזור מחזיר את הסרטון לרשימה הפעילה ושומר ניתוח, תמלול ופרקים אם נשמרו"
-              : "סרטון ידני נשמר מקומית, מופיע בכרטיס רגיל בדשבורד, ויפוג אחרי 30 יום אלא אם נשמר לצמיתות"}
+              ? "שחזור מחזיר את הסרטון לרשימה הפעילה ושומר ניתוח, תמלול ופרקים אם נשמרו."
+              : isDuplicatePrompt
+                ? "טען גרסה קיימת כדי להמשיך מהמקום האחרון, או ייבא מחדש מאפס כדי לנקות טעויות סיווג ישנות."
+                : "סרטון ידני נשמר מקומית, מופיע בכרטיס רגיל בדשבורד, וייפוג אחרי 30 יום אלא אם נשמר לצמיתות."}
           </p>
         </form>
       </DialogContent>

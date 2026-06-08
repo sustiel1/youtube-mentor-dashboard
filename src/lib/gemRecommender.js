@@ -208,14 +208,27 @@ function pickSubCategory(gemKey, fullText) {
 }
 
 // ─── Category Normalization ────────────────────────────────────────────────────
-// Maps any political variant (typos, English, partial) → canonical "פוליטיקה"
-const POLITICAL_VARIANTS = ['פולטי', 'פוליטי', 'פולטיקה', 'פוליטיקה ותוכן', 'political', 'politics', 'politics', 'פוליטיקה'];
+// Maps English category codes AND political variants to canonical Hebrew labels.
+const POLITICAL_VARIANTS = ['פולטי', 'פוליטי', 'פולטיקה', 'פוליטיקה ותוכן', 'political', 'politics', 'פוליטיקה'];
+
+// English category codes used by the RSS ingestion layer → canonical Hebrew labels
+const CATEGORY_CODE_TO_HEBREW = {
+  Markets: 'שוק ההון',
+  AI: 'בינה מלאכותית ואוטומציה',
+  Dev: 'פיתוח תוכנה',
+  Politics: 'פוליטיקה',
+  Health: 'בריאות ותזונה',
+  Music: 'מוזיקה',
+  Food: 'אוכל ובישול',
+};
 
 export function normalizeCategoryName(raw) {
   if (!raw) return raw;
   const trimmed = String(raw).trim();
   const lower = trimmed.toLowerCase();
   if (POLITICAL_VARIANTS.some(v => v.toLowerCase() === lower)) return 'פוליטיקה';
+  const hebrewLabel = CATEGORY_CODE_TO_HEBREW[trimmed];
+  if (hebrewLabel) return hebrewLabel;
   return trimmed;
 }
 

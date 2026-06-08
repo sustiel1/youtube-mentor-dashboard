@@ -1,5 +1,5 @@
 // Obsidian-compatible Markdown export engine — v2
-import { getObsidianPrimaryByTopicId } from "@/lib/topicRules";
+import { getObsidianPrimaryByTopicId, getAppIdeasFolder } from "@/lib/topicRules";
 // Supports: topic-based pathing, LLM-ready headings, temporal YAML, weekly recap.
 //
 // Root folders map directly to semantic destinations inside the vault.
@@ -20,6 +20,11 @@ import {
   buildObsidianOpenUrl,
   getConfiguredObsidianVaultName,
 } from "./obsidianVaultConfig";
+import {
+  buildObsidianVideoFileName,
+  resolveObsidianFolderFromTaxonomy,
+  resolveVideoObsidianRoute,
+} from "./obsidianRouting.js";
 import { applyObsidianExportMetadata } from "./obsidianExportMetadata.js";
 
 export { applyObsidianExportMetadata, buildVaultExportMetadataPayload } from "./obsidianExportMetadata.js";
@@ -33,20 +38,33 @@ export const OBSIDIAN_VAULT_NAME = DEFAULT_OBSIDIAN_VAULT_NAME;
 
 export const OBSIDIAN_FOLDER_CATALOG = {
   'שוק ההון': [
-    'שוק ההון/אופציות',
-    'שוק ההון/אינדיקטורים',
-    'שוק ההון/אסטרטגיות',
-    'שוק ההון/דוחות ורווחים',
-    'שוק ההון/השקעות לטווח ארוך',
-    'שוק ההון/טראמפ ושוק ההון',
-    'שוק ההון/מאקרו',
-    'שוק ההון/מניות AI',
+    // ── Folders that physically exist in the vault ──────────────────────
+    'שוק ההון/סרטונים',                         // video exports (V-*.md)
+    'שוק ההון/ספריית ידע/ניתוח טכני',
+    'שוק ההון/ספריית ידע/ניתוח חדשות',
+    'שוק ההון/ספריית ידע/אינדיקטורים',
+    'שוק ההון/ספריית ידע/אסטרטגיות',
+    'שוק ההון/ספריית ידע/ניהול סיכונים',
+    'שוק ההון/ספריית ידע/פונדמנטלי',
+    'שוק ההון/ספריית ידע/מאקרו',
+    'שוק ההון/ספריית ידע/פסיכולוגיית מסחר',
+    'שוק ההון/ספריית ידע/הערכת שווי',
+    'שוק ההון/ספריית ידע/סקטורים ותעשיות',
+    'שוק ההון/ספריית ידע/ETF',
+    'שוק ההון/ספריית ידע/AI והשקעות',
+    'שוק ההון/ספריית ידע/בניית אפליקציה',
+    "שוק ההון/ספריית ידע/צ'קליסטים",
+    'שוק ההון/ניתוח פונדמנטלי',
+    'שוק ההון/מדד ה VIX',
+    // ── Logical folders (may not yet exist — created on first save) ──────
+    'שוק ההון/ניתוח טכני',
     'שוק ההון/מסחר יומי',
     'שוק ההון/מסחר סווינג',
-    'שוק ההון/ניהול סיכונים',
-    'שוק ההון/ניתוח טכני',
-    'שוק ההון/פונדמנטלי',
-    'שוק ההון/רשימות מעקב',
+    'שוק ההון/אופציות',
+    'שוק ההון/מאקרו',
+    'שוק ההון/מניות AI',
+    'שוק ההון/דוחות ורווחים',
+    'שוק ההון/השקעות לטווח ארוך',
     'שוק ההון/שיטת הרצפים',
   ],
   'טכנולוגיה ו-AI': [
@@ -98,17 +116,24 @@ export const OBSIDIAN_FOLDER_CATALOG = {
     'ידע אישי/תוכניות',
   ],
   'פוליטיקה': [
+    // ── Folders that physically exist in the vault ──────────────────────
+    'פוליטיקה/דת ומדינה',
+    'פוליטיקה/הכיבוש',
+    'פוליטיקה/חרדים וגיוס',
+    'פוליטיקה/מערכת המשפט',
+    'פוליטיקה/ערבים ויהודים',
+    'פוליטיקה/שלום עם הפלסטינים',
+    'פוליטיקה/עסקת חטופים 7.10.23',
+    'פוליטיקה/דיור',
+    // ── Logical folders (created on first save) ─────────────────────────
     'פוליטיקה/בחירות',
     'פוליטיקה/ביטחון וצבא',
     'פוליטיקה/גיאופוליטיקה',
     'פוליטיקה/דמוקרטיה ומוסדות',
-    'פוליטיקה/הכיבוש',
-    'פוליטיקה/חרדים וגיוס',
     'פוליטיקה/טראמפ',
     'פוליטיקה/כלכלה וחברה',
     'פוליטיקה/מדינת הלכה',
     'פוליטיקה/מחאה ואקטיביזם',
-    'פוליטיקה/מערכת המשפט',
     'פוליטיקה/משיחיים',
     'פוליטיקה/פוליטיקה פנימית',
     'פוליטיקה/ריאיונות וזומק',
@@ -123,6 +148,7 @@ const DEFAULT_PRIMARY_TOPIC = 'ידע אישי/למידה';
 const DEFAULT_MAIN_CATEGORY = 'ידע אישי';
 
 const CATEGORY_TO_MAIN_CATEGORY = {
+  // English codes (from RSS ingestion / mentor resolver)
   Markets: 'שוק ההון',
   Stock: 'שוק ההון',
   Trading: 'שוק ההון',
@@ -139,6 +165,14 @@ const CATEGORY_TO_MAIN_CATEGORY = {
   General: 'ידע אישי',
   Politics: 'פוליטיקה',
   Political: 'פוליטיקה',
+  // Hebrew labels (from normalizeCategoryName / auto-assign flow)
+  'שוק ההון': 'שוק ההון',
+  'פוליטיקה': 'פוליטיקה',
+  'טכנולוגיה ו-AI': 'טכנולוגיה ו-AI',
+  'בינה מלאכותית ואוטומציה': 'טכנולוגיה ו-AI',
+  'פיתוח תוכנה': 'טכנולוגיה ו-AI',
+  'בריאות ותזונה': 'בריאות ותזונה',
+  'ידע אישי': 'ידע אישי',
 };
 
 const CATEGORY_TO_TOPIC = {
@@ -266,9 +300,11 @@ function isoWeekNumber(date) {
 export function slugify(text, maxLen = 35) {
   return String(text || '')
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
+    // keep ASCII word chars + Hebrew Unicode block (א-ת) + spaces + hyphens
+    .replace(/[^\wא-ת\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-+/, '')
     .slice(0, maxLen)
     .replace(/-$/, '');
 }
@@ -628,7 +664,8 @@ export function generateWeeklyRecapNote({
 // ── Video → Note builders ─────────────────────────────────────────────────────
 
 export function buildVideoLearningNote(video, mentorName = '', primaryTopicOverride = null, notes = [], exportOptions = {}) {
-  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
+  if (video?.contentType === "pdf") return buildPdfFullObsidianExport(video, { primaryTopicOverride, notes });
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolveObsidianFolderForVideo(video);
   const tags = [
     ...(video.tags || []).map(cleanTag),
     ...(mentorName ? [cleanTag(mentorName)] : []),
@@ -673,7 +710,7 @@ export function buildVideoLearningNote(video, mentorName = '', primaryTopicOverr
 }
 
 export function buildVideoSessionNote(video, mentorName = '', primaryTopicOverride = null, notes = [], exportOptions = {}) {
-  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolveObsidianFolderForVideo(video);
   const tags = (video.tags || []).map(cleanTag).filter(Boolean);
 
   const chapters = (video.aiChapters || video.chapters || [])
@@ -877,6 +914,19 @@ export const ATOMIC_FIELD_TO_FOLDER = {
   quotes: 'Atomic/Quotes',
 };
 
+/** Maps GEMS v2.1 political sectionType → Obsidian folder path. */
+export const GEMS_V2_SECTION_PATHS = {
+  politicalSummary:         'פוליטיקה/סיכום פוליטי',
+  ideologyAnalysis:         'פוליטיקה/אידיאולוגיה וערכים',
+  theologyAnalysis:         'פוליטיקה/דת ותיאולוגיה',
+  liberalJewishPerspective: 'פוליטיקה/יהדות ליברלית',
+  opponentView:             'פוליטיקה/דעת הצד השני',
+  debateResponses:          'פוליטיקה/תגובות לוויכוחים',
+  commentBank:              'פוליטיקה/בנק תגובות',
+  campaignKit:              'פוליטיקה/קיט קמפיין',
+  reusableKnowledge:        'פוליטיקה/ידע רב פעמי',
+};
+
 function parseAtomicSelectionKey(key) {
   const m = /^([a-zA-Z]+):(\d+)$/.exec(String(key || ''));
   if (!m) return null;
@@ -909,7 +959,7 @@ export function buildAtomicNotesFromVideo(video, selections) {
   const keys = Object.keys(sel).filter((k) => sel[k] === true);
   if (keys.length === 0) return [];
 
-  const primaryTopic = normalizePrimaryTopic(v?.obsidianTopic) || resolvePrimaryTopic(v);
+  const primaryTopic = normalizePrimaryTopic(v?.obsidianTopic) || resolveObsidianFolderForVideo(v);
   const videoSlug = slugify(v.title || 'video', 40) || 'video';
   const videoBasename = `V-${videoSlug}`;
   const videoWikiPath = `${primaryTopic}/${videoBasename}`;
@@ -1073,8 +1123,9 @@ export function buildAtomicKnowledgeMarkdown(video, selections) {
 const SOURCE_LABELS_HEB = { manual: 'ידני', notebooklm: 'NotebookLM', research: 'מחקר' };
 
 export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride = null, notes = [], manualNotes = [], exportOptions = undefined) {
+  if (video?.contentType === "pdf") return buildPdfFullObsidianExport(video, { primaryTopicOverride, notes });
   const opts = exportOptions && typeof exportOptions === 'object' ? exportOptions : {};
-  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(video);
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolveObsidianFolderForVideo(video);
   const d = toDateStr(video.publishedAt || video.analyzedAt);
   const created = toISOCreated(video.analyzedAt || video.publishedAt);
 
@@ -1121,6 +1172,10 @@ export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride 
 
   // Helper: add a section only if it has content
   const sec = (heading, body) => body ? [heading, body, ''] : [];
+
+  const customSubtitle = typeof (v.customSubtitle ?? v.subtitle) === 'string'
+    ? String(v.customSubtitle ?? v.subtitle).trim()
+    : '';
 
   const headerParts = [
     youtubeUrl ? `[YouTube](${youtubeUrl})` : null,
@@ -1173,16 +1228,299 @@ export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride 
     lines.push('## הערות ידע חיצוני', '', ...manualLines.flatMap((l) => [l, '']),  '');
   }
 
+  // Opponent-view marked sentences (political only)
+  const opponentSentences = Array.isArray(opts.opponentSentences) ? opts.opponentSentences : [];
+  if (opponentSentences.length > 0) {
+    lines.push('## ⚔️ דעת האויב — משפטים מסומנים', '');
+    opponentSentences.forEach(s => {
+      lines.push(`- ⚔️ ${s.text}`);
+      if (s.response) lines.push(`  - 💬 תשובה: ${s.response}`);
+    });
+    lines.push('');
+  }
+
   const content = finalizeObsidianExport(lines.join('\n'), video, {
     analysisType: opts.analysisType || 'Summary',
     ...opts,
   });
-  return { content, filename, path: getExportPath('learning', primaryTopic, filename) };
+  const notePath = `${primaryTopic}/${filename}`;
+  console.debug("OBSIDIAN ROUTE FINAL", {
+    category: video.category,
+    subCategory: video.subCategory,
+    obsidianTopic: video.obsidianTopic,
+    resolvedFolder: primaryTopic,
+    fileName: filename,
+    fullPath: notePath,
+  });
+  return { content, filename, path: notePath };
 }
 
 // ── Full-video one-click export (all sections) ────────────────────────────────
 // Generates a comprehensive single note with every available content section.
 // Does NOT re-run AI — reads all fields from the video state object.
+
+
+/**
+ * Build Obsidian markdown lines for all GEMS v2.1 political sections.
+ * Supports flat (v2.1) structure with fallback to nested legacy.
+ * @param {Object} pd  - The full politicalSummary state object
+ * @param {Object} vid - The video object (for metadata)
+ * @returns {string[]} Markdown lines ready to spread into the export lines array
+ */
+function buildGemsV2PoliticalSections(pd, vid) {
+  if (!pd) return [];
+  const pn  = pd?.politicalSummary || {};              // nested legacy fallback
+  const get = (key) => pd[key] || pn[key] || null;    // dual-structure resolver
+
+  const videoTitle = vid?.title || '';
+  const videoId    = vid?.youtubeId || vid?.id || '';
+  const meta       = `> sectionType: GEMS v2.1 | videoId: ${videoId} | title: ${videoTitle}`;
+  const now        = new Date().toISOString();
+  const out        = [];
+
+  // Normalize any value to an array of non-empty strings
+  const toStrings = (val) => {
+    if (!val) return [];
+    if (typeof val === 'string') return val.trim() ? [val.trim()] : [];
+    if (Array.isArray(val)) return val.map(v => {
+      if (typeof v === 'string') return v.trim();
+      return (v?.quote || v?.slogan || v?.comment || v?.response ||
+              v?.text  || v?.point  || String(v)).trim();
+    }).filter(Boolean);
+    if (typeof val === 'object') return Object.values(val).flatMap(toStrings);
+    return [String(val).trim()].filter(Boolean);
+  };
+
+  // Add a section built from a flat array
+  const addList = (heading, data, sectionType) => {
+    const items = toStrings(data);
+    if (items.length === 0) {
+      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      return;
+    }
+    console.log(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
+    out.push(`## ${heading}`, meta, '', `> createdAt: ${now}`, '');
+    items.forEach(item => out.push(`- ${item}`));
+    out.push('');
+    console.log(`[ObsidianExport] export success: ${sectionType}`);
+  };
+
+  // Add a section built from an object with named sub-fields
+  const addObject = (heading, data, sectionType, fields) => {
+    if (!data || typeof data !== 'object') {
+      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      return;
+    }
+    const hasContent = fields.some(({ key }) => toStrings(data[key]).length > 0);
+    if (!hasContent) {
+      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      return;
+    }
+    console.log(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
+    out.push(`## ${heading}`, meta, '', `> createdAt: ${now}`, '');
+    fields.forEach(({ key, label }) => {
+      const lines = toStrings(data[key]);
+      if (lines.length === 0) return;
+      out.push(`### ${label}`);
+      lines.forEach(l => out.push(`- ${l}`));
+      out.push('');
+    });
+    console.log(`[ObsidianExport] export success: ${sectionType}`);
+  };
+
+  // 1. politicalSummary
+  const ps = get('politicalSummary');
+  if (ps && typeof ps === 'object') {
+    const psItems = [
+      ps.shortSummary && `**תקציר:** ${ps.shortSummary}`,
+      ps.mainClaim    && `**טענה מרכזית:** ${ps.mainClaim}`,
+      ...(toStrings(ps.keyPoints)),
+      ...(toStrings(ps.supportingArguments)),
+      ps.bottomLine   && `**שורה תחתונה:** ${ps.bottomLine}`,
+    ].filter(Boolean);
+    if (psItems.length > 0) {
+      console.log('[ObsidianExport] exporting GEMS v2.1 section: politicalSummary');
+      out.push('## סיכום פוליטי', meta, '', `> createdAt: ${now}`, '');
+      psItems.forEach(l => out.push(l));
+      out.push('');
+      console.log('[ObsidianExport] export success: politicalSummary');
+    }
+  }
+
+  // 2. ideologyAnalysis
+  addObject('⚖️ אידיאולוגיה וערכים', get('ideologyAnalysis'), 'ideologyAnalysis', [
+    { key: 'politicalCamp',        label: 'מחנה פוליטי' },
+    { key: 'coreValues',           label: 'ערכי ליבה' },
+    { key: 'targetAudience',       label: 'קהל יעד' },
+    { key: 'emotionalTriggers',    label: 'טריגרים רגשיים' },
+    { key: 'persuasionTechniques', label: 'טכניקות שכנוע' },
+    { key: 'hiddenAssumptions',    label: 'הנחות נסתרות' },
+    { key: 'logicalWeaknesses',    label: 'חולשות לוגיות' },
+  ]);
+
+  // 3. theologyAnalysis
+  addObject('✡️ דת ותיאולוגיה', get('theologyAnalysis'), 'theologyAnalysis', [
+    { key: 'religiousTopics',        label: 'נושאים דתיים' },
+    { key: 'jewishSources',          label: 'מקורות יהודיים' },
+    { key: 'jewishValues',           label: 'ערכים יהודיים' },
+    { key: 'theologicalAssumptions', label: 'הנחות תיאולוגיות' },
+    { key: 'conflictingValues',      label: 'ערכים בסתירה' },
+    { key: 'summary',                label: 'סיכום' },
+  ]);
+
+  // 4. liberalJewishPerspective
+  addObject('יהדות ליברלית', get('liberalJewishPerspective'), 'liberalJewishPerspective', [
+    { key: 'supportedValues',       label: 'ערכים נתמכים' },
+    { key: 'concerns',              label: 'חששות' },
+    { key: 'ethicalQuestions',      label: 'שאלות אתיות' },
+    { key: 'relevantJewishSources', label: 'מקורות יהודיים' },
+    { key: 'bottomLine',            label: 'שורה תחתונה' },
+  ]);
+
+  // 5. opponentView
+  addObject('דעת הצד השני', get('opponentView'), 'opponentView', [
+    { key: 'summary',              label: 'סיכום' },
+    { key: 'strongestArguments',   label: 'הטיעונים החזקים' },
+    { key: 'basicAssumptions',     label: 'הנחות יסוד' },
+    { key: 'recommendedResponses', label: 'תגובות מומלצות' },
+  ]);
+
+  // 6. debateResponses — special: format as claim → response
+  const dr = get('debateResponses');
+  if (Array.isArray(dr) && dr.length > 0) {
+    const drLines = dr.map(d =>
+      typeof d === 'string' ? d
+        : `${d.claim ? d.claim + ' ← ' : ''}תגובה: ${d.response || ''}`.trim()
+    ).filter(Boolean);
+    addList('תגובות לוויכוחים', drLines, 'debateResponses');
+  }
+
+  // 7. commentBank
+  addList('בנק תגובות', get('commentBank'), 'commentBank');
+
+  // 8. campaignKit
+  addObject('קיט קמפיין', get('campaignKit'), 'campaignKit', [
+    { key: 'topSlogans',         label: 'סיסמאות מובילות' },
+    { key: 'topQuotes',          label: 'ציטוטים מובילים' },
+    { key: 'topComments',        label: 'תגובות מובילות' },
+    { key: 'topDebateResponses', label: 'תגובות ויכוח מובילות' },
+    { key: 'keyIdeas',           label: 'רעיונות מרכזיים' },
+  ]);
+
+  // 9. reusableKnowledge
+  addObject('ידע רב פעמי', get('reusableKnowledge'), 'reusableKnowledge', [
+    { key: 'principles',         label: 'עקרונות' },
+    { key: 'mentalModels',       label: 'מודלים מנטליים' },
+    { key: 'historicalPatterns', label: 'דפוסים היסטוריים' },
+    { key: 'strategicLessons',   label: 'לקחים אסטרטגיים' },
+    { key: 'reusableArguments',  label: 'טיעונים רב פעמיים' },
+  ]);
+
+  return out;
+}
+
+// ── PDF Document Export ───────────────────────────────────────────────────────
+// Generates Obsidian-compatible markdown for PDF documents (contentType:"pdf").
+// Called by buildFullVideoObsidianExport, buildVideoLearningNote, buildVideoFullNote
+// when contentType === "pdf" is detected — keeps YouTube logic completely untouched.
+//
+// Label differences vs YouTube exports:
+//   "פרטי סרטון"  → "פרטי מסמך"  (metadata section)
+//   "תמלול מלא"   → "טקסט שחולץ מ-PDF"  (transcript/body section)
+//   source:YouTube → source:PDF  (YAML frontmatter)
+//   type:video-full → type:pdf-document
+function buildPdfFullObsidianExport(v, {
+  primaryTopicOverride = null,
+  notes = [],
+  includeTranscript = true,
+} = {}) {
+  console.log("[ObsidianSave] Saving PDF content item:", {
+    id: v.id,
+    title: v.title,
+    pages: v.pdfPages,
+    originalFileName: v.originalFileName,
+    transcriptLength: (v.transcript || v.manualTranscript || '').length,
+  });
+
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolveObsidianFolderForVideo(v);
+  const d       = toDateStr(v.addedAt || v.fetchedAt);
+  const created = toISOCreated(v.addedAt || v.fetchedAt);
+  const filename = `PDF-${slugify(v.title || 'document', 40)}.md`;
+  const tags = [...(v.tags || []).map(cleanTag)].filter(Boolean);
+
+  const frontmatter = buildFrontmatter({
+    type: 'pdf-document',
+    topic: primaryTopic,
+    source: 'PDF',
+    channel: '',
+    tags,
+    date: d,
+    created,
+    related: [],
+  });
+
+  const transcript = typeof (v.transcript || v.manualTranscript || '') === 'string'
+    ? (v.transcript || v.manualTranscript || '').trim()
+    : '';
+
+  const sec = (heading, body) => (body ? [heading, body, ''] : []);
+  const secList = (heading, arr) => {
+    const items = (Array.isArray(arr) ? arr : []).map(i => String(i).trim()).filter(Boolean);
+    return items.length ? [heading, ...items.map(i => `- ${i}`), ''] : [];
+  };
+
+  const lines = [
+    frontmatter,
+    '',
+    `# ${v.title || 'PDF Document'}`,
+    '',
+    // One-line overview: icon, filename, page count
+    `> 📄 ${v.originalFileName || (v.title + '.pdf')}${v.pdfPages ? ` · ${v.pdfPages} עמודים` : ''}`,
+    '',
+
+    // PDF-specific metadata (not YouTube metadata)
+    '## פרטי מסמך',
+    `- **סוג:** מסמך PDF`,
+    ...(v.originalFileName ? [`- **שם קובץ מקורי:** ${v.originalFileName}`] : []),
+    ...(v.pdfPages != null  ? [`- **מספר עמודים:** ${v.pdfPages}`] : []),
+    ...(v.addedAt           ? [`- **תאריך ייבוא:** ${toDateStr(v.addedAt)}`] : []),
+    `- **contentType:** pdf`,
+    '',
+
+    // AI analysis sections (same structure as YouTube — filled after analysis)
+    ...sec('## סיכום קצר',    (v.shortSummary || '').trim() || null),
+    ...sec('## סיכום מלא',    (v.fullSummary  || '').trim() || null),
+    ...sec('## לקח מרכזי',    (v.mainLesson   || '').trim() || null),
+    ...secList('## נקודות מפתח',    v.keyPoints),
+    ...secList('## תובנות מפתח',    v.keyInsights),
+    ...secList('## כללים ועקרונות', v.rules),
+    ...secList('## פעולות מומלצות', v.actionItems),
+
+    // User notes from NoteEditor
+    ...(buildNotesSection(notes) ? [buildNotesSection(notes), ''] : []),
+
+    // Extracted PDF text — renamed from "תמלול מלא" to be accurate
+    ...(includeTranscript && transcript ? [
+      '## טקסט שחולץ מ-PDF',
+      '',
+      '<details>',
+      '<summary>לחץ להצגת הטקסט המלא</summary>',
+      '',
+      transcript,
+      '',
+      '</details>',
+      '',
+    ] : []),
+  ];
+
+  const content = finalizeObsidianExport(lines.join('\n'), v, { analysisType: 'PDF Document' });
+  console.log('[ObsidianSave] PDF export generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
+  return {
+    content,
+    filename,
+    path: `${primaryTopic}/${filename}`,
+  };
+}
 
 export function buildFullVideoObsidianExport(video, {
   mentorName = '',
@@ -1190,8 +1528,11 @@ export function buildFullVideoObsidianExport(video, {
   notes = [],
   manualNotes = [],
   includeTranscript = true,
+  politicalData = null,
 } = {}) {
   const v = video || {};
+  // PDF documents use a dedicated template — no YouTube-specific fields
+  if (v.contentType === "pdf") return buildPdfFullObsidianExport(v, { primaryTopicOverride, notes, includeTranscript });
   const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(v);
   const d = toDateStr(v.publishedAt || v.analyzedAt);
   const created = toISOCreated(v.analyzedAt || v.publishedAt);
@@ -1248,6 +1589,10 @@ export function buildFullVideoObsidianExport(video, {
 
   // Brain highlights
   const brainHighlights = extractBrainHighlightsFromVideo(v);
+  // GEMS v2.1 political sections (built from politicalData param or video fields)
+  const _pdSource = politicalData || (v.politicalSummary ? v : null);
+  const gemsV2Lines = _pdSource ? buildGemsV2PoliticalSections(_pdSource, v) : [];
+  if (gemsV2Lines.length > 0) console.log('[ObsidianExport] sectionType supported: GEMS v2.1 political', gemsV2Lines.length, 'lines');
 
   // Manual / NotebookLM notes
   const manualLines = (manualNotes || []).map(n => {
@@ -1276,12 +1621,17 @@ export function buildFullVideoObsidianExport(video, {
     counterArguments: counterArguments.length > 0,
     appBuilderPoints: appBuilderPoints.length > 0,
     transcript: transcript.length > 0,
+    gemsV2Political: gemsV2Lines.length > 0,
   };
   const sectionsFound = Object.entries(debugSections).filter(([, v]) => v).map(([k]) => k);
   const sectionsMissing = Object.entries(debugSections).filter(([, v]) => !v).map(([k]) => k);
   console.log('[FullObsidianExport] sections found:', sectionsFound);
   console.log('[FullObsidianExport] sections missing:', sectionsMissing);
   console.log('[FullObsidianExport] destination path:', `${primaryTopic}/${filename}`);
+
+  const customSubtitle = typeof (v.customSubtitle ?? v.subtitle) === 'string'
+    ? String(v.customSubtitle ?? v.subtitle).trim()
+    : '';
 
   const headerParts = [
     youtubeUrl ? `[YouTube](${youtubeUrl})` : null,
@@ -1294,6 +1644,7 @@ export function buildFullVideoObsidianExport(video, {
     frontmatter,
     '',
     `# ${v.title || 'Video Analysis'}`,
+    ...(customSubtitle ? [`> ${customSubtitle}`, ''] : []),
     '',
     ...(headerParts.length ? [`> ${headerParts.join(' · ')}`, ''] : []),
 
@@ -1321,7 +1672,7 @@ export function buildFullVideoObsidianExport(video, {
     ...secList('## מושגים',               v.concepts),
     ...secList('## פעולות מומלצות',       v.actionItems),
     ...secList('## טעויות להימנע',        v.mistakesToAvoid),
-    ...secList('## Brain Highlights',     brainHighlights),
+    ...secList('## 🧠 תובנות מרכזיות',    brainHighlights),
 
     ...(brainHighlights.length === 0 && v.brainSummary ? ['## 🧠 Brain Summary', '', v.brainSummary.trim(), ''] : []),
 
@@ -1330,6 +1681,9 @@ export function buildFullVideoObsidianExport(video, {
     ...(politicalSlogans.length > 0  ? ['## סיסמאות פוליטיות', ...politicalSlogans.map(s => `- ${s}`), ''] : []),
     ...(networkSlogans.length > 0    ? ['## סיסמאות רשת', ...networkSlogans.map(s => `- ${s}`), ''] : []),
     ...(counterArguments.length > 0  ? secList('## טיעוני נגד', counterArguments) : []),
+
+    // GEMS v2.1 political sections
+    ...gemsV2Lines,
 
     // App builder
     ...(appBuilderPoints.length > 0 ? secList('## 🏗️ App Builder', appBuilderPoints) : []),
@@ -1352,6 +1706,52 @@ export function buildFullVideoObsidianExport(video, {
       '</details>',
       '',
     ] : []),
+
+    // Attached Documents Insights (AI-generated section — only when analysis included PDFs)
+    ...(() => {
+      const ins = v.attachedDocumentsInsights;
+      if (!ins) return [];
+      const listSection = (heading, arr) => {
+        if (!Array.isArray(arr) || arr.length === 0) return [];
+        return [`### ${heading}`, ...arr.map(i => `- ${i}`), ''];
+      };
+      return [
+        '## 📚 תובנות ממסמכים מצורפים',
+        '',
+        ...(ins.overallSummary ? [ins.overallSummary, ''] : []),
+        ...listSection('🔍 ממצאים מרכזיים', ins.keyFindings),
+        ...listSection('✅ ראיות תומכות', ins.supportingEvidence),
+        ...listSection('⚠️ סתירות עם הסרטון', ins.contradictions),
+        ...listSection('💡 מושגים נוספים', ins.additionalConcepts),
+      ];
+    })(),
+
+    // Attached PDF documents (list + collapsible transcript)
+    ...(() => {
+      const docs = Array.isArray(v.attachedDocuments) ? v.attachedDocuments : [];
+      if (docs.length === 0) return [];
+      console.log('[VideoPDF] Included in Obsidian export:', docs.map(d => ({ id: d.id, name: d.name })));
+      const docLines = docs.flatMap(doc => [
+        `### 📄 ${doc.name}`,
+        ...(doc.pages ? [`- **עמודים:** ${doc.pages}`] : []),
+        ...(doc.importedAt ? [`- **יובא:** ${doc.importedAt.slice(0, 10)}`] : []),
+        '',
+        ...(doc.transcript?.length > 50 ? [
+          '<details>',
+          `<summary>טקסט מ-PDF — ${Math.round(doc.transcript.length / 1000)}K תווים</summary>`,
+          '',
+          doc.transcript.trim(),
+          '',
+          '</details>',
+          '',
+        ] : ['*(אין טקסט חלוץ)*', '']),
+      ]);
+      return [
+        '## 📚 מסמכים מצורפים',
+        '',
+        ...docLines,
+      ];
+    })(),
   ];
 
   const content = finalizeObsidianExport(lines.join('\n'), v, { analysisType: 'Full Export' });
@@ -1372,11 +1772,49 @@ export function buildFullVideoObsidianExport(video, {
  * Builds an obsidian:// URI that opens the matching vault file for a video.
  * Path mirrors buildVideoFullNote: {topic}/V-{slug}.md
  */
+/**
+ * Resolves the Obsidian folder path for the current video.
+ * Priority:
+ *   1. category + subCategory → direct folder match (most accurate)
+ *   2. resolvePrimaryTopic fallback (topicIds → keywords → obsidianTopic)
+ *
+ * Does NOT use video.obsidianTopic as primary source to prevent stale cache reuse.
+ */
+// Per-category default folder for video exports (where V-*.md notes land in the real vault)
+const VIDEO_DEFAULT_FOLDER = {
+  'שוק ההון':       'שוק ההון/סרטונים',
+  'פוליטיקה':       'פוליטיקה/פוליטיקה פנימית',
+  'טכנולוגיה ו-AI': 'טכנולוגיה ו-AI',
+  'בריאות ותזונה':  'בריאות ותזונה',
+  'ידע אישי':       'ידע אישי/למידה',
+};
+
+export function resolveObsidianFolderForVideo(video = {}) {
+  const taxonomyFolder = resolveObsidianFolderFromTaxonomy(video);
+
+  // Priority 1: explicit UI selection always wins — no keyword override
+  if (taxonomyFolder) return taxonomyFolder;
+
+  // Priority 2: fallback to keyword/topicId/obsidianTopic detection
+  return resolvePrimaryTopic(video);
+}
+
 export function buildObsidianUrl(video, vaultName = getConfiguredObsidianVaultName()) {
-  const primaryTopic = normalizePrimaryTopic(video?.obsidianTopic) || resolvePrimaryTopic(video || {});
-  const slug = slugify((video || {}).title || 'video', 40);
-  const filePath = `${primaryTopic}/V-${slug}.md`;
-  return buildObsidianOpenUrl(filePath, vaultName);
+  const route = resolveVideoObsidianRoute(video || {}, {
+    vaultName,
+    fileName: buildObsidianVideoFileName(video || {}, { prefix: "V", maxLen: 40 }),
+  });
+
+  console.debug("OBSIDIAN OPEN FINAL", {
+    category: video?.category,
+    subCategory: video?.subCategory,
+    resolvedFolder: route.resolvedFolder,
+    fileName: route.fileName,
+    fullPath: route.finalFilePath,
+    url: route.obsidianUrl,
+  });
+
+  return route.obsidianUrl;
 }
 
 let lastOpenedObsidianUrl = '';
@@ -1417,6 +1855,7 @@ export function openObsidianUrl(url, options = {}) {
   lastOpenedObsidianUrl = url;
   lastOpenedObsidianAt = now;
 
+  console.debug("FINAL OBSIDIAN URL", url);
   console.log("[ObsidianOpen] attempting", debug);
 
   if (method === 'window') {
@@ -1471,6 +1910,61 @@ export function openObsidianUrl(url, options = {}) {
   }
 
   return debug;
+}
+
+// ── APP Builder Obsidian integration (§26 + §30) ─────────────────────────────
+
+/**
+ * Returns the full Obsidian path for an APP Builder note.
+ * §30: only valid path is App Ideas/{folder}/{filename}.md
+ */
+export function getAppIdeasPath(topicName, title) {
+  const folder = getAppIdeasFolder(topicName);
+  const safeTitle = slugify(title || 'untitled', 60) || 'untitled';
+  return `App Ideas/${folder}/${safeTitle}.md`;
+}
+
+/**
+ * Builds the Obsidian markdown for an APP Builder draft.
+ * sections = { summary, requirements, screens, logic, risks, tasks, prompt }
+ */
+export function buildAppIdeasNote(video, sections = {}, topicName = '') {
+  const title = video?.title || 'Untitled';
+  const videoId = video?.videoId || video?.id || '';
+  const watchUrl = videoId ? `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}` : '';
+  const date = new Date().toISOString().slice(0, 10);
+
+  const lines = [
+    '---',
+    `title: "${title.replace(/"/g, "'")}"`,
+    `date: ${date}`,
+    `source: ${watchUrl || 'manual'}`,
+    `topic: "${topicName}"`,
+    `tags: [app-idea, youtube-mentor]`,
+    '---',
+    '',
+    `# 🏗️ בונה אפליקציות — ${title}`,
+    '',
+  ];
+
+  const sectionDefs = [
+    { key: 'summary',      label: '## 📝 סיכום — מה לבנות' },
+    { key: 'requirements', label: '## 🎯 דרישות' },
+    { key: 'screens',      label: '## 🖥️ מסכים' },
+    { key: 'logic',        label: '## ⚙️ לוגיקה' },
+    { key: 'risks',        label: '## ⚠️ סיכונים' },
+    { key: 'tasks',        label: '## 📋 משימות' },
+    { key: 'prompt',       label: '## 🚀 פרומפט פיתוח' },
+  ];
+
+  sectionDefs.forEach(({ key, label }) => {
+    const content = sections[key]?.trim();
+    if (content) {
+      lines.push(label, '', content, '');
+    }
+  });
+
+  return lines.join('\n');
 }
 
 // ── Export utilities ──────────────────────────────────────────────────────────

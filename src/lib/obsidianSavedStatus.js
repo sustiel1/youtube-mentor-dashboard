@@ -13,7 +13,7 @@ export function buildObsidianSavedStatus({ folder, file, vaultName } = {}) {
   const resolvedVault = String(vaultName || "").trim() || settings.vaultName;
   const savedPath = `${normalizedFolder}/${normalizedFile}`.replace(/\/+/g, "/");
 
-  return {
+  const result = {
     savedAt: new Date().toISOString(),
     vaultName: resolvedVault,
     folder: normalizedFolder,
@@ -21,6 +21,15 @@ export function buildObsidianSavedStatus({ folder, file, vaultName } = {}) {
     savedPath,
     obsidianUrl: buildObsidianOpenUrl(savedPath, resolvedVault),
   };
+
+  console.debug("OBSIDIAN SAVE FINAL", {
+    resolvedFolder: normalizedFolder,
+    fileName: normalizedFile,
+    fullPath: savedPath,
+    url: result.obsidianUrl,
+  });
+
+  return result;
 }
 
 export const OBSIDIAN_SAVED_FILTER_ALL = "all";

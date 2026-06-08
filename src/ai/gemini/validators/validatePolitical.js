@@ -232,6 +232,8 @@ export function normalizePoliticalResult(parsed) {
     emotionalFraming,
     contradictions: pickStrings(parsed?.contradictions),
     longTermImplications: pickStrings(parsed?.longTermImplications),
+    // Explicit passthrough so UI can access the full ideologyAnalysis object
+    ideologyAnalysis: parsed?.ideologyAnalysis || null,
   };
 }
 

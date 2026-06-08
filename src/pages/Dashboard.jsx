@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { FilterBar } from "@/components/dashboard/FilterBar";
 import { ExternalVideoModal } from "@/components/dashboard/ExternalVideoModal";
+import { PdfUploader } from "@/components/upload/PdfUploader";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { ErrorsBar } from "@/components/dashboard/ErrorsBar";
@@ -27,6 +28,7 @@ import { getLocalStorageUsageMB, getStorageBreakdown, estimateEmbeddedTranscript
 import { clearAllAttachments } from "@/lib/attachmentStore";
 import { DriveStatusBadge } from "@/components/ui/DriveStatusBadge";
 import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
+import { saveLocalVideo } from "@/lib/localVideoStore";
 
 function mergeSelectedVideoState(fresh, prev) {
   if (!fresh) return prev;
@@ -284,6 +286,15 @@ export default function Dashboard({
   const refreshStorageMeter = () => {
     setStorageMB(getLocalStorageUsageMB());
     if (storageBreakdown !== null) setStorageBreakdown(getStorageBreakdown());
+  };
+
+  // Called by PdfUploader after successful text extraction.
+  // Saves the doc to the same localStorage store as YouTube videos, then opens VideoDetailPanel.
+  const handlePdfDocumentCreated = (doc) => {
+    const saved = saveLocalVideo(doc);
+    // saveLocalVideo returns null if duplicate — fall back to the original doc object
+    setSelectedVideo(saved || doc);
+    setPanelOpen(true);
   };
 
   const handleCleanCaches = () => {
@@ -897,6 +908,9 @@ export default function Dashboard({
                 <Plus className="h-4 w-4 shrink-0 stroke-[2.5]" />
                 <span className="whitespace-nowrap">הוסף סרטון</span>
               </button>
+
+              {/* PDF upload — extracts text client-side and opens in VideoDetailPanel */}
+              <PdfUploader onDocumentCreated={handlePdfDocumentCreated} />
 
               <FilterBar
                 compact

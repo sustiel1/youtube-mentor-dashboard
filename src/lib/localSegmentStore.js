@@ -30,6 +30,14 @@ export function hasSegments(videoId) {
   return getSegments(videoId).length > 0;
 }
 
+export function clearSegments(videoId) {
+  if (!videoId) return false;
+  const all = loadAll();
+  if (!(videoId in all)) return false;
+  delete all[videoId];
+  return saveAll(all);
+}
+
 export function saveSegments(videoId, segments) {
   if (!videoId || !Array.isArray(segments) || segments.length === 0) return false;
   const all = loadAll();

@@ -69,11 +69,14 @@ export function getUserTopics() {
   return stored;
 }
 
-// Returns merged list: mockData TOPICS + user-added, deduped by name
+// Returns merged list: mockData TOPICS + user-added, deduped by normalised name (trim + lowercase)
 export function loadTopics() {
-  const userTopics  = getUserTopics();
-  const existingNames = new Set(TOPICS.map((t) => t.name.toLowerCase()));
-  const newOnes = userTopics.filter((t) => !existingNames.has(t.name.toLowerCase()));
+  const userTopics    = getUserTopics();
+  const existingNames = new Set(TOPICS.map((t) => String(t.name || "").trim().toLowerCase()));
+  const newOnes       = userTopics.filter((t) => {
+    const norm = String(t.name || "").trim().toLowerCase();
+    return norm && !existingNames.has(norm);
+  });
   return [...TOPICS, ...newOnes];
 }
 
@@ -83,11 +86,12 @@ export function isUserTopic(id) {
 
 // Add a new user topic. Returns { topic } on success or { error } on failure.
 export function addTopic({ name, color = "blue", parentId = null }) {
-  const trimmed = name?.trim();
+  const trimmed = (name ?? "").trim();
   if (!trimmed) return { error: "יש להזין שם לנושא" };
 
+  const normalizedNew = trimmed.toLowerCase();
   const all = loadTopics();
-  const duplicate = all.some((t) => t.name.toLowerCase() === trimmed.toLowerCase());
+  const duplicate = all.some((t) => String(t.name || "").trim().toLowerCase() === normalizedNew);
   if (duplicate) return { error: "כבר קיים נושא עם שם זה" };
 
   const slug = trimmed

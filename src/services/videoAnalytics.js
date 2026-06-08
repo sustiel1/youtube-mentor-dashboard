@@ -608,6 +608,61 @@ function normalizeStringArray(values) {
     .filter(Boolean);
 }
 
+/**
+ * Normalizes a single learning item (string or structured GEM object).
+ * Handles any object shape by: known aliases first, then "join all strings" fallback.
+ */
+function normalizeLearningItem(value) {
+  if (typeof value === 'string') return cleanAtomicText(value);
+  if (!value || typeof value !== 'object') return '';
+
+  // term + definition (glossary / definitions tab)
+  const term = String(value.term || '').trim();
+  const definition = String(value.definition || '').trim();
+  if (term && definition) return cleanAtomicText(`${term}: ${definition}`);
+  if (definition) return cleanAtomicText(definition);
+  if (term) return cleanAtomicText(term);
+
+  // label: name / indicator / pattern / setup + description / usage / details
+  const label = String(
+    value.name || value.indicator || value.indicatorName ||
+    value.pattern || value.patternName ||
+    value.setup || value.setupName ||
+    value.principle || value.model || value.highlight ||
+    value.checklist || value.mistake || value.step || value.item ||
+    ''
+  ).trim();
+  const desc = String(
+    value.description || value.desc || value.usage ||
+    value.explanation || value.details || value.signal ||
+    value.conditions || value.condition || value.note || value.info ||
+    ''
+  ).trim();
+  if (label && desc) return cleanAtomicText(`${label}: ${desc}`);
+  if (desc) return cleanAtomicText(desc);
+  if (label) return cleanAtomicText(label);
+
+  // single well-known keys
+  const single =
+    value.summary || value.title || value.text || value.fact ||
+    value.insight || value.rule || value.warning || value.point ||
+    value.value || value.knowledge || value.takeaway ||
+    value.content || value.body || '';
+  if (single) return cleanAtomicText(String(single));
+
+  // Last resort: join ALL non-empty string values in the object (order by key)
+  const joined = Object.values(value)
+    .filter(v => typeof v === 'string' && v.trim())
+    .join(': ');
+  return cleanAtomicText(joined);
+}
+
+/** Like normalizeStringArray but understands learning-field object shapes. */
+function normalizeLearningArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map(normalizeLearningItem).filter(Boolean);
+}
+
 function normalizeAtomicTags(values) {
   return normalizeStringArray(values).slice(0, 6);
 }
@@ -1017,6 +1072,8 @@ export function normalizeAiAnalysisResult(result) {
   const root = result && typeof result === "object" ? result : {};
   const nested = root.analysis && typeof root.analysis === "object" ? root.analysis : {};
   const merged = { ...nested, ...root };
+  // Support both flat GEM format (analysis.definitions) and nested legacy (analysis.learning.definitions)
+  const learning = merged.learning || nested.learning || {};
   const atomicKnowledge = normalizeAtomicKnowledge(result);
 
   const chapters =
@@ -1108,30 +1165,33 @@ export function normalizeAiAnalysisResult(result) {
     strategyOrMethod: resolvedStrategy || "לא צוין בתמלול",
     keyPoints: mergedKeyPoints,
     tags: normalizeStringArray(merged.tags || merged.aiTags || nested.tags || nested.aiTags),
-    rules: normalizeStringArray(merged.rules || nested.rules).length > 0
-      ? normalizeStringArray(merged.rules || nested.rules)
+    rules: normalizeLearningArray(merged.rules || nested.rules || learning.rules).length > 0
+      ? normalizeLearningArray(merged.rules || nested.rules || learning.rules)
       : fallbackRules,
-    mistakesToAvoid: normalizeStringArray(merged.mistakesToAvoid || nested.mistakesToAvoid).length > 0
-      ? normalizeStringArray(merged.mistakesToAvoid || nested.mistakesToAvoid)
+    mistakesToAvoid: normalizeLearningArray(merged.mistakesToAvoid || nested.mistakesToAvoid).length > 0
+      ? normalizeLearningArray(merged.mistakesToAvoid || nested.mistakesToAvoid)
       : fallbackMistakes,
     keyInsights: (() => {
+      const learningInsights = Array.isArray(learning.keyInsights)
+        ? learning.keyInsights.map(x => typeof x === 'string' ? x : String(x?.insight || x?.text || x?.title || '')).filter(Boolean)
+        : [];
       const base = normalizeStringArray(merged.keyInsights || nested.keyInsights);
-      const resolved = base.length > 0 ? base : fallbackKeyInsights;
+      const combined = base.length > 0 ? [...new Set([...base, ...learningInsights])] : (learningInsights.length > 0 ? learningInsights : fallbackKeyInsights);
       return brainInsightsExtra.length > 0
-        ? [...new Set([...resolved, ...brainInsightsExtra])]
-        : resolved;
+        ? [...new Set([...combined, ...brainInsightsExtra])]
+        : combined;
     })(),
     actionItems: normalizeStringArray(merged.actionItems || nested.actionItems).length > 0
       ? normalizeStringArray(merged.actionItems || nested.actionItems)
       : fallbackActions,
-    checklists: normalizeStringArray(merged.checklists || nested.checklists).length > 0
-      ? normalizeStringArray(merged.checklists || nested.checklists)
+    checklists: normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists).length > 0
+      ? normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists)
       : fallbackChecklists,
-    warnings: normalizeStringArray(merged.warnings || nested.warnings).length > 0
-      ? normalizeStringArray(merged.warnings || nested.warnings)
+    warnings: normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings).length > 0
+      ? normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings)
       : fallbackWarnings,
-    frameworks: normalizeStringArray(merged.frameworks || nested.frameworks).length > 0
-      ? normalizeStringArray(merged.frameworks || nested.frameworks)
+    frameworks: normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks).length > 0
+      ? normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks)
       : fallbackFrameworks,
     concepts: normalizeStringArray(merged.concepts || nested.concepts).length > 0
       ? normalizeStringArray(merged.concepts || nested.concepts)
@@ -1142,6 +1202,17 @@ export function normalizeAiAnalysisResult(result) {
     questions: normalizeStringArray(merged.questions || nested.questions).length > 0
       ? normalizeStringArray(merged.questions || nested.questions)
       : fallbackQuestions,
+    // Learning tab fields — flat GEM format (root-level) + nested legacy (analysis.learning.*)
+    // Uses normalizeLearningArray to handle object shapes: { term, definition }, { name, description }, etc.
+    definitions: normalizeLearningArray(merged.definitions || nested.definitions || learning.definitions),
+    indicators: normalizeLearningArray(merged.indicators || nested.indicators || learning.indicators),
+    setups: normalizeLearningArray(merged.setups || merged.tradingSetups || nested.setups || nested.tradingSetups || learning.setups),
+    patterns: normalizeLearningArray(merged.patterns || merged.tradingPatterns || nested.patterns || learning.patterns),
+    tradingPrinciples: normalizeLearningArray(merged.tradingPrinciples || nested.tradingPrinciples || learning.tradingPrinciples),
+    mentalModels: normalizeLearningArray(merged.mentalModels || nested.mentalModels || learning.mentalModels),
+    brainHighlights: normalizeLearningArray(merged.brainHighlights || nested.brainHighlights || learning.brainHighlights),
+    usefulKnowledge: normalizeLearningArray(merged.usefulKnowledge || nested.usefulKnowledge || learning.usefulKnowledge || learning.keyTakeaways),
+    keyTakeaways: normalizeLearningArray(merged.keyTakeaways || nested.keyTakeaways || learning.keyTakeaways),
     chapters,
     brainSummary: String(merged.brainSummary || nested.brainSummary || "").trim() || derivedBrainSummary || null,
     atomicKnowledge,
@@ -1166,7 +1237,7 @@ export function normalizeAiAnalysisResult(result) {
         .filter(x => x.point);
     })(),
     richKeyInsights: (() => {
-      const raw = merged.keyInsights || nested.keyInsights || merged.learning?.keyInsights;
+      const raw = merged.keyInsights || nested.keyInsights || learning.keyInsights;
       if (!Array.isArray(raw)) return [];
       return raw
         .map(x => {
@@ -1181,16 +1252,32 @@ export function normalizeAiAnalysisResult(result) {
     })(),
     appBuilding: (() => {
       const ab = merged.appBuilding || nested.appBuilding;
-      if (!ab || !Array.isArray(ab.suggestedFeatures) || ab.suggestedFeatures.length === 0) return null;
-      return {
-        suggestedFeatures: ab.suggestedFeatures
-          .filter(x => x?.feature)
-          .map(x => ({
-            feature: String(x.feature || '').trim(),
-            reason: String(x.reason || x.explanation || '').trim(),
-            priority: ['high', 'medium', 'low'].includes(x.priority) ? x.priority : 'medium',
-          })),
-      };
+      if (!ab) return null;
+      const safeArr = (arr) => Array.isArray(arr) ? arr : [];
+      const kpiList = safeArr(ab.kpiList);
+      const dashboards = safeArr(ab.dashboards);
+      const prompts = safeArr(ab.prompts);
+      const screeningCriteria = safeArr(ab.screeningCriteria);
+      const dataFields = safeArr(ab.dataFields);
+      const suggestedFeatures = safeArr(ab.suggestedFeatures)
+        .filter(x => x?.feature)
+        .map(x => ({
+          feature: String(x.feature || '').trim(),
+          reason: String(x.reason || x.explanation || '').trim(),
+          priority: ['high', 'medium', 'low'].includes(x.priority) ? x.priority : 'medium',
+        }));
+      const hasData = kpiList.length > 0 || dashboards.length > 0 || prompts.length > 0
+        || screeningCriteria.length > 0 || dataFields.length > 0 || suggestedFeatures.length > 0;
+      if (!hasData) return null;
+      return { kpiList, dashboards, prompts, screeningCriteria, dataFields, suggestedFeatures };
+    })(),
+    obsidianTopics: (() => {
+      const raw = merged.obsidianTopics || nested.obsidianTopics;
+      return Array.isArray(raw) ? raw.filter(x => x && typeof x === 'string') : [];
+    })(),
+    metadataTopics: (() => {
+      const meta = merged.metadata || nested.metadata;
+      return Array.isArray(meta?.topics) ? meta.topics.filter(x => x && typeof x === 'string') : [];
     })(),
   };
 }
@@ -1540,8 +1627,24 @@ export function resolveDisplayChaptersWithSource(video) {
 }
 
 export function getChapterSource(video, options = {}) {
-  const transcriptSegments = Array.isArray(options?.transcriptSegments) ? options.transcriptSegments : [];
-  const usableTranscript = transcriptSegments.length > 0 && transcriptSegments.some((segment) => Number.isFinite(segment?.startSeconds ?? segment?.start));
+  // Use segments from options first; fall back to what's stored on the video object
+  let transcriptSegments = Array.isArray(options?.transcriptSegments) ? options.transcriptSegments : [];
+  if (transcriptSegments.length === 0 && Array.isArray(video?.transcriptSegments) && video.transcriptSegments.length > 0) {
+    transcriptSegments = video.transcriptSegments;
+  }
+
+  // Detect whether any text transcript exists (even without timed segments)
+  const hasTextTranscript =
+    (typeof video?.transcript === 'string' && video.transcript.trim().length > 100) ||
+    (typeof video?.manualTranscript === 'string' && video.manualTranscript.trim().length > 100);
+
+  // A "usable" transcript for chapter splitting requires timed segments
+  const usableTranscript =
+    transcriptSegments.length > 0 &&
+    transcriptSegments.some((segment) => Number.isFinite(segment?.startSeconds ?? segment?.start));
+
+  // For displaying UI we only need to know if any transcript content exists
+  const hasAnyTranscript = usableTranscript || hasTextTranscript || transcriptSegments.length > 0;
   const descriptionChapters = extractChaptersFromDescription(
     typeof video?.description === 'string' ? video.description : ''
   );
@@ -1595,7 +1698,20 @@ export function getChapterSource(video, options = {}) {
         timeSource: 'real',
       })),
       transcriptSegments: [],
-      message: 'לא נמצא תמלול מלא, אבל נמצאו פרקים מתוך תיאור הסרטון.',
+      message: hasAnyTranscript ? null : 'לא נמצא תמלול מלא, אבל נמצאו פרקים מתוך תיאור הסרטון.',
+    };
+  }
+
+  // Text-only transcript (no timed segments) — chapters can be generated via AI
+  if (hasTextTranscript) {
+    if (loggableVideoId) console.log("[chapter-source] selected source", "text_transcript");
+    return {
+      source: 'transcript',
+      chapterSource: 'text_transcript',
+      analysisQuality: 'medium',
+      chapters: [],
+      transcriptSegments: [],
+      message: null,
     };
   }
 
@@ -1606,7 +1722,7 @@ export function getChapterSource(video, options = {}) {
     analysisQuality: 'none',
     chapters: [],
     transcriptSegments: [],
-    message: 'לא נמצא תמלול זמין לסרטון זה.',
+    message: null,
   };
 }
 

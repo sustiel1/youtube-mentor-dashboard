@@ -275,15 +275,17 @@ export function updateStoredVideo(id, updates) {
   videos[idx] = updated;
   saveVideos(videos);
 
-  // Auto-strip transcript from localStorage after analysis is saved.
-  // The current in-memory `updated` value still has the transcript for this session.
+  // Auto-strip heavy fields from localStorage after analysis is saved.
+  // Transcript text is kept intentionally — user deletes it explicitly via "מחק תמלול".
+  // Only description (rarely needed post-analysis) and raw segments (re-derivable) are stripped.
+  const AUTO_STRIP_FIELDS = ['description', 'transcriptSegments'];
   if (updated.analysisStatus === 'analyzed') {
-    const needsStrip = LARGE_VIDEO_FIELDS.some(
+    const needsStrip = AUTO_STRIP_FIELDS.some(
       (f) => f in updated && updated[f] != null && updated[f] !== ''
     );
     if (needsStrip) {
       const stripped = { ...updated };
-      for (const f of LARGE_VIDEO_FIELDS) delete stripped[f];
+      for (const f of AUTO_STRIP_FIELDS) delete stripped[f];
 
       // Before losing description: extract chapters if not already saved elsewhere.
       // Covers the case where chapters were only derivable from video.description.
