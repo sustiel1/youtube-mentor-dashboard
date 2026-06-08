@@ -49,8 +49,28 @@ export function SpecializedContentRenderer({
     />
   );
 
-  // ── Technical / Fundamental Analysis ────────────────────────────
-  if (slug === 'technical-analysis' || slug === 'fundamental-analysis') {
+  // ── Fundamental Analysis ─────────────────────────────────────────
+  if (slug === 'fundamental-analysis') {
+    const sects = [
+      sect('📈 מדדים פיננסיים',  extractVideoTabItems(effectiveVideo, 'financial-metrics',    marketBriefData), 'financial-metrics'),
+      sect('💰 הערכת שווי',       extractVideoTabItems(effectiveVideo, 'valuation',            marketBriefData), 'valuation'),
+      sect('⚙️ מסגרות ניתוח',     extractVideoTabItems(effectiveVideo, 'analysis-frameworks',  marketBriefData), 'analysis-frameworks'),
+      sect("📋 צ'קליסט השקעה",    extractVideoTabItems(effectiveVideo, 'investment-checklist', marketBriefData), 'investment-checklist'),
+      sect('⚠️ סיכונים',          extractVideoTabItems(effectiveVideo, 'mistakes',             marketBriefData), 'mistakes'),
+      sect('✅ כללים',             extractVideoTabItems(effectiveVideo, 'checklists',           marketBriefData), 'checklists'),
+    ].filter(Boolean);
+
+    if (sects.length === 0) return (
+      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+        <span className="text-3xl mb-2 opacity-30">📊</span>
+        <p className="text-sm">אין עדיין נתונים פונדמנטליים — נתח את הסרטון</p>
+      </div>
+    );
+    return <div className="space-y-3">{sects}</div>;
+  }
+
+  // ── Technical Analysis ───────────────────────────────────────────
+  if (slug === 'technical-analysis') {
     const sects = [
       sect('📈 אינדיקטורים', extractVideoTabItems(effectiveVideo, 'indicators',  marketBriefData), 'indicators'),
       sect('🎯 סטאפים',      extractVideoTabItems(effectiveVideo, 'setups',      marketBriefData), 'setups'),
@@ -144,10 +164,17 @@ export function SpecializedContentRenderer({
     const _ljp = ps?.liberalJewishPerspective || ps?.politicalSummary?.liberalJewishPerspective || null;
     const _rk  = ps?.reusableKnowledge        || ps?.politicalSummary?.reusableKnowledge        || [];
 
+    const keyPlayers   = extractVideoTabItems(effectiveVideo, 'political-players',      marketBriefData);
+    const argsFor      = extractVideoTabItems(effectiveVideo, 'political-for',          marketBriefData);
+    const argsAgainst  = extractVideoTabItems(effectiveVideo, 'political-against',      marketBriefData);
+
     const sects = [
+      sect('👥 שחקנים מרכזיים',   keyPlayers,                                                        'political-players'),
       sect('⚖️ אידיאולוגיה',      [...safeArr(Array.isArray(_ia)  ? _ia  : []), ...objToArr(_ia)],  'political-ideology'),
       sect('✡️ תאולוגיה',          [...safeArr(Array.isArray(_ta)  ? _ta  : []), ...objToArr(_ta)],  'political-theology'),
       sect('🕊️ יהדות ליברלית',    [...safeArr(Array.isArray(_ljp) ? _ljp : []), ...objToArr(_ljp)], 'political-liberal'),
+      sect('✅ בעד',               argsFor,                                                            'political-for'),
+      sect('❌ נגד',               argsAgainst,                                                        'political-against'),
       sect('📢 סיסמאות וציטוטים', [...safeArr(_vq), ...safeArr(_sl)],                                'political-slogans'),
       sect('⚔️ תגובות לוויכוחים', safeArr(_dr),                                                      'political-debates'),
       sect('📚 ידע לשימוש חוזר',  safeArr(_rk),                                                      'political-reusable'),

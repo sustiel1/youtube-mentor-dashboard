@@ -8442,11 +8442,16 @@ export function VideoDetailPanel({
                     ...(Array.isArray(effectiveVideo?.brainHighlights)         ? effectiveVideo.brainHighlights         : []),
                     ...(Array.isArray(effectiveVideo?.analysis?.brainHighlights) ? effectiveVideo.analysis.brainHighlights : []),
                   ].filter(Boolean);
+                  const thesis = [
+                    ...(Array.isArray(effectiveVideo?.thesis)          ? effectiveVideo.thesis          : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.thesis) ? effectiveVideo.analysis.thesis : []),
+                  ].filter(Boolean);
 
                   const sections = [
                     mainLesson.length > 0    && { key: 'lesson',     label: '🎯 לקח מרכזי',       items: mainLesson,  highlight: true,  tabKey: 'insights' },
                     keyInsights.length > 0   && { key: 'insights',   label: '💡 תובנות מרכזיות',   items: keyInsights, highlight: false, tabKey: 'insights' },
                     principles.length > 0    && { key: 'principles', label: '🧠 עקרונות מסחר',     items: principles,  highlight: false, tabKey: 'trading-brain' },
+                    thesis.length > 0        && { key: 'thesis',     label: '📐 טזה / טיעון מרכזי', items: thesis,      highlight: false, tabKey: 'insights' },
                   ].filter(Boolean);
 
                   if (sections.length === 0) return (
@@ -8475,6 +8480,10 @@ export function VideoDetailPanel({
               {/* ── Useful Knowledge tab — actionItems, definitions, rules, checklists, mistakes (universal) ── */}
               <TabsContent value="useful-knowledge" className="mt-5 min-h-[320px]" dir="rtl">
                 {(() => {
+                  const rawRules = [
+                    ...(Array.isArray(effectiveVideo?.rules)          ? effectiveVideo.rules          : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.rules) ? effectiveVideo.analysis.rules : []),
+                  ].filter(Boolean);
                   const sections = [
                     {
                       key: 'practical',
@@ -8490,7 +8499,13 @@ export function VideoDetailPanel({
                     },
                     {
                       key: 'rules',
-                      label: '✅ כללים',
+                      label: '📏 כללי מסחר',
+                      items: rawRules,
+                      tabKey: 'useful-knowledge',
+                    },
+                    {
+                      key: 'checklists',
+                      label: '✅ צ\'קליסטים',
                       items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData),
                       tabKey: 'checklists',
                     },

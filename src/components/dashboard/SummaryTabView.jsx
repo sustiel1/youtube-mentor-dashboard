@@ -85,8 +85,8 @@ function buildInsightCallouts(video) {
   if (video?.mainLesson) push("השיעור המרכזי", video.mainLesson, "indigo");
   const thesis = Array.isArray(video?.thesis) ? video.thesis.filter(Boolean) : [];
   if (thesis[0]) push("מה באמת חשוב כאן", thesis[0], "violet");
-  const ki = Array.isArray(video?.keyInsights) ? video.keyInsights.filter(Boolean) : [];
-  if (ki[0]) push("המשמעות למשקיעים", ki[0], "emerald");
+  const strategyText = typeof video?.strategyOrMethod === "string" ? video.strategyOrMethod.trim() : "";
+  if (strategyText) push("האסטרטגיה / השיטה", strategyText, "emerald");
   const mistakes = Array.isArray(video?.mistakesToAvoid) ? video.mistakesToAvoid.filter(Boolean) : [];
   if (mistakes[0]) push("הטעות שרוב האנשים עושים", mistakes[0], "amber");
   const concepts = Array.isArray(video?.concepts) ? video.concepts.filter(Boolean) : [];

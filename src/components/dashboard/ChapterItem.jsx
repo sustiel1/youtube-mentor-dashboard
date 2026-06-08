@@ -82,6 +82,38 @@ function TranscriptPreview({ section }) {
   );
 }
 
+function ChapterKeyPoints({ points }) {
+  const [open, setOpen] = useState(false);
+  const safe = Array.isArray(points) ? points.filter(Boolean) : [];
+  if (safe.length === 0) return null;
+  return (
+    <div className="mt-1.5" dir="rtl">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+        className="text-[10px] font-medium text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 transition-colors"
+      >
+        {safe.length} נקודות מפתח {open ? "▲" : "▼"}
+      </button>
+      {open && (
+        <ul
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1 space-y-1"
+        >
+          {safe.map((pt, i) => (
+            <li
+              key={i}
+              className="rounded-md border border-amber-100 bg-amber-50/60 px-2 py-1 text-[11px] leading-relaxed text-slate-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-zinc-300"
+            >
+              {typeof pt === "string" ? pt : (pt?.text || pt?.point || pt?.title || JSON.stringify(pt))}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ChapterContent({ section, timestampLabel, muted = false }) {
   const [showOriginal, setShowOriginal] = useState(false);
   const hasHebrew = Boolean(section.hebrewTitle);
@@ -120,6 +152,7 @@ function ChapterContent({ section, timestampLabel, muted = false }) {
             {section.description}
           </div>
         ) : null}
+        <ChapterKeyPoints points={section?.keyPoints} />
         <TranscriptPreview section={section} />
       </div>
       {timestampLabel ? (
