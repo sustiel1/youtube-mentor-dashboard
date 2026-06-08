@@ -72,7 +72,7 @@ import { StatusBadge } from "./StatusBadge";
 import { ObsidianExportButton } from "./ObsidianExportButton";
 import { ObsidianSettingsDialog } from "./ObsidianSettingsDialog";
 import { buildVideoFullNote, openObsidianUrl, downloadMarkdown, getSelectedAtomicKnowledge, resolvePrimaryTopic } from "@/lib/obsidianExport";
-import { buildObsidianOpenUrl, hasUsableObsidianVaultName, resolveObsidianVaultName, useObsidianSettingsState } from "@/lib/obsidianVaultConfig";
+import { buildObsidianOpenUrl, getObsidianVaultRequestFields, hasUsableObsidianVaultName, resolveObsidianVaultName, useObsidianSettingsState } from "@/lib/obsidianVaultConfig";
 import { buildObsidianRoutingDebugInfo, resolveVideoObsidianRoute } from "@/lib/obsidianRouting";
 import { getManualNotesByTopic } from "@/lib/localManualNoteStore";
 import { createKnowledgeItemFromVideo, getKnowledgeItems, upsertKnowledgeItem, updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
@@ -96,7 +96,7 @@ import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
-import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatus } from "@/lib/obsidianSavedStatus";
+import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatusFromPath, logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
@@ -1346,6 +1346,59 @@ function repairGemsJson(raw) {
     fixes.push('Skipped leading non-JSON text');
   }
 
+  // ── Strip embedded root JSON injected inside string values ────────────
+  // Handles: "note": "Hebrew text{\n"contentType": "marketBrief",...
+  // AI sometimes copies the full output JSON into a single string field.
+  // Detection: inside a string value, find { followed within 100 chars by a root-level key.
+  {
+    const ROOT_FIELD_CHECK = /^\s*"?(contentType|videoType|briefDate|videoUrl|chapters|marketOverview|channelName|videoTitle|marketSession)["\\]?\s*:/;
+    let out0 = '', inS0 = false, esc0 = false;
+    let embeddedCount = 0;
+
+    for (let i0 = 0; i0 < s.length; i0++) {
+      const c = s[i0];
+      if (esc0) { out0 += c; esc0 = false; continue; }
+      if (c === '\\' && inS0) { out0 += c; esc0 = true; continue; }
+      if (c === '"') { inS0 = !inS0; out0 += c; continue; }
+
+      if (inS0 && c === '{') {
+        // Normalize lookahead: collapse escape sequences + whitespace for key detection
+        const ahead = s.slice(i0 + 1, i0 + 100)
+          .replace(/\\[nrt]/g, ' ')
+          .replace(/\\/g, '');
+        if (ROOT_FIELD_CHECK.test(ahead)) {
+          // Close the string value before the injection
+          const fieldCtx = out0.slice(Math.max(0, out0.length - 60)).replace(/\s+/g, ' ');
+          out0 += '"';
+          inS0 = false;
+          // Skip the injected {…} block by counting brace depth
+          let depth = 1, j = i0 + 1, jInS = false, jEsc = false;
+          while (j < s.length && depth > 0) {
+            const jc = s[j];
+            if (jEsc) { jEsc = false; j++; continue; }
+            if (jc === '\\' && jInS) { jEsc = true; j++; continue; }
+            if (jc === '"') { jInS = !jInS; j++; continue; }
+            if (!jInS && jc === '{') { depth++; j++; continue; }
+            if (!jInS && jc === '}') { depth--; j++; continue; }
+            j++;
+          }
+          console.log(`[JSON Repair] Embedded root JSON detected — field context: ...${fieldCtx}`);
+          console.log(`[JSON Repair] Skipped ${j - i0 - 1} injected characters (depth resolved at pos ${j})`);
+          const previewAfter = s.slice(j, j + 60).replace(/\s+/g, ' ');
+          console.log(`[JSON Repair] Repaired preview after injection: ${previewAfter}`);
+          embeddedCount++;
+          i0 = j - 1; // -1 because loop does i0++
+          continue;
+        }
+      }
+      out0 += c;
+    }
+    if (embeddedCount > 0) {
+      s = out0;
+      fixes.push(`Stripped ${embeddedCount} embedded root JSON injection(s) from string value(s)`);
+    }
+  }
+
   // Fix curly/smart quotes → standard ASCII quotes
   const beforeQuotes = s;
   s = s.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
@@ -1830,9 +1883,13 @@ export function VideoDetailPanel({
   ]);
 
   const effectiveSubCategory = useMemo(() => {
-    const rawValue = subCategoryOverride ?? video?.subCategory ?? videoProp?.subCategory;
+    // Priority: user-confirmed > local state override > stored subCategory > prop
+    const confirmedVal = (video?.userConfirmedSubCategory && video?.confirmedSubCategory)
+      ? String(video.confirmedSubCategory).trim()
+      : null;
+    const rawValue = confirmedVal ?? subCategoryOverride ?? video?.subCategory ?? videoProp?.subCategory;
     return typeof rawValue === "string" ? String(rawValue).trim() : "";
-  }, [subCategoryOverride, video?.subCategory, videoProp?.subCategory]);
+  }, [subCategoryOverride, video?.confirmedSubCategory, video?.userConfirmedSubCategory, video?.subCategory, videoProp?.subCategory]);
 
   const effectiveVideo = useMemo(() => {
     if (!video) return video;
@@ -2080,6 +2137,38 @@ export function VideoDetailPanel({
       activeTab,
     });
   }, [activeTab, effectiveCategory, effectiveSubCategory, normalizedSubCategory, selectedTabsConfigKey, videoType]);
+
+  // ── Diagnostic log: morning-brief + analysis state ────────────────────
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const isBriefType = ['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(normalizedSubCategory);
+    if (!isBriefType) return;
+    const summaryFields = [
+      video?.shortSummary, video?.fullSummary, video?.summary, video?.gemSummary,
+    ].filter(Boolean).length;
+    const specializedFields = marketBriefData
+      ? Object.values(marketBriefData).filter(v => Array.isArray(v) ? v.length > 0 : !!v).length
+      : 0;
+    console.log('[BriefDiagnostic]', {
+      category: effectiveCategory ?? null,
+      subCategory: effectiveSubCategory || null,
+      normalizedSubCategory,
+      tabsKey: selectedTabsConfigKey,
+      contentType: video?.contentType || null,
+      userConfirmedSubCategory: video?.userConfirmedSubCategory ?? false,
+      confirmedSubCategory: video?.confirmedSubCategory ?? null,
+      'marketBriefData.exists': !!marketBriefData,
+      'marketBriefData.contentType': marketBriefData?.contentType ?? null,
+      'analysis.exists': !!(video?.shortSummary || video?.fullSummary),
+      'summaryFieldsCount': summaryFields,
+      'specializedFieldsCount': specializedFields,
+      'transcript.length': (video?.transcript || '').length || 0,
+      'gemRec.gemKey': gemRec?.gemKey ?? null,
+      'gemRec.confidence': Math.round(gemRec?.confidencePct || 0),
+    });
+  }, [effectiveCategory, effectiveSubCategory, normalizedSubCategory, selectedTabsConfigKey,
+      video?.contentType, video?.shortSummary, video?.fullSummary, video?.userConfirmedSubCategory,
+      video?.confirmedSubCategory, video?.transcript, marketBriefData, gemRec]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -3306,41 +3395,85 @@ export function VideoDetailPanel({
     setBrainPickerOpen(true);
   }, []);
 
+  const persistVerifiedVaultWriteStatus = useCallback(async (data, { savePath, apiRoute }) => {
+    const { vaultName, vaultPath } = getObsidianVaultRequestFields();
+    const savedPath = data?.savedPath || savePath;
+    const verified = data?.verified === true;
+    logObsidianVaultP0Diagnostics({
+      apiRoute,
+      vaultName,
+      vaultPath,
+      finalFilePath: savedPath,
+      verified,
+      obsidianSavedStatusUpdated: false,
+    });
+    if (!data?.ok || !verified) return false;
+    const baseStatus = buildObsidianSavedStatusFromPath(savedPath, vaultName);
+    if (!baseStatus) return false;
+    const obsidianStatus = {
+      ...baseStatus,
+      mappingCategory: effectiveCategory || video?.category || null,
+      mappingSubCategory: effectiveSubCategory || video?.subCategory || null,
+    };
+    await saveVideoFields({ obsidianSavedStatus: obsidianStatus });
+    logObsidianVaultP0Diagnostics({
+      apiRoute,
+      vaultName,
+      vaultPath,
+      finalFilePath: savedPath,
+      verified: true,
+      obsidianSavedStatusUpdated: true,
+    });
+    return true;
+  }, [effectiveCategory, effectiveSubCategory, saveVideoFields, video?.category, video?.subCategory]);
+
   const handleSaveAllConfirmed = useCallback(async () => {
     if (!saveAllContent) return;
+    const { vaultName, vaultPath } = getObsidianVaultRequestFields();
+    const apiRoute = "/api/vault/write";
     try {
-      const res = await fetch('/api/vault/write', {
+      const res = await fetch(apiRoute, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           path: saveAllContent.path,
           content: saveAllContent.markdown,
+          vaultPath,
+          vaultName,
           videoTitle: video?.title,
           videoUrl: getWatchUrl(video),
           channelTitle: video?.channelTitle,
           duration: video?.duration,
         }),
       });
-      const data = await res.json();
-      if (data.ok) {
-        toast.success(`✅ נשמרו ${saveAllContent.totalItems} פריטים למוח`, {
-          description: `נתיב: ${saveAllContent.path}`,
-          duration: 6000,
+      const data = await res.json().catch(() => ({}));
+      if (data.ok && data.verified === true) {
+        const statusUpdated = await persistVerifiedVaultWriteStatus(data, {
+          savePath: saveAllContent.path,
+          apiRoute,
         });
-        setSaveAllConfirmOpen(false);
-        setSaveAllContent(null);
+        if (statusUpdated) {
+          toast.success(`✅ נשמרו ${saveAllContent.totalItems} פריטים למוח`, {
+            description: `נתיב: ${data.savedPath || saveAllContent.path}`,
+            duration: 6000,
+          });
+          setSaveAllConfirmOpen(false);
+          setSaveAllContent(null);
+        } else {
+          toast.error("הקובץ נשמר אך לא עודכן סטטוס השמירה");
+        }
       } else if (data.error === "NO_VAULT_PATH") {
         openObsidianSettingsForPath(saveAllContent.path, {
           autoOpenAfterSave: false,
           toastMessage: "יש להגדיר קודם את נתיב ה-vault של Obsidian",
         });
       } else {
-        toast.error(`שגיאה בשמירה: ${data.error || 'לא ידוע'}`);
+        toast.error(`שגיאה בשמירה: ${data.message || data.error || 'לא ידוע'}`);
       }
     } catch (err) {
       toast.error(`שגיאה: ${err.message}`);
     }
-  }, [openObsidianSettingsForPath, saveAllContent, video]);
+  }, [openObsidianSettingsForPath, persistVerifiedVaultWriteStatus, saveAllContent, video]);
 
   const knowledgeItemId = useMemo(() => {
     const sourceId = String(video?.videoId || video?.id || "");
@@ -3419,13 +3552,33 @@ export function VideoDetailPanel({
 
   const isObsidianMappingCurrent = useMemo(() => {
     if (!hasObsidianSavedStatus(video)) return false;
-    const savedFolder = String(video?.obsidianSavedStatus?.folder || "").trim().replace(/\\/g, "/");
+    const status = video?.obsidianSavedStatus;
+    const savedFolder = String(status?.folder || "").trim().replace(/\\/g, "/");
     const targetFolder = String(expectedObsidianFolder || "").trim().replace(/\\/g, "/");
-    const savedVault = String(video?.obsidianSavedStatus?.vaultName || "").trim();
+    const savedVault = String(status?.vaultName || "").trim();
     const currentVault = String(resolvedObsidianVaultName || "").trim();
     const vaultMatches = !savedVault || !currentVault || savedVault === currentVault;
-    return Boolean(savedFolder) && savedFolder === targetFolder && vaultMatches;
-  }, [expectedObsidianFolder, resolvedObsidianVaultName, video?.obsidianSavedStatus, video?.obsidianSavedStatus?.folder, video?.obsidianSavedStatus?.vaultName]);
+    if (!vaultMatches) return false;
+    if (savedFolder && targetFolder && savedFolder === targetFolder) return true;
+    const savedCat = String(status?.mappingCategory || "").trim();
+    const savedSub = String(status?.mappingSubCategory || "").trim();
+    if (savedCat || savedSub) {
+      const curCat = String(effectiveCategory || "").trim();
+      const curSub = String(effectiveSubCategory || "").trim();
+      return savedCat === curCat && savedSub === curSub;
+    }
+    return Boolean(savedFolder) && savedFolder === targetFolder;
+  }, [
+    effectiveCategory,
+    effectiveSubCategory,
+    expectedObsidianFolder,
+    resolvedObsidianVaultName,
+    video?.obsidianSavedStatus,
+    video?.obsidianSavedStatus?.folder,
+    video?.obsidianSavedStatus?.mappingCategory,
+    video?.obsidianSavedStatus?.mappingSubCategory,
+    video?.obsidianSavedStatus?.vaultName,
+  ]);
 
   const isCurrentBrainSave = useMemo(
     () => hasObsidianSavedStatus(video) && isObsidianMappingCurrent,
@@ -3602,7 +3755,13 @@ export function VideoDetailPanel({
     setIsSubTopicEditing(false);
     console.log('[SubTopicRecommendation] accepted:', newSubCat);
     try {
-      await saveVideoFields({ subCategory: newSubCat, dismissedSubTopicRec: null });
+      await saveVideoFields({
+        subCategory: newSubCat,
+        dismissedSubTopicRec: null,
+        userConfirmedSubCategory: true,
+        confirmedSubCategory: newSubCat,
+        confirmedAt: new Date().toISOString(),
+      });
       toast.success(`תת-נושא נשמר: ${newSubCat}`);
     } catch (err) {
       console.warn("[SubTopicRec] save failed:", err?.message);
@@ -3638,7 +3797,13 @@ export function VideoDetailPanel({
     setNewSubTopicDraft("");
     console.log("[SubTopicRecommendation] manual selection:", normalizedSubTopic);
     try {
-      await saveVideoFields({ subCategory: normalizedSubTopic, dismissedSubTopicRec: null });
+      await saveVideoFields({
+        subCategory: normalizedSubTopic,
+        dismissedSubTopicRec: null,
+        userConfirmedSubCategory: true,
+        confirmedSubCategory: normalizedSubTopic,
+        confirmedAt: new Date().toISOString(),
+      });
       toast.success(`תת-נושא עודכן: ${normalizedSubTopic}`);
     } catch (err) {
       console.warn("[SubTopicManual] save failed:", err?.message);
@@ -7504,7 +7669,39 @@ export function VideoDetailPanel({
                   }
 
                   // ── Non-political: existing summary logic ─────────────
+                  const isBriefVideo = ['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(normalizedSubCategory);
                   const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
+
+                  // Brief video without any summary data — show guidance
+                  if (isBriefVideo && !summaryShort && !marketBriefData) {
+                    return (
+                      <div className="mt-3 space-y-3" dir="rtl">
+                        <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-4 dark:border-sky-800/40 dark:bg-sky-950/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">📰</span>
+                            <p className="text-sm font-bold text-sky-800 dark:text-sky-200">
+                              {effectiveSubCategory || 'מבזק'} — זרימת ניתוח
+                            </p>
+                          </div>
+                          <div className="space-y-2 text-xs text-sky-700 dark:text-sky-300 mb-3">
+                            <p><span className="font-semibold">1.</span> הרץ &quot;נתח עם Claude&quot; ← יוצר פרקים + סיכום</p>
+                            <p><span className="font-semibold">2.</span> פתח GEM <strong>מבזק בוקר</strong> ב-Gemini ← הדבק JSON</p>
+                            <p><span className="font-semibold">3.</span> טאב Specialized יתמלא בנתוני שוק</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsGemsPasteOpen(true)}
+                              className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 transition-all"
+                            >
+                              📋 הדבק GEM JSON
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   if (summaryShort) {
                     return (
                       <div className="mt-3 space-y-3" onMouseUp={handleSummaryMouseUp}>
@@ -8321,6 +8518,24 @@ export function VideoDetailPanel({
                         </div>
                       </div>
                     )}
+                    {/* ── Brief video: no GEM data yet — guidance banner ── */}
+                    {['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(normalizedSubCategory) && !marketBriefData && (
+                      <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-right dark:border-sky-800/40 dark:bg-sky-950/20" dir="rtl">
+                        <p className="text-sm font-semibold text-sky-800 dark:text-sky-200 mb-1">
+                          📰 {effectiveSubCategory || 'מבזק'} — נדרש ניתוח GEM
+                        </p>
+                        <p className="text-xs text-sky-700 dark:text-sky-300 mb-2.5">
+                          פתח את GEM <strong>מבזק בוקר</strong> ב-Gemini, הדבק את ה-JSON שהוא מחזיר כאן
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setIsGemsPasteOpen(true)}
+                          className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 active:scale-95 transition-all"
+                        >
+                          📋 הדבק GEM JSON
+                        </button>
+                      </div>
+                    )}
                     {/* ── AI Field Mapping (Morning Brief only) ── */}
                     {marketBriefData && normalizedSubCategory === 'morning-brief' && (() => {
                       const mapping = getMorningBriefFieldMapping(marketBriefData);
@@ -9133,6 +9348,8 @@ export function VideoDetailPanel({
         selectedTabsConfigKey={selectedTabsConfigKey}
         gemRec={gemRec}
         marketBriefData={marketBriefData}
+        userConfirmedSubCategory={!!video?.userConfirmedSubCategory}
+        confirmedAt={video?.confirmedAt ?? null}
       />
     )}
 
@@ -9203,22 +9420,11 @@ export function VideoDetailPanel({
           setPendingBrainSave(null);
           const content = buildSaveAllContent();
           const savePath = pickerPath || `ידע/${filename || 'סרטון'}.md`;
-          const _vaultPath = obsidianSettings.vaultPath || "";
-          const _vaultName = obsidianSettings.vaultName || resolveObsidianVaultName();
-          const _hasUsableVaultName = hasUsableObsidianVaultName(obsidianSettings.vaultName);
-          console.debug("OBSIDIAN SAVE START", {
-            videoId: video?.id,
-            title: video?.title,
-            category: video?.category,
-            subCategory: video?.subCategory,
-            hasTranscript: !!(video?.transcript || video?.fullTranscript),
-            hasAnalysis: !!(video?.analysis || video?.shortSummary),
-            savePath,
-            vaultName: _vaultName || null,
-            hasUsableVaultName: _hasUsableVaultName,
-          });
+          const { vaultPath: _vaultPath, vaultName: _vaultName } = getObsidianVaultRequestFields();
+          const _hasUsableVaultName = hasUsableObsidianVaultName(_vaultName);
+          const apiRoute = "/api/vault/write";
           try {
-            const res = await fetch('/api/vault/write', {
+            const res = await fetch(apiRoute, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -9234,20 +9440,16 @@ export function VideoDetailPanel({
               }),
             });
             const data = await res.json().catch(() => ({}));
-            console.debug("OBSIDIAN SAVE RESULT", data);
-            if (data.ok) {
+            if (data.ok && data.verified === true) {
+              const statusUpdated = await persistVerifiedVaultWriteStatus(data, { savePath, apiRoute });
               const savedPath = data.savedPath || savePath;
               const folderPath = savedPath.includes('/')
                 ? savedPath.substring(0, savedPath.lastIndexOf('/'))
                 : '';
-              const savedFileName = savedPath.includes('/')
-                ? savedPath.substring(savedPath.lastIndexOf('/') + 1)
-                : savedPath;
 
-              // Persist the saved status so the Obsidian card turns green
-              const obsidianStatus = buildObsidianSavedStatus({ folder: folderPath || savedPath, file: savedFileName, vaultName: _vaultName });
-              if (obsidianStatus) {
-                try { await saveVideoFields({ obsidianSavedStatus: obsidianStatus }); } catch {}
+              if (!statusUpdated) {
+                toast.error("הקובץ נשמר אך לא עודכן סטטוס השמירה");
+                return;
               }
 
               if (_hasUsableVaultName) {
@@ -9279,14 +9481,11 @@ export function VideoDetailPanel({
               // Vault API not available — fallback: download markdown
               const safeFilename = `${filename || 'ידע'}.md`;
               downloadMarkdown(content.markdown, safeFilename);
-              toast.success(`✅ ${content.totalItems} פריטים יוצאו — ${safeFilename}`);
+              toast.info(`הורדה מקומית — ${content.totalItems} פריטים (${safeFilename})`);
             }
           } catch (err) {
             console.error("OBSIDIAN SAVE ERROR", err);
-            // Network/API error — fallback: download markdown
-            const safeFilename = `${filename || 'ידע'}.md`;
-            downloadMarkdown(content.markdown, safeFilename);
-            toast.success(`✅ ${content.totalItems} פריטים יוצאו — ${safeFilename}`);
+            toast.error(`שגיאה בשמירה: ${err.message}`);
           }
         }
       }}
