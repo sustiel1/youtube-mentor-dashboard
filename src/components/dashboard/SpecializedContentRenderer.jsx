@@ -2,6 +2,18 @@ import { LearningTabContent } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { extractVideoTabItems } from "@/config/videoTabsConfig";
 
+// Detects structured market-index strings like "spx: direction: down | change: -0.23% | level: | note: ..."
+const MARKET_FIELD_RE = /\b(direction|change|level)\s*:/;
+function looksLikeMarketIndex(item) {
+  if (item && typeof item === 'object') return true;
+  if (typeof item !== 'string') return false;
+  const ci = item.indexOf(':');
+  if (ci === -1) return false;
+  const tickerPart = item.slice(0, ci).trim();
+  const rest = item.slice(ci + 1);
+  return tickerPart.length <= 12 && MARKET_FIELD_RE.test(rest);
+}
+
 function Section({ label, items, tabKey, onSaveToBrain }) {
   const safe = Array.isArray(items) ? items : [];
   if (safe.length === 0) return null;
@@ -101,8 +113,23 @@ export function SpecializedContentRenderer({
       </div>
     ) : null;
 
+    const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
+    const marketIndexItems = allNewsItems.filter(looksLikeMarketIndex);
+    const plainNewsItems   = allNewsItems.filter((i) => !looksLikeMarketIndex(i));
+
+    const marketNewsSect = marketIndexItems.length > 0 ? (
+      <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📰 סקירת שוק</p>
+        <MarketIndicesTable
+          items={marketIndexItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 סקירת שוק')}
+        />
+      </div>
+    ) : null;
+
     const sects = [
-      sect('📰 חדשות',       extractVideoTabItems(effectiveVideo, 'market-news',         marketBriefData), 'market-news'),
+      marketNewsSect,
+      plainNewsItems.length > 0 ? sect('📋 חדשות', plainNewsItems, 'market-news') : null,
       indicesSect,
       sect('🌍 מאקרו',        extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
       sect('🎯 רשימת מעקב',  extractVideoTabItems(effectiveVideo, 'stocks-mentioned',    marketBriefData), 'stocks-mentioned'),
