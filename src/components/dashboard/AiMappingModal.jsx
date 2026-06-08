@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { X, ClipboardList, Download, Copy, ArrowRight } from "lucide-react";
 import { extractVideoTabItems } from "@/config/videoTabsConfig";
 import { getKnowledgeItems } from "@/lib/localKnowledgeItemStore";
+import { toast } from "sonner";
 
 // ── Learning fields → target tab ──────────────────────────────────────────────
 const LEARNING_FIELD_TO_TAB = {
@@ -106,7 +107,11 @@ const INTERNAL_SKIP = new Set([
 const TAB_LABEL = {
   "summary":             "סיכום",
   "chapters":            "פרקים",
+  "insights":            "תובנות",
   "useful-knowledge":    "ידע שימושי",
+  "app-builder":         "APP",
+  "topics-subtopics":    "נושאים ותתי-נושאים",
+  "specialized":         "תוכן ייעודי",
   "definitions":         "מושגים",
   "indicators":          "אינדיקטורים",
   "setups":              "סטאפים",
@@ -126,6 +131,148 @@ const TAB_LABEL = {
   "brief-conclusions":   "מסקנות למסחר",
   "political":           "פוליטי",
 };
+
+// ── Diagnostic Report Builder ─────────────────────────────────────────────────
+
+const SAFE_TAB_DATA_MAPPINGS = [
+  // ── Summary ───────────────────────────────────────────────────────────
+  { tabKey: "summary", expectedField: "summary→aiSummary",  sourcePath: "marketBriefData.summary",      targetPath: "video.aiSummary"    },
+  { tabKey: "summary", expectedField: "shortSummary",        sourcePath: "marketBriefData.shortSummary", targetPath: "video.shortSummary" },
+  { tabKey: "summary", expectedField: "fullSummary",         sourcePath: "marketBriefData.fullSummary",  targetPath: "video.fullSummary"  },
+  { tabKey: "summary", expectedField: "mainLesson",          sourcePath: "marketBriefData.mainLesson",   targetPath: "video.mainLesson"   },
+  // ── Chapters ──────────────────────────────────────────────────────────
+  { tabKey: "chapters", expectedField: "aiChapters",         sourcePath: "marketBriefData.chapters",     targetPath: "video.aiChapters"   },
+  // ── Insights ──────────────────────────────────────────────────────────
+  { tabKey: "insights", expectedField: "top5Insights",       sourcePath: "marketBriefData.top5Insights",     targetPath: "video.top5Insights"     },
+  { tabKey: "insights", expectedField: "learningInsights",   sourcePath: "marketBriefData.learningInsights", targetPath: "video.learningInsights" },
+  { tabKey: "insights", expectedField: "conclusions",        sourcePath: "marketBriefData.conclusions",      targetPath: "video.conclusions"      },
+  // ── Useful Knowledge ──────────────────────────────────────────────────
+  { tabKey: "useful-knowledge", expectedField: "reusableKnowledge", sourcePath: "marketBriefData.reusableKnowledge", targetPath: "video.reusableKnowledge" },
+  { tabKey: "useful-knowledge", expectedField: "keyTakeaways",      sourcePath: "marketBriefData.keyTakeaways",      targetPath: "video.keyTakeaways"      },
+  { tabKey: "useful-knowledge", expectedField: "actionChecklist",   sourcePath: "marketBriefData.actionChecklist",   targetPath: "video.actionChecklist"   },
+  // ── Specialized ───────────────────────────────────────────────────────
+  { tabKey: "specialized", expectedField: "indices",         sourcePath: "marketBriefData.indices",        targetPath: "video.indices"        },
+  { tabKey: "specialized", expectedField: "marketNews",      sourcePath: "marketBriefData.marketNews",     targetPath: "video.marketNews"     },
+  { tabKey: "specialized", expectedField: "macroFactors",    sourcePath: "marketBriefData.macroFactors",   targetPath: "video.macroFactors"   },
+  { tabKey: "specialized", expectedField: "stocksMentioned", sourcePath: "marketBriefData.stocksMentioned",targetPath: "video.stocksMentioned"},
+  { tabKey: "specialized", expectedField: "opportunities",   sourcePath: "marketBriefData.opportunities",  targetPath: "video.opportunities"  },
+  { tabKey: "specialized", expectedField: "risks",           sourcePath: "marketBriefData.risks",          targetPath: "video.risks"          },
+  // ── Topics & Subtopics ────────────────────────────────────────────────
+  { tabKey: "topics-subtopics", expectedField: "tags",           sourcePath: "marketBriefData.tags",          targetPath: "video.tags"          },
+  { tabKey: "topics-subtopics", expectedField: "obsidianTopics", sourcePath: "marketBriefData.obsidianTopics",targetPath: "video.obsidianTopics"},
+  // ── App Builder ───────────────────────────────────────────────────────
+  { tabKey: "app-builder", expectedField: "appBuilding", sourcePath: "marketBriefData.appBuilding", targetPath: "video.analysis.appBuilding" },
+];
+
+const UNIVERSAL_TAB_KEYS = ['summary', 'chapters', 'insights', 'useful-knowledge', 'app-builder', 'topics-subtopics', 'specialized'];
+const UNIVERSAL_TAB_DISPLAY_KEY = {
+  'summary':         'summary',
+  'chapters':        'chapters',
+  'insights':        'insights',
+  'useful-knowledge':'usefulKnowledge',
+  'app-builder':     'appBuilder',
+  'topics-subtopics':'topics',
+  'specialized':     'specialized',
+};
+
+function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData, userConfirmedSubCategory, confirmedAt }) {
+  const a  = v.analysis || {};
+  const transcriptSegs  = Array.isArray(v.transcriptSegments) ? v.transcriptSegments : [];
+  const transcriptText  = typeof v.transcript === 'string' ? v.transcript : '';
+  const transcriptLen   = transcriptText.length ||
+    transcriptSegs.reduce((s, seg) => s + (String(seg?.text || '').length), 0);
+
+  const youtubeChaps = Array.isArray(v.chapters)
+    ? v.chapters.filter(c => c.timeSource === 'real' || c.chapterSource === 'description_timestamp' || c.chapterSource === 'native_chapters').length
+    : 0;
+  const aiChaps      = Array.isArray(v.aiChapters) ? v.aiChapters.length : 0;
+  const analysisChaps= Array.isArray(a.chapters) ? a.chapters.length : 0;
+  const finalChaps   = youtubeChaps || aiChaps || analysisChaps;
+
+  const hasSummary   = !!(v.shortSummary || v.fullSummary || a.contentType);
+
+  const tabs = {};
+  for (const tabValue of UNIVERSAL_TAB_KEYS) {
+    const displayKey = UNIVERSAL_TAB_DISPLAY_KEY[tabValue];
+    const items = tabValue === 'chapters'
+      ? finalChaps
+      : extractVideoTabItems(v, tabValue, marketBriefData).length;
+
+    const sources = [];
+    if (tabValue === 'summary') {
+      if (v.shortSummary) sources.push('video.shortSummary');
+      if (v.fullSummary)  sources.push('video.fullSummary');
+      if (v.gemSummary)   sources.push('video.gemSummary');
+    } else if (tabValue === 'chapters') {
+      if (youtubeChaps) sources.push('video.chapters (youtube)');
+      if (aiChaps)      sources.push('video.aiChapters');
+      if (analysisChaps)sources.push('analysis.chapters');
+    } else if (tabValue === 'insights') {
+      if (Array.isArray(v.keyInsights)         && v.keyInsights.length)          sources.push('video.keyInsights');
+      if (Array.isArray(v.brainHighlights)     && v.brainHighlights.length)      sources.push('video.brainHighlights');
+      if (Array.isArray(v.tradingPrinciples)   && v.tradingPrinciples.length)    sources.push('video.tradingPrinciples');
+      if (Array.isArray(v.top5Insights)        && v.top5Insights.length)         sources.push('video.top5Insights');
+      if (v.mainLesson)                                                           sources.push('video.mainLesson');
+    } else if (tabValue === 'useful-knowledge') {
+      if (Array.isArray(v.actionItems)         && v.actionItems.length)          sources.push('video.actionItems');
+      if (Array.isArray(v.usefulKnowledge)     && v.usefulKnowledge.length)      sources.push('video.usefulKnowledge');
+      if (Array.isArray(v.definitions)         && v.definitions.length)          sources.push('video.definitions');
+      if (Array.isArray(v.checklists)          && v.checklists.length)           sources.push('video.checklists');
+    }
+    tabs[displayKey] = { items, sources };
+  }
+
+  const warnings = [];
+  if (transcriptLen < 100 && transcriptSegs.length === 0) warnings.push('Missing transcript');
+  if (!hasSummary)                                          warnings.push('Missing AI analysis');
+  if (finalChaps === 0)                                     warnings.push('No chapters');
+  if ((tabs.specialized?.items ?? 0) === 0)                 warnings.push('No specialized content');
+  if (!normalizedSubCategory)                               warnings.push('No subCategory — falling back to keyword detection');
+  if (!v.category)                                          warnings.push('Missing category');
+
+  return {
+    video: {
+      id:          v.id          || v.videoId || '',
+      title:       v.title       || '',
+      youtubeId:   v.youtubeId   || v.videoId || '',
+      channel:     v.channelName || v.mentorName || '',
+      category:    v.category    || '',
+      subCategory: v.subCategory || '',
+      contentType: v.contentType || a.contentType || '',
+      videoType:   videoType     || '',
+      tabsKey:     selectedTabsConfigKey || '',
+      userConfirmed: !!userConfirmedSubCategory,
+      confirmedSubCategory: v.confirmedSubCategory || null,
+      confirmedAt: confirmedAt || null,
+      analysisFlow: ANALYSIS_FLOW_MAP[normalizedSubCategory] || 'General',
+    },
+    transcript: {
+      exists:   transcriptLen >= 100 || transcriptSegs.length > 0,
+      length:   transcriptLen,
+      segments: transcriptSegs.length,
+      source:   v.transcriptSource || v.transcriptStatus || '',
+    },
+    chapters: {
+      youtubeChapters: youtubeChaps,
+      aiChapters:      aiChaps,
+      finalChapters:   finalChaps,
+      source: youtubeChaps > 0 ? 'youtube' : aiChaps > 0 ? 'ai' : finalChaps > 0 ? 'analysis' : 'none',
+    },
+    analysis: {
+      exists:      hasSummary,
+      gemType:     gemRec?.gemKey  || v.analysisProvider || '',
+      confidence:  Math.round(gemRec?.confidencePct || 0),
+      generatedAt: a.savedAt || v.analysisSavedAt || '',
+    },
+    tabs,
+    routing: {
+      obsidianCategory:    v.category    || '',
+      obsidianSubCategory: v.subCategory || '',
+      obsidianPath:        v.obsidianTopic || '',
+    },
+    warnings,
+  };
+}
 
 // ── Shared UI components ───────────────────────────────────────────────────────
 
@@ -193,9 +340,156 @@ function countArr(obj, key) {
   return Array.isArray(v) ? v.length : (typeof v === 'string' && v.trim() ? 1 : 0);
 }
 
+function getPathValue({ video, marketBriefData }, path) {
+  const [root, ...segments] = String(path || "").split(".");
+  const base = root === "video" ? video : root === "marketBriefData" ? marketBriefData : undefined;
+  return segments.reduce((acc, key) => (acc == null ? undefined : acc[key]), base);
+}
+
+function cloneValue(value) {
+  if (Array.isArray(value)) return value.map((item) => cloneValue(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, cloneValue(val)]));
+  }
+  return value;
+}
+
+function valueCount(value) {
+  if (Array.isArray(value)) return value.length;
+  if (typeof value === "string") return value.trim() ? 1 : 0;
+  if (value && typeof value === "object") return Object.keys(value).length;
+  return value == null ? 0 : 1;
+}
+
+function hasValue(value) {
+  return valueCount(value) > 0;
+}
+
+function getTargetField(path) {
+  const parts = String(path || "").split(".");
+  return parts[0] === "video" ? parts.slice(1).join(".") : null;
+}
+
+function buildFixPreview(mapping, { video, marketBriefData }) {
+  const sourceValue = getPathValue({ video, marketBriefData }, mapping.sourcePath);
+  const targetValue = getPathValue({ video, marketBriefData }, mapping.targetPath);
+  const sourceExists = hasValue(sourceValue);
+  const targetExists = hasValue(targetValue);
+  const oldCount = valueCount(targetValue);
+  const newCount = sourceExists ? valueCount(sourceValue) : oldCount;
+
+  let reason = "ready";
+  if (!sourceExists) reason = "source-missing";
+  else if (targetExists) reason = "target-has-data";
+
+  return {
+    ...mapping,
+    tabLabel: TAB_LABEL[mapping.tabKey] || mapping.tabKey,
+    sourceValue,
+    targetValue,
+    sourceExists,
+    targetExists,
+    oldCount,
+    newCount,
+    canApply: sourceExists && !targetExists,
+    reason,
+  };
+}
+
+// ── Local Diagnostic Fallback ──────────────────────────────────────────────────
+
+const FALLBACK_REASON_LABEL = {
+  'key-missing':    'מפתח Gemini API חסר',
+  'quota-exceeded': 'מכסת Gemini חרגה (429)',
+  'network-error':  'שגיאת רשת',
+  'invalid-key':    'מפתח API לא תקף',
+  'unknown':        'שגיאה לא ידועה',
+};
+
+function parseGeminiErrorReason(fetchError, data) {
+  if (data?.error === 'GEMINI_API_KEY_MISSING') return 'key-missing';
+  const msg = (data?.message || fetchError?.message || '').toLowerCase();
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('too many requests')) return 'quota-exceeded';
+  if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('networkerror')) return 'network-error';
+  if (msg.includes('api key') || msg.includes('invalid key')) return 'invalid-key';
+  return 'unknown';
+}
+
+function buildLocalDiagResult(report, { droppedFields }) {
+  const working = [];
+  const issues = [];
+  const missingData = [];
+  const unmappedData = [];
+
+  if (report.transcript.exists) working.push(`תמלול קיים — ${report.transcript.length} תווים, ${report.transcript.segments} קטעים`);
+  if (report.analysis.exists) working.push('ניתוח AI קיים');
+  if (report.chapters.finalChapters > 0) working.push(`פרקים: ${report.chapters.finalChapters} (${report.chapters.source})`);
+  for (const [key, data] of Object.entries(report.tabs || {})) {
+    if ((data.items ?? 0) > 0) working.push(`טאב ${key}: ${data.items} פריטים`);
+  }
+
+  for (const w of report.warnings) {
+    issues.push({ area: 'warnings', problem: w, severity: 'high', recommendedFix: null });
+  }
+  for (const [key, data] of Object.entries(report.tabs || {})) {
+    if ((data.items ?? 0) === 0) {
+      issues.push({ area: `tab:${key}`, problem: `טאב "${key}" ריק`, evidence: 'items=0', severity: 'medium', recommendedFix: `בדוק מיפוי שדות ל-${key}` });
+    }
+  }
+
+  if (!report.transcript.exists) missingData.push('transcript');
+  if (!report.analysis.exists) missingData.push('analysis');
+  for (const f of (droppedFields || [])) unmappedData.push(`${f.field} (${f.count} items)`);
+
+  const emptyTabs = Object.entries(report.tabs || {}).filter(([, d]) => (d.items ?? 0) === 0).map(([k]) => k);
+
+  const fixPromptForClaudeCode = [
+    `Problem:`,
+    `Universal tabs are empty after video load or GEM paste.`,
+    ``,
+    `Evidence:`,
+    `- Video: ${report.video.title || report.video.id}`,
+    `- Category: ${report.video.category} / ${report.video.subCategory}`,
+    `- tabsKey: ${report.video.tabsKey}`,
+    `- analysisFlow: ${report.video.analysisFlow}`,
+    `- Analysis exists: ${report.analysis.exists}`,
+    `- Transcript: ${report.transcript.exists ? `${report.transcript.length} chars` : 'MISSING'}`,
+    `- Empty tabs: ${emptyTabs.length > 0 ? emptyTabs.join(', ') : 'none'}`,
+    `- Warnings: ${report.warnings.length > 0 ? report.warnings.join('; ') : 'none'}`,
+    droppedFields?.length > 0 ? `- Unmapped fields: ${droppedFields.map(f => f.field).join(', ')}` : '',
+    ``,
+    `Files likely involved:`,
+    `- src/components/dashboard/VideoDetailPanel.jsx`,
+    `- src/config/videoTabsConfig.js`,
+    ``,
+    `Recommended fix:`,
+    `1. Ensure effectiveVideo useMemo includes marketBriefData in deps`,
+    `2. Ensure extractVideoTabItems reads from marketBriefData for empty tabs`,
+    `3. Reset activeTab to 'summary' when normalizedSubCategory changes`,
+    ``,
+    `Acceptance criteria:`,
+    `- All 7 universal tabs show items when analysis/GEM data exists`,
+    `- Tab content updates immediately after GEM paste`,
+    `- Build passes with EXIT=0`,
+  ].filter(Boolean).join('\n');
+
+  return { working, issues, missingData, unmappedData, fixPromptForClaudeCode };
+}
+
 /**
  * DEV-only modal: shows how AI/GEM output was extracted and mapped into UI tabs.
  */
+const ANALYSIS_FLOW_MAP = {
+  'morning-brief':   'Market Brief Analysis (GEM מבזק בוקר)',
+  'evening-brief':   'Market Brief Analysis (GEM מבזק ערב)',
+  'weekly-brief':    'Market Brief Analysis (GEM מבזק שבועי)',
+  'earnings-brief':  'Market Brief Analysis (GEM מבזק דוחות)',
+  'technical-analysis':   'Technical Analysis (GEM טכני)',
+  'fundamental-analysis': 'Fundamental Analysis (GEM פונדמנטלי)',
+  'macro':           'Macro Analysis (GEM מאקרו)',
+  'political':       'Political Analysis (GEM פוליטי)',
+};
+
 export function AiMappingModal({
   open,
   onOpenChange,
@@ -208,6 +502,12 @@ export function AiMappingModal({
   selectedTabsConfigKey,
   gemRec,
   marketBriefData,
+  userConfirmedSubCategory = false,
+  confirmedSubCategory = null,
+  analysisExists = false,
+  hasTranscript = false,
+  confirmedAt = null,
+  onSaveVideoFields,
 }) {
   const v  = video || {};
   const a  = v.analysis || {};
@@ -302,6 +602,216 @@ export function AiMappingModal({
   const activeBrief    = briefFieldMapping.length;
   const totalActive    = activeLearning + activeBrief;
 
+  // ── §7 Debug Report ─────────────────────────────────────────────────────────
+  const [showReport, setShowReport] = useState(false);
+  const [selectedFixPreview, setSelectedFixPreview] = useState(null);
+  const [isApplyingFix, setIsApplyingFix] = useState(false);
+  const [showAiDiag, setShowAiDiag] = useState(false);
+  const [isRunningAiDiag, setIsRunningAiDiag] = useState(false);
+  const [aiDiagResult, setAiDiagResult] = useState(null);
+  const [aiDiagError, setAiDiagError] = useState(null);
+  const [aiDiagMode, setAiDiagMode] = useState('idle'); // 'idle' | 'gemini' | 'local'
+  const [aiDiagFallbackReason, setAiDiagFallbackReason] = useState(null);
+
+  const report = useMemo(() => buildDiagnosticReport({
+    v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData,
+    userConfirmedSubCategory, confirmedAt,
+  }), [v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData, userConfirmedSubCategory, confirmedAt]);
+
+  const reportJson = useMemo(() => JSON.stringify(report, null, 2), [report]);
+
+  const handleCopyReport = useCallback(() => {
+    navigator.clipboard.writeText(reportJson)
+      .then(() => toast.success('✅ הדוח הועתק ללוח'))
+      .catch(() => toast.error('שגיאה בהעתקה'));
+  }, [reportJson]);
+
+  const handleCopyForChatGPT = useCallback(() => {
+    const prompt = `Below is a diagnostic report for a YouTube video analysis app. Please analyze it and identify issues:\n\n\`\`\`json\n${reportJson}\n\`\`\`\n\nKey questions:\n1. Why are some tabs empty?\n2. What data is missing?\n3. What should be fixed?`;
+    navigator.clipboard.writeText(prompt)
+      .then(() => toast.success('✅ פרומפט לChatGPT הועתק'))
+      .catch(() => toast.error('שגיאה בהעתקה'));
+  }, [reportJson]);
+
+  const handleDownloadJson = useCallback(() => {
+    const blob = new Blob([reportJson], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `diagnostic-${v.id || v.videoId || 'video'}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [reportJson, v]);
+
+  const safeTabDataMappings = useMemo(() =>
+    SAFE_TAB_DATA_MAPPINGS.map((mapping) => buildFixPreview(mapping, { video: v, marketBriefData })),
+  [v, marketBriefData]);
+
+  const logMappingFix = useCallback((preview, applied, reason) => {
+    console.log("[AiMappingFix]", {
+      sourcePath: preview.sourcePath,
+      targetPath: preview.targetPath,
+      oldValueCount: preview.oldCount,
+      newValueCount: preview.newCount,
+      applied,
+      reason,
+    });
+  }, []);
+
+  const handlePreviewFix = useCallback((preview) => {
+    setSelectedFixPreview(preview);
+    logMappingFix(preview, false, `preview:${preview.reason}`);
+  }, [logMappingFix]);
+
+  const applyFixes = useCallback(async (previews) => {
+    if (typeof onSaveVideoFields !== "function") {
+      toast.error("Fix Mapping unavailable: save callback missing");
+      return;
+    }
+
+    const applicable = previews.filter((preview) => preview.canApply);
+    const blocked = previews.filter((preview) => !preview.canApply);
+    blocked.forEach((preview) => logMappingFix(preview, false, preview.reason));
+
+    if (applicable.length === 0) {
+      toast.info("No safe mapping fixes available");
+      return;
+    }
+
+    const shouldApply = window.confirm(
+      applicable.length === 1
+        ? `Apply safe fix from ${applicable[0].sourcePath} to ${applicable[0].targetPath}?`
+        : `Apply ${applicable.length} safe mapping fixes? Existing target data will not be overwritten.`
+    );
+    if (!shouldApply) {
+      applicable.forEach((preview) => logMappingFix(preview, false, "cancelled"));
+      return;
+    }
+
+    const updates = {};
+    applicable.forEach((preview) => {
+      const targetField = getTargetField(preview.targetPath);
+      if (!targetField) {
+        logMappingFix(preview, false, "invalid-target-path");
+        return;
+      }
+      const dotIdx = targetField.indexOf(".");
+      if (dotIdx !== -1) {
+        // Nested path (e.g. "analysis.appBuilding") — preserve sibling keys via spread
+        const parent = targetField.slice(0, dotIdx);
+        const child  = targetField.slice(dotIdx + 1);
+        if (!updates[parent]) updates[parent] = { ...(v[parent] || {}) };
+        updates[parent][child] = cloneValue(preview.sourceValue);
+      } else {
+        updates[targetField] = cloneValue(preview.sourceValue);
+      }
+    });
+
+    if (Object.keys(updates).length === 0) {
+      toast.info("No valid fixes to apply");
+      return;
+    }
+
+    setIsApplyingFix(true);
+    try {
+      await onSaveVideoFields(updates);
+      applicable.forEach((preview) => logMappingFix(preview, true, "applied"));
+      toast.success(
+        applicable.length === 1
+          ? `Applied fix for ${applicable[0].tabLabel}`
+          : `Applied ${applicable.length} safe mapping fixes`
+      );
+      setSelectedFixPreview(null);
+    } catch (error) {
+      applicable.forEach((preview) => logMappingFix(preview, false, `save-failed:${error?.message || "unknown-error"}`));
+      toast.error("Failed to apply mapping fix");
+    } finally {
+      setIsApplyingFix(false);
+    }
+  }, [logMappingFix, onSaveVideoFields]);
+
+  const handleApplySingleFix = useCallback(async () => {
+    if (!selectedFixPreview) return;
+    await applyFixes([selectedFixPreview]);
+  }, [applyFixes, selectedFixPreview]);
+
+  const handleApplyAllSafeFixes = useCallback(async () => {
+    await applyFixes(safeTabDataMappings);
+  }, [applyFixes, safeTabDataMappings]);
+
+  const handleRunAiDiagnosis = useCallback(async () => {
+    setIsRunningAiDiag(true);
+    setAiDiagError(null);
+    setAiDiagResult(null);
+    setAiDiagMode('idle');
+    setAiDiagFallbackReason(null);
+    setShowAiDiag(true);
+    setShowReport(false);
+    console.log('[AIMapping] mode=gemini');
+    let fetchError = null;
+    let data = {};
+    try {
+      const payload = {
+        ...report,
+        rawBriefFields: rawBriefFields.slice(0, 30),
+        rawVideoFields: rawVideoFields.slice(0, 30),
+        droppedFields,
+        tabMapping,
+        briefFieldMapping,
+        learningFieldMapping: learningFieldMapping.filter(r => r.count > 0),
+      };
+      const res = await fetch('/api/gemini-ai-mapping-diagnosis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ diagnosticReport: payload }),
+      });
+      data = await res.json().catch(() => ({}));
+    } catch (err) {
+      fetchError = err;
+    }
+
+    const geminiOk = !fetchError && data.ok && !data.error;
+    if (geminiOk) {
+      setAiDiagMode('gemini');
+      setAiDiagResult(data.result);
+    } else {
+      const reason = parseGeminiErrorReason(fetchError, data);
+      console.log('[AIMapping] fallback=local');
+      console.log(`[AIMapping] reason=${reason}`);
+      const localResult = buildLocalDiagResult(report, { droppedFields });
+      setAiDiagMode('local');
+      setAiDiagFallbackReason(reason);
+      setAiDiagResult(localResult);
+    }
+    setIsRunningAiDiag(false);
+  }, [report, rawBriefFields, rawVideoFields, droppedFields, tabMapping, briefFieldMapping, learningFieldMapping]);
+
+  const handleCopyAiReport = useCallback(() => {
+    if (!aiDiagResult) return;
+    navigator.clipboard.writeText(JSON.stringify(aiDiagResult, null, 2))
+      .then(() => toast.success('✅ דוח AI הועתק'))
+      .catch(() => toast.error('שגיאה בהעתקה'));
+  }, [aiDiagResult]);
+
+  const handleCopyFixPrompt = useCallback(() => {
+    const text = aiDiagResult?.fixPromptForClaudeCode;
+    if (!text) return;
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success('✅ פרומפט הועתק ל-Claude Code'))
+      .catch(() => toast.error('שגיאה בהעתקה'));
+  }, [aiDiagResult]);
+
+  const handleDownloadAiReport = useCallback(() => {
+    if (!aiDiagResult) return;
+    const blob = new Blob([JSON.stringify(aiDiagResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-diagnosis-${v.id || v.videoId || 'video'}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [aiDiagResult, v]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -313,29 +823,272 @@ export function AiMappingModal({
         >
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-zinc-800">
-            <div>
-              <DialogPrimitive.Title className="text-base font-bold text-slate-900 dark:text-zinc-100">
-                🗺️ AI Mapping
-              </DialogPrimitive.Title>
-              <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">
-                {totalActive} שדות פעילים · {totalTabItems} פריטים בסך הכל
-                {marketBriefData && <span className="mr-2 rounded-full bg-sky-50 px-2 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">📈 Market Brief</span>}
-              </p>
+            <div className="flex items-center gap-3">
+              {(showReport || showAiDiag) && (
+                <button type="button" onClick={() => { setShowReport(false); setShowAiDiag(false); }} className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                  <ArrowRight className="h-3.5 w-3.5" />
+                  חזרה
+                </button>
+              )}
+              <div>
+                <DialogPrimitive.Title className="text-base font-bold text-slate-900 dark:text-zinc-100">
+                  {showReport ? '📋 Export Debug Report' : showAiDiag ? '🤖 AI Mapping Diagnosis' : '🗺️ AI Mapping'}
+                </DialogPrimitive.Title>
+                <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">
+                  {showReport
+                    ? `${report.warnings.length} אזהרות · JSON מוכן לשליחה`
+                    : showAiDiag
+                      ? (isRunningAiDiag ? 'מנתח...' : aiDiagMode === 'local' ? `מצב מקומי · ${(aiDiagResult?.issues || []).length} בעיות זוהו` : aiDiagResult ? `${(aiDiagResult.issues || []).length} בעיות זוהו` : aiDiagError ? 'ניתוח נכשל' : '')
+                      : <>{totalActive} שדות פעילים · {totalTabItems} פריטים בסך הכל{marketBriefData && <span className="mr-2 rounded-full bg-sky-50 px-2 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">📈 Market Brief</span>}</>
+                  }
+                </p>
+              </div>
             </div>
-            <DialogPrimitive.Close className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
-              <X className="h-4 w-4" />
-            </DialogPrimitive.Close>
+            <div className="flex items-center gap-2">
+              {!showReport && !showAiDiag && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRunAiDiagnosis}
+                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 hover:border-violet-300 transition-colors dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-300"
+                  >
+                    🤖 אבחן מיפוי עם AI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReport(true)}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-white hover:border-slate-300 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    📋 Export Debug Report
+                  </button>
+                </>
+              )}
+              <DialogPrimitive.Close className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
+                <X className="h-4 w-4" />
+              </DialogPrimitive.Close>
+            </div>
           </div>
 
           <div className="overflow-y-auto px-6 py-5 space-y-7">
+
+            {/* ── Report View ── */}
+            {showReport && (
+              <>
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2 pb-1" dir="rtl">
+                  <button type="button" onClick={handleCopyReport}
+                    className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors">
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy Report
+                  </button>
+                  <button type="button" onClick={handleCopyForChatGPT}
+                    className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors">
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy for ChatGPT
+                  </button>
+                  <button type="button" onClick={handleDownloadJson}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                    <Download className="h-3.5 w-3.5" />
+                    Download JSON
+                  </button>
+                </div>
+
+                {/* Warnings summary */}
+                {report.warnings.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+                    <p className="mb-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300">⚠️ אזהרות ({report.warnings.length})</p>
+                    <ul className="space-y-0.5">
+                      {report.warnings.map((w, i) => (
+                        <li key={i} className="text-xs text-amber-700 dark:text-amber-400">• {w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* JSON report */}
+                <div className="relative">
+                  <pre dir="ltr" className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-900 px-4 py-4 text-[11px] leading-relaxed text-slate-100 dark:border-zinc-700 dark:bg-zinc-950 whitespace-pre-wrap break-all">
+                    {reportJson}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={handleCopyReport}
+                    className="absolute left-3 top-3 rounded-lg border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] font-semibold text-zinc-300 hover:bg-zinc-700 transition-colors"
+                  >
+                    <Copy className="h-3 w-3 inline mr-1" />
+                    Copy
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── AI Diagnosis View ── */}
+            {showAiDiag && (
+              <>
+                {isRunningAiDiag && (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
+                    <p className="text-sm text-slate-500 dark:text-zinc-400">מנתח מיפוי עם AI...</p>
+                  </div>
+                )}
+                {!isRunningAiDiag && aiDiagMode === 'local' && aiDiagFallbackReason && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/40 dark:bg-amber-950/20" dir="rtl">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">⚠️ AI Mapping AI unavailable</p>
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                      סיבה: {FALLBACK_REASON_LABEL[aiDiagFallbackReason] || aiDiagFallbackReason}
+                    </p>
+                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                      המערכת עברה אוטומטית ל-Local Diagnostic Mode.
+                    </p>
+                  </div>
+                )}
+                {!isRunningAiDiag && aiDiagResult && (
+                  <>
+                    <div className="flex flex-wrap gap-2 pb-1" dir="rtl">
+                      <button type="button" onClick={handleCopyAiReport}
+                        className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors">
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy AI Report
+                      </button>
+                      {aiDiagResult.fixPromptForClaudeCode && (
+                        <button type="button" onClick={handleCopyFixPrompt}
+                          className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700 transition-colors">
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy Fix Prompt for Claude Code
+                        </button>
+                      )}
+                      <button type="button" onClick={handleDownloadAiReport}
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                        <Download className="h-3.5 w-3.5" />
+                        Download JSON
+                      </button>
+                    </div>
+
+                    {Array.isArray(aiDiagResult.working) && aiDiagResult.working.length > 0 && (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                        <p className="mb-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">✅ עובד ({aiDiagResult.working.length})</p>
+                        <ul className="space-y-0.5">
+                          {aiDiagResult.working.map((w, i) => (
+                            <li key={i} className="text-xs text-emerald-700 dark:text-emerald-400">• {w}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {Array.isArray(aiDiagResult.issues) && aiDiagResult.issues.length > 0 && (
+                      <section>
+                        <SectionHeader>🔴 בעיות שזוהו ({aiDiagResult.issues.length})</SectionHeader>
+                        <div className="space-y-3">
+                          {aiDiagResult.issues.map((issue, i) => {
+                            const sev = issue.severity;
+                            const colors = sev === 'high'
+                              ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20'
+                              : sev === 'medium'
+                                ? 'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20'
+                                : 'border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900';
+                            const textColor = sev === 'high'
+                              ? 'text-red-800 dark:text-red-300'
+                              : sev === 'medium' ? 'text-amber-800 dark:text-amber-300' : 'text-slate-700 dark:text-zinc-300';
+                            return (
+                              <div key={i} className={`rounded-xl border px-4 py-3 ${colors}`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-xs font-bold uppercase ${textColor}`}>{sev}</span>
+                                  <span className="font-mono text-xs text-slate-500 dark:text-zinc-500">{issue.area}</span>
+                                </div>
+                                <p className={`text-sm font-semibold ${textColor}`}>{issue.problem}</p>
+                                {issue.evidence && <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400">עדות: {issue.evidence}</p>}
+                                {issue.recommendedFix && <p className="mt-1 text-xs font-medium text-slate-700 dark:text-zinc-300">תיקון: {issue.recommendedFix}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {Array.isArray(aiDiagResult.missingData) && aiDiagResult.missingData.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                          <p className="mb-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300">❌ נתונים חסרים</p>
+                          <ul className="space-y-0.5">
+                            {aiDiagResult.missingData.map((m, i) => (
+                              <li key={i} className="font-mono text-[11px] text-slate-500 dark:text-zinc-500">• {m}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {Array.isArray(aiDiagResult.unmappedData) && aiDiagResult.unmappedData.length > 0 && (
+                        <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 dark:border-amber-900/30 dark:bg-amber-950/20">
+                          <p className="mb-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">⚠️ נתונים ללא מיפוי</p>
+                          <ul className="space-y-0.5">
+                            {aiDiagResult.unmappedData.map((m, i) => (
+                              <li key={i} className="font-mono text-[11px] text-amber-700 dark:text-amber-400">• {m}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {aiDiagResult.tabMappingPlan && Object.keys(aiDiagResult.tabMappingPlan).length > 0 && (
+                      <section>
+                        <SectionHeader>📑 תוכנית מיפוי מומלצת</SectionHeader>
+                        <DataTable
+                          headers={["טאב", "שדות מומלצים"]}
+                          rows={Object.entries(aiDiagResult.tabMappingPlan).map(([tab, fields]) => [
+                            <span className="font-semibold text-slate-700 dark:text-zinc-300">{tab}</span>,
+                            <span className="text-xs text-slate-500 dark:text-zinc-500">{Array.isArray(fields) ? fields.join(', ') || '—' : '—'}</span>,
+                          ])}
+                        />
+                      </section>
+                    )}
+
+                    {aiDiagResult.fixPromptForClaudeCode && (
+                      <section>
+                        <div className="flex items-center justify-between mb-2">
+                          <SectionHeader>🤖 פרומפט לתיקון — Claude Code</SectionHeader>
+                          <button type="button" onClick={handleCopyFixPrompt}
+                            className="flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-300">
+                            <Copy className="h-3 w-3" />
+                            Copy
+                          </button>
+                        </div>
+                        <pre dir="ltr" className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-900 px-4 py-4 text-[11px] leading-relaxed text-slate-100 dark:border-zinc-700 dark:bg-zinc-950 whitespace-pre-wrap break-all">
+                          {aiDiagResult.fixPromptForClaudeCode}
+                        </pre>
+                      </section>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ── Main mapping view (hidden when showReport or showAiDiag) ── */}
+            {!showReport && !showAiDiag && (<>
 
             {/* §0 Classification */}
             <section>
               <SectionHeader>🏷️ סיווג הסרטון</SectionHeader>
               <div className="rounded-xl border border-slate-100 px-4 py-2 dark:border-zinc-800">
                 <MetaRow label="קטגוריה" value={category} />
-                <MetaRow label="תת-קטגוריה" value={subCategory} />
+                <MetaRow label="תת-קטגוריה (effectiveSubCategory)" value={subCategory} />
+                <MetaRow label="userConfirmed" value={
+                  userConfirmedSubCategory
+                    ? `✅ כן${confirmedAt ? ` · ${new Date(confirmedAt).toLocaleDateString('he-IL')}` : ''}`
+                    : '❌ לא — מונחה ע"י AI בלבד'
+                } />
+                <MetaRow label="confirmedSubCategory" value={confirmedSubCategory || '—'} />
                 <MetaRow label="תת-קטגוריה מנורמלת" value={normalizedSubCategory} />
+                <MetaRow label="selectedAnalysisFlow" value={
+                  ANALYSIS_FLOW_MAP[normalizedSubCategory] || (videoType === 'political' ? 'Political Analysis' : 'General — Claude + Gemini')
+                } />
+                <MetaRow label="analysisExists" value={analysisExists ? '✅ כן' : '❌ לא'} />
+                <MetaRow label="missingAnalysisReason" value={
+                  analysisExists ? '—' :
+                  !hasTranscript ? 'אין תמלול — נדרש ייבוא תמלול' :
+                  !userConfirmedSubCategory ? 'subCategory לא אושר — בחר ואשר תת-נושא' :
+                  marketBriefData ? 'marketBriefData קיים אך אין summary' :
+                  'נדרש ניתוח — לחץ "הרץ ניתוח" או הדבק GEM JSON'
+                } />
                 <MetaRow label="contentType" value={v.contentType || a.contentType} />
                 <MetaRow label="סוג סרטון (detected)" value={videoType} />
                 <MetaRow label="מפתח טאבים (tabsKey)" value={selectedTabsConfigKey} />
@@ -359,6 +1112,95 @@ export function AiMappingModal({
             </section>
 
             {/* §2a Learning field mapping — only when data present */}
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <SectionHeader>🛠️ Tab → Data Mapping</SectionHeader>
+                <button
+                  type="button"
+                  onClick={handleApplyAllSafeFixes}
+                  disabled={isApplyingFix}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-400"
+                >
+                  Apply All Safe Fixes
+                </button>
+              </div>
+              <DataTable
+                headers={["Tab", "Key", "Expected Field", "Source Path", "Target Path", "Source?", "Target?", "Count", "Actions"]}
+                rows={safeTabDataMappings.map((mapping) => {
+                  const previewSelected =
+                    selectedFixPreview?.sourcePath === mapping.sourcePath &&
+                    selectedFixPreview?.targetPath === mapping.targetPath;
+
+                  return [
+                    <span className="font-medium text-slate-800 dark:text-zinc-200">{mapping.tabLabel}</span>,
+                    <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{mapping.tabKey}</span>,
+                    <span className="font-mono text-[11px] text-slate-700 dark:text-zinc-300">{mapping.expectedField}</span>,
+                    <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{mapping.sourcePath}</span>,
+                    <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{mapping.targetPath}</span>,
+                    <span className={mapping.sourceExists ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}>
+                      {mapping.sourceExists ? "Yes" : "No"}
+                    </span>,
+                    <span className={mapping.targetExists ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-zinc-500"}>
+                      {mapping.targetExists ? "Yes" : "No"}
+                    </span>,
+                    <span className="font-mono text-sm text-slate-700 dark:text-zinc-300">{mapping.newCount}</span>,
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePreviewFix(mapping)}
+                        className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        Preview Fix
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyFixes([mapping])}
+                        disabled={isApplyingFix || !mapping.canApply || !previewSelected}
+                        className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-300"
+                      >
+                        Fix Mapping
+                      </button>
+                    </div>,
+                  ];
+                })}
+              />
+
+              {selectedFixPreview && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Preview Fix</p>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">{selectedFixPreview.tabLabel} · {selectedFixPreview.expectedField}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleApplySingleFix}
+                      disabled={isApplyingFix || !selectedFixPreview.canApply}
+                      className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-300"
+                    >
+                      Apply Fix
+                    </button>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <MetaRow label="source path" value={selectedFixPreview.sourcePath} />
+                    <MetaRow label="target path" value={selectedFixPreview.targetPath} />
+                    <MetaRow label="old count" value={String(selectedFixPreview.oldCount)} />
+                    <MetaRow label="new count" value={String(selectedFixPreview.newCount)} />
+                    <MetaRow
+                      label="status"
+                      value={
+                        selectedFixPreview.canApply
+                          ? "Safe to apply"
+                          : selectedFixPreview.reason === "target-has-data"
+                            ? "Skipped: target already has data"
+                            : "Skipped: source missing"
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+
             {activeLearning > 0 && (
               <section>
                 <SectionHeader>📚 שדות AI — ניתוח לימוד (video.*)</SectionHeader>
@@ -467,6 +1309,7 @@ export function AiMappingModal({
               )}
             </section>
 
+            </>)}
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>
