@@ -687,6 +687,22 @@ const FORBIDDEN_MARKET_SUBTOPICS = new Set([
   "ערבים ויהודים",
 ]);
 
+const CANONICAL_MARKET_SUBTOPICS = [
+  { id: 'can:technical',    name: 'ניתוח טכני' },
+  { id: 'can:fundamental',  name: 'פונדמנטלי' },
+  { id: 'can:macro',        name: 'מאקרו' },
+  { id: 'can:morning',      name: 'מבזק בוקר' },
+  { id: 'can:evening',      name: 'מבזק ערב' },
+  { id: 'can:weekly',       name: 'מבזק שבועי' },
+  { id: 'can:earnings',     name: 'מבזק דוחות' },
+  { id: 'can:watchlist',    name: 'רשימת מעקב' },
+  { id: 'can:reports',      name: 'דוחות ורווחים' },
+  { id: 'can:longterm',     name: 'השקעות לטווח ארוך' },
+  { id: 'can:options',      name: 'אופציות' },
+  { id: 'can:swing',        name: 'מסחר סווינג' },
+  { id: 'can:risk',         name: 'ניהול סיכונים' },
+].map((c) => ({ ...c, isCustom: false, isCanonical: true }));
+
 function normalizeLooseName(value) {
   return String(value || "")
     .trim()
@@ -2100,7 +2116,12 @@ export function VideoDetailPanel({
       return normalized && list.findIndex((candidate) => normalizeLooseName(candidate.name) === normalized) === index;
     });
 
-    setVaultSubtopics(mergedSubtopics);
+    const existingNames = new Set(mergedSubtopics.map((s) => normalizeLooseName(s.name)));
+    const canonicalToAdd = CANONICAL_MARKET_SUBTOPICS.filter(
+      (c) => !existingNames.has(normalizeLooseName(c.name))
+    );
+
+    setVaultSubtopics([...mergedSubtopics, ...canonicalToAdd]);
 
     const candidateNames = getMarketSubTopicCandidates(
       effectiveGemInfo?.gemKey,
@@ -2157,7 +2178,7 @@ export function VideoDetailPanel({
 
     if (resolvedVideoMode.mode === "market") {
       rawSubs = vaultSubtopics;
-      // Fallback: collect unique subCategory values from all market videos
+      // Fallback: collect unique subCategory values from all market videos + canonical list
       if (!rawSubs.length) {
         const seen = new Set();
         allVideos
@@ -2169,6 +2190,12 @@ export function VideoDetailPanel({
               rawSubs.push({ id: `meta:${sub}`, name: sub, isCustom: true });
             }
           });
+        CANONICAL_MARKET_SUBTOPICS.forEach((c) => {
+          if (!seen.has(normalizeLooseName(c.name))) {
+            seen.add(normalizeLooseName(c.name));
+            rawSubs.push(c);
+          }
+        });
       }
     } else if (resolvedVideoMode.mode === "politics" && politicsRootTopic) {
       // BFS: collect ALL descendants of the politics root
