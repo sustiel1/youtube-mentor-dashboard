@@ -324,6 +324,42 @@ export function getTabsForVideo(video, {
 
 // ── Field extraction ─────────────────────────────────────────────────
 
+/**
+ * Merges universalTabs.specialized sub-fields up to top-level so brief tabs
+ * can extract from universalTabs.specialized without changing their logic.
+ * universalTabs.specialized wins over legacy top-level keys.
+ */
+function resolveSpecialized(mbd) {
+  if (!mbd || typeof mbd !== 'object') return mbd;
+  const spec = mbd.universalTabs?.specialized;
+  if (!spec || typeof spec !== 'object') return mbd;
+  return { ...mbd, ...spec };
+}
+
+/**
+ * Detects whether a GEM JSON object uses the new universalTabs schema,
+ * legacy flat fields, or a mix of both.
+ * Returns 'universal' | 'legacy' | 'mixed' | null
+ */
+export function detectGEMSchemaType(mbd) {
+  if (!mbd || typeof mbd !== 'object') return null;
+  const hasUniversal = mbd.universalTabs != null && typeof mbd.universalTabs === 'object' &&
+    Object.keys(mbd.universalTabs).length > 0;
+  const LEGACY_KEYS = [
+    'top5Insights', 'reusableKnowledge', 'marketNews', 'indices',
+    'stocksMentioned', 'macro', 'sentiment', 'calendar', 'opportunities',
+    'risks', 'keyTakeaways', 'actionChecklist', 'conclusions',
+  ];
+  const hasLegacy = LEGACY_KEYS.some(k => {
+    const v = mbd[k];
+    return Array.isArray(v) ? v.length > 0 : Boolean(v);
+  });
+  if (hasUniversal && hasLegacy) return 'mixed';
+  if (hasUniversal) return 'universal';
+  if (hasLegacy) return 'legacy';
+  return null;
+}
+
 function pickArray(obj, ...keys) {
   for (const key of keys) {
     const val = obj?.[key];
@@ -462,22 +498,66 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
   const a  = video.analysis || {};
 
   switch (tabValue) {
-    case 'chapters':
+    case 'summary': {
+      const utSummary = marketBriefData?.universalTabs?.summary;
+      if (Array.isArray(utSummary) && utSummary.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: universalTabs.summary (array) | exists: true | itemsCount:', utSummary.length);
+        return utSummary;
+      }
+      if (utSummary && typeof utSummary === 'object') {
+        const items = [
+          ...pickStringAsArray(utSummary, 'shortSummary', 'fullSummary', 'marketMood', 'mainConclusion'),
+          ...pickArray(utSummary, 'topTakeaways', 'importantWarnings', 'keyOpportunities'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: universalTabs.summary (object) | exists: true | itemsCount:', items.length);
+        if (items.length > 0) return items;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: legacy | exists:', !!(marketBriefData || video.shortSummary));
+      return [
+        ...pickStringAsArray(video, 'shortSummary', 'fullSummary', 'gemSummary', 'summary', 'mainLesson'),
+        ...(marketBriefData && !(video.shortSummary || video.fullSummary)
+          ? pickArray(marketBriefData, 'top5Insights', 'reusableKnowledge').slice(0, 3)
+          : []),
+      ];
+    }
+
+    case 'chapters': {
+      const utChapters = marketBriefData?.universalTabs?.chapters;
+      if (Array.isArray(utChapters) && utChapters.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: universalTabs.chapters | exists: true | itemsCount:', utChapters.length);
+        return utChapters;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: legacy | exists: false');
       return [
         ...pickArray(video, 'chapters', 'aiChapters'),
         ...pickArray(a, 'chapters', 'aiChapters'),
       ];
+    }
 
-    case 'useful-knowledge':
+    case 'useful-knowledge': {
+      const utUseful = marketBriefData?.universalTabs?.usefulKnowledge;
+      if (Array.isArray(utUseful) && utUseful.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: universalTabs.usefulKnowledge (array) | exists: true | itemsCount:', utUseful.length);
+        return utUseful;
+      }
+      if (utUseful && typeof utUseful === 'object') {
+        const items = [
+          ...pickArray(utUseful, 'reusableKnowledge', 'actionChecklist', 'keyTakeaways', 'riskManagement', 'mistakesToAvoid', 'rules'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: universalTabs.usefulKnowledge (object) | exists: true | itemsCount:', items.length);
+        if (items.length > 0) return items;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: legacy | exists:', !!marketBriefData);
       return [
-        // GEMS JSON: learning sub-fields now normalized into analysis root
         ...pickArray(a, 'frameworks', 'usefulKnowledge', 'keyTakeaways'),
-        // Legacy / flat formats
         ...pickArray(video, 'actionItems', 'usefulKnowledge', 'keyTakeaways'),
         ...pickArray(al, 'keyTakeaways', 'actionItems'),
-        // allPoints filtered for knowledge categories
+        ...(marketBriefData
+          ? pickArray(marketBriefData, 'reusableKnowledge', 'keyTakeaways', 'actionChecklist')
+          : []),
         ...filterAllPoints(video, a, ['rule', 'strategy', 'checklist']),
       ];
+    }
 
     case 'definitions':
       return [
@@ -521,23 +601,33 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(a, 'warnings', 'mistakesToAvoid'),
       ];
 
-    case 'insights':
+    case 'insights': {
+      const utInsights = marketBriefData?.universalTabs?.insights;
+      if (Array.isArray(utInsights) && utInsights.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: universalTabs.insights (array) | exists: true | itemsCount:', utInsights.length);
+        return utInsights;
+      }
+      if (utInsights && typeof utInsights === 'object') {
+        const items = [
+          ...pickArray(utInsights, 'top5Insights', 'learningInsights', 'marketLessons', 'tradingInsights', 'conclusions'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: universalTabs.insights (object) | exists: true | itemsCount:', items.length);
+        if (items.length > 0) return items;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: legacy | exists:', !!marketBriefData);
       return [
-        // GEMS JSON: learning.keyInsights (rich objects now in analysis.keyInsights)
         ...pickArray(a, 'keyInsights'),
-        // Legacy and other formats
         ...pickArray(video, 'keyInsights', 'brainHighlights', 'tradingPrinciples', 'mentalModels', 'keyPoints'),
         ...pickNested(video, 'analysis.brainHighlights'),
         ...pickArray(a, 'brainHighlights', 'tradingPrinciples', 'mentalModels'),
         ...pickArray(video, 'top5Insights'),
-        // allPoints filtered for insight category
         ...filterAllPoints(video, a, ['insight']),
-        // brief-conclusions fields (marketBriefData or video fallback)
         ...(marketBriefData
           ? pickArray(marketBriefData, 'reusableKnowledge', 'top5Insights', 'keyTakeaways', 'learningInsights', 'actionChecklist', 'conclusions')
           : pickArray(video, 'briefConclusions', 'sessionConclusions')
         ),
       ];
+    }
 
     case 'trading-brain':
       return [
@@ -548,63 +638,74 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(a, 'brainHighlights', 'tradingPrinciples', 'mentalModels'),
       ];
 
-    case 'market-news':
-      if (marketBriefData) {
+    case 'market-news': {
+      const src = resolveSpecialized(marketBriefData);
+      if (src) {
         return [
-          ...pickArray(marketBriefData, 'marketNews', 'headlines', 'news', 'topStories'),
-          ...pickObjectAsStrings(marketBriefData, 'marketOverview'),
-          ...pickArray(marketBriefData, 'catalysts', 'snapshot'),
+          ...pickArray(src, 'marketNews', 'headlines', 'news', 'topStories'),
+          ...pickObjectAsStrings(src, 'marketOverview'),
+          ...pickArray(src, 'catalysts', 'snapshot'),
         ];
       }
       return [
         ...pickArray(video, 'marketConditions'),
         ...pickArray(video, 'concepts', 'definitions'),
       ];
+    }
 
-    case 'indices':
-      if (marketBriefData) {
+    case 'indices': {
+      const src = resolveSpecialized(marketBriefData);
+      if (src) {
         return [
-          ...pickArray(marketBriefData, 'indices', 'indexPerformance', 'indexData'),
-          ...pickArray(marketBriefData, 'keyLevels'),
-          ...pickArray(marketBriefData, 'sectorRotation'),
+          ...pickArray(src, 'indices', 'indexPerformance', 'indexData'),
+          ...pickArray(src, 'keyLevels'),
+          ...pickArray(src, 'sectorRotation'),
         ];
       }
       return [
         ...pickArray(video, 'marketConditions', 'keyLevels'),
         ...pickArray(video, 'indicators'),
       ];
+    }
 
     case 'stocks-mentioned': {
-      const rawWatchlist = marketBriefData
+      const src = resolveSpecialized(marketBriefData);
+      const rawWatchlist = src
         ? [
-            ...pickArray(marketBriefData, 'stocksMentioned', 'stocks', 'watchlist', 'tickers'),
-            ...pickArray(marketBriefData, 'watchlistLevels'),
+            ...pickArray(src, 'stocksMentioned', 'stocks', 'watchlist', 'tickers'),
+            ...pickArray(src, 'watchlistLevels'),
           ]
         : pickArray(video, 'stocksMentioned');
       return rawWatchlist.map(formatWatchlistItem).filter(Boolean);
     }
 
-    case 'brief-risks':
-      return marketBriefData
-        ? pickArray(marketBriefData, 'risks', 'warnings', 'riskFactors')
+    case 'brief-risks': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'risks', 'warnings', 'riskFactors')
         : pickArray(video, 'warnings', 'riskRules', 'risks');
+    }
 
-    case 'brief-opportunities':
-      return marketBriefData
-        ? pickArray(marketBriefData, 'opportunities', 'tradingOpportunities', 'trades')
+    case 'brief-opportunities': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'opportunities', 'tradingOpportunities', 'trades')
         : pickArray(video, 'actionItems', 'tradingSetups', 'opportunities');
+    }
 
-    case 'brief-conclusions':
-      if (marketBriefData) {
+    case 'brief-conclusions': {
+      const src = resolveSpecialized(marketBriefData);
+      if (src) {
         return [
-          ...pickArray(marketBriefData, 'reusableKnowledge', 'actionChecklist', 'conclusions'),
-          ...pickArray(marketBriefData, 'top5Insights', 'learningInsights', 'keyTakeaways'),
+          ...pickArray(src, 'reusableKnowledge', 'actionChecklist', 'conclusions'),
+          ...pickArray(src, 'top5Insights', 'learningInsights', 'keyTakeaways'),
         ];
       }
       return [
         ...pickStringAsArray(video, 'mainLesson'),
         ...pickArray(video, 'keyInsights'),
       ];
+    }
 
     // ── Fundamental analysis ──────────────────────────────────────────
     case 'financial-metrics':
@@ -647,10 +748,11 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
 
     // ── Morning/evening brief ─────────────────────────────────────────
     case 'brief-macro': {
-      const rawMacro = marketBriefData
+      const src = resolveSpecialized(marketBriefData);
+      const rawMacro = src
         ? [
-            ...pickArray(marketBriefData, 'macro', 'macroEvents', 'macroHighlights', 'macroContext', 'economicContext', 'economicEvents'),
-            ...pickArray(marketBriefData, 'macroFactors'),
+            ...pickArray(src, 'macro', 'macroEvents', 'macroHighlights', 'macroContext', 'economicContext', 'economicEvents'),
+            ...pickArray(src, 'macroFactors'),
           ]
         : [
             ...pickArray(video, 'macroEvents', 'macroHighlights', 'marketConditions'),
@@ -659,26 +761,30 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       return rawMacro.map(formatMacroItem).filter(Boolean);
     }
 
-    case 'brief-sentiment':
-      if (marketBriefData) {
+    case 'brief-sentiment': {
+      const src = resolveSpecialized(marketBriefData);
+      if (src) {
         return [
-          ...pickArray(marketBriefData, 'sentiment', 'marketSentiment', 'sentimentAnalysis', 'marketMood', 'fearGreed'),
-          ...pickArray(marketBriefData, 'sectorRotation'),
+          ...pickArray(src, 'sentiment', 'marketSentiment', 'sentimentAnalysis', 'marketMood', 'fearGreed'),
+          ...pickArray(src, 'sectorRotation'),
         ];
       }
       return [
         ...pickArray(video, 'marketSentiment', 'sentiment'),
         ...pickArray(video, 'tradingPrinciples', 'mentalModels'),
       ];
+    }
 
-    case 'brief-calendar':
-      if (marketBriefData) {
-        return pickArray(marketBriefData, 'calendar', 'economicCalendar', 'events', 'upcomingEvents', 'schedule');
+    case 'brief-calendar': {
+      const src = resolveSpecialized(marketBriefData);
+      if (src) {
+        return pickArray(src, 'calendar', 'economicCalendar', 'events', 'upcomingEvents', 'schedule');
       }
       return [
         ...pickArray(video, 'economicCalendar', 'calendar', 'upcomingEvents'),
         ...pickArray(video, 'checklists'),
       ];
+    }
 
     case 'brief-sectors':
       return pickArray(video, 'sectorPerformance', 'sectors');
@@ -753,6 +859,23 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       ];
 
     case 'app-builder': {
+      // JSON key may be 'app' (new schema) or 'appBuilder' (schema example)
+      const utApp = marketBriefData?.universalTabs?.app || marketBriefData?.universalTabs?.appBuilder;
+      if (utApp && typeof utApp === 'object') {
+        const utItems = [
+          ...pickArray(utApp, 'kpiList', 'dataPoints'),
+          ...pickArray(utApp, 'dashboards', 'dashboardUpdates'),
+          ...pickArray(utApp, 'prompts'),
+          ...pickArray(utApp, 'alerts'),
+          ...pickArray(utApp, 'newIndicators'),
+          ...pickArray(utApp, 'screeningCriteria'),
+          ...pickArray(utApp, 'dataFields'),
+          ...pickArray(utApp, 'suggestedFeatures', 'componentSuggestions'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: universalTabs.app/appBuilder | exists: true | itemsCount:', utItems.length);
+        if (utItems.length > 0) return utItems;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: legacy | exists:', !!marketBriefData);
       const ab = a.appBuilding || {};
       return [
         ...pickArray(ab, 'kpiList'),
@@ -765,11 +888,48 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       ];
     }
 
-    case 'topics-subtopics':
+    case 'topics-subtopics': {
+      const utTopics = marketBriefData?.universalTabs?.topicsSubtopics;
+      if (Array.isArray(utTopics) && utTopics.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: universalTabs.topicsSubtopics (array) | exists: true | itemsCount:', utTopics.length);
+        return utTopics;
+      }
+      if (utTopics && typeof utTopics === 'object') {
+        const items = [
+          ...pickArray(utTopics, 'tags', 'obsidianTopics', 'relatedTopics', 'suggestedSubTopics'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: universalTabs.topicsSubtopics (object) | exists: true | itemsCount:', items.length);
+        if (items.length > 0) return items;
+      }
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: legacy | exists:', !!marketBriefData);
       return [
         ...pickArray(a, 'obsidianTopics', 'metadataTopics', 'tags'),
         ...pickArray(video, 'obsidianTopics', 'tags', 'topicIds'),
       ];
+    }
+
+    case 'specialized': {
+      const utSpec = marketBriefData?.universalTabs?.specialized;
+      if (utSpec && typeof utSpec === 'object') {
+        const specItems = [
+          ...pickArray(utSpec, 'indices', 'indexPerformance'),
+          ...pickArray(utSpec, 'marketNews', 'headlines'),
+          ...pickArray(utSpec, 'stocksMentioned', 'stocks'),
+          ...pickArray(utSpec, 'macro', 'macroEvents'),
+          ...pickArray(utSpec, 'top5Insights', 'insights'),
+        ];
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: specialized | sourcePath: universalTabs.specialized | exists: true | itemsCount:', specItems.length);
+        if (specItems.length > 0) return specItems;
+      }
+      if (!marketBriefData) return [];
+      return [
+        ...pickArray(marketBriefData, 'indices', 'indexPerformance', 'indexData'),
+        ...pickArray(marketBriefData, 'marketNews', 'headlines', 'news', 'topStories'),
+        ...pickArray(marketBriefData, 'stocksMentioned', 'stocks', 'watchlist'),
+        ...pickArray(marketBriefData, 'macro', 'macroEvents', 'macroHighlights'),
+        ...pickArray(marketBriefData, 'top5Insights', 'reusableKnowledge'),
+      ];
+    }
 
     default:
       return [];

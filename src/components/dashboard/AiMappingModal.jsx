@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import { X, ClipboardList, Download, Copy, ArrowRight } from "lucide-react";
-import { extractVideoTabItems } from "@/config/videoTabsConfig";
+import { extractVideoTabItems, detectGEMSchemaType } from "@/config/videoTabsConfig";
 import { getKnowledgeItems } from "@/lib/localKnowledgeItemStore";
 import { toast } from "sonner";
 
@@ -90,6 +90,8 @@ const BRIEF_FIELD_TO_TAB = {
   chapters:             "chapters",
   // obsidian / meta — useful-knowledge is the best tab
   obsidianTopics:       "useful-knowledge",
+  // universalTabs schema — single key spanning all 7 tabs
+  universalTabs:        "summary",
 };
 
 const ALL_KNOWN_FIELDS = new Set([
@@ -134,6 +136,88 @@ const TAB_LABEL = {
 
 // ── Diagnostic Report Builder ─────────────────────────────────────────────────
 
+const SPECIALIZED_RENDERER_TAB_REGISTRY = {
+  "fundamental-analysis": [
+    "financial-metrics", "valuation", "analysis-frameworks",
+    "investment-checklist", "mistakes", "checklists",
+  ],
+  "technical-analysis": [
+    "indicators", "setups", "patterns", "checklists", "mistakes",
+  ],
+  "morning-brief": [
+    "market-news", "indices", "brief-macro", "brief-sentiment",
+    "brief-calendar", "stocks-mentioned", "brief-opportunities", "brief-risks",
+  ],
+  "evening-brief": [
+    "market-news", "indices", "brief-macro", "brief-sentiment",
+    "brief-sectors", "brief-changes", "brief-tomorrow", "brief-calendar",
+    "stocks-mentioned", "brief-opportunities", "brief-risks",
+  ],
+  "weekly-brief": [
+    "brief-highlights", "market-news", "indices", "brief-macro",
+    "brief-winners", "brief-losers", "brief-sentiment", "brief-calendar",
+    "brief-outlook", "stocks-mentioned", "brief-opportunities", "brief-risks",
+  ],
+  "earnings-brief": [
+    "financial-metrics", "earnings-guidance", "earnings-commentary",
+    "brief-macro", "brief-sentiment", "brief-calendar", "market-news",
+    "indices", "stocks-mentioned", "brief-opportunities", "brief-risks",
+  ],
+  "macro": [
+    "brief-macro", "indices", "brief-opportunities",
+  ],
+  "political": [
+    "political-players", "political-for", "political-against",
+    "political-slogans", "political-debates", "political-ideology",
+    "political-theology", "political-liberal", "political-reusable",
+  ],
+  "default": [
+    "trading-brain", "indicators", "setups", "patterns", "checklists",
+    "mistakes", "valuation", "financial-metrics", "cause-effect", "market-impact",
+  ],
+};
+
+const TRACE_REQUIRED_FIELDS = [
+  {
+    tabKey: "brief-sentiment",
+    sourcePaths: [
+      "marketBriefData.sentiment",
+      "marketBriefData.marketSentiment",
+      "marketBriefData.sentimentAnalysis",
+      "marketBriefData.marketMood",
+      "marketBriefData.fearGreed",
+    ],
+  },
+  {
+    tabKey: "brief-calendar",
+    sourcePaths: [
+      "marketBriefData.calendar",
+      "marketBriefData.economicCalendar",
+      "marketBriefData.events",
+      "marketBriefData.upcomingEvents",
+      "marketBriefData.schedule",
+    ],
+  },
+  { tabKey: "brief-sectors", sourcePaths: ["video.sectorPerformance", "video.sectors"] },
+  { tabKey: "brief-changes", sourcePaths: ["video.marketChanges", "video.changes"] },
+  { tabKey: "brief-tomorrow", sourcePaths: ["video.tomorrowEvents", "video.nextEvents"] },
+  { tabKey: "brief-highlights", sourcePaths: ["video.weeklyHighlights", "video.highlights", "video.marketConditions"] },
+  { tabKey: "brief-winners", sourcePaths: ["video.winners", "video.topGainers"] },
+  { tabKey: "brief-losers", sourcePaths: ["video.losers", "video.topLosers"] },
+  { tabKey: "brief-outlook", sourcePaths: ["video.weeklyOutlook", "video.outlook", "video.nextWeekOutlook"] },
+  { tabKey: "earnings-guidance", sourcePaths: ["video.guidance", "video.earningsGuidance"] },
+  { tabKey: "earnings-commentary", sourcePaths: ["video.managementCommentary", "video.commentary"] },
+  { tabKey: "financial-metrics", sourcePaths: ["video.financialMetrics", "video.analysis.financialMetrics"] },
+];
+
+const TRACE_FIELDS_BY_TAB = Object.fromEntries(
+  TRACE_REQUIRED_FIELDS.map((entry) => [entry.tabKey, entry.sourcePaths])
+);
+
+const ALL_SPECIALIZED_RENDERER_TAB_KEYS = new Set(
+  Object.values(SPECIALIZED_RENDERER_TAB_REGISTRY).flat()
+);
+
 const SAFE_TAB_DATA_MAPPINGS = [
   // ── Summary ───────────────────────────────────────────────────────────
   { tabKey: "summary", expectedField: "summary→aiSummary",  sourcePath: "marketBriefData.summary",      targetPath: "video.aiSummary"    },
@@ -151,12 +235,30 @@ const SAFE_TAB_DATA_MAPPINGS = [
   { tabKey: "useful-knowledge", expectedField: "keyTakeaways",      sourcePath: "marketBriefData.keyTakeaways",      targetPath: "video.keyTakeaways"      },
   { tabKey: "useful-knowledge", expectedField: "actionChecklist",   sourcePath: "marketBriefData.actionChecklist",   targetPath: "video.actionChecklist"   },
   // ── Specialized ───────────────────────────────────────────────────────
-  { tabKey: "specialized", expectedField: "indices",         sourcePath: "marketBriefData.indices",        targetPath: "video.indices"        },
-  { tabKey: "specialized", expectedField: "marketNews",      sourcePath: "marketBriefData.marketNews",     targetPath: "video.marketNews"     },
-  { tabKey: "specialized", expectedField: "macroFactors",    sourcePath: "marketBriefData.macroFactors",   targetPath: "video.macroFactors"   },
-  { tabKey: "specialized", expectedField: "stocksMentioned", sourcePath: "marketBriefData.stocksMentioned",targetPath: "video.stocksMentioned"},
-  { tabKey: "specialized", expectedField: "opportunities",   sourcePath: "marketBriefData.opportunities",  targetPath: "video.opportunities"  },
-  { tabKey: "specialized", expectedField: "risks",           sourcePath: "marketBriefData.risks",          targetPath: "video.risks"          },
+  { tabKey: "specialized", expectedField: "indices",
+    sourcePath: "marketBriefData.indices",
+    sourcePaths: ["marketBriefData.indices","marketBriefData.indexPerformance","marketBriefData.indexData","marketBriefData.keyLevels","marketBriefData.sectorRotation"],
+    targetPath: "video.indices" },
+  { tabKey: "specialized", expectedField: "marketNews",
+    sourcePath: "marketBriefData.marketNews",
+    sourcePaths: ["marketBriefData.marketNews","marketBriefData.headlines","marketBriefData.news","marketBriefData.topStories","marketBriefData.catalysts"],
+    targetPath: "video.marketNews" },
+  { tabKey: "specialized", expectedField: "macroFactors",
+    sourcePath: "marketBriefData.macroFactors",
+    sourcePaths: ["marketBriefData.macroFactors","marketBriefData.macro","marketBriefData.macroEvents","marketBriefData.macroHighlights","marketBriefData.economicEvents"],
+    targetPath: "video.macroFactors" },
+  { tabKey: "specialized", expectedField: "stocksMentioned",
+    sourcePath: "marketBriefData.stocksMentioned",
+    sourcePaths: ["marketBriefData.stocksMentioned","marketBriefData.stocks","marketBriefData.watchlist","marketBriefData.tickers"],
+    targetPath: "video.stocksMentioned" },
+  { tabKey: "specialized", expectedField: "opportunities",
+    sourcePath: "marketBriefData.opportunities",
+    sourcePaths: ["marketBriefData.opportunities","marketBriefData.tradingOpportunities","marketBriefData.trades"],
+    targetPath: "video.opportunities" },
+  { tabKey: "specialized", expectedField: "risks",
+    sourcePath: "marketBriefData.risks",
+    sourcePaths: ["marketBriefData.risks","marketBriefData.riskFactors","marketBriefData.warnings"],
+    targetPath: "video.risks" },
   // ── Topics & Subtopics ────────────────────────────────────────────────
   { tabKey: "topics-subtopics", expectedField: "tags",           sourcePath: "marketBriefData.tags",          targetPath: "video.tags"          },
   { tabKey: "topics-subtopics", expectedField: "obsidianTopics", sourcePath: "marketBriefData.obsidianTopics",targetPath: "video.obsidianTopics"},
@@ -335,6 +437,64 @@ function DataTable({ headers, rows, borderColor = "border-slate-100 dark:border-
   );
 }
 
+function PipelineBadge({ badge }) {
+  const toneClasses = {
+    rendered: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    empty: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    lost: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+    dead: "bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300",
+    unknown: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${toneClasses[badge?.tone] || toneClasses.unknown}`}>
+      {badge?.label || "Unknown / needs code trace"}
+    </span>
+  );
+}
+
+function PipelineFacts({ trace }) {
+  const boolText = (value) => value === true ? "yes" : value === false ? "no" : "Unknown / needs code trace";
+  const textTone = (value) => value === true
+    ? "text-emerald-600 dark:text-emerald-400"
+    : value === false
+      ? "text-red-500 dark:text-red-400"
+      : "text-sky-600 dark:text-sky-400";
+
+  return (
+    <div className="space-y-1 text-[11px] leading-5">
+      <PipelineBadge badge={trace.badge} />
+      <div className="text-slate-500 dark:text-zinc-400">
+        Data Found:
+        {" "}
+        <span className={textTone(trace.dataFound)}>{boolText(trace.dataFound)}</span>
+      </div>
+      <div className="text-slate-500 dark:text-zinc-400">
+        Extractor Exists:
+        {" "}
+        <span className={textTone(trace.extractorExists)}>{boolText(trace.extractorExists)}</span>
+      </div>
+      <div className="text-slate-500 dark:text-zinc-400">
+        Extractor Returned Items:
+        {" "}
+        <span className="font-mono text-slate-700 dark:text-zinc-200">{trace.extractorReturnedItems}</span>
+      </div>
+      <div className="text-slate-500 dark:text-zinc-400">
+        Renderer Exists:
+        {" "}
+        <span className={textTone(trace.rendererExists)}>{boolText(trace.rendererExists)}</span>
+      </div>
+      <div className="text-slate-500 dark:text-zinc-400">
+        UI Rendered:
+        {" "}
+        <span className={textTone(trace.uiRendered === true ? true : trace.uiRendered === false ? false : null)}>
+          {boolText(trace.uiRendered)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function countArr(obj, key) {
   const v = obj?.[key];
   return Array.isArray(v) ? v.length : (typeof v === 'string' && v.trim() ? 1 : 0);
@@ -371,8 +531,21 @@ function getTargetField(path) {
 }
 
 function buildFixPreview(mapping, { video, marketBriefData }) {
-  const sourceValue = getPathValue({ video, marketBriefData }, mapping.sourcePath);
-  const targetValue = getPathValue({ video, marketBriefData }, mapping.targetPath);
+  const context = { video, marketBriefData };
+
+  // Resolve source: check sourcePaths aliases first, fall back to sourcePath
+  const pathsToCheck = mapping.sourcePaths || [mapping.sourcePath];
+  let sourceValue, effectiveSourcePath;
+  for (const path of pathsToCheck) {
+    const v = getPathValue(context, path);
+    if (hasValue(v)) { sourceValue = v; effectiveSourcePath = path; break; }
+  }
+  if (!effectiveSourcePath) {
+    sourceValue = getPathValue(context, mapping.sourcePath);
+    effectiveSourcePath = mapping.sourcePath;
+  }
+
+  const targetValue = getPathValue(context, mapping.targetPath);
   const sourceExists = hasValue(sourceValue);
   const targetExists = hasValue(targetValue);
   const oldCount = valueCount(targetValue);
@@ -384,6 +557,7 @@ function buildFixPreview(mapping, { video, marketBriefData }) {
 
   return {
     ...mapping,
+    sourcePath: effectiveSourcePath,
     tabLabel: TAB_LABEL[mapping.tabKey] || mapping.tabKey,
     sourceValue,
     targetValue,
@@ -393,6 +567,164 @@ function buildFixPreview(mapping, { video, marketBriefData }) {
     newCount,
     canApply: sourceExists && !targetExists,
     reason,
+  };
+}
+
+function getRendererTrace(tabKey, normalizedSubCategory) {
+  if (UNIVERSAL_TAB_KEYS.includes(tabKey)) {
+    return {
+      rendererExists: true,
+      rendererLabel: "VideoDetailPanel universal tab",
+      reachableAnywhere: true,
+      reachableInCurrentView: true,
+    };
+  }
+
+  const routeKeys = SPECIALIZED_RENDERER_TAB_REGISTRY[normalizedSubCategory]
+    || SPECIALIZED_RENDERER_TAB_REGISTRY.default
+    || [];
+  const reachableInCurrentView = routeKeys.includes(tabKey);
+  const reachableAnywhere = ALL_SPECIALIZED_RENDERER_TAB_KEYS.has(tabKey);
+
+  return {
+    rendererExists: reachableInCurrentView,
+    rendererLabel: reachableInCurrentView
+      ? `SpecializedContentRenderer ${normalizedSubCategory || "default"}`
+      : reachableAnywhere
+        ? "SpecializedContentRenderer (other flow)"
+        : "SpecializedContentRenderer",
+    reachableAnywhere,
+    reachableInCurrentView,
+  };
+}
+
+function getTabSourcePaths(tabKey, mappingRows = []) {
+  const mappingPaths = mappingRows
+    .filter((row) => row.tabKey === tabKey)
+    .map((row) => row.sourcePath)
+    .filter(Boolean);
+  if (mappingPaths.length > 0) return mappingPaths;
+  return TRACE_FIELDS_BY_TAB[tabKey] || [];
+}
+
+function getSourceTrace(context, sourcePaths = []) {
+  const matches = sourcePaths
+    .map((path) => ({ path, value: getPathValue(context, path) }))
+    .filter(({ value }) => hasValue(value));
+
+  return {
+    dataFound: matches.length > 0,
+    matchedPaths: matches.map(({ path }) => path),
+    totalItems: matches.reduce((sum, { value }) => sum + valueCount(value), 0),
+  };
+}
+
+function derivePipelineBadge({ deadConfig, dataFound, extractorReturnedItems, rendererExists, uiRendered }) {
+  if (deadConfig) {
+    return {
+      tone: "dead",
+      label: "Dead Config",
+      detail: "Tab/config is not reachable from UNIVERSAL_TABS or SpecializedContentRenderer",
+    };
+  }
+  if (!dataFound) {
+    return {
+      tone: "empty",
+      label: "Empty",
+      detail: "Mapping exists, but source data is empty",
+    };
+  }
+  if (extractorReturnedItems > 0 && !rendererExists) {
+    return {
+      tone: "lost",
+      label: "Lost Field",
+      detail: "Data exists and extractor works, but renderer is missing",
+    };
+  }
+  if (extractorReturnedItems > 0 && uiRendered === true) {
+    return {
+      tone: "rendered",
+      label: "Rendered",
+      detail: "Data exists, extractor works, and renderer uses it",
+    };
+  }
+  return {
+    tone: "unknown",
+    label: "Unknown / needs code trace",
+    detail: "Runtime detection is uncertain for this field",
+  };
+}
+
+function buildPipelineTrace({ tabKey, label, video, marketBriefData, normalizedSubCategory, sourcePaths = [], mappingRows = [] }) {
+  const context = { video, marketBriefData };
+  const resolvedSourcePaths = sourcePaths.length > 0 ? sourcePaths : getTabSourcePaths(tabKey, mappingRows);
+  const sourceTrace = getSourceTrace(context, resolvedSourcePaths);
+  const extractorReturnedItems = extractVideoTabItems(video, tabKey, marketBriefData).length;
+  const rendererTrace = getRendererTrace(tabKey, normalizedSubCategory);
+  const extractorExists = rendererTrace.reachableAnywhere || UNIVERSAL_TAB_KEYS.includes(tabKey);
+  const uiRendered = rendererTrace.rendererExists
+    ? (extractorReturnedItems > 0 ? true : false)
+    : rendererTrace.reachableAnywhere
+      ? "Unknown / needs code trace"
+      : false;
+  const deadConfig = !rendererTrace.reachableAnywhere && !UNIVERSAL_TAB_KEYS.includes(tabKey);
+  const badge = derivePipelineBadge({
+    deadConfig,
+    dataFound: sourceTrace.dataFound,
+    extractorReturnedItems,
+    rendererExists: rendererTrace.rendererExists,
+    uiRendered,
+  });
+
+  return {
+    tabKey,
+    label: label || TAB_LABEL[tabKey] || tabKey,
+    sourcePaths: resolvedSourcePaths,
+    dataFound: sourceTrace.dataFound,
+    matchedSourcePaths: sourceTrace.matchedPaths,
+    sourceItemCount: sourceTrace.totalItems,
+    extractorExists,
+    extractorReturnedItems,
+    rendererExists: rendererTrace.rendererExists,
+    rendererReachableAnywhere: rendererTrace.reachableAnywhere,
+    rendererLabel: rendererTrace.rendererLabel,
+    uiRendered,
+    deadConfig,
+    badge,
+    lines: [
+      {
+        label: "Source",
+        text: resolvedSourcePaths.length > 0
+          ? `${resolvedSourcePaths.join(" | ")} ${sourceTrace.dataFound ? `found (${sourceTrace.totalItems})` : "not found"}`
+          : "Unknown / needs code trace",
+        ok: sourceTrace.dataFound,
+      },
+      {
+        label: "Extractor",
+        text: extractorExists
+          ? `extractVideoTabItems("${tabKey}") returned ${extractorReturnedItems} items`
+          : `extractVideoTabItems("${tabKey}") is not traceable from config`,
+        ok: extractorExists && extractorReturnedItems > 0,
+      },
+      {
+        label: "Renderer",
+        text: rendererTrace.rendererExists
+          ? `${rendererTrace.rendererLabel} used`
+          : rendererTrace.reachableAnywhere
+            ? `${rendererTrace.rendererLabel} exists, but not in the current flow`
+            : `${rendererTrace.rendererLabel} not referenced`,
+        ok: rendererTrace.rendererExists,
+      },
+      {
+        label: "UI",
+        text: uiRendered === true
+          ? "rendered"
+          : uiRendered === false
+            ? "not rendered"
+            : "Unknown / needs code trace",
+        ok: uiRendered === true,
+      },
+    ],
   };
 }
 
@@ -597,6 +929,8 @@ export function AiMappingModal({
     catch { return []; }
   }, [v]);
 
+  const gemSchemaType = useMemo(() => detectGEMSchemaType(marketBriefData), [marketBriefData]);
+
   const totalTabItems  = tabMapping.reduce((s, r) => s + r.count, 0);
   const activeLearning = learningFieldMapping.filter(r => r.count > 0).length;
   const activeBrief    = briefFieldMapping.length;
@@ -605,6 +939,7 @@ export function AiMappingModal({
   // ── §7 Debug Report ─────────────────────────────────────────────────────────
   const [showReport, setShowReport] = useState(false);
   const [selectedFixPreview, setSelectedFixPreview] = useState(null);
+  const [selectedTraceTab, setSelectedTraceTab] = useState(null);
   const [isApplyingFix, setIsApplyingFix] = useState(false);
   const [showAiDiag, setShowAiDiag] = useState(false);
   const [isRunningAiDiag, setIsRunningAiDiag] = useState(false);
@@ -619,6 +954,17 @@ export function AiMappingModal({
   }), [v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData, userConfirmedSubCategory, confirmedAt]);
 
   const reportJson = useMemo(() => JSON.stringify(report, null, 2), [report]);
+
+  const tabPipelineTraces = useMemo(() => (
+    tabMapping.map((tab) => buildPipelineTrace({
+      tabKey: tab.value,
+      label: tab.label,
+      video: v,
+      marketBriefData,
+      normalizedSubCategory,
+      mappingRows: SAFE_TAB_DATA_MAPPINGS,
+    }))
+  ), [tabMapping, v, marketBriefData, normalizedSubCategory]);
 
   const handleCopyReport = useCallback(() => {
     navigator.clipboard.writeText(reportJson)
@@ -644,8 +990,40 @@ export function AiMappingModal({
   }, [reportJson, v]);
 
   const safeTabDataMappings = useMemo(() =>
-    SAFE_TAB_DATA_MAPPINGS.map((mapping) => buildFixPreview(mapping, { video: v, marketBriefData })),
-  [v, marketBriefData]);
+    SAFE_TAB_DATA_MAPPINGS.map((mapping) => {
+      const preview = buildFixPreview(mapping, { video: v, marketBriefData });
+      return {
+        ...preview,
+        pipelineTrace: buildPipelineTrace({
+          tabKey: mapping.tabKey,
+          label: TAB_LABEL[mapping.tabKey] || mapping.tabKey,
+          video: v,
+          marketBriefData,
+          normalizedSubCategory,
+          sourcePaths: preview.sourcePath ? [preview.sourcePath] : getTabSourcePaths(mapping.tabKey, SAFE_TAB_DATA_MAPPINGS),
+          mappingRows: SAFE_TAB_DATA_MAPPINGS,
+        }),
+      };
+    }),
+  [v, marketBriefData, normalizedSubCategory]);
+
+  const orphanLostFields = useMemo(() => (
+    TRACE_REQUIRED_FIELDS.map((fieldTrace) => buildPipelineTrace({
+      tabKey: fieldTrace.tabKey,
+      label: TAB_LABEL[fieldTrace.tabKey] || fieldTrace.tabKey,
+      video: v,
+      marketBriefData,
+      normalizedSubCategory,
+      sourcePaths: fieldTrace.sourcePaths,
+      mappingRows: SAFE_TAB_DATA_MAPPINGS,
+    }))
+  ), [v, marketBriefData, normalizedSubCategory]);
+
+  const selectedTrace = useMemo(() => (
+    selectedTraceTab
+      ? tabPipelineTraces.find((trace) => trace.tabKey === selectedTraceTab) || null
+      : null
+  ), [selectedTraceTab, tabPipelineTraces]);
 
   const logMappingFix = useCallback((preview, applied, reason) => {
     console.log("[AiMappingFix]", {
@@ -839,7 +1217,7 @@ export function AiMappingModal({
                     ? `${report.warnings.length} אזהרות · JSON מוכן לשליחה`
                     : showAiDiag
                       ? (isRunningAiDiag ? 'מנתח...' : aiDiagMode === 'local' ? `מצב מקומי · ${(aiDiagResult?.issues || []).length} בעיות זוהו` : aiDiagResult ? `${(aiDiagResult.issues || []).length} בעיות זוהו` : aiDiagError ? 'ניתוח נכשל' : '')
-                      : <>{totalActive} שדות פעילים · {totalTabItems} פריטים בסך הכל{marketBriefData && <span className="mr-2 rounded-full bg-sky-50 px-2 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">📈 Market Brief</span>}</>
+                      : <>{totalActive} שדות פעילים · {totalTabItems} פריטים בסך הכל{marketBriefData && <span className="mr-2 rounded-full bg-sky-50 px-2 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">📈 Market Brief</span>}{gemSchemaType === 'universal' && <span className="mr-1 rounded-full bg-emerald-50 px-2 text-[10px] font-medium text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">✦ universalTabs</span>}{gemSchemaType === 'mixed' && <span className="mr-1 rounded-full bg-amber-50 px-2 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">◐ mixed schema</span>}{gemSchemaType === 'legacy' && <span className="mr-1 rounded-full bg-slate-100 px-2 text-[10px] font-medium text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">▤ legacy schema</span>}</>
                   }
                 </p>
               </div>
@@ -1125,7 +1503,7 @@ export function AiMappingModal({
                 </button>
               </div>
               <DataTable
-                headers={["Tab", "Key", "Expected Field", "Source Path", "Target Path", "Source?", "Target?", "Count", "Actions"]}
+                headers={["Tab", "Key", "Expected Field", "Source Path", "Target Path", "Pipeline Status", "Source?", "Target?", "Count", "Actions"]}
                 rows={safeTabDataMappings.map((mapping) => {
                   const previewSelected =
                     selectedFixPreview?.sourcePath === mapping.sourcePath &&
@@ -1137,6 +1515,7 @@ export function AiMappingModal({
                     <span className="font-mono text-[11px] text-slate-700 dark:text-zinc-300">{mapping.expectedField}</span>,
                     <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{mapping.sourcePath}</span>,
                     <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{mapping.targetPath}</span>,
+                    <PipelineFacts trace={mapping.pipelineTrace} />,
                     <span className={mapping.sourceExists ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}>
                       {mapping.sourceExists ? "Yes" : "No"}
                     </span>,
@@ -1199,6 +1578,70 @@ export function AiMappingModal({
                   </div>
                 </div>
               )}
+            </section>
+
+            <section>
+              <SectionHeader>Trace Pipeline</SectionHeader>
+              <DataTable
+                headers={["Tab", "Key", "Items", "Pipeline Status", "Trace"]}
+                rows={tabPipelineTraces.map((trace) => [
+                  <span className="font-medium text-slate-800 dark:text-zinc-200">{trace.label}</span>,
+                  <span className="font-mono text-xs text-slate-400 dark:text-zinc-500">{trace.tabKey}</span>,
+                  <StatusPill count={trace.extractorReturnedItems} />,
+                  <PipelineFacts trace={trace} />,
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTraceTab((current) => current === trace.tabKey ? null : trace.tabKey)}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    Trace Tab
+                  </button>,
+                ])}
+              />
+              {selectedTrace && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">{selectedTrace.label}</p>
+                      <p className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">{selectedTrace.tabKey}</p>
+                    </div>
+                    <PipelineBadge badge={selectedTrace.badge} />
+                  </div>
+                  <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-950/50">
+                    {selectedTrace.lines.map((line) => (
+                      <div key={line.label} className="flex items-start gap-2 text-right">
+                        <span className="mt-0.5 text-slate-400 dark:text-zinc-500">├─</span>
+                        <div>
+                          <span className="font-semibold text-slate-700 dark:text-zinc-300">{line.label}:</span>
+                          {" "}
+                          <span className="text-slate-600 dark:text-zinc-400">{line.text}</span>
+                          {" "}
+                          <span className={line.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}>
+                            {line.ok ? "✓" : "✗"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section>
+              <SectionHeader>Orphan / Lost Fields</SectionHeader>
+              <DataTable
+                borderColor="border-red-100 dark:border-red-900/30"
+                headBg="bg-red-50 dark:bg-red-950/20"
+                dividerColor="divide-red-50 dark:divide-red-900/20"
+                headers={["Field", "Key", "Pipeline Status", "Renderer", "Items"]}
+                rows={orphanLostFields.map((trace) => [
+                  <span className="font-medium text-slate-800 dark:text-zinc-200">{trace.label}</span>,
+                  <span className="font-mono text-xs text-slate-400 dark:text-zinc-500">{trace.tabKey}</span>,
+                  <PipelineFacts trace={trace} />,
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">{trace.rendererLabel}</span>,
+                  <span className="font-mono text-sm text-slate-700 dark:text-zinc-300">{trace.extractorReturnedItems}</span>,
+                ])}
+              />
             </section>
 
             {activeLearning > 0 && (
