@@ -539,6 +539,112 @@ function makeGeminiPlugin(env) {
           res.end(JSON.stringify({ error: code, message: err.message }));
         }
       });
+
+      server.middlewares.use('/api/gemini-repair-json', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+
+        const apiKey = env.GEMINI_API_KEY;
+        if (!apiKey) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'GEMINI_API_KEY_MISSING', message: 'Add GEMINI_API_KEY to .env' }));
+          return;
+        }
+
+        try {
+          const body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', chunk => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+            req.on('error', reject);
+          });
+
+          const {
+            rawJson = '',
+            parserError = '',
+            line = null,
+            col = null,
+            contextLines = '',
+          } = body || {};
+
+          if (!rawJson || typeof rawJson !== 'string') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'MISSING_JSON', message: 'rawJson is required' }));
+            return;
+          }
+
+          const prompt = `
+You are a JSON repair assistant.
+Return STRICT JSON ONLY, no markdown, no explanation outside JSON.
+
+Task:
+1. Repair the broken JSON so it becomes valid parseable JSON.
+2. Explain what was broken.
+3. List exact changes made.
+4. Explain how to prevent the issue in the GEM prompt/schema.
+
+Input parser error:
+${parserError || 'Unknown parser error'}
+
+Location:
+line=${line ?? 'unknown'}, column=${col ?? 'unknown'}
+
+Surrounding lines:
+${contextLines || '(none)'}
+
+Broken JSON:
+${rawJson}
+
+Return EXACTLY this JSON shape:
+{
+  "repairedJson": "{ ... valid JSON string ... }",
+  "changes": ["change 1", "change 2"],
+  "why": "short explanation of why the JSON broke",
+  "prevention": ["prevention 1", "prevention 2"],
+  "promptCorrection": "short schema/prompt correction",
+  "report": "# GEMS JSON Repair Report\\n..."
+}
+
+Rules:
+- repairedJson must be valid JSON text as a string value.
+- Preserve the original data as much as possible.
+- Escape newline/control characters correctly.
+- Keep double-quoted property names.
+- Do not remove major sections unless absolutely necessary for validity.
+          `.trim();
+
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+          const result = await model.generateContent(prompt);
+          const rawText = result.response.text().trim();
+          const cleaned = rawText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
+          const parsed = JSON.parse(cleaned);
+
+          if (!parsed?.repairedJson || typeof parsed.repairedJson !== 'string') {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'INVALID_AI_REPAIR_RESPONSE', message: 'AI response missing repairedJson' }));
+            return;
+          }
+
+          JSON.parse(parsed.repairedJson);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(parsed));
+        } catch (err) {
+          const status = err.status ?? err.statusCode ?? 500;
+          const code =
+            status === 429 ? 'RATE_LIMIT' :
+            status === 401 ? 'INVALID_KEY' :
+            'GEMINI_REPAIR_ERROR';
+
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: code, message: err.message }));
+        }
+      });
     },
   };
 }
@@ -804,7 +910,7 @@ function sanitizeVaultRelativePath(relPath = '') {
 function getVaultRequestConfig(body = {}, env = {}) {
   const requestVaultPath = String(body?.vaultPath || '').trim();
   const requestVaultName = String(body?.vaultName || '').trim();
-  const envVaultPath = String(env.OBSIDIAN_VAULT_PATH || '').trim();
+  const envVaultPath = String(env.OBSIDIAN_VAULT_PATH || env.VITE_OBSIDIAN_VAULT_PATH || '').trim();
   const envVaultName = String(env.VITE_OBSIDIAN_VAULT_NAME || '').trim();
 
   return {
@@ -1248,7 +1354,7 @@ function makeVaultListPlugin(env) {
         }
         const url = new URL(req.url, 'http://localhost');
         const topic = (url.searchParams.get('topic') || '').replace(/\.\./g, '').trim();
-        const vaultPath = (url.searchParams.get('vaultPath') || env.OBSIDIAN_VAULT_PATH || '').trim();
+        const vaultPath = (url.searchParams.get('vaultPath') || env.OBSIDIAN_VAULT_PATH || env.VITE_OBSIDIAN_VAULT_PATH || '').trim();
         if (!vaultPath || !topic) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, subtopics: [] }));
@@ -1360,6 +1466,89 @@ function makeHebrewChapterTitlesPlugin(env) {
   };
 }
 
+function makeAiMappingDiagnosisPlugin(env) {
+  return {
+    name: 'gemini-ai-mapping-diagnosis',
+    configureServer(server) {
+      server.middlewares.use('/api/gemini-ai-mapping-diagnosis', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+        const apiKey = env.GEMINI_API_KEY;
+        if (!apiKey) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'GEMINI_API_KEY_MISSING' }));
+          return;
+        }
+        let body;
+        try {
+          body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', chunk => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch (e) { reject(e); } });
+            req.on('error', reject);
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_BODY' }));
+          return;
+        }
+        const diagnosticReport = body?.diagnosticReport;
+        if (!diagnosticReport) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'MISSING_REPORT' }));
+          return;
+        }
+        const reportStr = JSON.stringify(diagnosticReport, null, 2);
+        const prompt = `You are a debugging assistant for a React app that maps YouTube video AI analysis into 7 universal tabs: summary, chapters, insights, useful-knowledge, app-builder, topics-subtopics, specialized.
+
+Analyze the diagnostic report below and return ONLY valid JSON (no markdown fences, no extra text) with this exact structure:
+{
+  "status": "ok",
+  "working": ["what works correctly"],
+  "issues": [{"severity":"high|medium|low","area":"tabs.summary","problem":"what is broken","evidence":"what data shows this","recommendedFix":"minimal fix"}],
+  "missingData": ["missing fields or data sources"],
+  "unmappedData": ["fields that exist but are not mapped to any tab"],
+  "tabMappingPlan": {"summary":[],"chapters":[],"insights":[],"usefulKnowledge":[],"appBuilder":[],"topics":[],"specialized":[]},
+  "fixPromptForClaudeCode": "A complete ready-to-use English prompt that a developer can paste into Claude Code to fix the most critical issue"
+}
+
+Diagnostic report:
+${reportStr}`;
+        try {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+          const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
+          });
+          let raw = result.response.text().trim();
+          raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          let parsed;
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            parsed = {
+              status: 'raw', rawText: raw,
+              issues: [{ severity: 'high', area: 'parse', problem: 'AI returned non-JSON', evidence: raw.slice(0, 300), recommendedFix: 'Check prompt or model output' }],
+              working: [], missingData: [], unmappedData: [], tabMappingPlan: {}, fixPromptForClaudeCode: '',
+            };
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, result: parsed }));
+        } catch (err) {
+          console.error('[gemini-ai-mapping-diagnosis] error:', err.message);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'DIAGNOSIS_FAILED', message: err.message }));
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix loads ALL vars from .env (not just VITE_ ones)
   const env = loadEnv(mode, process.cwd(), '');
@@ -1384,6 +1573,7 @@ export default defineConfig(({ mode }) => {
       makeKnowledgeLibraryEnsurePlugin(env),
       makeVaultListPlugin(env),
       makeHebrewChapterTitlesPlugin(env),
+      makeAiMappingDiagnosisPlugin(env),
       base44({
         legacySDKImports: false,
         hmrNotifier: true,

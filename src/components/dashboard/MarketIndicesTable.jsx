@@ -37,12 +37,12 @@ function parseIndexItem(raw) {
 function dirInfo(dir) {
   const d = (dir || '').toLowerCase();
   if (d === 'up' || d === 'bullish' || d === 'positive')
-    return { emoji: '🟢', label: 'עלייה', cls: 'text-emerald-600 dark:text-emerald-400', rowCls: 'bg-emerald-50/40 dark:bg-emerald-950/10' };
+    return { emoji: '🟢', label: 'עלייה', badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300', rowCls: 'bg-emerald-50/60 dark:bg-emerald-950/15' };
   if (d === 'down' || d === 'bearish' || d === 'negative')
-    return { emoji: '🔴', label: 'ירידה', cls: 'text-red-500 dark:text-red-400', rowCls: 'bg-red-50/40 dark:bg-red-950/10' };
+    return { emoji: '🔴', label: 'ירידה', badgeCls: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300', rowCls: 'bg-red-50/60 dark:bg-red-950/15' };
   if (d === 'flat' || d === 'neutral' || d === 'unchanged')
-    return { emoji: '⚪', label: 'ניטרלי', cls: 'text-slate-400 dark:text-zinc-500', rowCls: '' };
-  return { emoji: null, label: dir || '—', cls: 'text-slate-500 dark:text-zinc-400', rowCls: '' };
+    return { emoji: '⚪', label: 'ניטרלי', badgeCls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400', rowCls: 'bg-slate-50/40 dark:bg-zinc-900/20' };
+  return { emoji: null, label: dir || null, badgeCls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400', rowCls: '' };
 }
 
 function changeColor(change, direction) {
@@ -51,9 +51,11 @@ function changeColor(change, direction) {
   if (c.startsWith('+') || (!c.startsWith('-') && (d === 'up' || d === 'bullish' || d === 'positive')))
     return 'text-emerald-600 dark:text-emerald-400';
   if (c.startsWith('-') || d === 'down' || d === 'bearish' || d === 'negative')
-    return 'text-red-500 dark:text-red-400';
-  return 'text-slate-600 dark:text-zinc-400';
+    return 'text-red-600 dark:text-red-400';
+  return 'text-slate-700 dark:text-zinc-300';
 }
+
+const DASH = <span className="text-slate-300 dark:text-zinc-600">—</span>;
 
 export function MarketIndicesTable({ items = [], onSaveToBrain }) {
   const rows = items.map(parseIndexItem).filter(Boolean);
@@ -71,48 +73,62 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
     <div dir="rtl">
       {/* ── Desktop: table ── */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-900/50">
-              <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400">נכס</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400">מגמה</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400">שינוי</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400">רמה</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400">תובנה</th>
-              {onSaveToBrain && <th className="w-8" />}
+            <tr className="border-b-2 border-slate-200 dark:border-zinc-700 bg-slate-100/80 dark:bg-zinc-800/60">
+              <th style={{ width: 120, minWidth: 120 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">נכס</th>
+              <th style={{ width: 120, minWidth: 120 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">מגמה</th>
+              <th style={{ width: 140, minWidth: 140 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">שינוי</th>
+              <th style={{ width: 140, minWidth: 140 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">רמה</th>
+              <th className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">תובנה</th>
+              {onSaveToBrain && <th style={{ width: 36 }} />}
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => {
               const dir = dirInfo(row.direction);
               const cc  = changeColor(row.change, row.direction);
+              const isEven = i % 2 === 0;
+              const zebraCls = dir.rowCls || (isEven ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/60 dark:bg-zinc-800/30');
               return (
                 <tr
                   key={i}
-                  className={`border-b border-slate-100 dark:border-zinc-800/60 hover:brightness-95 transition-colors group ${dir.rowCls}`}
+                  className={`border-b border-slate-100 dark:border-zinc-800/60 hover:brightness-[0.97] dark:hover:brightness-110 transition-colors group ${zebraCls}`}
                 >
-                  <td className="px-3 py-2.5 font-bold text-slate-800 dark:text-zinc-100 text-xs tracking-wide whitespace-nowrap">
-                    {row.name || '—'}
+                  {/* Asset */}
+                  <td style={{ width: 120, minWidth: 120 }} className="px-3 py-3 font-bold text-sm text-slate-900 dark:text-zinc-50 tracking-wide whitespace-nowrap">
+                    {row.name || DASH}
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    {row.direction ? (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${dir.cls}`}>
-                        {dir.emoji && <span className="leading-none">{dir.emoji}</span>}
+
+                  {/* Trend badge */}
+                  <td style={{ width: 120, minWidth: 120 }} className="px-3 py-3 whitespace-nowrap">
+                    {dir.label ? (
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold ${dir.badgeCls}`}>
+                        {dir.emoji && <span className="text-base leading-none">{dir.emoji}</span>}
                         <span>{dir.label}</span>
                       </span>
-                    ) : <span className="text-slate-300 dark:text-zinc-600 text-xs">—</span>}
+                    ) : DASH}
                   </td>
-                  <td className={`px-3 py-2.5 font-mono text-xs font-semibold whitespace-nowrap ${row.change ? cc : 'text-slate-300 dark:text-zinc-600'}`}>
-                    {row.change || '—'}
+
+                  {/* Change — large & bold */}
+                  <td style={{ width: 140, minWidth: 140 }} className="px-3 py-3 whitespace-nowrap">
+                    {row.change ? (
+                      <span className={`font-mono text-base font-bold ${cc}`}>{row.change}</span>
+                    ) : DASH}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-600 dark:text-zinc-300 font-mono whitespace-nowrap">
-                    {row.level || '—'}
+
+                  {/* Level */}
+                  <td style={{ width: 140, minWidth: 140 }} className="px-3 py-3 font-mono text-sm text-slate-700 dark:text-zinc-200 whitespace-nowrap">
+                    {row.level || DASH}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                    {row.note || <span className="text-slate-300 dark:text-zinc-600">—</span>}
+
+                  {/* Insight — flexible */}
+                  <td className="px-3 py-3 text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+                    {row.note || DASH}
                   </td>
+
                   {onSaveToBrain && (
-                    <td className="px-2 py-2.5">
+                    <td style={{ width: 36 }} className="px-2 py-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -134,34 +150,37 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
       </div>
 
       {/* ── Mobile: stacked cards ── */}
-      <div className="sm:hidden space-y-2">
+      <div className="sm:hidden space-y-2.5">
         {rows.map((row, i) => {
           const dir = dirInfo(row.direction);
           const cc  = changeColor(row.change, row.direction);
           return (
             <div
               key={i}
-              className={`rounded-xl border border-slate-200 dark:border-zinc-800 px-3 py-2.5 ${dir.rowCls || 'bg-white dark:bg-zinc-900'}`}
+              className={`rounded-xl border border-slate-200 dark:border-zinc-700 px-4 py-3 shadow-sm ${dir.rowCls || 'bg-white dark:bg-zinc-900'}`}
               dir="rtl"
             >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="font-bold text-xs tracking-wide text-slate-800 dark:text-zinc-100">{row.name || '—'}</span>
+              {/* Top row: asset + trend + change */}
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name || '—'}</span>
                 <div className="flex items-center gap-2 shrink-0">
-                  {row.direction && (
-                    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${dir.cls}`}>
+                  {dir.label && (
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${dir.badgeCls}`}>
                       {dir.emoji} {dir.label}
                     </span>
                   )}
                   {row.change && (
-                    <span className={`font-mono text-xs font-semibold ${cc}`}>{row.change}</span>
-                  )}
-                  {row.level && (
-                    <span className="font-mono text-xs text-slate-500 dark:text-zinc-400">{row.level}</span>
+                    <span className={`font-mono text-base font-bold ${cc}`}>{row.change}</span>
                   )}
                 </div>
               </div>
+              {/* Level */}
+              {row.level && (
+                <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 mb-1">רמה: {row.level}</p>
+              )}
+              {/* Insight */}
               {row.note && (
-                <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400">{row.note}</p>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">{row.note}</p>
               )}
               {onSaveToBrain && (
                 <button
@@ -170,7 +189,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                     const text = [row.name, row.change, dir.label, row.note].filter(Boolean).join(' · ');
                     onSaveToBrain(text);
                   }}
-                  className="mt-1 text-[10px] text-indigo-400 hover:text-indigo-600"
+                  className="mt-1.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors"
                 >
                   🧠 שמור
                 </button>

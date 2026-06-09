@@ -91,7 +91,7 @@ import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
-import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS } from "@/config/videoTabsConfig";
+import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
@@ -1487,6 +1487,44 @@ function repairGemsJsonDetailed(raw) {
     const beforeGershayim = s;
     s = s.replace(/([ְ-׿\w])"([ְ-׿\w])/g, '$1\\"$2');
     if (s !== beforeGershayim) fixes.push('Escaped Hebrew gershayim / in-word quote(s)');
+  }
+
+  // Pass C: Fix structural tail leaked into a string value.
+  // Pattern: "field": "\n}..." — Gemini captured closing brackets + sibling fields as a string.
+  // Action: escape every internal unescaped " except the last (the true string closer).
+  // The surrounding {{ }} from line 356 already close the outer objects correctly.
+  {
+    const leakRe = /:\s*"\\n}/;
+    const leakMatch = leakRe.exec(s);
+    if (leakMatch) {
+      // Find the opening " of the string value (the " right before \n})
+      let valueOpen = -1;
+      for (let i = leakMatch.index; i < leakMatch.index + leakMatch[0].length; i++) {
+        if (s[i] === '"') { valueOpen = i; }
+      }
+      if (valueOpen >= 0) {
+        // Collect all unescaped " positions after valueOpen (escape-aware forward scan)
+        const unescapedPositions = [];
+        let esc = false;
+        for (let i = valueOpen + 1; i < s.length; i++) {
+          if (esc) { esc = false; continue; }
+          if (s[i] === '\\') { esc = true; continue; }
+          if (s[i] === '"') unescapedPositions.push(i);
+        }
+        // Escape all internal " — all except the last (which is the true string closer)
+        const toEscape = unescapedPositions.slice(0, -1);
+        if (toEscape.length > 0) {
+          let result = s;
+          // Apply in reverse so earlier insertions don't shift later positions
+          for (let k = toEscape.length - 1; k >= 0; k--) {
+            const pos = toEscape[k];
+            result = result.slice(0, pos) + '\\"' + result.slice(pos + 1);
+          }
+          s = result;
+          fixes.push(`Fixed structural tail leaked into string — escaped ${toEscape.length} internal quote(s)`);
+        }
+      }
+    }
   }
 
   // Escape literal newlines / carriage-returns / tabs embedded inside JSON string values.

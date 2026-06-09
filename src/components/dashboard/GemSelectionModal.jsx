@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, ExternalLink, Settings, Copy, Save, Check, AlertCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
-import { getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
+import { getGemUrl, isGeminiGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { cn } from "@/lib/utils";
 import { loadTopics } from "@/services/topicStorage";
@@ -47,6 +47,7 @@ function validateUrl(raw) {
   const v = raw.trim();
   if (!v) return "יש להזין כתובת URL";
   if (!v.startsWith("https://")) return "ה-URL חייב להתחיל ב-https://";
+  if (!isGeminiGemUrl(v)) return "יש להזין URL תקין של Gemini GEM בפורמט https://gemini.google.com/gem/...";
   return null;
 }
 
@@ -178,7 +179,7 @@ export function GemSelectionModal({
 
   const allGems        = useMemo(() => [...ALL_FIXED_GEMS, ...dynamicTopicGems], [dynamicTopicGems]);
   const selectedGem    = allGems.find((g) => g.key === selected) || FIXED_GEMS_TOP[0];
-  const selectedGemUrl = gemUrls[selected] || "";
+  const selectedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
   const isAiRec        = selected === recommendedGemKey;
   const isSavedSel     = selected === savedGemKey;
   const hasUnsaved     = selected !== (savedGemKey || recommendedGemKey || "general");
@@ -195,10 +196,11 @@ export function GemSelectionModal({
   };
 
   const handleOpenGem = async () => {
+    const resolvedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
     if (!fullTranscriptText) { toast.error("אין תמלול להעתקה — ייבא תמלול קודם"); return; }
-    if (!selectedGemUrl) {
+    if (!resolvedGemUrl || !isGeminiGemUrl(resolvedGemUrl)) {
       setIsConfiguringUrl(true);
-      toast.info(`יש להגדיר URL ל-${selectedGem.label} לפני הפתיחה`);
+      toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
     const payload = [
@@ -218,7 +220,10 @@ export function GemSelectionModal({
       return;
     }
     console.log("[MorningBriefing] GEM opened:", selected);
-    openGeminiGemUrl(selectedGemUrl);
+    if (!openGeminiGemUrl(resolvedGemUrl)) {
+      toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
+      return;
+    }
     onGemOpened?.(selected);
     if (!summaryReceived) {
       setGemWaiting(true);
@@ -262,7 +267,7 @@ export function GemSelectionModal({
     const isSel    = gem.key === selected;
     const isRec    = gem.key === recommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
-    const hasUrl   = Boolean(gemUrls[gem.key]);
+    const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
     return (
       <button
         key={gem.key}
@@ -292,7 +297,7 @@ export function GemSelectionModal({
     const isSel    = gem.key === selected;
     const isRec    = gem.key === recommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
-    const hasUrl   = Boolean(gemUrls[gem.key]);
+    const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
     return (
       <button
         key={gem.key}

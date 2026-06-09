@@ -14,7 +14,7 @@ function looksLikeMarketIndex(item) {
   return tickerPart.length <= 12 && MARKET_FIELD_RE.test(rest);
 }
 
-function Section({ label, items, tabKey, onSaveToBrain }) {
+function Section({ label, items, tabKey, onSaveToBrain, checkSaved }) {
   const safe = Array.isArray(items) ? items : [];
   if (safe.length === 0) return null;
   return (
@@ -24,6 +24,7 @@ function Section({ label, items, tabKey, onSaveToBrain }) {
         items={safe}
         emptyLabel=""
         onSaveToBrain={(text) => onSaveToBrain(text, tabKey, label)}
+        isSaved={checkSaved ? (text) => checkSaved(text, tabKey) : undefined}
       />
     </div>
   );
@@ -48,6 +49,7 @@ export function SpecializedContentRenderer({
   politicalSummary,
   hasPoliticalTabSet,
   onSaveToBrain,
+  checkSaved,
 }) {
   const slug = normalizedSubCategory;
 
@@ -58,6 +60,7 @@ export function SpecializedContentRenderer({
       items={items}
       tabKey={tabKey}
       onSaveToBrain={onSaveToBrain}
+      checkSaved={checkSaved}
     />
   );
 
@@ -100,8 +103,8 @@ export function SpecializedContentRenderer({
     return <div className="space-y-3">{sects}</div>;
   }
 
-  // ── Market Brief ─────────────────────────────────────────────────
-  if (['morning-brief', 'evening-brief', 'weekly-brief', 'earnings-brief'].includes(slug)) {
+  // ── Morning Brief ────────────────────────────────────────────────
+  if (slug === 'morning-brief') {
     const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
     const indicesSect = indicesItems.length > 0 ? (
       <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
@@ -131,16 +134,172 @@ export function SpecializedContentRenderer({
       marketNewsSect,
       plainNewsItems.length > 0 ? sect('📋 חדשות', plainNewsItems, 'market-news') : null,
       indicesSect,
-      sect('🌍 מאקרו',        extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
-      sect('🎯 רשימת מעקב',  extractVideoTabItems(effectiveVideo, 'stocks-mentioned',    marketBriefData), 'stocks-mentioned'),
-      sect('💡 הזדמנויות',   extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), 'brief-opportunities'),
-      sect('⚠️ סיכונים',     extractVideoTabItems(effectiveVideo, 'brief-risks',         marketBriefData), 'brief-risks'),
+      sect('🌍 מאקרו',          extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
+      sect('📊 סנטימנט שוק',   extractVideoTabItems(effectiveVideo, 'brief-sentiment',     marketBriefData), 'brief-sentiment'),
+      sect('📅 לוח כלכלי',     extractVideoTabItems(effectiveVideo, 'brief-calendar',      marketBriefData), 'brief-calendar'),
+      sect('🎯 רשימת מעקב',    extractVideoTabItems(effectiveVideo, 'stocks-mentioned',    marketBriefData), 'stocks-mentioned'),
+      sect('💡 הזדמנויות',     extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), 'brief-opportunities'),
+      sect('⚠️ סיכונים',       extractVideoTabItems(effectiveVideo, 'brief-risks',         marketBriefData), 'brief-risks'),
     ].filter(Boolean);
 
     if (sects.length === 0) return (
       <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
         <span className="text-3xl mb-2 opacity-30">📰</span>
         <p className="text-sm">אין עדיין נתוני מבזק — הדבק JSON מ-GEM</p>
+      </div>
+    );
+    return <div className="space-y-3">{sects}</div>;
+  }
+
+  // ── Evening Brief ────────────────────────────────────────────────
+  if (slug === 'evening-brief') {
+    const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
+    const indicesSect = indicesItems.length > 0 ? (
+      <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📊 סקירת שוק</p>
+        <MarketIndicesTable
+          items={indicesItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 סקירת שוק')}
+        />
+      </div>
+    ) : null;
+
+    const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
+    const marketIndexItems = allNewsItems.filter(looksLikeMarketIndex);
+    const plainNewsItems   = allNewsItems.filter((i) => !looksLikeMarketIndex(i));
+
+    const marketNewsSect = marketIndexItems.length > 0 ? (
+      <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📰 עדכוני שוק</p>
+        <MarketIndicesTable
+          items={marketIndexItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 עדכוני שוק')}
+        />
+      </div>
+    ) : null;
+
+    const sects = [
+      marketNewsSect,
+      plainNewsItems.length > 0 ? sect('📋 עדכוני מאקרו', plainNewsItems, 'market-news') : null,
+      indicesSect,
+      sect('🌍 מאקרו',            extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
+      sect('📊 סנטימנט שוק',     extractVideoTabItems(effectiveVideo, 'brief-sentiment',     marketBriefData), 'brief-sentiment'),
+      sect('📊 ביצועי סקטורים',  extractVideoTabItems(effectiveVideo, 'brief-sectors',       marketBriefData), 'brief-sectors'),
+      sect('🔄 מה השתנה היום',   extractVideoTabItems(effectiveVideo, 'brief-changes',       marketBriefData), 'brief-changes'),
+      sect('📅 אירועי מחר',      extractVideoTabItems(effectiveVideo, 'brief-tomorrow',      marketBriefData), 'brief-tomorrow'),
+      sect('📅 לוח כלכלי',       extractVideoTabItems(effectiveVideo, 'brief-calendar',      marketBriefData), 'brief-calendar'),
+      sect('🎯 רשימת מעקב',      extractVideoTabItems(effectiveVideo, 'stocks-mentioned',    marketBriefData), 'stocks-mentioned'),
+      sect('💡 הזדמנויות',       extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), 'brief-opportunities'),
+      sect('⚠️ סיכונים',         extractVideoTabItems(effectiveVideo, 'brief-risks',         marketBriefData), 'brief-risks'),
+    ].filter(Boolean);
+
+    if (sects.length === 0) return (
+      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+        <span className="text-3xl mb-2 opacity-30">🌙</span>
+        <p className="text-sm">אין עדיין נתוני מבזק ערב — הדבק JSON מ-GEM</p>
+      </div>
+    );
+    return <div className="space-y-3">{sects}</div>;
+  }
+
+  // ── Weekly Brief ─────────────────────────────────────────────────
+  if (slug === 'weekly-brief') {
+    const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
+    const indicesSect = indicesItems.length > 0 ? (
+      <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📊 ביצועי שוק</p>
+        <MarketIndicesTable
+          items={indicesItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 ביצועי שוק')}
+        />
+      </div>
+    ) : null;
+
+    const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
+    const marketIndexItems = allNewsItems.filter(looksLikeMarketIndex);
+    const plainNewsItems   = allNewsItems.filter((i) => !looksLikeMarketIndex(i));
+
+    const marketNewsSect = marketIndexItems.length > 0 ? (
+      <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📰 סיכום שוק</p>
+        <MarketIndicesTable
+          items={marketIndexItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 סיכום שוק')}
+        />
+      </div>
+    ) : null;
+
+    const sects = [
+      sect('📰 כותרות השבוע',    extractVideoTabItems(effectiveVideo, 'brief-highlights',   marketBriefData), 'brief-highlights'),
+      marketNewsSect,
+      plainNewsItems.length > 0 ? sect('📋 חדשות', plainNewsItems, 'market-news') : null,
+      indicesSect,
+      sect('🌍 מאקרו',            extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
+      sect('🏆 מנצחים',           extractVideoTabItems(effectiveVideo, 'brief-winners',       marketBriefData), 'brief-winners'),
+      sect('📉 מפסידים',          extractVideoTabItems(effectiveVideo, 'brief-losers',        marketBriefData), 'brief-losers'),
+      sect('📊 סנטימנט שוק',     extractVideoTabItems(effectiveVideo, 'brief-sentiment',     marketBriefData), 'brief-sentiment'),
+      sect('📅 לוח כלכלי',       extractVideoTabItems(effectiveVideo, 'brief-calendar',      marketBriefData), 'brief-calendar'),
+      sect('🔮 תחזית שבוע הבא',  extractVideoTabItems(effectiveVideo, 'brief-outlook',       marketBriefData), 'brief-outlook'),
+      sect('🎯 רשימת מעקב',      extractVideoTabItems(effectiveVideo, 'stocks-mentioned',    marketBriefData), 'stocks-mentioned'),
+      sect('💡 הזדמנויות',       extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), 'brief-opportunities'),
+      sect('⚠️ סיכונים',         extractVideoTabItems(effectiveVideo, 'brief-risks',         marketBriefData), 'brief-risks'),
+    ].filter(Boolean);
+
+    if (sects.length === 0) return (
+      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+        <span className="text-3xl mb-2 opacity-30">📆</span>
+        <p className="text-sm">אין עדיין נתוני מבזק שבועי — הדבק JSON מ-GEM</p>
+      </div>
+    );
+    return <div className="space-y-3">{sects}</div>;
+  }
+
+  // ── Earnings Brief ───────────────────────────────────────────────
+  if (slug === 'earnings-brief') {
+    const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
+    const indicesSect = indicesItems.length > 0 ? (
+      <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📊 שווקים</p>
+        <MarketIndicesTable
+          items={indicesItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 שווקים')}
+        />
+      </div>
+    ) : null;
+
+    const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
+    const marketIndexItems = allNewsItems.filter(looksLikeMarketIndex);
+    const plainNewsItems   = allNewsItems.filter((i) => !looksLikeMarketIndex(i));
+
+    const marketNewsSect = marketIndexItems.length > 0 ? (
+      <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 px-1 text-right">📰 רקע שוק</p>
+        <MarketIndicesTable
+          items={marketIndexItems}
+          onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 רקע שוק')}
+        />
+      </div>
+    ) : null;
+
+    const sects = [
+      sect('📈 מדדים פיננסיים',  extractVideoTabItems(effectiveVideo, 'financial-metrics',   marketBriefData), 'financial-metrics'),
+      sect('🎯 תחזיות',           extractVideoTabItems(effectiveVideo, 'earnings-guidance',   marketBriefData), 'earnings-guidance'),
+      sect('💬 פרשנות הנהלה',    extractVideoTabItems(effectiveVideo, 'earnings-commentary',  marketBriefData), 'earnings-commentary'),
+      sect('🌍 מאקרו',            extractVideoTabItems(effectiveVideo, 'brief-macro',          marketBriefData), 'brief-macro'),
+      sect('📊 סנטימנט שוק',     extractVideoTabItems(effectiveVideo, 'brief-sentiment',      marketBriefData), 'brief-sentiment'),
+      sect('📅 לוח כלכלי',       extractVideoTabItems(effectiveVideo, 'brief-calendar',       marketBriefData), 'brief-calendar'),
+      marketNewsSect,
+      plainNewsItems.length > 0 ? sect('📋 חדשות', plainNewsItems, 'market-news') : null,
+      indicesSect,
+      sect('🎯 רשימת מעקב',      extractVideoTabItems(effectiveVideo, 'stocks-mentioned',     marketBriefData), 'stocks-mentioned'),
+      sect('💡 הזדמנויות',       extractVideoTabItems(effectiveVideo, 'brief-opportunities',  marketBriefData), 'brief-opportunities'),
+      sect('⚠️ סיכונים',         extractVideoTabItems(effectiveVideo, 'brief-risks',          marketBriefData), 'brief-risks'),
+    ].filter(Boolean);
+
+    if (sects.length === 0) return (
+      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+        <span className="text-3xl mb-2 opacity-30">📈</span>
+        <p className="text-sm">אין עדיין נתוני דוחות — הדבק JSON מ-GEM</p>
       </div>
     );
     return <div className="space-y-3">{sects}</div>;

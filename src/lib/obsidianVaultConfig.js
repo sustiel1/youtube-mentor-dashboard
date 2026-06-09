@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 const OBSIDIAN_SETTINGS_KEY = "obsidian_settings_v1";
 export const OBSIDIAN_SETTINGS_CHANGED_EVENT = "obsidian-settings-changed";
 
-const LEGACY_DEFAULT_VAULT_NAME = "Knowledge-Base";
-export const DEFAULT_OBSIDIAN_VAULT_NAME = "Obsidian-Brain-Structure-2026-05-17";
-export const DEFAULT_OBSIDIAN_VAULT_PATH = "C:\\Users\\11\\Workspace\\Obsidian-Brain-Structure-2026-05-17";
+export const DEFAULT_OBSIDIAN_VAULT_NAME = "Knowledge-Base";
+export const DEFAULT_OBSIDIAN_VAULT_PATH = "C:\\Users\\11\\Workspace\\Knowledge-Base";
 
 function normalizeValue(value) {
   return String(value || "").trim();
@@ -48,6 +47,15 @@ export function getStoredObsidianSettings() {
 function isLegacyDefault(stored) {
   return stored.vaultName === LEGACY_DEFAULT_VAULT_NAME &&
     (!stored.vaultPath || stored.vaultPath.toLowerCase().includes("knowledge-base"));
+}
+
+/** vaultName + vaultPath for every /api/vault/* request body (P0 vault sync). */
+export function getObsidianVaultRequestFields() {
+  const { vaultName, vaultPath } = getObsidianSettings();
+  return {
+    vaultName: normalizeValue(vaultName),
+    vaultPath: normalizeValue(vaultPath),
+  };
 }
 
 export function getObsidianSettings() {

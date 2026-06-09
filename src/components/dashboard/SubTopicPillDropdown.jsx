@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import ReactDOM from "react-dom";
 import { cn } from "@/lib/utils";
+import { getObsidianVaultRequestFields } from "@/lib/obsidianVaultConfig";
 import { CheckCircle2, Plus, ChevronDown, X } from "lucide-react";
 
 export function SubTopicPillDropdown({ anchorEl, options = [], value = "", onSelect, onCancel, topicName = "", vaultPath = "" }) {
@@ -46,8 +47,12 @@ export function SubTopicPillDropdown({ anchorEl, options = [], value = "", onSel
   useEffect(() => {
     if (!topicName) return;
     setObsidianLoading(true);
+    const { vaultName: settingsVaultName, vaultPath: settingsVaultPath } = getObsidianVaultRequestFields();
     const params = new URLSearchParams({ topic: topicName });
-    if (vaultPath) params.set("vaultPath", vaultPath);
+    const resolvedVaultPath = vaultPath || settingsVaultPath;
+    const resolvedVaultName = settingsVaultName;
+    if (resolvedVaultPath) params.set("vaultPath", resolvedVaultPath);
+    if (resolvedVaultName) params.set("vaultName", resolvedVaultName);
     fetch(`/api/vault/list?${params.toString()}`)
       .then(r => r.ok ? r.json() : { ok: false, subtopics: [] })
       .then(data => {

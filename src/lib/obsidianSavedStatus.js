@@ -32,6 +32,40 @@ export function buildObsidianSavedStatus({ folder, file, vaultName } = {}) {
   return result;
 }
 
+/** Build saved status from a vault write response path (folder + fileName). */
+export function buildObsidianSavedStatusFromPath(savedPath, vaultName) {
+  const normalized = String(savedPath || "").trim().replace(/\\/g, "/");
+  if (!normalized) return null;
+  const lastSlash = normalized.lastIndexOf("/");
+  const folder = lastSlash >= 0 ? normalized.substring(0, lastSlash) : "";
+  const file = lastSlash >= 0 ? normalized.substring(lastSlash + 1) : normalized;
+  if (!file) return null;
+  return buildObsidianSavedStatus({
+    folder: folder || normalized,
+    file,
+    vaultName,
+  });
+}
+
+/** P0 diagnostics — vault write / status persistence. */
+export function logObsidianVaultP0Diagnostics({
+  apiRoute,
+  vaultName,
+  vaultPath,
+  finalFilePath,
+  verified,
+  obsidianSavedStatusUpdated,
+} = {}) {
+  console.debug("[ObsidianVault][P0]", {
+    apiRoute: apiRoute || null,
+    vaultName: vaultName || null,
+    vaultPath: vaultPath || null,
+    finalFilePath: finalFilePath || null,
+    verified: verified === true,
+    obsidianSavedStatusUpdated: obsidianSavedStatusUpdated === true,
+  });
+}
+
 export const OBSIDIAN_SAVED_FILTER_ALL = "all";
 export const OBSIDIAN_SAVED_FILTER_SAVED = "saved";
 export const OBSIDIAN_SAVED_FILTER_NOT_SAVED = "not_saved";

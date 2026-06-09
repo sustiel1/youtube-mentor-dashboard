@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import {
   getGemConfigSnapshot,
+  isGeminiGemUrl,
   openGeminiGemUrl,
   saveGemConfigSnapshot,
 } from "@/lib/gemsConfig";
@@ -39,6 +40,10 @@ export function GemsSettingsModal({ open, onOpenChange, focusKey = null }) {
   const handleTest = (key) => {
     const url = draft[key] || "";
     if (!url) { toast.error("אין URL להפעלה"); return; }
+    if (!isGeminiGemUrl(url)) {
+      toast.error("יש להזין קישור GEM תקין של Gemini בפורמט https://gemini.google.com/gem/...");
+      return;
+    }
     if (!openGeminiGemUrl(url)) {
       toast.info("הפופ-אפ נחסם — פתח ידנית", { description: url });
     }

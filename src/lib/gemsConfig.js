@@ -39,6 +39,17 @@ function normalizeGemUrl(url) {
   return value;
 }
 
+export function isGeminiGemUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.hostname === "gemini.google.com" && parsed.pathname.startsWith("/gem/");
+  } catch {
+    return false;
+  }
+}
+
 function readLegacyConfig() {
   try {
     const parsed = JSON.parse(localStorage.getItem(GEMS_CONFIG_KEY) || "{}");
@@ -106,7 +117,7 @@ export function getGemUrl(key) {
 
 export function openGeminiGemUrl(url) {
   const normalized = normalizeGemUrl(url);
-  if (!normalized) return false;
+  if (!normalized || !isGeminiGemUrl(normalized)) return false;
   const tab = window.open(normalized, "_blank", "noopener,noreferrer");
   return Boolean(tab);
 }

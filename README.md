@@ -1,5 +1,7 @@
 # YouTube Mentor Dashboard
 
+> Before making UI, save-flow, topic, Workspace, Obsidian, Brain, GEM, or analysis changes, read [`AI_DEVELOPMENT_GUIDE.md`](./AI_DEVELOPMENT_GUIDE.md).
+
 A management system for organizing, learning, and analyzing YouTube content — focused on improving learning workflows and strategies.
 
 Built with React, Vite, and Base44. Includes an admin panel, E2E testing with Playwright, and automated CI via GitHub Actions.

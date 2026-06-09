@@ -10,7 +10,7 @@ import {
   getExportStatus,
 } from "@/lib/appBuilderStore";
 import { getAppIdeasPath, buildAppIdeasNote } from "@/lib/obsidianExport";
-import { getActiveObsidianVaultConfig } from "@/lib/obsidianVaultConfig";
+import { getObsidianVaultRequestFields } from "@/lib/obsidianVaultConfig";
 import { BulkSelectionBar } from "@/components/shared/BulkSelectionBar";
 import { useSelection } from "@/hooks/useSelection";
 import { upsertKnowledgeItem } from "@/lib/localKnowledgeItemStore";
@@ -280,7 +280,7 @@ export function AppBuilderTab({ video, topicName = '' }) {
     const partialSections = Object.fromEntries(keysToSave.map(k => [k, sections[k]]));
     const markdown = buildAppIdeasNote(video, partialSections, topicName);
     const path = getAppIdeasPath(topicName, video?.title);
-    const vaultConfig = getActiveObsidianVaultConfig();
+    const { vaultPath, vaultName } = getObsidianVaultRequestFields();
 
     setSaving(true);
     try {
@@ -290,8 +290,8 @@ export function AppBuilderTab({ video, topicName = '' }) {
         body: JSON.stringify({
           path,
           content: markdown,
-          vaultPath: vaultConfig.vaultPath,
-          vaultName: vaultConfig.vaultName,
+          vaultPath,
+          vaultName,
         }),
       });
       const data = await res.json();

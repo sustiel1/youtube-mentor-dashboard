@@ -21,14 +21,21 @@ function copyText(text) {
     .catch(() => toast.error('שגיאה בהעתקה'));
 }
 
-function ItemRow({ text, onBrain }) {
+function ItemRow({ text, onBrain, saved }) {
   return (
     <div className="group flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors">
       <span className="flex-1 text-sm text-slate-700 dark:text-zinc-300 leading-relaxed text-right whitespace-pre-line">
         {text}
       </span>
       <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onBrain && (
+        {saved ? (
+          <span
+            title="נשמר למוח"
+            className="p-1 rounded text-emerald-500 text-sm leading-none"
+          >
+            ✓
+          </span>
+        ) : onBrain ? (
           <button
             type="button"
             onClick={onBrain}
@@ -37,7 +44,7 @@ function ItemRow({ text, onBrain }) {
           >
             🧠
           </button>
-        )}
+        ) : null}
         <button
           type="button"
           onClick={() => copyText(text)}
@@ -59,7 +66,7 @@ function ItemRow({ text, onBrain }) {
  *   emptyLabel   — string shown when items is empty
  *   onSaveToBrain(text) — callback for saving an item to the brain
  */
-export function LearningTabContent({ items = [], emptyLabel = 'אין עדיין נתונים בסעיף הזה', onSaveToBrain }) {
+export function LearningTabContent({ items = [], emptyLabel = 'אין עדיין נתונים בסעיף הזה', onSaveToBrain, isSaved }) {
   const formatted = items.map(formatItem).filter(Boolean);
 
   if (formatted.length === 0) {
@@ -77,6 +84,7 @@ export function LearningTabContent({ items = [], emptyLabel = 'אין עדיין
         <ItemRow
           key={i}
           text={text}
+          saved={isSaved ? isSaved(text) : false}
           onBrain={onSaveToBrain ? () => onSaveToBrain(text) : null}
         />
       ))}

@@ -14,6 +14,7 @@ import {
   buildObsidianOpenUrl,
   buildObsidianVaultRootUrl,
   clearObsidianSettings,
+  getObsidianVaultRequestFields,
   saveObsidianSettings,
   useObsidianSettingsState,
 } from "@/lib/obsidianVaultConfig";
@@ -65,12 +66,13 @@ export function ObsidianSettingsDialog({
     const fetchDiagnostics = async () => {
       setDiagnosticsLoading(true);
       try {
+        const { vaultName: settingsVaultName, vaultPath: settingsVaultPath } = getObsidianVaultRequestFields();
         const res = await fetch("/api/vault/diagnostics", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            vaultName: effectiveVaultName,
-            vaultPath: effectiveVaultPath,
+            vaultName: effectiveVaultName || settingsVaultName,
+            vaultPath: effectiveVaultPath || settingsVaultPath,
             filePath,
             createFolder: false,
           }),

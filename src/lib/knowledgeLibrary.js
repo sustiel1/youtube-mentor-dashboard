@@ -1,7 +1,8 @@
 // Knowledge Library — fixed per-tab accumulation pages in localStorage + Obsidian vault.
 // Parallel to the Brain save workflow; does NOT replace it.
 
-import { buildObsidianOpenUrl, getConfiguredObsidianVaultName, getActiveObsidianVaultConfig } from "@/lib/obsidianVaultConfig";
+import { buildObsidianOpenUrl, getConfiguredObsidianVaultName, getObsidianVaultRequestFields } from "@/lib/obsidianVaultConfig";
+import { logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
 import { openObsidianUrl } from "@/lib/obsidianExport";
 
 const STORAGE_KEY = "yt_knowledge_library_v1";
@@ -385,7 +386,7 @@ export function ensureKnowledgeLibraryVaultFiles() {
     return Promise.resolve({ ok: false, skipped: true });
   }
   if (!ensureVaultFilesPromise) {
-    const { vaultName, vaultPath } = getActiveObsidianVaultConfig();
+    const { vaultName, vaultPath } = getObsidianVaultRequestFields();
     ensureVaultFilesPromise = fetch("/api/vault/knowledge-library/ensure", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -486,7 +487,7 @@ export function openInObsidian(filePath, vaultName = getConfiguredObsidianVaultN
  */
 export async function appendToLibraryAndVault({ text, categoryKey, path: directPath, videoTitle, channel, date, url }) {
   const targetPath = directPath || getLibraryPagePath(categoryKey);
-  const vaultName = getConfiguredObsidianVaultName();
+  const { vaultName, vaultPath } = getObsidianVaultRequestFields();
   const writeMethod = "/api/vault/append";
 
   console.log("[KnowledgeLibrary] targetPath", targetPath);
@@ -519,10 +520,12 @@ export async function appendToLibraryAndVault({ text, categoryKey, path: directP
 
     await ensureKnowledgeLibraryVaultFiles();
 
-    const res = await fetch("/api/vault/append", {
+    const res = await fetch(writeMethod, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        vaultName,
+        vaultPath,
         category: null,
         videoTitle: videoTitle || null,
         channelTitle: channel || null,
@@ -538,6 +541,14 @@ export async function appendToLibraryAndVault({ text, categoryKey, path: directP
     });
     writeResult = await res.json().catch(() => ({}));
     verified = writeResult?.verified === true;
+    logObsidianVaultP0Diagnostics({
+      apiRoute: writeMethod,
+      vaultName,
+      vaultPath,
+      finalFilePath: targetPath,
+      verified,
+      obsidianSavedStatusUpdated: false,
+    });
     vaultWritten = verified;
     isDuplicateInVault = writeResult?.alreadyExists === true;
     if (!verified) {
