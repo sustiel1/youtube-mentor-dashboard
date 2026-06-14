@@ -87,8 +87,28 @@ import { GemSelectionModal } from "./GemSelectionModal";
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { AiMappingModal } from "./AiMappingModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
+import {
+  UniversalTabCheckbox,
+  UniversalTabSelectRow,
+} from '@/components/shared/UniversalTabSelectRow';
+import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import {
+  resolveBrainSaveStatus,
+  resolveObsidianSaveStatus,
+  resolveWorkspaceSaveStatus,
+} from '@/lib/saveStatusResolver';
+import {
+  buildObsidianItemIdentityKey,
+  isObsidianItemSaved,
+  recordObsidianItemSave,
+} from '@/lib/obsidianItemSaveStore';
+import { mergeItemsIntoObsidianNote } from '@/lib/obsidianNoteMerge';
+import { readObsidianVaultMarkdown, writeObsidianWithItemMerge } from '@/lib/obsidianVaultMergeWrite';
+import { collectVideoObsidianMergeItems } from '@/lib/obsidianVideoMergeItems';
+import { getAppBuilderDraft } from '@/lib/appBuilderStore';
+import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { MarketBriefView } from "./MarketBriefView";
-import { LearningTabContent } from "./LearningTabContent";
+import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
@@ -426,6 +446,66 @@ function normalizeManualChapters(chapters) {
     .sort((a, b) => a.startSeconds - b.startSeconds);
 }
 
+/** Parses GEM chapter time values: numeric seconds, numeric strings, or "MM:SS" / "HH:MM:SS". */
+function gemTimeToSeconds(value) {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.floor(value);
+  if (typeof value === 'string' && value.trim() !== '') {
+    const str = value.trim();
+    if (str.includes(':')) {
+      const parts = str.split(':').map(Number);
+      if (!parts.some((p) => !Number.isFinite(p) || p < 0)) {
+        if (parts.length === 2) return parts[0] * 60 + parts[1];
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      }
+      return null;
+    }
+    const n = Number(str);
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+  }
+  return null;
+}
+
+/** MM:SS, or HH:MM:SS when hours exist. */
+function formatChapterTimestamp(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+/** Normalizes universalTabs.chapters (GEM) into ChapterItem-compatible rows. */
+function normalizeGemChapters(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return raw.map((ch, i) => {
+    if (typeof ch === 'string') {
+      const title = ch.trim();
+      return title ? { title, timestamp: '', chapterSource: 'gem' } : null;
+    }
+    if (!ch || typeof ch !== 'object') return null;
+    const title = String(ch.title || ch.name || ch.label || `פרק ${i + 1}`).trim();
+    if (!title) return null;
+
+    const rawStamp = String(ch.timestamp || ch.time || ch.startTime || ch.timeLabel || '').trim();
+    const startSeconds =
+      gemTimeToSeconds(ch.startSeconds) ??
+      gemTimeToSeconds(ch.start) ??
+      gemTimeToSeconds(rawStamp);
+    const endSeconds = gemTimeToSeconds(ch.endSeconds) ?? gemTimeToSeconds(ch.end);
+
+    const timestamp = startSeconds != null ? formatChapterTimestamp(startSeconds) : rawStamp;
+    const summary = String(ch.summary || ch.description || '').trim();
+    return {
+      title,
+      timestamp,
+      summary,
+      chapterSource: 'gem',
+      ...(startSeconds != null ? { startSeconds } : {}),
+      ...(endSeconds != null && (startSeconds == null || endSeconds >= startSeconds) ? { endSeconds } : {}),
+    };
+  }).filter(Boolean);
+}
 
 const STOPWORDS_HE = new Set([
   "של","על","עם","זה","זאת","אני","אתה","את","אנחנו","הם","הן","היא","הוא","היה","היו","יהיה","תהיה","כל","גם","אבל","כי","כדי","אם","או","לא","כן","מה","מי","איך","למה",
@@ -3008,6 +3088,13 @@ export function VideoDetailPanel({
   const baseChapters = useMemo(() => {
     return chapterSourceInfo.chapters || [];
   }, [chapterSourceInfo]);
+
+  const gemChapters = useMemo(
+    () => normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData)),
+    [effectiveVideo, marketBriefData],
+  );
+  const displayChapters = gemChapters.length > 0 ? gemChapters : baseChapters;
+  const chaptersFromGem = gemChapters.length > 0;
 
   useEffect(() => {
     setYoutubeChaptersHint(null);
@@ -8260,7 +8347,8 @@ export function VideoDetailPanel({
               </TabsContent>
 
               {/* ── Chapters tab ── */}
-                <TabsContent value="chapters" className="mt-4 min-h-[320px]" dir="rtl">
+                <TabsContent value="chapters" className="mt-0 min-h-[320px]" dir="rtl">
+                  <TabBulkItemsRegistrar tab="chapters" items={buildChaptersBulkItems(displayChapters)} />
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
 
                     {/* header: title + badge (right) + auto-detect button (left) */}
@@ -8274,7 +8362,12 @@ export function VideoDetailPanel({
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {baseChapters?.length > 0 && (
+                        {chaptersFromGem && (
+                          <span className="text-[10px] border px-1.5 py-0.5 rounded-full border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/40 dark:bg-sky-950/20 dark:text-sky-300">
+                            GEM
+                          </span>
+                        )}
+                        {displayChapters?.length > 0 && !chaptersFromGem && (
                           <button
                             type="button"
                             onClick={handleGenerateHebrewTitles}
@@ -8347,7 +8440,7 @@ export function VideoDetailPanel({
                     )}
 
                     {/* transcript exists but no chapters yet → offer AI generation */}
-                    {baseChapters?.length === 0 && chapterSourceInfo.source === 'transcript' && !youtubeChaptersHint && (
+                    {displayChapters?.length === 0 && chapterSourceInfo.source === 'transcript' && !youtubeChaptersHint && (
                       <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-right dark:border-zinc-700 dark:bg-zinc-900">
                         <p className="text-sm font-medium text-slate-700 dark:text-zinc-200">קיים תמלול — ניתן לייצר פרקים בעזרת AI.</p>
                         <button
@@ -8361,7 +8454,7 @@ export function VideoDetailPanel({
                     )}
 
                     {/* no chapters and no transcript → clear empty state */}
-                    {baseChapters?.length === 0 && chapterSourceInfo.source === 'none' && (
+                    {displayChapters?.length === 0 && chapterSourceInfo.source === 'none' && (
                       <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-right text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                         לא נמצאו פרקים או תמלול. יש לייבא תמלול כדי ליצור פרקים.
                       </div>
@@ -8375,35 +8468,44 @@ export function VideoDetailPanel({
                           <div>hasTranscript: {String(hasStoredTranscript)}</div>
                           <div>transcriptLen: {fullTranscriptText?.length ?? 0}</div>
                           <div>nativeChapters: {baseChapters?.length ?? 0}</div>
-                          <div>source: {chapterSourceInfo.source}</div>
-                          <div>finalChapters: {baseChapters?.length ?? 0}</div>
+                          <div>gemChapters: {gemChapters?.length ?? 0}</div>
+                          <div>source: {chaptersFromGem ? 'gem' : chapterSourceInfo.source}</div>
+                          <div>finalChapters: {displayChapters?.length ?? 0}</div>
                           <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
                         </div>
                       </details>
                     )}
 
                     {/* chapters list or empty state */}
-                    {baseChapters?.length > 0 ? (
+                    {displayChapters?.length > 0 ? (
                       <>
-                        <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                          <span className="text-xs text-slate-400 dark:text-zinc-500">{baseChapters.length} פרקים</span>
-                          <button type="button"
-                            onClick={() => multiSelectAll(baseChapters.map((ch, i) => ({ id: `chapters:${i}`, text: ch.title || `פרק ${i + 1}`, sectionLabel: 'פרקים', type: 'chapters', timestamp: ch.timestamp || '' })))}
-                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
-                          >בחר הכל</button>
-                        </div>
-                        <div className="space-y-3">
-                          {baseChapters.map((chapter, index) => {
+                        <div className="space-y-0.5">
+                          {displayChapters.map((chapter, index) => {
                             const chId = `chapters:${index}`;
                             return (
-                              <div key={`chapters-tab-${index}`} id={`chap-hl-${index}`} className="flex items-start gap-2">
-                                <input type="checkbox"
-                                  checked={multiSelected.has(chId)}
-                                  onChange={() => toggleMultiSelect(chId, { text: chapter.title || `פרק ${index + 1}`, sectionLabel: 'פרקים', type: 'chapters', timestamp: chapter.timestamp || '' })}
-                                  className="mt-3.5 h-4 w-4 shrink-0 rounded cursor-pointer accent-indigo-600"
-                                />
-                                <div className="flex-1 min-w-0">
+                              <UniversalTabSelectRow
+                                key={`chapters-tab-${index}`}
+                                id={`chap-hl-${index}`}
+                                className={`group flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors${index === highlightedChapterIndex ? " bg-violet-50/50 dark:bg-violet-950/20" : ""}`}
+                                checkbox={(
+                                  <UniversalTabCheckbox
+                                    checked={multiSelected.has(chId)}
+                                    onChange={() => toggleMultiSelect(chId, { text: chapter.title || `פרק ${index + 1}`, sectionLabel: 'פרקים', type: 'chapters', timestamp: chapter.timestamp || '' })}
+                                  />
+                                )}
+                                actions={(
+                                  <UniversalTabQuickSaveFromBulk
+                                    bulkSelection={bulkSelectionShare}
+                                    text={chapter.title || `פרק ${index + 1}`}
+                                    sectionLabel="פרקים"
+                                    type="chapters"
+                                    tabScope="chapters"
+                                    timestamp={chapter.timestamp || ''}
+                                  />
+                                )}
+                              >
                                   <ChapterItem
+                                    variant="row"
                                     section={hebrewTitlesMap[index]
                                       ? { ...chapter, hebrewTitle: hebrewTitlesMap[index].hebrewTitle, originalTitle: hebrewTitlesMap[index].originalTitle || chapter.title }
                                       : chapter}
@@ -8411,8 +8513,7 @@ export function VideoDetailPanel({
                                     videoUrl={getWatchUrl(video)}
                                     isHighlighted={index === highlightedChapterIndex}
                                   />
-                                </div>
-                              </div>
+                              </UniversalTabSelectRow>
                             );
                           })}
                         </div>
