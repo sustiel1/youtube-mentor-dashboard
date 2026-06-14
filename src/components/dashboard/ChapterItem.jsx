@@ -56,6 +56,29 @@ function ChapterShell({ children, clickable = false, title, onClick, isHighlight
   );
 }
 
+/** Flat row shell — matches Insights / Useful Knowledge density inside UniversalTabSelectRow. */
+function ChapterRowShell({ children, clickable = false, title, onClick, isHighlighted = false, muted = false }) {
+  const Tag = clickable ? "button" : "div";
+  return (
+    <Tag
+      type={clickable ? "button" : undefined}
+      onClick={onClick}
+      className={[
+        "w-full min-w-0 text-right transition-colors",
+        clickable
+          ? "cursor-pointer rounded-md hover:text-blue-800 dark:hover:text-blue-200"
+          : "",
+        isHighlighted ? "rounded-md bg-violet-50/70 dark:bg-violet-950/25 px-1 -mx-1" : "",
+        muted && !clickable ? "text-slate-600 dark:text-zinc-400" : "",
+      ].join(" ")}
+      title={title}
+      dir="rtl"
+    >
+      {children}
+    </Tag>
+  );
+}
+
 function TranscriptPreview({ section }) {
   const [open, setOpen] = useState(false);
   const count = section?.transcriptSegmentCount ?? section?.transcriptSegments?.length ?? 0;
@@ -114,16 +137,19 @@ function ChapterKeyPoints({ points }) {
   );
 }
 
-function ChapterContent({ section, timestampLabel, muted = false }) {
+function ChapterContent({ section, timestampLabel, muted = false, compact = false }) {
   const [showOriginal, setShowOriginal] = useState(false);
   const hasHebrew = Boolean(section.hebrewTitle);
   const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
   const originalTitle = hasHebrew ? (section.originalTitle || section.title) : null;
+  const titleCls = compact
+    ? `w-full text-right text-[15px] font-semibold leading-snug ${muted ? "text-slate-600 dark:text-zinc-400" : "text-slate-800 dark:text-zinc-100"}`
+    : `w-full text-right text-base font-bold leading-snug ${muted ? "text-slate-700 dark:text-zinc-200" : "text-blue-900 dark:text-blue-200"}`;
 
   return (
-    <div className="flex flex-row-reverse items-start justify-between gap-3" dir="rtl">
+    <div className={`flex flex-row-reverse items-start justify-between ${compact ? "gap-2" : "gap-3"}`} dir="rtl">
       <div className="min-w-0 flex-1 items-start text-right">
-        <div className={`w-full text-right text-base font-bold leading-snug ${muted ? "text-slate-700 dark:text-zinc-200" : "text-blue-900 dark:text-blue-200"}`}>
+        <div className={titleCls}>
           {displayTitle}
         </div>
         {hasHebrew && (
@@ -148,7 +174,7 @@ function ChapterContent({ section, timestampLabel, muted = false }) {
           </div>
         )}
         {section.description ? (
-          <div className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-zinc-300 line-clamp-2 text-right">
+          <div className={`${compact ? "mt-1 text-sm leading-relaxed" : "mt-1.5 text-sm leading-6"} text-slate-600 dark:text-zinc-300 ${compact ? "line-clamp-1" : "line-clamp-2"} text-right`}>
             {section.description}
           </div>
         ) : null}
@@ -158,7 +184,7 @@ function ChapterContent({ section, timestampLabel, muted = false }) {
       {timestampLabel ? (
         <div className="shrink-0 flex flex-col items-center gap-0.5">
           <div
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums ${
+            className={`${compact ? "rounded-md px-2 py-0.5 text-[11px]" : "rounded-lg px-2.5 py-1 text-xs"} font-semibold tabular-nums ${
               muted
                 ? "border border-slate-200 bg-slate-100 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 : "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200"
@@ -178,15 +204,18 @@ function ChapterContent({ section, timestampLabel, muted = false }) {
   );
 }
 
-const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false }) => {
+const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false, variant = "card" }) => {
+  const isRow = variant === "row";
+  const Shell = isRow ? ChapterRowShell : ChapterShell;
   const finalSeconds = resolveStartSeconds(section);
+  // Fall back to parsing the "MM:SS" / "HH:MM:SS" timestamp string when no numeric startSeconds exists
   const resolvedSeconds = finalSeconds !== null
     ? finalSeconds
     : parseTimestampString(section?.timestamp);
   const formattedTimestamp = resolvedSeconds !== null
     ? formatHebrewTimestamp(resolvedSeconds)
     : (section?.timestamp || "");
-  const isValid = finalSeconds !== null;
+  const isValid = resolvedSeconds !== null;
   const hasPlayerSeek = Boolean(playerRef?.current?.seekTo);
   const urlStr = typeof videoUrl === "string" ? videoUrl.trim() : "";
   const hasTarget = hasPlayerSeek || urlStr.length > 0;
@@ -197,50 +226,52 @@ const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false }) =>
     if (playerRef?.current?.seekTo) {
       const p = playerRef.current;
       if (typeof p.playVideo === "function") {
-        p.seekTo(finalSeconds, true);
+        p.seekTo(resolvedSeconds, true);
         p.playVideo();
       } else {
-        p.seekTo(finalSeconds, "seconds");
+        p.seekTo(resolvedSeconds, "seconds");
       }
       return;
     }
 
     if (urlStr) {
-      const timestampUrl = buildTimestampUrl(urlStr, finalSeconds);
+      const timestampUrl = buildTimestampUrl(urlStr, resolvedSeconds);
       if (timestampUrl) {
         window.open(timestampUrl, "_blank", "noopener,noreferrer");
       }
     }
   };
 
+  const contentProps = { compact: isRow };
+
   if (!isValid) {
     if (urlStr) {
       return (
-        <ChapterShell clickable title="הפרק יפתח את הסרטון מתחילתו" onClick={() => window.open(urlStr, "_blank", "noopener,noreferrer")}>
-          <ChapterContent section={section} timestampLabel={null} muted />
-        </ChapterShell>
+        <Shell clickable title="הפרק יפתח את הסרטון מתחילתו" onClick={() => window.open(urlStr, "_blank", "noopener,noreferrer")} isHighlighted={isHighlighted} muted={isRow}>
+          <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
+        </Shell>
       );
     }
 
     return (
-      <ChapterShell title="אין זמן זמין לפרק הזה">
-        <ChapterContent section={section} timestampLabel={null} muted />
-      </ChapterShell>
+      <Shell title="אין זמן זמין לפרק הזה" isHighlighted={isHighlighted} muted={isRow}>
+        <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
+      </Shell>
     );
   }
 
   if (!hasTarget) {
     return (
-      <ChapterShell title="אין יעד פתיחה זמין לפרק הזה">
-        <ChapterContent section={section} timestampLabel={formattedTimestamp} muted />
-      </ChapterShell>
+      <Shell title="אין יעד פתיחה זמין לפרק הזה" isHighlighted={isHighlighted} muted={isRow}>
+        <ChapterContent section={section} timestampLabel={formattedTimestamp} muted {...contentProps} />
+      </Shell>
     );
   }
 
   return (
-    <ChapterShell clickable onClick={handleNavigation} title="ניווט לפי זמן" isHighlighted={isHighlighted}>
-      <ChapterContent section={section} timestampLabel={formattedTimestamp} />
-    </ChapterShell>
+    <Shell clickable onClick={handleNavigation} title="ניווט לפי זמן" isHighlighted={isHighlighted}>
+      <ChapterContent section={section} timestampLabel={formattedTimestamp} {...contentProps} />
+    </Shell>
   );
 };
 
