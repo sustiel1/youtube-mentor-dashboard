@@ -384,3 +384,17 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
     recommendedSubCategoryConfidencePct,
   };
 }
+
+/** Related template labels for a recommended GEM (from existing subCategory rules). */
+export function getRelatedGemTemplates(gemKey) {
+  const key = String(gemKey || "").trim();
+  const cfg = GEM_CATEGORY_MAP[key];
+  const fromRules = Array.isArray(cfg?.subCategoryRules)
+    ? cfg.subCategoryRules.map((r) => r.label).filter(Boolean)
+    : [];
+  const briefAliases = key === "news"
+    ? ["מבזק בוקר", "מבזק ערב", "עדכון שוק", "Opening Bell"]
+    : [];
+  const merged = [...briefAliases, ...fromRules];
+  return [...new Set(merged)].slice(0, 6);
+}
