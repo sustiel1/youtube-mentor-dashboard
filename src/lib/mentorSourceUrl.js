@@ -120,3 +120,33 @@ export function isAcceptableMentorSourceUrl(raw) {
   if (lower.includes("rss") || lower.includes("feed") || lower.endsWith(".xml")) return true;
   return false;
 }
+
+/**
+ * Resolve a mentor's public YouTube channel URL from existing mentor fields.
+ * Priority: channelUrl → youtubeChannelUrl → youtubeUrl/youtubePageUrl → channelId → handle.
+ */
+export function resolveMentorChannelUrl(mentor) {
+  if (!mentor) return null;
+
+  for (const raw of [
+    mentor.channelUrl,
+    mentor.youtubeChannelUrl,
+    mentor.youtubeUrl,
+    mentor.youtubePageUrl,
+  ]) {
+    const url = String(raw || "").trim();
+    if (url.startsWith("http")) return url;
+  }
+
+  const channelId = mentor.youtubeChannelId || mentor.channelId;
+  if (channelId && String(channelId).startsWith("UC")) {
+    return `https://www.youtube.com/channel/${String(channelId).trim()}`;
+  }
+
+  const handle = mentor.handle;
+  if (handle) {
+    return `https://www.youtube.com/@${String(handle).replace(/^@/, "")}`;
+  }
+
+  return null;
+}
