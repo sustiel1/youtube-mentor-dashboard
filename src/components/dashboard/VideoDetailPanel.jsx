@@ -34,6 +34,7 @@ import {
 import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache } from "@/services/youtubeTranscript";
 import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
 import { clearSegments } from "@/lib/localSegmentStore";
+import { getVideoTranscriptText, resolveTranscriptForChapters } from "@/lib/videoTranscriptUtils";
 import { deleteChunks } from "@/lib/localChunkStore";
 import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
 import { fetchVideoDescription, fetchVideoMetadata } from "@/services/youtubeApi";
@@ -542,6 +543,20 @@ function normalizeGemChapters(raw) {
       ...(endSeconds != null && (startSeconds == null || endSeconds >= startSeconds) ? { endSeconds } : {}),
     };
   }).filter(Boolean);
+}
+
+/** Prefer saved ai_transcript chapters for display over GEM / description sources. No count cap — renders all validated chapters. */
+function resolveAiTranscriptDisplayChapters(video, overrideChapters = null) {
+  if (!video || video.chapterSource !== "ai_transcript") return [];
+  const raw =
+    overrideChapters ??
+    (Array.isArray(video.aiChapters) && video.aiChapters.length > 0
+      ? video.aiChapters
+      : Array.isArray(video.chapters)
+        ? video.chapters
+        : []);
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return resolveVideoChapters(video, raw);
 }
 
 const STOPWORDS_HE = new Set([
@@ -1980,6 +1995,7 @@ export function VideoDetailPanel({
   const [goldenExample, setGoldenExample] = useState(null);
   const [goldenFindError, setGoldenFindError] = useState(null);
   const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
+  const [chapterTranscriptSource, setChapterTranscriptSource] = useState(null);
   const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
   const [hebrewTitlesMap, setHebrewTitlesMap] = useState(() => {
     try {
@@ -3269,12 +3285,43 @@ export function VideoDetailPanel({
     () => normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData)),
     [effectiveVideo, marketBriefData],
   );
-  const displayChapters = gemChapters.length > 0 ? gemChapters : baseChapters;
-  const chaptersFromGem = gemChapters.length > 0;
+  const aiTranscriptChapters = useMemo(() => {
+    const sourceVideo =
+      effectiveVideo?.chapterSource === "ai_transcript" ? effectiveVideo : video;
+    return resolveAiTranscriptDisplayChapters(sourceVideo);
+  }, [effectiveVideo, video]);
+  const displayChapters =
+    aiTranscriptChapters.length > 0
+      ? aiTranscriptChapters
+      : gemChapters.length > 0
+        ? gemChapters
+        : baseChapters;
+  const chaptersFromGem = aiTranscriptChapters.length === 0 && gemChapters.length > 0;
+
+  const savedAnalysisTranscript = useMemo(
+    () => (video?.id ? loadSavedAnalysis(video.id) : null),
+    [video?.id],
+  );
+  const videoDurationForChapters = useMemo(() => {
+    const rawDurationSec = getVideoDurationSeconds(video);
+    const labelDurationSec = parseDurationToSeconds(video?.durationLabel);
+    if (labelDurationSec > 0 && rawDurationSec > 0) {
+      const ratio = Math.max(rawDurationSec, labelDurationSec) / Math.min(rawDurationSec, labelDurationSec);
+      return ratio > 3 ? labelDurationSec : rawDurationSec;
+    }
+    return labelDurationSec > 0 ? labelDurationSec : rawDurationSec;
+  }, [video]);
+  const transcriptForChapters = useMemo(
+    () => resolveTranscriptForChapters(video, savedAnalysisTranscript, videoDurationForChapters),
+    [video, savedAnalysisTranscript, videoDurationForChapters],
+  );
+
+  const handleDismissChaptersHint = () => setYoutubeChaptersHint(null);
 
   useEffect(() => {
     setYoutubeChaptersHint(null);
     setTranscriptDiagnostics(null);
+    setChapterTranscriptSource(null);
   }, [video?.id]);
 
   const handleFetchYoutubeChapters = async () => {
@@ -3368,8 +3415,8 @@ export function VideoDetailPanel({
 
     // Debug: log current state before detection
     const _apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-    const _segs = storedTranscriptSegments; // closure — defined later in render scope, initialized by call time
-    console.log(`[Chapters] transcriptExists=${Boolean(_segs?.length > 0)} apiKeyExists=${Boolean(_apiKey?.trim())} chapterSource=${chapterSourceInfo?.source ?? 'none'}`);
+    const _segs = transcriptForChapters.segments;
+    console.log(`[Chapters] transcriptExists=${Boolean(_segs?.length > 0)} source=${transcriptForChapters.source ?? 'none'} apiKeyExists=${Boolean(_apiKey?.trim())} chapterSource=${chapterSourceInfo?.source ?? 'none'}`);
 
     // Step 1: check existing description for timestamps (no API call needed)
     const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
@@ -3531,45 +3578,63 @@ export function VideoDetailPanel({
     }
   };
 
-    const handleGenerateTranscriptChapters = () => {
-    // storedTranscriptSegments is defined later in the render scope — safely accessible here as a closure
-    const segs = storedTranscriptSegments;
-    if (!segs?.length) {
-      toast.error('אין תמלול זמין לצור פרקים');
+  const handleGenerateTranscriptChapters = () => {
+    const resolution = transcriptForChapters;
+    if (!resolution.hasUsableText || !resolution.lines.length) {
+      setYoutubeChaptersHint("no_transcript");
+      toast.error("לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.");
       return;
     }
-    const parsed = {
-      lines: segs.map((s) => ({
-        text: s.text || '',
-        start: s.startSeconds ?? s.start ?? 0,
-      })),
-    };
-    const chapters = generateChaptersFromTranscript(parsed, video);
+
+    console.log(`[Chapters] generating from transcript source=${resolution.source ?? "unknown"} lines=${resolution.lines.length}`);
+
+    let chapters = generateChaptersFromTranscript({ lines: resolution.lines }, video);
     if (!chapters?.length) {
-      toast.error('התמלול קצר מדי לצור פרקים');
+      const plainText =
+        getVideoTranscriptText(video) ||
+        resolution.lines.map((line) => line.text).join(" ");
+      chapters = splitPlainTranscriptToChapters(plainText, videoDurationForChapters);
+    }
+
+    if (!chapters?.length) {
+      setYoutubeChaptersHint("transcript_gen_failed");
+      toast.error("Gemini לא הצליח ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.");
       return;
     }
+
     const aiChapters = chapters.map((c) => ({
       ...c,
-      chapterSource: 'ai_transcript',
-      source: 'ai_transcript',
-      timeSource: c.timeSource || 'transcript',
+      chapterSource: "ai_transcript",
+      source: "ai_transcript",
+      timeSource: c.timeSource || "transcript",
     }));
-    const updates = { aiChapters, chapters: aiChapters, chapterSource: 'ai_transcript' };
+
+    const coverage = validateChapterTimelineCoverage(aiChapters, videoDurationForChapters);
+    if (!coverage.ok && !coverage.skipped) {
+      console.warn("[Chapters] transcript chapters incomplete coverage", coverage);
+      setYoutubeChaptersHint("transcript_gen_failed");
+      toast.warning(coverage.reason || "הפרקים לא מכסים את כל הסרטון — לא נשמרו");
+      return;
+    }
+
+    const updates = { aiChapters, chapters: aiChapters, chapterSource: "ai_transcript" };
     const localSaved = patchVideo(updates);
+    const savedVideo = localSaved ?? { ...video, ...updates };
     if (localSaved) {
       onVideoPatch?.(localSaved);
     } else {
       Video.update(video.id, updates)
         .then(() => {
           patchVideo(updates);
-          queryClient.invalidateQueries({ queryKey: ['videos'] });
+          queryClient.invalidateQueries({ queryKey: ["videos"] });
           onVideoPatch?.({ ...video, ...updates });
         })
-        .catch(() => toast.error('לא ניתן לשמור את הפרקים'));
+        .catch(() => toast.error("לא ניתן לשמור את הפרקים"));
     }
+    setChapterTranscriptSource(resolution.source);
     setYoutubeChaptersHint(null);
-    toast.success(`נוצרו ${aiChapters.length} פרקים מהתמלול`);
+    const renderedCount = resolveAiTranscriptDisplayChapters(savedVideo, aiChapters).length;
+    toast.success(`נוצרו ${renderedCount} פרקים מהתמלול`);
   };
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
@@ -7051,19 +7116,8 @@ export function VideoDetailPanel({
             : null;
   const chapterSourceBadgeClass =
     "bg-blue-50 text-blue-700 border-blue-200";
-  const storedTranscriptSegments =
-    Array.isArray(video.transcriptSegments) && video.transcriptSegments.length > 0
-      ? video.transcriptSegments
-      : typeof video.transcript === "string" && video.transcript.trim().length > 0
-        ? parseTranscript(video.transcript).lines
-        : typeof video.manualTranscript === "string" && video.manualTranscript.trim().length > 0
-          ? parseManualTranscript(video.manualTranscript).segments
-          : [];
-  const transcriptTextLength =
-    typeof video.transcript === "string" ? video.transcript.trim().length
-    : typeof video.manualTranscript === "string" ? video.manualTranscript.trim().length
-    : 0;
-  const hasStoredTranscript = storedTranscriptSegments.length > 0 || transcriptTextLength > 100;
+  const storedTranscriptSegments = transcriptForChapters.segments;
+  const hasStoredTranscript = transcriptForChapters.hasUsableText;
   const transcriptSourceLabel =
     video.transcriptSource === "youtube-transcript-api" ? "youtube-transcript-api"
     : video.transcriptSource === "youtube-timedtext" ? "YouTube"
@@ -7072,13 +7126,10 @@ export function VideoDetailPanel({
     : video.transcriptStatus === "youtube" ? "YouTube"
     : null;
   const fullTranscriptText =
-    typeof video.transcript === "string" && video.transcript.trim().length > 40
-      ? video.transcript.trim()
-      : typeof video.manualTranscript === "string" && video.manualTranscript.trim().length > 40
-        ? video.manualTranscript.trim()
-        : storedTranscriptSegments.length > 0
-          ? storedTranscriptSegments.map(s => s.text || '').join(' ')
-          : "";
+    getVideoTranscriptText(video) ||
+    (storedTranscriptSegments.length > 0
+      ? storedTranscriptSegments.map((s) => s.text || "").join(" ")
+      : "");
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
 
   const handleOpenRecommendedGem = async () => {
@@ -9454,9 +9505,18 @@ export function VideoDetailPanel({
 
                     {/* hint: no timestamps → offer AI generation */}
                     {youtubeChaptersHint === "no_timestamps" && (
-                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-right dark:border-zinc-700 dark:bg-zinc-900">
+                      <div className="relative mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 pe-10 text-right dark:border-zinc-700 dark:bg-zinc-900">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-slate-400 hover:bg-white/80 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                         <p className="text-xs text-slate-600 dark:text-zinc-400">לא נמצאו timestamps בתיאור הסרטון.</p>
-                        {hasStoredTranscript && (
+                        {hasStoredTranscript ? (
                           <button
                             type="button"
                             onClick={handleGenerateTranscriptChapters}
@@ -9464,15 +9524,26 @@ export function VideoDetailPanel({
                           >
                             🤖 צור פרקים בעזרת AI
                           </button>
+                        ) : (
+                          <p className="text-xs text-slate-500 dark:text-zinc-400">לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.</p>
                         )}
                       </div>
                     )}
 
                     {/* hint: no video URL (Gemini fallback also unavailable) */}
                     {youtubeChaptersHint === "no_api_key" && (
-                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
+                      <div className="relative mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 pe-10 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-amber-500 hover:bg-amber-100/80 hover:text-amber-700 dark:hover:bg-amber-900/30 dark:hover:text-amber-300"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                         <p className="text-xs text-amber-700 dark:text-amber-300">לא ניתן לזהות כתובת YouTube לסרטון זה.</p>
-                        {hasStoredTranscript && (
+                        {hasStoredTranscript ? (
                           <button
                             type="button"
                             onClick={handleGenerateTranscriptChapters}
@@ -9480,22 +9551,55 @@ export function VideoDetailPanel({
                           >
                             🤖 צור פרקים מהתמלול
                           </button>
+                        ) : (
+                          <p className="text-xs text-amber-700 dark:text-amber-300">לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.</p>
                         )}
                       </div>
                     )}
 
                     {/* hint: Gemini returned partial timeline — not saved */}
                     {youtubeChaptersHint === "partial_coverage" && (
-                      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
-                        הפרקים שנוצרו לא מכסים את כל אורך הסרטון — לא נשמרו. נסה שוב או צור פרקים מהתמלול.
+                      <div className="relative mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 pe-10 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-amber-500 hover:bg-amber-100/80 hover:text-amber-700 dark:hover:bg-amber-900/30 dark:hover:text-amber-300"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          הפרקים שנוצרו לא מכסים את כל אורך הסרטון — לא נשמרו. נסה שוב או צור פרקים מהתמלול.
+                        </p>
+                        {hasStoredTranscript && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateTranscriptChapters}
+                            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                          >
+                            🤖 צור פרקים מהתמלול
+                          </button>
+                        )}
                       </div>
                     )}
 
                     {/* hint: fetch/gemini error */}
                     {youtubeChaptersHint === "fetch_failed" && (
-                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right dark:border-red-900/40 dark:bg-red-950/20">
-                        <p className="text-xs text-red-700 dark:text-red-300">Gemini לא הצליח לנתח את הסרטון — ייתכן שהסרטון חדש מדי. ייבא תמלול כדי ליצור פרקים.</p>
-                        {hasStoredTranscript && (
+                      <div className="relative mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 pe-10 text-right dark:border-red-900/40 dark:bg-red-950/20">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-red-400 hover:bg-red-100/80 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          Gemini לא הצליח לנתח את הסרטון — ייתכן שהסרטון חדש מדי. ייבא תמלול כדי ליצור פרקים.
+                        </p>
+                        {hasStoredTranscript ? (
                           <button
                             type="button"
                             onClick={handleGenerateTranscriptChapters}
@@ -9503,7 +9607,47 @@ export function VideoDetailPanel({
                           >
                             🤖 צור פרקים מהתמלול
                           </button>
+                        ) : (
+                          <p className="text-xs text-red-600 dark:text-red-300">
+                            לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.
+                          </p>
                         )}
+                      </div>
+                    )}
+
+                    {/* hint: transcript generation failed */}
+                    {youtubeChaptersHint === "transcript_gen_failed" && (
+                      <div className="relative mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 pe-10 text-right dark:border-red-900/40 dark:bg-red-950/20">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-red-400 hover:bg-red-100/80 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          Gemini לא הצליח ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* hint: no saved transcript when user tried transcript chapters */}
+                    {youtubeChaptersHint === "no_transcript" && (
+                      <div className="relative mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 pe-10 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
+                        <button
+                          type="button"
+                          onClick={handleDismissChaptersHint}
+                          title="סגור הודעה"
+                          aria-label="סגור הודעה"
+                          className="absolute left-2 top-2 rounded-md p-1 text-amber-500 hover:bg-amber-100/80 hover:text-amber-700 dark:hover:bg-amber-900/30 dark:hover:text-amber-300"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.
+                        </p>
                       </div>
                     )}
 
@@ -9534,6 +9678,8 @@ export function VideoDetailPanel({
                         <summary className="cursor-pointer select-none px-2 py-1 text-slate-400 dark:text-zinc-500">🔍 chapter debug</summary>
                         <div className="px-2 pb-2 pt-0.5 space-y-0.5 font-mono text-slate-500 dark:text-zinc-400" dir="ltr">
                           <div>hasTranscript: {String(hasStoredTranscript)}</div>
+                          <div>transcriptSource: {transcriptForChapters.source ?? "—"}</div>
+                          <div>lastChapterSource: {chapterTranscriptSource ?? "—"}</div>
                           <div>transcriptLen: {fullTranscriptText?.length ?? 0}</div>
                           <div>nativeChapters: {baseChapters?.length ?? 0}</div>
                           <div>gemChapters: {gemChapters?.length ?? 0}</div>
