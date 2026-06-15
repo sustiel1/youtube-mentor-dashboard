@@ -25,9 +25,11 @@ import {
   getVideoDurationSeconds,
   isGenericChapterTitle,
   normalizeAiAnalysisResult,
+  parseDurationToSeconds,
   resolveVideoChapters,
   validateAiAnalysisQuality,
   validateChaptersForSave,
+  validateChapterTimelineCoverage,
 } from "@/services/videoAnalytics";
 import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache } from "@/services/youtubeTranscript";
 import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
@@ -75,7 +77,7 @@ import { buildVideoFullNote, openObsidianUrl, downloadMarkdown, getSelectedAtomi
 import { buildObsidianOpenUrl, getObsidianVaultRequestFields, hasUsableObsidianVaultName, resolveObsidianVaultName, useObsidianSettingsState } from "@/lib/obsidianVaultConfig";
 import { buildObsidianRoutingDebugInfo, resolveVideoObsidianRoute } from "@/lib/obsidianRouting";
 import { getManualNotesByTopic } from "@/lib/localManualNoteStore";
-import { createKnowledgeItemFromVideo, getKnowledgeItems, upsertKnowledgeItem, updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
+import { createKnowledgeItemFromVideo, getKnowledgeItems, hasKnowledgeItem, upsertKnowledgeItem, updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
 import { getOpponentSentences, toggleOpponentSentence, setOpponentSentenceResponse } from "@/lib/opponentSentenceStore";
 import { CategoryBadge } from "./CategoryBadge";
 import { LearningStatusBadge, LEARNING_STATUSES } from "./LearningStatusBadge";
@@ -84,6 +86,7 @@ import { NoteEditor } from "./NoteEditor";
 import ChapterItem from "./ChapterItem";
 import { BrainDestinationPicker } from "./BrainDestinationPicker";
 import { GemSelectionModal } from "./GemSelectionModal";
+import { GemRecommendationCard } from "./GemRecommendationCard";
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { AiMappingModal } from "./AiMappingModal";
 import { BrainSelectableItem } from "./BrainSelectableItem";
@@ -116,9 +119,15 @@ import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
+import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatusFromPath, logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
+import {
+  buildMarketBriefWithSectionOverride,
+  persistMarketBriefData,
+  preserveManualOverridesOnReanalysis,
+} from "@/lib/manualBriefOverrides";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
 import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
 import { updateLocalVideo } from "@/lib/localVideoStore";
@@ -128,8 +137,36 @@ import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId } from "@/lib/w
 import { SubTopicPillDropdown } from "@/components/dashboard/SubTopicPillDropdown";
 import { SummaryTextSaveMenu } from "@/components/dashboard/SummaryTextSaveMenu";
 import { AppBuilderTab } from "@/components/dashboard/AppBuilderTab";
+import { UniversalTabSectionBlocks } from "@/components/dashboard/UniversalTabSectionBlocks";
+import { ObsidianMappingTab } from "@/components/dashboard/ObsidianMappingTab";
+import { InsightsStructuredView } from "@/components/dashboard/InsightsStructuredView";
 import { hasAppBuilderDraft } from "@/lib/appBuilderStore";
+import {
+  extractUniversalTabContent,
+  extractUniversalTabFlatItems,
+  logUniversalTabExtractShape,
+} from "@/lib/universalTabSections";
 import { GemRawModal } from "@/components/dashboard/GemRawModal";
+import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
+import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
+import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
+import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
+import { UniversalTabBulkToolbar } from "@/components/dashboard/UniversalTabBulkToolbar";
+import { TabBulkItemsRegistrar } from "@/components/dashboard/TabBulkItemsRegistrar";
+import { useTabBulkSelection } from "@/hooks/useTabBulkSelection";
+import {
+  buildBulkItemsFromSections,
+  buildCardBulkItemsFromSections,
+  buildSummaryBriefingBulkItems,
+  buildSummaryBriefingCardBulkItems,
+  buildPoliticalSummaryBulkItems,
+  buildChaptersBulkItems,
+} from "@/lib/universalTabBulkItems";
+import { SummaryBriefingView } from "@/components/dashboard/SummaryBriefingView";
+import { SUMMARY_CARD_CLASS, SUMMARY_CARD_TITLE_CLASS, SUMMARY_LEAD_CLASS } from "@/lib/summaryCardStyles";
+import { buildDailyBriefingView } from "@/lib/summaryBriefingDisplay";
+import { collectVideoKnowledgePackage } from "@/lib/videoKnowledgePackage";
+import { appendMarketAppBrainItems } from "@/lib/appIdeasBrainObsidian";
 
 // §26 — APP Builder tab is shown only for these educational topic categories
 const APP_BUILDER_TOPICS = new Set([
@@ -1499,34 +1536,41 @@ function repairGemsJsonDetailed(raw) {
   // Gemini sometimes returns JSON where structural separators are literal \n (two chars)
   // and property-name delimiters are literal \" — this appears when the model wraps its
   // output in a JSON string before returning it.
+  // GUARD: only apply when the whole payload is wrapped in a string (starts with ").
+  // For structured JSON starting with { or [, any outside-string \n/" is caused by a
+  // broken string boundary (e.g. unescaped quote inside a value) — NOT double-stringification.
+  // Applying the unescape in that case makes things worse: it converts \" inside legitimate
+  // string values to raw " and destroys the structure before Pass C can fix it.
   {
-    const before = s;
-    // Detect \n or \" as literal two-char sequences OUTSIDE any string context
-    let _hasEsc = false;
-    let _inS = false, _esc = false;
-    for (let i = 0; i < s.length - 1; i++) {
-      if (_esc)             { _esc = false; continue; }
-      if (s[i] === '\\' && _inS) { _esc = true; continue; }
-      if (s[i] === '"')           { _inS = !_inS; continue; }
-      if (!_inS && s[i] === '\\' && (s[i + 1] === 'n' || s[i + 1] === '"')) {
-        _hasEsc = true; break;
-      }
-    }
-    if (_hasEsc) {
-      let out = '';
-      for (let i = 0; i < s.length; i++) {
-        if (s[i] === '\\' && i + 1 < s.length) {
-          const nx = s[i + 1];
-          if (nx === '"')  { out += '"';  i++; continue; }
-          if (nx === 'n')  { out += '\n'; i++; continue; }
-          if (nx === 'r')  { out += '\r'; i++; continue; }
-          if (nx === 't')  { out += '\t'; i++; continue; }
-          if (nx === '\\') { out += '\\'; i++; continue; }
+    if (s.startsWith('"')) {
+      const before = s;
+      // Detect \n or \" as literal two-char sequences OUTSIDE any string context
+      let _hasEsc = false;
+      let _inS = false, _esc = false;
+      for (let i = 0; i < s.length - 1; i++) {
+        if (_esc)             { _esc = false; continue; }
+        if (s[i] === '\\' && _inS) { _esc = true; continue; }
+        if (s[i] === '"')           { _inS = !_inS; continue; }
+        if (!_inS && s[i] === '\\' && (s[i + 1] === 'n' || s[i + 1] === '"')) {
+          _hasEsc = true; break;
         }
-        out += s[i];
       }
-      s = out;
-      if (s !== before) fixes.push('Unescaped structural \\n/\\" (double-stringified JSON)');
+      if (_hasEsc) {
+        let out = '';
+        for (let i = 0; i < s.length; i++) {
+          if (s[i] === '\\' && i + 1 < s.length) {
+            const nx = s[i + 1];
+            if (nx === '"')  { out += '"';  i++; continue; }
+            if (nx === 'n')  { out += '\n'; i++; continue; }
+            if (nx === 'r')  { out += '\r'; i++; continue; }
+            if (nx === 't')  { out += '\t'; i++; continue; }
+            if (nx === '\\') { out += '\\'; i++; continue; }
+          }
+          out += s[i];
+        }
+        s = out;
+        if (s !== before) fixes.push('Unescaped structural \\n/\\" (double-stringified JSON)');
+      }
     }
   }
 
@@ -1602,6 +1646,39 @@ function repairGemsJsonDetailed(raw) {
           }
           s = result;
           fixes.push(`Fixed structural tail leaked into string — escaped ${toEscape.length} internal quote(s)`);
+        }
+      }
+    }
+  }
+
+  // ── Pass D: Detect string values containing serialized / escaped JSON blocks ──
+  // GEM sometimes serializes an entire JSON section as a string value, e.g.:
+  //   "specialized": "\n},\n\"brainKnowledge\": {...}"
+  // This makes the field un-parseable as structured data and signals a GEM prompt issue.
+  // We do not auto-fix the semantics here (Pass C already escapes the stray quotes so the
+  // outer JSON can parse), but we add a clear entry to the fixes report.
+  {
+    // Match: "fieldName": "\n}, — string value that starts with literal \n} (two chars)
+    const leakedFieldRe = /"(\w+)"\s*:\s*"\\n}[,{]/;
+    const lm = leakedFieldRe.exec(s);
+    if (lm) {
+      fixes.push(
+        `⚠️ Field "${lm[1]}" contains serialized JSON — GEM returned a nested JSON block as a string ` +
+        `(value starts with "\\n},"). The outer JSON has been repaired for parsing, ` +
+        `but the content of "${lm[1]}" will be a raw string, not a structured object. ` +
+        `Fix: in your GEM prompt, instruct: "Return \\"${lm[1]}\\" as a proper JSON object, ` +
+        `not as a string value. Do not embed closing braces or sibling fields inside a string."`
+      );
+    } else {
+      // Secondary check: known root-level keys embedded inside a string value (\\n\\"key\\":)
+      for (const key of ['brainKnowledge', 'mappingHints', 'briefDate', 'sourceChannel']) {
+        // In the raw JSON source, this appears as \n\"key\": (five chars before the key)
+        if (s.includes(`\\n\\"${key}\\":`)) {
+          fixes.push(
+            `⚠️ Key "${key}" found inside a string value — GEM serialized JSON objects as a string. ` +
+            `Review the field containing "${key}" and update your GEM prompt to return it as an object.`
+          );
+          break;
         }
       }
     }
@@ -1870,10 +1947,19 @@ export function VideoDetailPanel({
   const [isAutoTranscriptModalOpen, setIsAutoTranscriptModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
   const prevTabRef = useRef("summary");
+  const appBuilderBulkRef = useRef(null);
   const learningSubTabRef = useRef("chapters"); // tracks last selected learning sub-tab (Phase 5: remove)
   const [activePoliticalTab, setActivePoliticalTab] = useState("brain-hi");
   const [showMorePoliticalTabs, setShowMorePoliticalTabs] = useState(false);
-  const [multiSelected, setMultiSelected] = useState(new Map()); // id → { text, sectionLabel, type, timestamp? }
+  const {
+    multiSelected,
+    toggleMultiSelect,
+    multiSelectAll,
+    multiSelectClear,
+    count: tabBulkCount,
+    entriesForActiveTab,
+  } = useTabBulkSelection(activeTab);
+
   const [highlightedChapterIndex, setHighlightedChapterIndex] = useState(null);
   const [isManualTranscriptOpen, setIsManualTranscriptOpen] = useState(false);
   const [manualTranscriptInput, setManualTranscriptInput] = useState("");
@@ -1927,6 +2013,7 @@ export function VideoDetailPanel({
   const [isGemsPasteOpen, setIsGemsPasteOpen] = useState(false);
   const [isGemRawOpen, setIsGemRawOpen] = useState(false);
   const [gemsPasteInput, setGemsPasteInput] = useState("");
+  const [gemsCopyStatus, setGemsCopyStatus] = useState(null);
   const [gemsPasteError, setGemsPasteError] = useState("");
   const [gemsParsedErrorInfo, setGemsParsedErrorInfo] = useState(null);
   const [gemsRepairApplied, setGemsRepairApplied] = useState(false);
@@ -1947,7 +2034,11 @@ export function VideoDetailPanel({
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
   const [pendingBrainSave, setPendingBrainSave] = useState(null);
+  const [pendingObsidianRowSave, setPendingObsidianRowSave] = useState(null);
+  const [obsidianItemSaveRevision, setObsidianItemSaveRevision] = useState(0);
   const [multiObsidianPickerMode, setMultiObsidianPickerMode] = useState(false);
+  const [obsidianSaveIntent, setObsidianSaveIntent] = useState(null);
+  const [saveEntireVideoPackage, setSaveEntireVideoPackage] = useState(true);
   const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
   const [newsGemOpened, setNewsGemOpened] = useState(false);
   const [gemPasteOpen, setGemPasteOpen] = useState(false);
@@ -1959,6 +2050,8 @@ export function VideoDetailPanel({
   const [vaultSubtopics, setVaultSubtopics] = useState([]);
   const [gemOverride, setGemOverride] = useState(null);
   const [showGemModal, setShowGemModal] = useState(false);
+  const [gemRecommendationVisible, setGemRecommendationVisible] = useState(false);
+  const [gemRecommendationOpening, setGemRecommendationOpening] = useState(false);
   const [showGemsSettings, setShowGemsSettings] = useState(false);
   const [showAiMapping, setShowAiMapping] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState("");
@@ -1978,6 +2071,10 @@ export function VideoDetailPanel({
 
   useEffect(() => { setShowLowQualityWarning(false); }, [video?.id]);
   useEffect(() => {
+    setGemRecommendationVisible(false);
+    setGemRecommendationOpening(false);
+  }, [video?.id]);
+  useEffect(() => {
     const videoId = video?.id || video?.videoId;
     setOpponentSentences(videoId ? getOpponentSentences(videoId) : []);
     setKeyPointsFilter("all");
@@ -1988,6 +2085,31 @@ export function VideoDetailPanel({
     setAttachedDocsExpanded(false);
     setAttachedDocumentsInsights(video?.attachedDocumentsInsights ?? null);
   }, [video?.id]);
+  useEffect(() => {
+    const videoId = video?.youtubeId || video?.id;
+    if (!videoId) {
+      setSavedItemKeys(new Set());
+      return;
+    }
+    const prefix = `brain-item:${videoId}:`;
+    const ids = getKnowledgeItems()
+      .filter((i) => String(i.id || '').startsWith(prefix))
+      .map((i) => i.id);
+    setSavedItemKeys(new Set(ids));
+  }, [video?.youtubeId, video?.id]);
+  useEffect(() => {
+    const syncSavedKeysFromStore = () => {
+      const videoId = video?.youtubeId || video?.id;
+      if (!videoId) return;
+      const prefix = `brain-item:${videoId}:`;
+      const ids = getKnowledgeItems()
+        .filter((i) => String(i.id || '').startsWith(prefix))
+        .map((i) => i.id);
+      setSavedItemKeys(new Set(ids));
+    };
+    window.addEventListener('knowledge-items-updated', syncSavedKeysFromStore);
+    return () => window.removeEventListener('knowledge-items-updated', syncSavedKeysFromStore);
+  }, [video?.youtubeId, video?.id]);
   useEffect(() => {
     const loadedSubtitle = typeof video?.customSubtitle === "string" ? video.customSubtitle.trim() : "";
     setSubtitleDraft(loadedSubtitle);
@@ -2006,12 +2128,38 @@ export function VideoDetailPanel({
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
   useEffect(() => {
     if (!video?.id && !video?.youtubeId) { setMarketBriefData(null); return; }
-    const key = `market_brief_${video.id || video.youtubeId}`;
-    try {
-      const stored = localStorage.getItem(key);
-      setMarketBriefData(stored ? JSON.parse(stored) : (video?.marketBriefData ?? null));
-    } catch { setMarketBriefData(null); }
-  }, [video?.id, video?.youtubeId]);
+    const ids = [...new Set([video.id, video.youtubeId].filter(Boolean))];
+    let loaded = null;
+    let loadedFromKey = null;
+    for (const id of ids) {
+      const key = `market_brief_${id}`;
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          loaded = JSON.parse(stored);
+          loadedFromKey = key;
+          break;
+        }
+      } catch {
+        loaded = null;
+      }
+    }
+    if (!loaded) loaded = video?.marketBriefData ?? null;
+    setMarketBriefData(loaded);
+    if (import.meta.env.DEV) {
+      console.log('[MarketBriefLoad]', {
+        videoId: video.id ?? null,
+        youtubeId: video.youtubeId ?? null,
+        keysTried: ids.map((id) => `market_brief_${id}`),
+        loadedFromKey,
+        exists: !!loaded,
+        contentType: loaded?.contentType ?? null,
+        hasRawData: !!loaded?.rawData,
+        hasUtSummary: !!loaded?.universalTabs?.summary,
+        hasUtSpecialized: !!loaded?.universalTabs?.specialized,
+      });
+    }
+  }, [video?.id, video?.youtubeId, video?.marketBriefData]);
   useEffect(() => {
     if (!video) { setPoliticalSummary(null); return; }
     const key = `political_summary_${video.id || video.youtubeId}`;
@@ -2105,6 +2253,18 @@ export function VideoDetailPanel({
     return mentorResolved ?? mentorByName ?? null;
   }, [mentorName, video]);
 
+  const mentorChannelUrl = useMemo(() => {
+    const fromMentor = resolveMentorChannelUrl(mentorResolution?.mentor);
+    if (fromMentor) return fromMentor;
+    const videoUrl = String(video?.channelUrl || "").trim();
+    if (videoUrl.startsWith("http")) return videoUrl;
+    const channelId = String(video?.channelId || "").trim();
+    if (channelId.startsWith("UC") && channelId.length === 24) {
+      return `https://www.youtube.com/channel/${channelId}`;
+    }
+    return null;
+  }, [mentorResolution, video?.channelUrl, video?.channelId]);
+
   const effectiveCategory = useMemo(() => {
     const normalizedCategoryCandidates = [
       categoryOverride,
@@ -2151,6 +2311,22 @@ export function VideoDetailPanel({
     () => normalizeSubCategory(effectiveSubCategory),
     [effectiveSubCategory]
   );
+
+  /** Brief render slug: confirmed subcategory, or infer from pasted GEM marketBrief JSON. */
+  const effectiveBriefSlug = useMemo(() => {
+    if (normalizedSubCategory) return normalizedSubCategory;
+    if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
+    return null;
+  }, [normalizedSubCategory, marketBriefData?.contentType]);
+
+  const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
+    if (!marketBriefData) return;
+    const videoId = video?.id || video?.youtubeId;
+    const next = buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
+    persistMarketBriefData(videoId, next, patchVideo);
+    setMarketBriefData(next);
+    toast.success('השינויים נשמרו');
+  }, [marketBriefData, video?.id, video?.youtubeId, patchVideo]);
 
   const obsidianRoute = useMemo(
     () => resolveVideoObsidianRoute(effectiveVideo || {}, {
@@ -2238,7 +2414,7 @@ export function VideoDetailPanel({
 
   const gemRec = useMemo(() => {
     if (!effectiveVideo) return null;
-    const transcriptText = String(effectiveVideo?.transcript || '');
+    const transcriptText = String(effectiveVideo?.transcript || effectiveVideo?.manualTranscript || '').trim();
     // Priority: mentor channel → mentor name prop → stored video.category → AI
     const forcedCategoryLabel = mentorResolution?.categoryLabel ?? (effectiveVideo?.category || null);
     const firstTopicId = Array.isArray(effectiveVideo.topicIds) ? effectiveVideo.topicIds[0] : null;
@@ -3238,8 +3414,71 @@ export function VideoDetailPanel({
       return;
     }
 
-    // Step 3: no description timestamps, no local transcript — try YouTube API
-    await handleFetchYoutubeChapters();
+    // Step 3: no description timestamps, no local transcript — generate via Gemini (no YouTube API key needed)
+    const watchUrl = getWatchUrl(video);
+    const videoId = getVideoIdFromUrl(watchUrl);
+    if (!watchUrl || !videoId) {
+      setYoutubeChaptersHint("no_api_key");
+      return;
+    }
+    setIsYoutubeChaptersFetch(true);
+    try {
+      const rawDurationSec = getVideoDurationSeconds(video);
+      const labelDurationSec = parseDurationToSeconds(video?.durationLabel);
+      // If both exist and conflict by more than 3×, prefer durationLabel (raw may be stored in wrong unit)
+      const durationSec = (() => {
+        if (labelDurationSec > 0 && rawDurationSec > 0) {
+          const ratio = Math.max(rawDurationSec, labelDurationSec) / Math.min(rawDurationSec, labelDurationSec);
+          return ratio > 3 ? labelDurationSec : rawDurationSec;
+        }
+        return labelDurationSec > 0 ? labelDurationSec : rawDurationSec;
+      })();
+      const chaptersTarget = durationSec <= 8 * 60 ? 4 : durationSec <= 14 * 60 ? 5 : durationSec <= 22 * 60 ? 7 : 8;
+      const result = await fetchGeminiVideoContent({
+        videoId,
+        title: video?.title || '',
+        youtubeUrl: watchUrl,
+        durationSeconds: durationSec || null,
+        chaptersTarget,
+        analysisMode: 'url_only',
+      });
+      const rawChapters = Array.isArray(result?.chapters) ? result.chapters : [];
+      const normalized = normalizeGemChapters(rawChapters);
+      if (!normalized.length) {
+        setYoutubeChaptersHint("no_timestamps");
+        return;
+      }
+      const aiChapters = normalized.map(c => ({ ...c, source: 'gem' }));
+      const coverage = validateChapterTimelineCoverage(aiChapters, durationSec);
+      if (!coverage.ok) {
+        console.warn('[Gemini chapters fallback] incomplete timeline coverage', coverage);
+        setYoutubeChaptersHint("partial_coverage");
+        toast.warning(coverage.reason || 'הפרקים לא מכסים את כל הסרטון — לא נשמרו');
+        return;
+      }
+      const updates = { aiChapters, chapters: aiChapters, chapterSource: 'gem' };
+      const localSaved = patchVideo(updates);
+      if (localSaved) {
+        onVideoPatch?.(localSaved);
+      } else {
+        try {
+          await Video.update(video.id, updates);
+          patchVideo(updates);
+          queryClient.invalidateQueries({ queryKey: ['videos'] });
+          onVideoPatch?.({ ...video, ...updates });
+        } catch {
+          toast.error('לא ניתן לשמור את הפרקים');
+          return;
+        }
+      }
+      toast.success(`נוצרו ${aiChapters.length} פרקים בעזרת Gemini`);
+      setYoutubeChaptersHint(null);
+    } catch (err) {
+      console.error('[Gemini chapters fallback]', err);
+      setYoutubeChaptersHint("fetch_failed");
+    } finally {
+      setIsYoutubeChaptersFetch(false);
+    }
   };
 
   const handleGenerateHebrewTitles = async () => {
@@ -3913,6 +4152,187 @@ export function VideoDetailPanel({
     resolvedObsidianVaultName,
   ]);
 
+  const buildObsidianMergeFooter = useCallback(() => {
+    const watchUrl = getWatchUrl(video);
+    if (!watchUrl) return [];
+    return [`מקור: [${video?.title || ''}](${watchUrl})`];
+  }, [video]);
+
+  const toObsidianMergeItem = useCallback((item) => ({
+    text: item.text,
+    sectionLabel: item.sectionLabel || 'כללי',
+    identityKey: buildObsidianItemIdentityKey({
+      videoId: video?.youtubeId || video?.id,
+      tabKey: item.type || item.tabScope || 'multi',
+      sectionKey: item.sectionLabel || '',
+      text: item.text,
+    }),
+    timestamp: item.timestamp || '',
+  }), [video?.id, video?.youtubeId]);
+
+  const bumpObsidianItemSaveUi = useCallback(() => {
+    setObsidianItemSaveRevision((n) => n + 1);
+  }, []);
+
+  const markObsidianRowSaved = useCallback((params) => {
+    const entry = recordObsidianItemSave(params);
+    if (entry) bumpObsidianItemSaveUi();
+    return entry;
+  }, [bumpObsidianItemSaveUi]);
+
+  const executeObsidianVaultWrite = useCallback(async ({
+    savePath,
+    content,
+    mode = 'overwrite',
+    mergeItems,
+    footerLines,
+    subtitle = '',
+    successMessage,
+    allowDownloadFallback = true,
+  }) => {
+    const { vaultPath: _vaultPath, vaultName: _vaultName } = getObsidianVaultRequestFields();
+    const _hasUsableVaultName = hasUsableObsidianVaultName(_vaultName);
+    const apiRoute = "/api/vault/write";
+    const safeFilename = String(savePath || '').split('/').pop() || 'note.md';
+    const videoMeta = {
+      videoTitle: video?.title,
+      videoUrl: getWatchUrl(video),
+      channelTitle: video?.channelTitle,
+      duration: video?.duration,
+      subtitle,
+    };
+
+    try {
+      let data = null;
+      let savedPath = savePath;
+
+      if (mode === 'merge' && Array.isArray(mergeItems) && mergeItems.length > 0) {
+        const mergeResult = await writeObsidianWithItemMerge({
+          savePath,
+          mergeItems,
+          footerLines: footerLines || [],
+          videoTitle: video?.title || '',
+          vaultPath: _vaultPath,
+          vaultName: _vaultName,
+          videoMeta,
+        });
+        data = mergeResult.data || {};
+        savedPath = data.savedPath || savePath;
+        if (!mergeResult.ok) {
+          if (mergeResult.error === 'NO_VAULT_PATH') {
+            openObsidianSettingsForPath(savePath, {
+              autoOpenAfterSave: false,
+              toastMessage: 'יש להגדיר קודם את נתיב ה-vault של Obsidian',
+            });
+            return { ok: false, error: 'NO_VAULT_PATH' };
+          }
+          if (allowDownloadFallback) {
+            const read = await readObsidianVaultMarkdown({ path: savePath, vaultPath: _vaultPath, vaultName: _vaultName });
+            const fallbackContent = mergeItemsIntoObsidianNote({
+              existingContent: read.content || '',
+              videoTitle: video?.title || '',
+              items: mergeItems,
+              footerLines: footerLines || [],
+            }).content;
+            downloadMarkdown(fallbackContent, safeFilename);
+            toast.info(`הורדה מקומית — ${successMessage} (${safeFilename})`);
+            return { ok: false, fallback: 'download' };
+          }
+          toast.error(`שגיאה בשמירה: ${data.message || mergeResult.error || 'לא ידוע'}`);
+          return { ok: false, error: mergeResult.error || data.error };
+        }
+      } else {
+        const res = await fetch(apiRoute, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: savePath,
+            mode,
+            content,
+            vaultPath: _vaultPath,
+            vaultName: _vaultName,
+            ...videoMeta,
+          }),
+        });
+        data = await res.json().catch(() => ({}));
+        savedPath = data.savedPath || savePath;
+      }
+
+      if (data.ok && data.verified === true) {
+        const statusUpdated = await persistVerifiedVaultWriteStatus(data, { savePath, apiRoute });
+        const savedPath = data.savedPath || savePath;
+        const folderPath = savedPath.includes('/')
+          ? savedPath.substring(0, savedPath.lastIndexOf('/'))
+          : '';
+
+        if (!statusUpdated) {
+          toast.error("הקובץ נשמר אך לא עודכן סטטוס השמירה");
+          return { ok: false };
+        }
+
+        if (_hasUsableVaultName) {
+          openResolvedObsidianPath(savedPath);
+        } else {
+          openObsidianSettingsForPath(savedPath);
+        }
+
+        toast.success(successMessage, {
+          description: savedPath,
+          duration: 10000,
+          action: savedPath ? {
+            label: '📂 פתח ב-Obsidian',
+            onClick: () => { openResolvedObsidianPath(savedPath); },
+          } : undefined,
+          cancel: folderPath ? {
+            label: '📁 פתח תיקייה',
+            onClick: () => { openResolvedObsidianPath(folderPath); },
+          } : undefined,
+        });
+        return { ok: true, savedPath, data };
+      }
+
+      if (data.error === 'NO_VAULT_PATH') {
+        openObsidianSettingsForPath(savePath, {
+          autoOpenAfterSave: false,
+          toastMessage: 'יש להגדיר קודם את נתיב ה-vault של Obsidian',
+        });
+        return { ok: false, error: 'NO_VAULT_PATH' };
+      }
+
+      if (data.error) {
+        toast.error(`שגיאה בשמירה: ${data.message || data.error}`);
+        return { ok: false, error: data.error };
+      }
+
+      if (allowDownloadFallback) {
+        const read = await readObsidianVaultMarkdown({ path: savePath, vaultPath: _vaultPath, vaultName: _vaultName });
+        const fallbackContent = mode === 'merge'
+          ? mergeItemsIntoObsidianNote({
+            existingContent: read.content || '',
+            videoTitle: video?.title || '',
+            items: mergeItems || [],
+            footerLines: footerLines || [],
+          }).content
+          : content;
+        downloadMarkdown(fallbackContent, safeFilename);
+        toast.info(`הורדה מקומית — ${successMessage} (${safeFilename})`);
+        return { ok: false, fallback: 'download' };
+      }
+
+      toast.error('שגיאה בשמירה ל-Obsidian');
+      return { ok: false, error: 'WRITE_FAILED' };
+    } catch (err) {
+      console.error("OBSIDIAN SAVE ERROR", err);
+      toast.error(`שגיאה בשמירה: ${err.message}`);
+      return { ok: false, error: err.message };
+    }
+  }, [
+    openObsidianSettingsForPath,
+    openResolvedObsidianPath,
+    persistVerifiedVaultWriteStatus,
+    video,
+  ]);
+
   const handleObsidianSettingsSaved = useCallback((savedSettings) => {
     const pendingPath = String(obsidianSettingsTargetPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
     const nextVaultName = resolveObsidianVaultName(savedSettings?.vaultName);
@@ -4062,6 +4482,76 @@ export function VideoDetailPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subTopicRec, video?.id, saveVideoFields]);
 
+  const summaryShortForPackage = useMemo(
+    () => (video?.shortSummary || enrichedVideo?.aiSummaryShort || '').replace(/\[MOCK\]\s*/g, '').trim(),
+    [video?.shortSummary, enrichedVideo?.aiSummaryShort],
+  );
+
+  const videoKnowledgePackage = useMemo(() => {
+    const topicsShaped = extractUniversalTabContent(effectiveVideo, 'topics-subtopics', marketBriefData);
+    const gemTopicsSections = topicsShaped?.mode === 'sections' ? topicsShaped.sections : [];
+    const gemTopicsFlat = topicsShaped?.mode === 'flat' && topicsShaped.items.length > 0
+      ? topicsShaped.items
+      : (gemTopicsSections.length === 0
+        ? extractUniversalTabFlatItems(effectiveVideo, 'topics-subtopics', marketBriefData)
+        : []);
+    return collectVideoKnowledgePackage({
+      effectiveVideo,
+      marketBriefData,
+      summaryShort: summaryShortForPackage,
+      fullSummary: video?.fullSummary || enrichedVideo?.aiSummaryLong || '',
+      displayChapters,
+      gemTopicsSections,
+      gemTopicsFlat,
+    });
+  }, [
+    effectiveVideo,
+    marketBriefData,
+    summaryShortForPackage,
+    video?.fullSummary,
+    enrichedVideo?.aiSummaryLong,
+    displayChapters,
+  ]);
+
+  const handleRequestObsidianMappingSave = useCallback((recommendedSubCategory) => {
+    const sub = String(recommendedSubCategory || '').trim();
+    if (!sub) return;
+
+    if (hasObsidianSavedStatus(video) && isObsidianMappingCurrent && resolvedObsidianSavedPath) {
+      openResolvedObsidianPath(resolvedObsidianSavedPath);
+      return;
+    }
+
+    setSubCategoryOverride(sub);
+    setObsidianSaveIntent({ mode: 'mapping', pendingSubCategory: sub });
+    setSaveEntireVideoPackage(true);
+    setPendingObsidianRowSave(null);
+    setMultiObsidianPickerMode(true);
+    setBrainPickerOpen(true);
+  }, [
+    isObsidianMappingCurrent,
+    openResolvedObsidianPath,
+    resolvedObsidianSavedPath,
+    video,
+  ]);
+
+  const obsidianPackagePreview = useMemo(() => {
+    if (!multiObsidianPickerMode || obsidianSaveIntent?.mode !== 'mapping') return null;
+    return {
+      sections: videoKnowledgePackage.sections,
+      totalItems: videoKnowledgePackage.totalItems,
+      saveEntireVideo: saveEntireVideoPackage,
+      onToggleSaveEntireVideo: setSaveEntireVideoPackage,
+      selectedCount: multiSelected.size,
+    };
+  }, [
+    multiObsidianPickerMode,
+    obsidianSaveIntent,
+    videoKnowledgePackage,
+    saveEntireVideoPackage,
+    multiSelected.size,
+  ]);
+
   const handleSaveSubTopicSelection = useCallback(async () => {
     if (!video?.id) return;
     const normalizedSubTopic = subTopicDraft === NEW_SUBTOPIC_SENTINEL ? "" : subTopicDraft.trim();
@@ -4147,35 +4637,22 @@ export function VideoDetailPanel({
   const clearBrainSelections = () => setBrainSelections({});
   const brainSelectionCount = Object.keys(brainSelections).length;
 
-  const toggleMultiSelect = (id, payload) => {
-    setMultiSelected(prev => {
-      const next = new Map(prev);
-      if (next.has(id)) next.delete(id); else next.set(id, payload);
-      return next;
-    });
-  };
-  const multiSelectAll = (items) => {
-    setMultiSelected(prev => {
-      const next = new Map(prev);
-      items.forEach(({ id, ...rest }) => next.set(id, rest));
-      return next;
-    });
-  };
-  const multiSelectClear = () => {
-    console.log('[Selection] Clear all selected items');
-    setMultiSelected(new Map());
+  const multiSelectClearWithBrain = () => {
+    multiSelectClear();
     clearBrainSelections();
   };
   const handleSaveSelectedToObsidian = () => {
     if (multiSelected.size === 0) return;
+    setPendingObsidianRowSave(null);
     setMultiObsidianPickerMode(true);
     setBrainPickerOpen(true);
   };
 
-  const buildMultiSelectMarkdown = ({ folder, subFolder } = {}) => {
+  const buildMultiSelectMarkdown = ({ folder, subFolder, items } = {}) => {
+    const selectedItems = items || [...multiSelected.values()];
     const lines = [`# פריטים נבחרים — ${video?.title || ''}`, ''];
     const bySection = new Map();
-    multiSelected.forEach((item) => {
+    selectedItems.forEach((item) => {
       const sec = item.sectionLabel || 'כללי';
       if (!bySection.has(sec)) bySection.set(sec, []);
       bySection.get(sec).push(item);
@@ -4194,15 +4671,170 @@ export function VideoDetailPanel({
     if (folder) lines.push(`נתיב: ${subFolder ? `${folder}/${subFolder}/` : `${folder}/`}`);
     return lines.join('\n');
   };
+
+  const buildVideoObsidianMergeItems = useCallback(() => {
+    const videoId = video?.youtubeId || video?.id;
+    const topicsShaped = extractUniversalTabContent(effectiveVideo, 'topics-subtopics', marketBriefData);
+    const gemTopicsSections = topicsShaped?.mode === 'sections' ? topicsShaped.sections : [];
+    const gemTopicsFlat = topicsShaped?.mode === 'flat' && topicsShaped.items?.length
+      ? topicsShaped.items
+      : (gemTopicsSections.length === 0
+        ? extractUniversalTabFlatItems(effectiveVideo, 'topics-subtopics', marketBriefData)
+        : []);
+    return collectVideoObsidianMergeItems({
+      effectiveVideo,
+      marketBriefData,
+      summaryShort: summaryShortForPackage,
+      fullSummary: video?.fullSummary || enrichedVideo?.aiSummaryLong || '',
+      displayChapters,
+      gemTopicsSections,
+      gemTopicsFlat,
+      videoNotes,
+      appBuilderSections: videoId ? getAppBuilderDraft(videoId) : null,
+    });
+  }, [
+    displayChapters,
+    effectiveVideo,
+    enrichedVideo?.aiSummaryLong,
+    marketBriefData,
+    summaryShortForPackage,
+    video?.fullSummary,
+    video?.id,
+    video?.youtubeId,
+    videoNotes,
+  ]);
+
+  const executeMappingObsidianSave = useCallback(async ({
+    sub,
+    savePath,
+    subtitle = '',
+    saveEntireVideo = true,
+    replaceExisting = false,
+  }) => {
+    const normalizedSub = String(sub || '').trim();
+    if (!normalizedSub || !video?.id) throw new Error('אין המלצה לשמירה');
+
+    setSubCategoryOverride(normalizedSub);
+    setSubTopicDraft(normalizedSub);
+    setSubTopicRecDismissed(true);
+    await saveVideoFields({
+      subCategory: normalizedSub,
+      dismissedSubTopicRec: null,
+      userConfirmedSubCategory: true,
+      confirmedSubCategory: normalizedSub,
+      confirmedAt: new Date().toISOString(),
+    });
+
+    const videoForNote = { ...(effectiveVideo || video), subCategory: normalizedSub };
+    const note = buildVideoFullNote(videoForNote, mentorName, null, videoNotes, [], {});
+    const finalPath = savePath || note.path;
+
+    if (replaceExisting) {
+      const result = await executeObsidianVaultWrite({
+        savePath: finalPath,
+        content: note.content,
+        mode: 'overwrite',
+        subtitle,
+        successMessage: `✅ נשמר ל-Obsidian${videoKnowledgePackage.totalItems ? ` — ${videoKnowledgePackage.totalItems} פריטים` : ''}`,
+        allowDownloadFallback: false,
+      });
+      if (!result.ok) throw new Error(result.error || 'הכתיבה ל-vault נכשלה');
+      return { savedPath: result.savedPath || finalPath };
+    }
+
+    if (!saveEntireVideo && multiSelected.size > 0) {
+      const mergeItems = [...multiSelected.values()].map(toObsidianMergeItem);
+      const result = await executeObsidianVaultWrite({
+        savePath: finalPath,
+        mode: 'merge',
+        mergeItems,
+        footerLines: buildObsidianMergeFooter(),
+        subtitle,
+        successMessage: `✅ נשמר ל-Obsidian — ${mergeItems.length} פריטים`,
+        allowDownloadFallback: false,
+      });
+      if (!result.ok) throw new Error(result.error || 'הכתיבה ל-vault נכשלה');
+      mergeItems.forEach((item) => {
+        const source = [...multiSelected.values()].find((row) => row.text === item.text) || item;
+        markObsidianRowSaved({
+          videoId: video?.youtubeId || video?.id,
+          tabKey: source.type || source.tabScope || 'multi',
+          sectionKey: source.sectionLabel || item.sectionLabel || '',
+          text: item.text,
+          destinationPath: result.savedPath || finalPath,
+        });
+      });
+      return { savedPath: result.savedPath || finalPath };
+    }
+
+    const mergeItems = buildVideoObsidianMergeItems();
+    const result = await executeObsidianVaultWrite({
+      savePath: finalPath,
+      mode: 'merge',
+      mergeItems,
+      footerLines: buildObsidianMergeFooter(),
+      subtitle,
+      successMessage: `✅ נשמר ל-Obsidian${mergeItems.length ? ` — ${mergeItems.length} פריטים` : ''}`,
+      allowDownloadFallback: false,
+    });
+    if (!result.ok) throw new Error(result.error || 'הכתיבה ל-vault נכשלה');
+    mergeItems.forEach((item) => {
+      markObsidianRowSaved({
+        videoId: video?.youtubeId || video?.id,
+        tabKey: 'package',
+        sectionKey: item.sectionLabel || '',
+        text: item.text,
+        destinationPath: result.savedPath || finalPath,
+      });
+    });
+    return { savedPath: result.savedPath || finalPath };
+  }, [
+    buildObsidianMergeFooter,
+    buildVideoObsidianMergeItems,
+    effectiveVideo,
+    executeObsidianVaultWrite,
+    markObsidianRowSaved,
+    mentorName,
+    multiSelected,
+    saveVideoFields,
+    toObsidianMergeItem,
+    video,
+    videoKnowledgePackage.totalItems,
+    videoNotes,
+  ]);
+
+  const buildSingleObsidianItemMarkdown = ({ text, sectionLabel, timestamp } = {}) => {
+    const body = String(text || '').trim();
+    const watchUrl = getWatchUrl(video) || '';
+    const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
+    return [
+      `# ${body.slice(0, 80)}`,
+      '',
+      body,
+      '',
+      '---',
+      watchUrl ? `מקור: [${video?.title || ''}](${watchUrl})` : null,
+      sectionLabel ? `קטע: ${sectionLabel}` : null,
+      `תאריך: ${new Date().toLocaleDateString('he-IL')}${tsLine}`,
+    ].filter(Boolean).join('\n');
+  };
+
   const handleSaveSelectedToBrain = () => {
     if (multiSelected.size === 0) return;
+    const hasAppBuilderSections = entriesForActiveTab.some((e) => e.sectionKey);
+    if (activeTab === 'app-builder' && hasAppBuilderSections && appBuilderBulkRef.current?.saveBrain) {
+      appBuilderBulkRef.current.saveBrain();
+      multiSelectClearWithBrain();
+      return;
+    }
     let count = 0;
     multiSelected.forEach((item) => {
+      if (item.sectionKey) return;
       saveSingleItemToBrain(item.text, item.type || 'multi', item.sectionLabel || 'נבחרים', '');
       count++;
     });
     if (count > 0) toast.success(`🧠 ${count} פריטים נשמרו למוח`);
-    multiSelectClear();
+    multiSelectClearWithBrain();
   };
 
   const handleSaveSelectedToWorkspace = () => {
@@ -4229,7 +4861,40 @@ export function VideoDetailPanel({
       count++;
     });
     if (count > 0) toast.success(`⭐ ${count} פריטים נשמרו ל-Workspace`);
-    multiSelectClear();
+    multiSelectClearWithBrain();
+  };
+
+  const handleBulkObsidianForTab = async () => {
+    if (multiSelected.size === 0) return;
+    const hasAppBuilderSections = entriesForActiveTab.some((e) => e.sectionKey);
+    if (activeTab === 'app-builder' && hasAppBuilderSections && appBuilderBulkRef.current?.saveObsidian) {
+      await appBuilderBulkRef.current.saveObsidian();
+      multiSelectClearWithBrain();
+      return;
+    }
+    const appIdeasRaw = entriesForActiveTab.filter((e) => e.type === 'app-ideas-brain' && e.rawItem);
+    if (activeTab === 'app-builder' && appIdeasRaw.length > 0) {
+      try {
+        const result = await appendMarketAppBrainItems(
+          appIdeasRaw.map((e) => e.rawItem),
+          video,
+          resolvedVideoMode.category || '',
+        );
+        if (result.ok) {
+          toast.success('נשמר למוח רעיונות השוק', {
+            description: `${result.saved} פריטים → ${result.paths.join(', ')}`,
+            duration: 6000,
+          });
+          multiSelectClearWithBrain();
+        } else {
+          toast.error('שגיאה בשמירה ל-Obsidian', { description: result.errors?.[0] || 'בדוק חיבור Vault' });
+        }
+      } catch (err) {
+        toast.error('שגיאה בשמירה', { description: err?.message });
+      }
+      return;
+    }
+    handleSaveSelectedToObsidian();
   };
 
   // Deterministic dedup key — same text+tab always produces the same ID
@@ -4238,6 +4903,12 @@ export function VideoDetailPanel({
       .replace(/\s+/g, '-').replace(/[^a-z0-9א-ת-]/g, '') || 'item';
     return `brain-item:${vid}:${tab}:${textKey}`;
   };
+
+  const isBrainItemSaved = useCallback((text, tabKey) => {
+    const videoId = video?.youtubeId || video?.id;
+    const itemId = itemDedupeKey(videoId, tabKey, text);
+    return savedItemKeys.has(itemId) || hasKnowledgeItem(itemId);
+  }, [video?.youtubeId, video?.id, savedItemKeys]);
 
   const saveSingleItemToBrain = (text, sourceTab, tabLabel, note = '') => {
     const videoId = video?.youtubeId || video?.id;
@@ -4284,6 +4955,193 @@ export function VideoDetailPanel({
     setSavedItemKeys(prev => { const next = new Set(prev); next.add(itemId); return next; });
     toast.success(`✅ נשמר למוח`);
   };
+
+  const saveSingleItemToObsidian = useCallback((meta) => {
+    const body = String(meta?.text || '').trim();
+    if (!body) return;
+    setPendingObsidianRowSave(meta);
+    setMultiObsidianPickerMode(true);
+    setBrainPickerOpen(true);
+  }, []);
+
+  const saveSingleItemToWorkspace = useCallback(({ text, sectionLabel, type, tabScope, timestamp }) => {
+    const videoId = video?.youtubeId || video?.id || 'unknown';
+    const body = String(text || '').trim();
+    if (!body) return;
+    const sourceTab = type || tabScope || 'multi';
+    const wsId = itemDedupeKey(videoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
+    if (hasKnowledgeItem(wsId)) {
+      toast.info('כבר נשמר ל-Workspace');
+      return;
+    }
+    const now = new Date().toISOString();
+    const title = (video?.title || '').slice(0, 40);
+    const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
+    upsertKnowledgeItem({
+      id: wsId,
+      title: `${sectionLabel || 'פריט'} — ${title || videoId}`.slice(0, 80),
+      content: `${body}${tsLine}\n\n---\nמקור: ${video?.title || ''}\nקטע: ${sectionLabel || ''}`,
+      topicId: video?.topicIds?.[0] || null,
+      videoId,
+      videoTitle: video?.title || '',
+      sourceType: 'youtube',
+      sectionName: sectionLabel || '',
+      workspacePath: `Workspace/קטעים/${title || videoId}/${sectionLabel || 'פריט'}.md`,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        perspective: 'self',
+        contentRole: 'saved_item',
+        selectedText: true,
+        videoId,
+        videoTitle: video?.title || '',
+        sourceTab,
+      },
+    });
+    toast.success('⭐ נשמר ל-Workspace');
+  }, [video]);
+
+  const navigateFromPanel = useCallback((page, params = {}) => {
+    if (!navigateTo) {
+      toast.error('לא ניתן לפתוח את הפריט השמור');
+      return false;
+    }
+    onOpenChange(false);
+    setTimeout(() => navigateTo(page, params), 80);
+    return true;
+  }, [navigateTo, onOpenChange]);
+
+  const openSavedBrainItem = useCallback((text, tabKey) => {
+    const videoId = video?.youtubeId || video?.id;
+    const status = resolveBrainSaveStatus(videoId, tabKey, text);
+    if (!status.saved || !status.topicId) {
+      toast.error('לא ניתן לפתוח את הפריט השמור');
+      return false;
+    }
+    return navigateFromPanel('TopicKnowledgePage', { topicId: status.topicId });
+  }, [navigateFromPanel, video?.id, video?.youtubeId]);
+
+  const openSavedWorkspaceItem = useCallback((text, tabKey) => {
+    const videoId = video?.youtubeId || video?.id;
+    const status = resolveWorkspaceSaveStatus(videoId, tabKey, text);
+    if (!status.saved) {
+      toast.error('לא ניתן לפתוח את הפריט השמור');
+      return false;
+    }
+    if (status.topicId) {
+      return navigateFromPanel('TopicKnowledgePage', { topicId: status.topicId });
+    }
+    return navigateFromPanel('Workspace', {});
+  }, [navigateFromPanel, video?.id, video?.youtubeId]);
+
+  const videoIdForQuickSave = video?.youtubeId || video?.id;
+
+  const resolveObsidianStatusForItem = useCallback((meta, destinationPath) => {
+    const tabKey = meta?.type || meta?.tabScope || 'multi';
+    return resolveObsidianSaveStatus({
+      videoId: videoIdForQuickSave,
+      tabKey,
+      sectionKey: meta?.sectionLabel || '',
+      text: meta?.text || '',
+      destinationPath,
+    });
+  }, [videoIdForQuickSave]);
+
+  const openSavedObsidianItem = useCallback((text, tabKey, sectionKey) => {
+    const status = resolveObsidianSaveStatus({
+      videoId: videoIdForQuickSave,
+      tabKey: tabKey || 'multi',
+      sectionKey: sectionKey || '',
+      text,
+    });
+    if (!status.saved || !status.openPath) {
+      toast.error('לא ניתן לפתוח את הפריט השמור');
+      return false;
+    }
+    return openResolvedObsidianPath(status.openPath);
+  }, [openResolvedObsidianPath, videoIdForQuickSave]);
+
+  const obsidianPickerSaveContext = useMemo(() => {
+    if (!videoIdForQuickSave) return null;
+    if (pendingObsidianRowSave) {
+      return {
+        videoId: videoIdForQuickSave,
+        items: [{
+          text: pendingObsidianRowSave.text,
+          tabKey: pendingObsidianRowSave.type || pendingObsidianRowSave.tabScope || 'multi',
+          sectionKey: pendingObsidianRowSave.sectionLabel || '',
+          sectionLabel: pendingObsidianRowSave.sectionLabel || '',
+        }],
+      };
+    }
+    if (multiObsidianPickerMode && multiSelected.size > 0) {
+      return {
+        videoId: videoIdForQuickSave,
+        items: [...multiSelected.values()].map((item) => ({
+          text: item.text,
+          tabKey: item.type || item.tabScope || 'multi',
+          sectionKey: item.sectionLabel || '',
+          sectionLabel: item.sectionLabel || '',
+        })),
+      };
+    }
+    return null;
+  }, [videoIdForQuickSave, pendingObsidianRowSave, multiObsidianPickerMode, multiSelected]);
+
+  const bulkSelectionShare = useMemo(() => ({
+    multiSelected,
+    onToggle: toggleMultiSelect,
+    onSelectAll: multiSelectAll,
+    onClear: multiSelectClear,
+    videoId: videoIdForQuickSave,
+    obsidianItemSaveRevision,
+    onQuickSaveBrain: (meta) => {
+      const tabKey = meta.type || meta.tabScope || 'multi';
+      if (isBrainItemSaved(meta.text, tabKey)) {
+        openSavedBrainItem(meta.text, tabKey);
+      } else {
+        saveSingleItemToBrain(meta.text, tabKey, meta.sectionLabel || '', '');
+      }
+    },
+    onQuickSaveObsidian: (meta) => {
+      if (resolveObsidianStatusForItem(meta).saved) {
+        openSavedObsidianItem(meta.text, meta.type || meta.tabScope || 'multi', meta.sectionLabel || '');
+      } else {
+        saveSingleItemToObsidian(meta);
+      }
+    },
+    onQuickSaveWorkspace: (meta) => {
+      const tabKey = meta.type || meta.tabScope || 'multi';
+      if (resolveWorkspaceSaveStatus(videoIdForQuickSave, tabKey, meta.text).saved) {
+        openSavedWorkspaceItem(meta.text, tabKey);
+      } else {
+        saveSingleItemToWorkspace(meta);
+      }
+    },
+    isBrainSaved: (text, tabKey) => isBrainItemSaved(text, tabKey),
+    isObsidianSaved: (text, tabKey, sectionKey) => isObsidianItemSaved({
+      videoId: videoIdForQuickSave,
+      tabKey: tabKey || 'multi',
+      sectionKey: sectionKey || '',
+      text,
+    }),
+    isWorkspaceSaved: (text, tabKey) => resolveWorkspaceSaveStatus(videoIdForQuickSave, tabKey, text).saved,
+  }), [
+    multiSelected,
+    toggleMultiSelect,
+    multiSelectAll,
+    multiSelectClear,
+    videoIdForQuickSave,
+    obsidianItemSaveRevision,
+    isBrainItemSaved,
+    openSavedBrainItem,
+    saveSingleItemToBrain,
+    resolveObsidianStatusForItem,
+    openSavedObsidianItem,
+    saveSingleItemToObsidian,
+    saveSingleItemToWorkspace,
+    openSavedWorkspaceItem,
+  ]);
 
   const handleSaveBrainSelections = () => {
     const videoId = video?.youtubeId || video?.id;
@@ -4500,19 +5358,20 @@ export function VideoDetailPanel({
 
     // ── Market Brief — handle separately before generic pipeline ──────────
     if (parsed?.contentType === 'marketBrief') {
+      const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
       const videoId = video?.id || video?.youtubeId;
       if (videoId) {
-        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsed));
+        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
         localStorage.setItem(`gems-applied-${video.id}`, 'true');
       }
       // Persist into video entity so tabs refresh and data survives navigation
       patchVideo({
-        marketBriefData: parsed,
+        marketBriefData: parsedWithOverrides,
         analysisProvider: 'gems',
         analysisStatus: 'analyzed',
         analyzedAt: new Date().toISOString(),
       });
-      setMarketBriefData(parsed);
+      setMarketBriefData(parsedWithOverrides);
       setGemsJsonApplied(true);
       setGemsPasteError('');
       setGemsParsedErrorInfo(null);
@@ -4849,6 +5708,17 @@ export function VideoDetailPanel({
     }
   }, [gemsPasteInput]);
 
+  const handleCopyGemsJson = async () => {
+    if (!gemsPasteInput) return;
+    try {
+      await navigator.clipboard.writeText(gemsPasteInput);
+      setGemsCopyStatus('copied');
+    } catch {
+      setGemsCopyStatus('error');
+    }
+    setTimeout(() => setGemsCopyStatus(null), 2000);
+  };
+
   const handleClearGemsPaste = () => {
     setGemsPasteInput('');
     setGemsPasteError('');
@@ -5014,6 +5884,7 @@ export function VideoDetailPanel({
         transcriptError: null,
         analysisError: null,
       });
+      setGemRecommendationVisible(true);
       toast.success("התמלול נשמר — מריץ ניתוח AI...");
       await runAiAnalysis({ force: true, manualTranscriptOverride: text });
     } finally {
@@ -5956,6 +6827,7 @@ export function VideoDetailPanel({
         analysisType: patch.analysisType ?? null,
       });
       persistAnalysisState(patch);
+      setGemRecommendationVisible(true);
       console.log("[transcript] success lang=" + (payload?.lang || "?") + " segments=" + segments.length);
       setAnalyzeError(null);
       toast.success("תמלול נשמר בהצלחה");
@@ -6208,6 +7080,36 @@ export function VideoDetailPanel({
           ? storedTranscriptSegments.map(s => s.text || '').join(' ')
           : "";
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
+
+  const handleOpenRecommendedGem = async () => {
+    const gemKey = effectiveGemInfo?.gemKey;
+    if (!fullTranscriptText) {
+      toast.error("אין תמלול זמין לשליחה");
+      return;
+    }
+    if (!gemKey) return;
+    setGemRecommendationOpening(true);
+    try {
+      const clipboardPayload = buildTranscriptGemPayload({
+        video,
+        fullTranscriptText,
+        durationLabel: videoDuration,
+      });
+      await navigator.clipboard.writeText(clipboardPayload);
+      toast.success("✓ התמלול הועתק ללוח");
+      const gemUrl = getGemUrl(gemKey);
+      if (!gemUrl) {
+        setShowGemsSettings(true);
+        toast.info("יש להגדיר כתובת Gem בהגדרות");
+        return;
+      }
+      openGeminiGemUrl(gemUrl);
+    } catch {
+      toast.error("לא ניתן לגשת ללוח");
+    } finally {
+      setGemRecommendationOpening(false);
+    }
+  };
 
   const transcriptSearchMatches = (() => {
     const q = transcriptSearch.trim().toLowerCase();
@@ -6687,8 +7589,9 @@ export function VideoDetailPanel({
           </button>
         )}
 
-        <ScrollArea className="flex-1">
-          <div dir="rtl" className="flex flex-col max-w-[1400px] mx-auto bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <ScrollArea className="flex-1 max-lg:overflow-x-hidden">
+          <div className="w-0 min-w-full max-w-full overflow-x-clip box-border">
+          <div dir="rtl" className="flex flex-col max-w-[1400px] mx-auto bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 w-full max-w-full min-w-0 box-border overflow-x-clip">
 
             {isDev && (
               <div className="hidden rounded-xl border border-slate-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
@@ -7043,6 +7946,19 @@ export function VideoDetailPanel({
                       >
                         {ytLogo}
                         <span>YouTube</span>
+                      </a>
+                    )}
+                    {/* Mentor channel link */}
+                    {mentorChannelUrl && (
+                      <a
+                        href={mentorChannelUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${BASE} border-indigo-200/60 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700/50`}
+                        title="פתח את ערוץ המנטור ביוטיוב"
+                      >
+                        <span className="text-xs leading-none">📺</span>
+                        <span>ערוץ המנטור</span>
                       </a>
                     )}
                     {/* Transcript status */}
@@ -7402,10 +8318,10 @@ export function VideoDetailPanel({
 
             {/* ── Main Content: Sidebar + Tabs ── */}
             <PanelErrorBoundary>
-            <div className="flex gap-4 items-start px-4 pt-2 pb-4" dir="rtl">
+            <div className="flex gap-4 items-start px-4 pt-2 pb-4 max-lg:flex-col max-lg:w-full max-lg:max-w-full max-lg:min-w-0 max-lg:overflow-x-hidden" dir="rtl">
 
               {/* ── SIDEBAR ── */}
-              <div className="w-[340px] shrink-0 flex flex-col gap-3 self-start sticky top-0">
+              <div className="w-[340px] shrink-0 flex flex-col gap-3 self-start sticky top-0 max-lg:w-full max-lg:max-w-full max-lg:static max-lg:overflow-x-hidden">
               {/* ── Video Thumbnail Card / PDF Document Card ── */}
               {video.contentType === "pdf" ? (
                 <PdfDocumentCard video={video} />
@@ -7607,7 +8523,7 @@ export function VideoDetailPanel({
               </div>{/* closes sidebar */}
 
               {/* ── MAIN CONTENT ── */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 w-full max-w-full overflow-hidden max-lg:w-full max-lg:max-w-full max-lg:min-w-0">
             {/* Error */}
             {video.status === "error" && video.errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-right">
@@ -7616,30 +8532,42 @@ export function VideoDetailPanel({
             )}
 
             {/* ── טאבים ── */}
-            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+            <UniversalTabBulkProvider
+              activeTab={activeTab}
+              multiSelected={multiSelected}
+              toggleMultiSelect={toggleMultiSelect}
+              multiSelectAll={multiSelectAll}
+              multiSelectClear={multiSelectClear}
+              bulkSelectionShare={bulkSelectionShare}
+            >
+            <Tabs id="analysis-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0 max-w-full" dir="rtl">
               {/* ── Universal 7-tab bar — same for every video (Phase 1) ── */}
+              <div className="w-full max-w-full min-w-0 overflow-hidden">
               <TabsList
-                className="flex rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1 gap-0 w-full"
+                className="flex flex-nowrap justify-start rounded-2xl bg-slate-100/80 border border-slate-200 dark:bg-zinc-800/60 dark:border-zinc-700 p-1.5 gap-1 w-full max-w-full min-w-0 min-h-[52px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]"
                 dir="rtl"
               >
                 {UNIVERSAL_TABS.map(({ value, label, emoji }) => (
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="shrink-0 flex-1 min-w-max inline-flex items-center justify-center gap-1 rounded-xl py-2 px-2.5 text-xs font-medium transition-all duration-150
-                      text-slate-500 dark:text-zinc-400
-                      data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:font-semibold
-                      dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white
-                      hover:text-slate-700 dark:hover:text-zinc-200"
+                    className="shrink-0 min-w-max lg:min-w-0 lg:flex-1 inline-flex h-11 min-h-[44px] items-center justify-center gap-1.5 rounded-[14px] px-5 sm:px-6 lg:px-5 xl:px-6 text-sm lg:text-[15px] leading-none font-medium transition-all duration-150
+                      text-slate-600 dark:text-zinc-300
+                      data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md data-[state=active]:font-semibold data-[state=active]:ring-1 data-[state=active]:ring-slate-200/90
+                      dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white dark:data-[state=active]:shadow-[0_2px_10px_rgba(0,0,0,0.35)] dark:data-[state=active]:ring-zinc-600/60
+                      hover:text-slate-800 hover:bg-white/60 dark:hover:text-zinc-100 dark:hover:bg-zinc-700/50"
                   >
                     <span>{emoji}</span>
                     <span>{label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
+              </div>
+
+              <UniversalTabBulkToolbar />
 
               {/* ── Summary tab ── */}
-              <TabsContent value="summary" className="mt-5 min-h-[320px]" dir="rtl">
+              <TabsContent value="summary" className="mt-0 min-h-[320px]" dir="rtl">
                 <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-3 space-y-3 text-right">
                   {/* GEM RAW debug button */}
                   <div className="flex justify-end">
@@ -7654,14 +8582,14 @@ export function VideoDetailPanel({
                   </div>
                   {/* GEM summary card */}
                   {video?.gemSummary && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20 px-4 py-3">
+                    <div className={SUMMARY_CARD_CLASS}>
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300">📄 סיכום מ-GEM · {effectiveGemInfo?.gemLabel || 'GEM'}</span>
+                        <span className={SUMMARY_CARD_TITLE_CLASS}>📄 סיכום מ-GEM · {effectiveGemInfo?.gemLabel || 'GEM'}</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => navigator.clipboard.writeText(video.gemSummary).then(() => toast.success('הועתק'))}
-                            className="text-amber-400 hover:text-amber-600 dark:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                            className="text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
                             title="העתק"
                           >
                             <Copy className="h-3.5 w-3.5" />
@@ -7669,14 +8597,14 @@ export function VideoDetailPanel({
                           <button
                             type="button"
                             onClick={() => { setGemPasteOpen(true); setGemPasteText(video.gemSummary || ""); }}
-                            className="text-[10px] text-amber-500 hover:text-amber-700 dark:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                            className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
                             title="ערוך"
                           >
                             ✏
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-amber-900 dark:text-amber-100 leading-7 whitespace-pre-wrap text-right">{video.gemSummary}</p>
+                      <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 whitespace-pre-wrap text-right">{video.gemSummary}</p>
                     </div>
                   )}
                   {isClaudeAnalysisRunning && (
@@ -7879,15 +8807,15 @@ export function VideoDetailPanel({
                       return String(v);
                     };
                     const emotionColorMap = { כעס:'bg-red-100 text-red-700 border-red-200', פחד:'bg-orange-100 text-orange-700 border-orange-200', תקווה:'bg-emerald-100 text-emerald-700 border-emerald-200', דחיפות:'bg-yellow-100 text-yellow-800 border-yellow-200', בוז:'bg-purple-100 text-purple-700 border-purple-200', הזדהות:'bg-sky-100 text-sky-700 border-sky-200' };
-                    const PCard = ({ title, icon, cn, saveKey, saveContent, children }) => {
+                    const PCard = ({ title, icon, saveKey, saveContent, children }) => {
                       const isSaved = saveKey ? !!savedPsSections[saveKey] : false;
                       const dropIsOpen = psCardDropOpen === saveKey;
                       return (
-                        <div data-section={title} className={`rounded-xl border px-4 py-3 ${cn || 'border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'}`} dir="rtl">
+                        <div data-section={title} className={SUMMARY_CARD_CLASS} dir="rtl">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5">
                               <span className="text-base leading-none">{icon}</span>
-                              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 tracking-wide">{title}</span>
+                              <span className={SUMMARY_CARD_TITLE_CLASS}>{title}</span>
                             </div>
                             {saveKey && (isSaved
                               ? <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">✅ נשמר</span>
@@ -7902,8 +8830,8 @@ export function VideoDetailPanel({
                                   {dropIsOpen && (
                                     <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 overflow-hidden">
                                       {[
-                                        { dest: 'brain',     label: '🧠 שמור למוח' },
-                                        { dest: 'obsidian',  label: '📁 שמור ל-Obsidian' },
+                                        { dest: 'brain', label: '🧠 שמור למוח' },
+                                        { dest: 'obsidian' },
                                         { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
                                         ...(isPoliticalVideo ? [{ dest: 'opponent', label: '⚔️ דעת האויב', red: true }] : []),
                                       ].map(({ dest, label, red }) => (
@@ -7913,7 +8841,7 @@ export function VideoDetailPanel({
                                           onClick={() => { handleSavePsSectionTo(saveKey, title, saveContent, dest); setPsCardDropOpen(null); }}
                                           className={`flex w-full items-center gap-2 px-3 py-2 text-xs text-right transition-colors ${red ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20' : 'text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900'}`}
                                         >
-                                          {label}
+                                          {dest === 'obsidian' ? <ObsidianSaveLabel /> : label}
                                         </button>
                                       ))}
                                     </div>
@@ -7938,34 +8866,12 @@ export function VideoDetailPanel({
                           onClose={() => setTextSaveMenu(null)}
                         />
                       )}
+                      <TabBulkItemsRegistrar tab="summary" items={buildPoliticalSummaryBulkItems(ps)} />
                       <div className="mt-3 space-y-3" dir="rtl" onMouseUp={handleSummaryMouseUp}>
                         {/* Actions row */}
                         <div className="flex items-center gap-2 flex-row-reverse flex-wrap">
                           <button type="button" onClick={handleGeneratePoliticalSummary} disabled={isPoliticalSummaryLoading} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:border-blue-700/50 dark:bg-blue-950/30 dark:text-blue-300">🔄 רענן</button>
                           <button type="button" onClick={handleDeletePoliticalSummary} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400">🗑️ מחק</button>
-                          <button type="button" onClick={() => {
-                            const sections = [
-                              { k: 'shortSummary', l: 'תקציר קצר', c: ps.shortSummary },
-                              { k: 'mainClaim', l: 'הטענה המרכזית', c: ps.mainClaim },
-                              { k: 'keyPoints', l: 'נקודות מרכזיות', c: ps.keyPoints },
-                              { k: 'supportingArguments', l: 'טיעונים בעד', c: ps.supportingArguments },
-                              { k: 'weaknesses', l: 'נקודות חולשה', c: ps.weaknessesAndCounterpoints },
-                              { k: 'usefulQuotes', l: 'ציטוטים חזקים', c: ps.usefulQuotes },
-                              { k: 'bottomLine', l: 'שורה תחתונה', c: ps.bottomLine },
-                              { k: 'context', l: 'הקשר', c: ps.context },
-                              { k: 'conclusion', l: 'מסקנה', c: ps.conclusion },
-                              { k: 'implications', l: 'השלכות', c: ps.implications },
-                            ].filter(s => s.c && (typeof s.c === 'string' ? s.c.trim() : (Array.isArray(s.c) ? s.c.length > 0 : false)));
-                            // Populate multiSelected so user can choose destination from bar
-                            const items = sections.flatMap(({ k, l, c }) => {
-                              const arr = Array.isArray(c) ? c : [c];
-                              return arr.filter(Boolean).map((text, i) => ({
-                                id: `summary:${k}:${i}`, text: String(text).slice(0, 200), sectionLabel: l, type: 'summary',
-                              }));
-                            });
-                            if (items.length) multiSelectAll(items);
-                            toast.success(`☑ ${items.length} חלקים נבחרו — בחר יעד שמירה`);
-                          }} className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700/50 dark:bg-indigo-950/30 dark:text-indigo-300">☑ בחר הכל</button>
                           <button type="button" onClick={() => {
                             const sections = [
                               { k: 'shortSummary', l: 'תקציר קצר', c: ps.shortSummary },
@@ -8001,17 +8907,17 @@ export function VideoDetailPanel({
                         </div>
 
                         {/* 1. תקציר קצר */}
-                        {ps.shortSummary && <PCard title="תקציר קצר" icon="📝" cn="border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900" saveKey="shortSummary" saveContent={ps.shortSummary}>
+                        {ps.shortSummary && <PCard title="תקציר קצר" icon="📝" saveKey="shortSummary" saveContent={ps.shortSummary}>
                           <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7">{ps.shortSummary}</p>
                         </PCard>}
 
                         {/* 2. הטענה המרכזית */}
-                        {ps.mainClaim && <PCard title="הטענה המרכזית" icon="🎯" cn="border-indigo-200 bg-indigo-50 dark:border-indigo-800/50 dark:bg-indigo-950/30" saveKey="mainClaim" saveContent={ps.mainClaim}>
+                        {ps.mainClaim && <PCard title="הטענה המרכזית" icon="🎯" saveKey="mainClaim" saveContent={ps.mainClaim}>
                           <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100 leading-relaxed">{ps.mainClaim}</p>
                         </PCard>}
 
                         {/* 3. נקודות מרכזיות */}
-                        {ps.keyPoints?.length > 0 && <PCard title="נקודות מרכזיות" icon="📌" cn="border-blue-200 bg-blue-50/60 dark:border-blue-800/40 dark:bg-blue-950/20" saveKey="keyPoints" saveContent={ps.keyPoints}>
+                        {ps.keyPoints?.length > 0 && <PCard title="נקודות מרכזיות" icon="📌" saveKey="keyPoints" saveContent={ps.keyPoints}>
                           <ul className="space-y-1.5">
                             {ps.keyPoints.map((pt, i) => (
                               <li key={i} className="flex items-start gap-2 text-sm text-blue-900 dark:text-blue-100">
@@ -8023,7 +8929,7 @@ export function VideoDetailPanel({
                         </PCard>}
 
                         {/* 4. מי נגד מי */}
-                        {ps.actorsMap && <PCard title="מי נגד מי" icon="⚔️" cn="border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20">
+                        {ps.actorsMap && <PCard title="מי נגד מי" icon="⚔️">
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { label: 'הדובר/ים', value: ps.actorsMap.speakers, icon: '🎤' },
@@ -8045,7 +8951,7 @@ export function VideoDetailPanel({
 
                         {/* 5 & 6 — טיעונים / חולשות side by side */}
                         <div className="grid grid-cols-2 gap-3">
-                          {ps.supportingArguments?.length > 0 && <PCard title="טיעונים בעד" icon="✅" cn="border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20" saveKey="supportingArguments" saveContent={ps.supportingArguments}>
+                          {ps.supportingArguments?.length > 0 && <PCard title="טיעונים בעד" icon="✅" saveKey="supportingArguments" saveContent={ps.supportingArguments}>
                             <ul className="space-y-1">
                               {ps.supportingArguments.map((a, i) => (
                                 <li key={i} className="flex items-start gap-1.5 text-xs text-emerald-800 dark:text-emerald-200 leading-snug">
@@ -8054,7 +8960,7 @@ export function VideoDetailPanel({
                               ))}
                             </ul>
                           </PCard>}
-                          {ps.weaknessesAndCounterpoints?.length > 0 && <PCard title="נקודות חולשה" icon="⚠️" cn="border-orange-200 bg-orange-50/60 dark:border-orange-800/40 dark:bg-orange-950/20" saveKey="weaknesses" saveContent={ps.weaknessesAndCounterpoints}>
+                          {ps.weaknessesAndCounterpoints?.length > 0 && <PCard title="נקודות חולשה" icon="⚠️" saveKey="weaknesses" saveContent={ps.weaknessesAndCounterpoints}>
                             <ul className="space-y-1">
                               {ps.weaknessesAndCounterpoints.map((w, i) => (
                                 <li key={i} className="flex items-start gap-1.5 text-xs text-orange-800 dark:text-orange-200 leading-snug">
@@ -8066,7 +8972,7 @@ export function VideoDetailPanel({
                         </div>
 
                         {/* 7. ציטוטים חזקים */}
-                        {ps.usefulQuotes?.length > 0 && <PCard title="ציטוטים חזקים לשימוש" icon="💬" cn="border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20" saveKey="usefulQuotes" saveContent={ps.usefulQuotes}>
+                        {ps.usefulQuotes?.length > 0 && <PCard title="ציטוטים חזקים לשימוש" icon="💬" saveKey="usefulQuotes" saveContent={ps.usefulQuotes}>
                           <div className="space-y-2">
                             {ps.usefulQuotes.map((q, i) => {
                               const qStr = safeStr(q);
@@ -8083,7 +8989,7 @@ export function VideoDetailPanel({
                         </PCard>}
 
                         {/* 8. מסגור רגשי */}
-                        {ps.emotionalFraming?.length > 0 && <PCard title="מסגור רגשי" icon="🎭" cn="border-pink-200 bg-pink-50/60 dark:border-pink-800/40 dark:bg-pink-950/20">
+                        {ps.emotionalFraming?.length > 0 && <PCard title="מסגור רגשי" icon="🎭">
                           <div className="flex flex-wrap gap-1.5">
                             {ps.emotionalFraming.map((e, i) => {
                               const eStr = safeStr(e);
@@ -8094,7 +9000,7 @@ export function VideoDetailPanel({
                         </PCard>}
 
                         {/* 9. שימוש פרקטי */}
-                        {ps.practicalUse?.length > 0 && <PCard title="שימוש פרקטי" icon="🛠️" cn="border-teal-200 bg-teal-50/60 dark:border-teal-800/40 dark:bg-teal-950/20">
+                        {ps.practicalUse?.length > 0 && <PCard title="שימוש פרקטי" icon="🛠️">
                           <div className="space-y-2">
                             {ps.practicalUse.map((item, i) => {
                               const itemStr = safeStr(item);
@@ -8114,9 +9020,9 @@ export function VideoDetailPanel({
 
                         {/* 10. שורה תחתונה */}
                         {ps.bottomLine && (
-                          <div data-section="שורה תחתונה" className="rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-3 dark:border-zinc-200 dark:bg-zinc-100" dir="rtl">
+                          <div data-section="שורה תחתונה" className={SUMMARY_CARD_CLASS} dir="rtl">
                             <div className="flex items-center justify-between mb-1.5">
-                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">⬇️ שורה תחתונה</div>
+                              <div className={SUMMARY_CARD_TITLE_CLASS}>⬇️ שורה תחתונה</div>
                               {savedPsSections['bottomLine']
                                 ? <span className="text-[10px] font-semibold text-emerald-400 dark:text-emerald-600">✅ נשמר</span>
                                 : <div className="relative" data-pcard-drop>
@@ -8125,13 +9031,13 @@ export function VideoDetailPanel({
                                       <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-zinc-700 bg-zinc-950 shadow-xl overflow-hidden">
                                         {[
                                           { dest: 'brain', label: '🧠 שמור למוח' },
-                                          { dest: 'obsidian', label: '📁 שמור ל-Obsidian' },
+                                          { dest: 'obsidian' },
                                           { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
                                           { dest: 'opponent', label: '⚔️ דעת האויב', red: true },
                                         ].map(({ dest, label, red }) => (
                                           <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('bottomLine', 'שורה תחתונה', ps.bottomLine, dest); setPsCardDropOpen(null); }}
                                             className={`flex w-full items-center gap-2 px-3 py-2 text-xs text-right transition-colors ${red ? 'text-red-400 hover:bg-red-950/20' : 'text-zinc-200 hover:bg-zinc-900'}`}>
-                                            {label}
+                                            {dest === 'obsidian' ? <ObsidianSaveLabel /> : label}
                                           </button>
                                         ))}
                                       </div>
@@ -8139,22 +9045,22 @@ export function VideoDetailPanel({
                                   </div>
                               }
                             </div>
-                            <p className="text-sm font-bold text-white dark:text-slate-900 leading-relaxed">{safeStr(ps.bottomLine)}</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-zinc-100 leading-relaxed">{safeStr(ps.bottomLine)}</p>
                           </div>
                         )}
 
                         {/* 11. הקשר */}
-                        {ps.context && <PCard title="הקשר" icon="🔍" cn="border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900" saveKey="context" saveContent={ps.context}>
+                        {ps.context && <PCard title="הקשר" icon="🔍" saveKey="context" saveContent={ps.context}>
                           <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed">{safeStr(ps.context)}</p>
                         </PCard>}
 
                         {/* 12. מסקנה */}
-                        {ps.conclusion && <PCard title="מסקנה" icon="✅" cn="border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20" saveKey="conclusion" saveContent={ps.conclusion}>
+                        {ps.conclusion && <PCard title="מסקנה" icon="✅" saveKey="conclusion" saveContent={ps.conclusion}>
                           <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100 leading-relaxed">{safeStr(ps.conclusion)}</p>
                         </PCard>}
 
                         {/* 13. השלכות */}
-                        {ps.implications?.length > 0 && <PCard title="השלכות" icon="🔮" cn="border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20" saveKey="implications" saveContent={ps.implications}>
+                        {ps.implications?.length > 0 && <PCard title="השלכות" icon="🔮" saveKey="implications" saveContent={ps.implications}>
                           <ul className="space-y-1.5">
                             {ps.implications.map((imp, i) => (
                               <li key={i} className="flex items-start gap-2 text-sm text-violet-900 dark:text-violet-100">
@@ -8171,7 +9077,7 @@ export function VideoDetailPanel({
                   }
 
                   // ── Non-political: existing summary logic ─────────────
-                  const isBriefVideo = ['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(normalizedSubCategory);
+                  const isBriefVideo = ['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(effectiveBriefSlug);
                   const summaryShort = (video.shortSummary || enrichedVideo.aiSummaryShort)?.replace(/\[MOCK\]\s*/g, '');
 
                   // Brief video without any analysis — show actionable CTA
@@ -8218,40 +9124,173 @@ export function VideoDetailPanel({
                   }
 
                   if (isBriefVideo && !summaryShort && marketBriefData) {
-                    const gemInsights = [
-                      ...(Array.isArray(marketBriefData.top5Insights) ? marketBriefData.top5Insights : []),
-                      ...(Array.isArray(marketBriefData.reusableKnowledge) ? marketBriefData.reusableKnowledge : []),
-                      ...(Array.isArray(marketBriefData.conclusions) ? marketBriefData.conclusions : []),
-                    ].filter(Boolean);
+                    const summaryShaped = extractUniversalTabContent(effectiveVideo, 'summary', marketBriefData);
+                    logUniversalTabExtractShape('summary', summaryShaped, marketBriefData);
+
+                    if (summaryShaped?.mode === 'sections') {
+                      const dailyBriefingForSections = buildDailyBriefingView({
+                        effectiveVideo,
+                        marketBriefData,
+                        summaryShort,
+                        fullSummary: video.fullSummary || enrichedVideo.aiSummaryLong,
+                        summaryShaped,
+                      });
+                      const sectionsPopulated = (summaryShaped.sections || []).filter(
+                        (s) => Array.isArray(s.items) && s.items.length > 0,
+                      );
+                      const summarySectionsBulkItems = [
+                        ...buildSummaryBriefingCardBulkItems(dailyBriefingForSections),
+                        ...buildSummaryBriefingBulkItems(dailyBriefingForSections),
+                        ...buildCardBulkItemsFromSections(
+                          sectionsPopulated.map((s) => ({ ...s, tabKey: 'summary' })),
+                          'summary',
+                        ),
+                        ...buildBulkItemsFromSections(
+                          sectionsPopulated.map((s) => ({ ...s, tabKey: 'summary' })),
+                          'summary',
+                        ),
+                      ];
+
+                      return (
+                        <div className="mt-3 space-y-3" dir="rtl">
+                          <TabBulkItemsRegistrar tab="summary" items={summarySectionsBulkItems} />
+                          <SummaryBriefingView
+                            briefing={dailyBriefingForSections}
+                            effectiveVideo={effectiveVideo}
+                            marketBriefData={marketBriefData}
+                            summaryShort={summaryShort}
+                            fullSummary={video.fullSummary || enrichedVideo.aiSummaryLong}
+                            summaryShaped={summaryShaped}
+                            fullSummaryStorageKey={`summary-full-expanded:${video?.youtubeId || video?.id || 'unknown'}`}
+                            onSaveToBrain={saveSingleItemToBrain}
+                            isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                            bulkSelection={bulkSelectionShare}
+                          >
+                            <p className={SUMMARY_CARD_TITLE_CLASS}>📈 {effectiveSubCategory || 'מבזק שוק'} — סיכום מ-GEM</p>
+                            <UniversalTabSectionBlocks
+                              sections={summaryShaped.sections}
+                              tabKey="summary"
+                              cardClassName={SUMMARY_CARD_CLASS}
+                              labelClassName={SUMMARY_CARD_TITLE_CLASS}
+                              onSaveToBrain={(text, tabKey, label) => saveSingleItemToBrain(text, tabKey, label, '')}
+                              isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                              bulkSelection={bulkSelectionShare}
+                              skipBulkRegister
+                            />
+                          </SummaryBriefingView>
+                          <p className="text-xs text-slate-400 dark:text-zinc-500 text-right">לסיכום AI מלא — לחץ "הרץ ניתוח" בטאב ניתוח AI.</p>
+                        </div>
+                      );
+                    }
+
+                    const gemInsights = summaryShaped?.mode === 'flat' && summaryShaped.items.length > 0
+                      ? summaryShaped.items
+                      : (() => {
+                        const flat = extractUniversalTabFlatItems(effectiveVideo, 'summary', marketBriefData);
+                        if (flat.length > 0) return flat;
+                        return [
+                          ...(Array.isArray(marketBriefData.top5Insights) ? marketBriefData.top5Insights : []),
+                          ...(Array.isArray(marketBriefData.reusableKnowledge) ? marketBriefData.reusableKnowledge : []),
+                          ...(Array.isArray(marketBriefData.conclusions) ? marketBriefData.conclusions : []),
+                        ].filter(Boolean);
+                      })();
+
+                    const dailyBriefingForGem = buildDailyBriefingView({
+                      effectiveVideo,
+                      marketBriefData,
+                      summaryShort,
+                      fullSummary: video.fullSummary || enrichedVideo.aiSummaryLong,
+                      summaryShaped,
+                    });
+                    const summaryBulkItems = [
+                      ...buildSummaryBriefingCardBulkItems(dailyBriefingForGem),
+                      ...buildSummaryBriefingBulkItems(dailyBriefingForGem),
+                      ...buildCardBulkItemsFromSections(
+                        [{ key: 'gem', label: 'סיכום מ-GEM', items: gemInsights, tabKey: 'summary' }],
+                        'summary',
+                      ),
+                      ...buildBulkItemsFromSections(
+                        [{ key: 'gem', label: 'סיכום מ-GEM', items: gemInsights, tabKey: 'summary' }],
+                        'summary',
+                      ),
+                    ];
+
                     return (
                       <div className="mt-3 space-y-3" dir="rtl">
-                        <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 dark:border-sky-800/40 dark:bg-sky-950/20">
-                          <p className="text-xs font-semibold text-sky-700 dark:text-sky-300 mb-3">📈 {effectiveSubCategory || 'מבזק שוק'} — תובנות מ-GEM</p>
-                          {gemInsights.length > 0 ? (
-                            <ul className="space-y-2" dir="rtl">
-                              {gemInsights.slice(0, 5).map((item, i) => {
-                                const text = typeof item === 'string' ? item : (item?.insight || item?.text || item?.point || '');
-                                if (!text) return null;
-                                return (
-                                  <li key={i} className="flex items-start gap-2 text-sm text-sky-800 dark:text-sky-200 text-right leading-relaxed">
-                                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-                                    {text}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <p className="text-xs text-sky-600 dark:text-sky-400">מבזק שוק נקלט — עבור לטאב "תוכן ייעודי" לנתוני השוק המלאים.</p>
-                          )}
-                        </div>
+                        <TabBulkItemsRegistrar tab="summary" items={summaryBulkItems} />
+                        <SummaryBriefingView
+                          briefing={dailyBriefingForGem}
+                          effectiveVideo={effectiveVideo}
+                          marketBriefData={marketBriefData}
+                          summaryShort={summaryShort}
+                          fullSummary={video.fullSummary || enrichedVideo.aiSummaryLong}
+                          summaryShaped={summaryShaped}
+                          fullSummaryStorageKey={`summary-full-expanded:${video?.youtubeId || video?.id || 'unknown'}`}
+                          onSaveToBrain={saveSingleItemToBrain}
+                          isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                          bulkSelection={bulkSelectionShare}
+                        >
+                          <div className={SUMMARY_CARD_CLASS}>
+                            <p className={`${SUMMARY_CARD_TITLE_CLASS} mb-3`}>📈 {effectiveSubCategory || 'מבזק שוק'} — סיכום מ-GEM</p>
+                            {gemInsights.length > 0 ? (
+                              <>
+                                <LearningTabContent
+                                  items={gemInsights}
+                                  emptyLabel=""
+                                  onSaveToBrain={(text) => saveSingleItemToBrain(text, 'summary', 'סיכום מ-GEM', '')}
+                                  isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, 'summary', text))}
+                                  bulkSelection={mergeBulkSelection(bulkSelectionShare, {
+                                    idPrefix: 'summary:gem',
+                                    sectionLabel: 'סיכום מ-GEM',
+                                    type: 'summary',
+                                    tabScope: 'summary',
+                                  })}
+                                />
+                              </>
+                            ) : (
+                              <p className="text-xs text-sky-600 dark:text-sky-400">מבזק שוק נקלט — עבור לטאב "תוכן ייעודי" לנתוני השוק המלאים.</p>
+                            )}
+                          </div>
+                        </SummaryBriefingView>
                         <p className="text-xs text-slate-400 dark:text-zinc-500 text-right">לסיכום AI מלא — לחץ "הרץ ניתוח" בטאב ניתוח AI.</p>
                       </div>
                     );
                   }
 
                   if (summaryShort) {
+                    const summaryShapedForBriefing = marketBriefData
+                      ? extractUniversalTabContent(effectiveVideo, 'summary', marketBriefData)
+                      : null;
+                    const showDailyBriefing = isBriefVideo || !!marketBriefData;
+                    const summaryVideoId = video?.youtubeId || video?.id || 'unknown';
+                    const fullSummaryStorageKey = `summary-full-expanded:${summaryVideoId}`;
+                    const dailyBriefing = showDailyBriefing
+                      ? buildDailyBriefingView({
+                          effectiveVideo,
+                          marketBriefData,
+                          summaryShort,
+                          fullSummary: video.fullSummary || enrichedVideo.aiSummaryLong,
+                          summaryShaped: summaryShapedForBriefing,
+                        })
+                      : null;
+                    const hideStandaloneSummaryCard = Boolean(dailyBriefing?.coversSummaryShort);
+                    const summaryTabBulkItems = [
+                      ...buildSummaryBriefingCardBulkItems(dailyBriefing),
+                      ...buildSummaryBriefingBulkItems(dailyBriefing),
+                      ...(Array.isArray(video.keyPoints)
+                        ? video.keyPoints.map((point, i) => ({
+                          id: `keypoints:${i}`,
+                          text: String(point),
+                          sectionLabel: 'נקודות מפתח',
+                          type: 'keypoints',
+                          tabScope: 'summary',
+                        }))
+                        : []),
+                    ];
+
                     return (
                       <div className="mt-3 space-y-3" onMouseUp={handleSummaryMouseUp}>
+                        <TabBulkItemsRegistrar tab="summary" items={summaryTabBulkItems} />
                         {textSaveMenu && (
                           <SummaryTextSaveMenu
                             coords={textSaveMenu.coords}
@@ -8262,26 +9301,39 @@ export function VideoDetailPanel({
                             onClose={() => setTextSaveMenu(null)}
                           />
                         )}
-                        <div data-section="סיכום" className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                        {showDailyBriefing && (
+                          <SummaryBriefingView
+                            briefing={dailyBriefing}
+                            fullSummaryStorageKey={fullSummaryStorageKey}
+                            onSaveToBrain={saveSingleItemToBrain}
+                            isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                            bulkSelection={bulkSelectionShare}
+                          />
+                        )}
+                        {!hideStandaloneSummaryCard && (
+                        <div data-section="סיכום" className={SUMMARY_CARD_CLASS}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-slate-400 dark:text-zinc-500">📝 סיכום</span>
+                            <span className={SUMMARY_CARD_TITLE_CLASS}>📝 סיכום</span>
                             <div className="relative" data-pcard-drop>
                               <button type="button" onClick={() => setPsCardDropOpen(psCardDropOpen === 'nonPoliticalSummary' ? null : 'nonPoliticalSummary')} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${psCardDropOpen === 'nonPoliticalSummary' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/30 dark:text-indigo-300' : 'border-transparent text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-950/30'}`}>🧠 שמור ▾</button>
                               {psCardDropOpen === 'nonPoliticalSummary' && (
                                 <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 overflow-hidden">
                                   {[
                                     { dest: 'brain', label: '🧠 שמור למוח' },
-                                    { dest: 'obsidian', label: '📁 שמור ל-Obsidian' },
+                                    { dest: 'obsidian' },
                                     { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
                                   ].map(({ dest, label }) => (
-                                    <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalSummary', 'סיכום', summaryShort, dest); setPsCardDropOpen(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">{label}</button>
+                                    <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalSummary', 'סיכום', summaryShort, dest); setPsCardDropOpen(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">
+                                      {dest === 'obsidian' ? <ObsidianSaveLabel /> : label}
+                                    </button>
                                   ))}
                                 </div>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-slate-800 dark:text-zinc-200 leading-7 text-right" data-section-content="סיכום">{summaryShort}</p>
+                          <p className={SUMMARY_LEAD_CLASS} data-section-content="סיכום">{summaryShort}</p>
                         </div>
+                        )}
                         {Array.isArray(video.keyPoints) && video.keyPoints.length > 0 ? (
                           <>
                             <ul className="space-y-3 text-right" dir="rtl">
@@ -8383,7 +9435,7 @@ export function VideoDetailPanel({
                           disabled={isYoutubeChaptersFetch}
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                         >
-                          {isYoutubeChaptersFetch ? "⏳ בודק..." : "🔍 בדוק פרקים אוטומטית"}
+                          {isYoutubeChaptersFetch ? "⏳ מייצר..." : "🔍 בדוק פרקים אוטומטית"}
                         </button>
                       </div>
                     </div>
@@ -8416,10 +9468,10 @@ export function VideoDetailPanel({
                       </div>
                     )}
 
-                    {/* hint: no API key */}
+                    {/* hint: no video URL (Gemini fallback also unavailable) */}
                     {youtubeChaptersHint === "no_api_key" && (
                       <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-right dark:border-amber-900/40 dark:bg-amber-950/20">
-                        <p className="text-xs text-amber-700 dark:text-amber-300">לא הוגדר VITE_YOUTUBE_API_KEY.</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">לא ניתן לזהות כתובת YouTube לסרטון זה.</p>
                         {hasStoredTranscript && (
                           <button
                             type="button"
@@ -8432,10 +9484,26 @@ export function VideoDetailPanel({
                       </div>
                     )}
 
-                    {/* hint: fetch error */}
+                    {/* hint: Gemini returned partial timeline — not saved */}
+                    {youtubeChaptersHint === "partial_coverage" && (
+                      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 text-right dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                        הפרקים שנוצרו לא מכסים את כל אורך הסרטון — לא נשמרו. נסה שוב או צור פרקים מהתמלול.
+                      </div>
+                    )}
+
+                    {/* hint: fetch/gemini error */}
                     {youtubeChaptersHint === "fetch_failed" && (
-                      <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 text-right dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
-                        שגיאה בטעינת נתוני YouTube — נסה שוב.
+                      <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right dark:border-red-900/40 dark:bg-red-950/20">
+                        <p className="text-xs text-red-700 dark:text-red-300">Gemini לא הצליח לנתח את הסרטון — ייתכן שהסרטון חדש מדי. ייבא תמלול כדי ליצור פרקים.</p>
+                        {hasStoredTranscript && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateTranscriptChapters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                          >
+                            🤖 צור פרקים מהתמלול
+                          </button>
+                        )}
                       </div>
                     )}
 
@@ -8608,6 +9676,18 @@ export function VideoDetailPanel({
                             💎 ניהול GEMS
                           </button>
                         </div>
+
+                        {gemRecommendationVisible && effectiveGemInfo && hasStoredTranscript && (
+                          <div className="mb-3">
+                            <GemRecommendationCard
+                              recommendation={effectiveGemInfo}
+                              onOpenRecommended={handleOpenRecommendedGem}
+                              onChooseAnother={() => setShowGemModal(true)}
+                              onDismiss={() => setGemRecommendationVisible(false)}
+                              opening={gemRecommendationOpening}
+                            />
+                          </div>
+                        )}
 
                         {/* Search bar + mode toggle */}
                         <div className="mb-2 flex flex-col gap-2" dir="rtl">
@@ -9098,7 +10178,7 @@ export function VideoDetailPanel({
                       </div>
                     )}
                     {/* ── AI Field Mapping (Morning Brief only) ── */}
-                    {marketBriefData && normalizedSubCategory === 'morning-brief' && (() => {
+                    {marketBriefData && effectiveBriefSlug === 'morning-brief' && (() => {
                       const mapping = getMorningBriefFieldMapping(marketBriefData);
                       if (!mapping.length) return null;
                       return (
@@ -9220,18 +10300,25 @@ export function VideoDetailPanel({
                 </TabsContent>
 
               {/* ── APP Builder tab — universal, appears for every video ── */}
-              <TabsContent value="app-builder" className="mt-3" dir="rtl">
+              <TabsContent value="app-builder" className="mt-0" dir="rtl">
                 <AppBuilderTab
                   video={video}
                   topicName={resolvedVideoMode.category || ''}
+                  gemAppData={marketBriefData?.universalTabs?.app || marketBriefData?.universalTabs?.appBuilder || null}
+                  marketBriefData={marketBriefData}
+                  bulkSelection={bulkSelectionShare}
+                  onBulkHandlersRef={appBuilderBulkRef}
                 />
               </TabsContent>
 
               {/* ── Insights tab — keyInsights, brainHighlights, tradingPrinciples, mentalModels, keyPoints ── */}
-              <TabsContent value="insights" className="mt-5 min-h-[320px]" dir="rtl">
+              <TabsContent value="insights" className="mt-0 min-h-[320px]" dir="rtl">
                 {(() => {
                   const mainLesson   = effectiveVideo?.mainLesson ? [effectiveVideo.mainLesson] : [];
-                  const keyInsights  = [
+                  const insightsShaped = extractUniversalTabContent(effectiveVideo, 'insights', marketBriefData);
+                  logUniversalTabExtractShape('insights', insightsShaped, marketBriefData);
+                  const universalInsightSections = insightsShaped?.mode === 'sections' ? insightsShaped.sections : [];
+                  const legacyKeyInsights = [
                     ...(Array.isArray(effectiveVideo?.keyInsights)             ? effectiveVideo.keyInsights             : []),
                     ...(Array.isArray(effectiveVideo?.analysis?.keyInsights)   ? effectiveVideo.analysis.keyInsights    : []),
                     ...(marketBriefData ? [...(Array.isArray(marketBriefData?.top5Insights) ? marketBriefData.top5Insights : []), ...(Array.isArray(marketBriefData?.reusableKnowledge) ? marketBriefData.reusableKnowledge : [])] : [
@@ -9239,6 +10326,13 @@ export function VideoDetailPanel({
                       ...(Array.isArray(effectiveVideo?.reusableKnowledge)     ? effectiveVideo.reusableKnowledge       : []),
                     ]),
                   ].filter(Boolean);
+                  const keyInsights = insightsShaped?.mode === 'flat' && insightsShaped.items.length > 0
+                    ? insightsShaped.items
+                    : (universalInsightSections.length > 0
+                      ? []
+                      : (extractUniversalTabFlatItems(effectiveVideo, 'insights', marketBriefData).length > 0
+                        ? extractUniversalTabFlatItems(effectiveVideo, 'insights', marketBriefData)
+                        : legacyKeyInsights));
                   const principles = [
                     ...(Array.isArray(effectiveVideo?.tradingPrinciples)       ? effectiveVideo.tradingPrinciples       : []),
                     ...(Array.isArray(effectiveVideo?.mentalModels)            ? effectiveVideo.mentalModels            : []),
@@ -9257,44 +10351,106 @@ export function VideoDetailPanel({
                     thesis.length > 0        && { key: 'thesis',     label: '📐 טזה / טיעון מרכזי', items: thesis,      highlight: false, tabKey: 'insights' },
                   ].filter(Boolean);
 
-                  if (sections.length === 0) return (
-                    <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
-                      <span className="text-3xl mb-2 opacity-30">💡</span>
-                      <p className="text-sm">אין עדיין תובנות — נתח את הסרטון כדי להפיק</p>
-                    </div>
+                  if (sections.length === 0 && universalInsightSections.length === 0) return (
+                    <>
+                      <TabBulkItemsRegistrar tab="insights" items={[]} />
+                      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+                        <span className="text-3xl mb-2 opacity-30">💡</span>
+                        <p className="text-sm">אין עדיין תובנות — נתח את הסרטון כדי להפיק</p>
+                      </div>
+                    </>
                   );
+                  const brainSaveInsights = (text) => saveSingleItemToBrain(text, 'insights', '', '');
+                  const isInsightSaved = (text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, 'insights', text));
+
+                  const insightsBulkSections = [
+                    ...universalInsightSections.map((s) => ({ key: s.key, label: s.label, items: s.items, tabKey: 'insights' })),
+                    ...sections.map(({ key, label, items, tabKey }) => ({ key, label, items, tabKey: tabKey || 'insights' })),
+                  ];
+                  const insightsBulkItems = buildBulkItemsFromSections(insightsBulkSections, 'insights');
+
                   return (
                     <div className="space-y-3">
-                      {sections.map(({ key, label, items, highlight, tabKey }) => (
-                        <div key={key} className={`rounded-xl border px-3 py-2 ${highlight ? 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20' : 'border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900'}`}>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5 px-1 text-right">{label}</p>
-                          <LearningTabContent
-                            items={items}
-                            emptyLabel=""
-                            onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
-                            isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
-                          />
-                        </div>
-                      ))}
+                      <TabBulkItemsRegistrar tab="insights" items={insightsBulkItems} />
+                      {universalInsightSections.length > 0 && (
+                        <InsightsStructuredView
+                          sections={universalInsightSections}
+                          onSaveToBrain={brainSaveInsights}
+                          isSaved={isInsightSaved}
+                          bulkSelection={bulkSelectionShare}
+                          tabScope="insights"
+                        />
+                      )}
+                      {sections.map(({ key, label, items, highlight, tabKey }) => {
+                        if (key === 'insights') {
+                          return (
+                            <InsightsStructuredView
+                              key={key}
+                              sections={[{ key, label, items }]}
+                              cardClassName={highlight ? 'rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20 px-4 py-3' : SUMMARY_CARD_CLASS}
+                              onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
+                              isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                              bulkSelection={bulkSelectionShare}
+                              tabScope="insights"
+                            />
+                          );
+                        }
+                        return (
+                          <div key={key} className={highlight ? 'rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20 px-4 py-3' : SUMMARY_CARD_CLASS}>
+                            <UniversalTabSectionLabelRow
+                              label={label}
+                              items={items}
+                              bulkSelection={bulkSelectionShare}
+                              tabScope="insights"
+                              type={tabKey}
+                              sectionKey={key}
+                            />
+                            <LearningTabContent
+                              items={items}
+                              emptyLabel=""
+                              onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
+                              isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                              bulkSelection={mergeBulkSelection(bulkSelectionShare, {
+                                idPrefix: `insights:${key}`,
+                                sectionLabel: label,
+                                type: tabKey,
+                                tabScope: 'insights',
+                              })}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })()}
               </TabsContent>
 
               {/* ── Useful Knowledge tab — actionItems, definitions, rules, checklists, mistakes (universal) ── */}
-              <TabsContent value="useful-knowledge" className="mt-5 min-h-[320px]" dir="rtl">
+              <TabsContent value="useful-knowledge" className="mt-0 min-h-[320px]" dir="rtl">
                 {(() => {
+                  const ukShaped = extractUniversalTabContent(effectiveVideo, 'useful-knowledge', marketBriefData);
+                  logUniversalTabExtractShape('useful-knowledge', ukShaped, marketBriefData);
                   const rawRules = [
                     ...(Array.isArray(effectiveVideo?.rules)          ? effectiveVideo.rules          : []),
                     ...(Array.isArray(effectiveVideo?.analysis?.rules) ? effectiveVideo.analysis.rules : []),
                   ].filter(Boolean);
+                  const practicalItems = ukShaped?.mode === 'flat' && ukShaped.items.length > 0
+                    ? ukShaped.items
+                    : (ukShaped?.mode === 'sections' ? [] : extractUniversalTabFlatItems(effectiveVideo, 'useful-knowledge', marketBriefData));
                   const sections = [
-                    {
-                      key: 'practical',
-                      label: '🎯 ידע פרקטי',
-                      items: extractVideoTabItems(effectiveVideo, 'useful-knowledge', marketBriefData),
-                      tabKey: 'useful-knowledge',
-                    },
+                    ...(ukShaped?.mode === 'sections'
+                      ? ukShaped.sections.map((s) => ({
+                        key: `uk-${s.key}`,
+                        label: s.label,
+                        items: s.items,
+                        tabKey: 'useful-knowledge',
+                      }))
+                      : [{
+                        key: 'practical',
+                        label: '🎯 ידע פרקטי',
+                        items: practicalItems,
+                        tabKey: 'useful-knowledge',
+                      }]),
                     {
                       key: 'definitions',
                       label: '📖 מושגים',
@@ -9323,22 +10479,42 @@ export function VideoDetailPanel({
                   const populated = sections.filter(s => s.items.length > 0);
                   if (populated.length === 0) {
                     return (
-                      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
-                        <span className="text-3xl mb-2 opacity-30">📭</span>
-                        <p className="text-sm">אין עדיין ידע שימושי — נתח את הסרטון כדי להפיק</p>
-                      </div>
+                      <>
+                        <TabBulkItemsRegistrar tab="useful-knowledge" items={[]} />
+                        <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
+                          <span className="text-3xl mb-2 opacity-30">📭</span>
+                          <p className="text-sm">אין עדיין ידע שימושי — נתח את הסרטון כדי להפיק</p>
+                        </div>
+                      </>
                     );
                   }
+                  const ukBulkItems = buildBulkItemsFromSections(populated, 'useful-knowledge');
+
                   return (
                     <div className="space-y-3">
+                      <TabBulkItemsRegistrar tab="useful-knowledge" items={ukBulkItems} />
+                      <UsefulKnowledgeSourceLine video={effectiveVideo} mentorName={mentorName} />
                       {populated.map(({ key, label, items, tabKey }) => (
                         <div key={key} className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5 px-1 text-right">{label}</p>
+                          <UniversalTabSectionLabelRow
+                            label={label}
+                            items={items}
+                            bulkSelection={bulkSelectionShare}
+                            tabScope="useful-knowledge"
+                            type={tabKey}
+                            sectionKey={key}
+                          />
                           <LearningTabContent
                             items={items}
                             emptyLabel=""
                             onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
-                            isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                            isSaved={(text) => isBrainItemSaved(text, tabKey)}
+                            bulkSelection={mergeBulkSelection(bulkSelectionShare, {
+                              idPrefix: `useful-knowledge:${key}`,
+                              sectionLabel: label,
+                              type: tabKey,
+                              tabScope: 'useful-knowledge',
+                            })}
                           />
                         </div>
                       ))}
@@ -9347,134 +10523,121 @@ export function VideoDetailPanel({
                 })()}
               </TabsContent>
 
-              {/* ── Topics & Subtopics tab ── */}
-              <TabsContent value="topics-subtopics" className="mt-5 min-h-[320px]" dir="rtl">
+              {/* ── Obsidian mapping tab (classification metadata for brain save) ── */}
+              <TabsContent value="topics-subtopics" className="mt-0 min-h-[320px]" dir="rtl">
                 {(() => {
-                  const cat               = effectiveVideo?.category    || '';
-                  const subCat            = effectiveVideo?.subCategory || '';
-                  const tags              = Array.isArray(effectiveVideo?.tags)            ? effectiveVideo.tags            : [];
-                  const topicIds          = Array.isArray(effectiveVideo?.topicIds)        ? effectiveVideo.topicIds        : [];
-                  const obsidianPath      = effectiveVideo?.obsidianTopic || '';
-                  const obsidianTopics    = Array.isArray(effectiveVideo?.obsidianTopics)  ? effectiveVideo.obsidianTopics  : [];
-                  const suggestedSubTopics = [
-                    ...(Array.isArray(effectiveVideo?.suggestedSubTopics)             ? effectiveVideo.suggestedSubTopics             : []),
-                    ...(Array.isArray(effectiveVideo?.analysis?.suggestedSubTopics)   ? effectiveVideo.analysis.suggestedSubTopics    : []),
-                    ...(Array.isArray(effectiveVideo?.subTopicSuggestions)            ? effectiveVideo.subTopicSuggestions            : []),
+                  const topicsShaped = extractUniversalTabContent(effectiveVideo, 'topics-subtopics', marketBriefData);
+                  logUniversalTabExtractShape('topics-subtopics', topicsShaped, marketBriefData);
+                  const gemTopicsSections = topicsShaped?.mode === 'sections' ? topicsShaped.sections : [];
+                  const gemTopicsFlat = topicsShaped?.mode === 'flat' && topicsShaped.items.length > 0
+                    ? topicsShaped.items
+                    : (gemTopicsSections.length === 0
+                      ? extractUniversalTabFlatItems(effectiveVideo, 'topics-subtopics', marketBriefData)
+                      : []);
+
+                  const topicsBulkSections = [
+                    ...gemTopicsSections.map((s) => ({ key: s.key, label: s.label, items: s.items, tabKey: 'topics-subtopics' })),
+                    ...(gemTopicsFlat.length > 0 ? [{ key: 'flat', label: 'נושאים קשורים', items: gemTopicsFlat, tabKey: 'topics-subtopics' }] : []),
                   ];
-                  const hasAnything = cat || subCat || tags.length > 0 || topicIds.length > 0 || obsidianPath || obsidianTopics.length > 0;
+                  const topicsBulkItems = buildBulkItemsFromSections(topicsBulkSections, 'topics-subtopics');
 
                   return (
-                    <div className="space-y-3">
-                      {/* Category & SubCategory */}
-                      {(cat || subCat) && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">📂 קטגוריה</p>
-                          <div className="flex flex-wrap gap-2 justify-end">
-                            {cat    && <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">{cat}</span>}
-                            {subCat && <span className="rounded-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-xs font-medium text-indigo-500 dark:text-indigo-400">{subCat}</span>}
-                          </div>
+                    <div className="space-y-3" dir="rtl">
+                      <TabBulkItemsRegistrar tab="topics-subtopics" items={topicsBulkItems} />
+                      {gemTopicsFlat.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+                          <UniversalTabSectionLabelRow
+                            label="נושאים קשורים"
+                            items={gemTopicsFlat}
+                            bulkSelection={bulkSelectionShare}
+                            tabScope="topics-subtopics"
+                            type="topics-subtopics"
+                            sectionKey="flat"
+                          />
+                          <LearningTabContent
+                            items={gemTopicsFlat}
+                            emptyLabel=""
+                            onSaveToBrain={(text) => saveSingleItemToBrain(text, 'topics-subtopics', 'נושאים קשורים', '')}
+                            isSaved={(text) => isBrainItemSaved(text, 'topics-subtopics')}
+                            bulkSelection={mergeBulkSelection(bulkSelectionShare, {
+                              idPrefix: 'topics-subtopics:flat',
+                              sectionLabel: 'נושאים קשורים',
+                              type: 'topics-subtopics',
+                              tabScope: 'topics-subtopics',
+                            })}
+                          />
                         </div>
                       )}
-
-                      {/* Tags */}
-                      {tags.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">🏷️ תגיות</p>
-                          <div className="flex flex-wrap gap-1.5 justify-end">
-                            {tags.map((tag, i) => (
-                              <span key={i} className="rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 text-xs text-slate-600 dark:text-zinc-300">
-                                {typeof tag === 'string' ? tag : (tag?.name || String(tag))}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Topic IDs */}
-                      {topicIds.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 text-right">📌 נושאים מקושרים</p>
-                          <div className="flex flex-wrap gap-1.5 justify-end">
-                            {topicIds.map((id, i) => (
-                              <span key={i} className="rounded-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 px-2.5 py-1 text-xs text-emerald-700 dark:text-emerald-300">
-                                {id}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Obsidian Topics (array) */}
-                      {obsidianTopics.length > 0 && (
-                        <div className="rounded-xl border border-violet-200 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20 px-4 py-3">
-                          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 mb-2 text-right">🗂️ Obsidian Topics</p>
-                          <div className="flex flex-wrap gap-1.5 justify-end">
-                            {obsidianTopics.map((topic, i) => (
-                              <span key={i} className="rounded-full bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-800 px-2.5 py-1 text-xs text-violet-700 dark:text-violet-300 font-mono">
-                                {typeof topic === 'string' ? topic : (topic?.path || topic?.name || String(topic))}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Obsidian single path */}
-                      {obsidianPath && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1 text-right">🗂️ Obsidian</p>
-                          <p className="text-sm text-slate-600 dark:text-zinc-300 text-right font-mono">{obsidianPath}</p>
-                        </div>
-                      )}
-
-                      {/* Suggested Subtopics — from AI analysis or placeholder */}
-                      {suggestedSubTopics.length > 0 ? (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20 px-4 py-3">
-                          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-2 text-right">💡 הצעות לתתי-נושאים</p>
-                          <div className="flex flex-wrap gap-1.5 justify-end">
-                            {suggestedSubTopics.map((topic, i) => (
-                              <span key={i} className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs text-emerald-700 dark:text-emerald-300">
-                                {typeof topic === 'string' ? topic : (topic?.name || topic?.label || String(topic))}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 dark:border-zinc-700 px-4 py-3 opacity-60">
-                          <p className="text-xs font-semibold text-slate-400 dark:text-zinc-500 text-right">💡 הצעות לתתי-נושאים</p>
-                          <p className="text-xs text-slate-300 dark:text-zinc-600 text-right mt-1">יופיע לאחר ניתוח AI של הסרטון</p>
-                        </div>
-                      )}
-
-                      {/* Empty state */}
-                      {!hasAnything && (
-                        <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-zinc-500">
-                          <span className="text-3xl mb-2 opacity-30">🏷️</span>
-                          <p className="text-sm">אין עדיין נושאים — הוסף קטגוריה או תגיות לסרטון</p>
-                        </div>
-                      )}
+                    <ObsidianMappingTab
+                      videoId={effectiveVideo?.id || effectiveVideo?.youtubeId || ''}
+                      videoTitle={effectiveVideo?.title || ''}
+                      category={effectiveVideo?.category || ''}
+                      subCategory={effectiveSubCategory || effectiveVideo?.subCategory || ''}
+                      tags={Array.isArray(effectiveVideo?.tags) ? effectiveVideo.tags : []}
+                      obsidianTopics={Array.isArray(effectiveVideo?.obsidianTopics) ? effectiveVideo.obsidianTopics : []}
+                      obsidianPath={effectiveVideo?.obsidianTopic || ''}
+                      suggestedSubTopics={[
+                        ...(Array.isArray(effectiveVideo?.suggestedSubTopics) ? effectiveVideo.suggestedSubTopics : []),
+                        ...(Array.isArray(effectiveVideo?.analysis?.suggestedSubTopics) ? effectiveVideo.analysis.suggestedSubTopics : []),
+                        ...(Array.isArray(effectiveVideo?.subTopicSuggestions) ? effectiveVideo.subTopicSuggestions : []),
+                      ]}
+                      relatedTopicIds={Array.isArray(effectiveVideo?.topicIds) ? effectiveVideo.topicIds : []}
+                      topics={topics}
+                      gemSections={gemTopicsSections}
+                      gemFlat={gemTopicsFlat}
+                      aiSubCategoryRec={subTopicRec}
+                      gemConfidencePct={gemRec?.confidencePct ?? (subTopicRec?.confidence != null ? Math.round(subTopicRec.confidence * 100) : null)}
+                      onDraftChange={(mappingDraft) => {
+                        if (mappingDraft?.subCategory) {
+                          setSubCategoryOverride(mappingDraft.subCategory);
+                        }
+                      }}
+                      onConfirmRecommendation={async (recommendedSubCategory) => {
+                        const sub = String(recommendedSubCategory || '').trim();
+                        if (!sub) throw new Error('אין המלצה לשמירה');
+                        setSubCategoryOverride(sub);
+                        setSubTopicDraft(sub);
+                        setSubTopicRecDismissed(true);
+                        await saveVideoFields({
+                          subCategory: sub,
+                          dismissedSubTopicRec: null,
+                          userConfirmedSubCategory: true,
+                          confirmedSubCategory: sub,
+                          confirmedAt: new Date().toISOString(),
+                        });
+                      }}
+                      onRequestObsidianSave={handleRequestObsidianMappingSave}
+                      obsidianAlreadySaved={hasObsidianSavedStatus(video) && isObsidianMappingCurrent}
+                      savedObsidianPath={resolvedObsidianSavedPath}
+                      onOpenSavedObsidian={() => openResolvedObsidianPath(resolvedObsidianSavedPath)}
+                    />
                     </div>
                   );
                 })()}
               </TabsContent>
 
               {/* ── Specialized Content tab — Phase 4: SpecializedContentRenderer ── */}
-              <TabsContent value="specialized" className="mt-5 min-h-[320px]" dir="rtl">
+              <TabsContent value="specialized" className="mt-0 min-h-[320px]" dir="rtl">
                 <SpecializedContentRenderer
                   effectiveVideo={effectiveVideo}
-                  normalizedSubCategory={normalizedSubCategory}
+                  normalizedSubCategory={effectiveBriefSlug ?? normalizedSubCategory}
                   marketBriefData={marketBriefData}
                   politicalSummary={politicalSummary}
                   hasPoliticalTabSet={hasPoliticalTabSet}
                   onSaveToBrain={(text, tabKey, label) => saveSingleItemToBrain(text, tabKey, label, '')}
+                  onSaveMarketBriefSection={handleSaveMarketBriefSection}
                   checkSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                  bulkSelection={bulkSelectionShare}
                 />
               </TabsContent>
 
               </Tabs>
+            </UniversalTabBulkProvider>
               </div>{/* closes main content */}
             </div>{/* closes main content row */}
             </PanelErrorBoundary>
           </div>{/* closes max-w-[1400px] wrapper */}
+          </div>{/* closes scroll width clip wrapper */}
         </ScrollArea>
 
         {/* ── Brain Selection Floating Bar ─────────────────────────────── */}
@@ -9505,19 +10668,13 @@ export function VideoDetailPanel({
           </div>
         )}
 
-        {/* ── Multi-select floating action bar ── */}
-        {multiSelected.size > 0 && (
-          <div dir="rtl" className="flex-shrink-0 flex items-center gap-2 justify-between border-t border-zinc-800 bg-zinc-900 px-4 py-3 flex-wrap">
-            <button type="button" onClick={multiSelectClear} className="flex items-center gap-1 rounded-xl bg-zinc-700 hover:bg-zinc-600 px-2.5 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95">✕ נקה</button>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-white whitespace-nowrap">נבחרו {multiSelected.size} פריטים</span>
-              <div className="w-px h-5 bg-white/20 shrink-0" />
-              <button type="button" onClick={handleSaveSelectedToBrain} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">🧠 שמור למוח</button>
-              <button type="button" onClick={handleSaveSelectedToObsidian} className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">📁 Obsidian</button>
-              <button type="button" onClick={handleSaveSelectedToWorkspace} className="flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap">⭐ Workspace</button>
-            </div>
-          </div>
-        )}
+        <UniversalTabSelectionBar
+          count={tabBulkCount}
+          onClear={multiSelectClearWithBrain}
+          onBrain={handleSaveSelectedToBrain}
+          onObsidian={handleBulkObsidianForTab}
+          onWorkspace={handleSaveSelectedToWorkspace}
+        />
 
       </DialogContent>
     </Dialog>
@@ -9972,25 +11129,123 @@ export function VideoDetailPanel({
     {/* ── Brain Destination Picker ─────────────────────────── */}
     <BrainDestinationPicker
       open={brainPickerOpen}
+      variant={multiObsidianPickerMode ? "obsidian" : "brain"}
+      obsidianSaveContext={obsidianPickerSaveContext}
+      obsidianPackagePreview={obsidianPackagePreview}
+      onOpenSaved={(path) => openResolvedObsidianPath(path)}
       onOpenChange={(open) => {
         setBrainPickerOpen(open);
         if (!open) {
           setPendingBrainSave(null);
           setMultiObsidianPickerMode(false);
+          setPendingObsidianRowSave(null);
+          setObsidianSaveIntent(null);
         }
       }}
       video={effectiveVideo}
       onConfirm={async ({ brainId, subBrainId, customBrainName, customSubName, subtitle, filename, path: pickerPath }) => {
         setBrainPickerOpen(false);
         if (multiObsidianPickerMode) {
+          if (obsidianSaveIntent?.mode === 'mapping') {
+            const mappingSub = obsidianSaveIntent.pendingSubCategory;
+            setObsidianSaveIntent(null);
+            setMultiObsidianPickerMode(false);
+            try {
+              await executeMappingObsidianSave({
+                sub: mappingSub,
+                savePath: pickerPath,
+                subtitle: subtitle || '',
+                saveEntireVideo: saveEntireVideoPackage,
+              });
+            } catch (err) {
+              toast.error('שמירת ההמלצה ל-Obsidian נכשלה — נסה שוב', {
+                description: err?.message,
+              });
+            }
+            return;
+          }
+
+          const rowItem = pendingObsidianRowSave;
+          const isRowSave = Boolean(rowItem);
           setMultiObsidianPickerMode(false);
           const folder = customBrainName || brainId || 'כללי';
           const subFolder = customSubName || subBrainId || '';
-          const md = buildMultiSelectMarkdown({ folder, subFolder });
           const safeFilename = `${(filename || (video?.title || 'selected').replace(/[^\wא-ת\s]/g, '').trim().slice(0, 40))}.md`;
-          downloadMarkdown(md, safeFilename);
-          toast.success(`${multiSelected.size} פריטים יוצאו ל-Obsidian`);
-          multiSelectClear();
+          const savePath = pickerPath || [folder, subFolder, safeFilename].filter(Boolean).join('/');
+
+          const unsavedBulkItems = isRowSave
+            ? []
+            : [...multiSelected.values()].filter((item) => !isObsidianItemSaved({
+              videoId: videoIdForQuickSave,
+              tabKey: item.type || item.tabScope || 'multi',
+              sectionKey: item.sectionLabel || '',
+              text: item.text,
+            }, { destinationPath: savePath }));
+
+          const mergeItems = isRowSave
+            ? [toObsidianMergeItem(rowItem)]
+            : unsavedBulkItems.map(toObsidianMergeItem);
+
+          if (!isRowSave && mergeItems.length === 0) {
+            openResolvedObsidianPath(savePath);
+            multiSelectClearWithBrain();
+            return;
+          }
+
+          if (isRowSave && isObsidianItemSaved({
+            videoId: videoIdForQuickSave,
+            tabKey: rowItem.type || rowItem.tabScope || 'multi',
+            sectionKey: rowItem.sectionLabel || '',
+            text: rowItem.text,
+          }, { destinationPath: savePath })) {
+            openResolvedObsidianPath(savePath);
+            setPendingObsidianRowSave(null);
+            return;
+          }
+
+          const successMessage = isRowSave
+            ? 'נשמר ל-Obsidian'
+            : `${mergeItems.length} פריטים נשמרו ל-Obsidian`;
+
+          const result = await executeObsidianVaultWrite({
+            savePath,
+            mode: 'merge',
+            mergeItems,
+            footerLines: buildObsidianMergeFooter(),
+            subtitle: subtitle || '',
+            successMessage,
+            allowDownloadFallback: !isRowSave,
+          });
+
+          if (result.ok) {
+            const savedPath = result.savedPath || savePath;
+            if (isRowSave && rowItem) {
+              markObsidianRowSaved({
+                videoId: videoIdForQuickSave,
+                tabKey: rowItem.type || rowItem.tabScope || 'multi',
+                sectionKey: rowItem.sectionLabel || '',
+                text: rowItem.text,
+                destinationPath: savedPath,
+              });
+              setPendingObsidianRowSave(null);
+            } else {
+              mergeItems.forEach((item) => {
+                const source = unsavedBulkItems.find((row) => row.text === item.text) || item;
+                markObsidianRowSaved({
+                  videoId: videoIdForQuickSave,
+                  tabKey: source.type || source.tabScope || 'multi',
+                  sectionKey: source.sectionLabel || item.sectionLabel || '',
+                  text: item.text,
+                  destinationPath: savedPath,
+                });
+              });
+              multiSelectClearWithBrain();
+            }
+          } else if (result.fallback === 'download') {
+            multiSelectClearWithBrain();
+          } else if (isRowSave) {
+            setPendingObsidianRowSave(null);
+          }
         } else {
           // ── Save all content to brain using picker's chosen path ──
           setPendingBrainSave(null);
@@ -10126,6 +11381,16 @@ export function VideoDetailPanel({
             הדבק JSON שקיבלת מ-Gemini Gem (תוצאת ניתוח).
           </DialogDescription>
         </DialogHeader>
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={handleCopyGemsJson}
+            disabled={!gemsPasteInput}
+            className="px-3 py-1 text-xs border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {gemsCopyStatus === 'copied' ? 'הועתק ✅' : gemsCopyStatus === 'error' ? 'העתקה נכשלה' : '📋 העתק JSON'}
+          </button>
+        </div>
         <textarea
           className={`w-full h-72 rounded-lg border p-3 text-xs text-slate-800 resize-y font-mono leading-relaxed focus:outline-none focus:ring-2 dark:bg-zinc-900 dark:text-zinc-100 ${
             gemsPasteError
