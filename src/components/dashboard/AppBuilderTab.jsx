@@ -1,5 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, Save, Trash2, Copy, CheckSquare, Square, ExternalLink, ClipboardList } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Trash2, ExternalLink, ClipboardList } from "lucide-react";
+import { TabBulkItemsRegistrar } from "@/components/dashboard/TabBulkItemsRegistrar";
+import { extractAppIdeas, flattenAppIdeasBrain } from "@/lib/extractAppIdeas";
+import { formatBrainItemForDisplay } from "@/lib/appIdeasBrainHumanization";
+import {
+  AppIdeaHeroSection,
+  DevelopmentPromptSection,
+  LogicFlowSection,
+  RisksCardsSection,
+  TasksChecklistSection,
+  TriggersCardsSection,
+} from "@/components/dashboard/AppBuilderWorkspaceSections";
 import { toast } from "sonner";
 import {
   APP_BUILDER_SECTIONS,
@@ -8,16 +19,20 @@ import {
   clearAppBuilderDraft,
   markExportedToObsidian,
   getExportStatus,
+  mapUniversalAppBuilderToSections,
 } from "@/lib/appBuilderStore";
 import { getAppIdeasPath, buildAppIdeasNote } from "@/lib/obsidianExport";
 import { getObsidianVaultRequestFields } from "@/lib/obsidianVaultConfig";
-import { BulkSelectionBar } from "@/components/shared/BulkSelectionBar";
-import { useSelection } from "@/hooks/useSelection";
 import { upsertKnowledgeItem } from "@/lib/localKnowledgeItemStore";
 import { getGemUrl, openGeminiGemUrl } from "@/lib/gemsConfig";
 import { AppBuilderGemDialog } from "@/components/dashboard/AppBuilderGemDialog";
 import { AppBuilderPromptFallbackDialog } from "@/components/dashboard/AppBuilderPromptFallbackDialog";
 import { getVideoTranscriptText } from "@/lib/videoTranscriptUtils";
+import { splitTriggersAndRisks } from "@/lib/appBuilderDisplay";
+import { AppIdeasBrainPanel } from "@/components/dashboard/AppIdeasBrainPanel";
+import { ObsidianIcon } from "@/components/shared/ObsidianIcon";
+import { UniversalTabSectionHeaderActions } from "@/components/shared/UniversalTabSectionHeaderActions";
+import { formatSectionCopyText, mergeBulkSelection } from "@/lib/universalTabBulkItems";
 
 // ── Development Prompt quick-fill templates ───────────────────────────────────
 const PROMPT_TEMPLATES = {
@@ -154,33 +169,83 @@ function formatExportDate(iso) {
  * Paste-back flow per section + Development Prompt templates.
  * Saves to: localStorage (draft) + Brain + Obsidian vault (App Ideas/{topic}/).
  */
-export function AppBuilderTab({ video, topicName = '' }) {
+export function AppBuilderTab({
+  video,
+  topicName = '',
+  gemAppData = null,
+  marketBriefData = null,
+  bulkSelection = null,
+  onBulkHandlersRef = null,
+}) {
   const videoId = video?.videoId || video?.id || '';
 
   const [sections, setSections] = useState({});
-  const [openSections, setOpenSections] = useState({ summary: true });
   const [saving, setSaving] = useState(false);
   const [lastExported, setLastExported] = useState(null);
   const [gemDialogOpen, setGemDialogOpen] = useState(false);
   const [promptFallback, setPromptFallback] = useState({ open: false, text: "" });
 
-  // Load draft and export status whenever the video changes
+  // Load draft on video change. Existing localStorage draft wins; if empty, seed from universalTabs.app/appBuilder.
   useEffect(() => {
-    if (videoId) {
-      setSections(getAppBuilderDraft(videoId));
-      setLastExported(getExportStatus(videoId).lastExported);
+    if (!videoId) return;
+    const draft = getAppBuilderDraft(videoId);
+    const hasDraft = APP_BUILDER_SECTIONS.some(({ key }) => Boolean(draft[key]?.trim()));
+    if (hasDraft) {
+      setSections(draft);
+    } else if (gemAppData) {
+      const hydrated = mapUniversalAppBuilderToSections(gemAppData);
+      setSections(hydrated);
+    } else {
+      setSections(draft);
     }
-  }, [videoId]);
+    setLastExported(getExportStatus(videoId).lastExported);
+  }, [videoId, gemAppData]);
 
   const filledSections = APP_BUILDER_SECTIONS.filter(({ key }) => sections[key]?.trim());
   const hasDraft = filledSections.length > 0;
 
-  const { selected, toggle, selectAll, clearAll, isSelected, count } = useSelection(
-    filledSections.map(({ key }) => ({ id: key }))
+  const builderBulkItems = useMemo(() => filledSections.map(({ key, label }) => ({
+    id: `app-builder:${key}`,
+    text: sections[key]?.trim() || '',
+    sectionLabel: label || key,
+    type: 'app-builder',
+    tabScope: 'app-builder',
+    sectionKey: key,
+  })), [filledSections, sections]);
+
+  const brainBulkItems = useMemo(() => {
+    const extracted = extractAppIdeas(video, marketBriefData);
+    return flattenAppIdeasBrain(extracted).map((item) => {
+      const { displayTitle } = formatBrainItemForDisplay(item);
+      return {
+        id: `app-ideas-brain:${item.id}`,
+        text: displayTitle || item.title || item.content || '',
+        sectionLabel: 'מוח רעיונות לאפליקציות',
+        type: 'app-ideas-brain',
+        tabScope: 'app-builder',
+        rawItem: item,
+      };
+    });
+  }, [video, marketBriefData]);
+
+  const appTabBulkItems = useMemo(
+    () => [...brainBulkItems, ...builderBulkItems],
+    [brainBulkItems, builderBulkItems],
   );
 
-  const toggleSection = (key) =>
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  const isSelected = useCallback((key) => (
+    bulkSelection?.multiSelected?.has(`app-builder:${key}`) ?? false
+  ), [bulkSelection?.multiSelected]);
+
+  const toggle = useCallback((key) => {
+    const entry = builderBulkItems.find((b) => b.sectionKey === key);
+    if (!entry || !bulkSelection?.onToggle) return;
+    bulkSelection.onToggle(entry.id, entry);
+  }, [builderBulkItems, bulkSelection]);
+
+  const clearAll = useCallback(() => {
+    bulkSelection?.onClear?.();
+  }, [bulkSelection]);
 
   const handleChange = useCallback((key, value) => {
     setSections((prev) => {
@@ -211,7 +276,6 @@ export function AppBuilderTab({ video, topicName = '' }) {
     const template = PROMPT_TEMPLATES[templateKey]?.(videoTitle, topicName || 'כללי');
     if (template) {
       handleChange('prompt', template);
-      setOpenSections((prev) => ({ ...prev, prompt: true }));
     }
   }, [video?.title, topicName, handleChange]);
 
@@ -263,10 +327,6 @@ export function AppBuilderTab({ video, topicName = '' }) {
       return merged;
     });
     // Open all newly filled sections
-    setOpenSections((prev) => ({
-      ...prev,
-      ...Object.fromEntries(Object.keys(newSections).map((k) => [k, true])),
-    }));
     toast.success(`✅ ${filledCount} סעיפים הועתקו מ-GEM`, { duration: 4000 });
   }, [videoId]);
 
@@ -311,9 +371,14 @@ export function AppBuilderTab({ video, topicName = '' }) {
     }
   }, [sections, video, topicName, videoId, clearAll]);
 
+  const selectedSectionKeys = useMemo(
+    () => builderBulkItems.filter((b) => bulkSelection?.multiSelected?.has(b.id)).map((b) => b.sectionKey),
+    [builderBulkItems, bulkSelection?.multiSelected],
+  );
+
   // ── Save to Brain ───────────────────────────────────────────────────────────
   const handleSaveToBrain = useCallback((selectedKeys = null) => {
-    const keysToSave = selectedKeys ?? [...selected];
+    const keysToSave = selectedKeys ?? selectedSectionKeys;
     if (!keysToSave.length) return;
     const vId = video?.videoId || video?.id;
     const videoUrl = vId ? `https://www.youtube.com/watch?v=${encodeURIComponent(vId)}` : null;
@@ -361,14 +426,92 @@ export function AppBuilderTab({ video, topicName = '' }) {
       toast.success(`✅ נשמר למוח — ${saved} סעיפים`);
       clearAll();
     }
-  }, [sections, selected, video, topicName, clearAll]);
+  }, [sections, selectedSectionKeys, video, topicName, clearAll]);
 
-  // Bulk handlers for BulkSelectionBar
-  const handleBulkObsidian = useCallback(() => handleSaveToObsidian([...selected]), [selected, handleSaveToObsidian]);
-  const handleBulkBrain    = useCallback(() => handleSaveToBrain([...selected]),    [selected, handleSaveToBrain]);
+  useEffect(() => {
+    if (!onBulkHandlersRef) return;
+    onBulkHandlersRef.current = {
+      saveBrain: () => handleSaveToBrain(selectedSectionKeys),
+      saveObsidian: () => handleSaveToObsidian(selectedSectionKeys),
+    };
+  }, [onBulkHandlersRef, handleSaveToBrain, handleSaveToObsidian, selectedSectionKeys]);
+
+  const toggleGroupSelect = useCallback((keys) => {
+    const filled = keys.filter((k) => sections[k]?.trim());
+    if (!filled.length) return;
+    const allSelected = filled.every((k) => isSelected(k));
+    filled.forEach((k) => {
+      if (allSelected && isSelected(k)) toggle(k);
+      if (!allSelected && !isSelected(k)) toggle(k);
+    });
+  }, [sections, isSelected, toggle]);
+
+  const groupSelected = useCallback((keys) => {
+    const filled = keys.filter((k) => sections[k]?.trim());
+    return filled.length > 0 && filled.every((k) => isSelected(k));
+  }, [sections, isSelected]);
+
+  const copyGroup = useCallback((keys) => {
+    const text = keys.map((k) => sections[k]).filter(Boolean).join('\n\n');
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => toast.success('הועתק'));
+  }, [sections]);
+
+  const copyRisksOnly = useCallback(() => {
+    const { risks } = splitTriggersAndRisks(sections.risks ?? '');
+    const text = risks.filter(Boolean).join('\n');
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => toast.success('הועתק'));
+  }, [sections]);
+
+  const copyTriggersOnly = useCallback(() => {
+    const { triggers } = splitTriggersAndRisks(sections.risks ?? '');
+    const text = triggers.filter(Boolean).join('\n');
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => toast.success('הועתק'));
+  }, [sections]);
+
+  const makeSectionHeaderActions = useCallback((title, saveText, copyText) => {
+    const text = String(saveText || '').trim();
+    if (!bulkSelection || !text) return null;
+    return (
+      <UniversalTabSectionHeaderActions
+        text={text}
+        copyText={copyText || formatSectionCopyText(title, [text])}
+        bulkSelection={mergeBulkSelection(bulkSelection, {
+          sectionLabel: title,
+          type: 'app-builder',
+          tabScope: 'app-builder',
+        })}
+        sectionLabel={title}
+        type="app-builder"
+        tabScope="app-builder"
+      />
+    );
+  }, [bulkSelection]);
+
+  const heroSectionText = ['summary', 'requirements', 'screens']
+    .map((k) => sections[k]?.trim())
+    .filter(Boolean)
+    .join('\n\n');
 
   return (
     <div dir="rtl" className="space-y-2 pb-4">
+      <TabBulkItemsRegistrar tab="app-builder" items={appTabBulkItems} />
+
+      {/* ── App Ideas Brain (extracted from existing AI output) ── */}
+      <AppIdeasBrainPanel
+        video={video}
+        marketBriefData={marketBriefData}
+        topicName={topicName}
+        bulkSelection={bulkSelection}
+      />
+
+      <div className="flex items-center gap-2 pt-1">
+        <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-700" />
+        <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 shrink-0">🏗️ APP Builder</span>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-700" />
+      </div>
 
       {/* ── Header card ── */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3 space-y-2.5">
@@ -376,9 +519,9 @@ export function AppBuilderTab({ video, topicName = '' }) {
         {/* Title row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col text-right gap-0.5">
-            <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">🏗️ בונה אפליקציות</span>
-            <span className="text-xs text-slate-500 dark:text-zinc-400">
-              הדבק תוצאות GEM לכל סעיף — שמור ל-Obsidian תחת App Ideas/{topicName || '...'}
+            <span className="text-base font-bold text-slate-800 dark:text-zinc-100">🚀 Product Builder</span>
+            <span className="text-sm text-slate-500 dark:text-zinc-400">
+              סביבת PRD — ערוך, בחר סעיפים ושמור ל-Obsidian / מוח
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -425,144 +568,75 @@ export function AppBuilderTab({ video, topicName = '' }) {
             )}
             {lastExported && (
               <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-950/30 dark:text-violet-400">
-                🟣 יוצא ל-Obsidian: {formatExportDate(lastExported)}
+                <ObsidianIcon className="h-3 w-3" />
+                יוצא ל-Obsidian: {formatExportDate(lastExported)}
               </span>
             )}
           </div>
         )}
 
-        {/* Select All / Clear row */}
-        {hasDraft && (
-          <div className="flex items-center gap-3 pt-0.5">
-            <button
-              type="button"
-              onClick={selectAll}
-              className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 transition-colors"
-            >
-              <CheckSquare className="h-3.5 w-3.5" />
-              בחר הכל
-            </button>
-            {count > 0 && (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
-              >
-                <Square className="h-3.5 w-3.5" />
-                בטל בחירה ({count})
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ── Section accordions ── */}
-      {APP_BUILDER_SECTIONS.map(({ key, label, hint }) => {
-        const isOpen   = !!openSections[key];
-        const hasContent = !!sections[key]?.trim();
-        const isSel    = isSelected(key);
-        const isPrompt = key === 'prompt';
+      {/* ── PRD workspace sections (presentation only — same storage keys) ── */}
+      <div className="space-y-3" data-app-builder-workspace>
+        <AppIdeaHeroSection
+          summary={sections.summary ?? ''}
+          requirements={sections.requirements ?? ''}
+          screens={sections.screens ?? ''}
+          onChangeSummary={(v) => handleChange('summary', v)}
+          onChangeRequirements={(v) => handleChange('requirements', v)}
+          isSelected={groupSelected(['summary', 'requirements'])}
+          onToggleSelect={() => toggleGroupSelect(['summary', 'requirements'])}
+          onCopy={() => copyGroup(['summary', 'requirements', 'screens'])}
+          headerActions={makeSectionHeaderActions('🚀 רעיון לאפליקציה', heroSectionText)}
+        />
 
-        return (
-          <div
-            key={key}
-            className={`rounded-xl border transition-colors ${
-              isSel
-                ? 'border-indigo-300 bg-indigo-50/40 dark:border-indigo-700 dark:bg-indigo-950/20'
-                : 'border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50'
-            }`}
-          >
-            {/* Section header */}
-            <div className="flex items-center gap-2 px-3 py-2.5">
-              <input
-                type="checkbox"
-                checked={isSel}
-                disabled={!hasContent}
-                onChange={() => toggle(key)}
-                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 cursor-pointer disabled:opacity-30 shrink-0"
-              />
+        <LogicFlowSection
+          value={sections.logic ?? ''}
+          onChange={(v) => handleChange('logic', v)}
+          isSelected={isSelected('logic')}
+          onToggleSelect={() => sections.logic?.trim() && toggle('logic')}
+          onCopy={() => handleCopySection('logic')}
+          headerActions={makeSectionHeaderActions('🧠 לוגיקה עסקית', sections.logic?.trim())}
+        />
 
-              <button
-                type="button"
-                onClick={() => toggleSection(key)}
-                className="flex flex-1 items-center justify-between gap-2 text-right"
-              >
-                <div className="flex flex-col items-start gap-0.5 text-right">
-                  <span className={`text-sm font-medium flex items-center gap-1.5 ${hasContent ? 'text-slate-800 dark:text-zinc-100' : 'text-slate-400 dark:text-zinc-500'}`}>
-                    {label}
-                    {hasContent && <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />}
-                  </span>
-                  {hint && (
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 leading-tight">
-                      {hint}
-                    </span>
-                  )}
-                </div>
-                {isOpen
-                  ? <ChevronUp className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  : <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                }
-              </button>
+        <RisksCardsSection
+          risksText={sections.risks ?? ''}
+          onChangeRisksBlob={(v) => handleChange('risks', v)}
+          isSelected={isSelected('risks')}
+          onToggleSelect={() => sections.risks?.trim() && toggle('risks')}
+          onCopy={copyRisksOnly}
+          headerActions={makeSectionHeaderActions('⚠️ סיכונים', splitTriggersAndRisks(sections.risks ?? '').risks.filter(Boolean).join('\n'))}
+        />
 
-              {hasContent && (
-                <button
-                  type="button"
-                  onClick={() => handleCopySection(key)}
-                  title="העתק"
-                  className="shrink-0 rounded p-1 text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
-                >
-                  <Copy className="h-3 w-3" />
-                </button>
-              )}
-            </div>
+        <TasksChecklistSection
+          value={sections.tasks ?? ''}
+          onChange={(v) => handleChange('tasks', v)}
+          isSelected={isSelected('tasks')}
+          onToggleSelect={() => sections.tasks?.trim() && toggle('tasks')}
+          onCopy={() => handleCopySection('tasks')}
+          headerActions={makeSectionHeaderActions('✅ משימות', sections.tasks?.trim())}
+        />
 
-            {/* Section body */}
-            {isOpen && (
-              <div className="px-3 pb-3 space-y-2">
+        <TriggersCardsSection
+          risksText={sections.risks ?? ''}
+          onChangeRisksBlob={(v) => handleChange('risks', v)}
+          isSelected={isSelected('risks')}
+          onToggleSelect={() => sections.risks?.trim() && toggle('risks')}
+          onCopy={copyTriggersOnly}
+          headerActions={makeSectionHeaderActions('⚡ טריגרים', splitTriggersAndRisks(sections.risks ?? '').triggers.filter(Boolean).join('\n'))}
+        />
 
-                {/* Development Prompt quick-fill templates */}
-                {isPrompt && (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 shrink-0">תבנית מהירה:</span>
-                    {[
-                      { id: 'claude', label: '⚡ Claude Code' },
-                      { id: 'codex',  label: '🔵 Codex' },
-                      { id: 'base44', label: '🟣 Base44' },
-                    ].map(({ id, label: tLabel }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => handleInsertTemplate(id)}
-                        className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 transition-colors"
-                      >
-                        {tLabel}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <textarea
-                  dir="rtl"
-                  rows={isPrompt ? 10 : 5}
-                  value={sections[key] ?? ''}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  placeholder={hint ? `${hint}...` : `הדבק כאן תוכן עבור ${label}...`}
-                  className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-right text-slate-800 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 font-sans leading-7 tracking-normal"
-                />
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* ── Bulk selection bar — Brain + Obsidian ── */}
-      <BulkSelectionBar
-        count={count}
-        onBrain={handleBulkBrain}
-        onObsidian={handleBulkObsidian}
-        onClear={clearAll}
-        disabled={saving}
-      />
+        <DevelopmentPromptSection
+          value={sections.prompt ?? ''}
+          onChange={(v) => handleChange('prompt', v)}
+          isSelected={isSelected('prompt')}
+          onToggleSelect={() => sections.prompt?.trim() && toggle('prompt')}
+          onCopy={() => handleCopySection('prompt')}
+          headerActions={makeSectionHeaderActions('💻 פרומפט פיתוח', sections.prompt?.trim())}
+          onInsertTemplate={handleInsertTemplate}
+        />
+      </div>
 
       {/* ── Clipboard fallback — shown when navigator.clipboard is blocked ── */}
       <AppBuilderPromptFallbackDialog

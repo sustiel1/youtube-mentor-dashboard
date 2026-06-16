@@ -48,6 +48,58 @@ export function getAppBuilderDraft(videoId) {
   return sections;
 }
 
+function joinGemLines(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items
+    .map((item) => {
+      if (typeof item === 'string') return item.trim();
+      if (item && typeof item === 'object') {
+        return (item.text || item.title || item.name || item.description || '').trim()
+          || JSON.stringify(item);
+      }
+      return String(item ?? '').trim();
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+function labeledGemBlock(label, items) {
+  const lines = joinGemLines(items);
+  if (!lines) return '';
+  return `${label}:\n${lines.split('\n').map((line) => `• ${line}`).join('\n')}`;
+}
+
+/** Maps universalTabs.app / appBuilder GEM object → APP_BUILDER_SECTIONS draft shape. */
+export function mapUniversalAppBuilderToSections(utApp) {
+  if (!utApp || typeof utApp !== 'object') return {};
+  const out = {};
+  const summary = labeledGemBlock('פיצ\'רים מוצעים', utApp.suggestedFeatures);
+  if (summary) out.summary = summary;
+  const requirements = [
+    labeledGemBlock('מדדי KPI', utApp.kpiList),
+    labeledGemBlock('נקודות נתונים', utApp.dataPoints),
+    labeledGemBlock('שדות נתונים', utApp.dataFields),
+  ].filter(Boolean).join('\n\n');
+  if (requirements) out.requirements = requirements;
+  const screens = [
+    labeledGemBlock('דשבורדים', utApp.dashboards),
+    labeledGemBlock('עדכוני דשבורד', utApp.dashboardUpdates),
+  ].filter(Boolean).join('\n\n');
+  if (screens) out.screens = screens;
+  const logic = [
+    labeledGemBlock('קריטריוני סינון', utApp.screeningCriteria),
+    labeledGemBlock('אינדיקטורים חדשים', utApp.newIndicators),
+  ].filter(Boolean).join('\n\n');
+  if (logic) out.logic = logic;
+  const risks = labeledGemBlock('התראות', utApp.alerts);
+  if (risks) out.risks = risks;
+  const tasks = labeledGemBlock('הצעות קומפוננטות', utApp.componentSuggestions);
+  if (tasks) out.tasks = tasks;
+  const prompt = labeledGemBlock('פרומפטים', utApp.prompts);
+  if (prompt) out.prompt = prompt;
+  return out;
+}
+
 /** Returns true if any section has content for this video. */
 export function hasAppBuilderDraft(videoId) {
   if (!videoId) return false;
