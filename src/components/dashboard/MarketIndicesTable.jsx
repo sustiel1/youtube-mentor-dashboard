@@ -1,14 +1,22 @@
+import { formatMarketChange } from '@/lib/morningBriefVisuals';
+import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
+
 function parseIndexItem(raw) {
   if (!raw) return null;
 
   let name = '', direction = '', change = '', level = '', note = '';
 
   if (typeof raw === 'object') {
-    name      = raw.name || raw.asset || raw.ticker || raw.symbol || '';
+    name      = raw.name || raw.asset || raw.ticker || raw.symbol || raw.metric || raw.index || '';
     direction = raw.direction || raw.trend || '';
     change    = raw.change || raw.pct || raw.changePercent || '';
     level     = String(raw.level || raw.price || raw.value || '');
-    note      = raw.note || raw.insight || raw.description || raw.comment || '';
+    const condition = String(raw.condition || '').trim();
+    const conditionIsTrend = ['up', 'down', 'bullish', 'bearish', 'neutral', 'flat', 'positive', 'negative']
+      .includes(condition.toLowerCase());
+    if (!direction && conditionIsTrend) direction = condition;
+    note      = raw.note || raw.insight || raw.description || raw.comment ||
+      (!conditionIsTrend && condition ? condition : '');
   } else if (typeof raw === 'string') {
     const ci = raw.indexOf(':');
     if (ci === -1) return { name: raw.trim().toUpperCase(), direction: '', change: '', level: '', note: '' };
@@ -30,8 +38,16 @@ function parseIndexItem(raw) {
     return null;
   }
 
-  if (!name && !direction && !change) return null;
-  return { name: name.toUpperCase(), direction, change, level, note };
+  name = String(name || '').trim();
+  if (!name && !direction && !change && !level && !note) return null;
+  return { name: name ? name.toUpperCase() : '', direction, change, level, note };
+}
+
+function isStructuredRow(row) {
+  if (!row) return false;
+  const hasName = !!row.name;
+  const hasMetricData = !!(row.level || row.change || row.direction || row.note);
+  return hasName && hasMetricData;
 }
 
 function dirInfo(dir) {
@@ -45,17 +61,70 @@ function dirInfo(dir) {
   return { emoji: null, label: dir || null, badgeCls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400', rowCls: '' };
 }
 
-function changeColor(change, direction) {
-  const c = String(change || '');
-  const d = (direction || '').toLowerCase();
-  if (c.startsWith('+') || (!c.startsWith('-') && (d === 'up' || d === 'bullish' || d === 'positive')))
-    return 'text-emerald-600 dark:text-emerald-400';
-  if (c.startsWith('-') || d === 'down' || d === 'bearish' || d === 'negative')
-    return 'text-red-600 dark:text-red-400';
-  return 'text-slate-700 dark:text-zinc-300';
+function renderChangeCell(change, direction) {
+  const ctx = [direction, change].filter(Boolean).join(' ');
+  const display = formatMarketChange(change, ctx);
+  if (display) return <NumericChangeSpan display={display} className="text-base" />;
+  return null;
 }
 
-const DASH = <span className="text-slate-300 dark:text-zinc-600">—</span>;
+function formatKvValue(val) {
+  if (val == null) return '';
+  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) return val.map(formatKvValue).filter(Boolean).join(', ');
+  return JSON.stringify(val);
+}
+
+function KeyValueFallback({ items = [], onSaveToBrain }) {
+  return (
+    <div className="space-y-2" dir="rtl">
+      {items.map((raw, i) => {
+        if (typeof raw === 'string') {
+          const text = raw.trim();
+          if (!text) return null;
+          return (
+            <div key={i} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-3 py-2 text-sm text-slate-700 dark:text-zinc-300 text-right">
+              {text}
+            </div>
+          );
+        }
+        if (!raw || typeof raw !== 'object') return null;
+        const entries = Object.entries(raw).filter(([, v]) => formatKvValue(v));
+        if (entries.length === 0) return null;
+        const summary = entries.map(([k, v]) => `${k}: ${formatKvValue(v)}`).join(' · ');
+        return (
+          <div key={i} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-3 py-2 text-right group">
+            <dl className="space-y-1">
+              {entries.map(([k, v]) => (
+                <div key={k} className="flex flex-wrap gap-x-2 justify-end text-sm">
+                  <dt className="text-slate-400 dark:text-zinc-500 shrink-0">{k}:</dt>
+                  <dd className="text-slate-700 dark:text-zinc-300">{formatKvValue(v)}</dd>
+                </div>
+              ))}
+            </dl>
+            {onSaveToBrain && (
+              <button
+                type="button"
+                onClick={() => onSaveToBrain(summary)}
+                className="mt-1.5 text-xs text-indigo-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                🧠 שמור
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const TABLE_COLS = [
+  { key: 'name', label: 'נכס / מדד', pick: (r) => r.name },
+  { key: 'level', label: 'ערך', pick: (r) => r.level },
+  { key: 'change', label: 'שינוי', pick: (r) => r.change, isChange: true },
+  { key: 'direction', label: 'מגמה', pick: (r) => r.direction, isTrend: true },
+  { key: 'note', label: 'הערה', pick: (r) => r.note },
+];
 
 export function MarketIndicesTable({ items = [], onSaveToBrain }) {
   const rows = items.map(parseIndexItem).filter(Boolean);
@@ -69,6 +138,23 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
     );
   }
 
+  const structuredRows = rows.filter(isStructuredRow);
+  if (structuredRows.length === 0) {
+    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} />;
+  }
+
+  const activeCols = TABLE_COLS.filter((col) => {
+    if (col.key === 'name') return true;
+    return structuredRows.some((row) => {
+      const v = col.pick(row);
+      return v != null && String(v).trim() !== '';
+    });
+  });
+
+  if (activeCols.length <= 1) {
+    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} />;
+  }
+
   return (
     <div dir="rtl">
       {/* ── Desktop: table ── */}
@@ -76,18 +162,20 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b-2 border-slate-200 dark:border-zinc-700 bg-slate-100/80 dark:bg-zinc-800/60">
-              <th style={{ width: 120, minWidth: 120 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">נכס</th>
-              <th style={{ width: 120, minWidth: 120 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">מגמה</th>
-              <th style={{ width: 140, minWidth: 140 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">שינוי</th>
-              <th style={{ width: 140, minWidth: 140 }} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">רמה</th>
-              <th className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide">תובנה</th>
+              {activeCols.map((col) => (
+                <th
+                  key={col.key}
+                  className="px-3 py-2.5 text-right text-xs font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wide"
+                >
+                  {col.label}
+                </th>
+              ))}
               {onSaveToBrain && <th style={{ width: 36 }} />}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => {
+            {structuredRows.map((row, i) => {
               const dir = dirInfo(row.direction);
-              const cc  = changeColor(row.change, row.direction);
               const isEven = i % 2 === 0;
               const zebraCls = dir.rowCls || (isEven ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/60 dark:bg-zinc-800/30');
               return (
@@ -95,44 +183,44 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                   key={i}
                   className={`border-b border-slate-100 dark:border-zinc-800/60 hover:brightness-[0.97] dark:hover:brightness-110 transition-colors group ${zebraCls}`}
                 >
-                  {/* Asset */}
-                  <td style={{ width: 120, minWidth: 120 }} className="px-3 py-3 font-bold text-sm text-slate-900 dark:text-zinc-50 tracking-wide whitespace-nowrap">
-                    {row.name || DASH}
-                  </td>
-
-                  {/* Trend badge */}
-                  <td style={{ width: 120, minWidth: 120 }} className="px-3 py-3 whitespace-nowrap">
-                    {dir.label ? (
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold ${dir.badgeCls}`}>
-                        {dir.emoji && <span className="text-base leading-none">{dir.emoji}</span>}
-                        <span>{dir.label}</span>
-                      </span>
-                    ) : DASH}
-                  </td>
-
-                  {/* Change — large & bold */}
-                  <td style={{ width: 140, minWidth: 140 }} className="px-3 py-3 whitespace-nowrap">
-                    {row.change ? (
-                      <span className={`font-mono text-base font-bold ${cc}`}>{row.change}</span>
-                    ) : DASH}
-                  </td>
-
-                  {/* Level */}
-                  <td style={{ width: 140, minWidth: 140 }} className="px-3 py-3 font-mono text-sm text-slate-700 dark:text-zinc-200 whitespace-nowrap">
-                    {row.level || DASH}
-                  </td>
-
-                  {/* Insight — flexible */}
-                  <td className="px-3 py-3 text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                    {row.note || DASH}
-                  </td>
-
+                  {activeCols.map((col) => {
+                    const val = col.pick(row);
+                    if (col.isTrend) {
+                      return (
+                        <td key={col.key} className="px-3 py-3 whitespace-nowrap">
+                          {dir.label ? (
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold ${dir.badgeCls}`}>
+                              {dir.emoji && <span className="text-base leading-none">{dir.emoji}</span>}
+                              <span>{dir.label}</span>
+                            </span>
+                          ) : null}
+                        </td>
+                      );
+                    }
+                    if (col.isChange) {
+                      return (
+                        <td key={col.key} className="px-3 py-3 whitespace-nowrap">
+                          {renderChangeCell(val, row.direction)}
+                        </td>
+                      );
+                    }
+                    const cellCls = col.key === 'name'
+                      ? 'font-bold text-sm text-slate-900 dark:text-zinc-50 tracking-wide whitespace-nowrap'
+                      : col.key === 'level'
+                        ? 'font-mono text-sm text-slate-700 dark:text-zinc-200 whitespace-nowrap'
+                        : 'text-sm text-slate-600 dark:text-zinc-400 leading-relaxed';
+                    return (
+                      <td key={col.key} className={`px-3 py-3 ${cellCls}`}>
+                        {val || null}
+                      </td>
+                    );
+                  })}
                   {onSaveToBrain && (
                     <td style={{ width: 36 }} className="px-2 py-3">
                       <button
                         type="button"
                         onClick={() => {
-                          const text = [row.name, row.change, dir.label, row.note].filter(Boolean).join(' · ');
+                          const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
                           onSaveToBrain(text);
                         }}
                         className="opacity-0 group-hover:opacity-100 p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-all"
@@ -151,34 +239,30 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
 
       {/* ── Mobile: stacked cards ── */}
       <div className="sm:hidden space-y-2.5">
-        {rows.map((row, i) => {
+        {structuredRows.map((row, i) => {
           const dir = dirInfo(row.direction);
-          const cc  = changeColor(row.change, row.direction);
           return (
             <div
               key={i}
               className={`rounded-xl border border-slate-200 dark:border-zinc-700 px-4 py-3 shadow-sm ${dir.rowCls || 'bg-white dark:bg-zinc-900'}`}
               dir="rtl"
             >
-              {/* Top row: asset + trend + change */}
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name || '—'}</span>
+                {row.name && (
+                  <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name}</span>
+                )}
                 <div className="flex items-center gap-2 shrink-0">
                   {dir.label && (
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${dir.badgeCls}`}>
                       {dir.emoji} {dir.label}
                     </span>
                   )}
-                  {row.change && (
-                    <span className={`font-mono text-base font-bold ${cc}`}>{row.change}</span>
-                  )}
+                  {renderChangeCell(row.change, row.direction)}
                 </div>
               </div>
-              {/* Level */}
               {row.level && (
-                <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 mb-1">רמה: {row.level}</p>
+                <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 mb-1">ערך: {row.level}</p>
               )}
-              {/* Insight */}
               {row.note && (
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">{row.note}</p>
               )}
@@ -186,7 +270,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                 <button
                   type="button"
                   onClick={() => {
-                    const text = [row.name, row.change, dir.label, row.note].filter(Boolean).join(' · ');
+                    const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
                     onSaveToBrain(text);
                   }}
                   className="mt-1.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors"
