@@ -708,11 +708,13 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
     }
 
     // ── Fundamental analysis ──────────────────────────────────────────
-    case 'financial-metrics':
-      return [
-        ...pickArray(video, 'financialMetrics'),
-        ...pickArray(a, 'financialMetrics'),
-      ];
+    // Also used by earnings-brief (Step 1: now sources from universalTabs.specialized too).
+    case 'financial-metrics': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'financialMetrics')
+        : [...pickArray(video, 'financialMetrics'), ...pickArray(a, 'financialMetrics')];
+    }
 
     case 'valuation':
       return [
@@ -786,40 +788,70 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       ];
     }
 
-    case 'brief-sectors':
-      return pickArray(video, 'sectorPerformance', 'sectors');
+    case 'brief-sectors': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'sectorPerformance', 'sectors', 'sectorRotation')
+        : pickArray(video, 'sectorPerformance', 'sectors');
+    }
 
-    case 'brief-changes':
-      return pickArray(video, 'marketChanges', 'changes');
+    case 'brief-changes': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'marketChanges', 'changes')
+        : pickArray(video, 'marketChanges', 'changes');
+    }
 
-    case 'brief-tomorrow':
-      return pickArray(video, 'tomorrowEvents', 'nextEvents');
+    case 'brief-tomorrow': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'tomorrowEvents', 'nextEvents')
+        : pickArray(video, 'tomorrowEvents', 'nextEvents');
+    }
 
-    // ── Weekly brief ──────────────────────────────────────────────────
-    case 'brief-highlights':
-      return [
-        ...pickArray(video, 'weeklyHighlights', 'highlights'),
-        ...pickArray(video, 'marketConditions'),
-      ];
+    // ── Weekly brief (Step 1: now sources from universalTabs.specialized too) ──
+    case 'brief-highlights': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'weeklyHighlights', 'highlights')
+        : [...pickArray(video, 'weeklyHighlights', 'highlights'), ...pickArray(video, 'marketConditions')];
+    }
 
-    case 'brief-winners':
-      return pickArray(video, 'winners', 'topGainers');
+    case 'brief-winners': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'winners', 'topGainers')
+        : pickArray(video, 'winners', 'topGainers');
+    }
 
-    case 'brief-losers':
-      return pickArray(video, 'losers', 'topLosers');
+    case 'brief-losers': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'losers', 'topLosers')
+        : pickArray(video, 'losers', 'topLosers');
+    }
 
-    case 'brief-outlook':
-      return [
-        ...pickStringAsArray(video, 'weeklyOutlook', 'outlook'),
-        ...pickArray(video, 'nextWeekOutlook'),
-      ];
+    case 'brief-outlook': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'weeklyOutlook', 'outlook', 'nextWeekOutlook')
+        : [...pickStringAsArray(video, 'weeklyOutlook', 'outlook'), ...pickArray(video, 'nextWeekOutlook')];
+    }
 
-    // ── Earnings brief ────────────────────────────────────────────────
-    case 'earnings-guidance':
-      return pickArray(video, 'guidance', 'earningsGuidance');
+    // ── Earnings brief (Step 1: now sources from universalTabs.specialized too) ──
+    case 'earnings-guidance': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'guidance', 'earningsGuidance')
+        : pickArray(video, 'guidance', 'earningsGuidance');
+    }
 
-    case 'earnings-commentary':
-      return pickArray(video, 'managementCommentary', 'commentary');
+    case 'earnings-commentary': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'managementCommentary', 'commentary')
+        : pickArray(video, 'managementCommentary', 'commentary');
+    }
 
     // ── Political ─────────────────────────────────────────────────────
     case 'political-players':
