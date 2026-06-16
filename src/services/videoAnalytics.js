@@ -1458,6 +1458,45 @@ export function validateChaptersForSave(chapters, options = {}) {
   return { ok: true, reason: null, chapters: normalized };
 }
 
+/** Reject partial chapter timelines when duration is known (last start too early). */
+export function validateChapterTimelineCoverage(chapters, durationSeconds, { minLastStartRatio = 0.65 } = {}) {
+  const dur = Number(durationSeconds);
+  if (!Number.isFinite(dur) || dur <= 0) {
+    return { ok: true, skipped: true, reason: null };
+  }
+
+  const list = Array.isArray(chapters) ? chapters : [];
+  if (list.length < 2) {
+    return { ok: false, reason: 'מעט מדי פרקים לבדיקת כיסוי', lastStartSeconds: null, durationSeconds: dur };
+  }
+
+  const starts = list
+    .map((c) => {
+      const s = Number(c?.startSeconds);
+      return Number.isFinite(s) && s >= 0 ? s : null;
+    })
+    .filter((s) => s != null)
+    .sort((a, b) => a - b);
+
+  if (starts.length < 2) {
+    return { ok: false, reason: 'חסרים timestamps בפרקים — לא ניתן לוודא כיסוי מלא', lastStartSeconds: null, durationSeconds: dur };
+  }
+
+  const lastStart = starts[starts.length - 1];
+  const minLastStart = Math.floor(dur * minLastStartRatio);
+  if (lastStart < minLastStart) {
+    return {
+      ok: false,
+      reason: `הפרק האחרון מתחיל מוקדם מדי (${formatMmSsFromSeconds(lastStart)} מתוך ${formatMmSsFromSeconds(dur)}) — הפרקים לא מכסים את כל הסרטון`,
+      lastStartSeconds: lastStart,
+      minLastStartSeconds: minLastStart,
+      durationSeconds: dur,
+    };
+  }
+
+  return { ok: true, reason: null, lastStartSeconds: lastStart, durationSeconds: dur };
+}
+
 export function chaptersNeedEstimatedTimes(chapters, video) {
   const normalized = normalizeChapterArray(chapters);
   if (normalized.length === 0) return false;
