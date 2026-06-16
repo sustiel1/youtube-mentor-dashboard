@@ -14,7 +14,6 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
-import { SelectableSummaryCardHeader } from '@/components/shared/SelectableSummaryCardHeader';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
 export const COMPARISON_SURFACE_BG = 'bg-white dark:bg-zinc-900';
@@ -88,57 +87,41 @@ export function SectionCard({
   cardBulk = null,
 }) {
   const styles = toneStyles(tone);
-  const showTotalCount = count != null && count > 0 && !headerPills;
   const borderCls = COMPARISON_SECTION_BORDER;
   const surfaceCls = COMPARISON_SURFACE_BG;
-  const useSelectableHeader = cardBulk?.cardId && cardBulk?.cardText && cardBulk?.bulkSelection;
+  // NOTE: card-level bulk-select header (checkbox + quick-save actions) is temporarily
+  // unavailable — it depended on the untracked Universal Tab Bulk Selection cluster
+  // (SelectableSummaryCardHeader.jsx + its deps). `cardBulk` is accepted but currently
+  // ignored; the plain header below is used for all callers. No tracked caller relies on
+  // the selectable path today. Restore by re-wiring `cardBulk` once that cluster lands.
 
   return (
     <div
       className={`rounded-xl border-2 ${borderCls} ${surfaceCls} px-3 py-3 transition-colors`}
       dir="rtl"
     >
-      {useSelectableHeader ? (
-        <SelectableSummaryCardHeader
-          title={title}
-          cardId={cardBulk.cardId}
-          cardText={cardBulk.cardText}
-          bulkSelection={cardBulk.bulkSelection}
-          tabScope={cardBulk.tabScope || 'specialized'}
-          type={cardBulk.type}
-          sectionLabel={cardBulk.sectionLabel || title}
-          disabled={cardBulk.disabled}
-          headerPills={headerPills}
-          headerActions={headerActions}
-          showCount={showTotalCount}
-          count={count}
-          countTextCls={styles.text}
-          titleClassName={SECTION_HEADER_TITLE_CLS}
-        />
-      ) : (
-        <div
-          className="pt-1 pb-3 mb-3 px-0.5 text-right border-b border-slate-200/80 dark:border-zinc-700/70 flex flex-col gap-y-1"
-          dir="rtl"
-          data-section-header
-        >
-          <div className="flex items-center justify-between">
-            <h2 className={SECTION_HEADER_TITLE_CLS}>{title}</h2>
-            <div className="flex items-center gap-x-2 shrink-0">
-              {count != null && count > 0 && (
-                <span className={`${SECTION_HEADER_COUNT_CLS} shrink-0 ${styles.text}`}>
-                  {count}
-                </span>
-              )}
-              {headerActions}
-            </div>
+      <div
+        className="pt-1 pb-3 mb-3 px-0.5 text-right border-b border-slate-200/80 dark:border-zinc-700/70 flex flex-col gap-y-1"
+        dir="rtl"
+        data-section-header
+      >
+        <div className="flex items-center justify-between">
+          <h2 className={SECTION_HEADER_TITLE_CLS}>{title}</h2>
+          <div className="flex items-center gap-x-2 shrink-0">
+            {count != null && count > 0 && (
+              <span className={`${SECTION_HEADER_COUNT_CLS} shrink-0 ${styles.text}`}>
+                {count}
+              </span>
+            )}
+            {headerActions}
           </div>
-          {headerPills && (
-            <div className="flex items-center">
-              {headerPills}
-            </div>
-          )}
         </div>
-      )}
+        {headerPills && (
+          <div className="flex items-center">
+            {headerPills}
+          </div>
+        )}
+      </div>
       {isEmpty ? <EmptyState message={emptyMessage} /> : children}
     </div>
   );
