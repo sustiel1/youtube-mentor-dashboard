@@ -276,7 +276,7 @@ export function BrainDestinationPicker({
   onOpenChange,
   video,
   onConfirm,
-  onOpenSaved,
+  onOpenSaved = null,
   obsidianSaveContext,
   obsidianPackagePreview = null,
   gemKey,
@@ -1042,7 +1042,7 @@ export function BrainDestinationPicker({
               ביטול
             </button>
           </div>
-          {allowReplaceExisting && !(isObsidianFlow && obsidianItemStatus?.allSaved) && (
+          {isObsidianFlow && allowReplaceExisting && !obsidianItemStatus?.allSaved && (
             <button
               type="button"
               onClick={() => setReplaceConfirmOpen(true)}

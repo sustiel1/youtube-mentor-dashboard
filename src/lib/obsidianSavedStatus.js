@@ -102,11 +102,6 @@ export const BRAIN_SAVE_LABEL_SAVED = "✓ נשמר למוח";
 export const OBSIDIAN_SAVE_LABEL_DEFAULT = "שמור ל-Obsidian";
 export const OBSIDIAN_SAVE_LABEL_SAVED = "✓ נשמר ל-Obsidian";
 
-/** Label for primary Obsidian routing dialog confirm button (video-level legacy). */
-export function getObsidianSaveButtonLabel(video) {
-  return hasObsidianSavedStatus(video) ? OBSIDIAN_SAVE_LABEL_SAVED : OBSIDIAN_SAVE_LABEL_DEFAULT;
-}
-
 /** Item-aware picker button label: saved | unsaved | mixed */
 export function getObsidianPickerButtonLabel({ allSaved = false, mixed = false } = {}) {
   if (allSaved) return 'פתח ב-Obsidian';
