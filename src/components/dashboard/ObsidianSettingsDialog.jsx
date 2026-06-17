@@ -144,8 +144,8 @@ export function ObsidianSettingsDialog({
 
           {activeSettings.migrated && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300">
-              הגדרות ישנות (Knowledge-Base) זוהו ועודכנו אוטומטית.
-              ה-vault הפעיל הוא: <span className="font-mono font-semibold">Obsidian-Brain-Structure-2026-05-17</span>.
+              הגדרות ישנות (Obsidian-Brain-Structure) זוהו ועודכנו אוטומטית.
+              ה-vault הפעיל הוא: <span className="font-mono font-semibold">{activeSettings.vaultName}</span>.
               לחץ &quot;שמור הגדרות&quot; כדי לשמור לצמיתות.
             </div>
           )}
@@ -167,7 +167,7 @@ export function ObsidianSettingsDialog({
               type="text"
               value={vaultPath}
               onChange={(e) => setVaultPath(e.target.value)}
-              placeholder="למשל: C:\\Users\\11\\Workspace\\Obsidian-Brain-Structure-2026-05-17"
+              placeholder="למשל: C:\\Users\\11\\Desktop\\Workspace\\Knowledge-Base"
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
             <p className="text-xs text-slate-500 dark:text-zinc-400">
