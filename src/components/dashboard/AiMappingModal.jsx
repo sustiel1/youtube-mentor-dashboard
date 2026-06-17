@@ -112,7 +112,7 @@ const TAB_LABEL = {
   "insights":            "תובנות",
   "useful-knowledge":    "ידע שימושי",
   "app-builder":         "APP",
-  "topics-subtopics":    "נושאים ותתי-נושאים",
+  "topics-subtopics":    "מיפוי ל-Obsidian",
   "specialized":         "תוכן ייעודי",
   "definitions":         "מושגים",
   "indicators":          "אינדיקטורים",
