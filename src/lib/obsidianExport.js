@@ -1535,7 +1535,7 @@ export function buildFullVideoObsidianExport(video, {
   const v = video || {};
   // PDF documents use a dedicated template — no YouTube-specific fields
   if (v.contentType === "pdf") return buildPdfFullObsidianExport(v, { primaryTopicOverride, notes, includeTranscript });
-  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolvePrimaryTopic(v);
+  const primaryTopic = normalizePrimaryTopic(primaryTopicOverride) || resolveObsidianFolderForVideo(v);
   const d = toDateStr(v.publishedAt || v.analyzedAt);
   const created = toISOCreated(v.analyzedAt || v.publishedAt);
   const youtubeUrl = v.url || (v.videoId ? `https://youtube.com/watch?v=${v.videoId}` : null);
