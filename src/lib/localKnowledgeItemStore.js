@@ -78,6 +78,12 @@ export function getKnowledgeItems() {
   return readAll().sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 }
 
+/** True when a knowledge item with this id exists in local storage. */
+export function hasKnowledgeItem(id) {
+  if (!id) return false;
+  return readAll().some((item) => item.id === id);
+}
+
 export function getKnowledgeItemsByTopic(topicId) {
   if (!topicId) return [];
   return getKnowledgeItems().filter((i) => i.topicId === topicId);

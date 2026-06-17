@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UniversalTabSelectRow } from "@/components/shared/UniversalTabSelectRow";
 
 export function BrainSelectableItem({
   id,
@@ -32,36 +33,96 @@ export function BrainSelectableItem({
     setShowResponse(false);
   };
 
+  const checkboxButton = (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        "flex h-4 w-4 items-center justify-center rounded border-2 text-[9px] font-bold transition-all",
+        "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+        isSelected && "!opacity-100 border-indigo-500 bg-indigo-500 text-white",
+        !isSelected && "border-slate-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
+      )}
+    >
+      {isSelected ? "✓" : ""}
+    </button>
+  );
+
+  const hoverActions = (
+    <>
+      {isPolitical && (
+        <button
+          type="button"
+          onClick={() => onToggleOpponent?.()}
+          title={isOpponent ? "הסר סימון דעת האויב" : "סמן כדעת האויב"}
+          className={cn(
+            "p-1 rounded-lg text-sm leading-none transition-colors",
+            isOpponent
+              ? "text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/40 !opacity-100"
+              : "text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+          )}
+        >
+          ⚔️
+        </button>
+      )}
+      {isOpponent && (
+        <button
+          type="button"
+          onClick={() => { setShowResponse(p => !p); setResponseDraft(opponentResponse || ""); }}
+          title="הוסף תשובה"
+          className="p-1 rounded-lg text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-sm leading-none !opacity-100"
+        >
+          💬
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => onSaveSingle?.("")}
+        title="שמור למוח"
+        className="p-1 rounded-lg text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors text-sm leading-none"
+      >
+        🧠
+      </button>
+      <button
+        type="button"
+        onClick={() => setShowNote(p => !p)}
+        title="הוסף הערה"
+        className="p-1 rounded-lg text-slate-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-sm leading-none"
+      >
+        📝
+      </button>
+      <button
+        type="button"
+        onClick={() => onCopy?.()}
+        title="העתק"
+        className="p-1 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+      >
+        <Copy className="h-3 w-3" />
+      </button>
+    </>
+  );
+
   return (
     <div className="group relative">
-      <div
+      <UniversalTabSelectRow
         className={cn(
-          "flex items-start gap-2 rounded-xl px-2 py-2 transition-all",
+          "rounded-xl px-2 py-2 transition-all",
           isOpponent
             ? "border border-rose-300 bg-rose-50/70 dark:border-rose-800/60 dark:bg-rose-950/20"
             : isSelected
               ? "border border-indigo-300 bg-indigo-50/80 dark:border-indigo-700 dark:bg-indigo-950/40"
               : "border border-transparent hover:border-slate-200 hover:bg-slate-50/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/40"
         )}
+        checkbox={checkboxButton}
+        actions={(
+          <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            {hoverActions}
+          </div>
+        )}
       >
-        {/* Checkbox */}
-        <button
-          type="button"
-          onClick={onToggle}
-          className={cn(
-            "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 text-[9px] font-bold transition-all",
-            "opacity-0 group-hover:opacity-100",
-            isSelected && "!opacity-100 border-indigo-500 bg-indigo-500 text-white",
-            !isSelected && "border-slate-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
-          )}
-        >
-          {isSelected ? "✓" : ""}
-        </button>
-
-        {/* Text */}
         <span
           className={cn(
-            "flex-1 text-sm leading-relaxed text-right",
+            "block text-sm leading-relaxed",
             isOpponent
               ? "text-rose-800 dark:text-rose-300"
               : isSelected
@@ -72,60 +133,7 @@ export function BrainSelectableItem({
           {isOpponent && <span className="text-rose-400 mr-1 text-xs">⚔️</span>}
           {text}
         </span>
-
-        {/* Hover actions */}
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          {isPolitical && (
-            <button
-              type="button"
-              onClick={() => onToggleOpponent?.()}
-              title={isOpponent ? "הסר סימון דעת האויב" : "סמן כדעת האויב"}
-              className={cn(
-                "p-1 rounded-lg text-sm leading-none transition-colors",
-                isOpponent
-                  ? "text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/40 !opacity-100"
-                  : "text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-              )}
-            >
-              ⚔️
-            </button>
-          )}
-          {isOpponent && (
-            <button
-              type="button"
-              onClick={() => { setShowResponse(p => !p); setResponseDraft(opponentResponse || ""); }}
-              title="הוסף תשובה"
-              className="p-1 rounded-lg text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-sm leading-none !opacity-100"
-            >
-              💬
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => onSaveSingle?.("")}
-            title="שמור למוח"
-            className="p-1 rounded-lg text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors text-sm leading-none"
-          >
-            🧠
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowNote(p => !p)}
-            title="הוסף הערה"
-            className="p-1 rounded-lg text-slate-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-sm leading-none"
-          >
-            📝
-          </button>
-          <button
-            type="button"
-            onClick={() => onCopy?.()}
-            title="העתק"
-            className="p-1 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
+      </UniversalTabSelectRow>
 
       {/* Inline note input */}
       {showNote && (
