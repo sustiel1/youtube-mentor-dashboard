@@ -3,6 +3,17 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import path from 'path'
 import { YoutubeTranscript } from 'youtube-transcript'
+import {
+  DEFAULT_OBSIDIAN_VAULT_NAME,
+  DEFAULT_OBSIDIAN_VAULT_PATH,
+  normalizeObsidianVaultPath,
+  resolveObsidianVaultSettings,
+  stripMigrationPrefixFromRelativePath,
+} from './src/lib/obsidianVaultDefaults.js'
+import {
+  mergeItemsIntoObsidianNote,
+  noteContainsItemMarker,
+} from './src/lib/obsidianNoteMerge.js'
 
 // ─── RSS Proxy Plugin ─────────────────────────────────────────────────────────
 // Route: GET /api/rss?channelId=UCxxxxxxxx
@@ -274,9 +285,11 @@ function makeGeminiVideoContentPlugin(env) {
       'שאל: "אם שכחתי לגמרי את הסרטון — מה הייתי רוצה שיישאר?" — זה הידע שצריך לחלץ.',
       '',
       '═══ כללי פרקים ═══',
-      `צור בערך ${chaptersTarget || 6} פרקים איכותיים שמכסים את כל הסרטון.`,
+      `צור בערך ${chaptersTarget || 6} פרקים איכותיים שמכסים את כל הסרטון מההתחלה ועד הסוף.`,
       'כל כותרת פרק חייבת להיות ספציפית. אסור: "פתיח", "סיכום", "פרק 1".',
       'כלול startSeconds ו-endSeconds לכל פרק.',
+      'הפרק האחרון חייב להתחיל בשליש האחרון של הסרטון (startSeconds ≥ 65% ממשך הסרטון).',
+      'אסור לעצור פרקים באמצע הסרטון — הפרקים חייבים להגיע קרוב לסוף.',
       '',
       '═══ כללי איכות ═══',
       'אסור: "placeholder", ביטויים גנריים.',
@@ -900,11 +913,12 @@ function makeYouTubeVideoMetadataPlugin() {
 // Creates parent folders if missing. Returns { ok, savedPath, absolutePath, obsidianUri }.
 // ─────────────────────────────────────────────────────────────────────────────
 function sanitizeVaultRelativePath(relPath = '') {
-  return String(relPath || '')
+  const base = String(relPath || '')
     .replace(/\.\./g, '')
     .replace(/^[/\\]+/, '')
     .replace(/\\/g, '/')
     .trim();
+  return stripMigrationPrefixFromRelativePath(base);
 }
 
 function getVaultRequestConfig(body = {}, env = {}) {
@@ -913,25 +927,30 @@ function getVaultRequestConfig(body = {}, env = {}) {
   const envVaultPath = String(env.OBSIDIAN_VAULT_PATH || env.VITE_OBSIDIAN_VAULT_PATH || '').trim();
   const envVaultName = String(env.VITE_OBSIDIAN_VAULT_NAME || '').trim();
 
+  const resolved = resolveObsidianVaultSettings({
+    vaultName: requestVaultName || envVaultName || DEFAULT_OBSIDIAN_VAULT_NAME,
+    vaultPath: requestVaultPath || envVaultPath || DEFAULT_OBSIDIAN_VAULT_PATH,
+  });
+
   return {
-    vaultPath: requestVaultPath || envVaultPath || '',
-    vaultName: requestVaultName || envVaultName || 'Obsidian-Brain-Structure-2026-05-17',
-    vaultSource: requestVaultName ? 'request' : envVaultName ? 'env' : 'default',
-    pathSource: requestVaultPath ? 'request' : envVaultPath ? 'env' : 'missing',
+    vaultPath: resolved.vaultPath,
+    vaultName: resolved.vaultName,
+    vaultSource: requestVaultName ? 'request' : envVaultName ? 'env' : resolved.migrated ? 'migrated' : 'default',
+    pathSource: requestVaultPath ? 'request' : envVaultPath ? 'env' : 'default',
   };
 }
 
 async function buildVaultDiagnostics({
   vaultPath = '',
-  vaultName = 'Knowledge-Base',
+  vaultName = DEFAULT_OBSIDIAN_VAULT_NAME,
   relativePath = '',
   createFolder = false,
 } = {}) {
   const { default: fs } = await import('fs');
   const nodePath = (await import('path')).default;
   const safePath = sanitizeVaultRelativePath(relativePath);
-  const normalizedVaultPath = String(vaultPath || '').trim();
-  const normalizedVaultName = String(vaultName || '').trim() || 'Obsidian-Brain-Structure-2026-05-17';
+  const normalizedVaultPath = normalizeObsidianVaultPath(String(vaultPath || '').trim());
+  const normalizedVaultName = String(vaultName || '').trim() || DEFAULT_OBSIDIAN_VAULT_NAME;
   const vaultExists = normalizedVaultPath ? fs.existsSync(normalizedVaultPath) : false;
   const resolvedFolder = safePath.includes('/') ? safePath.slice(0, safePath.lastIndexOf('/')) : '';
   const folderResolved = Boolean(resolvedFolder);
@@ -1015,6 +1034,81 @@ function makeVaultDiagnosticsPlugin(env) {
   };
 }
 
+function makeVaultReadPlugin(env) {
+  return {
+    name: 'vault-read',
+    configureServer(server) {
+      server.middlewares.use('/api/vault/read', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+
+        let body;
+        try {
+          body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', chunk => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch (e) { reject(e); } });
+            req.on('error', reject);
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_BODY' }));
+          return;
+        }
+
+        const config = getVaultRequestConfig(body, env);
+        if (!config.vaultPath) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'NO_VAULT_PATH' }));
+          return;
+        }
+
+        const safePath = sanitizeVaultRelativePath(body.path || '');
+        if (!safePath) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_PATH' }));
+          return;
+        }
+
+        const diagnostics = await buildVaultDiagnostics({
+          vaultPath: config.vaultPath,
+          vaultName: config.vaultName,
+          relativePath: safePath,
+          createFolder: false,
+        });
+
+        if (!diagnostics.vaultExists) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: false,
+            error: 'VAULT_NOT_FOUND',
+            savedPath: safePath,
+            exists: false,
+            content: '',
+          }));
+          return;
+        }
+
+        const { default: fs } = await import('fs');
+        const exists = diagnostics.fileExists === true;
+        const content = exists ? fs.readFileSync(diagnostics.absoluteFilePath, 'utf-8') : '';
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          ok: true,
+          savedPath: safePath,
+          exists,
+          content,
+          absolutePath: diagnostics.absoluteFilePath,
+        }));
+      });
+    },
+  };
+}
+
 function makeVaultWritePlugin(env) {
   return {
     name: 'vault-write',
@@ -1041,6 +1135,9 @@ function makeVaultWritePlugin(env) {
         }
 
         const { path: relPath, content } = body;
+        const writeMode = String(body.mode || 'overwrite').trim().toLowerCase();
+        const mergeItems = Array.isArray(body.mergeItems) ? body.mergeItems : [];
+        const footerLines = Array.isArray(body.footerLines) ? body.footerLines : [];
         const config = getVaultRequestConfig(body, env);
         const vaultPath = config.vaultPath;
         const vaultName = config.vaultName;
@@ -1055,7 +1152,25 @@ function makeVaultWritePlugin(env) {
           return;
         }
 
-        if (!relPath || !content) {
+        if (!relPath) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'MISSING_FIELDS', message: 'path is required' }));
+          return;
+        }
+
+        if (writeMode === 'merge') {
+          if (mergeItems.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'MISSING_MERGE_ITEMS', message: 'mergeItems are required for merge mode' }));
+            return;
+          }
+        } else if (writeMode === 'merged-content') {
+          if (!content) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'MISSING_FIELDS', message: 'content is required for merged-content mode' }));
+            return;
+          }
+        } else if (!content) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'MISSING_FIELDS', message: 'path and content are required' }));
           return;
@@ -1088,17 +1203,48 @@ function makeVaultWritePlugin(env) {
         }
 
         try {
-          console.log(`[vault-write] writing: ${diagnostics.absoluteFilePath}`);
-          fs.writeFileSync(diagnostics.absoluteFilePath, content, 'utf-8');
+          let finalContent = content;
+          let mergeMeta = null;
+
+          if (writeMode === 'merge') {
+            const existing = diagnostics.fileExists
+              ? fs.readFileSync(diagnostics.absoluteFilePath, 'utf-8')
+              : '';
+            mergeMeta = mergeItemsIntoObsidianNote({
+              existingContent: existing,
+              videoTitle: body.videoTitle || '',
+              items: mergeItems,
+              footerLines,
+            });
+            finalContent = mergeMeta.content;
+            console.log(`[vault-write] merge: ${diagnostics.absoluteFilePath}`, {
+              added: mergeMeta.added,
+              skipped: mergeMeta.skipped,
+              changed: mergeMeta.changed,
+            });
+          } else if (writeMode === 'merged-content') {
+            finalContent = content;
+            console.log(`[vault-write] merged-content: ${diagnostics.absoluteFilePath}`, {
+              bytes: String(content || '').length,
+              items: mergeItems.length,
+            });
+          } else {
+            console.log(`[vault-write] writing: ${diagnostics.absoluteFilePath}`);
+          }
+
+          fs.writeFileSync(diagnostics.absoluteFilePath, finalContent, 'utf-8');
 
           const exists = fs.existsSync(diagnostics.absoluteFilePath);
           const verifiedContent = exists ? fs.readFileSync(diagnostics.absoluteFilePath, 'utf-8') : '';
-          const verified = exists && verifiedContent === content;
+          const verified = writeMode === 'merge' || writeMode === 'merged-content'
+            ? exists && mergeItems.every((item) => noteContainsItemMarker(verifiedContent, item.identityKey))
+            : exists && verifiedContent === finalContent;
 
           console.log('[vault-write] success:', {
             savedPath: safePath,
             exists,
             verified,
+            mode: writeMode,
             obsidianUri: diagnostics.obsidianUrl,
           });
 
@@ -1110,6 +1256,8 @@ function makeVaultWritePlugin(env) {
             obsidianUri: diagnostics.obsidianUrl,
             exists,
             verified,
+            mode: writeMode,
+            merge: mergeMeta,
             ...diagnostics,
           }));
         } catch (err) {
@@ -1568,6 +1716,7 @@ export default defineConfig(({ mode }) => {
       makePoliticalSummaryPlugin(env),
       makeYouTubeVideoMetadataPlugin(),
       makeVaultDiagnosticsPlugin(env),
+      makeVaultReadPlugin(env),
       makeVaultWritePlugin(env),
       makeVaultAppendPlugin(env),
       makeKnowledgeLibraryEnsurePlugin(env),
