@@ -10,6 +10,8 @@ export function BrainSelectableItem({
   onToggle,
   onSaveSingle,
   onCopy,
+  // saved state — show ✓ instead of 🧠 when already saved to Brain
+  isSaved = false,
   // opponent-view props (political only)
   isPolitical = false,
   isOpponent = false,
@@ -75,14 +77,23 @@ export function BrainSelectableItem({
           💬
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => onSaveSingle?.("")}
-        title="שמור למוח"
-        className="p-1 rounded-lg text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors text-sm leading-none"
-      >
-        🧠
-      </button>
+      {isSaved ? (
+        <span
+          title="נשמר למוח"
+          className="px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400 text-xs font-medium leading-none whitespace-nowrap"
+        >
+          ✓ נשמר
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onSaveSingle?.("")}
+          title="שמור למוח"
+          className="p-1 rounded-lg text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors text-sm leading-none"
+        >
+          🧠
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setShowNote(p => !p)}

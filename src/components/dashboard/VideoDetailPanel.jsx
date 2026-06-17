@@ -8337,8 +8337,8 @@ export function VideoDetailPanel({
                       label: 'יצוא MD',
                       cn: 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
                       onClick: () => {
-                        const note = buildVideoFullNote(video, mentorName, videoNotes, [], [], { opponentSentences });
-                        downloadMarkdown(note, `${(video.title || 'video').replace(/[^\w\sא-ת]/g, '').trim().slice(0, 50)}.md`);
+                        const note = buildVideoFullNote(video, mentorName, null, videoNotes, [], { opponentSentences });
+                        downloadMarkdown(note.content, `${(video.title || 'video').replace(/[^\w\sא-ת]/g, '').trim().slice(0, 50)}.md`);
                       },
                     },
                   ].map(({ id, emoji, label, cn, onClick, disabled }) => (
@@ -9407,6 +9407,7 @@ export function VideoDetailPanel({
                               id={itemId}
                               text={point}
                               isSelected={multiSelected.has(itemId)}
+                              isSaved={isBrainItemSaved(point, 'keypoints')}
                               onToggle={() => toggleMultiSelect(itemId, { text: point, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
                               onSaveSingle={(note) => saveSingleItemToBrain(point, 'keypoints', 'נקודות מפתח', note)}
                               onCopy={() => navigator.clipboard.writeText(point).then(() => toast.success('הועתק'))}
@@ -10144,6 +10145,7 @@ export function VideoDetailPanel({
                                         id={itemId}
                                         text={insight}
                                         isSelected={multiSelected.has(itemId)}
+                                        isSaved={isBrainItemSaved(insight, 'ai-insights')}
                                         onToggle={() => toggleMultiSelect(itemId, { text: insight, sectionLabel: 'תובנות מרכזיות', type: 'ai-insights' })}
                                         onSaveSingle={(note) => saveSingleItemToBrain(insight, 'ai-insights', 'תובנות מרכזיות', note)}
                                         onCopy={() => navigator.clipboard.writeText(insight).then(() => toast.success('הועתק'))}
@@ -10166,6 +10168,7 @@ export function VideoDetailPanel({
                                         id={itemId}
                                         text={action}
                                         isSelected={multiSelected.has(itemId)}
+                                        isSaved={isBrainItemSaved(action, 'ai-actions')}
                                         onToggle={() => toggleMultiSelect(itemId, { text: action, sectionLabel: 'פעולות', type: 'ai-actions' })}
                                         onSaveSingle={(note) => saveSingleItemToBrain(action, 'ai-actions', 'פעולות', note)}
                                         onCopy={() => navigator.clipboard.writeText(action).then(() => toast.success('הועתק'))}
@@ -10188,6 +10191,7 @@ export function VideoDetailPanel({
                                         id={itemId}
                                         text={rule}
                                         isSelected={multiSelected.has(itemId)}
+                                        isSaved={isBrainItemSaved(rule, 'ai-rules')}
                                         onToggle={() => toggleMultiSelect(itemId, { text: rule, sectionLabel: 'כללים', type: 'ai-rules' })}
                                         onSaveSingle={(note) => saveSingleItemToBrain(rule, 'ai-rules', 'כללים', note)}
                                         onCopy={() => navigator.clipboard.writeText(rule).then(() => toast.success('הועתק'))}

@@ -1297,28 +1297,28 @@ function buildGemsV2PoliticalSections(pd, vid) {
   const addList = (heading, data, sectionType) => {
     const items = toStrings(data);
     if (items.length === 0) {
-      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      console.debug(`[ObsidianExport] skipped empty section: ${sectionType}`);
       return;
     }
-    console.log(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
+    console.debug(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
     out.push(`## ${heading}`, meta, '', `> createdAt: ${now}`, '');
     items.forEach(item => out.push(`- ${item}`));
     out.push('');
-    console.log(`[ObsidianExport] export success: ${sectionType}`);
+    console.debug(`[ObsidianExport] export success: ${sectionType}`);
   };
 
   // Add a section built from an object with named sub-fields
   const addObject = (heading, data, sectionType, fields) => {
     if (!data || typeof data !== 'object') {
-      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      console.debug(`[ObsidianExport] skipped empty section: ${sectionType}`);
       return;
     }
     const hasContent = fields.some(({ key }) => toStrings(data[key]).length > 0);
     if (!hasContent) {
-      console.log(`[ObsidianExport] skipped empty section: ${sectionType}`);
+      console.debug(`[ObsidianExport] skipped empty section: ${sectionType}`);
       return;
     }
-    console.log(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
+    console.debug(`[ObsidianExport] exporting GEMS v2.1 section: ${sectionType}`);
     out.push(`## ${heading}`, meta, '', `> createdAt: ${now}`, '');
     fields.forEach(({ key, label }) => {
       const lines = toStrings(data[key]);
@@ -1327,7 +1327,7 @@ function buildGemsV2PoliticalSections(pd, vid) {
       lines.forEach(l => out.push(`- ${l}`));
       out.push('');
     });
-    console.log(`[ObsidianExport] export success: ${sectionType}`);
+    console.debug(`[ObsidianExport] export success: ${sectionType}`);
   };
 
   // 1. politicalSummary
@@ -1341,11 +1341,11 @@ function buildGemsV2PoliticalSections(pd, vid) {
       ps.bottomLine   && `**שורה תחתונה:** ${ps.bottomLine}`,
     ].filter(Boolean);
     if (psItems.length > 0) {
-      console.log('[ObsidianExport] exporting GEMS v2.1 section: politicalSummary');
+      console.debug('[ObsidianExport] exporting GEMS v2.1 section: politicalSummary');
       out.push('## סיכום פוליטי', meta, '', `> createdAt: ${now}`, '');
       psItems.forEach(l => out.push(l));
       out.push('');
-      console.log('[ObsidianExport] export success: politicalSummary');
+      console.debug('[ObsidianExport] export success: politicalSummary');
     }
   }
 
@@ -1436,7 +1436,7 @@ function buildPdfFullObsidianExport(v, {
   notes = [],
   includeTranscript = true,
 } = {}) {
-  console.log("[ObsidianSave] Saving PDF content item:", {
+  console.debug("[ObsidianSave] Saving PDF content item:", {
     id: v.id,
     title: v.title,
     pages: v.pdfPages,
@@ -1516,7 +1516,7 @@ function buildPdfFullObsidianExport(v, {
   ];
 
   const content = finalizeObsidianExport(lines.join('\n'), v, { analysisType: 'PDF Document' });
-  console.log('[ObsidianSave] PDF export generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
+  console.debug('[ObsidianSave] PDF export generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
   return {
     content,
     filename,
@@ -1594,7 +1594,7 @@ export function buildFullVideoObsidianExport(video, {
   // GEMS v2.1 political sections (built from politicalData param or video fields)
   const _pdSource = politicalData || (v.politicalSummary ? v : null);
   const gemsV2Lines = _pdSource ? buildGemsV2PoliticalSections(_pdSource, v) : [];
-  if (gemsV2Lines.length > 0) console.log('[ObsidianExport] sectionType supported: GEMS v2.1 political', gemsV2Lines.length, 'lines');
+  if (gemsV2Lines.length > 0) console.debug('[ObsidianExport] sectionType supported: GEMS v2.1 political', gemsV2Lines.length, 'lines');
 
   // Manual / NotebookLM notes
   const manualLines = (manualNotes || []).map(n => {
@@ -1627,9 +1627,9 @@ export function buildFullVideoObsidianExport(video, {
   };
   const sectionsFound = Object.entries(debugSections).filter(([, v]) => v).map(([k]) => k);
   const sectionsMissing = Object.entries(debugSections).filter(([, v]) => !v).map(([k]) => k);
-  console.log('[FullObsidianExport] sections found:', sectionsFound);
-  console.log('[FullObsidianExport] sections missing:', sectionsMissing);
-  console.log('[FullObsidianExport] destination path:', `${primaryTopic}/${filename}`);
+  console.debug('[FullObsidianExport] sections found:', sectionsFound);
+  console.debug('[FullObsidianExport] sections missing:', sectionsMissing);
+  console.debug('[FullObsidianExport] destination path:', `${primaryTopic}/${filename}`);
 
   const customSubtitle = typeof (v.customSubtitle ?? v.subtitle) === 'string'
     ? String(v.customSubtitle ?? v.subtitle).trim()
@@ -1732,7 +1732,7 @@ export function buildFullVideoObsidianExport(video, {
     ...(() => {
       const docs = Array.isArray(v.attachedDocuments) ? v.attachedDocuments : [];
       if (docs.length === 0) return [];
-      console.log('[VideoPDF] Included in Obsidian export:', docs.map(d => ({ id: d.id, name: d.name })));
+      console.debug('[VideoPDF] Included in Obsidian export:', docs.map(d => ({ id: d.id, name: d.name })));
       const docLines = docs.flatMap(doc => [
         `### 📄 ${doc.name}`,
         ...(doc.pages ? [`- **עמודים:** ${doc.pages}`] : []),
@@ -1757,7 +1757,7 @@ export function buildFullVideoObsidianExport(video, {
   ];
 
   const content = finalizeObsidianExport(lines.join('\n'), v, { analysisType: 'Full Export' });
-  console.log('[FullObsidianExport] generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
+  console.debug('[FullObsidianExport] generated', content.length, 'chars →', `${primaryTopic}/${filename}`);
   return {
     content,
     filename,
@@ -1845,7 +1845,7 @@ export function openObsidianUrl(url, options = {}) {
     now - lastOpenedObsidianAt < OBSIDIAN_OPEN_DEDUPE_MS
   ) {
     debug.deduped = true;
-    console.log("[ObsidianOpen] deduped", {
+    console.debug("[ObsidianOpen] deduped", {
       url,
       lastOpenedObsidianAt,
       now,
@@ -1858,7 +1858,7 @@ export function openObsidianUrl(url, options = {}) {
   lastOpenedObsidianAt = now;
 
   console.debug("FINAL OBSIDIAN URL", url);
-  console.log("[ObsidianOpen] attempting", debug);
+  console.debug("[ObsidianOpen] attempting", debug);
 
   if (method === 'window') {
     try {
@@ -1866,7 +1866,7 @@ export function openObsidianUrl(url, options = {}) {
         const opened = window.open(url, '_blank', 'noopener,noreferrer');
         debug.usedWindowOpen = true;
         debug.windowOpenBlocked = opened == null;
-        console.log("[ObsidianOpen] window.open", {
+        console.debug("[ObsidianOpen] window.open", {
           url,
           blocked: debug.windowOpenBlocked,
         });
@@ -1874,7 +1874,7 @@ export function openObsidianUrl(url, options = {}) {
     } catch (error) {
       debug.usedWindowOpen = true;
       debug.windowOpenBlocked = true;
-      console.log("[ObsidianOpen] window.open error", {
+      console.debug("[ObsidianOpen] window.open error", {
         url,
         message: error?.message || String(error),
       });
@@ -1889,9 +1889,9 @@ export function openObsidianUrl(url, options = {}) {
       anchor.click();
       document.body.removeChild(anchor);
       debug.usedAnchorClick = true;
-      console.log("[ObsidianOpen] anchor.click", { url });
+      console.debug("[ObsidianOpen] anchor.click", { url });
     } catch (error) {
-      console.log("[ObsidianOpen] anchor.click error", {
+      console.debug("[ObsidianOpen] anchor.click error", {
         url,
         message: error?.message || String(error),
       });
