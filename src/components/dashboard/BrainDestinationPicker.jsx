@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FolderOpen, ChevronDown, Sparkles, Info, Plus, X } from "lucide-react";
 import {
   Dialog,
@@ -8,8 +8,16 @@ import {
 } from "@/components/ui/dialog";
 import { useTopics } from "@/hooks/useTopics";
 import { cn } from "@/lib/utils";
-import { getBrainSaveButtonLabel, hasObsidianSavedStatus } from "@/lib/obsidianSavedStatus";
+import {
+  getBrainSaveButtonLabel,
+  getObsidianPickerButtonLabel,
+  getObsidianPickerHeaderLabel,
+  hasObsidianSavedStatus,
+} from "@/lib/obsidianSavedStatus";
+import { resolveObsidianBulkItemStatus } from "@/lib/obsidianItemSaveStore";
+import { ObsidianIcon } from "@/components/shared/ObsidianIcon";
 import { normalizeCategoryName, GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
+import { getObsidianSettings } from "@/lib/obsidianVaultConfig";
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 const LAST_SUBS_KEY = "brain_dest_subs_v1";
@@ -262,7 +270,21 @@ function suggestSubBrain(brainId, video) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, gemKey }) {
+/** @param {'brain' | 'obsidian'} variant — UI identity only; routing/save logic unchanged */
+export function BrainDestinationPicker({
+  open,
+  onOpenChange,
+  video,
+  onConfirm,
+  onOpenSaved,
+  obsidianSaveContext,
+  obsidianPackagePreview = null,
+  gemKey,
+  variant = "brain",
+  allowReplaceExisting = true,
+}) {
+  const isObsidianFlow = variant === "obsidian";
+  const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
   const [brainId, setBrainId] = useState("");
   const [subBrainId, setSubBrainId] = useState("");
   const [changingBrain, setChangingBrain] = useState(false);
@@ -332,6 +354,30 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
     effectiveFilename ? `${effectiveFilename}.md` : null,
   ].filter(Boolean);
   const pathPreview = pathParts.length > 0 ? pathParts.join("/") : null;
+  const vaultDisplayName = getObsidianSettings().vaultName || "Knowledge-Base";
+
+  const obsidianItemStatus = useMemo(() => {
+    if (!isObsidianFlow || !obsidianSaveContext?.items?.length) return null;
+    return resolveObsidianBulkItemStatus(obsidianSaveContext.items, {
+      videoId: obsidianSaveContext.videoId,
+      destinationPath: pathPreview,
+      videoSavedPath: video?.obsidianSavedStatus?.savedPath || null,
+    });
+  }, [isObsidianFlow, obsidianSaveContext, pathPreview, video?.obsidianSavedStatus?.savedPath]);
+
+  const obsidianPickerHeader = obsidianItemStatus
+    ? getObsidianPickerHeaderLabel({
+      allSaved: obsidianItemStatus.allSaved,
+      mixed: obsidianItemStatus.mixed,
+    })
+    : null;
+
+  const obsidianPickerButton = obsidianItemStatus
+    ? getObsidianPickerButtonLabel({
+      allSaved: obsidianItemStatus.allSaved,
+      mixed: obsidianItemStatus.mixed,
+    })
+    : null;
 
   useEffect(() => {
     if (!open || topics.length === 0) return;
@@ -476,23 +522,21 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
     setSuggestedSubId(null);
   }
 
-  function handleConfirm() {
-    setValidationError("");
-
+  function buildConfirmPayload(replaceExisting = false) {
     // Validate new brain name
     if (isNewBrain) {
       const existingNames = allMainBrains.map((t) => t.name);
       const err = validateFolderName(newBrainName, existingNames);
-      if (err) { setValidationError(err); return; }
+      if (err) { setValidationError(err); return null; }
     } else if (!brainId) {
-      return;
+      return null;
     }
 
     // Validate new sub name
     if (isNewSub) {
       const existingNames = allSubBrains.map((t) => t.name);
       const err = validateFolderName(newSubName, existingNames);
-      if (err) { setValidationError(err); return; }
+      if (err) { setValidationError(err); return null; }
     }
 
     // Persist new custom destinations and resolve final IDs / names
@@ -502,12 +546,10 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
     let customSubName = null;
 
     if (isNewBrain) {
-      // Save the new main category and use its ID going forward
       const savedMainId = persistCustomMain(newBrainName);
       resolvedBrainId = savedMainId;
       customBrainName = newBrainName.trim();
       if (isNewSub) {
-        // Save the new sub under the freshly created main
         const savedSubId = persistCustomSub(savedMainId, newSubName);
         resolvedSubBrainId = savedSubId;
         customSubName = newSubName.trim();
@@ -516,29 +558,25 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
       }
       setCustomDests(loadCustomDests());
     } else {
-      // Existing main — check if it's a custom one (need to pass its name)
       const customMain = (customDests.mains || []).find((m) => m.id === brainId);
       if (customMain) customBrainName = customMain.name;
 
       if (isNewSub) {
-        // Save new sub under the existing main and use its ID
         const savedSubId = persistCustomSub(brainId, newSubName);
         resolvedSubBrainId = savedSubId;
         customSubName = newSubName.trim();
         setCustomDests(loadCustomDests());
       } else if (subBrainId) {
-        // Selected sub — pass its name if it's a custom one (not in topicsById)
         const customSub = (customDests.subs?.[brainId] || []).find((s) => s.id === subBrainId);
         if (customSub) customSubName = customSub.name;
       }
     }
 
-    // Persist last-used destination so it's pre-selected next time
     if (resolvedBrainId) {
       writeLastSub(resolvedBrainId, resolvedSubBrainId);
     }
 
-    onConfirm({
+    return {
       brainId: resolvedBrainId,
       subBrainId: resolvedSubBrainId,
       customBrainName,
@@ -546,7 +584,34 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
       subtitle: subtitleDraft.trim(),
       filename: effectiveFilename,
       path: pathPreview,
-    });
+      replaceExisting,
+    };
+  }
+
+  function handleConfirm() {
+    setValidationError("");
+
+    if (isObsidianFlow && obsidianItemStatus?.allSaved) {
+      const openPath = obsidianItemStatus.openPath || pathPreview;
+      if (openPath && onOpenSaved) {
+        onOpenSaved(openPath);
+      }
+      onOpenChange(false);
+      return;
+    }
+
+    const payload = buildConfirmPayload(false);
+    if (!payload) return;
+    onConfirm(payload);
+    onOpenChange(false);
+  }
+
+  function handleReplaceConfirm() {
+    setValidationError("");
+    const payload = buildConfirmPayload(true);
+    if (!payload) return;
+    setReplaceConfirmOpen(false);
+    onConfirm(payload);
     onOpenChange(false);
   }
 
@@ -562,21 +627,114 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
       >
         <DialogHeader className="shrink-0 border-b border-slate-200/80 px-7 py-6 dark:border-zinc-800 sm:px-9 sm:py-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            {isObsidianFlow ? (
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white shadow-lg shadow-violet-500/25">
+                <ObsidianIcon className="h-6 w-6 text-white" title="Obsidian" />
+              </div>
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25">
+                <Sparkles className="h-5 w-5" />
+              </div>
+            )}
             <div className="space-y-1 text-right">
               <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">
-                שמור למוח
+                {isObsidianFlow
+                  ? (obsidianPickerHeader || "שמור ל-Obsidian")
+                  : "שמור למוח"}
               </DialogTitle>
               <p className="text-sm leading-6 text-slate-500 dark:text-zinc-400">
-                בחר לאן לשמור את המידע במערכת הידע שלך.
+                {isObsidianFlow
+                  ? (obsidianItemStatus?.fileExistsButItemUnsaved
+                    ? "קיים קובץ בנתיב הזה, אבל הפריט הזה עדיין לא נשמר."
+                    : "בחר היכן לשמור את הידע בכספת ה-Obsidian שלך")
+                  : "בחר לאן לשמור את המידע במערכת הידע שלך."}
               </p>
             </div>
           </div>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-7 px-7 py-7 sm:px-9 sm:py-8">
+          {isObsidianFlow && obsidianPackagePreview && (
+            <div className="rounded-2xl border border-violet-200 bg-violet-50/50 px-4 py-4 dark:border-violet-800/50 dark:bg-violet-950/20 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">
+                מה יישמר
+              </p>
+              {obsidianPackagePreview.sections?.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {obsidianPackagePreview.sections.map((sec) => (
+                    <li
+                      key={sec.key}
+                      className="flex items-center justify-between gap-3 text-sm text-slate-700 dark:text-zinc-200"
+                    >
+                      <span className="font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+                        {sec.count}
+                      </span>
+                      <span className="flex-1 text-right">{sec.label}</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 shrink-0">☑</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-zinc-400 text-right">
+                  אין פריטים זמינים לשמירה
+                </p>
+              )}
+              <div className="border-t border-violet-200/80 dark:border-violet-800/40 pt-2 flex justify-between text-sm font-bold">
+                <span className="text-violet-700 dark:text-violet-300 tabular-nums">
+                  {obsidianPackagePreview.totalItems || 0}
+                </span>
+                <span className="text-slate-500 dark:text-zinc-400">סה״כ פריטים</span>
+              </div>
+              {typeof obsidianPackagePreview.onToggleSaveEntireVideo === 'function' && (
+                <label className="flex items-center justify-end gap-2.5 cursor-pointer pt-1">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                    שמור את כל תוכן הסרטון
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={!!obsidianPackagePreview.saveEntireVideo}
+                    onChange={(e) => obsidianPackagePreview.onToggleSaveEntireVideo(e.target.checked)}
+                    className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-500"
+                  />
+                </label>
+              )}
+              {obsidianPackagePreview.selectedCount > 0 && !obsidianPackagePreview.saveEntireVideo && (
+                <p className="text-xs text-slate-500 dark:text-zinc-400 text-right">
+                  יישמרו {obsidianPackagePreview.selectedCount} פריטים נבחרים בלבד
+                </p>
+              )}
+            </div>
+          )}
+
+          {isObsidianFlow && obsidianItemStatus && obsidianItemStatus.total > 0 && !obsidianPackagePreview && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80 space-y-3">
+              {obsidianItemStatus.savedItems.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">כבר נשמר:</p>
+                  <ul className="space-y-1">
+                    {obsidianItemStatus.savedItems.map((item, idx) => (
+                      <li key={`saved-${idx}`} className="text-sm text-slate-700 dark:text-zinc-200 truncate">
+                        ✓ {item.preview}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {obsidianItemStatus.unsavedItems.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">עדיין לא נשמר:</p>
+                  <ul className="space-y-1">
+                    {obsidianItemStatus.unsavedItems.map((item, idx) => (
+                      <li key={`unsaved-${idx}`} className="text-sm text-slate-600 dark:text-zinc-300 truncate">
+                        ○ {item.preview}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {suggestedSub && (
             <button
               type="button"
@@ -823,17 +981,27 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
                 <Info className="h-3.5 w-3.5" />
                 נתיב שמירה ב-Obsidian
               </p>
-              <div className="font-mono text-sm text-slate-700 dark:text-zinc-200 space-y-0.5">
+              <div className="font-mono text-sm text-slate-700 dark:text-zinc-200 space-y-0.5" dir="rtl">
+                <div className="text-slate-600 dark:text-zinc-300 font-semibold">{vaultDisplayName}</div>
                 {effectiveBrainName && (
-                  <div className="flex items-center gap-1.5"><span className="text-slate-400">📁</span><span className="font-semibold">{effectiveBrainName}/</span></div>
+                  <div className="pr-0">└── {effectiveBrainName}</div>
                 )}
                 {effectiveSubName && (
-                  <div className="flex items-center gap-1.5 pl-4"><span className="text-slate-400">📂</span><span>{effectiveSubName}/</span></div>
+                  <div className="pr-4">└── {effectiveSubName}</div>
                 )}
                 {effectiveFilename && (
-                  <div className="flex items-center gap-1.5 pl-8"><span className="text-violet-500">📄</span><span className="text-violet-700 dark:text-violet-300 font-semibold">{effectiveFilename}.md</span></div>
+                  <div className="pr-8 text-violet-700 dark:text-violet-300 font-semibold">
+                    └── {effectiveFilename}.md
+                  </div>
                 )}
               </div>
+              {isObsidianFlow && obsidianPackagePreview && (
+                <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400 text-right">
+                  {obsidianPackagePreview.totalItems > 0
+                    ? `${obsidianPackagePreview.totalItems} פריטים יישמרו לקובץ אחד`
+                    : 'הערה תיווצר לפי הנתיב למעלה'}
+                </p>
+              )}
               {(isNewBrain || isNewSub) && (
                 <p className="mt-2 text-xs text-violet-500 dark:text-violet-400">תיקיות חסרות יווצרו אוטומטית</p>
               )}
@@ -843,29 +1011,79 @@ export function BrainDestinationPicker({ open, onOpenChange, video, onConfirm, g
         </div>
 
         {/* ── Sticky footer (actions) ── */}
-        <div className="shrink-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-7 py-5 dark:border-zinc-800 dark:bg-zinc-950/95 sm:flex-row sm:items-center sm:px-9">
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={!brainId && !isNewBrain}
-            className={cn(
-              "order-1 flex-1 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40",
-              hasObsidianSavedStatus(video)
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-700 hover:to-teal-700"
-                : "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-violet-500/20 hover:from-violet-700 hover:to-indigo-700"
-            )}
-          >
-            {getBrainSaveButtonLabel(video)}
-          </button>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="order-2 rounded-2xl border border-violet-200 px-6 py-4 text-base font-semibold text-violet-600 transition-colors hover:bg-violet-50 dark:border-violet-800/60 dark:text-violet-300 dark:hover:bg-violet-900/20"
-          >
-            ביטול
-          </button>
+        <div className="shrink-0 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-7 py-5 dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-9">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!brainId && !isNewBrain}
+              className={cn(
+                "order-1 flex-1 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                isObsidianFlow
+                  ? (obsidianItemStatus?.allSaved
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-700 hover:to-teal-700"
+                    : "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-violet-500/20 hover:from-violet-700 hover:to-indigo-700")
+                  : (hasObsidianSavedStatus(video)
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-700 hover:to-teal-700"
+                    : "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-violet-500/20 hover:from-violet-700 hover:to-indigo-700")
+              )}
+            >
+              {isObsidianFlow
+                ? (obsidianPackagePreview
+                  ? (obsidianItemStatus?.allSaved ? 'פתח ב-Obsidian' : 'אשר ושמור ל-Obsidian')
+                  : (obsidianPickerButton || "שמור ל-Obsidian"))
+                : getBrainSaveButtonLabel(video)}
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="order-2 rounded-2xl border border-violet-200 px-6 py-4 text-base font-semibold text-violet-600 transition-colors hover:bg-violet-50 dark:border-violet-800/60 dark:text-violet-300 dark:hover:bg-violet-900/20"
+            >
+              ביטול
+            </button>
+          </div>
+          {allowReplaceExisting && !(isObsidianFlow && obsidianItemStatus?.allSaved) && (
+            <button
+              type="button"
+              onClick={() => setReplaceConfirmOpen(true)}
+              disabled={!brainId && !isNewBrain}
+              className="w-full rounded-2xl border border-red-300 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-800/60 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+            >
+              החלף קובץ קיים
+            </button>
+          )}
         </div>
       </DialogContent>
+
+      <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right text-lg font-bold text-red-700 dark:text-red-300">
+              להחליף את הקובץ הקיים?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 dark:text-zinc-400 text-right leading-relaxed">
+            פעולה זו תמחק את תוכן הקובץ הנוכחי ב-Obsidian ותחליף אותו במלואו.
+            שמירות קודמות ועריכות ידניות בקובץ יאבדו. לא ניתן לבטל.
+          </p>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              type="button"
+              onClick={() => setReplaceConfirmOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              ביטול
+            </button>
+            <button
+              type="button"
+              onClick={handleReplaceConfirm}
+              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              החלף קובץ קיים
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
