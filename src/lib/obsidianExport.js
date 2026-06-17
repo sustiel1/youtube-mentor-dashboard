@@ -1175,8 +1175,8 @@ export function buildVideoFullNote(video, mentorName = '', primaryTopicOverride 
   // Helper: add a section only if it has content
   const sec = (heading, body) => body ? [heading, body, ''] : [];
 
-  const customSubtitle = typeof (v.customSubtitle ?? v.subtitle) === 'string'
-    ? String(v.customSubtitle ?? v.subtitle).trim()
+  const customSubtitle = typeof (video.customSubtitle ?? video.subtitle) === 'string'
+    ? String(video.customSubtitle ?? video.subtitle).trim()
     : '';
 
   const headerParts = [
