@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ObsidianIcon } from "@/components/shared/ObsidianIcon";
 
 const SECTIONS = [
   { key: "snapshot",          emoji: "⚡", label: "תמונת מצב",      kind: "list" },
@@ -71,7 +72,7 @@ function ItemRow({ text, onCopy, onBrain, onObsidian, onWorkspace }) {
             title="שמור ל-Obsidian"
             className="p-1 rounded text-violet-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-sm leading-none transition-colors"
           >
-            🟣
+            <ObsidianIcon className="h-3.5 w-3.5" />
           </button>
         )}
         {onWorkspace && (

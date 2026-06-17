@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
+import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 
 export function SummaryTextSaveMenu({ coords, text, sectionLabel, isPolitical, onSave, onClose }) {
   const ref = useRef(null);
@@ -47,8 +48,7 @@ export function SummaryTextSaveMenu({ coords, text, sectionLabel, isPolitical, o
         onClick={() => onSave("obsidian")}
         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors"
       >
-        <span className="shrink-0 text-sm">📁</span>
-        <span>שמור ל-Obsidian</span>
+        <ObsidianSaveLabel />
       </button>
       <button
         type="button"

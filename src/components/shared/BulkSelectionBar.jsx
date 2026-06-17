@@ -1,4 +1,5 @@
-import { Brain, BookOpen, Circle, X } from "lucide-react";
+import { Brain, BookOpen, X } from "lucide-react";
+import { ObsidianFooterLabel } from "@/components/shared/ObsidianIcon";
 
 /**
  * §22 BulkSelectionBar — sticky bottom bar shown when items are selected.
@@ -59,8 +60,7 @@ export function BulkSelectionBar({ count = 0, onBrain, onWorkspace, onObsidian, 
             title="שמור ל-Obsidian"
             className="flex items-center gap-1 rounded-lg bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950/40 dark:text-violet-300 dark:hover:bg-violet-950/60 transition-colors"
           >
-            <Circle className="h-3.5 w-3.5" />
-            <span>🟣 Obsidian</span>
+            <ObsidianFooterLabel iconClassName="text-violet-600 dark:text-violet-400" />
           </button>
         )}
 
