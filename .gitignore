@@ -28,3 +28,34 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+e2e/.tmp-merge-vault/
+e2e/.tmp-*/
+e2e/screenshots/
+
+# Playwright MCP console logs
+.playwright-mcp/
+
+# Codex / QA log artifacts
+.codex-*.log
+*.codex-*.log
+
+# Build temp files
+build-err.txt
+build-out.txt
+C*tmp*.txt
+c*tmp*.txt
+
+# Screenshot artifacts
+scripts/*.png
+qa*.png
+app-opened.png
+app-status.png
+morning-brief-*.png
+summary-tab-*.png
+
+# Staging / proposal temp folders
+.staging/
+.staging-vdp-head.jsx
+.proposal-a/
+.tmp-chrome-readonly/
+.tmp-qa-vault/
