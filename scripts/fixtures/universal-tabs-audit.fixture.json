@@ -1,0 +1,121 @@
+{
+  "universalTabs": {
+    "summary": {
+      "shortSummary": "Today's session opened with cautious optimism as Fed held rates steady.",
+      "topTakeaways": [
+        "Key watch: CPI data due Thursday could shift momentum.",
+        "Tech showing relative strength despite broad weakness."
+      ],
+      "importantWarnings": [
+        "VIX above 20 — reduce size on breakout trades."
+      ]
+    },
+    "chapters": [
+      { "title": "Pre-market Overview", "startSeconds": 0, "endSeconds": 120, "summary": "SPY gap-down reversed at open" }
+    ],
+    "insights": {
+      "top5Insights": [
+        "Market is pricing in 2 rate cuts before year-end — watch FOMC minutes.",
+        "Tech sector showing relative strength despite broad-market weakness."
+      ],
+      "marketLessons": [
+        "Pre-market volume spike often signals institutional positioning."
+      ]
+    },
+    "usefulKnowledge": {
+      "reusableKnowledge": [
+        "When VIX > 25, reduce position size by 50%."
+      ],
+      "actionChecklist": [
+        "Check economic calendar before open.",
+        "Review overnight futures gap."
+      ],
+      "rules": [
+        "No new longs into CPI release without hedge."
+      ]
+    },
+    "appBuilder": {
+      "kpiList": ["VIX level", "SPY pre-market gap"],
+      "dashboards": ["Pre-market scanner", "Sector rotation heatmap"],
+      "prompts": ["Show me today's macro events and expected market impact"],
+      "suggestedFeatures": ["Economic calendar integration", "Fear & Greed meter"]
+    },
+    "topicsSubtopics": {
+      "tags": ["Federal Reserve", "S&P 500"],
+      "relatedTopics": ["CPI / Inflation", "Tech sector rotation"],
+      "suggestedSubTopics": ["FOMC minutes", "Pre-market gaps"]
+    },
+    "specialized": {
+      "marketOverview": {
+        "marketTrend": "Cautiously bullish — narrow leadership",
+        "breadth": "Improving: 65% of S&P above 50-day MA",
+        "riskOnOff": "Risk-on with tech leadership",
+        "volatilityEnvironment": "VIX elevated but compressing",
+        "leadingSector": "Technology",
+        "weakestSector": "Utilities",
+        "marketStrength": "Moderate — index highs on low breadth",
+        "marketWeakness": "Narrow leadership — Mag 7 concentration",
+        "spy": { "trend": "Weak short-term", "strength": "Neutral", "condition": "Below short-term averages" },
+        "qqq": { "trend": "Pullback", "strength": "Weakening", "condition": "Broke short-term trendline" }
+      },
+      "sectorRotation": [
+        { "sector": "Technology", "direction": "up", "relativeStrength": "leading" },
+        { "sector": "Financials", "direction": "flat", "relativeStrength": "neutral" },
+        { "sector": "Utilities", "direction": "down", "relativeStrength": "lagging" }
+      ],
+      "indices": [
+        { "name": "S&P 500", "level": "5,280", "change": "+0.3%", "note": "Holding above 50-day MA" },
+        { "name": "Nasdaq 100", "level": "18,540", "change": "+0.5%" },
+        { "symbol": "VIX", "value": "21.4", "change": "-3%", "condition": "Compressing after spike" }
+      ],
+      "marketNews": [
+        "Fed holds rates steady at 5.25-5.50%",
+        "NVDA reports Q2 beat, guides higher"
+      ],
+      "stocksMentioned": [
+        { "symbol": "NVDA", "company": "Nvidia", "reason": "Q2 earnings beat", "sentiment": "positive", "importance": "high" },
+        { "symbol": "SPY", "reason": "Key support at 5,200", "importance": "medium" },
+        { "symbol": "JPM", "company": "JPMorgan", "reason": "Strong financial sector discussion", "sentiment": "positive", "importance": "high" }
+      ],
+      "mentionedStocks": [
+        { "ticker": "TSLA", "context": "Mentioned in market commentary", "sentiment": "negative" }
+      ],
+      "macro": [
+        { "event": "CPI Release", "date": "Thursday 8:30 AM", "importance": "high", "impact": "Rate-sensitive sectors" }
+      ],
+      "sentiment": [
+        "Fear & Greed index at 62 — Greed territory",
+        "Put/Call ratio 0.82 — mildly bullish"
+      ],
+      "calendar": [
+        { "event": "US CPI", "date": "Thursday 8:30 AM", "importance": "high", "type": "CPI", "impact": "Rate-sensitive sectors" },
+        { "event": "FOMC Minutes", "date": "Wednesday 2:00 PM", "importance": "high", "type": "FOMC" },
+        "Friday: University of Michigan Sentiment"
+      ],
+      "breakoutCandidates": [
+        { "title": "NVDA", "description": "Breakout above $130 on volume expansion" }
+      ],
+      "relativeStrengthLeaders": [
+        "SMH semiconductor ETF — RS vs SPY at 3-month high"
+      ],
+      "swingOpportunities": [
+        "XLF at key support — 3-day hold setup"
+      ],
+      "strongSectors": [
+        "Technology — RS improving vs SPY"
+      ],
+      "opportunities": [
+        "NVDA breakout above $130 — momentum entry",
+        "XLF at key support — swing trade setup"
+      ],
+      "risks": [
+        "Hot CPI could push yields higher and compress NVDA tech valuations",
+        "TSLA weakness weighs on EV sector sentiment",
+        "Middle East tension escalating — watch oil prices"
+      ]
+    }
+  },
+  "top5Insights": ["Legacy insight A", "Legacy insight B"],
+  "reusableKnowledge": ["Legacy knowledge 1"],
+  "conclusions": ["Legacy conclusion 1"]
+}
