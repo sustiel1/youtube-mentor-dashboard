@@ -59,3 +59,7 @@ summary-tab-*.png
 .proposal-a/
 .tmp-chrome-readonly/
 .tmp-qa-vault/
+
+# Temporary audit artifacts (generated at runtime, not committed)
+scripts/tmp-*.json
+scripts/runtime-tabs-audit-compute.mjs
