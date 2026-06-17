@@ -7,11 +7,13 @@ import { buildObsidianOpenUrl, getObsidianSettings } from "@/lib/obsidianVaultCo
 export function buildObsidianSavedStatus({ folder, file, vaultName } = {}) {
   const normalizedFolder = String(folder || "").trim().replace(/\\/g, "/");
   const normalizedFile = String(file || "").trim().replace(/\\/g, "/");
-  if (!normalizedFolder || !normalizedFile) return null;
+  if (!normalizedFile) return null;
 
   const settings = getObsidianSettings();
   const resolvedVault = String(vaultName || "").trim() || settings.vaultName;
-  const savedPath = `${normalizedFolder}/${normalizedFile}`.replace(/\/+/g, "/");
+  const savedPath = normalizedFolder
+    ? `${normalizedFolder}/${normalizedFile}`.replace(/\/+/g, "/")
+    : normalizedFile;
 
   const result = {
     savedAt: new Date().toISOString(),
@@ -41,7 +43,7 @@ export function buildObsidianSavedStatusFromPath(savedPath, vaultName) {
   const file = lastSlash >= 0 ? normalized.substring(lastSlash + 1) : normalized;
   if (!file) return null;
   return buildObsidianSavedStatus({
-    folder: folder || normalized,
+    folder,
     file,
     vaultName,
   });
