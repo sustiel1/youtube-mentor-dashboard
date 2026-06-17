@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+import {
+  DEFAULT_OBSIDIAN_VAULT_NAME,
+  DEFAULT_OBSIDIAN_VAULT_PATH,
+  resolveObsidianVaultSettings,
+  stripMigrationPrefixFromRelativePath,
+} from "@/lib/obsidianVaultDefaults";
 
 const OBSIDIAN_SETTINGS_KEY = "obsidian_settings_v1";
 export const OBSIDIAN_SETTINGS_CHANGED_EVENT = "obsidian-settings-changed";
 
-export const DEFAULT_OBSIDIAN_VAULT_NAME = "Knowledge-Base";
-export const DEFAULT_OBSIDIAN_VAULT_PATH = "C:\\Users\\11\\Workspace\\Knowledge-Base";
+export { DEFAULT_OBSIDIAN_VAULT_NAME, DEFAULT_OBSIDIAN_VAULT_PATH };
 
 function normalizeValue(value) {
   return String(value || "").trim();
@@ -19,6 +24,10 @@ function emitObsidianSettingsChanged(settings) {
 
 export function getEnvObsidianVaultName() {
   return normalizeValue(import.meta.env.VITE_OBSIDIAN_VAULT_NAME);
+}
+
+export function getEnvObsidianVaultPath() {
+  return normalizeValue(import.meta.env.VITE_OBSIDIAN_VAULT_PATH);
 }
 
 export function getStoredObsidianSettings() {
@@ -44,11 +53,6 @@ export function getStoredObsidianSettings() {
   }
 }
 
-function isLegacyDefault(stored) {
-  return stored.vaultName === LEGACY_DEFAULT_VAULT_NAME &&
-    (!stored.vaultPath || stored.vaultPath.toLowerCase().includes("knowledge-base"));
-}
-
 /** vaultName + vaultPath for every /api/vault/* request body (P0 vault sync). */
 export function getObsidianVaultRequestFields() {
   const { vaultName, vaultPath } = getObsidianSettings();
@@ -61,33 +65,41 @@ export function getObsidianVaultRequestFields() {
 export function getObsidianSettings() {
   const stored = getStoredObsidianSettings();
   const envVaultName = getEnvObsidianVaultName();
-  const migrated = (stored.vaultName || stored.vaultPath) ? isLegacyDefault(stored) : false;
-  const vaultName = migrated
-    ? (envVaultName || DEFAULT_OBSIDIAN_VAULT_NAME)
-    : (stored.vaultName || envVaultName || DEFAULT_OBSIDIAN_VAULT_NAME);
-  const vaultPath = migrated
-    ? DEFAULT_OBSIDIAN_VAULT_PATH
-    : (stored.vaultPath || DEFAULT_OBSIDIAN_VAULT_PATH);
-  const hasLocalOverride = Boolean(stored.vaultName || stored.vaultPath) && !migrated;
+  const envVaultPath = getEnvObsidianVaultPath();
+
+  const resolved = resolveObsidianVaultSettings({
+    vaultName: envVaultName || stored.vaultName || DEFAULT_OBSIDIAN_VAULT_NAME,
+    vaultPath: envVaultPath || stored.vaultPath || DEFAULT_OBSIDIAN_VAULT_PATH,
+  });
+
+  const hasLocalOverride = Boolean(stored.vaultName || stored.vaultPath) && !resolved.migrated;
+  const source = envVaultName || envVaultPath
+    ? "env"
+    : hasLocalOverride
+      ? "local"
+      : resolved.migrated
+        ? "migrated"
+        : "default";
 
   return {
-    vaultName,
-    vaultPath,
-    source: hasLocalOverride ? "local" : envVaultName ? "env" : migrated ? "migrated" : "default",
-    migrated,
+    ...resolved,
+    source,
   };
 }
 
 export function saveObsidianSettings(nextSettings = {}) {
   if (typeof window === "undefined") return getObsidianSettings();
 
-  const merged = {
-    vaultName: normalizeValue(nextSettings.vaultName),
-    vaultPath: normalizeValue(nextSettings.vaultPath),
-  };
+  const merged = resolveObsidianVaultSettings({
+    vaultName: nextSettings.vaultName,
+    vaultPath: nextSettings.vaultPath,
+  });
 
   try {
-    window.localStorage.setItem(OBSIDIAN_SETTINGS_KEY, JSON.stringify(merged));
+    window.localStorage.setItem(OBSIDIAN_SETTINGS_KEY, JSON.stringify({
+      vaultName: merged.vaultName,
+      vaultPath: merged.vaultPath,
+    }));
   } catch {}
 
   const resolved = getObsidianSettings();
@@ -127,6 +139,15 @@ export function getConfiguredObsidianVaultPath() {
   return getObsidianSettings().vaultPath;
 }
 
+export function sanitizeObsidianRelativePath(filePath = "") {
+  const base = String(filePath || "")
+    .trim()
+    .replace(/[\\]+/g, "/")
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/\.\./g, "");
+  return stripMigrationPrefixFromRelativePath(base);
+}
+
 export function buildObsidianVaultRootUrl(vaultName = getConfiguredObsidianVaultName()) {
   const normalizedVaultName = normalizeValue(vaultName);
   if (!normalizedVaultName) return "";
@@ -134,7 +155,7 @@ export function buildObsidianVaultRootUrl(vaultName = getConfiguredObsidianVault
 }
 
 export function buildObsidianOpenUrl(filePath, vaultName = getConfiguredObsidianVaultName()) {
-  const normalizedPath = String(filePath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+  const normalizedPath = sanitizeObsidianRelativePath(filePath);
   const normalizedVaultName = normalizeValue(vaultName);
   if (!normalizedPath || !normalizedVaultName) return "";
   return `obsidian://open?vault=${encodeURIComponent(normalizedVaultName)}&file=${encodeURIComponent(normalizedPath)}`;
@@ -147,6 +168,7 @@ export function getObsidianVaultDebugInfo(filePath = "") {
 
   return {
     defaultVaultName: DEFAULT_OBSIDIAN_VAULT_NAME,
+    defaultVaultPath: DEFAULT_OBSIDIAN_VAULT_PATH,
     envVaultName,
     storedVaultName: stored.vaultName,
     storedVaultPath: stored.vaultPath,
@@ -166,16 +188,18 @@ export function getActiveObsidianVaultConfig(preferred = {}) {
   const preferredVaultName = normalizeValue(nextPreferred.vaultName);
   const preferredVaultPath = normalizeValue(nextPreferred.vaultPath);
 
-  const vaultName = preferredVaultName || settings.vaultName || DEFAULT_OBSIDIAN_VAULT_NAME;
-  const vaultPath = preferredVaultPath || settings.vaultPath || DEFAULT_OBSIDIAN_VAULT_PATH;
+  const resolved = resolveObsidianVaultSettings({
+    vaultName: preferredVaultName || settings.vaultName || DEFAULT_OBSIDIAN_VAULT_NAME,
+    vaultPath: preferredVaultPath || settings.vaultPath || DEFAULT_OBSIDIAN_VAULT_PATH,
+  });
 
   return {
-    activeVault: vaultName,
-    vaultName,
-    vaultPath,
+    activeVault: resolved.vaultName,
+    vaultName: resolved.vaultName,
+    vaultPath: resolved.vaultPath,
     source: preferredVaultName || preferredVaultPath ? "preferred" : settings.source,
-    hasVaultName: Boolean(vaultName),
-    hasVaultPath: Boolean(vaultPath),
+    hasVaultName: Boolean(resolved.vaultName),
+    hasVaultPath: Boolean(resolved.vaultPath),
   };
 }
 
@@ -192,6 +216,7 @@ export function useObsidianSettingsState() {
           vaultName: normalizeValue(detail.vaultName) || getObsidianSettings().vaultName,
           vaultPath: normalizeValue(detail.vaultPath),
           source: detail.source || getObsidianSettings().source,
+          migrated: detail.migrated,
         });
         return;
       }

@@ -2,7 +2,10 @@ import { normalizeSubCategory } from "@/config/videoTabsConfig";
 import {
   buildObsidianOpenUrl,
   getActiveObsidianVaultConfig,
+  sanitizeObsidianRelativePath,
 } from "@/lib/obsidianVaultConfig";
+
+export { sanitizeObsidianRelativePath };
 
 function normalizeSegment(value) {
   return String(value || "")
@@ -20,10 +23,6 @@ function buildSlug(text, maxLen = 40) {
     .replace(/^-+/, "")
     .slice(0, maxLen)
     .replace(/-$/, "");
-}
-
-export function sanitizeObsidianRelativePath(filePath = "") {
-  return normalizeSegment(String(filePath || "").replace(/\.\./g, ""));
 }
 
 export function resolveObsidianFolderFromTaxonomy(video = {}) {
