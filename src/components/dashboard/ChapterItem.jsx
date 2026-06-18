@@ -33,6 +33,35 @@ function formatHebrewTimestamp(seconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * Removes a duplicated title prefix from a chapter description.
+ * GEM sometimes repeats the chapter title verbatim at the start of the description.
+ * Operates at display-level only — raw stored data is never mutated.
+ */
+function cleanChapterSubtitle(title, subtitle) {
+  if (!title || !subtitle) return subtitle || "";
+  const norm = (s) => String(s).replace(/\s+/g, " ").trim();
+  const normTitle = norm(title);
+  const normSub = norm(subtitle);
+
+  // Exact prefix: subtitle begins with full title text
+  if (normSub.startsWith(normTitle)) {
+    return normSub.slice(normTitle.length).replace(/^[\s,\-–—.·•:]+/, "").trim();
+  }
+
+  // Near-duplicate: first N words of subtitle match first N words of title (N ≥ 3)
+  const titleWords = normTitle.split(" ");
+  const n = Math.min(titleWords.length, 8);
+  if (n >= 3) {
+    const subWords = normSub.split(" ");
+    if (titleWords.slice(0, n).join(" ") === subWords.slice(0, n).join(" ")) {
+      return subWords.slice(n).join(" ").replace(/^[\s,\-–—.·•:]+/, "").trim();
+    }
+  }
+
+  return subtitle;
+}
+
 function ChapterShell({ children, clickable = false, title, onClick, isHighlighted = false }) {
   const Tag = clickable ? "button" : "div";
   return (
@@ -142,6 +171,7 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
   const hasHebrew = Boolean(section.hebrewTitle);
   const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
   const originalTitle = hasHebrew ? (section.originalTitle || section.title) : null;
+  const cleanedDescription = cleanChapterSubtitle(displayTitle, section.description || "");
   const titleCls = compact
     ? `w-full text-right text-[15px] font-semibold leading-snug ${muted ? "text-slate-600 dark:text-zinc-400" : "text-slate-800 dark:text-zinc-100"}`
     : `w-full text-right text-base font-bold leading-snug ${muted ? "text-slate-700 dark:text-zinc-200" : "text-blue-900 dark:text-blue-200"}`;
@@ -173,9 +203,9 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
             {section.translatedTitleHe}
           </div>
         )}
-        {section.description ? (
+        {cleanedDescription ? (
           <div className={`${compact ? "mt-1 text-sm leading-relaxed" : "mt-1.5 text-sm leading-6"} text-slate-600 dark:text-zinc-300 ${compact ? "line-clamp-1" : "line-clamp-2"} text-right`}>
-            {section.description}
+            {cleanedDescription}
           </div>
         ) : null}
         <ChapterKeyPoints points={section?.keyPoints} />
