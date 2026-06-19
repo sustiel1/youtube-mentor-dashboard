@@ -320,6 +320,64 @@ export function RegimeCard({ label, value, isLast = false, columnVariant }) {
   );
 }
 
+// ── Sector metadata: Hebrew labels + representative ETF tickers ────────────
+const SECTOR_METADATA = {
+  'Materials':                              { he: 'חומרי גלם',                          etf: 'XLB'  },
+  'Basic Materials':                        { he: 'חומרי גלם',                          etf: 'XLB'  },
+  'Consumer Staples':                       { he: 'צריכה בסיסית',                        etf: 'XLP'  },
+  'Consumer Defensive':                     { he: 'צריכה בסיסית',                        etf: 'XLP'  },
+  'Technology':                             { he: 'טכנולוגיה',                           etf: 'XLK'  },
+  'Technology / Mega Caps':                 { he: 'טכנולוגיה / מניות ענק',               etf: 'QQQ'  },
+  'Software':                               { he: 'תוכנה',                               etf: 'IGV'  },
+  'Semiconductors':                         { he: 'מוליכים למחצה',                       etf: 'SMH'  },
+  'Semiconductors (SMH)':                   { he: 'מוליכים למחצה',                       etf: 'SMH'  },
+  'Retail':                                 { he: 'קמעונאות',                            etf: 'XRT'  },
+  'Airlines':                               { he: 'חברות תעופה',                         etf: 'JETS' },
+  'Airlines (JETS)':                        { he: 'חברות תעופה',                         etf: 'JETS' },
+  'Energy':                                 { he: 'אנרגיה',                              etf: 'XLE'  },
+  'Solar':                                  { he: 'אנרגיה סולארית',                      etf: 'TAN'  },
+  'Financials':                             { he: 'פיננסים',                             etf: 'XLF'  },
+  'Regional Banks':                         { he: 'בנקים אזוריים',                       etf: 'KRE'  },
+  'Homebuilders':                           { he: 'קבלני בתים',                          etf: 'XHB'  },
+  'REITs':                                  { he: 'ריטים',                               etf: 'VNQ'  },
+  'Healthcare':                             { he: 'בריאות',                              etf: 'XLV'  },
+  'Industrials':                            { he: 'תעשייה',                              etf: 'XLI'  },
+  'Utilities':                              { he: 'תשתיות',                              etf: 'XLU'  },
+  'Real Estate':                            { he: 'נדל"ן',                               etf: 'XLRE' },
+  'Communication Services':                 { he: 'תקשורת',                              etf: 'XLC'  },
+  'Consumer Discretionary':                 { he: 'צריכה מחזורית',                        etf: 'XLY'  },
+  'Regional Banks / Homebuilders / REITs':  { he: 'בנקים אזוריים / קבלני בתים / ריטים', etf: 'KRE'  },
+};
+
+function _normSectorKey(name) {
+  return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+const _SECTOR_META_BY_KEY = Object.fromEntries(
+  Object.entries(SECTOR_METADATA).map(([k, v]) => [_normSectorKey(k), v])
+);
+
+function _etfUrl(ticker) {
+  return `https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`;
+}
+
+function getSectorMeta(name) {
+  const key = _normSectorKey(name);
+  const direct = _SECTOR_META_BY_KEY[key];
+  if (direct) return { he: direct.he, etf: direct.etf, finvizUrl: _etfUrl(direct.etf) };
+
+  // Fallback: extract ticker from parentheses, e.g. "XYZ Sector (ETF)"
+  const parenMatch = String(name).match(/\(([A-Z]{2,6})\)/);
+  if (parenMatch) {
+    const etf = parenMatch[1];
+    const baseName = String(name).replace(/\s*\([^)]+\)\s*/g, '').trim();
+    const baseMeta = _SECTOR_META_BY_KEY[_normSectorKey(baseName)];
+    return { he: baseMeta?.he ?? null, etf, finvizUrl: _etfUrl(etf) };
+  }
+
+  return null;
+}
+
 function buildSectorStatusParts(direction, relativeStrength) {
   const ctx = [direction, relativeStrength].filter(Boolean).join(' ');
   const parts = [];
@@ -360,15 +418,34 @@ export function SectorRow({
 }) {
   const sectorName = String(sector || '').trim();
   const statusParts = buildSectorStatusParts(direction, relativeStrength);
+  const meta = getSectorMeta(sectorName);
 
   if (!sectorName && statusParts.length === 0) return null;
 
   return (
     <div dir="rtl" className={`${DASHBOARD_ITEM_ROW_CLS} text-right`} data-sector-item>
       <div className="flex items-start gap-x-3 min-w-0">
-        <span className={`shrink-0 w-[38%] max-w-[10.5rem] ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-          {sectorName}
-        </span>
+        <div className="shrink-0 w-[55%] min-w-0">
+          {meta?.finvizUrl ? (
+            <a
+              href={meta.finvizUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="פתח ETF ב-Finviz ↗"
+              className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+            >
+              {sectorName}
+            </a>
+          ) : (
+            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sectorName}</span>
+          )}
+          {meta?.he && (
+            <>
+              <span className="text-slate-400 dark:text-zinc-500 mx-1.5 select-none" aria-hidden>—</span>
+              <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{meta.he}</span>
+            </>
+          )}
+        </div>
         {statusParts.length > 0 && (
           <span className="flex-1 min-w-0 text-right inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 justify-end">
             {statusParts.map((part, idx) => (

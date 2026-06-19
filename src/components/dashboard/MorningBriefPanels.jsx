@@ -1156,58 +1156,26 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
           onChange={edit.setDraft}
         />
       ) : (
-      <div dir="rtl" data-sector-comparison>
-        {/* Mobile: stacked Positive → Negative → Neutral */}
-        <div className="lg:hidden space-y-3">
-          <SectorComparisonColumn
-            variant="positive"
-            title={DISPLAY_COLUMN_TITLES.sectors.positive}
-            count={split.bullishCount}
-            rows={split.positive}
-            emptyMessage="לא נמצאו סקטורים חיוביים"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-          <SectorComparisonColumn
-            variant="negative"
-            title={DISPLAY_COLUMN_TITLES.sectors.negative}
-            count={split.bearishCount}
-            rows={split.negative}
-            emptyMessage="לא נמצאו סקטורים שליליים"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-          <SectorNeutralBlock rows={split.neutral} bulkSelection={bulkSelection} bulkSections={bulkSections} />
-        </div>
-
-        {/* Desktop: 2 columns — Positive right, Negative left (RTL). Hidden when both empty. */}
-        {(split.bullishCount > 0 || split.bearishCount > 0) && (
-        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3 lg:max-h-[min(60vh,480px)] lg:min-h-[160px]">
-          <SectorComparisonColumn
-            variant="positive"
-            title={DISPLAY_COLUMN_TITLES.sectors.positive}
-            count={split.bullishCount}
-            rows={split.positive}
-            scrollable
-            emptyMessage="לא נמצאו סקטורים חיוביים"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-          <SectorComparisonColumn
-            variant="negative"
-            title={DISPLAY_COLUMN_TITLES.sectors.negative}
-            count={split.bearishCount}
-            rows={split.negative}
-            scrollable
-            emptyMessage="לא נמצאו סקטורים שליליים"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-        </div>
-        )}
-        <div className={`hidden lg:block${(split.bullishCount > 0 || split.bearishCount > 0) && split.neutral.length > 0 ? ' mt-3' : ''}`}>
-          <SectorNeutralBlock rows={split.neutral} bulkSelection={bulkSelection} bulkSections={bulkSections} />
-        </div>
+      <div dir="rtl" data-sector-comparison className="space-y-3">
+        <SectorComparisonColumn
+          variant="positive"
+          title={DISPLAY_COLUMN_TITLES.sectors.positive}
+          count={split.bullishCount}
+          rows={split.positive}
+          emptyMessage="לא נמצאו סקטורים חיוביים"
+          bulkSelection={bulkSelection}
+          bulkSections={bulkSections}
+        />
+        <SectorComparisonColumn
+          variant="negative"
+          title={DISPLAY_COLUMN_TITLES.sectors.negative}
+          count={split.bearishCount}
+          rows={split.negative}
+          emptyMessage="לא נמצאו סקטורים שליליים"
+          bulkSelection={bulkSelection}
+          bulkSections={bulkSections}
+        />
+        <SectorNeutralBlock rows={split.neutral} bulkSelection={bulkSelection} bulkSections={bulkSections} />
       </div>
       )}
     </SectionCard>
@@ -2296,6 +2264,25 @@ const STOCK_SENTIMENT_COLUMNS = [
   },
 ];
 
+const STOCK_SECTOR_HE = {
+  'technology':              'טכנולוגיה',
+  'industrials':             'תעשייה',
+  'consumer staples':        'צריכה בסיסית',
+  'materials':               'חומרי גלם',
+  'energy':                  'אנרגיה',
+  'financials':              'פיננסים',
+  'healthcare':              'בריאות',
+  'communication services':  'תקשורת',
+  'consumer discretionary':  'צריכה מחזורית',
+  'utilities':               'תשתיות',
+  'real estate':             'נדל"ן',
+  'software':                'תוכנה',
+  'semiconductors':          'מוליכים למחצה',
+  'retail':                  'קמעונאות',
+  'airlines':                'תעופה',
+  'solar':                   'אנרגיה סולארית',
+};
+
 function stockDirFields(stock) {
   return {
     status: stock.context,
@@ -2397,32 +2384,18 @@ function StockMovePercentIndicator({ move }) {
   );
 }
 
-function StockMentionRow({
-  stock,
-  onSaveToBrain,
-  isLast = false,
-  bulkSelection = null,
-  bulkSections = [],
-}) {
+function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulkSections = [] }) {
   const summary = [stock.ticker, stock.company, stock.context, stock.sentiment].filter(Boolean).join(' · ');
-  const dirFields = stockDirFields(stock);
-  const dir = getDirectionFromFields(dirFields);
-  const styles = toneStyles(dir.tone);
-  const headerBadges = collectStockDisplayBadges(stock, dirFields);
-  const notesText = String(stock.notes || '').trim();
-  const contextText = String(stock.context || '').trim();
-  const showNotes = notesText && notesText !== contextText;
-  const actionabilityText = stockMentionActionability(stock.actionability);
-  const movePercent = parseStockMovePercentFromText(
-    [contextText, notesText, stock.sentiment],
-    dir.tone !== TONE.NEUTRAL ? dir.tone : null,
-  );
+  const sentKey = stockSentimentColumnKey(stock);
+  const sentLabel = sentKey === 'bullish' ? '🟢 חיובי' : sentKey === 'bearish' ? '🔴 שלילי' : '🔵 ניטרלי';
+  const ticker = String(stock.ticker || '').trim();
+  const notesText = [stock.context, stock.notes].filter(Boolean).map((s) => String(s).trim()).filter(Boolean).join(' · ');
+  const sectorEn = String(stock.sector || '').trim();
+  const sectorHe = STOCK_SECTOR_HE[sectorEn.toLowerCase()] ?? null;
 
   return (
-    <UniversalTabSelectRow
-      className={`group ${DASHBOARD_ITEM_ROW_CLS} text-right`}
-      data-stock-item
-      checkbox={(
+    <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
+      <td className="py-2 pr-2 pl-0 w-5 align-middle">
         <MorningBriefBulkCheckbox
           bulkSections={bulkSections}
           sectionKey="stocks-mentioned"
@@ -2431,8 +2404,63 @@ function StockMentionRow({
           tabKey="stocks-mentioned"
           bulkSelection={bulkSelection}
         />
-      )}
-      actions={(
+      </td>
+      <td className="px-2 py-2 align-top whitespace-nowrap">
+        {ticker ? (
+          <a
+            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="פתח ב-Finviz ↗"
+            className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+          >
+            {ticker}
+          </a>
+        ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
+      </td>
+      <td className="px-2 py-2 align-top">
+        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{stock.company || '—'}</span>
+      </td>
+      <td className="px-2 py-2 align-top whitespace-nowrap">
+        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorEn || '—'}</span>
+      </td>
+      <td className="px-2 py-2 align-top whitespace-nowrap">
+        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorHe || '—'}</span>
+      </td>
+      <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
+        {sentLabel}
+      </td>
+      <td className="px-2 py-2 align-top max-w-[16rem]">
+        <p
+          className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}
+          title={notesText || undefined}
+        >
+          {notesText || '—'}
+        </p>
+      </td>
+      <td className="px-2 py-2 align-top">
+        {ticker ? (
+          <div className="flex flex-col gap-0.5">
+            <a
+              href={`https://www.tradingview.com/symbols/NASDAQ-${encodeURIComponent(ticker)}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+            >
+              TradingView ↗
+            </a>
+            <a
+              href={`https://www.investing.com/search/?q=${encodeURIComponent(ticker)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+            >
+              Investing ↗
+            </a>
+          </div>
+        ) : null}
+      </td>
+      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
         <BriefRowSaveActions
           bulkSelection={bulkSelection}
           text={summary}
@@ -2440,40 +2468,8 @@ function StockMentionRow({
           tabKey="stocks-mentioned"
           onSaveToBrain={onSaveToBrain}
         />
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 justify-start min-w-0" data-stock-row-header>
-        <span className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} shrink-0 ${styles.text}`}>{stock.ticker}</span>
-        <StockMovePercentIndicator move={movePercent} />
-        {headerBadges.map((badge, i) => (
-          <span key={`${badge.kind}-${i}`} className="inline-flex items-center gap-x-1.5 shrink-0">
-            <span className="text-slate-300 dark:text-zinc-600 select-none" aria-hidden>|</span>
-            {badge.kind === 'direction' ? (
-              <StockMentionDirectionText fields={dirFields} />
-            ) : (
-              <StockCategoryText category={stock.category} />
-            )}
-          </span>
-        ))}
-      </div>
-      {stock.company && (
-        <p className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} mt-1`}>{stock.company}</p>
-      )}
-      {contextText && (
-        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} mt-1 break-words ${styles.text}`}>{contextText}</p>
-      )}
-      {showNotes && (
-        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} mt-1 break-words`}>{notesText}</p>
-      )}
-      {actionabilityText && (
-        <p className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} mt-1`}>
-          פעולה: {actionabilityText}
-        </p>
-      )}
-      {!isLast && (
-        <div className="mt-2.5 border-b border-slate-200/70 dark:border-zinc-700/50" aria-hidden />
-      )}
-    </UniversalTabSelectRow>
+      </td>
+    </tr>
   );
 }
 
@@ -2559,25 +2555,35 @@ export function StocksMentionedSection({
             </button>
           ))}
         </div>
-        {/* Unified flat stock list */}
-        {sortedStocks.map((stock, i) => {
-          const sentKey = stockSentimentColumnKey(stock);
-          const sentEmoji = sentKey === 'bullish' ? '🟢' : sentKey === 'bearish' ? '🔴' : '🔵';
-          return (
-            <div key={`${stock.ticker}-${i}`} className="flex items-start gap-2 min-w-0">
-              <span className="text-sm leading-none mt-2 shrink-0 select-none" aria-hidden>{sentEmoji}</span>
-              <div className="flex-1 min-w-0">
-                <StockMentionRow
+        {/* Stocks table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סימול</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>חברה</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>בעברית</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
+              </tr>
+            </thead>
+            <tbody>
+              {sortedStocks.map((stock, i) => (
+                <StockMentionTableRow
+                  key={`${stock.ticker}-${i}`}
                   stock={stock}
                   onSaveToBrain={onSaveToBrain}
-                  isLast={i === sortedStocks.length - 1}
                   bulkSelection={bulkSelection}
                   bulkSections={bulkSections}
                 />
-              </div>
-            </div>
-          );
-        })}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       )}
     </SectionCard>

@@ -69,9 +69,9 @@ export const DISPLAY_COLUMN_TITLES = {
     negative: '🔴 חדשות שליליות',
   },
   regime: {
-    positive: '🟢 מצב שוק חיובי',
-    neutral: '🟡 מצב שוק ניטרלי',
-    negative: '🔴 מצב שוק שלילי',
+    positive: '🟢 חיובי',
+    neutral: '🟡 ניטרלי',
+    negative: '🔴 שלילי',
   },
   sectors: {
     positive: '🟢 סקטורים חיוביים',
