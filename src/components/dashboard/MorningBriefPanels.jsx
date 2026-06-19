@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { cleanupMacroDisplayRows } from '@/lib/macroDisplayCleanup';
 import {
   extractCalendarRows,
@@ -1355,6 +1355,23 @@ function MacroDirectionCell({ text, row, className = DASHBOARD_TABLE_STATUS_CLS 
   return <NumericChangeSpan display={display} className={className} />;
 }
 
+/** Compact impact badge — shows only tone label, never raw AI narrative. */
+function MacroImpactBadge({ text }) {
+  if (!text) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
+  const tone = resolveTone(text);
+  const styles = toneStyles(tone);
+  const label = tone === TONE.BULLISH
+    ? `🟢 ${TONE_DISPLAY_LABELS.positive}`
+    : tone === TONE.BEARISH
+      ? `🔴 ${TONE_DISPLAY_LABELS.negative}`
+      : `⚪ ${TONE_DISPLAY_LABELS.neutral}`;
+  return (
+    <span className={`inline-flex items-center whitespace-nowrap text-xs font-semibold ${styles.text}`}>
+      {label}
+    </span>
+  );
+}
+
 function MacroRowSummary(row) {
   return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
     .filter(Boolean)
@@ -1374,7 +1391,8 @@ export function MacroSection({
   const fromSrc = extractMacroIndicatorRows(src);
   const marketRows = extractMarketDashboardRows(src);
   const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
-  const rows = cleanupMacroDisplayRows(mergeMacroDisplayRows(fromSrc, safeItems), marketRows);
+  const rows = cleanupMacroDisplayRows(mergeMacroDisplayRows(fromSrc, safeItems), marketRows)
+    .filter((row) => Boolean(row.value || row.change || row.description || row.impact || row.frequency));
 
   return (
     <SectionCard
@@ -1462,21 +1480,26 @@ export function MacroSection({
                         </div>
                       </td>
                     )}
-                    <td className={`px-2.5 py-2 whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</td>
-                    <td className={`px-2.5 py-2 whitespace-nowrap tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value || '—'}</td>
-                    <td className="px-2.5 py-2 whitespace-nowrap">
+                    <td className={`px-2.5 py-2 align-top whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</td>
+                    <td className={`px-2.5 py-2 align-top whitespace-nowrap tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value || '—'}</td>
+                    <td className="px-2.5 py-2 align-top whitespace-nowrap">
                       <MacroChangeCell change={row.change} row={row} />
                     </td>
-                    <td className={`px-2.5 py-2 whitespace-nowrap ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency || '—'}</td>
-                    <td className="px-2.5 py-2 leading-snug">
+                    <td className={`px-2.5 py-2 align-top whitespace-nowrap ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency || '—'}</td>
+                    <td
+                      className="px-2.5 py-2 align-top text-right"
+                      title={row.description || undefined}
+                    >
                       {row.description ? (
-                        <MacroDirectionCell text={row.description} row={row} />
+                        <div className="leading-snug line-clamp-2 overflow-hidden">
+                          <MacroDirectionCell text={row.description} row={row} />
+                        </div>
                       ) : (
                         <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
                       )}
                     </td>
-                    <td className="px-2.5 py-2">
-                      <MacroDirectionCell text={row.impact} row={row} />
+                    <td className="px-2.5 py-2 align-top whitespace-nowrap">
+                      <MacroImpactBadge text={row.impact} />
                     </td>
                   </tr>
                 );
@@ -2247,6 +2270,8 @@ export function RisksWarningSection({ marketBriefData, onSaveToBrain }) {
 }
 
 // ── 10. Stocks Mentioned ─────────────────────────────────────────────
+const STOCKS_SENTIMENT_ORDER = { bullish: 0, bearish: 1, neutral: 2 };
+
 const STOCK_SENTIMENT_COLUMNS = [
   {
     key: 'bullish',
@@ -2460,6 +2485,7 @@ export function StocksMentionedSection({
   bulkSelection = null,
   bulkSections = [],
 }) {
+  const [sortBy, setSortBy] = useState('sentiment');
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.stocksMentioned, {
     marketBriefData,
     effectiveVideo,
@@ -2470,13 +2496,18 @@ export function StocksMentionedSection({
     ? resolveTone(stocks.map((s) => s.sentiment).join(' '))
     : TONE.NEUTRAL;
 
-  const grouped = STOCK_SENTIMENT_COLUMNS.map((col) => ({
-    ...col,
-    items: stocks.filter((s) => stockSentimentColumnKey(s) === col.key),
-  }));
-  const bullishCount = grouped.find((g) => g.key === 'bullish')?.items.length ?? 0;
-  const bearishCount = grouped.find((g) => g.key === 'bearish')?.items.length ?? 0;
-  const neutralCount = grouped.find((g) => g.key === 'neutral')?.items.length ?? 0;
+  const bullishCount = stocks.filter((s) => stockSentimentColumnKey(s) === 'bullish').length;
+  const bearishCount = stocks.filter((s) => stockSentimentColumnKey(s) === 'bearish').length;
+  const neutralCount = stocks.filter((s) => stockSentimentColumnKey(s) === 'neutral').length;
+
+  const sortedStocks = [...stocks].sort((a, b) => {
+    if (sortBy === 'ticker') {
+      return String(a.ticker || '').localeCompare(String(b.ticker || ''), 'he');
+    }
+    const ka = stockSentimentColumnKey(a);
+    const kb = stockSentimentColumnKey(b);
+    return (STOCKS_SENTIMENT_ORDER[ka] ?? 2) - (STOCKS_SENTIMENT_ORDER[kb] ?? 2);
+  });
 
   return (
     <SectionCard
@@ -2505,42 +2536,48 @@ export function StocksMentionedSection({
           onChange={edit.setDraft}
         />
       ) : (
-      <div
-        className="grid grid-cols-1 lg:grid-cols-3 gap-3"
-        dir="rtl"
-        data-stocks-mentioned-section
-      >
-        {grouped.map(({ key, label, border, countText, items }) => (
-          <div
-            key={key}
-            className={`flex flex-col rounded-xl border-2 min-h-[120px] text-right ${border} ${COMPARISON_SURFACE_BG}`}
-            data-stocks-sentiment-column={key}
-          >
-            <DashboardColumnHeader
-              title={label}
-              count={items.length}
-              countTextCls={countText}
-            />
-            <div className="px-3 py-1 overflow-y-auto max-h-[min(45vh,360px)]">
-              {items.length === 0 ? (
-                <p className={`${DASHBOARD_EMPTY_CLS} text-center py-6`}>
-                  לא נמצאו מניות בקטגוריה זו
-                </p>
-              ) : (
-                items.map((stock, i) => (
-                  <StockMentionRow
-                    key={`${key}-${stock.ticker}`}
-                    stock={stock}
-                    onSaveToBrain={onSaveToBrain}
-                    isLast={i === items.length - 1}
-                    bulkSelection={bulkSelection}
-                    bulkSections={bulkSections}
-                  />
-                ))
-              )}
+      <div dir="rtl" data-stocks-mentioned-section>
+        {/* Sort controls */}
+        <div className="flex items-center gap-1.5 mb-3 justify-end">
+          <span className="text-[11px] text-slate-400 dark:text-zinc-500">מיון:</span>
+          {[
+            { key: 'sentiment', label: 'סנטימנט' },
+            { key: 'ticker', label: 'טיקר א-ב' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSortBy(key)}
+              className={
+                'text-[11px] px-2 py-0.5 rounded-full transition-colors ' +
+                (sortBy === key
+                  ? 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-medium'
+                  : 'text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800')
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {/* Unified flat stock list */}
+        {sortedStocks.map((stock, i) => {
+          const sentKey = stockSentimentColumnKey(stock);
+          const sentEmoji = sentKey === 'bullish' ? '🟢' : sentKey === 'bearish' ? '🔴' : '🔵';
+          return (
+            <div key={`${stock.ticker}-${i}`} className="flex items-start gap-2 min-w-0">
+              <span className="text-sm leading-none mt-2 shrink-0 select-none" aria-hidden>{sentEmoji}</span>
+              <div className="flex-1 min-w-0">
+                <StockMentionRow
+                  stock={stock}
+                  onSaveToBrain={onSaveToBrain}
+                  isLast={i === sortedStocks.length - 1}
+                  bulkSelection={bulkSelection}
+                  bulkSections={bulkSections}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       )}
     </SectionCard>
