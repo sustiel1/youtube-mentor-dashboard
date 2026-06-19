@@ -67,6 +67,7 @@ import {
   SECTION_EDIT_COLUMNS,
   getEditableRowsForSection,
 } from '@/lib/manualBriefOverrides';
+import { getStockSectorMeta } from '@/lib/stockSectorMap';
 import {
   BriefSectionManualHeaderExtras,
   ManualEditGrid,
@@ -2264,25 +2265,6 @@ const STOCK_SENTIMENT_COLUMNS = [
   },
 ];
 
-const STOCK_SECTOR_HE = {
-  'technology':              'טכנולוגיה',
-  'industrials':             'תעשייה',
-  'consumer staples':        'צריכה בסיסית',
-  'materials':               'חומרי גלם',
-  'energy':                  'אנרגיה',
-  'financials':              'פיננסים',
-  'healthcare':              'בריאות',
-  'communication services':  'תקשורת',
-  'consumer discretionary':  'צריכה מחזורית',
-  'utilities':               'תשתיות',
-  'real estate':             'נדל"ן',
-  'software':                'תוכנה',
-  'semiconductors':          'מוליכים למחצה',
-  'retail':                  'קמעונאות',
-  'airlines':                'תעופה',
-  'solar':                   'אנרגיה סולארית',
-};
-
 function stockDirFields(stock) {
   return {
     status: stock.context,
@@ -2384,14 +2366,16 @@ function StockMovePercentIndicator({ move }) {
   );
 }
 
+const _LINK_CLS = 'text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline';
+const _SEP = <span className="text-slate-300 dark:text-zinc-600 select-none mx-0.5" aria-hidden>·</span>;
+
 function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulkSections = [] }) {
   const summary = [stock.ticker, stock.company, stock.context, stock.sentiment].filter(Boolean).join(' · ');
   const sentKey = stockSentimentColumnKey(stock);
   const sentLabel = sentKey === 'bullish' ? '🟢 חיובי' : sentKey === 'bearish' ? '🔴 שלילי' : '🔵 ניטרלי';
   const ticker = String(stock.ticker || '').trim();
   const notesText = [stock.context, stock.notes].filter(Boolean).map((s) => String(s).trim()).filter(Boolean).join(' · ');
-  const sectorEn = String(stock.sector || '').trim();
-  const sectorHe = STOCK_SECTOR_HE[sectorEn.toLowerCase()] ?? null;
+  const sectorMeta = getStockSectorMeta(ticker);
 
   return (
     <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
@@ -2405,6 +2389,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
           bulkSelection={bulkSelection}
         />
       </td>
+      {/* סימול */}
       <td className="px-2 py-2 align-top whitespace-nowrap">
         {ticker ? (
           <a
@@ -2418,19 +2403,28 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
           </a>
         ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
       </td>
-      <td className="px-2 py-2 align-top">
-        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{stock.company || '—'}</span>
-      </td>
+      {/* סקטור */}
       <td className="px-2 py-2 align-top whitespace-nowrap">
-        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorEn || '—'}</span>
+        {sectorMeta?.sectorEtf ? (
+          <a
+            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(sectorMeta.sectorEtf)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`פתח ${sectorMeta.sectorEtf} ב-Finviz ↗`}
+            className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} hover:underline`}
+          >
+            {sectorMeta.sectorHe}
+          </a>
+        ) : (
+          <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>
+        )}
       </td>
-      <td className="px-2 py-2 align-top whitespace-nowrap">
-        <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorHe || '—'}</span>
-      </td>
+      {/* סנטימנט */}
       <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
         {sentLabel}
       </td>
-      <td className="px-2 py-2 align-top max-w-[16rem]">
+      {/* הערות */}
+      <td className="px-2 py-2 align-top max-w-[18rem]">
         <p
           className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}
           title={notesText || undefined}
@@ -2438,26 +2432,16 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
           {notesText || '—'}
         </p>
       </td>
-      <td className="px-2 py-2 align-top">
+      {/* קישורים */}
+      <td className="px-2 py-2 align-top whitespace-nowrap">
         {ticker ? (
-          <div className="flex flex-col gap-0.5">
-            <a
-              href={`https://www.tradingview.com/symbols/NASDAQ-${encodeURIComponent(ticker)}/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-            >
-              TradingView ↗
-            </a>
-            <a
-              href={`https://www.investing.com/search/?q=${encodeURIComponent(ticker)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-            >
-              Investing ↗
-            </a>
-          </div>
+          <span className="inline-flex items-center gap-x-0.5 text-xs font-medium">
+            <a href={`https://www.tradingview.com/symbols/NASDAQ-${encodeURIComponent(ticker)}/`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>TV</a>
+            {_SEP}
+            <a href={`https://www.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>Inv</a>
+            {_SEP}
+            <a href={`https://il.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>InvIL</a>
+          </span>
         ) : null}
       </td>
       <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2562,9 +2546,7 @@ export function StocksMentionedSection({
               <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
                 <th className="py-1.5 pr-2 pl-0 w-5" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סימול</th>
-                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>חברה</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>בעברית</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
