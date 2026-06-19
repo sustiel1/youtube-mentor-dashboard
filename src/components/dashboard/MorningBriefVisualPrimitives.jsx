@@ -361,7 +361,7 @@ function _etfUrl(ticker) {
   return `https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`;
 }
 
-function getSectorMeta(name) {
+export function getSectorMeta(name) {
   const key = _normSectorKey(name);
   const direct = _SECTOR_META_BY_KEY[key];
   if (direct) return { he: direct.he, etf: direct.etf, finvizUrl: _etfUrl(direct.etf) };

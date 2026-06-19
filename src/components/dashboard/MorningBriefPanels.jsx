@@ -61,6 +61,7 @@ import {
   SECTION_HEADER_TITLE_CLS,
   SectorCard,
   SectorRow,
+  getSectorMeta,
 } from './MorningBriefVisualPrimitives';
 import {
   BRIEF_MANUAL_SECTION_IDS,
@@ -925,34 +926,69 @@ export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection,
           onChange={edit.setDraft}
         />
       ) : (
-      <div dir="rtl" data-regime-comparison className="space-y-2">
-        <RegimeStackedGroup
-          variant="positive"
-          title={DISPLAY_COLUMN_TITLES.regime.positive}
-          count={split.bullishCount}
-          cards={split.positive}
-          emptyMessage="לא נמצאו פריטי מצב שוק חיוביים"
-          bulkSelection={bulkSelection}
-          bulkSections={bulkSections}
-        />
-        <RegimeStackedGroup
-          variant="neutral"
-          title={DISPLAY_COLUMN_TITLES.regime.neutral}
-          count={split.neutral.length}
-          cards={split.neutral}
-          emptyMessage="לא נמצאו פריטי מצב שוק ניטרליים"
-          bulkSelection={bulkSelection}
-          bulkSections={bulkSections}
-        />
-        <RegimeStackedGroup
-          variant="negative"
-          title={DISPLAY_COLUMN_TITLES.regime.negative}
-          count={split.bearishCount}
-          cards={split.negative}
-          emptyMessage="לא נמצאו פריטי מצב שוק שליליים"
-          bulkSelection={bulkSelection}
-          bulkSections={bulkSections}
-        />
+      <div dir="rtl" data-regime-comparison>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ...split.positive.map((c) => ({ ...c, sentLabel: '🟢 חיובי' })),
+                ...split.neutral.map((c) => ({ ...c, sentLabel: '🟡 ניטרלי' })),
+                ...split.negative.map((c) => ({ ...c, sentLabel: '🔴 שלילי' })),
+              ].map((card) => {
+                const displayText = `${translateDisplayLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
+                const displayValue = stripInternalFieldLabels(card.value);
+                const rowCtx = { indicator: translateDisplayLabel(card.label), description: displayValue };
+                const numericDisplay = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
+                return (
+                  <tr key={card.key + card.label} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group">
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="market-regime"
+                        text={displayText}
+                        sectionLabel="📊 מצב שוק"
+                        tabKey="market-regime"
+                        bulkSelection={bulkSelection}
+                      />
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap">
+                      <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{translateDisplayLabel(card.label)}</span>
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
+                      {card.sentLabel}
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[22rem]">
+                      {numericDisplay ? (
+                        <NumericChangeSpan display={numericDisplay} />
+                      ) : (
+                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={displayValue || undefined}>
+                          {displayValue || '—'}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BriefQuickSaveActions
+                        bulkSelection={bulkSelection}
+                        text={displayText}
+                        sectionLabel="📊 מצב שוק"
+                        tabKey="market-regime"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
       )}
     </SectionCard>
@@ -1157,26 +1193,82 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
           onChange={edit.setDraft}
         />
       ) : (
-      <div dir="rtl" data-sector-comparison className="space-y-3">
-        <SectorComparisonColumn
-          variant="positive"
-          title={DISPLAY_COLUMN_TITLES.sectors.positive}
-          count={split.bullishCount}
-          rows={split.positive}
-          emptyMessage="לא נמצאו סקטורים חיוביים"
-          bulkSelection={bulkSelection}
-          bulkSections={bulkSections}
-        />
-        <SectorComparisonColumn
-          variant="negative"
-          title={DISPLAY_COLUMN_TITLES.sectors.negative}
-          count={split.bearishCount}
-          rows={split.negative}
-          emptyMessage="לא נמצאו סקטורים שליליים"
-          bulkSelection={bulkSelection}
-          bulkSections={bulkSections}
-        />
-        <SectorNeutralBlock rows={split.neutral} bulkSelection={bulkSelection} bulkSections={bulkSections} />
+      <div dir="rtl" data-sector-comparison>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ...split.positive.map((r) => ({ ...r, sentLabel: '🟢 חיובי' })),
+                ...split.negative.map((r) => ({ ...r, sentLabel: '🔴 שלילי' })),
+                ...split.neutral.map((r) => ({ ...r, sentLabel: '🟡 ניטרלי' })),
+              ].map((row, i) => {
+                const sectorText = [row.sector, row.direction, row.relativeStrength].filter(Boolean).join(' · ');
+                const meta = getSectorMeta(row.sector);
+                const notesText = [row.direction, row.relativeStrength].filter(Boolean).join(' · ');
+                return (
+                  <tr key={`${row.sector}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sector-item>
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="sectors"
+                        text={sectorText}
+                        sectionLabel="🏭 סקטורים"
+                        tabKey="brief-sectors"
+                        bulkSelection={bulkSelection}
+                      />
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      {meta?.finvizUrl ? (
+                        <a
+                          href={meta.finvizUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="פתח ETF ב-Finviz ↗"
+                          className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+                        >
+                          {row.sector}
+                        </a>
+                      ) : (
+                        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{row.sector}</span>
+                      )}
+                      {meta?.he && (
+                        <>
+                          <span className="text-slate-400 dark:text-zinc-500 mx-1.5 select-none" aria-hidden>—</span>
+                          <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{meta.he}</span>
+                        </>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
+                      {row.sentLabel}
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[20rem]">
+                      <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={notesText || undefined}>
+                        {notesText || '—'}
+                      </p>
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BriefQuickSaveActions
+                        bulkSelection={bulkSelection}
+                        text={sectorText}
+                        sectionLabel="🏭 סקטורים"
+                        tabKey="brief-sectors"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
       )}
     </SectionCard>
@@ -2169,18 +2261,126 @@ export function OpportunitiesRisksDashboard({
           riskColumns={SECTION_EDIT_COLUMNS.risks}
         />
       ) : (
-      <div dir="rtl" data-opportunities-risks-dashboard>
-      {/* Mobile: stacked — Opportunities then Risks */}
-      <div className="lg:hidden space-y-3">
-        <OpportunitiesColumn ideas={ideas} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} bulkSections={bulkSections} />
-        <RisksColumn risks={risks} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} bulkSections={bulkSections} />
-      </div>
+      <div dir="rtl" data-opportunities-risks-dashboard className="space-y-4">
+        {/* הזדמנויות */}
+        {ideas.length > 0 && (
+          <div className="overflow-x-auto">
+            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-1.5 text-emerald-700 dark:text-emerald-400`}>🎯 הזדמנויות ({ideas.length})</p>
+            <table className="w-full text-right border-collapse" dir="rtl">
+              <thead>
+                <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                  <th className="py-1.5 pr-2 pl-0 w-5" />
+                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>נושא</th>
+                  <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
+                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>פרטים</th>
+                  <th className="py-1.5 pl-1 pr-0 w-5" />
+                </tr>
+              </thead>
+              <tbody>
+                {ideas.map((idea, i) => {
+                  const title = String(idea.title || '').trim();
+                  const detail = String(idea.detail || '').trim();
+                  const description = detail && detail !== title ? detail : '';
+                  const saveText = [title, description].filter(Boolean).join(' — ');
+                  return (
+                    <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-opportunity-item>
+                      <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="opportunities"
+                          text={saveText}
+                          sectionLabel="🎯 הזדמנויות"
+                          tabKey="brief-opportunities"
+                          bulkSelection={bulkSelection}
+                        />
+                      </td>
+                      <td className="px-2 py-2 align-top max-w-[14rem]">
+                        <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
+                      </td>
+                      <td className="px-2 py-2 align-top whitespace-nowrap">
+                        {idea.kindLabel ? (
+                          <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-emerald-700 dark:text-emerald-400`}>{idea.kindLabel}</span>
+                        ) : <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>}
+                      </td>
+                      <td className="px-2 py-2 align-top max-w-[20rem]">
+                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={description || undefined}>
+                          {description || '—'}
+                        </p>
+                      </td>
+                      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                        <BriefRowSaveActions
+                          bulkSelection={bulkSelection}
+                          text={saveText}
+                          sectionLabel="🎯 הזדמנויות"
+                          tabKey="brief-opportunities"
+                          onSaveToBrain={onSaveToBrain}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {/* Desktop: 2 equal columns, independent scroll — Opportunities right, Risks left (RTL) */}
-      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3 lg:h-[min(70vh,560px)] lg:min-h-[200px]">
-        <OpportunitiesColumn ideas={ideas} onSaveToBrain={onSaveToBrain} scrollable bulkSelection={bulkSelection} bulkSections={bulkSections} />
-        <RisksColumn risks={risks} onSaveToBrain={onSaveToBrain} scrollable bulkSelection={bulkSelection} bulkSections={bulkSections} />
-      </div>
+        {/* סיכונים */}
+        {risks.length > 0 && (
+          <div className="overflow-x-auto">
+            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-1.5 text-red-700 dark:text-red-400`}>⚠️ סיכונים ({risks.length})</p>
+            <table className="w-full text-right border-collapse" dir="rtl">
+              <thead>
+                <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                  <th className="py-1.5 pr-2 pl-0 w-5" />
+                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>נושא</th>
+                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>פרטים</th>
+                  <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>חומרה</th>
+                  <th className="py-1.5 pl-1 pr-0 w-5" />
+                </tr>
+              </thead>
+              <tbody>
+                {risks.map((risk, i) => {
+                  const { title, description, severity, tag } = parseRiskDisplay(risk);
+                  return (
+                    <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-risk-item>
+                      <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="risks"
+                          text={risk.text}
+                          sectionLabel="⚠️ סיכונים"
+                          tabKey="brief-risks"
+                          bulkSelection={bulkSelection}
+                        />
+                      </td>
+                      <td className="px-2 py-2 align-top max-w-[14rem]">
+                        <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
+                        {tag && <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} block mt-0.5`}>{tag}</span>}
+                      </td>
+                      <td className="px-2 py-2 align-top max-w-[20rem]">
+                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={description || undefined}>
+                          {description || '—'}
+                        </p>
+                      </td>
+                      <td className="px-2 py-2 align-top whitespace-nowrap">
+                        {severity ? <SeverityLabel level={severity} /> : <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>}
+                      </td>
+                      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                        <BriefRowSaveActions
+                          bulkSelection={bulkSelection}
+                          text={risk.text}
+                          sectionLabel="⚠️ סיכונים"
+                          tabKey="brief-risks"
+                          onSaveToBrain={onSaveToBrain}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       )}
     </SectionCard>
