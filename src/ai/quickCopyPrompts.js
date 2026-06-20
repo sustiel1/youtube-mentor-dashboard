@@ -6,6 +6,7 @@
 import { getGeneralSchemaExample } from './gemini/schemas/generalSchema.js';
 import { getPoliticalSchemaExample } from './gemini/schemas/politicalSchema.js';
 import { getMarketSchemaExample } from './gemini/schemas/marketSchema.js';
+import { getMorningBriefSchemaExample } from './gemini/schemas/morningBriefSchema.js';
 
 function transcriptBlock({ title, duration, transcript }) {
   return [
@@ -135,6 +136,33 @@ export function buildGeminiAppBuilderQuickPrompt({ title, duration, transcript }
     '• prompts: פרומפטים ל-AI שניתן להטמיע בתוך האפליקציה',
     '• screeningCriteria: קריטריוני סינון ספציפיים עם ערכי סף מספריים אם קיימים',
     '• אם שדה חסר חומר — החזר מערך ריק, לא placeholder',
+    '• אסור ערכים גנריים',
+    '',
+    'JSON schema:',
+    schema,
+    '',
+    transcriptBlock({ title, duration, transcript }),
+  ].join('\n');
+}
+
+export function buildGeminiNewsQuickPrompt({ title, duration, transcript }) {
+  const baseSchema = JSON.parse(getMorningBriefSchemaExample());
+  const schema = JSON.stringify({ contentType: 'marketBrief', ...baseSchema }, null, 2);
+  return [
+    'נתח את התמלול הבא והחזר JSON בלבד, ללא markdown, ללא טקסט נוסף.',
+    '',
+    'מטרה: לנתח מבזק שוק / מבזק בוקר ולייצר דוח מסחר יומי מובנה.',
+    '',
+    'כללי ניתוח מבזק בוקר:',
+    '• contentType חייב להיות "marketBrief" — חובה, ללא יוצא מן הכלל',
+    '• מלא את universalTabs.specialized עם כל השדות הרלוונטיים',
+    '• indices: שמות מדדים + רמה + שינוי + הערה קצרה',
+    '• stocksMentioned: ticker, סיבה, חשיבות (high / medium / low)',
+    '• macro: אירועים מאקרו עם תאריך, חשיבות, והשפעה צפויה',
+    '• calendar: אירועי לוח שנה ספציפיים עם מועדים',
+    '• opportunities: הזדמנויות מסחר קונקרטיות עם הגיון',
+    '• risks: סיכונים מרכזיים לסשן עם מנגנון',
+    '• אם שדה ריק — החזר מערך ריק, לא placeholder',
     '• אסור ערכים גנריים',
     '',
     'JSON schema:',
@@ -340,7 +368,7 @@ export const QUICK_COPY_ACTIONS = [
     icon: '📰',
     flow: 'gem-news',
     className: 'bg-amber-500 hover:bg-amber-600 text-white',
-    buildPrompt: buildGeminiMarketQuickPrompt,
+    buildPrompt: buildGeminiNewsQuickPrompt,
     toastMsg: 'התמלול הועתק — הדבק אותו ב-Gem מבזק בוקר',
   },
   {

@@ -109,7 +109,7 @@ import {
 import { mergeItemsIntoObsidianNote } from '@/lib/obsidianNoteMerge';
 import { readObsidianVaultMarkdown, writeObsidianWithItemMerge } from '@/lib/obsidianVaultMergeWrite';
 import { collectVideoObsidianMergeItems } from '@/lib/obsidianVideoMergeItems';
-import { getAppBuilderDraft } from '@/lib/appBuilderStore';
+import { getAppBuilderDraft, mapUniversalAppBuilderToSections, saveAppBuilderDraft } from '@/lib/appBuilderStore';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabContent";
@@ -5494,6 +5494,26 @@ export function VideoDetailPanel({
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('specialized'), 50);
       toast.success('📈 מבזק שוק נקלט בהצלחה ✓');
+      return true;
+    }
+
+    // ── App Builder — standalone universalTabs.appBuilder paste ──────────
+    // Triggered when quick-copy result contains universalTabs.appBuilder
+    // but NOT contentType: 'marketBrief' (which is handled above).
+    if (parsed?.universalTabs?.appBuilder && parsed?.contentType !== 'marketBrief') {
+      const videoId = video?.id || video?.youtubeId;
+      const sections = mapUniversalAppBuilderToSections(parsed.universalTabs.appBuilder);
+      if (videoId) {
+        saveAppBuilderDraft(videoId, sections);
+        localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      }
+      setGemsJsonApplied(true);
+      setGemsPasteError('');
+      setGemsParsedErrorInfo(null);
+      setGemsRepairApplied(false);
+      setIsGemsPasteOpen(false);
+      setTimeout(() => setActiveTab('app-builder'), 50);
+      toast.success('🏗️ App Builder נקלט בהצלחה — עוברים לטאב App Builder');
       return true;
     }
 
