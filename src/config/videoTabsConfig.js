@@ -756,6 +756,18 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ? [
             ...pickArray(src, 'macro', 'macroEvents', 'macroHighlights', 'macroContext', 'economicContext', 'economicEvents'),
             ...pickArray(src, 'macroFactors'),
+            // New Macro GEM field names (from universalTabs.specialized and rawData)
+            ...pickArray(src, 'macroConditions', 'marketConditions'),
+            ...pickObjectAsStrings(src, 'macroOverview'),
+            ...pickObjectAsStrings(src, 'fedPolicy'),
+            ...pickObjectAsStrings(src, 'interestRates'),
+            ...pickObjectAsStrings(src, 'inflation'),
+            ...pickObjectAsStrings(src, 'bondYields'),
+            ...pickObjectAsStrings(src, 'dollar'),
+            ...pickObjectAsStrings(src, 'oilEnergy'),
+            ...pickObjectAsStrings(src, 'liquidity'),
+            ...pickObjectAsStrings(src, 'laborMarket'),
+            ...pickObjectAsStrings(src, 'growthRecession'),
           ]
         : [
             ...pickArray(video, 'macroEvents', 'macroHighlights', 'marketConditions'),

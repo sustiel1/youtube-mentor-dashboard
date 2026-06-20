@@ -9277,7 +9277,7 @@ export function VideoDetailPanel({
                     );
                   }
 
-                  if (isBriefVideo && !summaryShort && marketBriefData) {
+                  if ((isBriefVideo || !!marketBriefData?.universalTabs) && !summaryShort && marketBriefData) {
                     const summaryShaped = extractUniversalTabContent(effectiveVideo, 'summary', marketBriefData);
                     logUniversalTabExtractShape('summary', summaryShaped, marketBriefData);
 

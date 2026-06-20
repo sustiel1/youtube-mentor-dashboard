@@ -397,7 +397,10 @@ export function SpecializedContentRenderer({
   }
 
   // ── Macro ────────────────────────────────────────────────────────
-  if (slug === 'macro') {
+  // Detect Macro GEM regardless of slug (handles videos without subCategory='מאקרו')
+  const isMacroContent = slug === 'macro' || (!!marketBriefData?.universalTabs && marketBriefData?.contentType === 'market');
+
+  if (isMacroContent) {
     const macroIndicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
     const macroIndicesSect = macroIndicesItems.length > 0 ? (
       <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
@@ -410,9 +413,12 @@ export function SpecializedContentRenderer({
     ) : null;
 
     const sects = [
-      sect('🌍 אירועי מאקרו', extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
+      sect('🌍 אירועי מאקרו',    extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
       macroIndicesSect,
-      sect('💡 הזדמנויות',    extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), 'brief-opportunities'),
+      sect('⚠️ סיכונים',          extractVideoTabItems(effectiveVideo, 'brief-risks',          marketBriefData), 'brief-risks'),
+      sect('💡 הזדמנויות',         extractVideoTabItems(effectiveVideo, 'brief-opportunities',  marketBriefData), 'brief-opportunities'),
+      sect('📊 ביצועי סקטורים',   extractVideoTabItems(effectiveVideo, 'brief-sectors',         marketBriefData), 'brief-sectors'),
+      sect('🎯 מניות רלוונטיות',  extractVideoTabItems(effectiveVideo, 'stocks-mentioned',      marketBriefData), 'stocks-mentioned'),
     ].filter(Boolean);
 
     if (sects.length === 0) return (
@@ -422,8 +428,11 @@ export function SpecializedContentRenderer({
       </div>
     );
     const macroBulkDefs = [
-      { key: 'brief-macro', label: '🌍 אירועי מאקרו', items: extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData), tabKey: 'brief-macro' },
-      { key: 'brief-opportunities', label: '💡 הזדמנויות', items: extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), tabKey: 'brief-opportunities' },
+      { key: 'brief-macro',        label: '🌍 אירועי מאקרו',   items: extractVideoTabItems(effectiveVideo, 'brief-macro',        marketBriefData), tabKey: 'brief-macro' },
+      { key: 'brief-risks',        label: '⚠️ סיכונים',        items: extractVideoTabItems(effectiveVideo, 'brief-risks',        marketBriefData), tabKey: 'brief-risks' },
+      { key: 'brief-opportunities',label: '💡 הזדמנויות',      items: extractVideoTabItems(effectiveVideo, 'brief-opportunities',marketBriefData), tabKey: 'brief-opportunities' },
+      { key: 'brief-sectors',      label: '📊 ביצועי סקטורים', items: extractVideoTabItems(effectiveVideo, 'brief-sectors',      marketBriefData), tabKey: 'brief-sectors' },
+      { key: 'stocks-mentioned',   label: '🎯 מניות רלוונטיות',items: extractVideoTabItems(effectiveVideo, 'stocks-mentioned',   marketBriefData), tabKey: 'stocks-mentioned' },
     ].filter((d) => d.items.length > 0);
     return wrapWithBriefHeader(renderBulkShell(macroBulkDefs, sects));
   }
