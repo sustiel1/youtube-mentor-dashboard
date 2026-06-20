@@ -99,6 +99,51 @@ export function buildGeminiMarketQuickPrompt({ title, duration, transcript }) {
   ].join('\n');
 }
 
+export function buildGeminiAppBuilderQuickPrompt({ title, duration, transcript }) {
+  const schema = JSON.stringify({
+    universalTabs: {
+      summary: ['מה האפליקציה עושה — תיאור תמציתי של המטרה'],
+      chapters: [{ title: '...', startSeconds: 0, endSeconds: 0, summary: '...' }],
+      insights: ['תובנה שמשפיעה על ארכיטקטורה או UX'],
+      usefulKnowledge: ['עקרון לשימוש חוזר בפיתוח'],
+      topicsSubtopics: ['React', 'TypeScript'],
+      appBuilder: {
+        suggestedFeatures: ['פיצ׳ר: שם קצר — מה הוא עושה'],
+        kpiList: ['שם KPI: מה מוצג וכיצד'],
+        dataPoints: ['שם שדה נתון: מקור הנתון'],
+        dataFields: ['שם שדה — סוג — מקור'],
+        dashboards: ['שם מסך: מה הוא עושה'],
+        dashboardUpdates: ['עדכון לוח: מה ישתנה'],
+        screeningCriteria: ['קריטריון: שם — לוגיקה — ערכי סף'],
+        newIndicators: ['אינדיקטור: שם — חישוב — שימוש'],
+        alerts: ['התראה: תנאי — פעולה מוצעת'],
+        componentSuggestions: ['קומפוננטה React: שם — תפקיד'],
+        prompts: ['פרומפט AI לשימוש בתוך האפליקציה'],
+      },
+    },
+  }, null, 2);
+  return [
+    'נתח את התמלול הבא והחזר JSON בלבד, ללא markdown, ללא טקסט נוסף.',
+    '',
+    'מטרה: לחלץ רעיונות לפיתוח אפליקציה — פיצ׳רים, KPI, מסכים, לוגיקה, פרומפטים.',
+    '',
+    'כללי ניתוח App Builder:',
+    '• suggestedFeatures: תיאור קצר מה הפיצ׳ר עושה — לא המלצה כללית',
+    '• kpiList: מדדים ספציפיים שהאפליקציה מציגה או מחשבת',
+    '• dashboards: שם מסך + מה המטרה שלו',
+    '• componentSuggestions: קומפוננטות React ספציפיות עם תפקיד ברור',
+    '• prompts: פרומפטים ל-AI שניתן להטמיע בתוך האפליקציה',
+    '• screeningCriteria: קריטריוני סינון ספציפיים עם ערכי סף מספריים אם קיימים',
+    '• אם שדה חסר חומר — החזר מערך ריק, לא placeholder',
+    '• אסור ערכים גנריים',
+    '',
+    'JSON schema:',
+    schema,
+    '',
+    transcriptBlock({ title, duration, transcript }),
+  ].join('\n');
+}
+
 // ─── Claude ───────────────────────────────────────────────────────────────────
 
 export function buildClaudeGeneralQuickPrompt({ title, duration, transcript }) {
@@ -259,7 +304,7 @@ export const QUICK_COPY_ACTIONS = [
     icon: '🏗️',
     className: 'bg-indigo-600 hover:bg-indigo-700 text-white',
     flow: 'gem-appBuilder',
-    buildPrompt: buildGeminiMarketQuickPrompt,
+    buildPrompt: buildGeminiAppBuilderQuickPrompt,
     toastMsg: 'התמלול הועתק — הדבק אותו ב-App Builder',
   },
   {
@@ -279,6 +324,15 @@ export const QUICK_COPY_ACTIONS = [
     className: 'bg-orange-500 hover:bg-orange-600 text-white',
     buildPrompt: buildGeminiMarketQuickPrompt,
     toastMsg: 'התמלול הועתק — הדבק אותו ב-Gem המאקרו',
+  },
+  {
+    id: 'gemini-daytrading',
+    label: 'Gemini מסחר יומי',
+    icon: '🗓️',
+    flow: 'gem-dayTrading',
+    className: 'bg-cyan-600 hover:bg-cyan-700 text-white',
+    buildPrompt: buildGeminiMarketQuickPrompt,
+    toastMsg: 'התמלול הועתק — הדבק אותו ב-Gem המסחר היומי',
   },
   {
     id: 'gemini-news',
@@ -356,6 +410,6 @@ export const QUICK_COPY_GROUPS = [
     id: 'market',
     label: 'שוק הון',
     cols: 3,
-    actionIds: ['gemini-fundamental', 'gemini-technical', 'gemini-macro', 'gemini-news', 'gemini-combo'],
+    actionIds: ['gemini-fundamental', 'gemini-technical', 'gemini-macro', 'gemini-daytrading', 'gemini-news', 'gemini-combo'],
   },
 ];
