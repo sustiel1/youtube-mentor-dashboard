@@ -7203,29 +7203,11 @@ export function VideoDetailPanel({
       : "");
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
 
-  // TJS-specific transcript recommendation (scored separately from general gemRec)
-  const tjsRec = useMemo(
-    () => recommendTjsGemFromTranscript(fullTranscriptText),
-    [fullTranscriptText]
-  );
+  const tjsRec = recommendTjsGemFromTranscript(fullTranscriptText);
 
-  // For the GemRecommendationCard: prefer TJS rec when it's confident
-  const displayGemInfo = useMemo(() => {
-    if (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60) {
-      return {
-        gemKey: tjsRec.gemKey,
-        gemLabel: tjsRec.gemLabel,
-        gemIcon: tjsRec.gemIcon,
-        confidencePct: tjsRec.confidencePct,
-        confidence: tjsRec.confidence,
-        reason: tjsRec.reason,
-        detectedKeywords: tjsRec.detectedKeywords,
-        phase: 'accurate',
-        isManual: false,
-      };
-    }
-    return effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
-  }, [tjsRec, effectiveGemInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const displayGemInfo = (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60)
+    ? { gemKey: tjsRec.gemKey, gemLabel: tjsRec.gemLabel, gemIcon: tjsRec.gemIcon, confidencePct: tjsRec.confidencePct, confidence: tjsRec.confidence, reason: tjsRec.reason, detectedKeywords: tjsRec.detectedKeywords, phase: 'accurate', isManual: false }
+    : effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
 
   const handleOpenRecommendedGem = async () => {
     const gemKey = effectiveGemInfo?.gemKey;
