@@ -154,7 +154,7 @@ export function MorningBriefMarketsTable({
 
     <div dir="rtl">
 
-      <div className="hidden sm:block overflow-x-auto">
+      <div className="overflow-x-auto">
 
         <table className="w-full border-collapse table-fixed">
 
@@ -273,72 +273,6 @@ export function MorningBriefMarketsTable({
           </tbody>
 
         </table>
-
-      </div>
-
-
-
-      <div className="sm:hidden space-y-2">
-
-        {rows.map((row, i) => {
-
-          const styles = toneStyles(rowDirection(row).tone);
-
-          const changeEl = renderChangeStrength(row);
-
-          const summary = formatRowText(row);
-
-          return (
-
-            <div
-
-              key={i}
-
-              className={`rounded-lg border-2 ${styles.border} ${COMPARISON_SURFACE_BG} px-3 py-2.5 text-right`}
-
-            >
-
-              <UniversalTabSelectRow
-
-                checkbox={bulkSelection ? (
-
-                  <MorningBriefBulkCheckbox
-
-                    bulkSections={bulkSections}
-
-                    sectionKey="markets"
-
-                    text={summary}
-
-                    sectionLabel="📈 שווקים"
-
-                    tabKey="indices"
-
-                    bulkSelection={bulkSelection}
-
-                  />
-
-                ) : null}
-
-                actions={changeEl}
-
-              >
-
-                <p className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{row.asset}</p>
-
-              </UniversalTabSelectRow>
-
-              {row.comment && (
-
-                <p className={`mt-1.5 ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.comment}</p>
-
-              )}
-
-            </div>
-
-          );
-
-        })}
 
       </div>
 

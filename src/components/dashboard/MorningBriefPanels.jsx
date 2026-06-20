@@ -1485,31 +1485,15 @@ export function MacroSection({
         />
       ) : (
       <div dir="rtl" data-macro-section>
-        {/* Desktop table */}
-        <div className="hidden md:block max-h-[min(70vh,520px)] overflow-y-auto rounded-lg border border-slate-200/80 dark:border-zinc-700/80">
-          <table className="w-full table-fixed border-collapse">
-            <colgroup>
-              {(onSaveToBrain || bulkSelection) && <col className="w-[32px]" />}
-              <col className="w-[14%]" />
-              <col className="w-[12%]" />
-              <col className="w-[11%]" />
-              <col className="w-[10%]" />
-              <col className="w-[38%]" />
-              <col className="w-[15%]" />
-            </colgroup>
-            <thead className={`sticky top-0 z-10 ${COMPARISON_TABLE_HEAD_BG} backdrop-blur-sm`}>
-              <tr className="border-b border-slate-200 dark:border-zinc-700">
-                {(onSaveToBrain || bulkSelection) && (
-                  <th className={UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS} aria-label="בחירה" />
-                )}
-                {MACRO_TABLE_HEADERS.map((h) => (
-                  <th
-                    key={h.key}
-                    className={`px-2.5 py-2 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}
-                  >
-                    {h.label}
-                  </th>
-                ))}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך / שינוי</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>תיאור / השפעה</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
               </tr>
             </thead>
             <tbody>
@@ -1523,82 +1507,7 @@ export function MacroSection({
                     className={`border-b border-slate-100 dark:border-zinc-800/60 ${COMPARISON_ROW_HOVER} transition-colors group border-r-2 ${rowBorder}`}
                     data-macro-row
                   >
-                    {(onSaveToBrain || bulkSelection) && (
-                      <td className={UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS}>
-                        <div className="flex flex-col items-center gap-1">
-                          <MorningBriefBulkCheckbox
-                            bulkSections={bulkSections}
-                            sectionKey="macro"
-                            text={summary}
-                            sectionLabel="🌍 מאקרו"
-                            tabKey="brief-macro"
-                            bulkSelection={bulkSelection}
-                          />
-                          {onSaveToBrain ? (
-                            <BriefRowSaveActions
-                              bulkSelection={bulkSelection}
-                              text={summary}
-                              sectionLabel="🌍 מאקרו"
-                              tabKey="brief-macro"
-                              onSaveToBrain={onSaveToBrain}
-                            />
-                          ) : (
-                            <BriefQuickSaveActions
-                              bulkSelection={bulkSelection}
-                              text={summary}
-                              sectionLabel="🌍 מאקרו"
-                              tabKey="brief-macro"
-                            />
-                          )}
-                        </div>
-                      </td>
-                    )}
-                    <td className={`px-2.5 py-2 align-top whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</td>
-                    <td className={`px-2.5 py-2 align-top whitespace-nowrap tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value || '—'}</td>
-                    <td className="px-2.5 py-2 align-top whitespace-nowrap">
-                      <MacroChangeCell change={row.change} row={row} />
-                    </td>
-                    <td className={`px-2.5 py-2 align-top whitespace-nowrap ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency || '—'}</td>
-                    <td
-                      className="px-2.5 py-2 align-top text-right"
-                      title={row.description || undefined}
-                    >
-                      {row.description ? (
-                        <div className="leading-snug line-clamp-2 overflow-hidden">
-                          <MacroDirectionCell text={row.description} row={row} />
-                        </div>
-                      ) : (
-                        <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
-                      )}
-                    </td>
-                    <td className="px-2.5 py-2 align-top whitespace-nowrap">
-                      <MacroImpactBadge text={row.impact} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile compact cards */}
-        <div className="md:hidden space-y-2" data-macro-mobile>
-          {rows.map((row, i) => {
-            const summary = MacroRowSummary(row);
-            const rowTone = resolveTone([row.change, row.impact, row.description].filter(Boolean).join(' '));
-            const styles = toneStyles(rowTone);
-            const changeDisplay = getMacroChangeDisplay(row.change, macroRowChangeContext(row));
-            const descriptionDisplay = row.description ? getMacroFieldDisplay(row.description, row) : null;
-            const impactDisplay = row.impact ? getMacroFieldDisplay(row.impact, row) : null;
-            return (
-              <details
-                key={i}
-                className={`rounded-lg border ${styles.border} ${COMPARISON_SURFACE_BG} overflow-hidden group`}
-                data-macro-row
-              >
-                <summary className="px-3 py-2.5 cursor-pointer list-none text-right">
-                  <UniversalTabSelectRow
-                    checkbox={(
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
                         sectionKey="macro"
@@ -1607,54 +1516,61 @@ export function MacroSection({
                         tabKey="brief-macro"
                         bulkSelection={bulkSelection}
                       />
-                    )}
-                    actions={changeDisplay ? (
-                      <NumericChangeSpan display={changeDisplay} />
-                    ) : null}
-                  >
-                    <p className={`truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
-                    {row.value && (
-                      <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value}</p>
-                    )}
-                  </UniversalTabSelectRow>
-                </summary>
-                <div className="px-3 pb-2.5 pt-0 space-y-1.5 border-t border-slate-100 dark:border-zinc-800/60 text-right">
-                  {row.frequency && (
-                    <p className={DASHBOARD_TABLE_CELL_MUTED_CLS}>
-                      <span className="font-semibold">תדירות: </span>{row.frequency}
-                    </p>
-                  )}
-                  {descriptionDisplay && (
-                    <p className="leading-relaxed">
-                      <NumericChangeSpan display={descriptionDisplay} />
-                    </p>
-                  )}
-                  {impactDisplay && (
-                    <p className="leading-relaxed">
-                      <span className={`font-semibold ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>השפעה: </span>
-                      <NumericChangeSpan display={impactDisplay} />
-                    </p>
-                  )}
-                  {onSaveToBrain ? (
-                    <BriefRowSaveActions
-                      bulkSelection={bulkSelection}
-                      text={summary}
-                      sectionLabel="🌍 מאקרו"
-                      tabKey="brief-macro"
-                      onSaveToBrain={onSaveToBrain}
-                    />
-                  ) : (
-                    <BriefQuickSaveActions
-                      bulkSelection={bulkSelection}
-                      text={summary}
-                      sectionLabel="🌍 מאקרו"
-                      tabKey="brief-macro"
-                    />
-                  )}
-                </div>
-              </details>
-            );
-          })}
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      <p className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
+                      {row.frequency && (
+                        <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency}</p>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap">
+                      {row.value && (
+                        <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value}</p>
+                      )}
+                      {row.change ? (
+                        <MacroChangeCell change={row.change} row={row} />
+                      ) : !row.value ? (
+                        <span className="text-slate-300 dark:text-zinc-600">—</span>
+                      ) : null}
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[24rem]">
+                      {row.description && (
+                        <div className="line-clamp-2 overflow-hidden">
+                          <MacroDirectionCell text={row.description} row={row} />
+                        </div>
+                      )}
+                      {row.impact && (
+                        <div className={row.description ? 'mt-0.5' : ''}>
+                          <MacroImpactBadge text={row.impact} />
+                        </div>
+                      )}
+                      {!row.description && !row.impact && (
+                        <span className="text-slate-300 dark:text-zinc-600">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onSaveToBrain ? (
+                        <BriefRowSaveActions
+                          bulkSelection={bulkSelection}
+                          text={summary}
+                          sectionLabel="🌍 מאקרו"
+                          tabKey="brief-macro"
+                          onSaveToBrain={onSaveToBrain}
+                        />
+                      ) : (
+                        <BriefQuickSaveActions
+                          bulkSelection={bulkSelection}
+                          text={summary}
+                          sectionLabel="🌍 מאקרו"
+                          tabKey="brief-macro"
+                        />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
       )}
@@ -1934,92 +1850,80 @@ export function EconomicCalendarSection({
         />
       ) : (
       <div dir="rtl" data-economic-calendar>
-        {/* Desktop — compact balanced table */}
-        <div className="hidden md:block rounded-lg border border-slate-200/60 dark:border-zinc-700/50 overflow-hidden">
-          <table className="w-full table-fixed border-collapse">
-            <colgroup>
-              {bulkSelection && <col className="w-[32px]" />}
-              <col className="w-[10%]" />
-              <col className="w-[38%]" />
-              <col className="w-[18%]" />
-              <col className="w-[14%]" />
-              <col className="w-[20%]" />
-            </colgroup>
-            <thead className={COMPARISON_TABLE_HEAD_BG}>
-              <tr className="border-b border-slate-200/80 dark:border-zinc-700/60">
-                {bulkSelection && (
-                  <th className={UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS} aria-label="בחירה" />
-                )}
-                <th className={`px-2.5 py-2 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
-                <th className={`px-2.5 py-2 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>אירוע</th>
-                <th className={`px-2.5 py-2 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>מועד</th>
-                <th className={`px-2.5 py-2 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>חשיבות</th>
-                <th className={`px-2.5 py-2 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>השפעה</th>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>אירוע</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>מועד / חשיבות</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>השפעה</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
               </tr>
             </thead>
             <tbody>
               {rows.map((row, i) => {
                 const calendarText = [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
                 return (
-                <tr
-                  key={i}
-                  className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors align-middle`}
-                  data-calendar-row
-                >
-                  {bulkSelection && (
-                    <td className={UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS}>
-                      <div className="flex flex-col items-center gap-1">
-                        <MorningBriefBulkCheckbox
-                          bulkSections={bulkSections}
-                          sectionKey="economic-calendar"
-                          text={calendarText}
-                          sectionLabel="📅 לוח כלכלי"
-                          tabKey="brief-calendar"
-                          bulkSelection={bulkSelection}
-                        />
-                        <BriefQuickSaveActions
-                          bulkSelection={bulkSelection}
-                          text={calendarText}
-                          sectionLabel="📅 לוח כלכלי"
-                          tabKey="brief-calendar"
-                        />
-                      </div>
+                  <tr
+                    key={i}
+                    className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors group`}
+                    data-calendar-row
+                  >
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="economic-calendar"
+                        text={calendarText}
+                        sectionLabel="📅 לוח כלכלי"
+                        tabKey="brief-calendar"
+                        bulkSelection={bulkSelection}
+                      />
                     </td>
-                  )}
-                  <td className="px-2 py-1.5 align-middle">
-                    <CalendarTypeBadge type={row.type} />
-                  </td>
-                  <td className={`px-2.5 py-2 truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`} title={row.event}>
-                    {row.event}
-                  </td>
-                  <td className={`px-2.5 py-2 whitespace-nowrap ${DASHBOARD_TABLE_CELL_DATE_CLS}`}>
-                    {row.date || <span className="text-slate-300 dark:text-zinc-600">—</span>}
-                  </td>
-                  <td className="px-2.5 py-2 align-middle">
-                    <CalendarImportanceText level={row.importance} table />
-                  </td>
-                  <td className="px-2.5 py-2 align-middle leading-snug">
-                    {row.impact ? <ChangeValue value={row.impact} /> : <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>}
-                  </td>
-                </tr>
-              );
+                    <td className="px-2 py-2 align-top">
+                      {row.type && (
+                        <div className="mb-0.5">
+                          <CalendarTypeBadge type={row.type} />
+                        </div>
+                      )}
+                      <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words`} title={row.event}>
+                        {row.event}
+                      </p>
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap">
+                      {row.date && (
+                        <p className={DASHBOARD_TABLE_CELL_DATE_CLS}>{row.date}</p>
+                      )}
+                      {row.importance && (
+                        <div className={row.date ? 'mt-0.5' : ''}>
+                          <CalendarImportanceText level={row.importance} table />
+                        </div>
+                      )}
+                      {!row.date && !row.importance && (
+                        <span className="text-slate-300 dark:text-zinc-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      {row.impact ? (
+                        <ChangeValue value={row.impact} />
+                      ) : (
+                        <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+                      )}
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BriefQuickSaveActions
+                        bulkSelection={bulkSelection}
+                        text={calendarText}
+                        sectionLabel="📅 לוח כלכלי"
+                        tabKey="brief-calendar"
+                      />
+                    </td>
+                  </tr>
+                );
               })}
             </tbody>
           </table>
         </div>
-
-        {/* Mobile — compact accordion cards */}
-        <div className="md:hidden space-y-1.5" data-calendar-mobile>
-          {rows.map((row, i) => (
-            <CalendarMobileCard
-              key={i}
-              row={row}
-              bulkSelection={bulkSelection}
-              bulkSections={bulkSections}
-            />
-          ))}
-        </div>
-
         {rows.length > 0 && <CalendarLegend />}
       </div>
       )}
