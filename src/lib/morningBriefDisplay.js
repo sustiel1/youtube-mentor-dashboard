@@ -756,9 +756,19 @@ function sentimentItemFromString(raw, index = 0) {
 function sentimentItemFromObject(item) {
   if (!item || typeof item !== 'object') return null;
   const label = pickString(item, 'label', 'name', 'type', 'category') || 'סנטימנט שוק';
-  const value = formatDisplayValue(
-    item.value ?? item.text ?? item.description ?? item.summary ?? item.mood ?? item,
-  );
+
+  // Try standard value fields first
+  const stdValue = item.value ?? item.text ?? item.description ?? item.summary ?? item.mood;
+  if (stdValue != null) {
+    const value = formatDisplayValue(stdValue);
+    return value ? { label, value } : null;
+  }
+
+  // Avoid full-object serialization: combine tone field + note field instead
+  const sentPart = pickString(item, 'sentiment', 'direction', 'bias', 'status');
+  const notePart = pickString(item, 'note', 'notes', 'reason', 'comment', 'content');
+  const value = [sentPart, notePart].filter(Boolean).join(' · ');
+
   return value ? { label, value } : null;
 }
 
@@ -868,12 +878,14 @@ function normalizeSectorRow(item) {
     item, 'relativeStrength', 'rs', 'strength', 'rank', 'momentum', 'status'
   );
 
+  const sentiment = pickString(item, 'sentiment', 'bias', 'outlook', 'tone');
+
   if (!sector) {
     const name = pickString(item, 'symbol', 'ticker');
     if (!name) return null;
-    return { sector: name, direction, relativeStrength };
+    return { sector: name, direction, relativeStrength, sentiment };
   }
-  return { sector, direction, relativeStrength };
+  return { sector, direction, relativeStrength, sentiment };
 }
 
 export function extractSectorRows(src) {

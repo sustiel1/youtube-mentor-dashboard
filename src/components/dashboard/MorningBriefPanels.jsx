@@ -1164,7 +1164,7 @@ function SectorNeutralBlock({ rows, bulkSelection = null, bulkSections = [] }) {
 export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [] }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.sectors, { marketBriefData, onSaveMarketBriefSection });
   const rows = extractSectorRows(getSpecializedSrc(marketBriefData));
-  const split = splitNewsByTone(rows, (r) => `${r.direction} ${r.relativeStrength}`);
+  const split = splitNewsByTone(rows, (r) => `${r.sentiment} ${r.direction} ${r.relativeStrength}`);
 
   return (
     <SectionCard
