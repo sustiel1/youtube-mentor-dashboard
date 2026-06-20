@@ -2546,29 +2546,6 @@ export function VideoDetailPanel({
     return { ...gemRec, isManual: false };
   }, [gemRec, gemOverride]);
 
-  // TJS-specific transcript recommendation (scored separately from general gemRec)
-  const tjsRec = useMemo(
-    () => recommendTjsGemFromTranscript(fullTranscriptText),
-    [fullTranscriptText]
-  );
-
-  // For the GemRecommendationCard: prefer TJS rec when it's confident
-  const displayGemInfo = useMemo(() => {
-    if (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60) {
-      return {
-        gemKey: tjsRec.gemKey,
-        gemLabel: tjsRec.gemLabel,
-        gemIcon: tjsRec.gemIcon,
-        confidencePct: tjsRec.confidencePct,
-        confidence: tjsRec.confidence,
-        reason: tjsRec.reason,
-        detectedKeywords: tjsRec.detectedKeywords,
-        phase: 'accurate',
-        isManual: false,
-      };
-    }
-    return effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
-  }, [tjsRec, effectiveGemInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasPoliticalTabSet = effectiveGemInfo?.gemKey === "political" || !!politicalSummary;
   const hasMarketBriefTabSet = !!marketBriefData;
@@ -7225,6 +7202,30 @@ export function VideoDetailPanel({
       ? storedTranscriptSegments.map((s) => s.text || "").join(" ")
       : "");
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
+
+  // TJS-specific transcript recommendation (scored separately from general gemRec)
+  const tjsRec = useMemo(
+    () => recommendTjsGemFromTranscript(fullTranscriptText),
+    [fullTranscriptText]
+  );
+
+  // For the GemRecommendationCard: prefer TJS rec when it's confident
+  const displayGemInfo = useMemo(() => {
+    if (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60) {
+      return {
+        gemKey: tjsRec.gemKey,
+        gemLabel: tjsRec.gemLabel,
+        gemIcon: tjsRec.gemIcon,
+        confidencePct: tjsRec.confidencePct,
+        confidence: tjsRec.confidence,
+        reason: tjsRec.reason,
+        detectedKeywords: tjsRec.detectedKeywords,
+        phase: 'accurate',
+        isManual: false,
+      };
+    }
+    return effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
+  }, [tjsRec, effectiveGemInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenRecommendedGem = async () => {
     const gemKey = effectiveGemInfo?.gemKey;
