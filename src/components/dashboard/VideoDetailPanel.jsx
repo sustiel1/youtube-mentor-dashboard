@@ -4884,6 +4884,56 @@ export function VideoDetailPanel({
     ].filter(Boolean).join('\n');
   };
 
+  const TAB_LABEL_MAP = {
+    insights: 'תובנות', chapters: 'פרקים', notes: 'הערות', summary: 'סיכום',
+    'useful-knowledge': 'ידע שימושי', topics: 'נושאים', political: 'פוליטי',
+    'app-builder': 'בונה אפליקציות', 'morning-brief': 'מבזק בוקר',
+    'market-brief': 'מבזק שוק', 'tech-brief': 'ניתוח טכני', 'brain-select': 'מוח',
+  };
+
+  const formatSelectedItemsForClipboard = (entries, context = {}) => {
+    const { videoTitle = '', tabKey = '' } = context;
+    const tabLabel = TAB_LABEL_MAP[tabKey] || tabKey || '';
+    const lines = ['# פריטים נבחרים', ''];
+    if (videoTitle) lines.push(`מקור: ${videoTitle}`);
+    if (tabLabel) lines.push(`לשונית: ${tabLabel}`);
+    lines.push(`כמות: ${entries.length}`, '');
+    entries.forEach((entry, idx) => {
+      const text = typeof entry.text === 'string' ? entry.text : (entry.rawItem?.text || entry.rawItem?.content || '');
+      if (!text) return;
+      lines.push(`## ${idx + 1}. ${entry.sectionLabel || tabLabel || 'פריט'}`);
+      if (entry.type && entry.type !== entry.sectionLabel) lines.push(`סוג: ${entry.type}`);
+      lines.push('', text, '', '---', '');
+    });
+    return lines.join('\n');
+  };
+
+  const handleCopySelectedItems = async () => {
+    if (entriesForActiveTab.length === 0) return;
+    const text = formatSelectedItemsForClipboard(entriesForActiveTab, {
+      videoTitle: video?.title || '',
+      tabKey: activeTab,
+    });
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast.success(`📋 הועתקו ${entriesForActiveTab.length} פריטים`);
+    } catch {
+      toast.error('לא הצלחתי להעתיק את הפריטים');
+    }
+  };
+
   const handleSaveSelectedToBrain = () => {
     if (multiSelected.size === 0) return;
     const hasAppBuilderSections = entriesForActiveTab.some((e) => e.sectionKey);
@@ -10824,6 +10874,7 @@ export function VideoDetailPanel({
           onBrain={handleSaveSelectedToBrain}
           onObsidian={handleBulkObsidianForTab}
           onWorkspace={handleSaveSelectedToWorkspace}
+          onCopy={handleCopySelectedItems}
         />
 
       </DialogContent>

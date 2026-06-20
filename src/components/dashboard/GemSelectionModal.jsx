@@ -15,16 +15,22 @@ const FIXED_GEMS_TOP = [
   { key: "political", label: "פוליטי", icon: "🏛️", description: "ניתוח פוליטי, ביטחוני, אסטרטגי ודיפלומטי" },
 ];
 
-const STOCK_MARKET_GEMS = [
-  { key: "technical",   label: "ניתוח טכני",       icon: "📉", description: "ניתוח טכני של גרפים, מגמות ונקודות כניסה ויציאה" },
-  { key: "fundamental", label: "פונדמנטלי",          icon: "📊", description: "ניתוח פונדמנטלי של חברות, מניות וביצועים פיננסיים" },
-  { key: "macro",       label: "מאקרו",              icon: "🌐", description: "ניתוח מאקרו-כלכלי — ריבית, אינפלציה, מדיניות מוניטרית" },
-  { key: "dayTrading",  label: "מסחר יומי",          icon: "🗓️", description: "אסטרטגיות מסחר יומי, סקאלפינג ועסקאות קצרות טווח" },
-  { key: "news",        label: "מבזק בוקר",          icon: "📰", description: "עיבוד מבזקי בוקר, סיכומי שוק ועדכוני יום" },
-  { key: "appBuilder",  label: "AP Builder",         icon: "🏗️", description: "פיתוח אפליקציות, קוד, React ובינה מלאכותית" },
+// Daily market workflow GEMS — grouped under "GEMS TJS"
+const TJS_GEMS = [
+  { key: "news",       label: "מבזק בוקר", icon: "📰", description: "עיבוד מבזקי בוקר, סיכומי שוק ועדכוני יום" },
+  { key: "macro",      label: "מאקרו",      icon: "🌐", description: "ניתוח מאקרו-כלכלי — ריבית, אינפלציה, מדיניות מוניטרית" },
+  { key: "dayTrading", label: "מסחר יומי",  icon: "🗓️", description: "אסטרטגיות מסחר יומי, סקאלפינג ועסקאות קצרות טווח" },
+  { key: "appBuilder", label: "AP Builder", icon: "🏗️", description: "פיתוח אפליקציות, קוד, React ובינה מלאכותית" },
 ];
 
-const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, ...STOCK_MARKET_GEMS];
+// Learning / knowledge GEMS — rendered as individual rows outside GEMS TJS
+const KNOWLEDGE_MARKET_GEMS = [
+  { key: "technical",   label: "ניתוח טכני", icon: "📉", description: "ניתוח טכני של גרפים, מגמות ונקודות כניסה ויציאה" },
+  { key: "fundamental", label: "פונדמנטלי",   icon: "📊", description: "ניתוח פונדמנטלי של חברות, מניות וביצועים פיננסיים" },
+];
+
+const TJS_GEM_KEYS = new Set(TJS_GEMS.map((g) => g.key));
+const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, ...TJS_GEMS, ...KNOWLEDGE_MARKET_GEMS];
 
 // Keys that use saveGemConfigSnapshot (vs. direct localStorage for dynamic topics)
 const FIXED_GEM_KEYS = new Set(ALL_FIXED_GEMS.map((g) => g.key));
@@ -77,7 +83,7 @@ function saveAnyGemUrl(key, url) {
 function getCategoryForKey(key, dynamicGems) {
   if (key === "political") return "political";
   if (key === "general") return "general";
-  if (STOCK_MARKET_GEMS.some((g) => g.key === key)) return "stockMarket";
+  if (TJS_GEM_KEYS.has(key)) return "tjs";
   if (dynamicGems.some((g) => g.key === key)) return key;
   return "general";
 }
@@ -322,15 +328,15 @@ export function GemSelectionModal({
     );
   };
 
-  const renderStockMarketAccordion = () => {
-    const isExpanded  = expandedCategory === "stockMarket";
-    const anySelected = STOCK_MARKET_GEMS.some((g) => g.key === selected);
-    const anyRec      = STOCK_MARKET_GEMS.some((g) => g.key === recommendedGemKey);
+  const renderTJSAccordion = () => {
+    const isExpanded  = expandedCategory === "tjs";
+    const anySelected = TJS_GEMS.some((g) => g.key === selected);
+    const anyRec      = TJS_GEMS.some((g) => g.key === recommendedGemKey);
     return (
-      <div key="stockMarket">
+      <div key="tjs">
         <button
           type="button"
-          onClick={() => toggleCategory("stockMarket")}
+          onClick={() => toggleCategory("tjs")}
           className={cn(
             "w-full flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all",
             anySelected
@@ -338,8 +344,8 @@ export function GemSelectionModal({
               : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:bg-cyan-50/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
           )}
         >
-          <span className="text-base leading-none shrink-0">📈</span>
-          <span className="text-sm font-semibold flex-1 text-right">שוק ההון</span>
+          <span className="text-base leading-none shrink-0">📊</span>
+          <span className="text-sm font-semibold flex-1 text-right">GEMS TJS</span>
           {anyRec && !isExpanded && <span className="rounded-full bg-amber-400 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">AI מומלץ</span>}
           {anySelected && !isExpanded && (
             <span className="text-[10px] opacity-60 shrink-0 truncate max-w-[80px]">· {selectedGem.label}</span>
@@ -348,7 +354,7 @@ export function GemSelectionModal({
         </button>
         {isExpanded && (
           <div className="mt-1.5 mr-2 border-r-2 border-cyan-200 pr-2 dark:border-cyan-800 space-y-1">
-            {STOCK_MARKET_GEMS.map(renderChildRow)}
+            {TJS_GEMS.map(renderChildRow)}
           </div>
         )}
       </div>
@@ -436,7 +442,9 @@ export function GemSelectionModal({
 
                 <div className="space-y-1.5">
                   {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
-                  {renderStockMarketAccordion()}
+                  {renderTJSAccordion()}
+                  {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+                  {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
                   {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
                   {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
                 </div>

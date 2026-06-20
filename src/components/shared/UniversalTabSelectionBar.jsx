@@ -7,6 +7,7 @@ export function UniversalTabSelectionBar({
   onBrain,
   onObsidian,
   onWorkspace,
+  onCopy,
   onClear,
   disabled = false,
 }) {
@@ -58,6 +59,16 @@ export function UniversalTabSelectionBar({
             className="flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
           >
             ⭐ Workspace
+          </button>
+        )}
+        {onCopy && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onCopy}
+            className="flex items-center gap-1.5 rounded-xl bg-zinc-600 hover:bg-zinc-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            📋 העתק
           </button>
         )}
       </div>
