@@ -19,7 +19,7 @@ export const defaultGems = {
   general: "",
   market: "",
   technical: "",
-  macro: "", // TODO: add Gemini GEM URL (TJS מאקרו) when ready
+  macro: "https://gemini.google.com/gem/a2df68e4d52b",
   news: "https://gemini.google.com/gem/0e687d497bd3",
   dayTrading: "", // TODO: add Gemini GEM URL (TJS מסחר יומי) when ready
 };

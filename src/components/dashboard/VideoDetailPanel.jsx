@@ -5518,6 +5518,32 @@ export function VideoDetailPanel({
       return true;
     }
 
+    // ── Macro / Universal Market GEM — contentType: 'market' with universalTabs ──────────
+    // Routes through marketBriefData so all universalTabs.* tabs render correctly.
+    if (parsed?.contentType === 'market' && parsed?.universalTabs && typeof parsed.universalTabs === 'object') {
+      const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
+      const videoId = video?.id || video?.youtubeId;
+      if (videoId) {
+        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
+        localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      }
+      patchVideo({
+        marketBriefData: parsedWithOverrides,
+        analysisProvider: 'gems',
+        analysisStatus: 'analyzed',
+        analyzedAt: new Date().toISOString(),
+      });
+      setMarketBriefData(parsedWithOverrides);
+      setGemsJsonApplied(true);
+      setGemsPasteError('');
+      setGemsParsedErrorInfo(null);
+      setGemsRepairApplied(false);
+      setIsGemsPasteOpen(false);
+      setTimeout(() => setActiveTab('summary'), 50);
+      toast.success('📊 מאקרו GEM נקלט בהצלחה ✓');
+      return true;
+    }
+
     if (import.meta.env.DEV) {
       console.debug('[GEMS Parse] has politicalSummary:', !!parsed?.politicalSummary);
       console.debug('[GEMS Parse] has opponentView:', !!(parsed?.opponentView || parsed?.politicalSummary?.opponentView));

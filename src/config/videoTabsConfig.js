@@ -325,15 +325,16 @@ export function getTabsForVideo(video, {
 // ── Field extraction ─────────────────────────────────────────────────
 
 /**
- * Merges universalTabs.specialized sub-fields up to top-level so brief tabs
+ * Merges universalTabs.specialized and rawData sub-fields up to top-level so brief tabs
  * can extract from universalTabs.specialized without changing their logic.
- * universalTabs.specialized wins over legacy top-level keys.
+ * Priority: universalTabs.specialized > rawData > top-level mbd fields.
  */
 function resolveSpecialized(mbd) {
   if (!mbd || typeof mbd !== 'object') return mbd;
   const spec = mbd.universalTabs?.specialized;
-  if (!spec || typeof spec !== 'object') return mbd;
-  return { ...mbd, ...spec };
+  const raw = (mbd.rawData && typeof mbd.rawData === 'object') ? mbd.rawData : null;
+  if (!spec && !raw) return mbd;
+  return { ...mbd, ...(raw || {}), ...(spec || {}) };
 }
 
 /**

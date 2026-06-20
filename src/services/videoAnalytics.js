@@ -1074,6 +1074,10 @@ export function normalizeAiAnalysisResult(result) {
   const merged = { ...nested, ...root };
   // Support both flat GEM format (analysis.definitions) and nested legacy (analysis.learning.definitions)
   const learning = merged.learning || nested.learning || {};
+  // Bridge: new universal GEM schema — extract from universalTabs.* and brainKnowledge.*
+  const utB = (merged.universalTabs && typeof merged.universalTabs === 'object') ? merged.universalTabs : {};
+  const bkB = (merged.brainKnowledge && typeof merged.brainKnowledge === 'object') ? merged.brainKnowledge : {};
+  const specB = (utB.specialized && typeof utB.specialized === 'object') ? utB.specialized : {};
   const atomicKnowledge = normalizeAtomicKnowledge(result);
 
   const chapters =
@@ -1112,7 +1116,7 @@ export function normalizeAiAnalysisResult(result) {
   const resolvedMainLesson = cleanAtomicText(
     typeof merged.mainLesson === "string"
       ? merged.mainLesson
-      : merged.mainLesson?.summary || merged.mainLesson?.title || fallbackMainLesson
+      : merged.mainLesson?.summary || merged.mainLesson?.title || bkB.mainLesson || fallbackMainLesson
   );
   const resolvedStrategy = cleanAtomicText(
     typeof merged.strategyOrMethod === "string"
@@ -1133,7 +1137,7 @@ export function normalizeAiAnalysisResult(result) {
       sample: rawKnowledgePoints[0],
     });
   }
-  const baseKeyPoints = normalizeStringArray(merged.keyPoints || nested.keyPoints);
+  const baseKeyPoints = normalizeStringArray(merged.keyPoints || nested.keyPoints || utB.keyPoints || bkB.keyPoints);
   const mergedKeyPoints = (() => {
     const extras = [...allPointsExtra, ...knowledgePointsExtra];
     return extras.length > 0 ? [...new Set([...baseKeyPoints, ...extras])] : baseKeyPoints;
@@ -1164,9 +1168,9 @@ export function normalizeAiAnalysisResult(result) {
     mainLesson: resolvedMainLesson || "לא צוין בתמלול",
     strategyOrMethod: resolvedStrategy || "לא צוין בתמלול",
     keyPoints: mergedKeyPoints,
-    tags: normalizeStringArray(merged.tags || merged.aiTags || nested.tags || nested.aiTags),
-    rules: normalizeLearningArray(merged.rules || nested.rules || learning.rules).length > 0
-      ? normalizeLearningArray(merged.rules || nested.rules || learning.rules)
+    tags: normalizeStringArray(merged.tags || merged.aiTags || nested.tags || nested.aiTags || bkB.tags),
+    rules: normalizeLearningArray(merged.rules || nested.rules || learning.rules || bkB.rules).length > 0
+      ? normalizeLearningArray(merged.rules || nested.rules || learning.rules || bkB.rules)
       : fallbackRules,
     mistakesToAvoid: normalizeLearningArray(merged.mistakesToAvoid || nested.mistakesToAvoid).length > 0
       ? normalizeLearningArray(merged.mistakesToAvoid || nested.mistakesToAvoid)
@@ -1175,7 +1179,7 @@ export function normalizeAiAnalysisResult(result) {
       const learningInsights = Array.isArray(learning.keyInsights)
         ? learning.keyInsights.map(x => typeof x === 'string' ? x : String(x?.insight || x?.text || x?.title || '')).filter(Boolean)
         : [];
-      const base = normalizeStringArray(merged.keyInsights || nested.keyInsights);
+      const base = normalizeStringArray(merged.keyInsights || nested.keyInsights || utB.keyInsights || bkB.keyInsights);
       const combined = base.length > 0 ? [...new Set([...base, ...learningInsights])] : (learningInsights.length > 0 ? learningInsights : fallbackKeyInsights);
       return brainInsightsExtra.length > 0
         ? [...new Set([...combined, ...brainInsightsExtra])]
@@ -1187,8 +1191,8 @@ export function normalizeAiAnalysisResult(result) {
     checklists: normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists).length > 0
       ? normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists)
       : fallbackChecklists,
-    warnings: normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings).length > 0
-      ? normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings)
+    warnings: normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings || specB.riskFactors || bkB.warnings).length > 0
+      ? normalizeLearningArray(merged.warnings || nested.warnings || learning.warnings || specB.riskFactors || bkB.warnings)
       : fallbackWarnings,
     frameworks: normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks).length > 0
       ? normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks)
@@ -1204,9 +1208,9 @@ export function normalizeAiAnalysisResult(result) {
       : fallbackQuestions,
     // Learning tab fields — flat GEM format (root-level) + nested legacy (analysis.learning.*)
     // Uses normalizeLearningArray to handle object shapes: { term, definition }, { name, description }, etc.
-    definitions: normalizeLearningArray(merged.definitions || nested.definitions || learning.definitions),
-    indicators: normalizeLearningArray(merged.indicators || nested.indicators || learning.indicators),
-    setups: normalizeLearningArray(merged.setups || merged.tradingSetups || nested.setups || nested.tradingSetups || learning.setups),
+    definitions: normalizeLearningArray(merged.definitions || nested.definitions || learning.definitions || utB.definitions || bkB.definitions),
+    indicators: normalizeLearningArray(merged.indicators || nested.indicators || learning.indicators || specB.macroConditions),
+    setups: normalizeLearningArray(merged.setups || merged.tradingSetups || nested.setups || nested.tradingSetups || learning.setups || specB.opportunities),
     patterns: normalizeLearningArray(merged.patterns || merged.tradingPatterns || nested.patterns || learning.patterns),
     tradingPrinciples: normalizeLearningArray(merged.tradingPrinciples || nested.tradingPrinciples || learning.tradingPrinciples),
     mentalModels: normalizeLearningArray(merged.mentalModels || nested.mentalModels || learning.mentalModels),
