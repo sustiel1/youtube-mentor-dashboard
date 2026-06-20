@@ -1385,15 +1385,6 @@ export function NewsSection({
 }
 
 // ── 5. Macro ─────────────────────────────────────────────────────────
-const MACRO_TABLE_HEADERS = [
-  { key: 'indicator', label: 'אינדיקטור' },
-  { key: 'value', label: 'ערך נוכחי' },
-  { key: 'change', label: 'שינוי' },
-  { key: 'frequency', label: 'תדירות עדכון' },
-  { key: 'description', label: 'תיאור' },
-  { key: 'impact', label: 'השפעה' },
-];
-
 function mergeMacroDisplayRows(primaryRows, fallbackItems) {
   const seen = new Set(primaryRows.map((r) => `${r.indicator}|${r.value}|${r.change}|${r.description}`));
   const merged = [...primaryRows];
@@ -1768,58 +1759,6 @@ function CalendarLegend() {
       </span>
       <span>השפעה · צבע לפי כיוון</span>
     </div>
-  );
-}
-
-function CalendarMobileCard({
-  row,
-  bulkSelection = null,
-  bulkSections = [],
-}) {
-  const calendarText = [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
-  return (
-    <details
-      className={`rounded-lg border border-slate-200/80 dark:border-zinc-700/60 ${COMPARISON_SURFACE_BG} overflow-hidden group`}
-      data-calendar-row
-    >
-      <summary className="px-2.5 py-2 cursor-pointer list-none text-right min-h-0">
-        <UniversalTabSelectRow
-          checkbox={(
-            <MorningBriefBulkCheckbox
-              bulkSections={bulkSections}
-              sectionKey="economic-calendar"
-              text={calendarText}
-              sectionLabel="📅 לוח כלכלי"
-              tabKey="brief-calendar"
-              bulkSelection={bulkSelection}
-            />
-          )}
-          actions={(
-            <>
-              <BriefQuickSaveActions
-                bulkSelection={bulkSelection}
-                text={calendarText}
-                sectionLabel="📅 לוח כלכלי"
-                tabKey="brief-calendar"
-              />
-              <CalendarTypeBadge type={row.type} />
-              {row.importance && <CalendarImportanceText level={row.importance} />}
-            </>
-          )}
-        >
-          <p className={`truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.event}</p>
-          {row.date && (
-            <p className={DASHBOARD_TABLE_CELL_DATE_CLS}>{row.date}</p>
-          )}
-        </UniversalTabSelectRow>
-      </summary>
-      {row.impact && (
-        <div className="px-2.5 pb-2 pt-0 border-t border-slate-100/80 dark:border-zinc-800/50 text-right">
-          <p className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} mb-0.5`}>השפעה</p>
-          <ChangeValue value={row.impact} />
-        </div>
-      )}
-    </details>
   );
 }
 
