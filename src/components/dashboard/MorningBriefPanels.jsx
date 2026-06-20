@@ -1319,52 +1319,64 @@ export function NewsSection({
         />
       ) : (
       <div dir="rtl" data-news-comparison>
-        {/* Mobile: stacked Positive → Neutral → Negative */}
-        <div className="lg:hidden space-y-1.5">
-          <NewsComparisonColumn
-            variant="positive"
-            count={split.bullishCount}
-            items={split.positive}
-            onSaveToBrain={onSaveToBrain}
-            emptyMessage="לא נמצאו חדשות חיוביות"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-          <NewsNeutralBlock items={split.neutral} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} bulkSections={bulkSections} />
-          <NewsComparisonColumn
-            variant="negative"
-            count={split.bearishCount}
-            items={split.negative}
-            onSaveToBrain={onSaveToBrain}
-            emptyMessage="לא נמצאו חדשות שליליות"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-        </div>
-
-        {/* Desktop: 3 columns — Positive | Neutral | Negative (RTL: right → left) */}
-        <div className="hidden lg:grid lg:grid-cols-3 lg:gap-1.5 lg:max-h-[min(55vh,440px)] lg:min-h-[120px]">
-          <NewsComparisonColumn
-            variant="positive"
-            count={split.bullishCount}
-            items={split.positive}
-            onSaveToBrain={onSaveToBrain}
-            scrollable
-            emptyMessage="לא נמצאו חדשות חיוביות"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-          <NewsNeutralBlock items={split.neutral} onSaveToBrain={onSaveToBrain} scrollable bulkSelection={bulkSelection} bulkSections={bulkSections} />
-          <NewsComparisonColumn
-            variant="negative"
-            count={split.bearishCount}
-            items={split.negative}
-            onSaveToBrain={onSaveToBrain}
-            scrollable
-            emptyMessage="לא נמצאו חדשות שליליות"
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>כותרת</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ...split.positive.map((t) => ({ text: t, sentLabel: '🟢 חיובי' })),
+                ...split.negative.map((t) => ({ text: t, sentLabel: '🔴 שלילי' })),
+                ...split.neutral.map((t) => ({ text: t, sentLabel: '🟡 כללי' })),
+              ].map(({ text, sentLabel }, i) => {
+                const displayText = stripInternalNewsFieldLabel(text);
+                const { headline, detail } = parseNewsDisplay(displayText);
+                return (
+                  <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-news-row>
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="news"
+                        text={displayText}
+                        sectionLabel="📰 חדשות"
+                        tabKey="market-news"
+                        bulkSelection={bulkSelection}
+                      />
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
+                      {sentLabel}
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[16rem]">
+                      <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} line-clamp-2 break-words`} title={headline || undefined}>
+                        {headline || '—'}
+                      </p>
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[22rem]">
+                      <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={detail || undefined}>
+                        {detail || '—'}
+                      </p>
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BriefRowSaveActions
+                        bulkSelection={bulkSelection}
+                        text={displayText}
+                        sectionLabel="📰 חדשות"
+                        tabKey="market-news"
+                        onSaveToBrain={onSaveToBrain}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
       )}
@@ -1730,16 +1742,73 @@ export function SentimentSection({
       emptyMessage="סנטימנט קמעונאי, מוסדי ופחד וחמדנות יוצגו כאן"
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sentiment', DISPLAY_SECTION_TITLES.sentiment)}
     >
-      <div dir="rtl" className="w-full px-0.5" data-sentiment-list>
-        {items.map(({ label, value }, i) => (
-          <SentimentListItem
-            key={`${label}-${i}`}
-            label={label}
-            value={value}
-            bulkSelection={bulkSelection}
-            bulkSections={bulkSections}
-          />
-        ))}
+      <div dir="rtl" data-sentiment-list>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+                <th className="py-1.5 pr-2 pl-0 w-5" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
+                <th className="py-1.5 pl-1 pr-0 w-5" />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(({ label, value }, i) => {
+                const valueText = String(value || '').trim();
+                const displayLabel = translateSentimentLabel(label);
+                const displayValue = translateSentimentValue(valueText);
+                const rowCtx = { indicator: displayLabel, description: displayValue, impact: valueText };
+                const display = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
+                const bulkText = `${label}: ${value}`;
+                const itemTone = resolveTone(valueText);
+                const sentLabel = itemTone === TONE.BULLISH ? '🟢 חיובי'
+                  : itemTone === TONE.BEARISH ? '🔴 שלילי' : '🟡 ניטרלי';
+                return (
+                  <tr key={`${label}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
+                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="sentiment"
+                        text={bulkText}
+                        sectionLabel="📊 סנטימנט"
+                        tabKey="brief-sentiment"
+                        bulkSelection={bulkSelection}
+                      />
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                        <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
+                        {displayLabel}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 align-top whitespace-nowrap text-sm font-medium">
+                      {sentLabel}
+                    </td>
+                    <td className="px-2 py-2 align-top max-w-[22rem]">
+                      {display ? (
+                        <NumericChangeSpan display={display} />
+                      ) : (
+                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={displayValue || undefined}>
+                          {displayValue || '—'}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BriefQuickSaveActions
+                        bulkSelection={bulkSelection}
+                        text={bulkText}
+                        sectionLabel="📊 סנטימנט"
+                        tabKey="brief-sentiment"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </SectionCard>
   );
