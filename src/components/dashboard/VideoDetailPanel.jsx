@@ -117,7 +117,7 @@ import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
-import { classifyVideoForGem, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import { classifyVideoForGem, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
 import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
@@ -2545,6 +2545,30 @@ export function VideoDetailPanel({
     }
     return { ...gemRec, isManual: false };
   }, [gemRec, gemOverride]);
+
+  // TJS-specific transcript recommendation (scored separately from general gemRec)
+  const tjsRec = useMemo(
+    () => recommendTjsGemFromTranscript(fullTranscriptText),
+    [fullTranscriptText]
+  );
+
+  // For the GemRecommendationCard: prefer TJS rec when it's confident
+  const displayGemInfo = useMemo(() => {
+    if (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60) {
+      return {
+        gemKey: tjsRec.gemKey,
+        gemLabel: tjsRec.gemLabel,
+        gemIcon: tjsRec.gemIcon,
+        confidencePct: tjsRec.confidencePct,
+        confidence: tjsRec.confidence,
+        reason: tjsRec.reason,
+        detectedKeywords: tjsRec.detectedKeywords,
+        phase: 'accurate',
+        isManual: false,
+      };
+    }
+    return effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
+  }, [tjsRec, effectiveGemInfo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasPoliticalTabSet = effectiveGemInfo?.gemKey === "political" || !!politicalSummary;
   const hasMarketBriefTabSet = !!marketBriefData;
@@ -9894,10 +9918,10 @@ export function VideoDetailPanel({
                           </button>
                         </div>
 
-                        {gemRecommendationVisible && effectiveGemInfo && hasStoredTranscript && (
+                        {gemRecommendationVisible && displayGemInfo && hasStoredTranscript && (
                           <div className="mb-3">
                             <GemRecommendationCard
-                              recommendation={effectiveGemInfo}
+                              recommendation={displayGemInfo}
                               onOpenRecommended={handleOpenRecommendedGem}
                               onChooseAnother={() => setShowGemModal(true)}
                               onDismiss={() => setGemRecommendationVisible(false)}
@@ -11241,8 +11265,9 @@ export function VideoDetailPanel({
       onOpenChange={setShowGemModal}
       video={effectiveVideo}
       topics={videoTopics}
-      recommendedGemKey={effectiveGemInfo?.gemKey || null}
+      recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
+      tjsRecommendation={tjsRec}
       fullTranscriptText={fullTranscriptText}
       onSave={async (key) => {
         setGemOverride(key);

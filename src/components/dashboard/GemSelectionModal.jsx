@@ -101,6 +101,7 @@ export function GemSelectionModal({
   fullTranscriptText = "",
   onGemOpened = null,
   onGemSummaryPaste = null,
+  tjsRecommendation = null,
 }) {
   const [selected, setSelected]                 = useState(savedGemKey || recommendedGemKey || "general");
   const [gemUrls, setGemUrls]                   = useState(() => {
@@ -274,6 +275,8 @@ export function GemSelectionModal({
     const isRec    = gem.key === recommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
     const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
+    const tjsScore = tjsRecommendation?.scores?.[gem.key];
+    const showScore = tjsScore != null && tjsScore > 0;
     return (
       <button
         key={gem.key}
@@ -290,7 +293,19 @@ export function GemSelectionModal({
       >
         <span className="text-sm leading-none shrink-0">{gem.icon}</span>
         <span className="text-xs font-semibold flex-1 text-right">{gem.label}</span>
-        {isRec && <span className="rounded-full bg-amber-400 text-[8px] font-bold text-white px-1.5 py-0.5 shrink-0">AI</span>}
+        {isRec && (
+          <span className="rounded-full bg-amber-400 text-[8px] font-bold text-white px-1.5 py-0.5 shrink-0">
+            AI מומלץ{showScore ? ` ${tjsScore}%` : ''}
+          </span>
+        )}
+        {!isRec && showScore && (
+          <span className={cn(
+            "rounded-full text-[8px] font-semibold px-1.5 py-0.5 shrink-0",
+            isSel ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400"
+          )}>
+            {tjsScore}%
+          </span>
+        )}
         {isSavedK && !isSel && <span className="rounded-full bg-emerald-500 text-[8px] font-bold text-white px-1.5 py-0.5 shrink-0">✓</span>}
         {!hasUrl && <span className="text-[9px] opacity-50 shrink-0" title="אין URL">⚠</span>}
       </button>
@@ -332,6 +347,7 @@ export function GemSelectionModal({
     const isExpanded  = expandedCategory === "tjs";
     const anySelected = TJS_GEMS.some((g) => g.key === selected);
     const anyRec      = TJS_GEMS.some((g) => g.key === recommendedGemKey);
+    const recScore    = anyRec && tjsRecommendation?.scores?.[recommendedGemKey];
     return (
       <div key="tjs">
         <button
@@ -346,7 +362,11 @@ export function GemSelectionModal({
         >
           <span className="text-base leading-none shrink-0">📊</span>
           <span className="text-sm font-semibold flex-1 text-right">GEMS TJS</span>
-          {anyRec && !isExpanded && <span className="rounded-full bg-amber-400 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">AI מומלץ</span>}
+          {anyRec && !isExpanded && (
+            <span className="rounded-full bg-amber-400 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">
+              AI מומלץ{recScore ? ` ${recScore}%` : ''}
+            </span>
+          )}
           {anySelected && !isExpanded && (
             <span className="text-[10px] opacity-60 shrink-0 truncate max-w-[80px]">· {selectedGem.label}</span>
           )}

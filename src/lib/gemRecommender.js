@@ -385,6 +385,116 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
   };
 }
 
+// ─── TJS GEM Recommender (transcript-only, 4 TJS children) ──────────────────
+// Scores only the four GEMS TJS children based on transcript keywords.
+// Returns null when transcript is absent/too short.
+
+const TJS_GEM_KEYWORDS = {
+  news: [
+    'market recap', 'weekly recap', 's&p 500', 'nasdaq', 'dow',
+    'sectors', 'market breadth', 'stocks mentioned', 'macro summary',
+    'earnings overview', 'next week', 'morning brief', 'today in markets',
+    'premarket', 'market open', 'afternoon wrap', 'market update',
+    'opening bell', 'market close', 'weekly update', 'daily update',
+    'מבזק', 'סיכום שוק', 'מדדים', 'סקטורים', 'מניות', 'מאקרו שבועי',
+  ],
+  macro: [
+    'fed', 'cpi', 'inflation', 'interest rate', 'yield', 'bond',
+    'dollar', 'oil', 'unemployment', 'recession', 'liquidity',
+    'central bank', 'monetary policy', 'federal reserve', 'fomc',
+    'jackson hole', 'gdp', 'economic data', 'yield curve',
+    'ריבית', 'אינפלציה', 'צמיחה', 'מיתון', 'בנק מרכזי', 'תשואה', 'פד',
+  ],
+  dayTrading: [
+    'breakout', 'support', 'resistance', 'entry', 'stop loss',
+    'target', 'intraday', 'scalp', 'day trade', 'setup',
+    'volume spike', 'price action', 'trade setup', 'momentum',
+    'trigger', 'squeeze', 'gap up', 'gap down', 'levels',
+    'פריצה', 'תמיכה', 'התנגדות', 'כניסה', 'יעד', 'סטופ', 'מסחר יומי',
+  ],
+  appBuilder: [
+    'app idea', 'dashboard', 'screener', 'automation', 'workflow',
+    'tool', 'feature request', 'product idea', 'user flow',
+    'data model', 'react', 'javascript', 'typescript', 'component',
+    'build', 'feature', 'frontend', 'backend',
+    'אפליקציה', 'דשבורד', 'סקרינר', 'אוטומציה', 'ממשק', 'פיצ׳ר',
+  ],
+};
+
+const TJS_GEM_META = {
+  news:        { label: 'מבזק בוקר', icon: '📰' },
+  macro:       { label: 'מאקרו',      icon: '🌐' },
+  dayTrading:  { label: 'מסחר יומי',  icon: '🗓️' },
+  appBuilder:  { label: 'AP Builder', icon: '🏗️' },
+};
+
+const TJS_REASON = {
+  news:       'נמצא דגש על סיכומי שוק, מדדים וסקטורים — מתאים למבזק בוקר',
+  macro:      'נמצא דגש על מדיניות מוניטרית, ריבית ואינפלציה — מתאים למאקרו',
+  dayTrading: 'נמצא דגש על פריצות, רמות ומסחר יומי — מתאים למסחר יומי',
+  appBuilder: 'נמצא דגש על אפליקציה, UI ואוטומציה — מתאים ל-AP Builder',
+};
+
+/**
+ * Recommends which GEMS TJS child best fits the transcript.
+ * Transcript-only — does not use video metadata.
+ *
+ * @param {string} transcriptText
+ * @returns {{ recommendedGemKey, confidencePct, confidence, scores, reason, detectedKeywords, gemKey, gemLabel, gemIcon, phase } | null}
+ */
+export function recommendTjsGemFromTranscript(transcriptText) {
+  if (!transcriptText || typeof transcriptText !== 'string' || transcriptText.trim().length < 100) {
+    return null;
+  }
+
+  const lower = transcriptText.toLowerCase();
+  const scores = {};
+  const allDetected = {};
+
+  for (const [key, keywords] of Object.entries(TJS_GEM_KEYWORDS)) {
+    const matches = keywords.filter(kw => lower.includes(kw.toLowerCase()));
+    scores[key] = matches.length === 0 ? 0 : Math.min(96, 30 + matches.length * 6);
+    allDetected[key] = matches.slice(0, 6);
+  }
+
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [topKey, topScore] = sorted[0];
+  const [, secondScore] = sorted[1] || [null, 0];
+
+  if (topScore < 36) {
+    return {
+      recommendedGemKey: null,
+      confidencePct: topScore,
+      confidence: 'low',
+      scores,
+      reason: 'אין המלצה חד משמעית — לא זוהה תוכן TJS ברור',
+      detectedKeywords: [],
+      gemKey: null,
+      gemLabel: '',
+      gemIcon: '📊',
+      phase: 'accurate',
+    };
+  }
+
+  const margin = topScore - secondScore;
+  const rawPct = margin < 10 ? Math.max(40, topScore - 10) : topScore;
+  const confidencePct = Math.round(rawPct);
+  const confidence = confidencePct >= 70 ? 'high' : confidencePct >= 50 ? 'medium' : 'low';
+
+  return {
+    recommendedGemKey: topKey,
+    confidencePct,
+    confidence,
+    scores,
+    reason: TJS_REASON[topKey] || `נמצא תוכן TJS — מומלץ ${TJS_GEM_META[topKey]?.label || topKey}`,
+    detectedKeywords: allDetected[topKey] || [],
+    gemKey: topKey,
+    gemLabel: TJS_GEM_META[topKey]?.label || topKey,
+    gemIcon: TJS_GEM_META[topKey]?.icon || '📊',
+    phase: 'accurate',
+  };
+}
+
 /** Related template labels for a recommended GEM (from existing subCategory rules). */
 export function getRelatedGemTemplates(gemKey) {
   const key = String(gemKey || "").trim();

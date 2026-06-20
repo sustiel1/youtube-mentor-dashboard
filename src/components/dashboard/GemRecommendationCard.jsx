@@ -15,6 +15,7 @@ export function GemRecommendationCard({
   if (!recommendation?.gemKey) return null;
 
   const confidencePct = Number(recommendation.confidencePct) || 0;
+  const detectedKeywords = Array.isArray(recommendation.detectedKeywords) ? recommendation.detectedKeywords : [];
   const isHigh = confidencePct >= 85;
   const isLow = confidencePct < 70;
   const isVeryLow = confidencePct < 50;
@@ -78,7 +79,23 @@ export function GemRecommendationCard({
         </p>
       )}
 
-      {!isHigh && relatedTemplates.length > 0 && (
+      {detectedKeywords.length > 0 && (
+        <div className="text-right">
+          <div className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">זוהה בתמלול</div>
+          <div className="flex flex-wrap gap-1 justify-end">
+            {detectedKeywords.map((kw) => (
+              <span
+                key={kw}
+                className="rounded-full border border-indigo-200 bg-indigo-50/80 px-2 py-0.5 text-[10px] text-indigo-700 dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-300"
+              >
+                {kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isHigh && !detectedKeywords.length && relatedTemplates.length > 0 && (
         <div className="text-right">
           <div className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">תבניות קשורות</div>
           <div className="flex flex-wrap gap-1 justify-end">
