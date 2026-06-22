@@ -15,6 +15,7 @@ import {
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from '@/components/shared/UniversalTabSelectRow';
+import { TAB_SECTION_LABEL_CLS } from '@/lib/summaryCardStyles';
 
 function SectionShell({
   title,
@@ -61,7 +62,7 @@ function SectionShell({
         ) : null}
         actions={actions}
       >
-        <h3 className="text-base font-bold text-slate-900 dark:text-zinc-50 leading-snug">{title}</h3>
+        <h3 className={TAB_SECTION_LABEL_CLS}>{title}</h3>
         {subtitle && (
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">{subtitle}</p>
         )}
@@ -463,6 +464,176 @@ export function TriggersCardsSection({
         הוסף טריגר
       </button>
     </SectionShell>
+  );
+}
+
+// ── Feature Discovery Cards ──────────────────────────────────────────────────
+
+const WORTH_BUILDING_HE = { Yes: 'כן', Maybe: 'אולי', No: 'לא' };
+
+const WORTH_STYLES = {
+  Yes: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50',
+  Maybe: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50',
+  No: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
+};
+
+const CATEGORY_STYLES = {
+  Scanner: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/50',
+  Dashboard: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900/50',
+  Tracker: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/50',
+  Analytics: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/50',
+  'Alert System': 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/50',
+  Watchlist: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/50',
+  Index: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900/50',
+  Matrix: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50',
+};
+
+function ScorePill({ icon, label, value }) {
+  const score = Number(value) || 0;
+  if (!score) return null;
+  const tone = score >= 8
+    ? 'text-emerald-700 dark:text-emerald-400'
+    : score >= 6
+      ? 'text-amber-700 dark:text-amber-400'
+      : 'text-slate-500 dark:text-zinc-400';
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${tone}`}>
+      <span aria-hidden>{icon}</span>
+      <span className="text-slate-400 dark:text-zinc-500 font-normal">{label}</span>
+      {score}/10
+    </span>
+  );
+}
+
+function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
+  const components = (idea.components || []).slice(0, 4);
+  const categoryStyle = CATEGORY_STYLES[idea.category] || CATEGORY_STYLES.Dashboard;
+  const worthStyle = WORTH_STYLES[idea.worthBuilding] || WORTH_STYLES.Maybe;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(idea)}
+      className={`w-full text-right rounded-xl border p-3.5 transition-all ${
+        isSelected
+          ? 'border-indigo-400 bg-indigo-50/60 ring-2 ring-indigo-300/60 dark:border-indigo-500 dark:bg-indigo-950/30 dark:ring-indigo-700/50'
+          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
+      }`}
+      dir="rtl"
+    >
+      {/* Row 1: rank + name + category */}
+      <div className="flex items-start gap-2 mb-2">
+        <span
+          className={`shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+            isSelected
+              ? 'border-indigo-500 bg-indigo-500'
+              : 'border-slate-300 dark:border-zinc-600'
+          }`}
+          aria-hidden
+        >
+          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <div className="min-w-0 text-right">
+              <span className="text-[11px] font-semibold text-slate-300 dark:text-zinc-600 block mb-0.5">
+                #{rank}
+              </span>
+              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-50 leading-snug">
+                {idea.titleHe || idea.productIdea}
+              </h3>
+              {(idea.titleEn || idea.productIdea) && (
+                <p className="text-xs font-medium text-slate-400 dark:text-zinc-500 mt-0.5 leading-snug" dir="ltr">
+                  {idea.titleEn || idea.productIdea}
+                </p>
+              )}
+            </div>
+            {idea.category && (
+              <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${categoryStyle}`}>
+                🔍 {idea.category}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Source insight */}
+      {idea.sourceInsight && (
+        <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1.5 pr-6 leading-snug">
+          📌 {idea.sourceInsight}
+        </p>
+      )}
+
+      {/* Why it matters — one line */}
+      {idea.whyItMatters && (
+        <p className="text-sm text-slate-700 dark:text-zinc-200 mb-2 pr-6 leading-snug">
+          🎯 {idea.whyItMatters}
+        </p>
+      )}
+
+      {/* Components — compact inline */}
+      {components.length > 0 && (
+        <p className="text-xs text-slate-500 dark:text-zinc-400 mb-2 pr-6 leading-relaxed">
+          <span className="font-semibold text-slate-400 dark:text-zinc-500">🧩 </span>
+          {components.join(' · ')}
+        </p>
+      )}
+
+      {/* Scores row */}
+      <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-slate-100 dark:border-zinc-800 pr-6">
+        <ScorePill icon="♻️" label="שימוש חוזר" value={idea.reusabilityScore} />
+        <ScorePill icon="⭐" label="התאמה" value={idea.appFitScore} />
+        {idea.worthBuilding && (
+          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold mr-auto ${worthStyle}`}>
+            🔥 שווה בנייה: {WORTH_BUILDING_HE[idea.worthBuilding] || idea.worthBuilding}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+export function ProductIdeaGrid({ ideas = [], selectedId, onSelect }) {
+  const list = Array.isArray(ideas) ? ideas : [];
+
+  return (
+    <div className="space-y-3" dir="rtl">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">
+          {list.length > 0
+            ? `${list.length} הזדמנויות מזוהו מהניתוח`
+            : 'אין הזדמנויות מזוהות'}
+        </span>
+        {list.length > 0 && (
+          <span className="text-xs text-slate-400 dark:text-zinc-500">
+            ממוין לפי ערך · לחץ לבחירה
+          </span>
+        )}
+      </div>
+
+      {list.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 dark:border-zinc-700 py-10 text-center px-4">
+          <p className="text-sm text-slate-500 dark:text-zinc-400">
+            אין הזדמנויות עם ביטחון מספיק מהניתוח
+          </p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1.5">
+            הפעל ניתוח מאקרו / תוכן ייעודי — רק רעיונות מבוססי תובנות יוצגו כאן
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+          {list.map((idea, i) => (
+            <DiscoveryOpportunityCard
+              key={idea.id || i}
+              idea={idea}
+              rank={i + 1}
+              isSelected={selectedId === idea.id}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

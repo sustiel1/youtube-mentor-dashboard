@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { analyzeVideoWithProvider } from "@/services/aiVideoAnalyzer";
+import { computeTargetChapters } from "@/lib/chapterCountUtils";
 import { getClaudeAnalyzerStatus } from "@/services/claudeVideoAnalyzer";
 import { fetchGeminiVideoContent, fetchHebrewChapterTitles } from "@/services/geminiVideoContent";
 import {
@@ -118,6 +119,7 @@ import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
 import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
@@ -1984,6 +1986,7 @@ export function VideoDetailPanel({
   const [geminiStatus, setGeminiStatus] = useState("idle");
   const [geminiMessage, setGeminiMessage] = useState(null);
   const [geminiAnalysisMode, setGeminiAnalysisMode] = useState("smart");
+  const [chapterDensityMode, setChapterDensityMode] = useState("normal");
   const [geminiAnalysisSource, setGeminiAnalysisSource] = useState(null);
   const [llamaStatus, setLlamaStatus] = useState("idle");
   const [llamaMessage, setLlamaMessage] = useState(null);
@@ -3481,7 +3484,7 @@ export function VideoDetailPanel({
         }
         return labelDurationSec > 0 ? labelDurationSec : rawDurationSec;
       })();
-      const chaptersTarget = durationSec <= 8 * 60 ? 4 : durationSec <= 14 * 60 ? 5 : durationSec <= 22 * 60 ? 7 : 8;
+      const chaptersTarget = computeTargetChapters(durationSec, chapterDensityMode);
       const result = await fetchGeminiVideoContent({
         videoId,
         title: video?.title || '',
@@ -4903,7 +4906,6 @@ export function VideoDetailPanel({
       const text = typeof entry.text === 'string' ? entry.text : (entry.rawItem?.text || entry.rawItem?.content || '');
       if (!text) return;
       lines.push(`## ${idx + 1}. ${entry.sectionLabel || tabLabel || 'פריט'}`);
-      if (entry.type && entry.type !== entry.sectionLabel) lines.push(`סוג: ${entry.type}`);
       lines.push('', text, '', '---', '');
     });
     return lines.join('\n');
@@ -6501,6 +6503,7 @@ export function VideoDetailPanel({
         durationSeconds: getVideoDurationSeconds(workingVideo),
         mentor: mentorName || null,
         category: null,
+        chaptersTarget: computeTargetChapters(getVideoDurationSeconds(workingVideo), chapterDensityMode),
         transcriptStatus: effectiveTranscriptStatus,
         transcriptQuality: effectiveTranscriptQuality,
         analysisMode: "golden_reference",
@@ -7065,7 +7068,7 @@ export function VideoDetailPanel({
     try {
       const chapterHints = resolveVideoChapters(video || {});
       const durationSec = getVideoDurationSeconds(video);
-      const chaptersTarget = durationSec <= 8 * 60 ? 4 : durationSec <= 14 * 60 ? 5 : durationSec <= 22 * 60 ? 7 : 8;
+      const chaptersTarget = computeTargetChapters(durationSec, chapterDensityMode);
       let txText = typeof video?.transcript === 'string' && video.transcript.trim().length > 40 ? video.transcript.trim() : null;
       const txSegments = Array.isArray(video?.transcriptSegments) && video.transcriptSegments.length > 0
         ? video.transcriptSegments
@@ -9295,14 +9298,6 @@ export function VideoDetailPanel({
                       const summarySectionsBulkItems = [
                         ...buildSummaryBriefingCardBulkItems(dailyBriefingForSections),
                         ...buildSummaryBriefingBulkItems(dailyBriefingForSections),
-                        ...buildCardBulkItemsFromSections(
-                          sectionsPopulated.map((s) => ({ ...s, tabKey: 'summary' })),
-                          'summary',
-                        ),
-                        ...buildBulkItemsFromSections(
-                          sectionsPopulated.map((s) => ({ ...s, tabKey: 'summary' })),
-                          'summary',
-                        ),
                       ];
 
                       return (
@@ -9319,19 +9314,7 @@ export function VideoDetailPanel({
                             onSaveToBrain={saveSingleItemToBrain}
                             isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
                             bulkSelection={bulkSelectionShare}
-                          >
-                            <p className={SUMMARY_CARD_TITLE_CLASS}>📈 {effectiveSubCategory || 'מבזק שוק'} — סיכום מ-GEM</p>
-                            <UniversalTabSectionBlocks
-                              sections={summaryShaped.sections}
-                              tabKey="summary"
-                              cardClassName={SUMMARY_CARD_CLASS}
-                              labelClassName={SUMMARY_CARD_TITLE_CLASS}
-                              onSaveToBrain={(text, tabKey, label) => saveSingleItemToBrain(text, tabKey, label, '')}
-                              isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
-                              bulkSelection={bulkSelectionShare}
-                              skipBulkRegister
-                            />
-                          </SummaryBriefingView>
+                          />
                           <p className="text-xs text-slate-400 dark:text-zinc-500 text-right">לסיכום AI מלא — לחץ "הרץ ניתוח" בטאב ניתוח AI.</p>
                         </div>
                       );
@@ -9359,14 +9342,6 @@ export function VideoDetailPanel({
                     const summaryBulkItems = [
                       ...buildSummaryBriefingCardBulkItems(dailyBriefingForGem),
                       ...buildSummaryBriefingBulkItems(dailyBriefingForGem),
-                      ...buildCardBulkItemsFromSections(
-                        [{ key: 'gem', label: 'סיכום מ-GEM', items: gemInsights, tabKey: 'summary' }],
-                        'summary',
-                      ),
-                      ...buildBulkItemsFromSections(
-                        [{ key: 'gem', label: 'סיכום מ-GEM', items: gemInsights, tabKey: 'summary' }],
-                        'summary',
-                      ),
                     ];
 
                     return (
@@ -9383,29 +9358,7 @@ export function VideoDetailPanel({
                           onSaveToBrain={saveSingleItemToBrain}
                           isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
                           bulkSelection={bulkSelectionShare}
-                        >
-                          <div className={SUMMARY_CARD_CLASS}>
-                            <p className={`${SUMMARY_CARD_TITLE_CLASS} mb-3`}>📈 {effectiveSubCategory || 'מבזק שוק'} — סיכום מ-GEM</p>
-                            {gemInsights.length > 0 ? (
-                              <>
-                                <LearningTabContent
-                                  items={gemInsights}
-                                  emptyLabel=""
-                                  onSaveToBrain={(text) => saveSingleItemToBrain(text, 'summary', 'סיכום מ-GEM', '')}
-                                  isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, 'summary', text))}
-                                  bulkSelection={mergeBulkSelection(bulkSelectionShare, {
-                                    idPrefix: 'summary:gem',
-                                    sectionLabel: 'סיכום מ-GEM',
-                                    type: 'summary',
-                                    tabScope: 'summary',
-                                  })}
-                                />
-                              </>
-                            ) : (
-                              <p className="text-xs text-sky-600 dark:text-sky-400">מבזק שוק נקלט — עבור לטאב "תוכן ייעודי" לנתוני השוק המלאים.</p>
-                            )}
-                          </div>
-                        </SummaryBriefingView>
+                        />
                         <p className="text-xs text-slate-400 dark:text-zinc-500 text-right">לסיכום AI מלא — לחץ "הרץ ניתוח" בטאב ניתוח AI.</p>
                       </div>
                     );
@@ -10381,6 +10334,18 @@ export function VideoDetailPanel({
                         <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">אין עדיין ניתוח AI לסרטון הזה</p>
                         <div className="flex flex-col gap-2 w-full max-w-xs">
                           <div className="flex items-center gap-1 justify-end" dir="rtl">
+                            <span className="text-[10px] text-slate-400 dark:text-zinc-500 ml-1">פרקים:</span>
+                            {[
+                              { id: 'normal', label: 'רגיל' },
+                              { id: 'detailed', label: 'מפורט' },
+                              { id: 'maximum', label: 'מקסימום' },
+                            ].map(({ id, label }) => (
+                              <button key={id} type="button" onClick={() => setChapterDensityMode(id)}
+                                className={`px-2 py-0.5 text-[10px] rounded-md border transition-colors ${chapterDensityMode === id ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-semibold dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-300' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-700 dark:text-zinc-400'}`}
+                              >{label}</button>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1 justify-end" dir="rtl">
                             {[
                               { id: 'smart', label: 'חכם ✨' },
                               { id: 'url_only', label: 'URL' },
@@ -10557,10 +10522,7 @@ export function VideoDetailPanel({
                 <AppBuilderTab
                   video={video}
                   topicName={resolvedVideoMode.category || ''}
-                  gemAppData={marketBriefData?.universalTabs?.app || marketBriefData?.universalTabs?.appBuilder || null}
                   marketBriefData={marketBriefData}
-                  bulkSelection={bulkSelectionShare}
-                  onBulkHandlersRef={appBuilderBulkRef}
                 />
               </TabsContent>
 
@@ -10690,45 +10652,88 @@ export function VideoDetailPanel({
                   const practicalItems = ukShaped?.mode === 'flat' && ukShaped.items.length > 0
                     ? ukShaped.items
                     : (ukShaped?.mode === 'sections' ? [] : extractUniversalTabFlatItems(effectiveVideo, 'useful-knowledge', marketBriefData));
-                  const sections = [
-                    ...(ukShaped?.mode === 'sections'
-                      ? ukShaped.sections.map((s) => ({
+                  const hasStructuredSections = ukShaped?.mode === 'sections' && ukShaped.sections.length > 0;
+
+                  // Split practical items: evergreen principles vs time-sensitive market facts
+                  const evergreenItems = practicalItems.filter(item => {
+                    const t = typeof item === 'string' ? item : String(item?.text || item?.title || item?.content || '');
+                    return !isTemporaryMarketFact(t);
+                  });
+                  const temporaryItems = practicalItems.filter(item => {
+                    const t = typeof item === 'string' ? item : String(item?.text || item?.title || item?.content || '');
+                    return isTemporaryMarketFact(t);
+                  });
+
+                  // Mental models: dedicated fields + tradingPrinciples
+                  const rawMentalModels = [
+                    ...(Array.isArray(effectiveVideo?.mentalModels) ? effectiveVideo.mentalModels : []),
+                    ...(Array.isArray(effectiveVideo?.tradingPrinciples) ? effectiveVideo.tradingPrinciples : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.mentalModels) ? effectiveVideo.analysis.mentalModels : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.tradingPrinciples) ? effectiveVideo.analysis.tradingPrinciples : []),
+                    ...(Array.isArray(marketBriefData?.universalTabs?.usefulKnowledge?.mentalModels)
+                      ? marketBriefData.universalTabs.usefulKnowledge.mentalModels : []),
+                  ].filter(Boolean);
+
+                  // Risk management: dedicated field
+                  const rawRiskMgmt = [
+                    ...(Array.isArray(effectiveVideo?.riskManagement) ? effectiveVideo.riskManagement : []),
+                    ...(Array.isArray(effectiveVideo?.analysis?.riskManagement) ? effectiveVideo.analysis.riskManagement : []),
+                    ...(Array.isArray(marketBriefData?.universalTabs?.usefulKnowledge?.riskManagement)
+                      ? marketBriefData.universalTabs.usefulKnowledge.riskManagement : []),
+                  ].filter(Boolean);
+
+                  const sections = hasStructuredSections
+                    ? ukShaped.sections.map((s) => ({
                         key: `uk-${s.key}`,
                         label: s.label,
                         items: s.items,
                         tabKey: 'useful-knowledge',
                       }))
-                      : [{
-                        key: 'practical',
-                        label: '🎯 ידע פרקטי',
-                        items: practicalItems,
-                        tabKey: 'useful-knowledge',
-                      }]),
-                    {
-                      key: 'definitions',
-                      label: '📖 מושגים',
-                      items: extractVideoTabItems(effectiveVideo, 'definitions', marketBriefData),
-                      tabKey: 'definitions',
-                    },
-                    {
-                      key: 'rules',
-                      label: '📏 כללי מסחר',
-                      items: rawRules,
-                      tabKey: 'useful-knowledge',
-                    },
-                    {
-                      key: 'checklists',
-                      label: '✅ צ\'קליסטים',
-                      items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData),
-                      tabKey: 'checklists',
-                    },
-                    {
-                      key: 'mistakes',
-                      label: '⚠️ טעויות להימנע',
-                      items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData),
-                      tabKey: 'mistakes',
-                    },
-                  ];
+                    : [
+                        {
+                          key: 'reusable',
+                          label: '📚 ידע לשימוש חוזר',
+                          items: evergreenItems,
+                          tabKey: 'useful-knowledge',
+                        },
+                        {
+                          key: 'mental-models',
+                          label: '🧩 מודלים מנטליים',
+                          items: rawMentalModels,
+                          tabKey: 'useful-knowledge',
+                        },
+                        {
+                          key: 'checklists',
+                          label: '✅ צ\'קליסטים',
+                          items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData),
+                          tabKey: 'checklists',
+                        },
+                        {
+                          key: 'risk',
+                          label: '⚠️ ניהול סיכונים',
+                          items: rawRiskMgmt,
+                          tabKey: 'useful-knowledge',
+                        },
+                        {
+                          key: 'mistakes',
+                          label: '❌ טעויות נפוצות',
+                          items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData),
+                          tabKey: 'mistakes',
+                        },
+                        {
+                          key: 'rules',
+                          label: '📏 כללי מסחר',
+                          items: rawRules,
+                          tabKey: 'useful-knowledge',
+                        },
+                        {
+                          key: 'temporary',
+                          label: '⏳ עובדות שוק זמניות',
+                          items: temporaryItems,
+                          tabKey: 'useful-knowledge',
+                          isTemporary: true,
+                        },
+                      ];
                   const populated = sections.filter(s => s.items.length > 0);
                   if (populated.length === 0) {
                     return (
@@ -10747,8 +10752,8 @@ export function VideoDetailPanel({
                     <div className="space-y-3">
                       <TabBulkItemsRegistrar tab="useful-knowledge" items={ukBulkItems} />
                       <UsefulKnowledgeSourceLine video={effectiveVideo} mentorName={mentorName} />
-                      {populated.map(({ key, label, items, tabKey }) => (
-                        <div key={key} className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
+                      {populated.map(({ key, label, items, tabKey, isTemporary }) => (
+                        <div key={key} className={`rounded-xl border px-3 py-2 ${isTemporary ? 'border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20' : 'border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900'}`}>
                           <UniversalTabSectionLabelRow
                             label={label}
                             items={items}
@@ -10757,6 +10762,11 @@ export function VideoDetailPanel({
                             type={tabKey}
                             sectionKey={key}
                           />
+                          {isTemporary && (
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2 text-right leading-snug px-1">
+                              עובדות אלה קשורות למצב השוק הנוכחי ועשויות לאבד ערך תוך 6–12 חודשים
+                            </p>
+                          )}
                           <LearningTabContent
                             items={items}
                             emptyLabel=""
