@@ -39,6 +39,19 @@ import {
 import { MorningBriefMarketsTable } from './MorningBriefMarketsTable';
 import { MarketSectorTable } from './MarketSectorTable';
 import {
+  BRIEF_NOTES_TEXT_CLS,
+  BRIEF_SENT_KEY_LABEL,
+  BriefSentimentNotesTable,
+} from './BriefSentimentNotesTable';
+import {
+  BRIEF_CELL,
+  BRIEF_COL,
+  BRIEF_SENTIMENT_INLINE_CLS,
+  BRIEF_TABLE_CLS,
+  BRIEF_TABLE_HEAD_ROW_CLS,
+  BriefTableWrapper,
+} from './briefTableLayout';
+import {
   ChangeValue,
   DirectionText,
   NumericChangeSpan,
@@ -77,6 +90,15 @@ import {
   useBriefSectionManualEdit,
 } from './BriefSectionManualEdit';
 import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
+import {
+  INSIGHT_GRID_SLOT_COUNT,
+  MacroStyleEmptyInsightCard,
+  MacroStyleOpportunityCard,
+  MacroStyleRiskCard,
+  getMacroOppStyle,
+  getMacroRiskStyle,
+  padInsightSlots,
+} from './MacroStyleInsightCards';
 import {
   UNIVERSAL_TAB_CHECKBOX_COL_CLASS,
   UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS,
@@ -494,14 +516,6 @@ function toneToSentKey(tone) {
   return 'neutral';
 }
 
-const BRIEF_TABLE_CHECKBOX_CELL = 'py-2 pr-2 pl-0 w-5 align-middle';
-const BRIEF_TABLE_SAVE_CELL = 'py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity';
-/** Shrink-to-content so name + sentiment stay attached (avoids wide empty sector column). */
-const BRIEF_TABLE_SYMBOL_CELL = 'px-2 py-2 align-middle whitespace-nowrap w-[1%]';
-const BRIEF_TABLE_SENTIMENT_CELL = 'px-2 py-2 align-middle whitespace-nowrap w-[1%]';
-const BRIEF_TABLE_NOTES_CELL = 'px-2 py-2 align-middle min-w-0 w-full';
-const BRIEF_TABLE_LINKS_CELL = 'px-2 py-2 align-middle whitespace-nowrap w-[1%]';
-const BRIEF_TABLE_SENTIMENT_INLINE_CLS = 'text-sm font-medium text-slate-900 dark:text-zinc-50 shrink-0';
 const BRIEF_TABLE_LINK_CLS = 'text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline';
 
 function NewsColumnHeader({ title, count, countTextCls }) {
@@ -981,78 +995,56 @@ export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection,
         />
       ) : (
       <div dir="rtl" data-regime-comparison>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse table-fixed" dir="rtl">
-            <colgroup>
-              <col className="w-8" />
-              <col className="w-auto" />
-              <col />
-              <col className="w-8" />
-            </colgroup>
-            <thead>
-              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                <th className="py-1.5 pr-2 pl-0 w-5" />
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
-                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
-                <th className="py-1.5 pl-1 pr-0 w-5" />
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ...split.positive.map((c) => ({ ...c, sentKey: 'positive' })),
-                ...split.neutral.map((c) => ({ ...c, sentKey: 'neutral' })),
-                ...split.negative.map((c) => ({ ...c, sentKey: 'negative' })),
-              ].map((card) => {
-                const displayText = `${translateDisplayLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
-                const displayValue = stripInternalFieldLabels(card.value);
-                const rowCtx = { indicator: translateDisplayLabel(card.label), description: displayValue };
-                const numericDisplay = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
-                return (
-                  <tr key={card.key + card.label} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group">
-                    <td className={BRIEF_TABLE_CHECKBOX_CELL}>
-                      <MorningBriefBulkCheckbox
-                        bulkSections={bulkSections}
-                        sectionKey="market-regime"
-                        text={displayText}
-                        sectionLabel="📊 מצב שוק"
-                        tabKey="market-regime"
-                        bulkSelection={bulkSelection}
-                      />
-                    </td>
-                    <td className={BRIEF_TABLE_SYMBOL_CELL}>
-                      <span className="inline-flex items-center gap-x-3 whitespace-nowrap" dir="rtl">
-                        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>
-                          {translateDisplayLabel(card.label)}
-                        </span>
-                        <InlineSentimentBadge
-                          sentKey={card.sentKey}
-                          className={BRIEF_TABLE_SENTIMENT_INLINE_CLS}
-                        />
-                      </span>
-                    </td>
-                    <td className={BRIEF_TABLE_NOTES_CELL}>
-                      {numericDisplay ? (
-                        <NumericChangeSpan display={numericDisplay} />
-                      ) : (
-                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={displayValue || undefined}>
-                          {displayValue || '—'}
-                        </p>
-                      )}
-                    </td>
-                    <td className={BRIEF_TABLE_SAVE_CELL}>
-                      <BriefQuickSaveActions
-                        bulkSelection={bulkSelection}
-                        text={displayText}
-                        sectionLabel="📊 מצב שוק"
-                        tabKey="market-regime"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <BriefSentimentNotesTable
+          labelHeader="אינדיקטור"
+          rows={[
+            ...split.positive.map((c) => ({ ...c, sentKey: 'positive' })),
+            ...split.neutral.map((c) => ({ ...c, sentKey: 'neutral' })),
+            ...split.negative.map((c) => ({ ...c, sentKey: 'negative' })),
+          ]}
+          getRowKey={(card) => card.key + card.label}
+          getRowMeta={(card) => {
+            const displayText = `${translateDisplayLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
+            return { rowText: displayText };
+          }}
+          renderLabelCell={(card) => (
+            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>
+              {translateDisplayLabel(card.label)}
+            </span>
+          )}
+          renderSentimentValue={(card) => BRIEF_SENT_KEY_LABEL[card.sentKey] || BRIEF_SENT_KEY_LABEL.neutral}
+          renderNotesCell={(card) => {
+            const displayValue = stripInternalFieldLabels(card.value);
+            const rowCtx = { indicator: translateDisplayLabel(card.label), description: displayValue };
+            const numericDisplay = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
+            if (numericDisplay) {
+              return <NumericChangeSpan display={numericDisplay} />;
+            }
+            return (
+              <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={displayValue || undefined}>
+                {displayValue || '—'}
+              </p>
+            );
+          }}
+          renderLeadingCell={(card, _i, meta) => (
+            <MorningBriefBulkCheckbox
+              bulkSections={bulkSections}
+              sectionKey="market-regime"
+              text={meta.rowText}
+              sectionLabel="📊 מצב שוק"
+              tabKey="market-regime"
+              bulkSelection={bulkSelection}
+            />
+          )}
+          renderTrailingCell={(card, _i, meta) => (
+            <BriefQuickSaveActions
+              bulkSelection={bulkSelection}
+              text={meta.rowText}
+              sectionLabel="📊 מצב שוק"
+              tabKey="market-regime"
+            />
+          )}
+        />
       </div>
       )}
     </SectionCard>
@@ -1503,24 +1495,24 @@ export function MacroSection({
         />
       ) : (
       <div dir="rtl" data-macro-section>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse table-fixed" dir="rtl">
+        <BriefTableWrapper>
+          <table className={BRIEF_TABLE_CLS} dir="rtl">
             <colgroup>
-              <col className="w-8" />
-              <col className="w-auto" />
-              <col className="w-auto" />
-              <col className="w-24" />
+              <col style={{ width: BRIEF_COL.checkbox }} />
+              <col style={{ width: BRIEF_COL.indicator }} />
+              <col style={{ width: BRIEF_COL.macroValue }} />
+              <col style={{ width: BRIEF_COL.sentiment }} />
               <col />
-              <col className="w-8" />
+              <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
             <thead>
-              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                <th className="py-1.5 pr-2 pl-0 w-5" />
+              <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+                <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך / שינוי</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>תיאור / השפעה</th>
-                <th className="py-1.5 pl-1 pr-0 w-5" />
+                <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
             <tbody>
@@ -1535,7 +1527,7 @@ export function MacroSection({
                     className={`border-b border-slate-100 dark:border-zinc-800/60 ${COMPARISON_ROW_HOVER} transition-colors group border-r-2 ${rowBorder}`}
                     data-macro-row
                   >
-                    <td className={BRIEF_TABLE_CHECKBOX_CELL}>
+                    <td className={BRIEF_CELL.checkbox}>
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
                         sectionKey="macro"
@@ -1545,13 +1537,13 @@ export function MacroSection({
                         bulkSelection={bulkSelection}
                       />
                     </td>
-                    <td className={BRIEF_TABLE_SYMBOL_CELL}>
-                      <p className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
+                    <td className={BRIEF_CELL.short}>
+                      <p className={`whitespace-nowrap overflow-hidden text-ellipsis ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
                       {row.frequency && (
                         <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency}</p>
                       )}
                     </td>
-                    <td className="px-2 py-2 align-middle whitespace-nowrap">
+                    <td className={BRIEF_CELL.change}>
                       {row.value && (
                         <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value}</p>
                       )}
@@ -1561,13 +1553,13 @@ export function MacroSection({
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       ) : null}
                     </td>
-                    <td className={BRIEF_TABLE_SENTIMENT_CELL}>
+                    <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
                         sentKey={sentKey}
-                        className={BRIEF_TABLE_SENTIMENT_INLINE_CLS}
+                        className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
-                    <td className={BRIEF_TABLE_NOTES_CELL}>
+                    <td className={BRIEF_CELL.notes}>
                       {row.description && (
                         <div className="line-clamp-2 overflow-hidden">
                           <MacroDirectionCell text={row.description} row={row} />
@@ -1582,7 +1574,7 @@ export function MacroSection({
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
-                    <td className={BRIEF_TABLE_SAVE_CELL}>
+                    <td className={BRIEF_CELL.save}>
                       {onSaveToBrain ? (
                         <BriefRowSaveActions
                           bulkSelection={bulkSelection}
@@ -1605,7 +1597,7 @@ export function MacroSection({
               })}
             </tbody>
           </table>
-        </div>
+        </BriefTableWrapper>
       </div>
       )}
     </SectionCard>
@@ -1693,15 +1685,22 @@ export function SentimentSection({
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sentiment', DISPLAY_SECTION_TITLES.sentiment)}
     >
       <div dir="rtl" data-sentiment-list>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse" dir="rtl">
+        <BriefTableWrapper>
+          <table className={BRIEF_TABLE_CLS} dir="rtl">
+            <colgroup>
+              <col style={{ width: BRIEF_COL.checkbox }} />
+              <col style={{ width: BRIEF_COL.type }} />
+              <col style={{ width: BRIEF_COL.sentiment }} />
+              <col />
+              <col style={{ width: BRIEF_COL.save }} />
+            </colgroup>
             <thead>
-              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                <th className="py-1.5 pr-2 pl-0 w-5" />
+              <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+                <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
-                <th className="py-1.5 pl-1 pr-0 w-5" />
+                <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
             <tbody>
@@ -1715,7 +1714,7 @@ export function SentimentSection({
                 const itemTone = resolveTone(valueText);
                 return (
                   <tr key={`${label}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
-                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                    <td className={BRIEF_CELL.checkbox}>
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
                         sectionKey="sentiment"
@@ -1725,28 +1724,28 @@ export function SentimentSection({
                         bulkSelection={bulkSelection}
                       />
                     </td>
-                    <td className="px-2 py-2 align-top">
+                    <td className={BRIEF_CELL.short}>
                       <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
                         <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
                         {displayLabel}
                       </span>
                     </td>
-                    <td className={BRIEF_TABLE_SENTIMENT_CELL}>
+                    <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
                         sentKey={toneToSentKey(itemTone)}
-                        className={BRIEF_TABLE_SENTIMENT_INLINE_CLS}
+                        className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
-                    <td className="px-2 py-2 align-top max-w-[22rem]">
+                    <td className={BRIEF_CELL.notes}>
                       {display ? (
                         <NumericChangeSpan display={display} />
                       ) : (
-                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={displayValue || undefined}>
+                        <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={displayValue || undefined}>
                           {displayValue || '—'}
                         </p>
                       )}
                     </td>
-                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className={BRIEF_CELL.save}>
                       <BriefQuickSaveActions
                         bulkSelection={bulkSelection}
                         text={bulkText}
@@ -1759,7 +1758,7 @@ export function SentimentSection({
               })}
             </tbody>
           </table>
-        </div>
+        </BriefTableWrapper>
       </div>
     </SectionCard>
   );
@@ -1833,15 +1832,22 @@ export function EconomicCalendarSection({
         />
       ) : (
       <div dir="rtl" data-economic-calendar>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse" dir="rtl">
+        <BriefTableWrapper>
+          <table className={BRIEF_TABLE_CLS} dir="rtl">
+            <colgroup>
+              <col style={{ width: BRIEF_COL.checkbox }} />
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '18%' }} />
+              <col />
+              <col style={{ width: BRIEF_COL.save }} />
+            </colgroup>
             <thead>
-              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                <th className="py-1.5 pr-2 pl-0 w-5" />
+              <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+                <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>אירוע</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>מועד / חשיבות</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>השפעה</th>
-                <th className="py-1.5 pl-1 pr-0 w-5" />
+                <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
             <tbody>
@@ -1853,7 +1859,7 @@ export function EconomicCalendarSection({
                     className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors group`}
                     data-calendar-row
                   >
-                    <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                    <td className={BRIEF_CELL.checkbox}>
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
                         sectionKey="economic-calendar"
@@ -1863,17 +1869,17 @@ export function EconomicCalendarSection({
                         bulkSelection={bulkSelection}
                       />
                     </td>
-                    <td className="px-2 py-2 align-top">
+                    <td className={BRIEF_CELL.notes}>
                       {row.type && (
                         <div className="mb-0.5">
                           <CalendarTypeBadge type={row.type} />
                         </div>
                       )}
-                      <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words`} title={row.event}>
-                        {row.event}
+                      <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={row.event}>
+                        {row.event || '—'}
                       </p>
                     </td>
-                    <td className="px-2 py-2 align-top whitespace-nowrap">
+                    <td className={BRIEF_CELL.short}>
                       {row.date && (
                         <p className={DASHBOARD_TABLE_CELL_DATE_CLS}>{row.date}</p>
                       )}
@@ -1886,14 +1892,14 @@ export function EconomicCalendarSection({
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
-                    <td className="px-2 py-2 align-top">
+                    <td className={BRIEF_CELL.notes}>
                       {row.impact ? (
                         <ChangeValue value={row.impact} />
                       ) : (
                         <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
                       )}
                     </td>
-                    <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className={BRIEF_CELL.save}>
                       <BriefQuickSaveActions
                         bulkSelection={bulkSelection}
                         text={calendarText}
@@ -1906,7 +1912,7 @@ export function EconomicCalendarSection({
               })}
             </tbody>
           </table>
-        </div>
+        </BriefTableWrapper>
         {rows.length > 0 && <CalendarLegend />}
       </div>
       )}
@@ -2168,39 +2174,13 @@ function RisksColumn({
   );
 }
 
-function getBriefOpportunityStyle(kindLabel, title) {
-  const t = `${kindLabel || ''} ${title || ''}`.toLowerCase();
-  if (t.includes('נדל') || t.includes('real estate') || t.includes('reit') || t.includes('קבלן'))
-    return { bg: 'bg-teal-50 dark:bg-teal-950/20', border: 'border-teal-200 dark:border-teal-800', badge: 'bg-teal-100 text-teal-700 border border-teal-400/60 dark:bg-teal-900/50 dark:text-teal-300 dark:border-teal-700/50', iconBg: 'bg-teal-100 dark:bg-teal-950/30', footerBorder: 'border-teal-100/80 dark:border-teal-900/40', icon: '🏠' };
-  if (t.includes('סווינג') || t.includes('swing') || t.includes('מסחר') || t.includes('trading') || t.includes('מומנטום') || t.includes('momentum') || t.includes('שורט') || t.includes('short'))
-    return { bg: 'bg-violet-50 dark:bg-violet-950/20', border: 'border-violet-200 dark:border-violet-800', badge: 'bg-violet-100 text-violet-700 border border-violet-400/60 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-700/50', iconBg: 'bg-violet-100 dark:bg-violet-950/30', footerBorder: 'border-violet-100/80 dark:border-violet-900/40', icon: '📊' };
-  if (t.includes('אג"ח') || t.includes('bond') || t.includes('treasury') || t.includes('ריבית') || t.includes('אוצר'))
-    return { bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-100 text-blue-700 border border-blue-400/60 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700/50', iconBg: 'bg-blue-100 dark:bg-blue-950/30', footerBorder: 'border-blue-100/80 dark:border-blue-900/40', icon: '🏛️' };
-  if (t.includes('לונג') || t.includes('long') || t.includes('equity') || t.includes('מניות') || t.includes('growth'))
-    return { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-100 text-orange-700 border border-orange-400/60 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700/50', iconBg: 'bg-orange-100 dark:bg-orange-950/30', footerBorder: 'border-orange-100/80 dark:border-orange-900/40', icon: '🚀' };
-  if (t.includes('ביו') || t.includes('bio') || t.includes('בריאות') || t.includes('health') || t.includes('pharma') || t.includes('פארמה'))
-    return { bg: 'bg-pink-50 dark:bg-pink-950/20', border: 'border-pink-200 dark:border-pink-800', badge: 'bg-pink-100 text-pink-700 border border-pink-400/60 dark:bg-pink-900/50 dark:text-pink-300 dark:border-pink-700/50', iconBg: 'bg-pink-100 dark:bg-pink-950/30', footerBorder: 'border-pink-100/80 dark:border-pink-900/40', icon: '🧬' };
-  return { bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-400/60 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700/50', iconBg: 'bg-emerald-100 dark:bg-emerald-950/30', footerBorder: 'border-emerald-100/80 dark:border-emerald-900/40', icon: '💡' };
-}
-
-function getBriefRiskStyle(severity) {
-  const sl = String(severity || '').toLowerCase();
-  if (sl.includes('קריטי') || sl.includes('critical') || sl.includes('מאוד גבוה'))
-    return { bg: 'bg-red-100 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-700', iconBg: 'bg-red-100 dark:bg-red-950/30', footerBorder: 'border-red-200/80 dark:border-red-900/40', icon: '🔴' };
-  if (sl.includes('גבוהה') || sl.includes('גבוה') || sl.includes('high'))
-    return { bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200 dark:border-red-800', iconBg: 'bg-red-50 dark:bg-red-950/30', footerBorder: 'border-red-100/80 dark:border-red-900/40', icon: '🔴' };
-  if (sl.includes('בינונית') || sl.includes('בינוני') || sl.includes('medium'))
-    return { bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800', iconBg: 'bg-amber-50 dark:bg-amber-950/30', footerBorder: 'border-amber-100/80 dark:border-amber-900/40', icon: '🟠' };
-  return { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', iconBg: 'bg-orange-50 dark:bg-orange-950/30', footerBorder: 'border-orange-100/80 dark:border-orange-900/40', icon: '⚠️' };
-}
-
 function buildBriefResearchUrl(text, category) {
   if (!text) return null;
   const term = category ? `${category}: ${text}` : text;
   return `https://www.perplexity.ai/search?q=${encodeURIComponent(`${term} — ניתוח שוק והזדמנויות השקעה`)}`;
 }
 
-/** Side-by-side Opportunities / Risks dashboard (desktop) with stacked mobile layout. */
+/** Side-by-side Opportunities / Risks dashboard — Macro-style 3+3 card grid with placeholders. */
 export function OpportunitiesRisksDashboard({
   marketBriefData,
   effectiveVideo,
@@ -2216,12 +2196,14 @@ export function OpportunitiesRisksDashboard({
   });
   const ideas = filterOpportunityIdeas(marketBriefData, effectiveVideo);
   const risks = extractRiskItems(getSpecializedSrc(marketBriefData));
+  const opportunitySlots = padInsightSlots(ideas, INSIGHT_GRID_SLOT_COUNT);
+  const riskSlots = padInsightSlots(risks, INSIGHT_GRID_SLOT_COUNT);
 
   return (
     <SectionCard
       title="🎯 הזדמנויות וסיכונים"
       tone={TONE.NEUTRAL}
-      isEmpty={!edit.editing && ideas.length === 0 && risks.length === 0}
+      isEmpty={false}
       emptyMessage="הזדמנויות וסיכונים יוצגו כאן"
       plainSurface
       headerActions={edit.headerActions}
@@ -2250,165 +2232,102 @@ export function OpportunitiesRisksDashboard({
         />
       ) : (
       <div dir="rtl" data-opportunities-risks-dashboard className="space-y-5">
-        {/* הזדמנויות */}
-        {ideas.length > 0 && (
-          <div>
-            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-emerald-700 dark:text-emerald-400`}>
-              💡 הזדמנויות ({ideas.length})
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {ideas.map((idea, i) => {
-                const title = String(idea.title || '').trim();
-                const detail = String(idea.detail || '').trim();
-                const description = detail && detail !== title ? detail : '';
-                const saveText = [title, description].filter(Boolean).join(' — ');
-                const style = getBriefOpportunityStyle(idea.kindLabel, title);
-                const pxUrl = buildBriefResearchUrl(title, idea.kindLabel);
-                return (
-                  <div
-                    key={i}
-                    className={`group rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${style.bg} ${style.border}`}
-                    data-opportunity-item
-                  >
-                    <div className="p-4" dir="rtl">
-                      <div className="flex items-start gap-3">
-                        <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${style.iconBg} shadow-sm text-xl leading-none`}>
-                          {style.icon}
-                        </div>
-                        <div className="flex-1 min-w-0 pt-0.5">
-                          <div className="flex items-start gap-2 flex-wrap" dir="rtl">
-                            <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} flex-1 min-w-0 break-words [overflow-wrap:anywhere]`}>
-                              {title || '—'}
-                            </p>
-                            {idea.kindLabel && (
-                              <span className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${style.badge}`}>
-                                {idea.kindLabel}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {description && (
-                        <p className={`mt-2 ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] leading-relaxed`}>
-                          {description}
-                        </p>
-                      )}
-                      <div className={`flex items-center gap-1.5 mt-3 pt-2.5 border-t ${style.footerBorder}`}>
-                        <MorningBriefBulkCheckbox
-                          bulkSections={bulkSections}
-                          sectionKey="opportunities"
-                          text={saveText}
-                          sectionLabel="🎯 הזדמנויות"
-                          tabKey="brief-opportunities"
-                          bulkSelection={bulkSelection}
-                        />
-                        {pxUrl && (
-                          <a
-                            href={pxUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
-                          >
-                            🔍 מחקר AI
-                          </a>
-                        )}
-                        <div className="flex-1 flex justify-end">
-                          <BriefRowSaveActions
-                            bulkSelection={bulkSelection}
-                            text={saveText}
-                            sectionLabel="🎯 הזדמנויות"
-                            tabKey="brief-opportunities"
-                            onSaveToBrain={onSaveToBrain}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        <div>
+          <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-emerald-700 dark:text-emerald-400`}>
+            💡 הזדמנויות ({ideas.length})
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {opportunitySlots.map((idea, i) => {
+              if (!idea) {
+                return <MacroStyleEmptyInsightCard key={`opp-empty-${i}`} variant="opportunity" slotIndex={i} />;
+              }
+              const title = String(idea.title || '').trim();
+              const detail = String(idea.detail || '').trim();
+              const description = detail && detail !== title ? detail : '';
+              const saveText = [title, description].filter(Boolean).join(' — ');
+              const pillLabel = String(idea.kindLabel || '').trim();
+              const style = getMacroOppStyle(pillLabel, title);
+              const pxUrl = buildBriefResearchUrl(title, pillLabel);
+              return (
+                <MacroStyleOpportunityCard
+                  key={`opp-${i}-${title}`}
+                  style={style}
+                  title={title}
+                  pillLabel={pillLabel || null}
+                  details={description || null}
+                  pxUrl={pxUrl}
+                  dataAttrs={{ 'data-opportunity-item': true }}
+                  checkbox={(
+                    <MorningBriefBulkCheckbox
+                      bulkSections={bulkSections}
+                      sectionKey="opportunities"
+                      text={saveText}
+                      sectionLabel="🎯 הזדמנויות"
+                      tabKey="brief-opportunities"
+                      bulkSelection={bulkSelection}
+                    />
+                  )}
+                  saveActions={(
+                    <BriefRowSaveActions
+                      bulkSelection={bulkSelection}
+                      text={saveText}
+                      sectionLabel="🎯 הזדמנויות"
+                      tabKey="brief-opportunities"
+                      onSaveToBrain={onSaveToBrain}
+                    />
+                  )}
+                />
+              );
+            })}
           </div>
-        )}
+        </div>
 
-        {/* סיכונים */}
-        {risks.length > 0 && (
-          <div>
-            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-red-700 dark:text-red-400`}>
-              ⚠️ סיכונים ({risks.length})
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {risks.map((risk, i) => {
-                const { title, description, severity, tag } = parseRiskDisplay(risk);
-                const style = getBriefRiskStyle(severity);
-                const pxUrl = buildBriefResearchUrl(title, severity ? `סיכון ${severity}` : 'סיכון');
-                return (
-                  <div
-                    key={i}
-                    className={`group rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${style.bg} ${style.border}`}
-                    data-risk-item
-                  >
-                    <div className="p-4" dir="rtl">
-                      <div className="flex items-start gap-3">
-                        <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${style.iconBg} shadow-sm text-xl leading-none`}>
-                          {style.icon}
-                        </div>
-                        <div className="flex-1 min-w-0 pt-0.5">
-                          <div className="flex items-start gap-2 flex-wrap" dir="rtl">
-                            <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} flex-1 min-w-0 break-words [overflow-wrap:anywhere]`}>
-                              {title || '—'}
-                            </p>
-                            {severity && (
-                              <span className="shrink-0"><SeverityLabel level={severity} /></span>
-                            )}
-                          </div>
-                          {tag && (
-                            <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{tag}</p>
-                          )}
-                        </div>
-                      </div>
-                      {description && (
-                        <p className={`mt-2 ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] leading-relaxed`}>
-                          {description}
-                        </p>
-                      )}
-                      <div className={`flex items-center gap-1.5 mt-3 pt-2.5 border-t ${style.footerBorder}`}>
-                        <MorningBriefBulkCheckbox
-                          bulkSections={bulkSections}
-                          sectionKey="risks"
-                          text={risk.text}
-                          sectionLabel="⚠️ סיכונים"
-                          tabKey="brief-risks"
-                          bulkSelection={bulkSelection}
-                        />
-                        {pxUrl && (
-                          <a
-                            href={pxUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors"
-                          >
-                            🔍 מחקר AI
-                          </a>
-                        )}
-                        <div className="flex-1 flex justify-end">
-                          <BriefRowSaveActions
-                            bulkSelection={bulkSelection}
-                            text={risk.text}
-                            sectionLabel="⚠️ סיכונים"
-                            tabKey="brief-risks"
-                            onSaveToBrain={onSaveToBrain}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        <div>
+          <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-red-700 dark:text-red-400`}>
+            ⚠️ סיכונים ({risks.length})
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {riskSlots.map((risk, i) => {
+              if (!risk) {
+                return <MacroStyleEmptyInsightCard key={`risk-empty-${i}`} variant="risk" slotIndex={i} />;
+              }
+              const { title, description, severity, tag } = parseRiskDisplay(risk);
+              const pillLabel = severity || tag || '';
+              const style = getMacroRiskStyle(severity || tag || '');
+              const pxUrl = buildBriefResearchUrl(title, severity ? `סיכון ${severity}` : 'סיכון');
+              return (
+                <MacroStyleRiskCard
+                  key={`risk-${i}-${title}`}
+                  style={style}
+                  title={title}
+                  pillLabel={pillLabel || null}
+                  details={description || null}
+                  pxUrl={pxUrl}
+                  dataAttrs={{ 'data-risk-item': true }}
+                  checkbox={(
+                    <MorningBriefBulkCheckbox
+                      bulkSections={bulkSections}
+                      sectionKey="risks"
+                      text={risk.text}
+                      sectionLabel="⚠️ סיכונים"
+                      tabKey="brief-risks"
+                      bulkSelection={bulkSelection}
+                    />
+                  )}
+                  saveActions={(
+                    <BriefRowSaveActions
+                      bulkSelection={bulkSelection}
+                      text={risk.text}
+                      sectionLabel="⚠️ סיכונים"
+                      tabKey="brief-risks"
+                      onSaveToBrain={onSaveToBrain}
+                    />
+                  )}
+                />
+              );
+            })}
           </div>
-        )}
+        </div>
       </div>
       )}
     </SectionCard>
@@ -2594,7 +2513,6 @@ function StockMovePercentIndicator({ move }) {
   );
 }
 
-const _LINK_CLS = 'text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline';
 const _SEP = <span className="text-slate-300 dark:text-zinc-600 select-none mx-0.5" aria-hidden>·</span>;
 
 function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulkSections = [] }) {
@@ -2606,7 +2524,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
 
   return (
     <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
-      <td className="py-2 pr-2 pl-0 w-5 align-middle">
+      <td className={BRIEF_CELL.checkbox}>
         <MorningBriefBulkCheckbox
           bulkSections={bulkSections}
           sectionKey="stocks-mentioned"
@@ -2617,7 +2535,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
         />
       </td>
       {/* סימול */}
-      <td className="px-2 py-2 align-top whitespace-nowrap">
+      <td className={BRIEF_CELL.short}>
         {ticker ? (
           <a
             href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`}
@@ -2631,7 +2549,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
         ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
       </td>
       {/* סקטור */}
-      <td className="px-2 py-2 align-top whitespace-nowrap">
+      <td className={BRIEF_CELL.short}>
         {sectorMeta?.sectorEtf ? (
           <a
             href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(sectorMeta.sectorEtf)}`}
@@ -2647,34 +2565,36 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
         )}
       </td>
       {/* סנטימנט */}
-      <td className={BRIEF_TABLE_SENTIMENT_CELL}>
+      <td className={BRIEF_CELL.sentiment}>
         <InlineSentimentBadge
           sentKey={sentKey}
-          className={BRIEF_TABLE_SENTIMENT_INLINE_CLS}
+          className={BRIEF_SENTIMENT_INLINE_CLS}
         />
       </td>
       {/* הערות */}
-      <td className="px-2 py-2 align-top max-w-[18rem]">
+      <td className={BRIEF_CELL.notes}>
         <p
-          className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}
+          className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}
           title={notesText || undefined}
         >
           {notesText || '—'}
         </p>
       </td>
       {/* קישורים */}
-      <td className="px-2 py-2 align-top whitespace-nowrap">
+      <td className={BRIEF_CELL.links}>
         {ticker ? (
           <span className="inline-flex items-center gap-x-0.5 text-xs font-medium">
-            <a href={`https://www.tradingview.com/symbols/NASDAQ-${encodeURIComponent(ticker)}/`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>TV</a>
+            <a href={`https://www.tradingview.com/symbols/NASDAQ-${encodeURIComponent(ticker)}/`} target="_blank" rel="noopener noreferrer" className={BRIEF_TABLE_LINK_CLS}>TV</a>
             {_SEP}
-            <a href={`https://www.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>Inv</a>
+            <a href={`https://www.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={BRIEF_TABLE_LINK_CLS}>Inv</a>
             {_SEP}
-            <a href={`https://il.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={_LINK_CLS}>InvIL</a>
+            <a href={`https://il.investing.com/search/?q=${encodeURIComponent(ticker)}`} target="_blank" rel="noopener noreferrer" className={BRIEF_TABLE_LINK_CLS}>InvIL</a>
           </span>
-        ) : null}
+        ) : (
+          <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>
+        )}
       </td>
-      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+      <td className={BRIEF_CELL.save}>
         <BriefRowSaveActions
           bulkSelection={bulkSelection}
           text={summary}
@@ -2770,17 +2690,26 @@ export function StocksMentionedSection({
           ))}
         </div>
         {/* Stocks table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse" dir="rtl">
+        <BriefTableWrapper>
+          <table className={BRIEF_TABLE_CLS} dir="rtl">
+            <colgroup>
+              <col style={{ width: BRIEF_COL.checkbox }} />
+              <col style={{ width: BRIEF_COL.symbol }} />
+              <col style={{ width: BRIEF_COL.sector }} />
+              <col style={{ width: BRIEF_COL.sentiment }} />
+              <col />
+              <col style={{ width: BRIEF_COL.links }} />
+              <col style={{ width: BRIEF_COL.save }} />
+            </colgroup>
             <thead>
-              <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                <th className="py-1.5 pr-2 pl-0 w-5" />
+              <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+                <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סימול</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
-                <th className="py-1.5 pl-1 pr-0 w-5" />
+                <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
             <tbody>
@@ -2795,7 +2724,7 @@ export function StocksMentionedSection({
               ))}
             </tbody>
           </table>
-        </div>
+        </BriefTableWrapper>
       </div>
       )}
     </SectionCard>

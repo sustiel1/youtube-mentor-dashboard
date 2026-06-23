@@ -14,6 +14,7 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
+import { resolveSectorMeta } from '@/utils/finvizLinks';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
 export const COMPARISON_SURFACE_BG = 'bg-white dark:bg-zinc-900';
@@ -35,7 +36,7 @@ export const SECTION_HEADER_COUNT_CLS = 'text-base font-bold tabular-nums';
  * Primary: 15px bold | Body: 15px semibold | Status: 16px bold | Headers: 16px bold
  */
 export const DASHBOARD_TABLE_HEAD_CLS =
-  'text-base font-bold text-slate-600 dark:text-zinc-300 leading-tight';
+  'text-base font-bold text-slate-800 dark:text-zinc-100 leading-tight';
 
 export const DASHBOARD_COLUMN_HEADER_CLS = DASHBOARD_TABLE_HEAD_CLS;
 
@@ -43,17 +44,17 @@ export const DASHBOARD_TABLE_CELL_PRIMARY_CLS =
   'text-[15px] font-bold text-slate-900 dark:text-zinc-50 leading-snug';
 
 export const DASHBOARD_TABLE_CELL_BODY_CLS =
-  'text-[15px] font-semibold text-slate-700 dark:text-zinc-200 leading-snug';
+  'text-[15px] font-semibold text-slate-900 dark:text-zinc-100 leading-relaxed';
 
 export const DASHBOARD_TABLE_CELL_DATE_CLS =
-  'text-[15px] font-semibold text-slate-600 dark:text-zinc-300 tabular-nums leading-snug';
+  'text-[15px] font-semibold text-slate-700 dark:text-zinc-200 tabular-nums leading-snug';
 
 /** Status / change / direction values (↑ 0.6%, ↓ נחלש) */
 export const DASHBOARD_TABLE_STATUS_CLS =
   'text-base font-bold leading-snug tabular-nums';
 
 export const DASHBOARD_TABLE_CELL_MUTED_CLS =
-  'text-sm font-medium text-slate-500 dark:text-zinc-400 leading-snug';
+  'text-sm font-semibold text-slate-600 dark:text-zinc-300 leading-snug';
 
 export const DASHBOARD_EMPTY_CLS =
   'text-[15px] font-medium text-slate-400 dark:text-zinc-500 leading-snug';
@@ -320,62 +321,8 @@ export function RegimeCard({ label, value, isLast = false, columnVariant }) {
   );
 }
 
-// ── Sector metadata: Hebrew labels + representative ETF tickers ────────────
-const SECTOR_METADATA = {
-  'Materials':                              { he: 'חומרי גלם',                          etf: 'XLB'  },
-  'Basic Materials':                        { he: 'חומרי גלם',                          etf: 'XLB'  },
-  'Consumer Staples':                       { he: 'צריכה בסיסית',                        etf: 'XLP'  },
-  'Consumer Defensive':                     { he: 'צריכה בסיסית',                        etf: 'XLP'  },
-  'Technology':                             { he: 'טכנולוגיה',                           etf: 'XLK'  },
-  'Technology / Mega Caps':                 { he: 'טכנולוגיה / מניות ענק',               etf: 'QQQ'  },
-  'Software':                               { he: 'תוכנה',                               etf: 'IGV'  },
-  'Semiconductors':                         { he: 'מוליכים למחצה',                       etf: 'SMH'  },
-  'Semiconductors (SMH)':                   { he: 'מוליכים למחצה',                       etf: 'SMH'  },
-  'Retail':                                 { he: 'קמעונאות',                            etf: 'XRT'  },
-  'Airlines':                               { he: 'חברות תעופה',                         etf: 'JETS' },
-  'Airlines (JETS)':                        { he: 'חברות תעופה',                         etf: 'JETS' },
-  'Energy':                                 { he: 'אנרגיה',                              etf: 'XLE'  },
-  'Solar':                                  { he: 'אנרגיה סולארית',                      etf: 'TAN'  },
-  'Financials':                             { he: 'פיננסים',                             etf: 'XLF'  },
-  'Regional Banks':                         { he: 'בנקים אזוריים',                       etf: 'KRE'  },
-  'Homebuilders':                           { he: 'קבלני בתים',                          etf: 'XHB'  },
-  'REITs':                                  { he: 'ריטים',                               etf: 'VNQ'  },
-  'Healthcare':                             { he: 'בריאות',                              etf: 'XLV'  },
-  'Industrials':                            { he: 'תעשייה',                              etf: 'XLI'  },
-  'Utilities':                              { he: 'תשתיות',                              etf: 'XLU'  },
-  'Real Estate':                            { he: 'נדל"ן',                               etf: 'XLRE' },
-  'Communication Services':                 { he: 'תקשורת',                              etf: 'XLC'  },
-  'Consumer Discretionary':                 { he: 'צריכה מחזורית',                        etf: 'XLY'  },
-  'Regional Banks / Homebuilders / REITs':  { he: 'בנקים אזוריים / קבלני בתים / ריטים', etf: 'KRE'  },
-};
-
-function _normSectorKey(name) {
-  return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-const _SECTOR_META_BY_KEY = Object.fromEntries(
-  Object.entries(SECTOR_METADATA).map(([k, v]) => [_normSectorKey(k), v])
-);
-
-function _etfUrl(ticker) {
-  return `https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`;
-}
-
 export function getSectorMeta(name) {
-  const key = _normSectorKey(name);
-  const direct = _SECTOR_META_BY_KEY[key];
-  if (direct) return { he: direct.he, etf: direct.etf, finvizUrl: _etfUrl(direct.etf) };
-
-  // Fallback: extract ticker from parentheses, e.g. "XYZ Sector (ETF)"
-  const parenMatch = String(name).match(/\(([A-Z]{2,6})\)/);
-  if (parenMatch) {
-    const etf = parenMatch[1];
-    const baseName = String(name).replace(/\s*\([^)]+\)\s*/g, '').trim();
-    const baseMeta = _SECTOR_META_BY_KEY[_normSectorKey(baseName)];
-    return { he: baseMeta?.he ?? null, etf, finvizUrl: _etfUrl(etf) };
-  }
-
-  return null;
+  return resolveSectorMeta(name);
 }
 
 function buildSectorStatusParts(direction, relativeStrength) {

@@ -7,40 +7,26 @@ import {
   buildPerplexityEtfHoldingsUrl,
   resolveSectorFinvizLink,
 } from '@/utils/finvizLinks';
+import {
+  BRIEF_CELL,
+  BRIEF_COL,
+  BRIEF_NOTES_TEXT_CLS,
+  BRIEF_TABLE_CLS,
+  BRIEF_TABLE_HEAD_ROW_CLS,
+  BriefTableWrapper,
+} from './briefTableLayout';
+import { BRIEF_SENT_KEY_LABEL, BriefSentimentCell } from './BriefSentimentNotesTable';
 
-/** Column widths — matches Macro Gem sectors table (38% pre-sentiment + 15.5% sentiment). */
+/** Column widths — matches Macro Gem sectors table. */
 export const SECTOR_TABLE_MCOL = {
-  checkbox: '2.5%',
-  sentiment: '15.5%',
-  save: '5%',
-  name: '38%',
+  checkbox: BRIEF_COL.checkbox,
+  sentiment: BRIEF_COL.sentiment,
+  save: BRIEF_COL.save,
+  name: BRIEF_COL.primaryLabel,
 };
 
-const SENT_KEY_LABEL = {
-  positive: 'חיובי',
-  negative: 'שלילי',
-  neutral: 'ניטרלי',
-};
-
-/** Dot + colored sentiment label — shared by Macro Gem and Morning Brief sectors. */
-export function SectorSentimentCell({ value }) {
-  if (!value) return <span className="text-slate-400 dark:text-zinc-500">—</span>;
-  const v = String(value).toLowerCase();
-  const isPositive = v.includes('חיובי') || v.includes('bullish') || v.includes('long') || v.includes('buy') || v.includes('up') || v.includes('outperform') || v.includes('strong');
-  const isNegative = v.includes('שלילי') || v.includes('bearish') || v.includes('short') || v.includes('sell') || v.includes('down') || v.includes('underperform') || v.includes('weak');
-  const dot = isPositive ? 'bg-emerald-500' : isNegative ? 'bg-red-500' : 'bg-amber-400';
-  const textCls = isPositive
-    ? 'text-emerald-700 dark:text-emerald-400'
-    : isNegative
-      ? 'text-red-700 dark:text-red-400'
-      : 'text-amber-600 dark:text-amber-400';
-  return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${textCls}`}>
-      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dot}`} aria-hidden />
-      <span>{value}</span>
-    </span>
-  );
-}
+/** @deprecated Use BriefSentimentCell */
+export const SectorSentimentCell = BriefSentimentCell;
 
 /**
  * Normalizes sector row data from Macro Gem or Morning Brief into a common shape.
@@ -70,7 +56,7 @@ export function normalizeSectorTableRow(item, options = {}) {
     item.reason || item.rationale || item.why || item.catalyst || ''
   ).trim();
   const noteText = [note, reason].filter(Boolean).join(' · ');
-  const sentimentFallback = options.sentKey ? SENT_KEY_LABEL[options.sentKey] : '';
+  const sentimentFallback = options.sentKey ? BRIEF_SENT_KEY_LABEL[options.sentKey] : '';
   const sentimentLabel = sentiment || sentimentFallback;
 
   return {
@@ -134,8 +120,8 @@ export function MarketSectorTable({
   if (!safe.length) return null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-right border-collapse" style={{ tableLayout: 'fixed' }} dir="rtl">
+    <BriefTableWrapper>
+      <table className={BRIEF_TABLE_CLS} dir="rtl">
         <colgroup>
           {renderLeadingCell ? <col style={{ width: SECTOR_TABLE_MCOL.checkbox }} /> : null}
           <col style={{ width: SECTOR_TABLE_MCOL.name }} />
@@ -144,7 +130,7 @@ export function MarketSectorTable({
           {renderTrailingCell ? <col style={{ width: SECTOR_TABLE_MCOL.save }} /> : null}
         </colgroup>
         <thead>
-          <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+          <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
             {renderLeadingCell ? <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" /> : null}
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
@@ -163,11 +149,11 @@ export function MarketSectorTable({
               return (
                 <tr key={i} className={rowClassName}>
                   {renderLeadingCell ? (
-                    <td className="py-2 pr-2 pl-0 align-middle">
+                    <td className={BRIEF_CELL.checkbox}>
                       {renderLeadingCell(item, i, normalized)}
                     </td>
                   ) : null}
-                  <td colSpan={3} className="px-2 py-2 align-middle">
+                  <td colSpan={3} className={BRIEF_CELL.notes}>
                     <div className="flex flex-col gap-0.5">
                       <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{normalized.sector}</span>
                       {strPxUrl && (
@@ -185,7 +171,7 @@ export function MarketSectorTable({
                     </div>
                   </td>
                   {renderTrailingCell ? (
-                    <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className={BRIEF_CELL.save}>
                       {renderTrailingCell(item, i, normalized)}
                     </td>
                   ) : null}
@@ -196,23 +182,23 @@ export function MarketSectorTable({
             return (
               <tr key={i} className={rowClassName} data-sector-item>
                 {renderLeadingCell ? (
-                  <td className="py-2 pr-2 pl-0 w-5 align-middle">
+                  <td className={BRIEF_CELL.checkbox}>
                     {renderLeadingCell(item, i, normalized)}
                   </td>
                 ) : null}
-                <td className="px-2 py-2 align-middle">
+                <td className={BRIEF_CELL.short}>
                   <SectorNameCell sector={normalized.sector} />
                 </td>
-                <td className="px-2 py-2 align-middle">
-                  <SectorSentimentCell value={normalized.sentiment} />
+                <td className={BRIEF_CELL.sentiment}>
+                  <BriefSentimentCell value={normalized.sentiment} />
                 </td>
-                <td className="px-2 py-2 align-middle">
-                  <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-3 break-words`}>
+                <td className={BRIEF_CELL.notes}>
+                  <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
                     {normalized.note || '—'}
                   </p>
                 </td>
                 {renderTrailingCell ? (
-                  <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className={BRIEF_CELL.save}>
                     {renderTrailingCell(item, i, normalized)}
                   </td>
                 ) : null}
@@ -221,6 +207,6 @@ export function MarketSectorTable({
           })}
         </tbody>
       </table>
-    </div>
+    </BriefTableWrapper>
   );
 }

@@ -1706,6 +1706,16 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5184,
       strictPort: true,
+      warmup: {
+        clientFiles: [
+          './src/components/dashboard/briefTableLayout.jsx',
+          './src/components/dashboard/BriefSentimentNotesTable.jsx',
+          './src/components/dashboard/MacroStyleInsightCards.jsx',
+          './src/lib/chapterCountUtils.js',
+          './src/lib/chapterTitleUtils.js',
+          './src/lib/chapterTopicBoundaries.js',
+        ],
+      },
     },
     plugins: [
       makeRssProxyPlugin(),
