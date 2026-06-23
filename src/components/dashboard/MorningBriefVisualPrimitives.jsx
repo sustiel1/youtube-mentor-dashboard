@@ -29,7 +29,7 @@ export const SECTION_HEADER_TITLE_CLS =
 export const SECTION_HEADER_ROW_CLS =
   'flex flex-wrap items-center justify-start gap-x-2.5 gap-y-1.5 pt-1 pb-3 mb-3 px-0.5 text-right border-b border-slate-200/80 dark:border-zinc-700/70';
 
-export const SECTION_HEADER_COUNT_CLS = 'text-base font-bold tabular-nums';
+export const SECTION_HEADER_COUNT_CLS = 'text-sm font-semibold tabular-nums text-slate-500 dark:text-zinc-400';
 
 /**
  * Dashboard typography scale — Macro section is the reference for all dedicated content.
@@ -87,7 +87,6 @@ export function SectionCard({
   plainSurface = false,
   cardBulk = null,
 }) {
-  const styles = toneStyles(tone);
   const borderCls = COMPARISON_SECTION_BORDER;
   const surfaceCls = COMPARISON_SURFACE_BG;
   // NOTE: card-level bulk-select header (checkbox + quick-save actions) is temporarily
@@ -106,14 +105,16 @@ export function SectionCard({
         dir="rtl"
         data-section-header
       >
-        <div className="flex items-center justify-between">
-          <h2 className={SECTION_HEADER_TITLE_CLS}>{title}</h2>
-          <div className="flex items-center gap-x-2 shrink-0">
+        <div className="flex items-center justify-between gap-x-3">
+          <div className="flex items-center gap-x-2 min-w-0">
+            <h2 className={SECTION_HEADER_TITLE_CLS}>{title}</h2>
             {count != null && count > 0 && (
-              <span className={`${SECTION_HEADER_COUNT_CLS} shrink-0 ${styles.text}`}>
+              <span className={`${SECTION_HEADER_COUNT_CLS} shrink-0`} aria-label={`${count} פריטים`}>
                 {count}
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-x-2 shrink-0">
             {headerActions}
           </div>
         </div>
