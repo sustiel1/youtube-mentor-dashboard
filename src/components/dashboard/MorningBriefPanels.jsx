@@ -2124,6 +2124,38 @@ function RisksColumn({
   );
 }
 
+function getBriefOpportunityStyle(kindLabel, title) {
+  const t = `${kindLabel || ''} ${title || ''}`.toLowerCase();
+  if (t.includes('נדל') || t.includes('real estate') || t.includes('reit') || t.includes('קבלן'))
+    return { bg: 'bg-teal-50 dark:bg-teal-950/20', border: 'border-teal-200 dark:border-teal-800', badge: 'bg-teal-100 text-teal-700 border border-teal-400/60 dark:bg-teal-900/50 dark:text-teal-300 dark:border-teal-700/50', iconBg: 'bg-teal-100 dark:bg-teal-950/30', footerBorder: 'border-teal-100/80 dark:border-teal-900/40', icon: '🏠' };
+  if (t.includes('סווינג') || t.includes('swing') || t.includes('מסחר') || t.includes('trading') || t.includes('מומנטום') || t.includes('momentum') || t.includes('שורט') || t.includes('short'))
+    return { bg: 'bg-violet-50 dark:bg-violet-950/20', border: 'border-violet-200 dark:border-violet-800', badge: 'bg-violet-100 text-violet-700 border border-violet-400/60 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-700/50', iconBg: 'bg-violet-100 dark:bg-violet-950/30', footerBorder: 'border-violet-100/80 dark:border-violet-900/40', icon: '📊' };
+  if (t.includes('אג"ח') || t.includes('bond') || t.includes('treasury') || t.includes('ריבית') || t.includes('אוצר'))
+    return { bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-100 text-blue-700 border border-blue-400/60 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700/50', iconBg: 'bg-blue-100 dark:bg-blue-950/30', footerBorder: 'border-blue-100/80 dark:border-blue-900/40', icon: '🏛️' };
+  if (t.includes('לונג') || t.includes('long') || t.includes('equity') || t.includes('מניות') || t.includes('growth'))
+    return { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-100 text-orange-700 border border-orange-400/60 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700/50', iconBg: 'bg-orange-100 dark:bg-orange-950/30', footerBorder: 'border-orange-100/80 dark:border-orange-900/40', icon: '🚀' };
+  if (t.includes('ביו') || t.includes('bio') || t.includes('בריאות') || t.includes('health') || t.includes('pharma') || t.includes('פארמה'))
+    return { bg: 'bg-pink-50 dark:bg-pink-950/20', border: 'border-pink-200 dark:border-pink-800', badge: 'bg-pink-100 text-pink-700 border border-pink-400/60 dark:bg-pink-900/50 dark:text-pink-300 dark:border-pink-700/50', iconBg: 'bg-pink-100 dark:bg-pink-950/30', footerBorder: 'border-pink-100/80 dark:border-pink-900/40', icon: '🧬' };
+  return { bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-400/60 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700/50', iconBg: 'bg-emerald-100 dark:bg-emerald-950/30', footerBorder: 'border-emerald-100/80 dark:border-emerald-900/40', icon: '💡' };
+}
+
+function getBriefRiskStyle(severity) {
+  const sl = String(severity || '').toLowerCase();
+  if (sl.includes('קריטי') || sl.includes('critical') || sl.includes('מאוד גבוה'))
+    return { bg: 'bg-red-100 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-700', iconBg: 'bg-red-100 dark:bg-red-950/30', footerBorder: 'border-red-200/80 dark:border-red-900/40', icon: '🔴' };
+  if (sl.includes('גבוהה') || sl.includes('גבוה') || sl.includes('high'))
+    return { bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200 dark:border-red-800', iconBg: 'bg-red-50 dark:bg-red-950/30', footerBorder: 'border-red-100/80 dark:border-red-900/40', icon: '🔴' };
+  if (sl.includes('בינונית') || sl.includes('בינוני') || sl.includes('medium'))
+    return { bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800', iconBg: 'bg-amber-50 dark:bg-amber-950/30', footerBorder: 'border-amber-100/80 dark:border-amber-900/40', icon: '🟠' };
+  return { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', iconBg: 'bg-orange-50 dark:bg-orange-950/30', footerBorder: 'border-orange-100/80 dark:border-orange-900/40', icon: '⚠️' };
+}
+
+function buildBriefResearchUrl(text, category) {
+  if (!text) return null;
+  const term = category ? `${category}: ${text}` : text;
+  return `https://www.perplexity.ai/search?q=${encodeURIComponent(`${term} — ניתוח שוק והזדמנויות השקעה`)}`;
+}
+
 /** Side-by-side Opportunities / Risks dashboard (desktop) with stacked mobile layout. */
 export function OpportunitiesRisksDashboard({
   marketBriefData,
@@ -2173,30 +2205,51 @@ export function OpportunitiesRisksDashboard({
           riskColumns={SECTION_EDIT_COLUMNS.risks}
         />
       ) : (
-      <div dir="rtl" data-opportunities-risks-dashboard className="space-y-4">
+      <div dir="rtl" data-opportunities-risks-dashboard className="space-y-5">
         {/* הזדמנויות */}
         {ideas.length > 0 && (
-          <div className="overflow-x-auto">
-            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-1.5 text-emerald-700 dark:text-emerald-400`}>🎯 הזדמנויות ({ideas.length})</p>
-            <table className="w-full text-right border-collapse" dir="rtl">
-              <thead>
-                <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                  <th className="py-1.5 pr-2 pl-0 w-5" />
-                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>נושא</th>
-                  <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
-                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>פרטים</th>
-                  <th className="py-1.5 pl-1 pr-0 w-5" />
-                </tr>
-              </thead>
-              <tbody>
-                {ideas.map((idea, i) => {
-                  const title = String(idea.title || '').trim();
-                  const detail = String(idea.detail || '').trim();
-                  const description = detail && detail !== title ? detail : '';
-                  const saveText = [title, description].filter(Boolean).join(' — ');
-                  return (
-                    <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-opportunity-item>
-                      <td className="py-2 pr-2 pl-0 w-5 align-middle">
+          <div>
+            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-emerald-700 dark:text-emerald-400`}>
+              💡 הזדמנויות ({ideas.length})
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {ideas.map((idea, i) => {
+                const title = String(idea.title || '').trim();
+                const detail = String(idea.detail || '').trim();
+                const description = detail && detail !== title ? detail : '';
+                const saveText = [title, description].filter(Boolean).join(' — ');
+                const style = getBriefOpportunityStyle(idea.kindLabel, title);
+                const pxUrl = buildBriefResearchUrl(title, idea.kindLabel);
+                return (
+                  <div
+                    key={i}
+                    className={`group rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${style.bg} ${style.border}`}
+                    data-opportunity-item
+                  >
+                    <div className="p-4" dir="rtl">
+                      <div className="flex items-start gap-3">
+                        <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${style.iconBg} shadow-sm text-xl leading-none`}>
+                          {style.icon}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <div className="flex items-start gap-2 flex-wrap" dir="rtl">
+                            <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} flex-1 min-w-0 break-words [overflow-wrap:anywhere]`}>
+                              {title || '—'}
+                            </p>
+                            {idea.kindLabel && (
+                              <span className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${style.badge}`}>
+                                {idea.kindLabel}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {description && (
+                        <p className={`mt-2 ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] leading-relaxed`}>
+                          {description}
+                        </p>
+                      )}
+                      <div className={`flex items-center gap-1.5 mt-3 pt-2.5 border-t ${style.footerBorder}`}>
                         <MorningBriefBulkCheckbox
                           bulkSections={bulkSections}
                           sectionKey="opportunities"
@@ -2205,57 +2258,77 @@ export function OpportunitiesRisksDashboard({
                           tabKey="brief-opportunities"
                           bulkSelection={bulkSelection}
                         />
-                      </td>
-                      <td className="px-2 py-2 align-top max-w-[14rem]">
-                        <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
-                      </td>
-                      <td className="px-2 py-2 align-top whitespace-nowrap">
-                        {idea.kindLabel ? (
-                          <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-emerald-700 dark:text-emerald-400`}>{idea.kindLabel}</span>
-                        ) : <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>}
-                      </td>
-                      <td className="px-2 py-2 align-top max-w-[20rem]">
-                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={description || undefined}>
-                          {description || '—'}
-                        </p>
-                      </td>
-                      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                        <BriefRowSaveActions
-                          bulkSelection={bulkSelection}
-                          text={saveText}
-                          sectionLabel="🎯 הזדמנויות"
-                          tabKey="brief-opportunities"
-                          onSaveToBrain={onSaveToBrain}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {pxUrl && (
+                          <a
+                            href={pxUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                          >
+                            🔍 מחקר AI
+                          </a>
+                        )}
+                        <div className="flex-1 flex justify-end">
+                          <BriefRowSaveActions
+                            bulkSelection={bulkSelection}
+                            text={saveText}
+                            sectionLabel="🎯 הזדמנויות"
+                            tabKey="brief-opportunities"
+                            onSaveToBrain={onSaveToBrain}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* סיכונים */}
         {risks.length > 0 && (
-          <div className="overflow-x-auto">
-            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-1.5 text-red-700 dark:text-red-400`}>⚠️ סיכונים ({risks.length})</p>
-            <table className="w-full text-right border-collapse" dir="rtl">
-              <thead>
-                <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
-                  <th className="py-1.5 pr-2 pl-0 w-5" />
-                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>נושא</th>
-                  <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>פרטים</th>
-                  <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>חומרה</th>
-                  <th className="py-1.5 pl-1 pr-0 w-5" />
-                </tr>
-              </thead>
-              <tbody>
-                {risks.map((risk, i) => {
-                  const { title, description, severity, tag } = parseRiskDisplay(risk);
-                  return (
-                    <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-risk-item>
-                      <td className="py-2 pr-2 pl-0 w-5 align-middle">
+          <div>
+            <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-red-700 dark:text-red-400`}>
+              ⚠️ סיכונים ({risks.length})
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {risks.map((risk, i) => {
+                const { title, description, severity, tag } = parseRiskDisplay(risk);
+                const style = getBriefRiskStyle(severity);
+                const pxUrl = buildBriefResearchUrl(title, severity ? `סיכון ${severity}` : 'סיכון');
+                return (
+                  <div
+                    key={i}
+                    className={`group rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${style.bg} ${style.border}`}
+                    data-risk-item
+                  >
+                    <div className="p-4" dir="rtl">
+                      <div className="flex items-start gap-3">
+                        <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${style.iconBg} shadow-sm text-xl leading-none`}>
+                          {style.icon}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <div className="flex items-start gap-2 flex-wrap" dir="rtl">
+                            <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} flex-1 min-w-0 break-words [overflow-wrap:anywhere]`}>
+                              {title || '—'}
+                            </p>
+                            {severity && (
+                              <span className="shrink-0"><SeverityLabel level={severity} /></span>
+                            )}
+                          </div>
+                          {tag && (
+                            <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{tag}</p>
+                          )}
+                        </div>
+                      </div>
+                      {description && (
+                        <p className={`mt-2 ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] leading-relaxed`}>
+                          {description}
+                        </p>
+                      )}
+                      <div className={`flex items-center gap-1.5 mt-3 pt-2.5 border-t ${style.footerBorder}`}>
                         <MorningBriefBulkCheckbox
                           bulkSections={bulkSections}
                           sectionKey="risks"
@@ -2264,33 +2337,32 @@ export function OpportunitiesRisksDashboard({
                           tabKey="brief-risks"
                           bulkSelection={bulkSelection}
                         />
-                      </td>
-                      <td className="px-2 py-2 align-top max-w-[14rem]">
-                        <p className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
-                        {tag && <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} block mt-0.5`}>{tag}</span>}
-                      </td>
-                      <td className="px-2 py-2 align-top max-w-[20rem]">
-                        <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`} title={description || undefined}>
-                          {description || '—'}
-                        </p>
-                      </td>
-                      <td className="px-2 py-2 align-top whitespace-nowrap">
-                        {severity ? <SeverityLabel level={severity} /> : <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>}
-                      </td>
-                      <td className="py-2 pl-1 pr-0 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                        <BriefRowSaveActions
-                          bulkSelection={bulkSelection}
-                          text={risk.text}
-                          sectionLabel="⚠️ סיכונים"
-                          tabKey="brief-risks"
-                          onSaveToBrain={onSaveToBrain}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {pxUrl && (
+                          <a
+                            href={pxUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors"
+                          >
+                            🔍 מחקר AI
+                          </a>
+                        )}
+                        <div className="flex-1 flex justify-end">
+                          <BriefRowSaveActions
+                            bulkSelection={bulkSelection}
+                            text={risk.text}
+                            sectionLabel="⚠️ סיכונים"
+                            tabKey="brief-risks"
+                            onSaveToBrain={onSaveToBrain}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
