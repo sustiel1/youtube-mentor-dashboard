@@ -4,21 +4,16 @@ import {
   emptyRowForColumns,
   getManualSectionSource,
 } from '@/lib/manualBriefOverrides';
+import { AiSourceBadge, MORNING_BRIEF_SHOW_AI_SOURCE_BADGE } from './AiSourceBadge';
 
-export function ManualSourceBadge({ marketBriefData, sectionId }) {
+export function ManualSourceBadge({ marketBriefData, sectionId, showAiBadge }) {
   const source = getManualSectionSource(marketBriefData, sectionId);
-  const isManual = source === 'manual';
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0 ${
-        isManual
-          ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40'
-          : 'text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800/60'
-      }`}
-      data-manual-source={source}
-    >
-      {isManual ? '✏️ Manual' : '🤖 AI'}
-    </span>
+    <AiSourceBadge
+      source={source === 'manual' ? 'manual' : 'ai'}
+      showAiBadge={showAiBadge}
+      dataManualSource={source}
+    />
   );
 }
 
@@ -226,10 +221,15 @@ export function BriefSectionManualHeaderExtras({
   onEdit,
   onCancel,
   onSave,
+  showAiBadge = MORNING_BRIEF_SHOW_AI_SOURCE_BADGE,
 }) {
   return (
     <div className="flex items-center gap-1.5 shrink-0 mr-auto" dir="rtl">
-      <ManualSourceBadge marketBriefData={marketBriefData} sectionId={sectionId} />
+      <ManualSourceBadge
+        marketBriefData={marketBriefData}
+        sectionId={sectionId}
+        showAiBadge={showAiBadge}
+      />
       <ManualSectionHeaderActions
         editing={editing}
         onEdit={onEdit}

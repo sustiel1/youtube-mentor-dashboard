@@ -194,7 +194,7 @@ function BriefRowSaveActions({
   );
 }
 
-function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo, onSaveMarketBriefSection, newsItems }) {
+function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo, onSaveMarketBriefSection, newsItems, showAiBadge }) {
   const enabled = Boolean(onSaveMarketBriefSection && marketBriefData);
   const getDraftRows = useCallback(
     () => getEditableRowsForSection(marketBriefData, effectiveVideo, sectionId, newsItems),
@@ -217,6 +217,7 @@ function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo
       onEdit={edit.startEdit}
       onCancel={edit.cancelEdit}
       onSave={edit.saveEdit}
+      showAiBadge={showAiBadge}
     />
   ) : null;
 
