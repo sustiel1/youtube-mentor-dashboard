@@ -3382,10 +3382,25 @@ export function VideoDetailPanel({
     return chapterSourceInfo.chapters || [];
   }, [chapterSourceInfo]);
 
-  const descriptionChapters = useMemo(
-    () => resolveStructuredChapters(video || {}),
-    [video],
-  );
+  const descriptionChapters = useMemo(() => {
+    const structured = resolveStructuredChapters(video || {});
+    if (structured.length > 0) return structured;
+
+    // When video.description was stripped from the entity, check the youtubeChapterCache
+    // for chapters fetched in a prior session without requiring an API call.
+    const watchUrl = getWatchUrl(video);
+    const ytId = getVideoIdFromUrl(watchUrl);
+    if (!ytId) return [];
+    const cached = getCachedVideoMetadata(ytId);
+    const cachedChapters = Array.isArray(cached?.chapters) ? cached.chapters : [];
+    if (!cachedChapters.length) return [];
+    return cachedChapters.map((c) => ({
+      ...c,
+      timeSource: c.timeSource || 'real',
+      chapterSource: c.chapterSource || 'description_timestamp',
+      source: c.source || 'description_timestamp',
+    }));
+  }, [video]);
 
   const gemChapters = useMemo(() => {
     const normalized = normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData));
@@ -3494,6 +3509,40 @@ export function VideoDetailPanel({
     setYoutubeChaptersHint(null);
     setTranscriptDiagnostics(null);
     setChapterTranscriptSource(null);
+  }, [video?.id]);
+
+  // Auto-extract description timestamps on video load — runs once per video,
+  // only when the description field is still available (before stripping) and
+  // no descriptionChapters have been saved yet.
+  useEffect(() => {
+    if (!video?.id) return;
+    if (Array.isArray(video.descriptionChapters) && video.descriptionChapters.length > 0) return;
+    const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
+    if (!existingDesc) return;
+    const descChapters = extractTimestampsFromDescription(existingDesc);
+    if (descChapters.length < 2) return;
+    const aiChapters = descChapters.map((c) => ({
+      ...c,
+      timeSource: c.timeSource || 'real',
+      chapterSource: 'description_timestamp',
+      source: 'description_timestamp',
+    }));
+    const updates = {
+      aiChapters,
+      chapters: aiChapters,
+      descriptionChapters: aiChapters,
+      chapterSource: 'description_timestamp',
+      analysisQuality: 'medium',
+    };
+    const localSaved = patchVideo(updates);
+    if (localSaved) {
+      onVideoPatch?.(localSaved);
+    } else {
+      Video.update(video.id, updates)
+        .then(() => { patchVideo(updates); onVideoPatch?.({ ...video, ...updates }); })
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [video?.id]);
 
   const handleFetchYoutubeChapters = async () => {
