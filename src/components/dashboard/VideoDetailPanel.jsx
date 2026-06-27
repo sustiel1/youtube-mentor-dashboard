@@ -8,6 +8,14 @@ import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { analyzeVideoWithProvider } from "@/services/aiVideoAnalyzer";
 import { computeTargetChapters } from "@/lib/chapterCountUtils";
+import {
+  buildTranscriptChunkTitle,
+  isAiAnalysisChapterSource,
+  isObviousTranscriptFragmentTitle,
+  isTranscriptChunkChapterSource,
+  sanitizeChaptersForDisplay,
+  stripTranscriptNoiseMarkers,
+} from "@/lib/chapterTitleUtils";
 import { getClaudeAnalyzerStatus } from "@/services/claudeVideoAnalyzer";
 import { fetchGeminiVideoContent, fetchHebrewChapterTitles } from "@/services/geminiVideoContent";
 import {
@@ -25,9 +33,11 @@ import {
   getChapterSource,
   getVideoDurationSeconds,
   isGenericChapterTitle,
+  matchChaptersToTranscript,
   normalizeAiAnalysisResult,
   parseDurationToSeconds,
   resolveVideoChapters,
+  resolveStructuredChapters,
   validateAiAnalysisQuality,
   validateChaptersForSave,
   validateChapterTimelineCoverage,
@@ -515,13 +525,40 @@ function formatChapterTimestamp(totalSeconds) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
+/**
+ * Detects when all GEM chapter timestamps look proportionally distributed (AI estimate
+ * rather than real transcript transitions). Threshold: ≥4 valid timestamps, all gaps
+ * within 8% of the average gap. Marks affected chapters with isEstimated + timestampSource.
+ */
+function markEstimatedIfEvenlySpaced(chapters) {
+  const seconds = chapters
+    .map((ch) => ch?.startSeconds)
+    .filter((v) => Number.isFinite(v));
+
+  if (seconds.length < 4) return chapters;
+
+  const gaps = seconds.slice(1).map((s, i) => s - seconds[i]);
+  const avg = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+
+  if (!Number.isFinite(avg) || avg <= 0) return chapters;
+
+  const evenlySpaced = gaps.every((g) => Math.abs(g - avg) / avg < 0.08);
+  if (!evenlySpaced) return chapters;
+
+  return chapters.map((ch) => ({
+    ...ch,
+    isEstimated: true,
+    timestampSource: 'estimated_proportional',
+  }));
+}
+
 /** Normalizes universalTabs.chapters (GEM) into ChapterItem-compatible rows. */
 function normalizeGemChapters(raw) {
   if (!Array.isArray(raw) || raw.length === 0) return [];
-  return raw.map((ch, i) => {
+  const normalized = raw.map((ch, i) => {
     if (typeof ch === 'string') {
       const title = ch.trim();
-      return title ? { title, timestamp: '', chapterSource: 'gem' } : null;
+      return title ? { title, timestamp: '', chapterSource: 'gem', isEstimated: true, timestampSource: 'missing' } : null;
     }
     if (!ch || typeof ch !== 'object') return null;
     const title = String(ch.title || ch.name || ch.label || `פרק ${i + 1}`).trim();
@@ -536,20 +573,25 @@ function normalizeGemChapters(raw) {
 
     const timestamp = startSeconds != null ? formatChapterTimestamp(startSeconds) : rawStamp;
     const summary = String(ch.summary || ch.description || '').trim();
+    const hasTimestamp = startSeconds != null;
     return {
       title,
       timestamp,
       summary,
       chapterSource: 'gem',
+      isEstimated: !hasTimestamp,
+      timestampSource: hasTimestamp ? 'gem' : 'missing',
       ...(startSeconds != null ? { startSeconds } : {}),
       ...(endSeconds != null && (startSeconds == null || endSeconds >= startSeconds) ? { endSeconds } : {}),
     };
   }).filter(Boolean);
+
+  return markEstimatedIfEvenlySpaced(normalized);
 }
 
-/** Prefer saved ai_transcript chapters for display over GEM / description sources. No count cap — renders all validated chapters. */
-function resolveAiTranscriptDisplayChapters(video, overrideChapters = null) {
-  if (!video || video.chapterSource !== "ai_transcript") return [];
+/** Local transcript-chunk chapters (legacy + heuristic). Never Claude/Gemini. */
+function resolveTranscriptChunkDisplayChapters(video, overrideChapters = null) {
+  if (!video || !isTranscriptChunkChapterSource(video.chapterSource)) return [];
   const raw =
     overrideChapters ??
     (Array.isArray(video.aiChapters) && video.aiChapters.length > 0
@@ -558,7 +600,43 @@ function resolveAiTranscriptDisplayChapters(video, overrideChapters = null) {
         ? video.chapters
         : []);
   if (!Array.isArray(raw) || raw.length === 0) return [];
+  return sanitizeChaptersForDisplay(resolveVideoChapters(video, raw));
+}
+
+/** Claude / Gemini / manual AI chapters saved on the video record. */
+function resolveAiAnalysisDisplayChapters(video) {
+  if (!video || !video.chapterSource || isTranscriptChunkChapterSource(video.chapterSource)) return [];
+  if (!isAiAnalysisChapterSource(video.chapterSource)) return [];
+  const raw = Array.isArray(video.aiChapters) && video.aiChapters.length > 0
+    ? video.aiChapters
+    : Array.isArray(video.chapters)
+      ? video.chapters
+      : [];
+  if (!Array.isArray(raw) || raw.length === 0) return [];
   return resolveVideoChapters(video, raw);
+}
+
+/**
+ * Quality gate for locally-generated transcript chapters.
+ * Module-level so it can be used in both useMemos (display-time) and generation handlers.
+ */
+function validateTranscriptChapterQuality(chapters) {
+  if (!Array.isArray(chapters) || chapters.length < 2) return { valid: false, reason: 'too_few' };
+  const titles = chapters.map(c => String(c.title || '').trim());
+  if (titles.some(t => !t)) return { valid: false, reason: 'empty_title' };
+  if (titles.some(t => /\[(music|applause|laughter|silence|שירה|מוזיקה)\]/i.test(t)))
+    return { valid: false, reason: 'noise_in_title' };
+  if (titles.some(t => /^פרק\s+\d+\s+בנושא/i.test(t)))
+    return { valid: false, reason: 'generic_fallback_title' };
+  if (titles.some(t => /^[a-z]/.test(t) && t.length > 25))
+    return { valid: false, reason: 'transcript_fragment_title' };
+  // Any repeated title → reject (was: >50% threshold; stricter: any duplicate)
+  const titleSet = new Set(titles);
+  if (titleSet.size < titles.length) {
+    const dupes = titles.filter((t, i) => titles.indexOf(t) !== i);
+    return { valid: false, reason: 'duplicate_title', detail: dupes };
+  }
+  return { valid: true };
 }
 
 const STOPWORDS_HE = new Set([
@@ -676,7 +754,11 @@ function splitPlainTranscriptToChapters(text, videoDurationSeconds) {
       durationSec
         ? (i < chunks.length - 1 ? Math.floor(((i + 1) / chunks.length) * durationSec) : durationSec)
         : (i < chunks.length - 1 ? (i + 1) * 60 : null);
-    const title = makeTitleFromText(chunk);
+    const cleanedChunk = stripTranscriptNoiseMarkers(chunk);
+    const keywordTitle = makeTitleFromText(cleanedChunk);
+    const title = isObviousTranscriptFragmentTitle(keywordTitle)
+      ? buildTranscriptChunkTitle(cleanedChunk, i, null)
+      : keywordTitle;
     const keyPoints = extractKeywords(chunk, { max: 4 }).slice(0, 3);
     const summary = chunk.split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 2).join(" ");
     return {
@@ -1796,9 +1878,23 @@ function repairGemsJsonDetailed(raw) {
     try { JSON.parse(s); break; } catch (err) {
       const loc = getJsonErrorLocation(s, err.message);
       if (!loc || loc.pos <= 0) break;
-      // The premature " is one character before the reported unexpected char
-      if (s[loc.pos - 1] !== '"') break;
-      s = s.slice(0, loc.pos - 1) + '\\"' + s.slice(loc.pos);
+      // The premature " is usually one character before the error, but sometimes
+      // a comma or escape sequence sits between them (e.g. .",\n" → error at '\').
+      // Scan backwards up to 10 chars to find the nearest unescaped ".
+      let fixPos = -1;
+      if (s[loc.pos - 1] === '"') {
+        fixPos = loc.pos - 1;
+      } else {
+        for (let k = loc.pos - 2; k >= Math.max(0, loc.pos - 10); k--) {
+          if (s[k] === '"') {
+            let bs = 0;
+            for (let b = k - 1; b >= 0 && s[b] === '\\'; b--) bs++;
+            if (bs % 2 === 0) { fixPos = k; break; }
+          }
+        }
+      }
+      if (fixPos < 0) break;
+      s = s.slice(0, fixPos) + '\\"' + s.slice(fixPos + 1);
       quoteFixes++;
     }
   }
@@ -3261,6 +3357,7 @@ export function VideoDetailPanel({
     if (resolved.length > 0) {
       const source =
         resolved[0]?.chapterSource ||
+        video?.chapterSource ||
         (resolved[0]?.timeSource === "transcript" ? "transcript"
         : resolved[0]?.timeSource === "real" ? "description_timestamp"
         : resolved[0]?.timeSource === "estimated" ? "duration_fallback"
@@ -3285,22 +3382,93 @@ export function VideoDetailPanel({
     return chapterSourceInfo.chapters || [];
   }, [chapterSourceInfo]);
 
-  const gemChapters = useMemo(
-    () => normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData)),
-    [effectiveVideo, marketBriefData],
+  const descriptionChapters = useMemo(
+    () => resolveStructuredChapters(video || {}),
+    [video],
   );
-  const aiTranscriptChapters = useMemo(() => {
-    const sourceVideo =
-      effectiveVideo?.chapterSource === "ai_transcript" ? effectiveVideo : video;
-    return resolveAiTranscriptDisplayChapters(sourceVideo);
+
+  const gemChapters = useMemo(() => {
+    const normalized = normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData));
+    if (!normalized.length) return [];
+
+    // Refine chapters that are missing timestamps using transcript segments when available.
+    // Chapters with valid timestamps are kept unchanged by matchChaptersToTranscript.
+    const hasMissingTimestamps = normalized.some((ch) => ch.timestampSource === 'missing');
+    if (!hasMissingTimestamps) return normalized;
+
+    const rawSegs = Array.isArray(effectiveVideo?.transcriptSegments) && effectiveVideo.transcriptSegments.length > 0
+      ? effectiveVideo.transcriptSegments
+      : null;
+    if (!rawSegs) return normalized;
+
+    const lines = rawSegs
+      .map((s) => ({ text: String(s?.text || '').trim(), start: Number(s?.startSeconds ?? s?.start ?? 0) }))
+      .filter((l) => l.text);
+    if (!lines.length) return normalized;
+
+    const refined = matchChaptersToTranscript(normalized, { lines });
+    return refined ?? normalized;
+  }, [effectiveVideo, marketBriefData]);
+  const transcriptChaptersRaw = useMemo(() => {
+    const sourceVideo = isTranscriptChunkChapterSource(effectiveVideo?.chapterSource)
+      ? effectiveVideo
+      : isTranscriptChunkChapterSource(video?.chapterSource)
+        ? video
+        : null;
+    return sourceVideo ? resolveTranscriptChunkDisplayChapters(sourceVideo) : [];
   }, [effectiveVideo, video]);
+
+  const transcriptQualityResult = useMemo(
+    () => transcriptChaptersRaw.length > 0 ? validateTranscriptChapterQuality(transcriptChaptersRaw) : null,
+    [transcriptChaptersRaw],
+  );
+
+  const transcriptChunkChapters = useMemo(() => {
+    if (transcriptChaptersRaw.length === 0) return [];
+    if (!transcriptQualityResult?.valid) {
+      console.warn(
+        '[Chapters] Stored transcript chapters failed display quality check:',
+        transcriptQualityResult?.reason,
+        transcriptQualityResult?.detail ?? transcriptChaptersRaw.map(c => c.title),
+      );
+      return [];
+    }
+    return transcriptChaptersRaw;
+  }, [transcriptChaptersRaw, transcriptQualityResult]);
+
+  const aiAnalysisChapters = useMemo(() => {
+    const sourceVideo = isAiAnalysisChapterSource(effectiveVideo?.chapterSource)
+      ? effectiveVideo
+      : isAiAnalysisChapterSource(video?.chapterSource)
+        ? video
+        : null;
+    return sourceVideo ? resolveAiAnalysisDisplayChapters(sourceVideo) : [];
+  }, [effectiveVideo, video]);
+
+  // When the user explicitly ran transcript chapter generation, those take priority over GEM
+  // (which may have stale estimated timestamps). Description timestamps always win.
+  const hasExplicitTranscriptChapters =
+    transcriptChunkChapters.length > 0 &&
+    (isTranscriptChunkChapterSource(video?.chapterSource) ||
+      isTranscriptChunkChapterSource(effectiveVideo?.chapterSource));
+
   const displayChapters =
-    aiTranscriptChapters.length > 0
-      ? aiTranscriptChapters
-      : gemChapters.length > 0
-        ? gemChapters
-        : baseChapters;
-  const chaptersFromGem = aiTranscriptChapters.length === 0 && gemChapters.length > 0;
+    descriptionChapters.length > 0
+      ? descriptionChapters
+      : hasExplicitTranscriptChapters
+        ? transcriptChunkChapters
+        : gemChapters.length > 0
+          ? gemChapters
+          : aiAnalysisChapters.length > 0
+            ? aiAnalysisChapters
+            : transcriptChunkChapters.length > 0
+              ? transcriptChunkChapters
+              : baseChapters;
+  const chaptersFromGem =
+    descriptionChapters.length === 0 &&
+    aiAnalysisChapters.length === 0 &&
+    transcriptChunkChapters.length === 0 &&
+    gemChapters.length > 0;
 
   const savedAnalysisTranscript = useMemo(
     () => (video?.id ? loadSavedAnalysis(video.id) : null),
@@ -3533,7 +3701,7 @@ export function VideoDetailPanel({
   };
 
   const handleGenerateHebrewTitles = async () => {
-    const chapters = baseChapters;
+    const chapters = displayChapters.length > 0 ? displayChapters : baseChapters;
     if (!chapters || chapters.length === 0) {
       toast.error('אין פרקים לעיבוד');
       return;
@@ -3572,6 +3740,7 @@ export function VideoDetailPanel({
       } catch {}
       toast.success('כותרות עבריות נוצרו בהצלחה');
     } catch (err) {
+      console.error('[HebrewTitles] generation failed', { code: err.code, message: err.message, status: err.status });
       const msg = err.code === 'GEMINI_API_KEY_MISSING'
         ? 'נדרש חיבור AI כדי ליצור כותרות עבריות.'
         : 'שגיאה ביצירת כותרות עבריות';
@@ -3592,25 +3761,35 @@ export function VideoDetailPanel({
 
     console.log(`[Chapters] generating from transcript source=${resolution.source ?? "unknown"} lines=${resolution.lines.length}`);
 
-    let chapters = generateChaptersFromTranscript({ lines: resolution.lines }, video);
+    const generated = generateChaptersFromTranscript({ lines: resolution.lines }, video);
+    let chapters = generated?.chapters ?? null;
+    let chapterSource = generated?.chapterSource || "transcript_heuristic";
+    let analysisQuality = generated?.analysisQuality || "low";
+    const boundaryMethod = generated?.boundaryMethod || "chunk";
+
     if (!chapters?.length) {
       const plainText =
         getVideoTranscriptText(video) ||
         resolution.lines.map((line) => line.text).join(" ");
       chapters = splitPlainTranscriptToChapters(plainText, videoDurationForChapters);
+      chapterSource = "transcript_heuristic";
+      analysisQuality = "low";
     }
 
     if (!chapters?.length) {
       setYoutubeChaptersHint("transcript_gen_failed");
-      toast.error("Gemini לא הצליח ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.");
+      toast.error("לא ניתן ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.");
       return;
     }
 
+    console.log(`[Chapters] boundaryMethod=${boundaryMethod} source=${chapterSource} count=${chapters.length}`);
+
     const aiChapters = chapters.map((c) => ({
       ...c,
-      chapterSource: "ai_transcript",
-      source: "ai_transcript",
+      chapterSource: c.chapterSource || chapterSource,
+      source: chapterSource,
       timeSource: c.timeSource || "transcript",
+      analysisQuality: c.analysisQuality || analysisQuality,
     }));
 
     const coverage = validateChapterTimelineCoverage(aiChapters, videoDurationForChapters);
@@ -3621,7 +3800,19 @@ export function VideoDetailPanel({
       return;
     }
 
-    const updates = { aiChapters, chapters: aiChapters, chapterSource: "ai_transcript" };
+    const titleQuality = validateTranscriptChapterQuality(aiChapters);
+    if (!titleQuality.valid) {
+      console.warn(`[Chapters] Title quality gate failed: ${titleQuality.reason}`, aiChapters.map(c => c.title));
+      toast.error('לא עודכנו פרקים — איכות הכותרות נמוכה');
+      return;
+    }
+
+    const updates = {
+      aiChapters,
+      chapters: aiChapters,
+      chapterSource,
+      analysisQuality,
+    };
     const localSaved = patchVideo(updates);
     const savedVideo = localSaved ?? { ...video, ...updates };
     if (localSaved) {
@@ -3637,8 +3828,9 @@ export function VideoDetailPanel({
     }
     setChapterTranscriptSource(resolution.source);
     setYoutubeChaptersHint(null);
-    const renderedCount = resolveAiTranscriptDisplayChapters(savedVideo, aiChapters).length;
-    toast.success(`נוצרו ${renderedCount} פרקים מהתמלול`);
+    const renderedCount = resolveTranscriptChunkDisplayChapters(savedVideo, aiChapters).length;
+    const methodLabel = boundaryMethod === "topic" ? "לפי נושאים" : "חלוקה שווה (איכות נמוכה)";
+    toast.success(`נוצרו ${renderedCount} פרקים מהתמלול — ${methodLabel}`);
   };
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
@@ -6119,6 +6311,7 @@ export function VideoDetailPanel({
 
       const fromTranscript =
         parsed?.lines?.length ? generateChaptersFromTranscript(parsed, video) : null;
+      const fromTranscriptChapters = fromTranscript?.chapters ?? null;
 
       const result = await analyzeVideoWithAI({
         videoId:     video.id,
@@ -6139,9 +6332,11 @@ export function VideoDetailPanel({
       const patch = {
         id: video.id,
         ...result,
-        ...(fromTranscript?.length
+        ...(fromTranscriptChapters?.length
           ? {
-              aiChapters: fromTranscript,
+              aiChapters: fromTranscriptChapters,
+              chapterSource: fromTranscript?.chapterSource || "transcript_heuristic",
+              analysisQuality: fromTranscript?.analysisQuality || "low",
               ...(transcriptToStore ? { transcript: transcriptToStore } : {}),
             }
           : {}),
@@ -6152,12 +6347,12 @@ export function VideoDetailPanel({
       onAnalyzeDone?.({
         ...result,
         status: "done",
-        ...(fromTranscript?.length ? { aiChapters: fromTranscript } : {}),
+        ...(fromTranscriptChapters?.length ? { aiChapters: fromTranscriptChapters } : {}),
       });
 
       const triedTranscript =
         (typeof video.transcript === "string" && video.transcript.trim().length > 40) || !!ytId;
-      if (triedTranscript && !fromTranscript?.length) {
+      if (triedTranscript && !fromTranscriptChapters?.length) {
         toast.info("לא נמצא תמלול, הפרקים נוצרו ללא ניווט מדויק");
       }
     } catch (err) {
@@ -7204,18 +7399,25 @@ export function VideoDetailPanel({
       toast.error(message);
     }
   };
-  const chapterSourceBadge =
-    chapterSourceInfo.source === "manual_transcript"
-      ? "ניתוח מבוסס תמלול ידני"
-      : chapterSourceInfo.source === "transcript"
-        ? "מבוסס תמלול"
-        : chapterSourceInfo.source === "description_timestamp"
-          ? "מבוסס פרקי YouTube/תיאור"
-          : chapterSourceInfo.source === "ai_transcript"
-            ? "AI מתמלול"
-            : null;
-  const chapterSourceBadgeClass =
-    "bg-blue-50 text-blue-700 border-blue-200";
+  const chapterSourceBadge = (() => {
+    const s = chapterSourceInfo.source;
+    if (!s) return null;
+    if (s === 'description_timestamp' || s === 'youtube_description' || s === 'description_timestamps') return '🟢 זמן מדויק';
+    if (s === 'gem' || s === 'gem_chapters' || s === 'gemini' || s === 'gemini_url' || s === 'gems_analysis' || s === 'ai_generated' || s === 'transcript' || s === 'saved') return '🔵 AI';
+    if (s === 'transcript_topic_heuristic' || isTranscriptChunkChapterSource(s) || s === 'manual_transcript') return '🟠 משוער מתמלול';
+    if (s === 'outline' || s === 'duration_fallback' || s === 'estimated' || s === 'native_chapters') return '⚪ תבנית';
+    return '⚪ מקור לא ידוע';
+  })();
+  const chapterSourceBadgeClass = (() => {
+    const s = chapterSourceInfo.source;
+    if (s === 'description_timestamp' || s === 'youtube_description' || s === 'description_timestamps')
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-800/40';
+    if (s === 'gem' || s === 'gem_chapters' || s === 'gemini' || s === 'gemini_url' || s === 'gems_analysis' || s === 'ai_generated' || s === 'transcript' || s === 'saved')
+      return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-800/40';
+    if (s === 'transcript_topic_heuristic' || isTranscriptChunkChapterSource(s) || s === 'manual_transcript')
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800/40';
+    return 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700';
+  })();
   const storedTranscriptSegments = transcriptForChapters.segments;
   const hasStoredTranscript = transcriptForChapters.hasUsableText;
   const transcriptSourceLabel =
@@ -9514,7 +9716,7 @@ export function VideoDetailPanel({
                     {/* header: title + badge (right) + auto-detect button (left) */}
                     <div className="mb-3 flex items-center justify-between gap-3" dir="rtl">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-base font-bold text-slate-900 dark:text-zinc-100">פרקי הסרטון</h4>
+                        <h4 className={SUMMARY_CARD_TITLE_CLASS}>פרקי הסרטון</h4>
                         {chapterSourceBadge && (
                           <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
                             {chapterSourceBadge}
@@ -9559,6 +9761,11 @@ export function VideoDetailPanel({
                         {hebrewTitlesError}
                       </div>
                     )}
+                    {transcriptQualityResult && !transcriptQualityResult.valid && (
+                      <div className="mb-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-700 text-right dark:border-orange-800/40 dark:bg-orange-950/20 dark:text-orange-300" dir="rtl">
+                        ⚠ פרקי תמלול שמורים נדחו ({transcriptQualityResult.reason}) — מוצג מקור חלופי
+                      </div>
+                    )}
 
                     {/* hint: no timestamps → offer AI generation */}
                     {youtubeChaptersHint === "no_timestamps" && (
@@ -9579,7 +9786,7 @@ export function VideoDetailPanel({
                             onClick={handleGenerateTranscriptChapters}
                             className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
                           >
-                            🤖 צור פרקים בעזרת AI
+                            📑 צור פרקים מהתמלול
                           </button>
                         ) : (
                           <p className="text-xs text-slate-500 dark:text-zinc-400">לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.</p>
@@ -9711,13 +9918,13 @@ export function VideoDetailPanel({
                     {/* transcript exists but no chapters yet → offer AI generation */}
                     {displayChapters?.length === 0 && chapterSourceInfo.source === 'transcript' && !youtubeChaptersHint && (
                       <div className="mb-3 flex flex-col items-end gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-right dark:border-zinc-700 dark:bg-zinc-900">
-                        <p className="text-sm font-medium text-slate-700 dark:text-zinc-200">קיים תמלול — ניתן לייצר פרקים בעזרת AI.</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-zinc-200">קיים תמלול — ניתן לחלק לפרקים לפי התמלול.</p>
                         <button
                           type="button"
                           onClick={handleGenerateTranscriptChapters}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
                         >
-                          🤖 צור פרקים בעזרת AI
+                          📑 צור פרקים מהתמלול
                         </button>
                       </div>
                     )}
@@ -9738,9 +9945,16 @@ export function VideoDetailPanel({
                           <div>transcriptSource: {transcriptForChapters.source ?? "—"}</div>
                           <div>lastChapterSource: {chapterTranscriptSource ?? "—"}</div>
                           <div>transcriptLen: {fullTranscriptText?.length ?? 0}</div>
+                          <div>descriptionChapters: {descriptionChapters?.length ?? 0}</div>
+                          <div>aiAnalysisChapters: {aiAnalysisChapters?.length ?? 0}</div>
+                          <div>transcriptChunkRaw: {transcriptChaptersRaw?.length ?? 0}</div>
+                          <div>transcriptQuality: {transcriptQualityResult ? (transcriptQualityResult.valid ? '✓ valid' : `✗ ${transcriptQualityResult.reason}`) : '—'}</div>
+                          <div>transcriptChunkPassed: {transcriptChunkChapters?.length ?? 0}</div>
                           <div>nativeChapters: {baseChapters?.length ?? 0}</div>
                           <div>gemChapters: {gemChapters?.length ?? 0}</div>
-                          <div>source: {chaptersFromGem ? 'gem' : chapterSourceInfo.source}</div>
+                          <div>chapterSourceBadge: {chapterSourceBadge ?? '—'}</div>
+                          <div>displayWinner: {descriptionChapters.length > 0 ? 'description' : transcriptChunkChapters.length > 0 ? 'transcriptChunk' : chaptersFromGem ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base'}</div>
+                          <div>fallbackSource: {transcriptChunkChapters.length === 0 && (transcriptChaptersRaw?.length ?? 0) > 0 ? (gemChapters.length > 0 ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base') : '—'}</div>
                           <div>finalChapters: {displayChapters?.length ?? 0}</div>
                           <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
                         </div>
