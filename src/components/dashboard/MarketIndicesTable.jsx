@@ -1,5 +1,6 @@
 import { formatMarketChange } from '@/lib/morningBriefVisuals';
 import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
+import { getExternalSymbolUrl } from '@/utils/finvizLinks';
 
 function parseIndexItem(raw) {
   if (!raw) return null;
@@ -209,6 +210,25 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                       : col.key === 'level'
                         ? 'font-mono text-sm text-slate-700 dark:text-zinc-200 whitespace-nowrap'
                         : 'text-sm text-slate-600 dark:text-zinc-400 leading-relaxed';
+                    if (col.key === 'name' && val) {
+                      const nameUrl = getExternalSymbolUrl(val);
+                      return (
+                        <td key={col.key} className={`px-3 py-3 ${cellCls}`}>
+                          {nameUrl ? (
+                            <a
+                              href={nameUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`פתח ${val} ↗`}
+                              className="hover:underline cursor-pointer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {val}
+                            </a>
+                          ) : val}
+                        </td>
+                      );
+                    }
                     return (
                       <td key={col.key} className={`px-3 py-3 ${cellCls}`}>
                         {val || null}
@@ -248,9 +268,23 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
               dir="rtl"
             >
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                {row.name && (
-                  <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name}</span>
-                )}
+                {row.name && (() => {
+                  const mobileUrl = getExternalSymbolUrl(row.name);
+                  return mobileUrl ? (
+                    <a
+                      href={mobileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`פתח ${row.name} ↗`}
+                      className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50 hover:underline cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {row.name}
+                    </a>
+                  ) : (
+                    <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name}</span>
+                  );
+                })()}
                 <div className="flex items-center gap-2 shrink-0">
                   {dir.label && (
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${dir.badgeCls}`}>
