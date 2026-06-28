@@ -138,7 +138,7 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
           if (!val) return null;
           return (
             <div key={col.key} className="w-full text-right">
-              <span className={SUMMARY_CARD_TITLE_CLASS.replace(' mb-2', '')}>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 leading-tight">
                 {col.label}
               </span>
               <span className="mt-0.5 block w-full text-right text-sm leading-[1.7] break-words whitespace-normal">

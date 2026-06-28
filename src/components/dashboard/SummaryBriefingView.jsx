@@ -19,6 +19,14 @@ const TONE_STYLES = {
   'High volatility': 'bg-violet-50 text-violet-800 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800',
 };
 
+const TONE_DISPLAY = {
+  Bullish: 'שורי',
+  'Bullish but cautious': 'שורי-זהיר',
+  Neutral: 'ניטרלי',
+  'Risk-off': 'חשש בשוק',
+  'High volatility': 'תנודתיות גבוהה',
+};
+
 function BriefingCard({
   title,
   cardId,
@@ -52,7 +60,6 @@ function BriefingCard({
           tabScope="summary"
           type="summary"
           sectionKey={cardId}
-          labelClassName={SUMMARY_CARD_TITLE_CLASS}
         />
       ) : null}
       {children}
@@ -106,7 +113,7 @@ function MarketStatusBlock({ status }) {
   return (
     <div className="space-y-2 text-right" dir="rtl">
       <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${toneCls}`}>
-        {status.tone}
+        {TONE_DISPLAY[status.tone] || status.tone}
       </span>
       {status.factors.length > 0 && (
         <ul className="space-y-1">
@@ -154,6 +161,7 @@ export function SummaryBriefingView({
 
   const marketStatusItems = flattenMarketStatusItems(briefing.marketStatus);
   const fullSummaryItems = briefing.fullSummaryText ? [briefing.fullSummaryText] : [];
+  const execItems = briefing.executiveConclusion ?? [];
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -194,7 +202,7 @@ export function SummaryBriefingView({
             <div className="space-y-2">
               {briefing.marketStatus.tone && (
                 <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${TONE_STYLES[briefing.marketStatus.tone] || TONE_STYLES.Neutral}`}>
-                  {briefing.marketStatus.tone}
+                  {TONE_DISPLAY[briefing.marketStatus.tone] || briefing.marketStatus.tone}
                 </span>
               )}
               <LearningTabContent
@@ -320,21 +328,42 @@ export function SummaryBriefingView({
         </BriefingCard>
       )}
 
-      {(briefing.fullSummaryText || children) && (
+      {(execItems.length > 0 || briefing.fullSummaryText || children) && (
         <BriefingCard
-          title="📝 סיכום מלא"
+          title="🎯 מסקנה מנהלים"
           cardId="full"
-          cardItems={fullSummaryItems}
+          cardItems={execItems.length > 0 ? execItems : fullSummaryItems}
           bulkSelection={bulkSelection}
         >
-          {briefing.fullSummaryText && (
-            <CollapsibleFullSummary
-              text={briefing.fullSummaryText}
-              storageKey={fullSummaryStorageKey}
-              className="mb-3"
-            />
+          {execItems.length > 0 ? (
+            brain ? (
+              <LearningTabContent
+                items={execItems}
+                emptyLabel=""
+                onSaveToBrain={(text) => brain(text, 'מסקנה מנהלים')}
+                isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
+                bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
+                  idPrefix: 'summary:exec',
+                  sectionLabel: 'מסקנה מנהלים',
+                  type: 'summary',
+                  tabScope: 'summary',
+                }) : null}
+              />
+            ) : (
+              <BulletList items={execItems} />
+            )
+          ) : (
+            <>
+              {briefing.fullSummaryText && (
+                <CollapsibleFullSummary
+                  text={briefing.fullSummaryText}
+                  storageKey={fullSummaryStorageKey}
+                  className="mb-3"
+                />
+              )}
+              {children}
+            </>
           )}
-          {children}
         </BriefingCard>
       )}
     </div>

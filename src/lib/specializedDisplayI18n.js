@@ -46,6 +46,12 @@ export const DISPLAY_LABEL_MAP = {
   generalmood: 'מצב רוח כללי',
   marketbreadth: 'רוחב שוק',
   marketmood: 'מצב השוק',
+  summary: 'סיכום',
+  'main conclusion': 'מסקנה מרכזית',
+  mainconclusion: 'מסקנה מרכזית',
+  'market status': 'מצב השוק',
+  marketstatus: 'מצב השוק',
+  'market mood': 'מצב השוק',
 };
 
 export const DISPLAY_SECTION_TITLES = {
@@ -104,6 +110,31 @@ function normalizeLabelKey(text) {
     .replace(/[_]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/\s*\/\s*/g, ' / ');
+}
+
+/** Market-status row labels (English keys / humanized camelCase → Hebrew). */
+export const MARKET_STATUS_LABELS_HE = {
+  summary: 'סיכום',
+  mainconclusion: 'מסקנה מרכזית',
+  marketstatus: 'מצב השוק',
+  marketmood: 'מצב השוק',
+};
+
+/** Translate מצב שוק table row labels; falls back to generic display label translation. */
+export function translateMarketStatusLabel(label) {
+  const raw = String(label ?? '').trim();
+  if (!raw) return raw;
+  if (/[\u0590-\u05FF]/.test(raw)) return raw;
+
+  const normalized = raw.toLowerCase().replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const compact = normalized.replace(/\s+/g, '');
+
+  if (normalized === 'summary') return MARKET_STATUS_LABELS_HE.summary;
+  if (normalized === 'main conclusion' || compact === 'mainconclusion') return MARKET_STATUS_LABELS_HE.mainconclusion;
+  if (normalized === 'market status' || compact === 'marketstatus') return MARKET_STATUS_LABELS_HE.marketstatus;
+  if (normalized === 'market mood' || compact === 'marketmood') return MARKET_STATUS_LABELS_HE.marketmood;
+
+  return translateDisplayLabel(raw);
 }
 
 /** Translate a visible UI label for display; returns original if unrecognized. */

@@ -20,7 +20,21 @@ function clearCache(videoId) {
 }
 
 /**
+ * Formats a single appIdea object into the hero-section string expected by parseAppIdea.
+ * parseAppIdea extracts: App Name / Purpose / Value / Complexity from labeled lines.
+ */
+function formatIdeaForHero(idea) {
+  const lines = [];
+  if (idea.productIdea)    lines.push(`App Name: ${idea.productIdea}`);
+  if (idea.userValue)      lines.push(`Purpose: ${idea.userValue}`);
+  if (idea.userValue)      lines.push(`Value: ${idea.userValue}`);
+  if (idea.buildComplexity) lines.push(`Complexity: ${idea.buildComplexity}`);
+  return lines.join("\n");
+}
+
+/**
  * Parses GEM JSON output → APP Builder section map.
+ * Supports both new (appIdeas array) and legacy (requirements/screens) formats.
  * Returns { sections: {key: string}, filledCount: number }.
  * Throws descriptive Error on failure.
  */
@@ -48,30 +62,77 @@ function parseGemJson(rawText) {
 
   const sections = {};
 
-  // summary
-  if (typeof obj.summary === "string" && obj.summary.trim()) {
-    sections.summary = obj.summary.trim();
-  } else if (Array.isArray(obj.summary) && obj.summary.length) {
-    sections.summary = obj.summary.join("\n");
+  // ── New format: appIdeas array of structured 9-field objects ──────────────
+  if (Array.isArray(obj.appIdeas) && obj.appIdeas.length) {
+    const ideas = obj.appIdeas.filter(Boolean);
+    const first = ideas[0];
+
+    // Preserve raw ideas array for card display (max 10)
+    sections.appIdeas = JSON.stringify(ideas.slice(0, 10));
+
+    // summary: overall one-liner from root, or first idea's name + value
+    if (typeof obj.summary === "string" && obj.summary.trim()) {
+      sections.summary = obj.summary.trim();
+    } else if (first) {
+      sections.summary = `App Name: ${first.productIdea || ""}\nPurpose: ${first.userValue || ""}`;
+    }
+
+    // requirements → hero fields for first idea (parsed by parseAppIdea)
+    if (first) {
+      sections.requirements = formatIdeaForHero(first);
+    }
+
+    // screens → all ideas as quick-reference list (shown as pill chips)
+    sections.screens = ideas.map((idea) => {
+      const tags = [idea.priority, idea.mvpOrFuture].filter(Boolean).join(" · ");
+      return tags ? `${idea.productIdea} (${tags})` : idea.productIdea || "";
+    }).filter(Boolean).join("\n");
+
+    // logic → component + data field details for all ideas
+    const logicLines = [];
+    ideas.forEach((idea) => {
+      if (idea.suggestedComponent)
+        logicLines.push(`רכיב: ${idea.suggestedComponent}`);
+      if (idea.possibleDataSource)
+        logicLines.push(`מקור נתונים: ${idea.possibleDataSource}`);
+      if (Array.isArray(idea.requiredDataFields))
+        idea.requiredDataFields.forEach((f) => logicLines.push(`שדה: ${f}`));
+      if (idea.notes)
+        logicLines.push(`הערה: ${idea.notes}`);
+    });
+    // Merge with root-level logic if provided
+    const rootLogic = Array.isArray(obj.logic)
+      ? obj.logic.map((l) => String(l).trim()).filter(Boolean)
+      : (typeof obj.logic === "string" && obj.logic.trim() ? [obj.logic.trim()] : []);
+    const allLogic = [...rootLogic, ...logicLines];
+    if (allLogic.length) sections.logic = allLogic.join("\n");
+
+  } else {
+    // ── Legacy format: flat requirements / screens / logic ─────────────────
+    if (typeof obj.summary === "string" && obj.summary.trim()) {
+      sections.summary = obj.summary.trim();
+    } else if (Array.isArray(obj.summary) && obj.summary.length) {
+      sections.summary = obj.summary.join("\n");
+    }
+
+    for (const key of ["requirements", "screens", "logic"]) {
+      const val = obj[key];
+      if (Array.isArray(val) && val.length) {
+        sections[key] = val.map((item) => `• ${String(item).trim()}`).join("\n");
+      } else if (typeof val === "string" && val.trim()) {
+        sections[key] = val.trim();
+      }
+    }
   }
 
-  // array fields → bullet list
-  for (const key of ["requirements", "screens", "logic", "risks", "tasks"]) {
+  // ── Always map risks and tasks regardless of format ────────────────────────
+  for (const key of ["risks", "tasks"]) {
     const val = obj[key];
     if (Array.isArray(val) && val.length) {
       sections[key] = val.map((item) => `• ${String(item).trim()}`).join("\n");
     } else if (typeof val === "string" && val.trim()) {
       sections[key] = val.trim();
     }
-  }
-
-  // developmentPrompt → prompt (prefer claudeCode, fallback to codex/base44)
-  if (obj.developmentPrompt && typeof obj.developmentPrompt === "object") {
-    const { claudeCode, codex, base44 } = obj.developmentPrompt;
-    const chosen = (claudeCode || codex || base44 || "").trim();
-    if (chosen) sections.prompt = chosen;
-  } else if (typeof obj.prompt === "string" && obj.prompt.trim()) {
-    sections.prompt = obj.prompt.trim();
   }
 
   const filledCount = Object.values(sections).filter(Boolean).length;
@@ -84,17 +145,23 @@ function parseGemJson(rawText) {
 
 const JSON_EXAMPLE = `{
   "contentType": "appBuilder",
-  "summary": "...",
-  "requirements": ["..."],
-  "screens": ["..."],
-  "logic": ["..."],
-  "risks": ["..."],
-  "tasks": ["..."],
-  "developmentPrompt": {
-    "claudeCode": "...",
-    "codex": "...",
-    "base44": "..."
-  }
+  "summary": "תיאור כללי של מה ניתן לבנות",
+  "appIdeas": [
+    {
+      "productIdea": "Fed Rate Tracker",
+      "shortDescription": "רכיב שמציג החלטות ריבית, תחזיות עתידיות והשפעה על סקטורים.",
+      "userValue": "מאפשר להבין האם הריבית תומכת במניות לפני החלטת פד",
+      "components": ["RateChart", "DecisionTimeline", "ImpactScore", "AlertWidget"],
+      "priority": "High",
+      "buildComplexity": "Medium",
+      "mvpOrFuture": "MVP",
+      "appFitScore": 9,
+      "notes": "API rate limits may apply"
+    }
+  ],
+  "logic": ["כלל עסקי 1", "כלל 2"],
+  "risks": ["⚠ סיכון טכני 1"],
+  "tasks": ["☐ משימת MVP 1"]
 }`;
 
 /**

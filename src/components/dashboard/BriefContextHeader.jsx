@@ -17,15 +17,15 @@ const BRIEF_DATE_CLS =
 /**
  * Brief type + timing context above Specialized Content (presentation only).
  */
-export function BriefContextHeader({ slug, subCategory, publishedAt, layout = 'stacked' }) {
+export function BriefContextHeader({ slug, subCategory, publishedAt, layout = 'stacked', showSourceCaption = true }) {
   const meta = getBriefContextDisplay(slug, subCategory);
   if (!meta) return null;
 
   const datePlain = formatBriefPublishDatePlain(publishedAt);
 
   if (layout === 'inline') {
-    const dateWithEmoji = formatBriefPublishDate(publishedAt);
-    const parts = [meta.title, meta.context, dateWithEmoji].filter(Boolean);
+    const dateWithEmoji = showSourceCaption ? formatBriefPublishDate(publishedAt) : null;
+    const parts = [meta.title, showSourceCaption ? meta.context : null, dateWithEmoji].filter(Boolean);
     return (
       <div
         dir="rtl"
@@ -46,9 +46,13 @@ export function BriefContextHeader({ slug, subCategory, publishedAt, layout = 's
       data-brief-context-header
     >
       <h1 className={BRIEF_TITLE_CLS}>{meta.title}</h1>
-      <p className={`${BRIEF_CONTEXT_CLS} mt-1`}>{meta.context}</p>
-      {datePlain && (
-        <p className={`${BRIEF_DATE_CLS} mt-0.5`}>{datePlain}</p>
+      {showSourceCaption && (
+        <>
+          <p className={`${BRIEF_CONTEXT_CLS} mt-1`}>{meta.context}</p>
+          {datePlain && (
+            <p className={`${BRIEF_DATE_CLS} mt-0.5`}>{datePlain}</p>
+          )}
+        </>
       )}
     </div>
   );

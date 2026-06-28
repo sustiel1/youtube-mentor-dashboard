@@ -11,21 +11,35 @@ export const BRIEF_TABLE_CLS = `w-full ${BRIEF_TABLE_MIN_WIDTH_CLS} text-right b
 
 export const BRIEF_TABLE_HEAD_ROW_CLS = 'border-b-2 border-slate-200/80 dark:border-zinc-700/70';
 
-/** Column widths aligned with Macro Gem MCOL. Notes column has no width — takes remainder. */
+/**
+ * Column widths — all tables share the same alignment anchor:
+ *   checkbox(2.5%) + [pre-sentiment cols summing to 38%] = 40.5% → sentiment always starts here.
+ *
+ * 3-col sections (label | sentiment | notes):   primaryLabel(38%)
+ * 4-col sections (ind + val | sentiment | notes): indicator(24%) + macroValue(14%) = 38%
+ * 4-col sections (asset | sentiment | change | notes): asset(38%)
+ * 5-col sections (sym + sector | sentiment | change | notes): symbol(20%) + sector(18%) = 38%
+ */
 export const BRIEF_COL = {
   checkbox: '2.5%',
   save: '5%',
   sentiment: '15.5%',
   asset: '27%',
   change: '11%',
-  symbol: '11%',
-  sector: '14%',
+  symbol: '20%',       // was 11% — stocks: symbol(20) + sector(18) = 38 → aligns sentiment
+  sector: '18%',       // was 14% — stocks: symbol(20) + sector(18) = 38 → aligns sentiment
   type: '18%',
-  indicator: '22%',
+  indicator: '24%',    // was 22% — macro: indicator(24) + macroValue(14) = 38 → aligns sentiment
   macroValue: '14%',
   links: '12%',
-  /** Primary label column — Sectors name / Market State indicator (Macro Gem 38%). */
+  /** Standard primary-label column — all single-label sections use this. */
   primaryLabel: '38%',
+};
+
+export const BRIEF_MARKETS_COL = {
+  asset: '38%',        // was 11% — aligns with primaryLabel so sentiment starts at 40.5%
+  sentiment: '15.5%',
+  change: '11%',
 };
 
 export const BRIEF_CELL = {

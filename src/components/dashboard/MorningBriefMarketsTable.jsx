@@ -6,6 +6,7 @@ import {
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import {
   EmptyState,
+  ExternalSymbolLink,
   NumericChangeSpan,
   DASHBOARD_TABLE_CELL_BODY_CLS,
   DASHBOARD_TABLE_CELL_MUTED_CLS,
@@ -25,6 +26,7 @@ import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import {
   BRIEF_CELL,
   BRIEF_COL,
+  BRIEF_MARKETS_COL,
   BRIEF_NOTES_TEXT_CLS,
   BRIEF_SENTIMENT_INLINE_CLS,
   BRIEF_TABLE_CLS,
@@ -110,9 +112,9 @@ export function MorningBriefMarketsTable({
       <table className={BRIEF_TABLE_CLS} dir="rtl">
         <colgroup>
           <col style={{ width: BRIEF_COL.checkbox }} />
-          <col style={{ width: BRIEF_COL.asset }} />
-          <col style={{ width: BRIEF_COL.change }} />
-          <col style={{ width: BRIEF_COL.sentiment }} />
+          <col style={{ width: BRIEF_MARKETS_COL.asset }} />
+          <col style={{ width: BRIEF_MARKETS_COL.sentiment }} />
+          <col style={{ width: BRIEF_MARKETS_COL.change }} />
           <col />
           <col style={{ width: BRIEF_COL.save }} />
         </colgroup>
@@ -120,8 +122,8 @@ export function MorningBriefMarketsTable({
           <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
             <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" />
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
-            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי / חוזק</th>
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
             <th className="py-1.5 pl-1 pr-0" aria-label="שמירה" />
           </tr>
@@ -155,14 +157,19 @@ export function MorningBriefMarketsTable({
                     bulkSelection={bulkSelection}
                   />
                 </td>
-                <td className={`${BRIEF_CELL.short} ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-                  {row.asset || '—'}
-                </td>
-                <td className={BRIEF_CELL.change}>
-                  {changeEl || <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>}
+                <td className={BRIEF_CELL.short}>
+                  <ExternalSymbolLink
+                    symbol={row.asset}
+                    className={`block truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}
+                  >
+                    {row.asset || '—'}
+                  </ExternalSymbolLink>
                 </td>
                 <td className={BRIEF_CELL.sentiment}>
                   <MarketsTableSentimentBadge sentKey={sentKey} />
+                </td>
+                <td className={BRIEF_CELL.change}>
+                  {changeEl || <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>}
                 </td>
                 <td className={BRIEF_CELL.notes}>
                   <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>

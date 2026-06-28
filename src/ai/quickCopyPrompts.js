@@ -164,7 +164,7 @@ export function buildGeminiNewsQuickPrompt({ title, duration, transcript }) {
     '• indices: שמות מדדים + רמה + שינוי + הערה קצרה בעברית',
     '• stocksMentioned: ticker באנגלית, סיבה בעברית, חשיבות (high / medium / low)',
     '• macro: אירועים מאקרו עם תאריך, חשיבות, והשפעה צפויה — בעברית',
-    '• calendar: אירועי לוח שנה ספציפיים עם מועדים — בעברית',
+    '• calendar: אירועי לוח שנה כ-objects — כל אובייקט: event (שם האירוע), date (מועד), importance (high/medium/low), impact (השפעה צפויה) — בעברית',
     '• opportunities: הזדמנויות מסחר קונקרטיות עם הגיון — בעברית',
     '• risks: סיכונים מרכזיים לסשן עם מנגנון — בעברית',
     '• אם שדה ריק — החזר מערך ריק, לא placeholder',

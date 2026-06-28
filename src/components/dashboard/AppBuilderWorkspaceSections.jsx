@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useMemo, useState, useCallback } from 'react';
+import { Plus, Trash2, ChevronDown, Copy } from 'lucide-react';
+import { getCategoryDisplayLabel } from '@/lib/featureDiscovery';
+import { toast } from 'sonner';
 import {
   mergeTriggersAndRisks,
   parseAppIdea,
@@ -509,16 +511,89 @@ function ScorePill({ icon, label, value }) {
   );
 }
 
+function AiBuilderBriefPanel({ brief }) {
+  const [open, setOpen] = useState(false);
+
+  const handleToggle = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen((v) => !v);
+  }, []);
+
+  const handleCopy = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!brief) return;
+    try {
+      await navigator.clipboard.writeText(brief);
+      toast.success('Builder Brief הועתק', { duration: 3000 });
+    } catch {
+      toast.error('העתקה נכשלה');
+    }
+  }, [brief]);
+
+  if (!brief?.trim()) return null;
+
+  return (
+    <div
+      className="pr-6 mt-1.5 border-t border-slate-100/80 dark:border-zinc-800/80 pt-2"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-right text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-200 transition-colors"
+        aria-expanded={open}
+      >
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
+        <span>📋 Builder Brief</span>
+      </button>
+      {open && (
+        <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50/80 dark:border-zinc-700 dark:bg-zinc-800/40 p-2.5 space-y-2">
+          <p
+            dir="ltr"
+            className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-300 whitespace-pre-line text-left font-mono"
+          >
+            {brief}
+          </p>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 rounded-md bg-violet-100 px-2 py-1 text-[11px] font-semibold text-violet-700 hover:bg-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:hover:bg-violet-950/70 transition-colors"
+            >
+              <Copy className="h-3 w-3" />
+              העתק
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
   const components = (idea.components || []).slice(0, 4);
   const categoryStyle = CATEGORY_STYLES[idea.category] || CATEGORY_STYLES.Dashboard;
   const worthStyle = WORTH_STYLES[idea.worthBuilding] || WORTH_STYLES.Maybe;
+  const categoryLabel = getCategoryDisplayLabel(idea.category);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(idea)}
-      className={`w-full text-right rounded-xl border p-3.5 transition-all ${
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(idea);
+        }
+      }}
+      className={`w-full text-right rounded-xl border p-3.5 transition-all cursor-pointer ${
         isSelected
           ? 'border-indigo-400 bg-indigo-50/60 ring-2 ring-indigo-300/60 dark:border-indigo-500 dark:bg-indigo-950/30 dark:ring-indigo-700/50'
           : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
@@ -551,11 +626,16 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
                   {idea.titleEn || idea.productIdea}
                 </p>
               )}
+              {(idea.valueDescription || idea.whatItDoes) && (
+                <p className="text-sm text-slate-600 dark:text-zinc-300 mt-1.5 leading-snug">
+                  {idea.valueDescription || idea.whatItDoes}
+                </p>
+              )}
             </div>
-            {idea.category && (
+            {idea.category && categoryLabel && (
               <span className={`${DISCOVERY_BADGE_BASE} shrink-0 font-semibold ${categoryStyle}`}>
                 <span aria-hidden>🔍</span>
-                {idea.category}
+                {categoryLabel}
               </span>
             )}
           </div>
@@ -566,13 +646,6 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
       {idea.sourceInsight && (
         <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1.5 pr-6 leading-snug">
           📌 {idea.sourceInsight}
-        </p>
-      )}
-
-      {/* Why it matters — one line */}
-      {idea.whyItMatters && (
-        <p className="text-sm text-slate-700 dark:text-zinc-200 mb-2 pr-6 leading-snug">
-          🎯 {idea.whyItMatters}
         </p>
       )}
 
@@ -595,7 +668,9 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
           </span>
         )}
       </div>
-    </button>
+
+      <AiBuilderBriefPanel brief={idea.aiBuilderBrief} />
+    </div>
   );
 }
 

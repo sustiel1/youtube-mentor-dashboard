@@ -40,14 +40,26 @@ Sections without manual edit (e.g. סנטימנט) do **not** show the badge.
 To hide AI/Manual badges across **all** Morning Brief sections:
 
 ```js
-// AiSourceBadge.jsx
-export const MORNING_BRIEF_SHOW_AI_SOURCE_BADGE = false;
+// morningBriefPresentation.js — specialized profile (תוכן ייעודי)
+export const MORNING_BRIEF_SPECIALIZED_PRESENTATION = {
+  showAiBadge: false,
+  // ...
+};
 ```
 
-Per-section override (optional):
+Morning Brief Specialized passes this profile via `MorningBriefDashboard` `presentation` prop.
+
+Legacy global flag (non-specialized surfaces only):
+
+```js
+// AiSourceBadge.jsx
+export const MORNING_BRIEF_SHOW_AI_SOURCE_BADGE = true;
+```
+
+Per-section override:
 
 ```jsx
-useMorningBriefSectionEdit(sectionId, { ..., showAiBadge: false })
+useMorningBriefSectionEdit(sectionId, { ..., presentation: { showAiBadge: false } })
 ```
 
 ## Visual rules

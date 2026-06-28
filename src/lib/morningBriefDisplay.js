@@ -15,6 +15,9 @@ const INDEX_OVERVIEW_KEYS = new Set([
 ]);
 
 const REGIME_SPECS = [
+  { keys: ['marketStatus', 'marketMood', 'marketCondition'], label: 'מצב השוק' },
+  { keys: ['summary', 'marketSummary', 'briefSummary', 'executiveSummary'], label: 'סיכום' },
+  { keys: ['mainConclusion', 'main_conclusion', 'primaryConclusion'], label: 'מסקנה מרכזית' },
   { keys: ['marketTrend', 'trend', 'marketDirection', 'overallTrend'], label: 'מגמת שוק' },
   { keys: ['breadth', 'marketBreadth', 'breadthIndicator'], label: 'רוחב שוק' },
   { keys: ['riskOn', 'riskOff', 'riskOnOff', 'riskEnvironment', 'riskAppetite'], label: 'Risk On / Off' },
@@ -1025,6 +1028,7 @@ function stockRecordFromObject(item, category = 'general') {
       pickString(item, 'catalyst', 'trigger', 'event'),
       pickString(item, 'level', 'price', 'target', 'entry')
     ),
+    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange'),
   };
 }
 
@@ -1048,6 +1052,7 @@ function upsertStock(map, record) {
     category,
     actionability: humanizeActionability(category, { importance: prev.actionability || record.actionability }),
     notes: mergeContext(prev.notes, record.notes),
+    changePercent: prev.changePercent || record.changePercent,
   });
 }
 

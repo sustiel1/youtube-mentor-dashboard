@@ -1,18 +1,9 @@
 import { analyzeVideoWithClaude } from "@/services/claudeVideoAnalyzer";
 import { normalizeAiAnalysisResult } from "@/services/videoAnalytics";
+import { computeTargetChapters } from "@/lib/chapterCountUtils";
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
-}
-
-function computeTargetChapters(durationSeconds) {
-  const d = Number(durationSeconds);
-  if (!Number.isFinite(d) || d <= 0) return 6;
-  if (d <= 8 * 60) return 4;
-  if (d <= 14 * 60) return 5;
-  if (d <= 22 * 60) return 7;
-  if (d <= 35 * 60) return 8;
-  return 9;
 }
 
 function computeQualityScore({ chapters, shortSummary, fullSummary, durationSeconds }) {
@@ -45,9 +36,10 @@ export async function analyzeVideoWithProvider({
   durationSeconds,
   mentor = null,
   category = null,
+  chaptersTarget: chaptersTargetOverride = null,
   signal,
 }) {
-  const chaptersTarget = computeTargetChapters(durationSeconds);
+  const chaptersTarget = chaptersTargetOverride ?? computeTargetChapters(durationSeconds);
 
   const raw = await analyzeVideoWithClaude({
     videoId,

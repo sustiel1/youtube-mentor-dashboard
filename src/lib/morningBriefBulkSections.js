@@ -5,7 +5,7 @@
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { cleanupMacroDisplayRows, cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { parseMacroDisplayItem } from '@/lib/morningBriefDisplay';
-import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
+import { translateDisplayLabel, translateMarketStatusLabel } from '@/lib/specializedDisplayI18n';
 import {
   buildCardBulkItemsFromSections,
   formatBulkItemText,
@@ -99,7 +99,7 @@ function stripInternalFieldLabels(text) {
 }
 
 function formatRegimeCardText(card) {
-  return `${translateDisplayLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
+  return `${translateMarketStatusLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
 }
 
 function mergeMacroDisplayRows(primaryRows, fallbackItems) {
@@ -127,6 +127,11 @@ function mergeMarketRows(marketBriefData, indicesItems = []) {
     return true;
   });
   return cleanupMarketDashboardRows(merged);
+}
+
+/** Merged market/index rows for Morning Brief שווקים (matches MorningBriefMarketsTable). */
+export function getMorningBriefMarketRows(marketBriefData, indicesItems = []) {
+  return mergeMarketRows(marketBriefData, indicesItems);
 }
 
 function getMacroDisplayRows(marketBriefData, fallbackItems = []) {

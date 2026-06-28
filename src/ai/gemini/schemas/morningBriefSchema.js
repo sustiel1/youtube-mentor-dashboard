@@ -56,8 +56,8 @@ export function getMorningBriefSchemaExample() {
           "Put/Call ratio 0.82 — mildly bullish"
         ],
         calendar: [
-          "Thursday: US CPI (forecast 3.2%)",
-          "Friday: University of Michigan Sentiment"
+          { event: "US CPI Release", date: "Thursday 8:30 AM", importance: "high", impact: "Rate-sensitive sectors could reprice" },
+          { event: "University of Michigan Sentiment", date: "Friday 10:00 AM", importance: "medium", impact: "Consumer confidence signal" }
         ],
         opportunities: [
           "NVDA breakout above $130 — momentum entry",
@@ -82,7 +82,7 @@ export function getMorningBriefSchemaExample() {
     stocksMentioned: [],
     macro: [],
     sentiment: ["..."],
-    calendar: ["..."],
+    calendar: [{ event: "...", date: "...", importance: "high|medium|low", impact: "..." }],
     opportunities: ["..."],
     risks: ["..."],
     tags: ["..."],

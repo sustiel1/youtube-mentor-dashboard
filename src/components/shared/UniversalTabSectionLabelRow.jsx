@@ -5,6 +5,7 @@ import {
   mergeBulkSelection,
 } from '@/lib/universalTabBulkItems';
 import { UniversalTabSectionHeaderActions } from '@/components/shared/UniversalTabSectionHeaderActions';
+import { TAB_SECTION_LABEL_CLS } from '@/lib/summaryCardStyles';
 
 /**
  * Section label row with header quick actions (Copy / Brain / Obsidian / Workspace).
@@ -20,7 +21,7 @@ export function UniversalTabSectionLabelRow({
   sectionLabel,
   sectionKey,
   idPrefix,
-  labelClassName = 'text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1.5 px-1 text-right',
+  labelClassName = TAB_SECTION_LABEL_CLS,
   brainSaved,
   copyGroups = null,
 }) {

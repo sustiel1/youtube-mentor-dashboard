@@ -46,8 +46,8 @@ const POSITIVE_WORDS = [
   { tok: 'חזקה', label: 'חזקה' },
   { tok: 'חזק', label: 'חזק' },
   { tok: 'נרכשת', label: 'נרכשת' },
-  { tok: 'bullish', label: 'Bullish' },
-  { tok: 'up', label: 'Up' },
+  { tok: 'bullish', label: 'שורי' },
+  { tok: 'up', label: 'עולה' },
   { tok: 'holding_high', label: 'שומר גבוה' },
   { tok: 'buyout_up', label: 'עלייה' },
 ];
@@ -61,9 +61,9 @@ const NEGATIVE_WORDS = [
   { tok: 'פגיעה', label: 'פגיעה' },
   { tok: 'שלילי', label: 'שלילי' },
   { tok: 'חלשה', label: 'חלשה' },
-  { tok: 'crash', label: 'Crash' },
-  { tok: 'down', label: 'Down' },
-  { tok: 'bearish', label: 'Bearish' },
+  { tok: 'crash', label: 'קריסה' },
+  { tok: 'down', label: 'ירידה' },
+  { tok: 'bearish', label: 'דובי' },
   { tok: 'dilution', label: 'דילול' },
   { tok: 'earnings_crash', label: 'קריסת דוח' },
   { tok: 'dilution_drop', label: 'ירידה+דילול' },
@@ -200,7 +200,7 @@ const IMPORTANCE_TEXT_CLS = {
   CRITICAL: 'text-red-950 dark:text-red-300',
   HIGH: 'text-red-700 dark:text-red-400',
   MEDIUM: 'text-orange-700 dark:text-orange-400',
-  LOW: 'text-emerald-700 dark:text-emerald-400',
+  LOW: 'text-slate-500 dark:text-zinc-500',
 };
 
 /** Text-only severity styles for calendar / dashboard rows (no pill background). */
@@ -220,11 +220,11 @@ export function directionChip(text) {
   const tone = resolveTone(raw);
   const styles = toneStyles(tone);
   const known = {
-    bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral',
-    up: 'Bullish', down: 'Bearish',
-    'risk on': 'Risk On', 'risk off': 'Risk Off',
-    strong: 'Strong', weak: 'Weak',
-    expansion: 'Expansion', contraction: 'Contraction',
+    bullish: 'שורי', bearish: 'דובי', neutral: 'ניטרלי',
+    up: 'עולה', down: 'יורד',
+    'risk on': 'אופטימיות בשוק', 'risk off': 'חשש בשוק',
+    strong: 'חזק', weak: 'חלש',
+    expansion: 'התרחבות', contraction: 'התכווצות',
   };
   const lower = raw.toLowerCase();
   const label = known[lower] || raw;

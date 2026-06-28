@@ -21,6 +21,7 @@ import {
   DISPLAY_SECTION_TITLES,
   TONE_DISPLAY_LABELS,
   translateDisplayLabel,
+  translateMarketStatusLabel,
 } from '@/lib/specializedDisplayI18n';
 import {
   getDirectionBadge,
@@ -40,8 +41,6 @@ import { MorningBriefMarketsTable } from './MorningBriefMarketsTable';
 import { MarketSectorTable } from './MarketSectorTable';
 import {
   BRIEF_NOTES_TEXT_CLS,
-  BRIEF_SENT_KEY_LABEL,
-  BriefSentimentNotesTable,
 } from './BriefSentimentNotesTable';
 import {
   BRIEF_CELL,
@@ -83,6 +82,8 @@ import {
   getEditableRowsForSection,
 } from '@/lib/manualBriefOverrides';
 import { getStockSectorMeta } from '@/lib/stockSectorMap';
+import { resolveMorningBriefPresentation, morningBriefSectionCount, morningBriefShowsSummaryCounters, morningBriefSubsectionTitle, countOpportunitiesAndRisks } from '@/lib/morningBriefPresentation';
+import { getMorningBriefMarketRows } from '@/lib/morningBriefBulkSections';
 import {
   BriefSectionManualHeaderExtras,
   ManualEditGrid,
@@ -106,6 +107,8 @@ import {
 } from '@/components/shared/UniversalTabSelectRow';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
+import { MorningBriefNewsSection } from './MorningBriefNewsSection';
+import { normalizeNewsItems } from '@/lib/morningBriefNewsNormalize';
 import {
   resolveMorningBriefCardText,
   resolveMorningBriefCombinedCardText,
@@ -194,7 +197,8 @@ function BriefRowSaveActions({
   );
 }
 
-function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo, onSaveMarketBriefSection, newsItems, showAiBadge }) {
+function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo, onSaveMarketBriefSection, newsItems, presentation }) {
+  const ui = resolveMorningBriefPresentation(presentation);
   const enabled = Boolean(onSaveMarketBriefSection && marketBriefData);
   const getDraftRows = useCallback(
     () => getEditableRowsForSection(marketBriefData, effectiveVideo, sectionId, newsItems),
@@ -217,7 +221,7 @@ function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo
       onEdit={edit.startEdit}
       onCancel={edit.cancelEdit}
       onSave={edit.saveEdit}
-      showAiBadge={showAiBadge}
+      showAiBadge={ui.showAiBadge}
     />
   ) : null;
 
@@ -517,6 +521,49 @@ function toneToSentKey(tone) {
   return 'neutral';
 }
 
+/** Paragraph rhythm — matches חדשות row detail text (text-sm + body + leading-snug). */
+const BRIEF_NEWS_NOTES_CLS =
+  `text-sm ${DASHBOARD_TABLE_CELL_BODY_CLS} leading-snug break-words [overflow-wrap:anywhere]`;
+
+function BriefNewsNotesText({ text, row = null, className = '', empty = '—' }) {
+  const raw = String(text || '').trim();
+  if (!raw) {
+    if (empty == null) return null;
+    return <span className="text-slate-300 dark:text-zinc-600">{empty}</span>;
+  }
+  const display = row ? getMacroFieldDisplay(raw, row) : null;
+
+  // Compact numeric change only — colored arrow + value (not full paragraphs).
+  if (display?.kind === 'percent') {
+    return <NumericChangeSpan display={display} />;
+  }
+  if (display?.kind === 'neutral' && display.text === '—') {
+    return <span className="text-slate-300 dark:text-zinc-600">—</span>;
+  }
+
+  let bodyText = raw;
+  let arrowPrefix = null;
+  if (display?.kind === 'direction') {
+    bodyText = display.text || raw.replace(/^[↑↓▲▼•]\s*/, '').trim();
+    if (display.arrow && display.arrow !== '•') {
+      arrowPrefix = (
+        <span className={`${DASHBOARD_TABLE_STATUS_CLS} ${display.cls}`.trim()}>
+          {display.arrow}{' '}
+        </span>
+      );
+    }
+  } else if (display?.text) {
+    bodyText = display.text;
+  }
+
+  return (
+    <p className={`${BRIEF_NEWS_NOTES_CLS} line-clamp-3 ${className}`.trim()} title={bodyText}>
+      {arrowPrefix}
+      {bodyText}
+    </p>
+  );
+}
+
 const BRIEF_TABLE_LINK_CLS = 'text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline';
 
 function NewsColumnHeader({ title, count, countTextCls }) {
@@ -800,9 +847,9 @@ function RegimeListItem({
   bulkSections = [],
   stacked = false,
 }) {
-  const displayText = `${translateDisplayLabel(label)}: ${stripInternalFieldLabels(value)}`;
+  const displayText = `${translateMarketStatusLabel(label)}: ${stripInternalFieldLabels(value)}`;
   const displayValue = stripInternalFieldLabels(value);
-  const rowCtx = { indicator: translateDisplayLabel(label), description: displayValue };
+  const rowCtx = { indicator: translateMarketStatusLabel(label), description: displayValue };
   const numericDisplay = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
 
   return (
@@ -831,7 +878,7 @@ function RegimeListItem({
         <div dir="rtl" className="min-w-0 text-right" data-regime-item>
           <div className="flex items-start gap-x-4 min-w-0">
             <span className={`shrink-0 w-[24%] min-w-[8rem] max-w-[14rem] ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-              {translateDisplayLabel(label)}
+              {translateMarketStatusLabel(label)}
             </span>
             <span className="flex-1 min-w-0 text-right break-words [overflow-wrap:anywhere] leading-snug">
               {numericDisplay ? (
@@ -844,7 +891,7 @@ function RegimeListItem({
         </div>
       ) : (
         <RegimeRow
-          label={translateDisplayLabel(label)}
+          label={translateMarketStatusLabel(label)}
           value={displayValue}
           isLast={isLast}
           columnVariant={columnVariant}
@@ -963,30 +1010,101 @@ function RegimeNeutralBlock({ cards, scrollable = false, bulkSelection = null, b
   );
 }
 
+
+/** Compact מצב שוק table: ☐ | אינדיקטור | סנטימנט | הערה / סיבה | save */
+function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
+  if (!rows.length) return null;
+
+  return (
+    <BriefTableWrapper>
+      <table className={BRIEF_TABLE_CLS} dir="rtl">
+        <colgroup>
+          <col style={{ width: BRIEF_COL.checkbox }} />
+          <col style={{ width: BRIEF_COL.primaryLabel }} />
+          <col style={{ width: BRIEF_COL.sentiment }} />
+          <col style={{ width: BRIEF_COL.change }} />
+          <col />
+          <col style={{ width: BRIEF_COL.save }} />
+        </colgroup>
+        <thead>
+          <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+            <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" />
+            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
+            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+            <th className="py-1.5 px-2" aria-label="שינוי" />
+            <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה / סיבה</th>
+            <th className="py-1.5 pl-1 pr-0" aria-label="שמירה" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((card) => {
+            const displayText = `${translateMarketStatusLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
+            const displayValue = stripInternalFieldLabels(card.value);
+            const rowCtx = { indicator: translateMarketStatusLabel(card.label), description: displayValue };
+
+            return (
+              <tr
+                key={card.key + card.label}
+                className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group"
+              >
+                <td className={BRIEF_CELL.checkbox}>
+                  <MorningBriefBulkCheckbox
+                    bulkSections={bulkSections}
+                    sectionKey="market-regime"
+                    text={displayText}
+                    sectionLabel="📊 מצב שוק"
+                    tabKey="market-regime"
+                    bulkSelection={bulkSelection}
+                  />
+                </td>
+                <td className={BRIEF_CELL.short}>
+                  <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>
+                    {translateMarketStatusLabel(card.label)}
+                  </span>
+                </td>
+                <td className={BRIEF_CELL.sentiment}>
+                  <InlineSentimentBadge
+                    sentKey={card.sentKey}
+                    className={BRIEF_SENTIMENT_INLINE_CLS}
+                  />
+                </td>
+                <td className={BRIEF_CELL.change} />
+                <td className={BRIEF_CELL.notes}>
+                  <BriefNewsNotesText text={displayValue} row={rowCtx} />
+                </td>
+                <td className={BRIEF_CELL.save}>
+                  <BriefQuickSaveActions
+                    bulkSelection={bulkSelection}
+                    text={displayText}
+                    sectionLabel="📊 מצב שוק"
+                    tabKey="market-regime"
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </BriefTableWrapper>
+  );
+}
+
 // ── 1. Market Regime ─────────────────────────────────────────────────
-export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [] }) {
-  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.marketRegime, { marketBriefData, onSaveMarketBriefSection });
+export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation }) {
+  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.marketRegime, { marketBriefData, onSaveMarketBriefSection, presentation });
   const cards = extractMarketRegimeCards(getSpecializedSrc(marketBriefData));
   const split = splitNewsByTone(cards, (c) => stripInternalFieldLabels(c.value));
 
   return (
     <SectionCard
       title="📊 מצב שוק"
-      count={cards.length}
+      count={morningBriefSectionCount(presentation, cards.length)}
       tone={TONE.NEUTRAL}
       isEmpty={!edit.editing && cards.length === 0}
       emptyMessage="מצב שוק, רוחב, Risk On/Off ותנודתיות יוצגו כאן"
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'market-regime', '📊 מצב שוק', { disabled: edit.editing })}
-      headerPills={!edit.editing ? (
-        <ThreeToneSummaryPills
-          bullishCount={split.bullishCount}
-          neutralCount={split.neutral.length}
-          bearishCount={split.bearishCount}
-          labels={{ positive: 'חיובי', neutral: 'ניטרלי', negative: 'שלילי' }}
-        />
-      ) : null}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -996,55 +1114,14 @@ export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection,
         />
       ) : (
       <div dir="rtl" data-regime-comparison>
-        <BriefSentimentNotesTable
-          labelHeader="אינדיקטור"
+        <MarketRegimeTable
           rows={[
             ...split.positive.map((c) => ({ ...c, sentKey: 'positive' })),
             ...split.neutral.map((c) => ({ ...c, sentKey: 'neutral' })),
             ...split.negative.map((c) => ({ ...c, sentKey: 'negative' })),
           ]}
-          getRowKey={(card) => card.key + card.label}
-          getRowMeta={(card) => {
-            const displayText = `${translateDisplayLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
-            return { rowText: displayText };
-          }}
-          renderLabelCell={(card) => (
-            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>
-              {translateDisplayLabel(card.label)}
-            </span>
-          )}
-          renderSentimentValue={(card) => BRIEF_SENT_KEY_LABEL[card.sentKey] || BRIEF_SENT_KEY_LABEL.neutral}
-          renderNotesCell={(card) => {
-            const displayValue = stripInternalFieldLabels(card.value);
-            const rowCtx = { indicator: translateDisplayLabel(card.label), description: displayValue };
-            const numericDisplay = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
-            if (numericDisplay) {
-              return <NumericChangeSpan display={numericDisplay} />;
-            }
-            return (
-              <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={displayValue || undefined}>
-                {displayValue || '—'}
-              </p>
-            );
-          }}
-          renderLeadingCell={(card, _i, meta) => (
-            <MorningBriefBulkCheckbox
-              bulkSections={bulkSections}
-              sectionKey="market-regime"
-              text={meta.rowText}
-              sectionLabel="📊 מצב שוק"
-              tabKey="market-regime"
-              bulkSelection={bulkSelection}
-            />
-          )}
-          renderTrailingCell={(card, _i, meta) => (
-            <BriefQuickSaveActions
-              bulkSelection={bulkSelection}
-              text={meta.rowText}
-              sectionLabel="📊 מצב שוק"
-              tabKey="market-regime"
-            />
-          )}
+          bulkSections={bulkSections}
+          bulkSelection={bulkSelection}
         />
       </div>
       )}
@@ -1060,12 +1137,15 @@ export function MarketsSection({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
-  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.markets, { marketBriefData, onSaveMarketBriefSection });
+  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.markets, { marketBriefData, onSaveMarketBriefSection, presentation });
+  const marketRows = getMorningBriefMarketRows(marketBriefData, indicesItems);
 
   return (
     <SectionCard
       title={DISPLAY_SECTION_TITLES.markets}
+      count={morningBriefSectionCount(presentation, marketRows.length)}
       tone={TONE.NEUTRAL}
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'markets', DISPLAY_SECTION_TITLES.markets, { disabled: edit.editing })}
@@ -1218,22 +1298,23 @@ function SectorNeutralBlock({ rows, bulkSelection = null, bulkSections = [] }) {
 }
 
 // ── 3. Sectors ───────────────────────────────────────────────────────
-export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [] }) {
-  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.sectors, { marketBriefData, onSaveMarketBriefSection });
+export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation }) {
+  const ui = resolveMorningBriefPresentation(presentation);
+  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.sectors, { marketBriefData, onSaveMarketBriefSection, presentation });
   const rows = extractSectorRows(getSpecializedSrc(marketBriefData));
   const split = splitNewsByTone(rows, (r) => `${r.sentiment} ${r.direction} ${r.relativeStrength}`);
 
   return (
     <SectionCard
       title="🏭 סקטורים"
-      count={rows.length}
+      count={morningBriefSectionCount(presentation, rows.length)}
       tone={TONE.NEUTRAL}
       isEmpty={!edit.editing && rows.length === 0}
       emptyMessage="ביצועי סקטורים ורוטציה יוצגו כאן"
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sectors', '🏭 סקטורים', { disabled: edit.editing })}
-      headerPills={!edit.editing ? (
+      headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ThreeToneSummaryPills
           bullishCount={split.bullishCount}
           neutralCount={split.neutral.length}
@@ -1252,6 +1333,7 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
       ) : (
       <div dir="rtl" data-sector-comparison>
         <MarketSectorTable
+          showHelperLinks={ui.showHelperLinks}
           rows={[
             ...split.positive.map((r) => ({ ...r, sentKey: 'positive' })),
             ...split.negative.map((r) => ({ ...r, sentKey: 'negative' })),
@@ -1284,24 +1366,6 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
 }
 
 // ── 4. News ──────────────────────────────────────────────────────────
-const NEWS_SENTIMENT_STYLE = {
-  positive: {
-    border: 'border-r-emerald-500 dark:border-r-emerald-400',
-    badge:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    label:  '🟢 חיובי',
-  },
-  negative: {
-    border: 'border-r-red-500 dark:border-r-red-500',
-    badge:  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    label:  '🔴 שלילי',
-  },
-  neutral: {
-    border: 'border-r-amber-400 dark:border-r-amber-400',
-    badge:  'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    label:  '🟡 כללי',
-  },
-};
-
 export function NewsSection({
   items = [],
   onSaveToBrain,
@@ -1309,21 +1373,22 @@ export function NewsSection({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.news, {
     marketBriefData,
     onSaveMarketBriefSection,
     newsItems: items,
+    presentation,
   });
-  const strings = normalizeNewsStrings(items);
-  const split = splitNewsByTone(strings, (t) => t);
+  const normalizedNews = normalizeNewsItems(items);
 
   return (
     <SectionCard
       title="📰 חדשות"
-      count={strings.length}
+      count={morningBriefSectionCount(presentation, normalizedNews.length)}
       tone={TONE.NEUTRAL}
-      isEmpty={!edit.editing && strings.length === 0}
+      isEmpty={!edit.editing && normalizedNews.length === 0}
       emptyMessage="כותרות ועדכוני שוק יוצגו כאן"
       plainSurface
       headerActions={edit.headerActions}
@@ -1336,69 +1401,12 @@ export function NewsSection({
           onChange={edit.setDraft}
         />
       ) : (
-      <div dir="rtl" data-news-comparison>
-        <div className="space-y-2">
-          {[
-            ...split.positive.map((t) => ({ text: t, sentKey: 'positive' })),
-            ...split.negative.map((t) => ({ text: t, sentKey: 'negative' })),
-            ...split.neutral.map((t) => ({ text: t, sentKey: 'neutral' })),
-          ].map(({ text, sentKey }, i) => {
-            const displayText = stripInternalNewsFieldLabel(text);
-            const { headline, detail } = parseNewsDisplay(displayText);
-            const sentStyle = NEWS_SENTIMENT_STYLE[sentKey];
-            return (
-              <div
-                key={i}
-                dir="rtl"
-                className={`group flex items-start gap-3 rounded-xl border border-r-4 ${sentStyle.border} border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 shadow-sm hover:shadow-md transition-shadow`}
-                data-news-row
-              >
-                {/* Checkbox — far right in RTL (fixed column, matches warnings rows) */}
-                <div className={UNIVERSAL_TAB_CHECKBOX_COL_CLASS}>
-                  <MorningBriefBulkCheckbox
-                    bulkSections={bulkSections}
-                    sectionKey="news"
-                    text={displayText}
-                    sectionLabel="📰 חדשות"
-                    tabKey="market-news"
-                    bulkSelection={bulkSelection}
-                  />
-                </div>
-
-                {/* Content — typography aligned with MacroWarningsSection */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-2 flex-wrap" dir="rtl">
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold leading-snug ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>
-                        {headline || '—'}
-                      </p>
-                      {detail && (
-                        <p className={`text-sm mt-0.5 ${DASHBOARD_TABLE_CELL_BODY_CLS} leading-snug break-words [overflow-wrap:anywhere]`}>
-                          {detail}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`shrink-0 inline-flex items-center self-start px-2 py-0.5 rounded-md text-[11px] font-medium whitespace-nowrap ${sentStyle.badge}`}>
-                      {sentStyle.label}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Save — far left in RTL */}
-                <div className="shrink-0 flex items-center">
-                  <BriefRowSaveActions
-                    bulkSelection={bulkSelection}
-                    text={displayText}
-                    sectionLabel="📰 חדשות"
-                    tabKey="market-news"
-                    onSaveToBrain={onSaveToBrain}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <MorningBriefNewsSection
+        items={items}
+        onSaveToBrain={onSaveToBrain}
+        bulkSelection={bulkSelection}
+        bulkSections={bulkSections}
+      />
       )}
     </SectionCard>
   );
@@ -1431,31 +1439,6 @@ function MacroChangeCell({ change, row }) {
   return <NumericChangeSpan display={display} />;
 }
 
-function MacroDirectionCell({ text, row, className = DASHBOARD_TABLE_STATUS_CLS }) {
-  const display = getMacroFieldDisplay(text, row);
-  if (!display) {
-    return <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>;
-  }
-  return <NumericChangeSpan display={display} className={className} />;
-}
-
-/** Compact impact badge — shows only tone label, never raw AI narrative. */
-function MacroImpactBadge({ text }) {
-  if (!text) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
-  const tone = resolveTone(text);
-  const styles = toneStyles(tone);
-  const label = tone === TONE.BULLISH
-    ? `🟢 ${TONE_DISPLAY_LABELS.positive}`
-    : tone === TONE.BEARISH
-      ? `🔴 ${TONE_DISPLAY_LABELS.negative}`
-      : `⚪ ${TONE_DISPLAY_LABELS.neutral}`;
-  return (
-    <span className={`inline-flex items-center whitespace-nowrap text-xs font-semibold ${styles.text}`}>
-      {label}
-    </span>
-  );
-}
-
 function MacroRowSummary(row) {
   return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
     .filter(Boolean)
@@ -1469,8 +1452,10 @@ export function MacroSection({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
-  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.macro, { marketBriefData, onSaveMarketBriefSection });
+  const ui = resolveMorningBriefPresentation(presentation);
+  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.macro, { marketBriefData, onSaveMarketBriefSection, presentation });
   const src = getSpecializedSrc(marketBriefData);
   const fromSrc = extractMacroIndicatorRows(src);
   const marketRows = extractMarketDashboardRows(src);
@@ -1481,7 +1466,7 @@ export function MacroSection({
   return (
     <SectionCard
       title={DISPLAY_SECTION_TITLES.macro}
-      count={rows.length}
+      count={morningBriefSectionCount(presentation, rows.length)}
       tone={TONE.NEUTRAL}
       isEmpty={!edit.editing && rows.length === 0}
       emptyMessage="גורמי מאקרו, אירועים כלכליים ו-VIX יוצגו כאן"
@@ -1503,6 +1488,7 @@ export function MacroSection({
               <col style={{ width: BRIEF_COL.indicator }} />
               <col style={{ width: BRIEF_COL.macroValue }} />
               <col style={{ width: BRIEF_COL.sentiment }} />
+              <col style={{ width: BRIEF_COL.change }} />
               <col />
               <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
@@ -1512,6 +1498,7 @@ export function MacroSection({
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך / שינוי</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className="py-1.5 px-2" aria-label="שינוי" />
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>תיאור / השפעה</th>
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
@@ -1540,7 +1527,7 @@ export function MacroSection({
                     </td>
                     <td className={BRIEF_CELL.short}>
                       <p className={`whitespace-nowrap overflow-hidden text-ellipsis ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
-                      {row.frequency && (
+                      {ui.showRowMetadata && row.frequency && (
                         <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency}</p>
                       )}
                     </td>
@@ -1560,16 +1547,17 @@ export function MacroSection({
                         className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
+                    <td className={BRIEF_CELL.change} />
                     <td className={BRIEF_CELL.notes}>
                       {row.description && (
-                        <div className="line-clamp-2 overflow-hidden">
-                          <MacroDirectionCell text={row.description} row={row} />
-                        </div>
+                        <BriefNewsNotesText text={row.description} row={row} />
                       )}
                       {row.impact && (
-                        <div className={row.description ? 'mt-0.5' : ''}>
-                          <MacroImpactBadge text={row.impact} />
-                        </div>
+                        <BriefNewsNotesText
+                          text={row.impact}
+                          row={row}
+                          className={row.description ? 'mt-0.5' : ''}
+                        />
                       )}
                       {!row.description && !row.impact && (
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
@@ -1606,6 +1594,44 @@ export function MacroSection({
 }
 
 // ── 6. Sentiment ─────────────────────────────────────────────────────
+
+/**
+ * Parses a sentiment value field into clean display parts.
+ * Handles:
+ *   - plain numbers: "17.3", "62"
+ *   - number + text: "62 — ניטרלי", "0.82 bullish"
+ *   - structured AI output: "value: 17.3 | status: ניטרלי | description: ..."
+ *   - plain text: "שורי", "neutral"
+ * Returns { numericText, descriptionText } — both may be null.
+ */
+function parseSentimentValueForDisplay(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return { numericText: null, descriptionText: null };
+
+  // Structured format: "key: val | key: val | ..."
+  if (/\w+\s*:\s*.+\|/.test(text)) {
+    const parts = {};
+    text.split('|').forEach((seg) => {
+      const m = seg.match(/^\s*(\w+)\s*:\s*([\s\S]+?)\s*$/);
+      if (m) parts[m[1].toLowerCase()] = m[2].trim();
+    });
+    const numRaw = parts['value'] ?? parts['numeric'] ?? null;
+    const numericText = numRaw && /^[+-]?\d+(\.\d+)?$/.test(numRaw) ? numRaw : null;
+    const descriptionText = parts['description'] ?? parts['desc'] ?? null;
+    return { numericText, descriptionText };
+  }
+
+  // Leading number — extract it, rest becomes description
+  const leadingNum = text.match(/^([+-]?\d+(?:\.\d+)?)/);
+  if (leadingNum) {
+    const rest = text.slice(leadingNum[0].length).trim().replace(/^[—\-–·|,;]+\s*/, '').trim();
+    return { numericText: leadingNum[0], descriptionText: rest || null };
+  }
+
+  // Pure text — no numeric
+  return { numericText: null, descriptionText: text };
+}
+
 function sentimentLabelEmoji(label) {
   const l = String(label || '').toLowerCase();
   if (l.includes('מוסדי') || l.includes('institutional')) return '🏦';
@@ -1670,6 +1696,7 @@ export function SentimentSection({
   marketBriefData,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
   const items = extractSentimentItems(getSpecializedSrc(marketBriefData));
   const tone = items.length > 0
@@ -1679,7 +1706,7 @@ export function SentimentSection({
   return (
     <SectionCard
       title={DISPLAY_SECTION_TITLES.sentiment}
-      count={items.length}
+      count={morningBriefSectionCount(presentation, items.length)}
       tone={tone}
       isEmpty={items.length === 0}
       emptyMessage="סנטימנט קמעונאי, מוסדי ופחד וחמדנות יוצגו כאן"
@@ -1690,8 +1717,9 @@ export function SentimentSection({
           <table className={BRIEF_TABLE_CLS} dir="rtl">
             <colgroup>
               <col style={{ width: BRIEF_COL.checkbox }} />
-              <col style={{ width: BRIEF_COL.type }} />
+              <col style={{ width: BRIEF_COL.primaryLabel }} />
               <col style={{ width: BRIEF_COL.sentiment }} />
+              <col style={{ width: BRIEF_COL.change }} />
               <col />
               <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
@@ -1700,6 +1728,7 @@ export function SentimentSection({
                 <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
@@ -1708,9 +1737,7 @@ export function SentimentSection({
               {items.map(({ label, value }, i) => {
                 const valueText = String(value || '').trim();
                 const displayLabel = translateSentimentLabel(label);
-                const displayValue = translateSentimentValue(valueText);
-                const rowCtx = { indicator: displayLabel, description: displayValue, impact: valueText };
-                const display = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
+                const { numericText, descriptionText } = parseSentimentValueForDisplay(valueText);
                 const bulkText = `${label}: ${value}`;
                 const itemTone = resolveTone(valueText);
                 return (
@@ -1737,14 +1764,17 @@ export function SentimentSection({
                         className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
-                    <td className={BRIEF_CELL.notes}>
-                      {display ? (
-                        <NumericChangeSpan display={display} />
+                    <td className={BRIEF_CELL.change}>
+                      {numericText ? (
+                        <span className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{numericText}</span>
                       ) : (
-                        <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={displayValue || undefined}>
-                          {displayValue || '—'}
-                        </p>
+                        <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
+                    </td>
+                    <td className={BRIEF_CELL.notes}>
+                      <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
+                        {descriptionText || '—'}
+                      </p>
                     </td>
                     <td className={BRIEF_CELL.save}>
                       <BriefQuickSaveActions
@@ -1769,40 +1799,29 @@ export function SentimentSection({
 function CalendarTypeBadge({ type }) {
   if (!type) return <span className={`text-slate-300 dark:text-zinc-600 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>—</span>;
   return (
-    <span className={`inline whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} text-violet-700 dark:text-violet-300`}>
+    <span className={`inline whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} text-slate-500 dark:text-zinc-400`}>
       {type}
     </span>
   );
 }
 
-function CalendarImportanceText({ level, table = false }) {
-  if (!level || !importanceTextStyles(level)) {
-    return <span className={`text-slate-300 dark:text-zinc-600 ${table ? DASHBOARD_TABLE_CELL_MUTED_CLS : 'text-[10px]'}`}>—</span>;
-  }
-  return <ImportanceBadge level={level} size={table ? 'table' : 'xs'} />;
-}
+const CALENDAR_IMPORTANCE_LABEL = {
+  CRITICAL: 'קריטי',
+  HIGH:     'גבוהה',
+  MEDIUM:   'בינונית',
+  LOW:      'נמוכה',
+};
 
-function CalendarLegend() {
+function CalendarImportanceDot({ level }) {
+  const meta = importanceStyles(level);
+  if (!meta) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
+  const label = CALENDAR_IMPORTANCE_LABEL[meta.label] ?? meta.label;
   return (
-    <div
-      className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5 mt-1.5 pt-1.5 border-t border-slate-100/80 dark:border-zinc-800/50 text-[9px] text-slate-400 dark:text-zinc-500"
-      dir="rtl"
-      data-calendar-legend
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${meta.cls}`}
     >
-      <span className="inline-flex items-center gap-1">
-        <CalendarTypeBadge type="CPI" />
-        <CalendarTypeBadge type="FOMC" />
-        <span className="text-slate-300 dark:text-zinc-600">סוג אירוע</span>
-      </span>
-      <span className="inline-flex items-center gap-1">
-        <CalendarImportanceText level="high" />
-        <CalendarImportanceText level="critical" />
-        <CalendarImportanceText level="medium" />
-        <CalendarImportanceText level="low" />
-        <span className="text-slate-300 dark:text-zinc-600">חשיבות</span>
-      </span>
-      <span>השפעה · צבע לפי כיוון</span>
-    </div>
+      {label}
+    </span>
   );
 }
 
@@ -1811,14 +1830,15 @@ export function EconomicCalendarSection({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
-  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.economicCalendar, { marketBriefData, onSaveMarketBriefSection });
+  const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.economicCalendar, { marketBriefData, onSaveMarketBriefSection, presentation });
   const rows = extractCalendarRows(getSpecializedSrc(marketBriefData));
 
   return (
     <SectionCard
       title={DISPLAY_SECTION_TITLES.economicCalendar}
-      count={rows.length}
+      count={morningBriefSectionCount(presentation, rows.length)}
       tone={TONE.NEUTRAL}
       isEmpty={!edit.editing && rows.length === 0}
       emptyMessage="אירועים כלכליים, דוחות ו-CPI יוצגו כאן"
@@ -1837,8 +1857,9 @@ export function EconomicCalendarSection({
           <table className={BRIEF_TABLE_CLS} dir="rtl">
             <colgroup>
               <col style={{ width: BRIEF_COL.checkbox }} />
-              <col style={{ width: '32%' }} />
-              <col style={{ width: '18%' }} />
+              <col style={{ width: BRIEF_COL.primaryLabel }} />
+              <col style={{ width: BRIEF_COL.sentiment }} />
+              <col style={{ width: BRIEF_COL.change }} />
               <col />
               <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
@@ -1846,7 +1867,8 @@ export function EconomicCalendarSection({
               <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
                 <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>אירוע</th>
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>מועד / חשיבות</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>חשיבות</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>מועד</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>השפעה</th>
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
@@ -1870,7 +1892,7 @@ export function EconomicCalendarSection({
                         bulkSelection={bulkSelection}
                       />
                     </td>
-                    <td className={BRIEF_CELL.notes}>
+                    <td className={BRIEF_CELL.short}>
                       {row.type && (
                         <div className="mb-0.5">
                           <CalendarTypeBadge type={row.type} />
@@ -1880,23 +1902,23 @@ export function EconomicCalendarSection({
                         {row.event || '—'}
                       </p>
                     </td>
-                    <td className={BRIEF_CELL.short}>
-                      {row.date && (
-                        <p className={DASHBOARD_TABLE_CELL_DATE_CLS}>{row.date}</p>
-                      )}
-                      {row.importance && (
-                        <div className={row.date ? 'mt-0.5' : ''}>
-                          <CalendarImportanceText level={row.importance} table />
-                        </div>
-                      )}
-                      {!row.date && !row.importance && (
+                    <td className={BRIEF_CELL.sentiment}>
+                      <CalendarImportanceDot level={row.importance} />
+                    </td>
+                    <td className={BRIEF_CELL.change}>
+                      {row.date ? (
+                        <p className={`${DASHBOARD_TABLE_CELL_DATE_CLS} whitespace-nowrap`}>{row.date}</p>
+                      ) : (
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
                     <td className={BRIEF_CELL.notes}>
-                      {row.impact ? (
-                        <ChangeValue value={row.impact} />
-                      ) : (
+                      <BriefNewsNotesText
+                        text={row.impact}
+                        row={{ indicator: row.event, description: row.impact }}
+                        empty={null}
+                      />
+                      {!row.impact && (
                         <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
                       )}
                     </td>
@@ -1914,7 +1936,6 @@ export function EconomicCalendarSection({
             </tbody>
           </table>
         </BriefTableWrapper>
-        {rows.length > 0 && <CalendarLegend />}
       </div>
       )}
     </SectionCard>
@@ -2175,12 +2196,6 @@ function RisksColumn({
   );
 }
 
-function buildBriefResearchUrl(text, category) {
-  if (!text) return null;
-  const term = category ? `${category}: ${text}` : text;
-  return `https://www.perplexity.ai/search?q=${encodeURIComponent(`${term} — ניתוח שוק והזדמנויות השקעה`)}`;
-}
-
 /** Side-by-side Opportunities / Risks dashboard — Macro-style 3+3 card grid with placeholders. */
 export function OpportunitiesRisksDashboard({
   marketBriefData,
@@ -2189,20 +2204,24 @@ export function OpportunitiesRisksDashboard({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.opportunitiesRisks, {
     marketBriefData,
     effectiveVideo,
     onSaveMarketBriefSection,
+    presentation,
   });
   const ideas = filterOpportunityIdeas(marketBriefData, effectiveVideo);
   const risks = extractRiskItems(getSpecializedSrc(marketBriefData));
   const opportunitySlots = padInsightSlots(ideas, INSIGHT_GRID_SLOT_COUNT);
   const riskSlots = padInsightSlots(risks, INSIGHT_GRID_SLOT_COUNT);
+  const oppRiskCount = countOpportunitiesAndRisks(ideas, risks);
 
   return (
     <SectionCard
       title="🎯 הזדמנויות וסיכונים"
+      count={morningBriefSectionCount(presentation, oppRiskCount)}
       tone={TONE.NEUTRAL}
       isEmpty={false}
       emptyMessage="הזדמנויות וסיכונים יוצגו כאן"
@@ -2215,7 +2234,7 @@ export function OpportunitiesRisksDashboard({
         '🎯 הזדמנויות וסיכונים',
         { disabled: edit.editing, cardId: 'opportunities-risks' },
       )}
-      headerPills={!edit.editing ? (
+      headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ComparisonSummaryPills
           pills={[
             { count: ideas.length, label: 'הזדמנויות', tone: 'positive' },
@@ -2233,102 +2252,110 @@ export function OpportunitiesRisksDashboard({
         />
       ) : (
       <div dir="rtl" data-opportunities-risks-dashboard className="space-y-5">
-        <div>
-          <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-emerald-700 dark:text-emerald-400`}>
-            💡 הזדמנויות ({ideas.length})
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {opportunitySlots.map((idea, i) => {
-              if (!idea) {
-                return <MacroStyleEmptyInsightCard key={`opp-empty-${i}`} variant="opportunity" slotIndex={i} />;
-              }
-              const title = String(idea.title || '').trim();
-              const detail = String(idea.detail || '').trim();
-              const description = detail && detail !== title ? detail : '';
-              const saveText = [title, description].filter(Boolean).join(' — ');
-              const pillLabel = String(idea.kindLabel || '').trim();
-              const style = getMacroOppStyle(pillLabel, title);
-              const pxUrl = buildBriefResearchUrl(title, pillLabel);
-              return (
-                <MacroStyleOpportunityCard
-                  key={`opp-${i}-${title}`}
-                  style={style}
-                  title={title}
-                  pillLabel={pillLabel || null}
-                  details={description || null}
-                  pxUrl={pxUrl}
-                  dataAttrs={{ 'data-opportunity-item': true }}
-                  checkbox={(
-                    <MorningBriefBulkCheckbox
-                      bulkSections={bulkSections}
-                      sectionKey="opportunities"
-                      text={saveText}
-                      sectionLabel="🎯 הזדמנויות"
-                      tabKey="brief-opportunities"
-                      bulkSelection={bulkSelection}
-                    />
-                  )}
-                  saveActions={(
-                    <BriefRowSaveActions
-                      bulkSelection={bulkSelection}
-                      text={saveText}
-                      sectionLabel="🎯 הזדמנויות"
-                      tabKey="brief-opportunities"
-                      onSaveToBrain={onSaveToBrain}
-                    />
-                  )}
-                />
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const risksFirst = risks.length > 0 && ideas.length === 0;
 
-        <div>
-          <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-red-700 dark:text-red-400`}>
-            ⚠️ סיכונים ({risks.length})
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {riskSlots.map((risk, i) => {
-              if (!risk) {
-                return <MacroStyleEmptyInsightCard key={`risk-empty-${i}`} variant="risk" slotIndex={i} />;
-              }
-              const { title, description, severity, tag } = parseRiskDisplay(risk);
-              const pillLabel = severity || tag || '';
-              const style = getMacroRiskStyle(severity || tag || '');
-              const pxUrl = buildBriefResearchUrl(title, severity ? `סיכון ${severity}` : 'סיכון');
-              return (
-                <MacroStyleRiskCard
-                  key={`risk-${i}-${title}`}
-                  style={style}
-                  title={title}
-                  pillLabel={pillLabel || null}
-                  details={description || null}
-                  pxUrl={pxUrl}
-                  dataAttrs={{ 'data-risk-item': true }}
-                  checkbox={(
-                    <MorningBriefBulkCheckbox
-                      bulkSections={bulkSections}
-                      sectionKey="risks"
-                      text={risk.text}
-                      sectionLabel="⚠️ סיכונים"
-                      tabKey="brief-risks"
-                      bulkSelection={bulkSelection}
+          const oppBlock = (
+            <div key="opp-block">
+              <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-emerald-700 dark:text-emerald-400`}>
+                {morningBriefSubsectionTitle(presentation, '💡 הזדמנויות', ideas.length)}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {opportunitySlots.map((idea, i) => {
+                  if (!idea) {
+                    return <MacroStyleEmptyInsightCard key={`opp-empty-${i}`} variant="opportunity" slotIndex={i} />;
+                  }
+                  const title = String(idea.title || '').trim();
+                  const detail = String(idea.detail || '').trim();
+                  const description = detail && detail !== title ? detail : '';
+                  const saveText = [title, description].filter(Boolean).join(' — ');
+                  const pillLabel = String(idea.kindLabel || '').trim();
+                  const style = getMacroOppStyle(pillLabel, title);
+                  return (
+                    <MacroStyleOpportunityCard
+                      key={`opp-${i}-${title}`}
+                      style={style}
+                      title={title}
+                      pillLabel={pillLabel || null}
+                      details={description || null}
+                      pxUrl={null}
+                      dataAttrs={{ 'data-opportunity-item': true }}
+                      checkbox={(
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="opportunities"
+                          text={saveText}
+                          sectionLabel="🎯 הזדמנויות"
+                          tabKey="brief-opportunities"
+                          bulkSelection={bulkSelection}
+                        />
+                      )}
+                      saveActions={(
+                        <BriefRowSaveActions
+                          bulkSelection={bulkSelection}
+                          text={saveText}
+                          sectionLabel="🎯 הזדמנויות"
+                          tabKey="brief-opportunities"
+                          onSaveToBrain={onSaveToBrain}
+                        />
+                      )}
                     />
-                  )}
-                  saveActions={(
-                    <BriefRowSaveActions
-                      bulkSelection={bulkSelection}
-                      text={risk.text}
-                      sectionLabel="⚠️ סיכונים"
-                      tabKey="brief-risks"
-                      onSaveToBrain={onSaveToBrain}
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          const riskBlock = (
+            <div key="risk-block">
+              <p className={`${DASHBOARD_TABLE_HEAD_CLS} mb-2.5 text-red-700 dark:text-red-400`}>
+                {morningBriefSubsectionTitle(presentation, '⚠️ סיכונים', risks.length)}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {riskSlots.map((risk, i) => {
+                  if (!risk) {
+                    return <MacroStyleEmptyInsightCard key={`risk-empty-${i}`} variant="risk" slotIndex={i} />;
+                  }
+                  const { title, description, severity, tag } = parseRiskDisplay(risk);
+                  const pillLabel = severity || tag || '';
+                  const style = getMacroRiskStyle(severity || tag || '');
+                  return (
+                    <MacroStyleRiskCard
+                      key={`risk-${i}-${title}`}
+                      style={style}
+                      title={title}
+                      pillLabel={pillLabel || null}
+                      details={description || null}
+                      pxUrl={null}
+                      dataAttrs={{ 'data-risk-item': true }}
+                      checkbox={(
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="risks"
+                          text={risk.text}
+                          sectionLabel="⚠️ סיכונים"
+                          tabKey="brief-risks"
+                          bulkSelection={bulkSelection}
+                        />
+                      )}
+                      saveActions={(
+                        <BriefRowSaveActions
+                          bulkSelection={bulkSelection}
+                          text={risk.text}
+                          sectionLabel="⚠️ סיכונים"
+                          tabKey="brief-risks"
+                          onSaveToBrain={onSaveToBrain}
+                        />
+                      )}
                     />
-                  )}
-                />
-              );
-            })}
-          </div>
-        </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          return risksFirst ? [riskBlock, oppBlock] : [oppBlock, riskBlock];
+        })()}
       </div>
       )}
     </SectionCard>
@@ -2516,7 +2543,14 @@ function StockMovePercentIndicator({ move }) {
 
 const _SEP = <span className="text-slate-300 dark:text-zinc-600 select-none mx-0.5" aria-hidden>·</span>;
 
-function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulkSections = [] }) {
+function StockMentionTableRow({
+  stock,
+  onSaveToBrain,
+  bulkSelection = null,
+  bulkSections = [],
+  showHelperLinks = true,
+  showStockExternalLinks = true,
+}) {
   const summary = [stock.ticker, stock.company, stock.context, stock.sentiment].filter(Boolean).join(' · ');
   const sentKey = stockSentimentColumnKey(stock);
   const ticker = String(stock.ticker || '').trim();
@@ -2538,29 +2572,37 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
       {/* סימול */}
       <td className={BRIEF_CELL.short}>
         {ticker ? (
-          <a
-            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="פתח ב-Finviz ↗"
-            className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
-          >
-            {ticker}
-          </a>
+          showHelperLinks ? (
+            <a
+              href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="פתח ב-Finviz ↗"
+              className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+            >
+              {ticker}
+            </a>
+          ) : (
+            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{ticker}</span>
+          )
         ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
       </td>
       {/* סקטור */}
       <td className={BRIEF_CELL.short}>
         {sectorMeta?.sectorEtf ? (
-          <a
-            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(sectorMeta.sectorEtf)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={`פתח ${sectorMeta.sectorEtf} ב-Finviz ↗`}
-            className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} hover:underline`}
-          >
-            {sectorMeta.sectorHe}
-          </a>
+          showHelperLinks ? (
+            <a
+              href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(sectorMeta.sectorEtf)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`פתח ${sectorMeta.sectorEtf} ב-Finviz ↗`}
+              className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} hover:underline`}
+            >
+              {sectorMeta.sectorHe}
+            </a>
+          ) : (
+            <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorMeta.sectorHe}</span>
+          )
         ) : (
           <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>
         )}
@@ -2572,6 +2614,13 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
           className={BRIEF_SENTIMENT_INLINE_CLS}
         />
       </td>
+      {/* שינוי % */}
+      <td className={BRIEF_CELL.change}>
+        {stock.changePercent
+          ? <ChangeValue value={stock.changePercent} />
+          : <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+        }
+      </td>
       {/* הערות */}
       <td className={BRIEF_CELL.notes}>
         <p
@@ -2582,6 +2631,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
         </p>
       </td>
       {/* קישורים */}
+      {showStockExternalLinks ? (
       <td className={BRIEF_CELL.links}>
         {ticker ? (
           <span className="inline-flex items-center gap-x-0.5 text-xs font-medium">
@@ -2595,6 +2645,7 @@ function StockMentionTableRow({ stock, onSaveToBrain, bulkSelection = null, bulk
           <span className="text-slate-400 dark:text-zinc-500 text-sm">—</span>
         )}
       </td>
+      ) : null}
       <td className={BRIEF_CELL.save}>
         <BriefRowSaveActions
           bulkSelection={bulkSelection}
@@ -2615,12 +2666,15 @@ export function StocksMentionedSection({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation,
 }) {
+  const ui = resolveMorningBriefPresentation(presentation);
   const [sortBy, setSortBy] = useState('sentiment');
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.stocksMentioned, {
     marketBriefData,
     effectiveVideo,
     onSaveMarketBriefSection,
+    presentation,
   });
   const stocks = extractUnifiedStocks(marketBriefData, effectiveVideo);
   const tone = stocks.length > 0
@@ -2643,14 +2697,14 @@ export function StocksMentionedSection({
   return (
     <SectionCard
       title="⭐ מניות שהוזכרו"
-      count={stocks.length}
+      count={morningBriefSectionCount(presentation, stocks.length)}
       tone={tone}
       isEmpty={!edit.editing && stocks.length === 0}
       emptyMessage="טיקרים, סנטימנט והקשר יוצגו כאן"
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'stocks-mentioned', '⭐ מניות שהוזכרו', { disabled: edit.editing })}
-      headerPills={!edit.editing ? (
+      headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ComparisonSummaryPills
           pills={[
             { count: bullishCount, label: 'חיוביות', tone: 'positive' },
@@ -2668,7 +2722,7 @@ export function StocksMentionedSection({
         />
       ) : (
       <div dir="rtl" data-stocks-mentioned-section>
-        {/* Sort controls */}
+        {ui.showSortControls && (
         <div className="flex items-center gap-1.5 mb-3 justify-end">
           <span className="text-[11px] text-slate-400 dark:text-zinc-500">מיון:</span>
           {[
@@ -2690,6 +2744,7 @@ export function StocksMentionedSection({
             </button>
           ))}
         </div>
+        )}
         {/* Stocks table */}
         <BriefTableWrapper>
           <table className={BRIEF_TABLE_CLS} dir="rtl">
@@ -2698,8 +2753,9 @@ export function StocksMentionedSection({
               <col style={{ width: BRIEF_COL.symbol }} />
               <col style={{ width: BRIEF_COL.sector }} />
               <col style={{ width: BRIEF_COL.sentiment }} />
+              <col style={{ width: BRIEF_COL.change }} />
               <col />
-              <col style={{ width: BRIEF_COL.links }} />
+              {ui.showStockExternalLinks ? <col style={{ width: BRIEF_COL.links }} /> : null}
               <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
             <thead>
@@ -2708,8 +2764,11 @@ export function StocksMentionedSection({
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סימול</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערות</th>
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
+                {ui.showStockExternalLinks ? (
+                  <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
+                ) : null}
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
@@ -2721,6 +2780,8 @@ export function StocksMentionedSection({
                   onSaveToBrain={onSaveToBrain}
                   bulkSelection={bulkSelection}
                   bulkSections={bulkSections}
+                  showHelperLinks={ui.showHelperLinks}
+                  showStockExternalLinks={ui.showStockExternalLinks}
                 />
               ))}
             </tbody>

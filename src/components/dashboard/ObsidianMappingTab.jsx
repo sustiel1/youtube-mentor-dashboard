@@ -162,6 +162,15 @@ function formatTagLabel(tag) {
   return t.startsWith('#') ? t : `#${t}`;
 }
 
+// Prepend category/subCategory as breadcrumb for Obsidian topic display
+function formatObsidianTopicPath(topic, category, subCat) {
+  const t = normalizePill(topic);
+  if (!t) return '';
+  if (t.includes('/')) return t; // already a path
+  const parts = [normalizePill(category), normalizePill(subCat), t].filter(Boolean);
+  return parts.join(' / ');
+}
+
 function ConfidenceBadge({ pct }) {
   const meta = confidenceMeta(pct);
   if (!meta) return null;
@@ -566,15 +575,15 @@ export function ObsidianMappingTab({
       {/* ── 1. נושא ראשי ── */}
       {primaryCategory && (
         <SectionBlock title="📂 נושא ראשי">
-          <div className="flex justify-end">
-            <Chip variant="category">{primaryCategory}</Chip>
+          <div className="space-y-1.5 text-right">
+            <p className="text-3xl font-extrabold text-indigo-700 dark:text-indigo-300">{primaryCategory}</p>
           </div>
         </SectionBlock>
       )}
 
       {/* ── 2. תת נושא מומלץ ── */}
       {(draft.subCategory || showSubRec || isEditingSub) && (
-        <SectionBlock title="🧠 תת נושא מומלץ">
+        <SectionBlock title="🏷️ תת נושא מומלץ">
           <div className="space-y-2.5 text-right">
             {subCategoryStatus && (
               <p className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500">{subCategoryStatus}</p>
@@ -610,20 +619,29 @@ export function ObsidianMappingTab({
               </div>
             ) : (
               <>
-                <p className="text-base font-bold text-slate-800 dark:text-zinc-100">
+                <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">
                   {draft.subCategory || aiRec.subCategory}
                 </p>
 
-                {confidencePct != null && (showSubRec || !draft.subCategory) && (
-                  <div className="flex justify-end">
+                {/* confidence — always visible when available */}
+                {confidencePct != null && (
+                  <div className="flex items-center gap-2 justify-end">
+                    <span className="text-xs text-slate-500 dark:text-zinc-400">ביטחון:</span>
                     <ConfidenceBadge pct={confidencePct} />
                   </div>
                 )}
 
+                {/* reasoning — always visible when available */}
+                {(aiSubCategoryRec?.reason || aiRec.source) && (
+                  <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+                    {aiSubCategoryRec?.reason || aiRec.source}
+                  </p>
+                )}
+
                 {showSubRec && (
-                  <div className="flex items-center min-h-[64px] rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/25 px-4 py-3">
-                    <p className="w-full max-w-prose mr-0 ml-auto text-[15px] leading-7 font-medium text-slate-800 dark:text-zinc-100 text-right">
-                      💡 {recommendationSourceLabel(aiRec, aiSubCategoryRec)}
+                  <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/25 px-3 py-2">
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold text-right">
+                      💡 המלצה ממתינה לאישור
                     </p>
                   </div>
                 )}
@@ -770,7 +788,11 @@ export function ObsidianMappingTab({
       {/* ── 4. נושאי Obsidian ── */}
       {draft.obsidianTopics.length > 0 && (
         <SectionBlock title="📚 נושאי Obsidian" count={draft.obsidianTopics.length}>
-          <ChipRow items={draft.obsidianTopics} variant="obsidian" />
+          <ChipRow
+            items={draft.obsidianTopics}
+            variant="obsidian"
+            formatItem={(topic) => formatObsidianTopicPath(topic, primaryCategory, draft.subCategory)}
+          />
         </SectionBlock>
       )}
 
@@ -785,6 +807,20 @@ export function ObsidianMappingTab({
       {displayRelatedTopics.length > 0 && (
         <SectionBlock title="🔗 נושאים קשורים" count={displayRelatedTopics.length}>
           <ChipRow items={displayRelatedTopics} variant="related" />
+        </SectionBlock>
+      )}
+
+      {/* ── 7. כיווני מחקר מוצעים ── */}
+      {suggestedSubTopics.length > 0 && (
+        <SectionBlock title="💡 כיווני מחקר מוצעים" count={suggestedSubTopics.length}>
+          <ul className="space-y-1.5 text-right" dir="rtl">
+            {suggestedSubTopics.map(normalizePill).filter(Boolean).map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-zinc-300">
+                <span className="mt-0.5 text-indigo-400 shrink-0 font-bold">→</span>
+                <span className="flex-1">{item}</span>
+              </li>
+            ))}
+          </ul>
         </SectionBlock>
       )}
 

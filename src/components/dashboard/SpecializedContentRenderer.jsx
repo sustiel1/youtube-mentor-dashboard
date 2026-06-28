@@ -1,6 +1,8 @@
 import { LearningTabContent } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { MorningBriefDashboard } from "./MorningBriefDashboard";
+import { MORNING_BRIEF_SPECIALIZED_PRESENTATION } from "@/lib/morningBriefPresentation";
+import { MacroGemDashboard } from "./MacroGemDashboard";
 import { BriefContextHeader } from "./BriefContextHeader";
 import { DASHBOARD_COLUMN_HEADER_CLS } from "./MorningBriefVisualPrimitives";
 import { SelectableSummaryCardHeader } from "@/components/shared/SelectableSummaryCardHeader";
@@ -46,7 +48,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
           tabScope="specialized"
           type={tabKey}
           sectionLabel={label}
-          titleClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300`}
+          titleClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100`}
           headerRowClassName="pt-0 pb-2 mb-2 px-1 border-b border-slate-200/50 dark:border-zinc-700/50"
         />
       ) : (
@@ -57,7 +59,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
           tabScope="specialized"
           type={tabKey}
           sectionKey={sectionKey || tabKey}
-          labelClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}
+          labelClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}
           brainSaved={checkSaved ? checkSaved(formatCardBulkText(label, safe), tabKey) : undefined}
         />
       )}
@@ -104,7 +106,7 @@ export function SpecializedContentRenderer({
   const slug = normalizedSubCategory;
   const briefContext = getBriefContextDisplay(slug, effectiveVideo?.subCategory);
 
-  const wrapWithBriefHeader = (content) => {
+  const wrapWithBriefHeader = (content, { showSourceCaption = true } = {}) => {
     if (!briefContext) return content;
     return (
       <div className="space-y-3" dir="rtl" data-specialized-brief-shell>
@@ -112,6 +114,7 @@ export function SpecializedContentRenderer({
           slug={slug}
           subCategory={effectiveVideo?.subCategory}
           publishedAt={effectiveVideo?.publishedAt}
+          showSourceCaption={showSourceCaption}
         />
         {content}
       </div>
@@ -200,8 +203,10 @@ export function SpecializedContentRenderer({
           onSaveMarketBriefSection={onSaveMarketBriefSection}
           bulkSelection={bulkSelection}
           bulkSections={morningBulkDefs}
+          presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
         />
       ), { cardBulkItems: morningCardBulkItems }),
+      { showSourceCaption: MORNING_BRIEF_SPECIALIZED_PRESENTATION.showSourceCaption },
     );
   }
 
@@ -210,7 +215,7 @@ export function SpecializedContentRenderer({
     const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
     const indicesSect = indicesItems.length > 0 ? (
       <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📊 סקירת שוק</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📊 סקירת שוק</p>
         <MarketIndicesTable
           items={indicesItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 סקירת שוק')}
@@ -224,7 +229,7 @@ export function SpecializedContentRenderer({
 
     const marketNewsSect = marketIndexItems.length > 0 ? (
       <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📰 עדכוני שוק</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📰 עדכוני שוק</p>
         <MarketIndicesTable
           items={marketIndexItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 עדכוני שוק')}
@@ -273,7 +278,7 @@ export function SpecializedContentRenderer({
     const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
     const indicesSect = indicesItems.length > 0 ? (
       <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📊 ביצועי שוק</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📊 ביצועי שוק</p>
         <MarketIndicesTable
           items={indicesItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 ביצועי שוק')}
@@ -287,7 +292,7 @@ export function SpecializedContentRenderer({
 
     const marketNewsSect = marketIndexItems.length > 0 ? (
       <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📰 סיכום שוק</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📰 סיכום שוק</p>
         <MarketIndicesTable
           items={marketIndexItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 סיכום שוק')}
@@ -338,7 +343,7 @@ export function SpecializedContentRenderer({
     const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
     const indicesSect = indicesItems.length > 0 ? (
       <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📊 שווקים</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📊 שווקים</p>
         <MarketIndicesTable
           items={indicesItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 שווקים')}
@@ -352,7 +357,7 @@ export function SpecializedContentRenderer({
 
     const marketNewsSect = marketIndexItems.length > 0 ? (
       <div key="market-news-table" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📰 רקע שוק</p>
+        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}>📰 רקע שוק</p>
         <MarketIndicesTable
           items={marketIndexItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 רקע שוק')}
@@ -401,40 +406,14 @@ export function SpecializedContentRenderer({
   const isMacroContent = slug === 'macro' || (!!marketBriefData?.universalTabs && marketBriefData?.contentType === 'market');
 
   if (isMacroContent) {
-    const macroIndicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
-    const macroIndicesSect = macroIndicesItems.length > 0 ? (
-      <div key="indices" className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
-        <p className={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-600 dark:text-zinc-300 mb-2 px-1 text-right`}>📊 שווקים</p>
-        <MarketIndicesTable
-          items={macroIndicesItems}
-          onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 שווקים')}
-        />
-      </div>
-    ) : null;
-
-    const sects = [
-      sect('🌍 אירועי מאקרו',    extractVideoTabItems(effectiveVideo, 'brief-macro',         marketBriefData), 'brief-macro'),
-      macroIndicesSect,
-      sect('⚠️ סיכונים',          extractVideoTabItems(effectiveVideo, 'brief-risks',          marketBriefData), 'brief-risks'),
-      sect('💡 הזדמנויות',         extractVideoTabItems(effectiveVideo, 'brief-opportunities',  marketBriefData), 'brief-opportunities'),
-      sect('📊 ביצועי סקטורים',   extractVideoTabItems(effectiveVideo, 'brief-sectors',         marketBriefData), 'brief-sectors'),
-      sect('🎯 מניות רלוונטיות',  extractVideoTabItems(effectiveVideo, 'stocks-mentioned',      marketBriefData), 'stocks-mentioned'),
-    ].filter(Boolean);
-
-    if (sects.length === 0) return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
-        <span className="text-3xl mb-2 opacity-30">🌍</span>
-        <p className="text-sm">אין עדיין נתוני מאקרו</p>
-      </div>
+    return wrapWithBriefHeader(
+      <MacroGemDashboard
+        marketBriefData={marketBriefData}
+        effectiveVideo={effectiveVideo}
+        onSaveToBrain={onSaveToBrain}
+        bulkSelection={bulkSelection}
+      />,
     );
-    const macroBulkDefs = [
-      { key: 'brief-macro',        label: '🌍 אירועי מאקרו',   items: extractVideoTabItems(effectiveVideo, 'brief-macro',        marketBriefData), tabKey: 'brief-macro' },
-      { key: 'brief-risks',        label: '⚠️ סיכונים',        items: extractVideoTabItems(effectiveVideo, 'brief-risks',        marketBriefData), tabKey: 'brief-risks' },
-      { key: 'brief-opportunities',label: '💡 הזדמנויות',      items: extractVideoTabItems(effectiveVideo, 'brief-opportunities',marketBriefData), tabKey: 'brief-opportunities' },
-      { key: 'brief-sectors',      label: '📊 ביצועי סקטורים', items: extractVideoTabItems(effectiveVideo, 'brief-sectors',      marketBriefData), tabKey: 'brief-sectors' },
-      { key: 'stocks-mentioned',   label: '🎯 מניות רלוונטיות',items: extractVideoTabItems(effectiveVideo, 'stocks-mentioned',   marketBriefData), tabKey: 'stocks-mentioned' },
-    ].filter((d) => d.items.length > 0);
-    return wrapWithBriefHeader(renderBulkShell(macroBulkDefs, sects));
   }
 
   // ── Political ────────────────────────────────────────────────────

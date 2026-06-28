@@ -705,6 +705,16 @@ export function KnowledgeFilterTabs({ tabs, activeId, onSelect, className, endSl
   );
 }
 
+/** Reusable large section title for knowledge category headers (Notion/Bloomberg style). */
+export function SectionTitle({ emoji, title, className }) {
+  return (
+    <h3 className={cn("text-2xl md:text-4xl font-extrabold tracking-tight leading-tight", className)}>
+      {emoji ? `${emoji} ` : ""}
+      {title}
+    </h3>
+  );
+}
+
 /** Themed section wrapper — flat rows inside, subtle tint + accent rail (RTL). */
 export function KnowledgeCategorySection({ categoryKey, title, emoji, children, className }) {
   const theme = getKnowledgeCategoryTheme(categoryKey);
@@ -718,13 +728,10 @@ export function KnowledgeCategorySection({ categoryKey, title, emoji, children, 
       )}
       dir="rtl"
     >
-      <div className={cn("px-3 py-2", theme.headerBg)}>
-        <h4 className={cn("text-xs font-semibold tracking-wide", theme.header)}>
-          {emoji ? `${emoji} ` : ""}
-          {title}
-        </h4>
+      <div className={cn("px-4 pt-5 pb-4", theme.headerBg)}>
+        <SectionTitle emoji={emoji} title={title} className={theme.header} />
       </div>
-      <div className={cn("border-r-2", theme.accentRail)}>
+      <div className={cn("border-r-2 pt-1", theme.accentRail)}>
         <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">{children}</div>
       </div>
     </section>

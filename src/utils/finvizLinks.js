@@ -177,6 +177,37 @@ export function getFinvizUrl(input) {
   return ticker ? `${FINVIZ_BASE}${encodeURIComponent(ticker)}` : null;
 }
 
+// Fallback URLs for symbols not supported by Finviz (DXY, crypto, etc.)
+const _FALLBACK_URL_MAP = new Map([
+  ['dxy',               'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['usdx',              'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['us dollar index',   'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['dollar index',      'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['מדד הדולר',         'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['btc',               'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
+  ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
+  ['btcusd',            'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
+  ['ביטקוין',           'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
+  ['eth',               'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
+  ['ethereum',          'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
+  ['אתריום',            'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
+  ['vix',               'https://www.tradingview.com/chart/?symbol=TVC:VIX'],
+  ['fear & greed',      'https://edition.cnn.com/markets/fear-and-greed'],
+  ['fear and greed',    'https://edition.cnn.com/markets/fear-and-greed'],
+]);
+
+/**
+ * Resolves any market symbol to an external research URL.
+ * Tries Finviz first; falls back to TradingView / CNN for DXY, VIX, crypto.
+ * Returns null if no URL is known — never returns a broken link.
+ */
+export function getExternalSymbolUrl(input) {
+  const finvizUrl = getFinvizUrl(input);
+  if (finvizUrl) return finvizUrl;
+  const key = _norm(input);
+  return _FALLBACK_URL_MAP.get(key) ?? null;
+}
+
 /** Returns true if the input resolves to a known Finviz-linkable symbol. */
 export function isFinvizLinkable(input) {
   return resolveFinvizTicker(input) !== null;

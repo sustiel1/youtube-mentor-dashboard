@@ -33,6 +33,20 @@ function formatHebrewTimestamp(seconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function resolveChapterSourceBadge(source) {
+  const s = String(source || '');
+  if (!s) return null;
+  if (s === 'description_timestamp' || s === 'youtube_description' || s === 'description_timestamps')
+    return { label: '🟢 זמן מדויק', cls: 'text-emerald-600 dark:text-emerald-400' };
+  if (s === 'gem' || s === 'gem_chapters' || s === 'gemini' || s === 'gemini_url' || s === 'gems_analysis' || s === 'ai_generated' || s === 'transcript' || s === 'saved')
+    return { label: '🔵 AI', cls: 'text-blue-500 dark:text-blue-400' };
+  if (s === 'transcript_topic_heuristic' || s === 'transcript_heuristic' || s === 'manual_transcript' || s === 'ai_transcript')
+    return { label: '🟠 משוער', cls: 'text-amber-600 dark:text-amber-400' };
+  if (s === 'outline' || s === 'duration_fallback' || s === 'estimated' || s === 'native_chapters')
+    return { label: '⚪ תבנית', cls: 'text-slate-400 dark:text-zinc-500' };
+  return { label: '⚪ לא ידוע', cls: 'text-slate-400 dark:text-zinc-500' };
+}
+
 /**
  * Removes a duplicated title prefix from a chapter description.
  * GEM sometimes repeats the chapter title verbatim at the start of the description.
@@ -172,6 +186,7 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
   const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
   const originalTitle = hasHebrew ? (section.originalTitle || section.title) : null;
   const cleanedDescription = cleanChapterSubtitle(displayTitle, section.description || "");
+  const sourceBadge = resolveChapterSourceBadge(section?.chapterSource || section?.source);
   const titleCls = compact
     ? `w-full text-right text-[15px] font-semibold leading-snug ${muted ? "text-slate-600 dark:text-zinc-400" : "text-slate-800 dark:text-zinc-100"}`
     : `w-full text-right text-base font-bold leading-snug ${muted ? "text-slate-700 dark:text-zinc-200" : "text-blue-900 dark:text-blue-200"}`;
@@ -226,6 +241,11 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
           {(section?.timestampSource === "estimated" || section?.isEstimated) && (
             <span className="text-[9px] leading-tight text-amber-500 dark:text-amber-400 whitespace-nowrap font-semibold">
               ~משוער
+            </span>
+          )}
+          {sourceBadge && !compact && (
+            <span className={`text-[9px] leading-tight whitespace-nowrap font-medium ${sourceBadge.cls}`}>
+              {sourceBadge.label}
             </span>
           )}
         </div>

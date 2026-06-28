@@ -1,5 +1,6 @@
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { isRegimeDuplicateString } from '@/lib/morningBriefDisplay';
+import { MORNING_BRIEF_SPECIALIZED_PRESENTATION } from '@/lib/morningBriefPresentation';
 import {
   EconomicCalendarSection,
   MacroSection,
@@ -23,6 +24,12 @@ function looksLikeMarketIndex(item) {
   return tickerPart.length <= 12 && MARKET_FIELD_RE.test(rest);
 }
 
+const sectionProps = (presentation, bulkSelection, bulkSections) => ({
+  presentation,
+  bulkSelection,
+  bulkSections,
+});
+
 /**
  * Morning Brief dashboard — news-first section order.
  * Always renders all sections — empty states when data is sparse.
@@ -35,6 +42,7 @@ export function MorningBriefDashboard({
   onSaveMarketBriefSection,
   bulkSelection = null,
   bulkSections = [],
+  presentation = MORNING_BRIEF_SPECIALIZED_PRESENTATION,
 }) {
   const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
   const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
@@ -42,6 +50,7 @@ export function MorningBriefDashboard({
     .filter((i) => !looksLikeMarketIndex(i))
     .filter((i) => typeof i !== 'string' || !isRegimeDuplicateString(i));
   const macroItems = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
+  const shared = sectionProps(presentation, bulkSelection, bulkSections);
 
   return (
     <div className="space-y-3" dir="rtl" data-morning-brief-dashboard>
@@ -50,63 +59,54 @@ export function MorningBriefDashboard({
         onSaveToBrain={onSaveToBrain}
         marketBriefData={marketBriefData}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <MarketRegimeSection
         marketBriefData={marketBriefData}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <SectorOverviewSection
         marketBriefData={marketBriefData}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <OpportunitiesRisksDashboard
         marketBriefData={marketBriefData}
         effectiveVideo={effectiveVideo}
         onSaveToBrain={onSaveToBrain}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <StocksMentionedSection
         marketBriefData={marketBriefData}
         effectiveVideo={effectiveVideo}
         onSaveToBrain={onSaveToBrain}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <EconomicCalendarSection
         marketBriefData={marketBriefData}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <MacroSection
         items={macroItems}
         marketBriefData={marketBriefData}
         onSaveToBrain={onSaveToBrain}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <SentimentSection
         marketBriefData={marketBriefData}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
       <MarketsSection
         marketBriefData={marketBriefData}
         indicesItems={indicesItems}
         onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📈 שווקים')}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
-        bulkSelection={bulkSelection}
-        bulkSections={bulkSections}
+        {...shared}
       />
     </div>
   );

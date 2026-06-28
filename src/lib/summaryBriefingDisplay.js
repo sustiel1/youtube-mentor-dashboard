@@ -151,6 +151,7 @@ function readInsightsObject(marketBriefData) {
  *   keyInsights: string[],
  *   keyRisks: string[],
  *   actionChecklist: string[],
+ *   executiveConclusion: string[],
  *   fullSummaryText: string,
  *   hasBriefing: boolean,
  *   coversSummaryShort: boolean,
@@ -254,26 +255,61 @@ export function buildDailyBriefingView({
     ...valueToDisplayItems(pickArray(video.actionItems, mbd.actionItems)),
   ], 8);
 
+  // Cross-section deduplication: thirtySecond items take priority; each later section
+  // drops exact duplicates that already appeared in an earlier section.
+  const crossSeen = new Set(thirtySecond.map((s) => s.toLowerCase()));
+  const dedupAgainst = (arr) => {
+    const out = [];
+    for (const item of arr) {
+      const key = String(item || '').trim().toLowerCase();
+      if (!key || crossSeen.has(key)) continue;
+      crossSeen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
+
+  const filteredStatusFactors = dedupAgainst([...statusFactors]);
+  const filteredWatchToday    = dedupAgainst([...watchToday]);
+  const filteredKeyInsights   = dedupAgainst([...keyInsights]);
+  const filteredKeyRisks      = dedupAgainst([...keyRisks]);
+  const filteredChecklist     = dedupAgainst([...actionChecklist]);
+
+  const filteredMarketStatus = marketStatus
+    ? { ...marketStatus, factors: filteredStatusFactors }
+    : null;
+
   const fullSummaryText = String(
     summaryObj.fullSummary || fullSummary || video.fullSummary || video.gemSummary || ''
   ).trim();
 
+  // Executive conclusion: up to 5 bullets from conclusion/full-summary not already shown above.
+  const conclusionBullets = uniqueStrings([
+    ...splitSummaryBullets(summaryObj.mainConclusion || ''),
+    ...splitSummaryBullets(fullSummaryText),
+  ], 20);
+  const executiveConclusion = conclusionBullets
+    .filter((b) => !crossSeen.has(String(b).trim().toLowerCase()))
+    .slice(0, 5);
+
   const hasBriefing = Boolean(
     thirtySecond.length
-    || marketStatus
-    || watchToday.length
-    || keyInsights.length
-    || keyRisks.length
-    || actionChecklist.length,
+    || filteredMarketStatus
+    || filteredWatchToday.length
+    || filteredKeyInsights.length
+    || filteredKeyRisks.length
+    || filteredChecklist.length
+    || executiveConclusion.length,
   );
 
   return {
     thirtySecond,
-    marketStatus,
-    watchToday,
-    keyInsights,
-    keyRisks,
-    actionChecklist,
+    marketStatus: filteredMarketStatus,
+    watchToday: filteredWatchToday,
+    keyInsights: filteredKeyInsights,
+    keyRisks: filteredKeyRisks,
+    actionChecklist: filteredChecklist,
+    executiveConclusion,
     fullSummaryText,
     hasBriefing,
     coversSummaryShort: isSummaryShortCoveredByBriefing(summaryShort, thirtySecond),

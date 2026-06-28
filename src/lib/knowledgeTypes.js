@@ -48,3 +48,29 @@ export function inferKnowledgeTypes(text) {
   }
   return found;
 }
+
+// ── Useful Knowledge shelf classification ─────────────────────────────────────
+
+/**
+ * Returns true if the text looks like a time-sensitive market fact — not evergreen.
+ * These belong in "Temporary Market Facts", not mixed with reusable principles.
+ */
+export function isTemporaryMarketFact(text) {
+  if (!text || typeof text !== 'string') return false;
+  const t = text.trim();
+  // Ticker + specific price number: "GOOGL 349", "MSFT at 420"
+  if (/\b[A-Z]{2,5}\s+(?:at\s+)?\d{3,}\b/.test(t)) return true;
+  // Support/resistance at a specific level
+  if (/(?:support|resistance|תמיכה|התנגדות)\s+(?:at|ב|ל|of)?\s*[\d,]+/i.test(t)) return true;
+  // Macro data with specific current %: "inflation at 3.2%", "ריבית עמדה על 5.25%"
+  if (/(?:inflation|אינפלציה|cpi|gdp|interest rate|ריבית|unemployment|אבטלה|pce)\s+(?:at|of|ב|ל|עומד על|עלה ל|is|stands at)?\s*[\d.]+%/i.test(t)) return true;
+  // Fed/central bank rate decisions
+  if (/(?:fed|federal reserve|הפד|בנק מרכזי|ecb|fomc).{0,40}(?:raised?|lowered?|cut|העלה|הוריד|הפחית|הקפיא).{0,20}\d/i.test(t)) return true;
+  // Quarterly or annual time-bound data: "Q3 2024", "2025 forecast"
+  if (/(?:Q[1-4]\s*\/?\s*\d{2,4}|רבעון\s+[א-ד]+\s*\d{2,4}|\b20[2-9]\d\s+(?:forecast|outlook|estimate|תחזית|projection))/.test(t)) return true;
+  // Price targets
+  if (/(?:price target|target price|מחיר יעד|tp:?)\s*[\$€£]?\s*\d+/i.test(t)) return true;
+  // Specific % forecasts: "expected to reach 4%", "צפי ל-3.5%"
+  if (/(?:forecast|תחזית|projection|expected to reach|צפי ל|expected at).{0,25}\d+\.?\d*%/i.test(t)) return true;
+  return false;
+}

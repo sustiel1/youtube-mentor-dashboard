@@ -1,5 +1,8 @@
 import { cn } from '@/lib/utils';
 import {
+  SectionHeaderTitle,
+} from '@/components/dashboard/MorningBriefVisualPrimitives';
+import {
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from '@/components/shared/UniversalTabSelectRow';
@@ -28,15 +31,8 @@ export function SelectableSummaryCardHeader({
 }) {
   const titleEl = (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0">
-      <h2 className={cn('text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-zinc-50 tracking-tight leading-snug shrink-0', titleClassName)}>
-        {title}
-      </h2>
+      <SectionHeaderTitle title={title} count={showCount ? count : undefined} titleClassName={titleClassName} />
       {headerPills}
-      {showCount && count != null && count > 0 && (
-        <span className={cn('text-base font-bold tabular-nums shrink-0', countTextCls)}>
-          {count}
-        </span>
-      )}
     </div>
   );
 
