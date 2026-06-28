@@ -59,6 +59,11 @@ function MacroDirectionLines({ text }) {
   );
 }
 
+function buildPxUrl(text) {
+  if (!text?.trim()) return null;
+  return `https://www.perplexity.ai/search?q=${encodeURIComponent(text.trim())}`;
+}
+
 function ItemRow({
   text,
   stockVisual = null,
@@ -68,6 +73,7 @@ function ItemRow({
   bulkSelected = false,
   onBulkToggle = null,
   bulkSelection = null,
+  pxUrl = null,
 }) {
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
@@ -75,6 +81,7 @@ function ItemRow({
         bulkSelection={bulkSelection}
         text={text}
         brainSaved={saved}
+        pxUrl={pxUrl}
       />
       {!bulkSelection?.onQuickSaveBrain && saved ? (
         <span
@@ -206,6 +213,7 @@ export function LearningTabContent({
               tabScope: bulkSelection.tabScope,
             }) : null}
             bulkSelection={bulkSelection}
+            pxUrl={buildPxUrl(text)}
           />
         );
       })}

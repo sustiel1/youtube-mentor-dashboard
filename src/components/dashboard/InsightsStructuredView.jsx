@@ -6,7 +6,7 @@ import {
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from '@/components/shared/UniversalTabSelectRow';
-import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
+import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSectionLabelRow';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { DASHBOARD_TABLE_CELL_BODY_CLS } from './MorningBriefVisualPrimitives';
@@ -59,6 +59,11 @@ const COLUMNS = [
   },
 ];
 
+function buildPxUrl(text) {
+  if (!text?.trim()) return null;
+  return `https://www.perplexity.ai/search?q=${encodeURIComponent(text.trim())}`;
+}
+
 /** Presentation-only: collapse accidental per-word newlines into flowing paragraphs. */
 function displayInsightText(value) {
   return String(value ?? '')
@@ -96,22 +101,23 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
   const cols = activeColumns([row]);
   const summary = rowSummary(row);
   const saved = isSaved ? isSaved(summary) : false;
+  const pxUrl = buildPxUrl(summary);
 
   const actions = bulkSelection?.onQuickSaveBrain ? (
     <UniversalTabQuickSaveFromBulk
       bulkSelection={bulkSelection}
       text={summary}
       brainSaved={saved}
+      pxUrl={pxUrl}
     />
-  ) : onSaveToBrain ? (
-    <button
-      type="button"
-      onClick={() => onSaveToBrain(summary)}
-      title="שמור למוח"
-      className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
-    >
-      {saved ? '✓' : '🧠'}
-    </button>
+  ) : (summary || pxUrl) ? (
+    <UniversalTabQuickSaveActions
+      meta={{ text: summary, sectionLabel: 'תובנות', type: 'insights' }}
+      onBrain={onSaveToBrain ? () => onSaveToBrain(summary) : undefined}
+      brainSaved={saved}
+      pxUrl={pxUrl}
+      compact
+    />
   ) : null;
 
   const insightOnly = cols.length === 1 && cols[0].key === 'insight';
