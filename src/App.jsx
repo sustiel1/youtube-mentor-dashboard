@@ -131,7 +131,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClientInstance}>
       <AppLayout theme={theme} toggleTheme={toggleTheme} isDark={isDark} />
-      <Toaster position="top-center" theme={isDark ? "dark" : "light"} richColors />
+      <Toaster position="bottom-center" theme={isDark ? "dark" : "light"} richColors />
     </QueryClientProvider>
   );
 }

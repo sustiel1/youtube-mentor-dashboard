@@ -6,6 +6,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { extractQueryFromPxUrl, openGoogleFinance } from '@/components/shared/ResearchDropdown';
 
@@ -64,24 +65,57 @@ function CompactSaveMenu({
   const [coords, setCoords] = useState(null);
   const triggerRef = useRef(null);
   const menuRef    = useRef(null);
+  const menuPointerRef = useRef(false);
 
   const close = useCallback(() => {
+    menuPointerRef.current = false;
     setOpen(false);
     setCoords(null);
   }, []);
 
-  const fire = useCallback((handler) => {
-    close();
-    if (handler) handler(payload);
-  }, [close, payload]);
+  const stopMenuEvent = useCallback((event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    menuPointerRef.current = true;
+  }, []);
 
-  const handleCopy = useCallback(() => {
-    close();
+  const fire = useCallback((event, handler) => {
+    stopMenuEvent(event);
+    if (!handler) return;
+    try {
+      handler(payload);
+      close();
+    } catch (err) {
+      console.error('[CompactSaveMenu] handler error:', err);
+      toast.error('שגיאה בביצוע הפעולה');
+    }
+  }, [close, payload, stopMenuEvent]);
+
+  const handleCopy = useCallback((event) => {
+    stopMenuEvent(event);
+
     const lines = [];
     if (payload.sectionLabel) lines.push(`## ${payload.sectionLabel}`);
     lines.push(payload.text);
-    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
-  }, [close, payload]);
+    navigator.clipboard.writeText(lines.join('\n'))
+      .then(() => {
+        toast.success('הועתק ✓');
+        close();
+      })
+      .catch(() => toast.error('שגיאה בהעתקה'));
+  }, [close, payload, stopMenuEvent]);
+
+  const handlePerplexity = useCallback((event) => {
+    stopMenuEvent(event);
+    if (pxUrl) window.open(pxUrl, '_blank', 'noopener,noreferrer');
+    close();
+  }, [close, pxUrl, stopMenuEvent]);
+
+  const handleGoogleFinance = useCallback((event) => {
+    stopMenuEvent(event);
+    openGoogleFinance(extractQueryFromPxUrl(pxUrl));
+    close();
+  }, [close, pxUrl, stopMenuEvent]);
 
   // Calculate fixed position from trigger bounding rect when opening
   useEffect(() => {
@@ -104,7 +138,7 @@ function CompactSaveMenu({
     });
   }, [open]);
 
-  // Close on outside mousedown and on any scroll
+  // Close on outside mousedown; ignore scroll while pointer is inside menu
   useEffect(() => {
     if (!open) return;
     const onDown = (e) => {
@@ -115,9 +149,11 @@ function CompactSaveMenu({
         close();
       }
     };
-    const onScroll = () => close();
+    const onScroll = () => {
+      if (menuPointerRef.current) return;
+      close();
+    };
     document.addEventListener('mousedown', onDown);
-    // capture:true catches scroll on any scrollable ancestor, not just window
     window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('mousedown', onDown);
@@ -147,12 +183,15 @@ function CompactSaveMenu({
             dir="rtl"
             style={{ position: 'fixed', top: coords.top, left: coords.left }}
             className="z-[9999] min-w-[160px] rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
+            onMouseDown={stopMenuEvent}
+            onPointerDown={stopMenuEvent}
+            onClick={stopMenuEvent}
           >
             {onBrain && (
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => fire(onBrain)}
+                onMouseDown={(e) => fire(e, onBrain, 'save_brain')}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {brainSaved ? '✓🧠 פתח במוח' : '🧠 שמור למוח'}
@@ -162,7 +201,7 @@ function CompactSaveMenu({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => fire(onObsidian)}
+                onMouseDown={(e) => fire(e, onObsidian, 'save_obsidian')}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {obsidianSaved ? '✅ נשמר ל-Obsidian' : '🟣 שמור ל-Obsidian'}
@@ -172,7 +211,7 @@ function CompactSaveMenu({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => fire(onWorkspace)}
+                onMouseDown={(e) => fire(e, onWorkspace, 'save_workspace')}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {workspaceSaved ? '✓⭐ פתח ב-Workspace' : '⭐ שמור ל-Workspace'}
@@ -182,7 +221,7 @@ function CompactSaveMenu({
             <button
               type="button"
               role="menuitem"
-              onClick={handleCopy}
+              onMouseDown={handleCopy}
               className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400"
             >
               📋 העתק
@@ -190,20 +229,18 @@ function CompactSaveMenu({
             {pxUrl && (
               <>
                 <div className="my-0.5 border-t border-slate-100 dark:border-zinc-800" />
-                <a
-                  href={pxUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  role="menuitem"
-                  onClick={() => close()}
-                  className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
-                >
-                  🔍 מחקר AI — פרפלקסיטי
-                </a>
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={() => { close(); openGoogleFinance(extractQueryFromPxUrl(pxUrl)); }}
+                  onMouseDown={handlePerplexity}
+                  className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
+                >
+                  🔍 מחקר AI — פרפלקסיטי
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onMouseDown={handleGoogleFinance}
                   className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                 >
                   📊 מחקר AI — Google Finance

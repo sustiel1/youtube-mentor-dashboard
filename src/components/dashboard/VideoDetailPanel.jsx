@@ -11074,7 +11074,7 @@ export function VideoDetailPanel({
                     </>
                   );
                   const brainSaveInsights = (text) => saveSingleItemToBrain(text, 'insights', '', '');
-                  const isInsightSaved = (text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, 'insights', text));
+                  const isInsightSaved = (text) => isBrainItemSaved(text, 'insights');
 
                   const insightsBulkSections = [
                     ...universalInsightSections.map((s) => ({ key: s.key, label: s.label, items: s.items, tabKey: 'insights' })),
@@ -11102,7 +11102,7 @@ export function VideoDetailPanel({
                               sections={[{ key, label, items }]}
                               cardClassName={highlight ? 'rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20 px-4 py-3' : SUMMARY_CARD_CLASS}
                               onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
-                              isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                              isSaved={(text) => isBrainItemSaved(text, tabKey)}
                               bulkSelection={bulkSelectionShare}
                               tabScope="insights"
                             />
@@ -11122,7 +11122,7 @@ export function VideoDetailPanel({
                               items={items}
                               emptyLabel=""
                               onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
-                              isSaved={(text) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
+                              isSaved={(text) => isBrainItemSaved(text, tabKey)}
                               bulkSelection={mergeBulkSelection(bulkSelectionShare, {
                                 idPrefix: `insights:${key}`,
                                 sectionLabel: label,
