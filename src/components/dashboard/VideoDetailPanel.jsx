@@ -3386,6 +3386,13 @@ export function VideoDetailPanel({
     const structured = resolveStructuredChapters(video || {});
     if (structured.length > 0) return structured;
 
+    // localStorage strips video.description — but videoProp (from Base44 / React Query)
+    // may still carry the original field. Try it as a second source.
+    if (videoProp && videoProp !== video) {
+      const fromProp = resolveStructuredChapters(videoProp);
+      if (fromProp.length > 0) return fromProp;
+    }
+
     // When video.description was stripped from the entity, check the youtubeChapterCache
     // for chapters fetched in a prior session without requiring an API call.
     const watchUrl = getWatchUrl(video);
@@ -3400,7 +3407,7 @@ export function VideoDetailPanel({
       chapterSource: c.chapterSource || 'description_timestamp',
       source: c.source || 'description_timestamp',
     }));
-  }, [video]);
+  }, [video, videoProp]);
 
   const gemChapters = useMemo(() => {
     const normalized = normalizeGemChapters(extractVideoTabItems(effectiveVideo, 'chapters', marketBriefData));
@@ -3517,7 +3524,10 @@ export function VideoDetailPanel({
   useEffect(() => {
     if (!video?.id) return;
     if (Array.isArray(video.descriptionChapters) && video.descriptionChapters.length > 0) return;
-    const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
+    // videoProp retains the description field from Base44 even after localStorage strips it
+    const existingDesc =
+      (typeof video?.description === 'string' ? video.description.trim() : '') ||
+      (typeof videoProp?.description === 'string' ? videoProp.description.trim() : '');
     if (!existingDesc) return;
     const descChapters = extractTimestampsFromDescription(existingDesc);
     if (descChapters.length < 2) return;
