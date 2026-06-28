@@ -1018,141 +1018,130 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
 
   return (
     <SectionCard title="🌍 אירועי מאקרו" count={safe.length} tone={TONE.NEUTRAL}>
-      <div className="space-y-4" dir="rtl">
-        {safe.map((item, i) => {
-          const isStr  = typeof item === 'string';
-          const title  = isStr ? item.trim() : (item.event || item.title || item.name || item.subject || '').trim();
-          const date   = isStr ? '' : (item.date || item.time || item.when || '').trim();
-          const imp    = isStr ? '' : translateLevel(item.importance || item.priority || item.significance || '');
-          const impact = isStr ? '' : (item.impact || item.effect || item.description || item.expectedImpact || '').trim();
-          const secs   = isStr ? [] : (() => {
-            const raw = item.sectors || item.affectedSectors || [];
-            return Array.isArray(raw) ? raw : String(raw).split(',').map(s => s.trim()).filter(Boolean);
-          })();
-          const rowText = formatMacroEventItem(item);
-          const pxUrl   = buildPerplexityResearchQuery(item, 'events');
-          const mktUrl  = buildMarketImpactUrl(item);
-          const icon    = getEventIcon(item);
+      <p className="text-[12px] text-slate-500 dark:text-zinc-400 mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
+        אירועים נקודתיים שיכולים להזיז את השוק
+      </p>
+      <div className="w-full overflow-x-auto" dir="rtl">
+        <table className="w-full min-w-[860px] text-right border-collapse table-fixed" dir="rtl">
+          <colgroup>
+            <col style={{ width: '2.5%' }} />
+            <col style={{ width: '24%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '14%' }} />
+            <col />
+            <col style={{ width: '11%' }} />
+          </colgroup>
+          <thead>
+            <tr className="border-b-2 border-slate-200/80 dark:border-zinc-700/70">
+              <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" />
+              <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אירוע</th>
+              <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>תאריך</th>
+              <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>חשיבות</th>
+              <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג אירוע</th>
+              <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכסים מושפעים</th>
+              <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>השפעה צפויה</th>
+              <th className={`py-1.5 pl-1 pr-0 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>פעולות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {safe.map((item, i) => {
+              const isStr     = typeof item === 'string';
+              const title     = isStr ? item.trim() : (item.event || item.title || item.name || item.subject || '').trim();
+              const date      = isStr ? '' : (item.date || item.time || item.when || '').trim();
+              const imp       = isStr ? '' : translateLevel(item.importance || item.priority || item.significance || '');
+              const impact    = isStr ? '' : (item.impact || item.effect || item.description || item.expectedImpact || '').trim();
+              const eventType = isStr ? '' : (item.type || item.eventType || item.category || '').trim();
+              const secs      = isStr ? [] : (() => {
+                const raw = item.sectors || item.affectedSectors || item.affectedAssets || item.assets || [];
+                return Array.isArray(raw) ? raw : String(raw).split(',').map(s => s.trim()).filter(Boolean);
+              })();
+              const rowText = formatMacroEventItem(item);
+              const pxUrl   = buildPerplexityResearchQuery(item, 'events');
+              const mktUrl  = buildMarketImpactUrl(item);
 
-          const bulkId    = merged ? `macro-gem:brief-macro:${i}` : null;
-          const isChecked = bulkId ? !!merged.multiSelected?.has(bulkId) : false;
-          const onToggle  = bulkId && merged?.onToggle
-            ? () => merged.onToggle(bulkId, { text: rowText, sectionLabel: '🌍 אירועי מאקרו', type: 'brief-macro', tabScope: 'specialized' })
-            : null;
+              const bulkId    = merged ? `macro-gem:brief-macro:${i}` : null;
+              const isChecked = bulkId ? !!merged.multiSelected?.has(bulkId) : false;
+              const onToggle  = bulkId && merged?.onToggle
+                ? () => merged.onToggle(bulkId, { text: rowText, sectionLabel: '🌍 אירועי מאקרו', type: 'brief-macro', tabScope: 'specialized' })
+                : null;
 
-          // Importance-driven card palette
-          const palette = (() => {
-            const il = imp.toLowerCase();
-            if (il.includes('גבוהה') || il.includes('קריטי') || il.includes('מאוד'))
-              return {
-                card:   'bg-gradient-to-br from-red-50/90 via-rose-50/60 to-white dark:from-red-950/25 dark:via-rose-950/10 dark:to-zinc-900 border-red-200/80 dark:border-red-800/50',
-                accent: 'bg-red-500',
-                badge:  'bg-red-100 text-red-700 border border-red-300/60 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700/50',
-                iconBg: 'bg-red-50 dark:bg-red-950/30',
-              };
-            if (il.includes('בינונית') || il.includes('medium'))
-              return {
-                card:   'bg-gradient-to-br from-amber-50/90 via-yellow-50/60 to-white dark:from-amber-950/25 dark:via-yellow-950/10 dark:to-zinc-900 border-amber-200/80 dark:border-amber-800/50',
-                accent: 'bg-amber-500',
-                badge:  'bg-amber-100 text-amber-700 border border-amber-300/60 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700/50',
-                iconBg: 'bg-amber-50 dark:bg-amber-950/30',
-              };
-            if (il.includes('נמוכה') || il.includes('low'))
-              return {
-                card:   'bg-gradient-to-br from-emerald-50/90 via-green-50/60 to-white dark:from-emerald-950/25 dark:via-green-950/10 dark:to-zinc-900 border-emerald-200/80 dark:border-emerald-800/50',
-                accent: 'bg-emerald-500',
-                badge:  'bg-emerald-100 text-emerald-700 border border-emerald-300/60 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700/50',
-                iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
-              };
-            return {
-              card:   'bg-gradient-to-br from-slate-50/90 via-blue-50/30 to-white dark:from-zinc-900/90 dark:via-blue-950/10 dark:to-zinc-900 border-slate-200/80 dark:border-zinc-700/60',
-              accent: 'bg-indigo-400',
-              badge:  'bg-slate-100 text-slate-600 border border-slate-200/60 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700/60',
-              iconBg: 'bg-slate-100 dark:bg-zinc-800',
-            };
-          })();
+              const impCls = (() => {
+                const il = imp.toLowerCase();
+                if (il.includes('גבוהה') || il.includes('קריטי') || il.includes('מאוד'))
+                  return 'bg-red-100 text-red-700 border border-red-300/60 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700/50';
+                if (il.includes('בינונית') || il.includes('medium'))
+                  return 'bg-amber-100 text-amber-700 border border-amber-300/60 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700/50';
+                return 'bg-slate-100 text-slate-600 border border-slate-200/60 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700/60';
+              })();
 
-          return (
-            <div
-              key={i}
-              className={`group relative rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden ${palette.card}`}
-            >
-              {/* Importance accent bar — right edge (RTL leading edge) */}
-              <div className={`absolute right-0 top-0 bottom-0 w-[3px] ${palette.accent}`} />
-
-              <div className="p-5 pr-6">
-                {/* ── Header row ───────────────────────────────────── */}
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div className={`shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl ${palette.iconBg} shadow-sm text-[28px] leading-none`}>
-                    {icon}
-                  </div>
-
-                  {/* Title + importance badge — same line */}
-                  <div className="flex-1 min-w-0 pt-0.5">
-                    <div className="flex items-baseline gap-2 flex-wrap" dir="rtl">
-                      <p className="text-base font-black leading-tight text-slate-900 dark:text-zinc-50 break-words [overflow-wrap:anywhere] flex-1 min-w-0">
-                        {title || '—'}
-                      </p>
-                      {imp && (
-                        <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${palette.badge}`}>
-                          📌 {imp}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Date + checkbox */}
-                  <div className="shrink-0 flex flex-col items-end gap-2">
-                    {date && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/70 dark:bg-zinc-800/70 border border-slate-200/50 dark:border-zinc-700/50 text-[11px] font-medium text-slate-500 dark:text-zinc-400 whitespace-nowrap backdrop-blur-sm">
-                        📅 {date}
-                      </span>
-                    )}
+              return (
+                <tr
+                  key={i}
+                  className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors group"
+                >
+                  <td className="py-2 pr-2 pl-0 align-middle">
                     {onToggle && <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />}
-                  </div>
-                </div>
-
-                {/* ── Summary ──────────────────────────────────────── */}
-                {impact && (
-                  <p className="mt-3 text-[15px] font-semibold text-slate-900 dark:text-zinc-100 leading-relaxed line-clamp-3 break-words mr-[72px]">
-                    {impact}
-                  </p>
-                )}
-
-                {/* ── Sector pills ─────────────────────────────────── */}
-                {secs.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5 mr-[72px]">
-                    {secs.map((s, si) => (
-                      <span key={si} className="px-2 py-0.5 rounded-full bg-white/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/40 text-[10px] font-semibold text-slate-600 dark:text-zinc-300">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* ── Action bar ───────────────────────────────────── */}
-                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100/80 dark:border-zinc-800/60 flex-wrap">
-                  {mktUrl && (
-                    <a href={mktUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50/90 dark:bg-cyan-950/40 text-[12px] font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors whitespace-nowrap shadow-sm">
-                      📈 השפעה על השוק
-                    </a>
-                  )}
-                  {pxUrl && (
-                    <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[12px] font-bold text-white transition-colors whitespace-nowrap shadow-sm">
-                      🔍 מחקר AI
-                    </a>
-                  )}
-                  <div className="mr-auto flex items-center gap-1">
-                    <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle">
+                    <p className="text-sm font-bold leading-snug text-slate-900 dark:text-zinc-50 break-words [overflow-wrap:anywhere] line-clamp-3">
+                      {title || '—'}
+                    </p>
+                  </td>
+                  <td className="px-2 py-2.5 align-middle whitespace-nowrap">
+                    {date
+                      ? <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">📅 {date}</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle">
+                    {imp
+                      ? <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${impCls}`}>{imp}</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle">
+                    {eventType
+                      ? <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 break-words">{eventType}</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle">
+                    {secs.length > 0
+                      ? <div className="flex flex-wrap gap-1">
+                          {secs.map((s, si) => (
+                            <span key={si} className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/40 text-[10px] font-semibold text-slate-600 dark:text-zinc-300 whitespace-nowrap">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle min-w-0">
+                    {impact
+                      ? <p className="text-[12px] font-medium text-slate-700 dark:text-zinc-200 leading-relaxed line-clamp-3 break-words [overflow-wrap:anywhere]">{impact}</p>
+                      : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+                  </td>
+                  <td className="px-2 py-2.5 align-middle">
+                    <div className="flex flex-col gap-1.5 items-end">
+                      {mktUrl && (
+                        <a href={mktUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-cyan-200 dark:border-cyan-800 bg-cyan-50/90 dark:bg-cyan-950/40 text-[10px] font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors whitespace-nowrap">
+                          📈 שוק
+                        </a>
+                      )}
+                      {pxUrl && (
+                        <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[10px] font-bold text-white transition-colors whitespace-nowrap">
+                          🔍 AI
+                        </a>
+                      )}
+                      <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </SectionCard>
   );
@@ -1531,6 +1520,28 @@ function buildPerplexityResearchQuery(item, sectionType) {
       : (item.warning || item.action || item.title || item.text || item.content || '').trim();
     if (!text) return null;
     q = `בדוק את פעולת המעקב הבאה:\n\n"${text}"\n\nהצג:\n1. האם זה עדיין רלוונטי לפי הנתונים האחרונים\n2. אילו נתונים צריך לבדוק\n3. אילו מניות / ETF קשורים\n4. מה תהיה אינדיקציה חיובית\n5. מה תהיה אינדיקציה שלילית\n6. פעולה מומלצת: קנייה / מעקב / המתנה / הימנעות\n\nענה בעברית.`;
+  } else if (sectionType === 'snapshot') {
+    const category = (item.category || '').trim();
+    const title    = (item.title    || '').trim();
+    const body     = (item.body     || '').trim();
+    const badge    = (item.badge    || '').trim();
+    if (!title && !body) return null;
+    const lines = [`נתח את מצב השוק הבא:`];
+    if (category) lines.push(`קטגוריה: ${category}`);
+    if (title)    lines.push(`כותרת: ${title}`);
+    if (badge)    lines.push(`מצב: ${badge}`);
+    if (body)     lines.push(`פרטים: ${body}`);
+    lines.push(`\nהצג:\n1. האם מצב זה תומך בקנייה, המתנה או הימנעות\n2. אילו סקטורים ומניות מושפעים\n3. מה הסיכון המרכזי\n4. מה כדאי לעקוב בשבועיים הקרובים\n\nענה בעברית ובצורה תמציתית.`);
+    q = lines.join('\n');
+  } else if (sectionType === 'macro-overview') {
+    const topic = (item.topic || '').trim();
+    const text  = (item.text  || '').trim();
+    if (!text) return null;
+    const lines = [`נתח את נושא המאקרו הבא:`];
+    if (topic) lines.push(`נושא: ${topic}`);
+    if (text)  lines.push(`סיכום: ${text}`);
+    lines.push(`\nהצג:\n1. למה זה חשוב למשקיעים עכשיו\n2. אילו סקטורים ומניות מושפעים\n3. מה הסיכון\n4. מה כדאי לעקוב בהמשך\n\nענה בעברית ובצורה תמציתית.`);
+    q = lines.join('\n');
   }
 
   if (!q) return null;
@@ -1812,8 +1823,8 @@ function KpiCard({ label, value, accent = 'slate', href, valueDir = 'rtl', compa
 
   const inner = (
     <div className={`rounded-lg border ${border} ${bg} px-3 ${compact ? 'py-2' : 'py-2.5'} h-full flex flex-col gap-0.5 min-w-0 transition-shadow hover:shadow-sm`}>
-      <p className={`text-[10px] font-semibold uppercase tracking-wide truncate ${lc}`}>{label}</p>
-      <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold leading-snug line-clamp-2 ${vc}`} dir={valueDir}>{value}</p>
+      <p className={`text-[11px] font-semibold uppercase tracking-wide truncate ${lc}`}>{label}</p>
+      <p className={`${compact ? 'text-[13px]' : 'text-sm'} font-bold leading-snug line-clamp-2 ${vc}`} dir={valueDir}>{value}</p>
     </div>
   );
 
@@ -1866,7 +1877,7 @@ const SC = {
   },
 };
 
-function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText, badge, ctaLabel, ctaHref, isEmpty = false, emptyTitle }) {
+function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText, badge, ctaLabel, ctaHref, researchHref, isEmpty = false, emptyTitle }) {
   const s = SC[accent] ?? SC.amber;
   return (
     <div className={`rounded-xl border ${s.border} ${s.bg} p-5 flex flex-col min-h-[11rem] transition-shadow hover:shadow-md`} dir="rtl">
@@ -1875,19 +1886,19 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
         <div className={`rounded-xl w-11 h-11 flex items-center justify-center text-xl shrink-0 ${s.iconBg} ${s.iconTx}`}>
           {icon}
         </div>
-        <p className={`text-xs font-medium ${s.cat}`}>{category}</p>
+        <p className={`text-[13px] font-semibold ${s.cat}`}>{category}</p>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         {!isEmpty && title ? (
           <>
-            <p className={`text-base font-bold leading-snug mb-1.5 break-words ${s.title}`}>{title}</p>
+            <p className={`text-lg font-bold leading-snug mb-1.5 break-words ${s.title}`}>{title}</p>
             {subLine && (
-              <p className={`text-sm mt-0.5 break-words ${s.body}`}>{subLine}</p>
+              <p className={`text-[13px] mt-0.5 break-words ${s.body}`}>{subLine}</p>
             )}
             {bodyText && (
-              <p className={`text-sm mt-1 line-clamp-3 break-words ${s.body}`}>{bodyText}</p>
+              <p className={`text-[13px] mt-1 line-clamp-3 break-words ${s.body}`}>{bodyText}</p>
             )}
           </>
         ) : (
@@ -1898,8 +1909,8 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
         )}
       </div>
 
-      {/* Footer: CTA button or badge with colored dot */}
-      <div className="mt-4 shrink-0">
+      {/* Footer: CTA button or badge with colored dot, + AI research action */}
+      <div className="mt-4 shrink-0 flex items-center gap-2 flex-wrap">
         {!isEmpty && ctaHref && ctaLabel ? (
           <a
             href={ctaHref}
@@ -1917,6 +1928,18 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
             {badge}
           </span>
         ) : null}
+        {!isEmpty && researchHref && (
+          <a
+            href={researchHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="פתח מחקר AI בפרפלקסיטי"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap"
+          >
+            🔍 מחקר AI
+          </a>
+        )}
       </div>
     </div>
   );
@@ -2062,13 +2085,6 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
   ]);
   const extras = entries.filter(([k]) => !allKnownKeys.has(k));
 
-  // Derived tones
-  const moodTone    = macroMood     ? getOverviewTone(macroMood)     : 'amber';
-  const riskTone    = riskOnRiskOff ? getOverviewTone(riskOnRiskOff) : 'amber';
-  const overallTone = moodTone === 'red' || riskTone === 'red' ? 'red'
-    : moodTone === 'green' && riskTone === 'green' ? 'green' : 'amber';
-  const riskLabel   = { green: 'סיכון נמוך', amber: 'סיכון בינוני', red: 'סיכון גבוה' }[overallTone];
-
   const fullText = [
     macroMood         && `מצב מאקרו: ${macroMood}`,
     riskOnRiskOff     && `Risk On/Off: ${riskOnRiskOff}`,
@@ -2081,45 +2097,137 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
     ...extras.map(([k, v]) => `${heLabel(k)}: ${String(v).trim()}`),
   ].filter(Boolean).join('\n');
 
+  const mainThemeUrl         = mainTheme         ? buildPerplexityResearchQuery({ topic: 'הסיפור המרכזי של השוק', text: mainTheme },         'macro-overview') : null;
+  const mainConclusionUrl    = mainConclusion     ? buildPerplexityResearchQuery({ topic: 'מסקנה מרכזית',        text: mainConclusion },     'macro-overview') : null;
+  const marketImplicationUrl = marketImplication  ? buildPerplexityResearchQuery({ topic: 'השפעה על השוק',       text: marketImplication },  'macro-overview') : null;
+  const actionsUrl           = actions.length     ? buildPerplexityResearchQuery({ topic: 'מה לעקוב',            text: actions.join(' • ') }, 'macro-overview') : null;
+
   return (
     <SectionCard title="🌐 תמונת מאקרו" count={null} tone={TONE.NEUTRAL}>
       <div className="space-y-3" dir="rtl">
+        <p className="text-[12px] text-slate-500 dark:text-zinc-400 -mt-1 mb-1 pb-2 border-b border-slate-100 dark:border-zinc-800">
+          סיכום מצב השוק והמשמעות הרחבה
+        </p>
 
-        {/* Row 1 — Status bar */}
-        {(macroMood || riskOnRiskOff) && (
-          <div className="flex flex-wrap gap-2">
-            {macroMood     && <MacroStatusPill label="מצב מאקרו"        value={translateFinancialTerm(macroMood)}     tone={moodTone} />}
-            {riskOnRiskOff && <MacroStatusPill label="סנטימנט סיכון"    value={translateFinancialTerm(riskOnRiskOff)} tone={riskTone} />}
-            {(macroMood || riskOnRiskOff) && <MacroStatusPill label="רמת סיכון" value={riskLabel} tone={overallTone} />}
+        {/* Compact summary table */}
+        {(mainTheme || mainConclusion || marketImplication || winners.length > 0 || losers.length > 0 || actions.length > 0 || extras.length > 0) && (
+          <div className="w-full overflow-x-auto rounded-lg border border-slate-100 dark:border-zinc-800" dir="rtl">
+            <table className="w-full text-right border-collapse" dir="rtl">
+              <colgroup>
+                <col style={{ width: '22%' }} />
+                <col />
+                <col style={{ width: '96px' }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-slate-200/80 dark:border-zinc-700/70 bg-slate-50/60 dark:bg-zinc-800/30">
+                  <th className={`px-3 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נושא</th>
+                  <th className={`px-3 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סיכום</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {mainTheme && (
+                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-blue-700 dark:text-blue-400">🎯 סיפור השוק</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainTheme}</p>
+                    </td>
+                    <td className="px-2 py-2.5 align-middle">
+                      {mainThemeUrl && <a href={mainThemeUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                    </td>
+                  </tr>
+                )}
+                {mainConclusion && (
+                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-purple-700 dark:text-purple-400">📌 מסקנה מרכזית</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainConclusion}</p>
+                    </td>
+                    <td className="px-2 py-2.5 align-middle">
+                      {mainConclusionUrl && <a href={mainConclusionUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                    </td>
+                  </tr>
+                )}
+                {marketImplication && (
+                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-sky-600 dark:text-sky-400">📈 השפעה על השוק</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{marketImplication}</p>
+                    </td>
+                    <td className="px-2 py-2.5 align-middle">
+                      {marketImplicationUrl && <a href={marketImplicationUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                    </td>
+                  </tr>
+                )}
+                {(winners.length > 0 || losers.length > 0) && (
+                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="text-[12px] font-bold text-slate-600 dark:text-zinc-300">📊 שוק</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <div className="flex flex-wrap gap-3">
+                        {winners.length > 0 && (
+                          <span className="flex flex-wrap gap-1 items-center">
+                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">📈 מרוויחים:</span>
+                            {winners.map((w, wi) => (
+                              <span key={wi} className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 text-[10px] font-semibold">{w}</span>
+                            ))}
+                          </span>
+                        )}
+                        {losers.length > 0 && (
+                          <span className="flex flex-wrap gap-1 items-center">
+                            <span className="text-[11px] font-bold text-red-600 dark:text-red-400">📉 תחת לחץ:</span>
+                            {losers.map((l, li) => (
+                              <span key={li} className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 text-[10px] font-semibold">{l}</span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td />
+                  </tr>
+                )}
+                {actions.length > 0 && (
+                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-indigo-600 dark:text-indigo-400">💡 מה לעקוב</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <ul className="space-y-1">
+                        {actions.map((a, ai) => (
+                          <li key={ai} className="flex items-start gap-1.5">
+                            <span className="text-indigo-400 dark:text-indigo-500 mt-0.5 shrink-0 font-bold text-[10px]">•</span>
+                            <span className="text-sm text-slate-700 dark:text-zinc-200">{a}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="px-2 py-2.5 align-middle">
+                      {actionsUrl && <a href={actionsUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                    </td>
+                  </tr>
+                )}
+                {extras.map(([k, v]) => (
+                  <tr key={k} className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <span className="text-[12px] font-bold text-slate-500 dark:text-zinc-400">• {heLabel(k)}</span>
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <p className="text-sm text-slate-700 dark:text-zinc-200 break-words [overflow-wrap:anywhere]">{String(v).trim()}</p>
+                    </td>
+                    <td />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
-        {/* Row 2 — Main theme */}
-        {mainTheme && <MacroInfoBlock icon="🎯" label="סיפור השוק המרכזי" value={mainTheme} variant="blue" />}
-
-        {/* Row 3 — Key conclusion */}
-        {mainConclusion && <MacroInfoBlock icon="📌" label="מסקנה מרכזית" value={mainConclusion} variant="purple" />}
-
-        {/* Market implication — shown only when no structured winners/losers */}
-        {marketImplication && !winners.length && !losers.length && (
-          <MacroInfoBlock icon="📈" label="השפעה על השוק" value={marketImplication} variant="sky" />
-        )}
-
-        {/* Row 4 — Winners / Losers */}
-        {(winners.length > 0 || losers.length > 0) && (
-          <div className="grid grid-cols-2 gap-3">
-            {winners.length > 0 && <MacroTagBlock icon="📈" label="מרוויחים" tags={winners} tone="green" />}
-            {losers.length  > 0 && <MacroTagBlock icon="📉" label="תחת לחץ"  tags={losers}  tone="red" />}
-          </div>
-        )}
-
-        {/* Row 5 — Investor actions */}
-        {actions.length > 0 && <MacroActionsBlock actions={actions} />}
-
-        {/* Extra unknown fields */}
-        {extras.map(([k, v]) => (
-          <MacroInfoBlock key={k} icon="•" label={heLabel(k)} value={String(v).trim()} />
-        ))}
 
       </div>
 
@@ -2202,15 +2310,21 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
   const hasAnyData = mood || riskStr || oppTitle || riskTitle || hasRow2;
   if (!hasAnyData) return null;
 
-  return (
-    <div
-      className="rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-gradient-to-br from-slate-50/80 to-white/90 dark:from-zinc-900/80 dark:to-zinc-900 p-4 shadow-sm"
-      dir="rtl"
-    >
-      <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 dark:text-indigo-500 mb-3">
-        🌍 תמונת מצב מהירה
-      </p>
+  const moodResearchHref = buildPerplexityResearchQuery(
+    { category: 'מצב שוק', title: mood || riskStr, badge: moodBadge, body: summary },
+    'snapshot',
+  );
+  const riskResearchHref = buildPerplexityResearchQuery(
+    { category: 'סיכון מרכזי', title: riskTitle, badge: riskSev, body: riskBody },
+    'snapshot',
+  );
+  const oppResearchHref = buildPerplexityResearchQuery(
+    { category: 'הזדמנות מרכזית', title: oppTitle, badge: oppType, body: oppDetail },
+    'snapshot',
+  );
 
+  return (
+    <div dir="rtl">
       {/* Row 1: 3 primary status cards — RTL order: מצב שוק (right) → סיכון (center) → הזדמנות (left) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatusCard
@@ -2223,6 +2337,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           badge={moodBadge}
           isEmpty={!mood && !riskStr}
           emptyTitle="מצב שוק לא ידוע"
+          researchHref={moodResearchHref}
         />
         <StatusCard
           accent={riskAccent}
@@ -2233,6 +2348,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           badge={riskBadge}
           isEmpty={!riskTitle}
           emptyTitle="אין כרגע סיכון מרכזי"
+          researchHref={riskResearchHref}
         />
         <StatusCard
           accent="green"
@@ -2245,6 +2361,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           ctaHref={oppLink}
           isEmpty={!oppTitle}
           emptyTitle="אין כרגע הזדמנות מרכזית"
+          researchHref={oppResearchHref}
         />
       </div>
 
@@ -2265,7 +2382,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
   );
 }
 
-// ── Main dashboard ───────────────────────────────────────────────────
+// ── Main dashboard ─────────────────────────────────────────────────────
 
 /**
  * Dedicated renderer for Macro GEM paste-back data.
@@ -2357,49 +2474,51 @@ export function MacroGemDashboard({
       <TabBulkItemsRegistrar tab="specialized" items={macroBulkItems} />
 
       {/* ✦ תמונת מצב מהירה */}
-      <ExecutiveSnapshot
-        macroOverview={macroOverview}
-        opportunities={Array.isArray(opportunities) ? opportunities : []}
-        risks={Array.isArray(risks) ? risks : []}
-        sectors={Array.isArray(sectors) ? sectors : []}
-        interestRates={interestRates}
-        inflation={inflation}
-        bondYields={bondYields}
-        oilEnergy={oilEnergy}
-        dollar={dollar}
-      />
+      <SectionCard title="🌍 תמונת מצב מהירה" count={null} tone={TONE.NEUTRAL}>
+        <ExecutiveSnapshot
+          macroOverview={macroOverview}
+          opportunities={Array.isArray(opportunities) ? opportunities : []}
+          risks={Array.isArray(risks) ? risks : []}
+          sectors={Array.isArray(sectors) ? sectors : []}
+          interestRates={interestRates}
+          inflation={inflation}
+          bondYields={bondYields}
+          oilEnergy={oilEnergy}
+          dollar={dollar}
+        />
+      </SectionCard>
 
-      {/* 1. אירועי מאקרו — מה קרה? */}
-      <MacroEventCardsSection
-        items={macroEvents}
-        onSaveToBrain={onSaveToBrain}
-        bulkSelection={bulkSelection}
-      />
-
-      {/* 2. תמונת מאקרו — מה זה אומר? */}
-      <MacroOverviewCard
-        macroOverview={macroOverview}
-        onSaveToBrain={onSaveToBrain}
-        bulkSelection={bulkSelection}
-      />
-
-      {/* 3. היילייטים — תובנות מרכזיות */}
+      {/* 1. היילייטים — השורה התחתונה של הסרטון */}
       <MacroHighlightsSection
         items={macroHighlights}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
       />
 
-      {/* 4. הזדמנויות */}
-      <MacroOpportunityCardsSection
-        items={opportunities}
+      {/* 2. אירועי מאקרו — מה קרה? */}
+      <MacroEventCardsSection
+        items={macroEvents}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
       />
 
-      {/* 5. סיכונים */}
+      {/* 3. תמונת מאקרו — מה זה אומר? */}
+      <MacroOverviewCard
+        macroOverview={macroOverview}
+        onSaveToBrain={onSaveToBrain}
+        bulkSelection={bulkSelection}
+      />
+
+      {/* 4. סיכונים */}
       <MacroRiskCardsSection
         items={risks}
+        onSaveToBrain={onSaveToBrain}
+        bulkSelection={bulkSelection}
+      />
+
+      {/* 5. הזדמנויות */}
+      <MacroOpportunityCardsSection
+        items={opportunities}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
       />
