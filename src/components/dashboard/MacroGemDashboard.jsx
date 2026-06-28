@@ -148,11 +148,6 @@ function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkS
   );
 }
 
-// ── Research provider button (Perplexity + Google Finance dropdown) ──
-
-function PxBtn({ url }) {
-  return <ResearchDropdownCompact pxUrl={url} />;
-}
 
 // ── Object section (key-value table) ────────────────────────────────
 
@@ -343,10 +338,7 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                       )}
                     </td>
                     <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex items-center gap-0.5">
-                        <PxBtn url={strPxUrl} />
-                        <MacroSaveCluster text={item} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
-                      </div>
+                      <MacroSaveCluster text={item} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={strPxUrl} />
                     </td>
                   </tr>
                 );
@@ -398,10 +390,7 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                     </p>
                   </td>
                   <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-0.5">
-                      <PxBtn url={stockPxUrl} />
-                      <MacroSaveCluster text={rowText} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
-                    </div>
+                    <MacroSaveCluster text={rowText} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={stockPxUrl} />
                   </td>
                 </tr>
               );
@@ -666,9 +655,8 @@ function MacroResearchSection({ title, items, sectionKey, formatItem, pxUrlBuild
               )}
               <span className="mt-1.5 text-indigo-300 dark:text-indigo-600 shrink-0 select-none text-[10px]">▸</span>
               <p className={`flex-1 text-sm leading-relaxed ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] whitespace-pre-line`}>{text}</p>
-              <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                {pxUrl && <PxBtn url={pxUrl} />}
-                <MacroSaveCluster text={text} sectionKey={sectionKey} sectionLabel={title} onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
+              <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MacroSaveCluster text={text} sectionKey={sectionKey} sectionLabel={title} onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
               </div>
             </li>
           );
@@ -1606,10 +1594,7 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                     )}
                   </td>
                   <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-0.5">
-                      <PxBtn url={idxStrPxUrl} />
-                      <MacroSaveCluster text={item} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
-                    </div>
+                    <MacroSaveCluster text={item} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxStrPxUrl} />
                   </td>
                 </tr>
               );
@@ -1657,10 +1642,7 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                   <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}>{reason || '—'}</p>
                 </td>
                 <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex items-center gap-0.5">
-                    <PxBtn url={idxPxUrl} />
-                    <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
-                  </div>
+                  <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxPxUrl} />
                 </td>
               </tr>
             );
@@ -2091,7 +2073,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainTheme}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainThemeUrl && <ResearchDropdownCompact pxUrl={mainThemeUrl} />}
+                      <MacroSaveCluster text={mainTheme} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainThemeUrl} compact />
                     </td>
                   </tr>
                 )}
@@ -2104,7 +2086,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainConclusion}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainConclusionUrl && <ResearchDropdownCompact pxUrl={mainConclusionUrl} />}
+                      <MacroSaveCluster text={mainConclusion} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainConclusionUrl} compact />
                     </td>
                   </tr>
                 )}
@@ -2117,7 +2099,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{marketImplication}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {marketImplicationUrl && <ResearchDropdownCompact pxUrl={marketImplicationUrl} />}
+                      <MacroSaveCluster text={marketImplication} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={marketImplicationUrl} compact />
                     </td>
                   </tr>
                 )}
@@ -2165,7 +2147,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       </ul>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {actionsUrl && <ResearchDropdownCompact pxUrl={actionsUrl} />}
+                      <MacroSaveCluster text={actions.join(' • ')} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={actionsUrl} compact />
                     </td>
                   </tr>
                 )}
