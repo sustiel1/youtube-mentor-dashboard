@@ -10,6 +10,10 @@
 //   getDashboardStats(videos, mentors) → KPI stats (newToday = ingested today, local calendar day)
 
 import { extractChaptersFromDescription, extractTimestampsFromDescription } from './youtubeMetadata';
+import {
+  buildEqualChunkChapters,
+  tryTopicDrivenChapters,
+} from '@/lib/chapterTopicBoundaries';
 
 export function hasNonEmptyChapters(chapters) {
   return Array.isArray(chapters) && chapters.length > 0;
@@ -1557,6 +1561,7 @@ function chaptersHaveRealTimestamps(chapters) {
     if (!Number.isFinite(sec) || sec < 0) return false;
     return (
       c.timeSource === 'real' ||
+      c.chapterSource === 'youtube_description' ||
       c.chapterSource === 'description_timestamp' ||
       c.chapterSource === 'native_chapters' ||
       c.chapterSource === 'youtube' ||
@@ -1914,7 +1919,7 @@ export function buildFallbackAiChapters(video) {
 
 export function normalizeChapterSource(rawSource) {
   if (rawSource === 'transcript') return 'ai';
-  if (rawSource === 'description_timestamp') return 'description';
+  if (rawSource === 'youtube_description' || rawSource === 'description_timestamp') return 'description';
   if (rawSource === 'duration_fallback') return 'fallback';
   return 'none';
 }
@@ -1974,23 +1979,13 @@ export function chaptersToVideoTopics(chapters) {
   });
 }
 
-function makeTranscriptChunkTitle(blob, idx, videoTitle) {
-  const words = blob.split(/\s+/).filter(Boolean);
-  let t = words.slice(0, 8).join(' ');
-  if (t.length < 4) {
-    t = videoTitle ? `חלק ${idx + 1} — ${String(videoTitle).slice(0, 40)}` : `חלק ${idx + 1}`;
-  }
-  if (t.length > 56) t = `${t.slice(0, 53)}…`;
-  return t;
-}
-
 /**
- * Build 4–6 navigable chapters from parsed timed transcript lines (local heuristic).
- * Returns null when transcript is too short — caller should keep existing chapter logic.
+ * Build navigable chapters from parsed timed transcript lines.
+ * Tries topic-boundary heuristic first; falls back to equal-chunk splitting.
  *
- * @param {{ lines: { start: number, text: string }[] }} transcript — output of parseTranscript()
+ * @param {{ lines: { start: number, text: string }[] }} transcript
  * @param {object} video
- * @returns {{ title: string, description: string, timestamp: string, startSeconds: number, timeSource: "transcript" }[] | null}
+ * @returns {{ chapters: object[], chapterSource: string, analysisQuality: string, boundaryMethod: string } | null}
  */
 export function generateChaptersFromTranscript(transcript, video) {
   const lines = transcript?.lines;
@@ -1999,26 +1994,13 @@ export function generateChaptersFromTranscript(transcript, video) {
   const fullText = lines.map((l) => l.text).join(' ');
   if (fullText.length < 400) return null;
 
-  const nTarget = Math.min(6, Math.max(4, Math.round(lines.length / 40)));
-  const chunk = Math.ceil(lines.length / nTarget);
-  const chapters = [];
-
-  for (let i = 0; i < nTarget; i++) {
-    const slice = lines.slice(i * chunk, (i + 1) * chunk);
-    if (!slice.length) continue;
-    const start = slice[0].start;
-    const blob = slice.map((l) => l.text).join(' ').replace(/\s+/g, ' ').trim();
-    if (!blob) continue;
-    chapters.push({
-      title:        makeTranscriptChunkTitle(blob, i, video?.title),
-      description:  blob.length > 220 ? `${blob.slice(0, 217)}…` : blob,
-      timestamp:    formatMmSsFromSeconds(start),
-      startSeconds: Math.max(0, Math.floor(Number(start) || 0)),
-      timeSource:   'transcript',
-    });
+  const durationSeconds = getVideoDurationSeconds(video) || 0;
+  const topicResult = tryTopicDrivenChapters(lines, video, durationSeconds);
+  if (topicResult?.chapters?.length >= 3) {
+    return topicResult;
   }
 
-  return chapters.length >= 2 ? chapters : null;
+  return buildEqualChunkChapters(lines, video);
 }
 
 /**
