@@ -2096,6 +2096,7 @@ export function VideoDetailPanel({
   const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
   const [chapterTranscriptSource, setChapterTranscriptSource] = useState(null);
   const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
+  const [isImportingDescChapters, setIsImportingDescChapters] = useState(false);
   const [hebrewTitlesMap, setHebrewTitlesMap] = useState(() => {
     try {
       const saved = localStorage.getItem('hebrew_chapter_titles_' + (video?.id || ''));
@@ -3638,6 +3639,74 @@ export function VideoDetailPanel({
       setYoutubeChaptersHint("fetch_failed");
     } finally {
       setIsYoutubeChaptersFetch(false);
+    }
+  };
+
+  const handlePullDescriptionChapters = async () => {
+    setIsImportingDescChapters(true);
+    try {
+      // Collect description text from all available sources (localStorage strips it,
+      // so check videoProp from Base44 and youtubeChapterCache as fallbacks).
+      const descText =
+        (typeof video?.description === 'string' ? video.description.trim() : '') ||
+        (typeof videoProp?.description === 'string' ? videoProp.description.trim() : '');
+
+      let chaptersResult = descText ? extractTimestampsFromDescription(descText) : [];
+
+      // If no description on the video object, try the YouTube metadata cache.
+      if (!chaptersResult.length) {
+        const watchUrl = getWatchUrl(video);
+        const ytId = getVideoIdFromUrl(watchUrl);
+        if (ytId) {
+          const cached = getCachedVideoMetadata(ytId);
+          if (Array.isArray(cached?.chapters) && cached.chapters.length) {
+            chaptersResult = cached.chapters;
+          }
+        }
+      }
+
+      if (!chaptersResult.length) {
+        toast.error('לא נמצאו פרקים בתיאור הסרטון');
+        return;
+      }
+
+      const aiChapters = chaptersResult.map((c) => {
+        const sec = typeof c.startSeconds === 'number' ? c.startSeconds : null;
+        return {
+          ...c,
+          ...(sec != null ? { startSeconds: sec } : {}),
+          timeSource: 'real',
+          chapterSource: 'description_timestamp',
+          source: 'description_timestamp',
+          isEstimated: false,
+        };
+      });
+
+      const updates = {
+        aiChapters,
+        chapters: aiChapters,
+        descriptionChapters: aiChapters,
+        chapterSource: 'description_timestamp',
+        analysisQuality: 'medium',
+      };
+
+      const localSaved = patchVideo(updates);
+      if (localSaved) {
+        onVideoPatch?.(localSaved);
+      } else {
+        try {
+          await Video.update(video.id, updates);
+          patchVideo(updates);
+          queryClient.invalidateQueries({ queryKey: ['videos'] });
+          onVideoPatch?.({ ...video, ...updates });
+        } catch {
+          toast.error('לא ניתן לשמור את הפרקים');
+          return;
+        }
+      }
+      toast.success(`הפרקים מהתיאור נטענו בהצלחה (${aiChapters.length} פרקים)`);
+    } finally {
+      setIsImportingDescChapters(false);
     }
   };
 
@@ -9798,6 +9867,15 @@ export function VideoDetailPanel({
                             {isGeneratingHebrewTitles ? "⏳ מייצר..." : "🤖 צור כותרות AI בעברית"}
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={handlePullDescriptionChapters}
+                          disabled={isImportingDescChapters}
+                          title="ייבוא פרקים מובנים מתיאור הסרטון"
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 shadow-sm hover:bg-emerald-100 disabled:opacity-60 transition-colors dark:border-emerald-800/40 dark:bg-emerald-950/20 dark:text-emerald-300"
+                        >
+                          {isImportingDescChapters ? "⏳ טוען..." : "📋 פרקי YouTube"}
+                        </button>
                         <button
                           type="button"
                           onClick={handleAutoDetectChapters}
