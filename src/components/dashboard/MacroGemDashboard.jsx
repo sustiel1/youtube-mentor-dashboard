@@ -14,6 +14,7 @@ import { resolveFinvizTicker } from '@/utils/finvizLinks';
 import { MarketSectorTable } from './MarketSectorTable';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
+import { ResearchDropdown, ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 
 // ── Hebrew label map for raw English GEM keys ────────────────────────
 
@@ -145,22 +146,10 @@ function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkS
   );
 }
 
-// ── Perplexity research button ───────────────────────────────────────
+// ── Research provider button (Perplexity + Google Finance dropdown) ──
 
 function PxBtn({ url }) {
-  if (!url) return null;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      title="בדוק ב-Perplexity AI"
-      onClick={(e) => e.stopPropagation()}
-      className="p-1 rounded text-violet-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-sm leading-none transition-colors"
-    >
-      🔍
-    </a>
-  );
+  return <ResearchDropdownCompact pxUrl={url} />;
 }
 
 // ── Object section (key-value table) ────────────────────────────────
@@ -807,12 +796,7 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
 
                 {/* ── Action bar ───────────────────────────────────── */}
                 <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100/80 dark:border-zinc-800/60 flex-wrap">
-                  {pxUrl && (
-                    <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[12px] font-bold text-white transition-colors whitespace-nowrap shadow-sm">
-                      🔍 מחקר AI
-                    </a>
-                  )}
+                  {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                   <div className="mr-auto flex items-center gap-1">
                     <MacroSaveCluster text={rowText} sectionKey="macro-highlights" sectionLabel="⭐ היילייטים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
                   </div>
@@ -1128,12 +1112,7 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
                           📈 שוק
                         </a>
                       )}
-                      {pxUrl && (
-                        <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[10px] font-bold text-white transition-colors whitespace-nowrap">
-                          🔍 AI
-                        </a>
-                      )}
+                      {pxUrl && <ResearchDropdown pxUrl={pxUrl} label="AI" />}
                       <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
                     </div>
                   </td>
@@ -1308,12 +1287,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                {pxUrl && (
-                  <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">
-                    🔍 מחקר AI
-                  </a>
-                )}
+                {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                 <div className="mr-auto">
                   <MacroSaveCluster text={rowText} sectionKey="brief-opportunities" sectionLabel="💡 הזדמנויות" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
                 </div>
@@ -1408,12 +1382,7 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                {pxUrl && (
-                  <a href={pxUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">
-                    🔍 מחקר AI
-                  </a>
-                )}
+                {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                 <div className="mr-auto">
                   <MacroSaveCluster text={rowText} sectionKey="brief-risks" sectionLabel="⚠️ סיכונים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
                 </div>
@@ -1928,18 +1897,7 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
             {badge}
           </span>
         ) : null}
-        {!isEmpty && researchHref && (
-          <a
-            href={researchHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="פתח מחקר AI בפרפלקסיטי"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap"
-          >
-            🔍 מחקר AI
-          </a>
-        )}
+        {!isEmpty && researchHref && <ResearchDropdown pxUrl={researchHref} />}
       </div>
     </div>
   );
@@ -2135,7 +2093,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainTheme}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainThemeUrl && <a href={mainThemeUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                      {mainThemeUrl && <ResearchDropdown pxUrl={mainThemeUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2148,7 +2106,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainConclusion}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainConclusionUrl && <a href={mainConclusionUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                      {mainConclusionUrl && <ResearchDropdown pxUrl={mainConclusionUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2161,7 +2119,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{marketImplication}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {marketImplicationUrl && <a href={marketImplicationUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                      {marketImplicationUrl && <ResearchDropdown pxUrl={marketImplicationUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2209,7 +2167,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       </ul>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {actionsUrl && <a href={actionsUrl} target="_blank" rel="noopener noreferrer" title="פתח מחקר AI בפרפלקסיטי" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white transition-colors whitespace-nowrap">🔍 מחקר AI</a>}
+                      {actionsUrl && <ResearchDropdown pxUrl={actionsUrl} />}
                     </td>
                   </tr>
                 )}

@@ -7,6 +7,7 @@ import {
   buildPerplexityEtfHoldingsUrl,
   resolveSectorFinvizLink,
 } from '@/utils/finvizLinks';
+import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 import {
   BRIEF_CELL,
   BRIEF_COL,
@@ -21,6 +22,7 @@ import { BRIEF_SENT_KEY_LABEL, BriefSentimentCell } from './BriefSentimentNotesT
 export const SECTOR_TABLE_MCOL = {
   checkbox: BRIEF_COL.checkbox,
   sentiment: BRIEF_COL.sentiment,
+  change: BRIEF_COL.change,
   save: BRIEF_COL.save,
   name: BRIEF_COL.primaryLabel,
 };
@@ -68,12 +70,16 @@ export function normalizeSectorTableRow(item, options = {}) {
   };
 }
 
-function SectorNameCell({ sector }) {
+function SectorNameCell({ sector, showHelperLinks = true }) {
+  if (!showHelperLinks) {
+    return <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sector || '—'}</span>;
+  }
+
   const link = resolveSectorFinvizLink(sector);
-  const pxUrl = link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
+  const pxUrl = showHelperLinks && link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
       {link ? (
         <a
           href={link.url}
@@ -90,16 +96,10 @@ function SectorNameCell({ sector }) {
         <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sector || '—'}</span>
       )}
       {pxUrl && (
-        <a
-          href={pxUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={`10 אחזקות מובילות של ${link.ticker} ב-Perplexity`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-[10px] font-medium text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 whitespace-nowrap transition-colors"
-        >
-          🔎 בדוק אחזקות
-        </a>
+        <ResearchDropdownLink
+          pxUrl={pxUrl}
+          titleHe={`10 אחזקות מובילות של ${link.ticker}`}
+        />
       )}
     </div>
   );
@@ -115,6 +115,7 @@ export function MarketSectorTable({
   renderTrailingCell = null,
   getRowOptions = null,
   rowClassName = 'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group',
+  showHelperLinks = true,
 }) {
   const safe = Array.isArray(rows) ? rows.filter(Boolean) : [];
   if (!safe.length) return null;
@@ -126,6 +127,7 @@ export function MarketSectorTable({
           {renderLeadingCell ? <col style={{ width: SECTOR_TABLE_MCOL.checkbox }} /> : null}
           <col style={{ width: SECTOR_TABLE_MCOL.name }} />
           <col style={{ width: SECTOR_TABLE_MCOL.sentiment }} />
+          <col style={{ width: SECTOR_TABLE_MCOL.change }} />
           <col />
           {renderTrailingCell ? <col style={{ width: SECTOR_TABLE_MCOL.save }} /> : null}
         </colgroup>
@@ -134,6 +136,7 @@ export function MarketSectorTable({
             {renderLeadingCell ? <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" /> : null}
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+            <th className="py-1.5 px-2" aria-label="שינוי" />
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה / סיבה</th>
             {renderTrailingCell ? <th className="py-1.5 pl-1 pr-0" aria-label="שמירה" /> : null}
           </tr>
@@ -145,7 +148,7 @@ export function MarketSectorTable({
 
             if (normalized.isStringOnly) {
               const strLink = resolveSectorFinvizLink(normalized.sector);
-              const strPxUrl = strLink ? buildPerplexityEtfHoldingsUrl(strLink.ticker) : null;
+              const strPxUrl = showHelperLinks && strLink ? buildPerplexityEtfHoldingsUrl(strLink.ticker) : null;
               return (
                 <tr key={i} className={rowClassName}>
                   {renderLeadingCell ? (
@@ -153,20 +156,14 @@ export function MarketSectorTable({
                       {renderLeadingCell(item, i, normalized)}
                     </td>
                   ) : null}
-                  <td colSpan={3} className={BRIEF_CELL.notes}>
-                    <div className="flex flex-col gap-0.5">
+                  <td colSpan={4} className={BRIEF_CELL.notes}>
+                    <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
                       <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{normalized.sector}</span>
                       {strPxUrl && (
-                        <a
-                          href={strPxUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={`10 אחזקות מובילות של ${strLink.ticker} ב-Perplexity`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] font-medium text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 whitespace-nowrap transition-colors"
-                        >
-                          🔎 בדוק אחזקות
-                        </a>
+                        <ResearchDropdownLink
+                          pxUrl={strPxUrl}
+                          titleHe={`10 אחזקות מובילות של ${strLink.ticker}`}
+                        />
                       )}
                     </div>
                   </td>
@@ -187,11 +184,12 @@ export function MarketSectorTable({
                   </td>
                 ) : null}
                 <td className={BRIEF_CELL.short}>
-                  <SectorNameCell sector={normalized.sector} />
+                  <SectorNameCell sector={normalized.sector} showHelperLinks={showHelperLinks} />
                 </td>
                 <td className={BRIEF_CELL.sentiment}>
                   <BriefSentimentCell value={normalized.sentiment} />
                 </td>
+                <td className={BRIEF_CELL.change} />
                 <td className={BRIEF_CELL.notes}>
                   <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
                     {normalized.note || '—'}

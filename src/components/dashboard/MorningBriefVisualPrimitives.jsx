@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import {
   directionChip,
   DIRECTION,
@@ -14,7 +15,8 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
-import { resolveSectorMeta } from '@/utils/finvizLinks';
+import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
 export const COMPARISON_SURFACE_BG = 'bg-white dark:bg-zinc-900';
@@ -30,6 +32,29 @@ export const SECTION_HEADER_ROW_CLS =
   'flex flex-wrap items-center justify-start gap-x-2.5 gap-y-1.5 pt-1 pb-3 mb-3 px-0.5 text-right border-b border-slate-200/80 dark:border-zinc-700/70';
 
 export const SECTION_HEADER_COUNT_CLS = 'text-sm font-semibold tabular-nums text-slate-500 dark:text-zinc-400';
+
+/**
+ * Shared section title + extracted-item count (RTL).
+ * Count sits next to the title — never near edit / AI / save controls.
+ * @see docs/SECTION_HEADER_COUNT_RULE.md
+ */
+export function SectionHeaderTitle({ title, count, titleClassName }) {
+  const showCount = count != null && Number(count) > 0;
+  return (
+    <div className="flex items-center gap-x-2 min-w-0">
+      <h2 className={cn(SECTION_HEADER_TITLE_CLS, titleClassName)}>{title}</h2>
+      {showCount && (
+        <span
+          className={`${SECTION_HEADER_COUNT_CLS} shrink-0`}
+          aria-label={`${count} פריטים`}
+          data-section-header-count
+        >
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
 
 /**
  * Dashboard typography scale — Macro section is the reference for all dedicated content.
@@ -62,6 +87,29 @@ export const DASHBOARD_EMPTY_CLS =
 export const DASHBOARD_PILL_CLS = 'text-base font-semibold tabular-nums';
 
 export const DASHBOARD_ITEM_ROW_CLS = 'py-2.5';
+
+/**
+ * Renders a financial symbol as a clickable external link when a URL can be resolved,
+ * or as plain text when no URL is known. Never produces broken links.
+ * Resolves via Finviz (stocks/ETFs/indices) with fallback to TradingView for DXY/crypto.
+ */
+export function ExternalSymbolLink({ symbol, className = '', children }) {
+  const url = symbol ? getExternalSymbolUrl(symbol) : null;
+  const display = children ?? symbol ?? '—';
+  if (!url) return <span className={className}>{display}</span>;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`פתח ${symbol} ↗`}
+      onClick={(e) => e.stopPropagation()}
+      className={`hover:underline cursor-pointer ${className}`}
+    >
+      {display}
+    </a>
+  );
+}
 
 export function EmptyState({ message = 'אין נתונים זמינים לסעיף זה' }) {
   return (
@@ -106,14 +154,7 @@ export function SectionCard({
         data-section-header
       >
         <div className="flex items-center justify-between gap-x-3">
-          <div className="flex items-center gap-x-2 min-w-0">
-            <h2 className={SECTION_HEADER_TITLE_CLS}>{title}</h2>
-            {count != null && count > 0 && (
-              <span className={`${SECTION_HEADER_COUNT_CLS} shrink-0`} aria-label={`${count} פריטים`}>
-                {count}
-              </span>
-            )}
-          </div>
+          <SectionHeaderTitle title={title} count={count} />
           <div className="flex items-center gap-x-2 shrink-0">
             {headerActions}
           </div>
@@ -367,31 +408,40 @@ export function SectorRow({
   const sectorName = String(sector || '').trim();
   const statusParts = buildSectorStatusParts(direction, relativeStrength);
   const meta = getSectorMeta(sectorName);
+  const holdingsUrl = meta?.etf ? buildPerplexityEtfHoldingsUrl(meta.etf) : null;
 
   if (!sectorName && statusParts.length === 0) return null;
 
   return (
     <div dir="rtl" className={`${DASHBOARD_ITEM_ROW_CLS} text-right`} data-sector-item>
       <div className="flex items-start gap-x-3 min-w-0">
-        <div className="shrink-0 w-[55%] min-w-0">
-          {meta?.finvizUrl ? (
-            <a
-              href={meta.finvizUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="פתח ETF ב-Finviz ↗"
-              className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
-            >
-              {sectorName}
-            </a>
-          ) : (
-            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sectorName}</span>
-          )}
-          {meta?.he && (
-            <>
-              <span className="text-slate-400 dark:text-zinc-500 mx-1.5 select-none" aria-hidden>—</span>
-              <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{meta.he}</span>
-            </>
+        <div className="shrink-0 w-[55%] min-w-0 flex flex-col gap-0.5">
+          <span className="inline-flex items-baseline gap-x-1 flex-wrap">
+            {meta?.finvizUrl ? (
+              <a
+                href={meta.finvizUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="פתח ETF ב-Finviz ↗"
+                className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+              >
+                {sectorName}
+              </a>
+            ) : (
+              <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sectorName}</span>
+            )}
+            {meta?.he && (
+              <>
+                <span className="text-slate-400 dark:text-zinc-500 mx-1.5 select-none" aria-hidden>—</span>
+                <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{meta.he}</span>
+              </>
+            )}
+          </span>
+          {holdingsUrl && (
+            <ResearchDropdownLink
+              pxUrl={holdingsUrl}
+              titleHe={`10 אחזקות מובילות של ${meta.etf}`}
+            />
           )}
         </div>
         {statusParts.length > 0 && (

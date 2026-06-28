@@ -2,6 +2,7 @@ import {
   DASHBOARD_TABLE_CELL_BODY_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
 } from './MorningBriefVisualPrimitives';
+import { ResearchDropdown } from '@/components/shared/ResearchDropdown';
 
 export const INSIGHT_GRID_SLOT_COUNT = 3;
 
@@ -39,12 +40,18 @@ export function getMacroRiskStyle(severity) {
   return { bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800', badge: 'text-amber-700 dark:text-amber-300 border border-amber-400/60 dark:border-amber-600/50', icon: '⚠️' };
 }
 
-const EMPTY_CARD_CLS = 'flex flex-col rounded-xl border border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50/40 dark:bg-zinc-900/20 p-4 shadow-sm min-h-[168px]';
+const EMPTY_CARD_BASE = 'flex flex-col rounded-xl border border-dashed p-4 shadow-sm min-h-[168px]';
+
+const EMPTY_CARD_VARIANT_CLS = {
+  opportunity: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/70 dark:border-emerald-800/40',
+  risk: 'bg-red-50/50 dark:bg-red-950/20 border-red-200/70 dark:border-red-800/40',
+};
 
 export function MacroStyleEmptyInsightCard({ variant = 'opportunity', slotIndex = 0 }) {
+  const variantCls = EMPTY_CARD_VARIANT_CLS[variant] ?? EMPTY_CARD_VARIANT_CLS.opportunity;
   return (
     <div
-      className={EMPTY_CARD_CLS}
+      className={`${EMPTY_CARD_BASE} ${variantCls}`}
       data-empty-insight-slot
       data-insight-variant={variant}
       data-slot-index={slotIndex}
@@ -108,17 +115,7 @@ function MacroStyleInsightCardShell({
       ) : null}
       {(pxUrl || saveActions) ? (
         <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-          {pxUrl ? (
-            <a
-              href={pxUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${researchCls} text-[11px] font-semibold text-white transition-colors whitespace-nowrap`}
-            >
-              🔍 מחקר AI
-            </a>
-          ) : null}
+          {pxUrl ? <ResearchDropdown pxUrl={pxUrl} /> : null}
           {saveActions ? <div className="mr-auto">{saveActions}</div> : null}
         </div>
       ) : null}
