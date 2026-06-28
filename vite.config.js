@@ -873,6 +873,19 @@ function makeYouTubeVideoMetadataPlugin() {
           const rawDate = metaDateMatch?.[1] || jsonDateMatch?.[1] || null;
           const publishedAt = rawDate ? `${rawDate}T00:00:00Z` : null;
 
+          // description — extracted from ytInitialPlayerResponse shortDescription
+          // YouTube JSON-encodes the full description (including chapter timestamps) here.
+          const shortDescMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+          const description = shortDescMatch
+            ? shortDescMatch[1]
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\')
+                .replace(/\\u003e/g, '>')
+                .replace(/\\u003c/g, '<')
+                .replace(/\\u0026/g, '&')
+            : null;
+
           const result = {
             channelId,
             channelTitle,
@@ -880,6 +893,7 @@ function makeYouTubeVideoMetadataPlugin() {
             viewCount,
             duration,
             publishedAt,
+            ...(description ? { description } : {}),
           };
 
           console.log(`[yt-metadata] ← result for ${videoId}:`, {
@@ -888,6 +902,7 @@ function makeYouTubeVideoMetadataPlugin() {
             viewCount: result.viewCount ?? '(none)',
             duration: result.duration || '(none)',
             publishedAt: result.publishedAt || '(none)',
+            descriptionLen: description?.length ?? 0,
           });
 
           res.writeHead(200, {

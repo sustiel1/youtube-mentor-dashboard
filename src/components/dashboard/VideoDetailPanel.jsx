@@ -3645,28 +3645,59 @@ export function VideoDetailPanel({
   const handlePullDescriptionChapters = async () => {
     setIsImportingDescChapters(true);
     try {
-      // Collect description text from all available sources (localStorage strips it,
-      // so check videoProp from Base44 and youtubeChapterCache as fallbacks).
-      const descText =
+      const watchUrl = getWatchUrl(video);
+      const ytId = getVideoIdFromUrl(watchUrl);
+
+      // ── Step 1: collect description text from all local sources ──────────────
+      // localStorage strips video.description; check videoProp (Base44) too.
+      let descText =
         (typeof video?.description === 'string' ? video.description.trim() : '') ||
         (typeof videoProp?.description === 'string' ? videoProp.description.trim() : '');
 
-      let chaptersResult = descText ? extractTimestampsFromDescription(descText) : [];
-
-      // If no description on the video object, try the YouTube metadata cache.
-      if (!chaptersResult.length) {
-        const watchUrl = getWatchUrl(video);
-        const ytId = getVideoIdFromUrl(watchUrl);
-        if (ytId) {
-          const cached = getCachedVideoMetadata(ytId);
-          if (Array.isArray(cached?.chapters) && cached.chapters.length) {
-            chaptersResult = cached.chapters;
-          }
+      // Also try the youtubeChapterCache description text.
+      if (!descText && ytId) {
+        const cached = getCachedVideoMetadata(ytId);
+        if (typeof cached?.description === 'string' && cached.description.trim()) {
+          descText = cached.description.trim();
         }
       }
 
+      // ── Step 2: if no local description, fetch from YouTube (no API key needed) ──
+      if (!descText && ytId) {
+        try {
+          const fetched = await fetchVideoDescription(ytId);
+          if (fetched) {
+            descText = fetched;
+            // Cache for future use.
+            const parsedForCache = extractTimestampsFromDescription(fetched);
+            setCachedVideoMetadata(ytId, { description: fetched, chapters: parsedForCache });
+          }
+        } catch {
+          // Network/proxy failure — continue with empty description.
+        }
+      }
+
+      console.log('[pullDescChapters] descText length:', descText.length, '/ first 200:', descText.slice(0, 200));
+
+      // ── Step 3: parse timestamps ──────────────────────────────────────────────
+      let chaptersResult = descText ? extractTimestampsFromDescription(descText) : [];
+
+      // If full description parse found nothing, try pre-parsed chapters from cache.
+      if (!chaptersResult.length && ytId) {
+        const cached = getCachedVideoMetadata(ytId);
+        if (Array.isArray(cached?.chapters) && cached.chapters.length) {
+          chaptersResult = cached.chapters;
+        }
+      }
+
+      // ── Error messages ────────────────────────────────────────────────────────
+      if (!descText) {
+        toast.error('לא נמצא תיאור מלא לסרטון — נסה להשתמש בכפתור "Fetch YouTube Chapters"');
+        return;
+      }
+
       if (!chaptersResult.length) {
-        toast.error('לא נמצאו פרקים בתיאור הסרטון');
+        toast.error('נמצא תיאור, אבל לא נמצאו פרקי זמן תקינים');
         return;
       }
 
@@ -10094,6 +10125,9 @@ export function VideoDetailPanel({
                           <div>fallbackSource: {transcriptChunkChapters.length === 0 && (transcriptChaptersRaw?.length ?? 0) > 0 ? (gemChapters.length > 0 ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base') : '—'}</div>
                           <div>finalChapters: {displayChapters?.length ?? 0}</div>
                           <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
+                          <div>video.desc: {typeof video?.description === 'string' ? video.description.length : '—'}</div>
+                          <div>prop.desc: {typeof videoProp?.description === 'string' ? videoProp.description.length : '—'}</div>
+                          <div>ytId: {getVideoIdFromUrl(getWatchUrl(video)) ?? '—'}</div>
                         </div>
                       </details>
                     )}
