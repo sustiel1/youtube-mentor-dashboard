@@ -14,7 +14,7 @@ import { resolveFinvizTicker } from '@/utils/finvizLinks';
 import { MarketSectorTable } from './MarketSectorTable';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
-import { ResearchDropdown, ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
+import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 
 // ── Hebrew label map for raw English GEM keys ────────────────────────
 
@@ -123,7 +123,7 @@ function SaveBtn({ text, sectionKey, sectionLabel, onSaveToBrain }) {
  * Renders Brain / Obsidian / Workspace save actions when bulkSelection provides
  * the quick-save handlers. Falls back to compact ⋯ menu with brain + copy.
  */
-function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkSelection, compact = true }) {
+function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkSelection, compact = true, pxUrl }) {
   if (bulkSelection?.onQuickSaveBrain || bulkSelection?.onQuickSaveObsidian || bulkSelection?.onQuickSaveWorkspace) {
     return (
       <UniversalTabQuickSaveFromBulk
@@ -133,6 +133,7 @@ function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkS
         type={sectionKey}
         tabScope="specialized"
         compact={compact}
+        pxUrl={pxUrl}
       />
     );
   }
@@ -141,6 +142,7 @@ function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkS
     <UniversalTabQuickSaveActions
       meta={{ text, sectionLabel, type: sectionKey }}
       onBrain={onSaveToBrain ? () => onSaveToBrain(text, sectionKey, sectionLabel) : undefined}
+      pxUrl={pxUrl}
       compact
     />
   );
@@ -796,9 +798,8 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
 
                 {/* ── Action bar ───────────────────────────────────── */}
                 <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100/80 dark:border-zinc-800/60 flex-wrap">
-                  {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                   <div className="mr-auto flex items-center gap-1">
-                    <MacroSaveCluster text={rowText} sectionKey="macro-highlights" sectionLabel="⭐ היילייטים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
+                    <MacroSaveCluster text={rowText} sectionKey="macro-highlights" sectionLabel="⭐ היילייטים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
                   </div>
                 </div>
               </div>
@@ -1112,8 +1113,7 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
                           📈 שוק
                         </a>
                       )}
-                      {pxUrl && <ResearchDropdown pxUrl={pxUrl} label="AI" />}
-                      <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} />
+                      <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
                     </div>
                   </td>
                 </tr>
@@ -1287,9 +1287,8 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                 <div className="mr-auto">
-                  <MacroSaveCluster text={rowText} sectionKey="brief-opportunities" sectionLabel="💡 הזדמנויות" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
+                  <MacroSaveCluster text={rowText} sectionKey="brief-opportunities" sectionLabel="💡 הזדמנויות" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
                 </div>
               </div>
             </div>
@@ -1382,9 +1381,8 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                {pxUrl && <ResearchDropdown pxUrl={pxUrl} />}
                 <div className="mr-auto">
-                  <MacroSaveCluster text={rowText} sectionKey="brief-risks" sectionLabel="⚠️ סיכונים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
+                  <MacroSaveCluster text={rowText} sectionKey="brief-risks" sectionLabel="⚠️ סיכונים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
                 </div>
               </div>
             </div>
@@ -1897,7 +1895,7 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
             {badge}
           </span>
         ) : null}
-        {!isEmpty && researchHref && <ResearchDropdown pxUrl={researchHref} />}
+        {!isEmpty && researchHref && <ResearchDropdownCompact pxUrl={researchHref} />}
       </div>
     </div>
   );
@@ -2093,7 +2091,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainTheme}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainThemeUrl && <ResearchDropdown pxUrl={mainThemeUrl} />}
+                      {mainThemeUrl && <ResearchDropdownCompact pxUrl={mainThemeUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2106,7 +2104,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainConclusion}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {mainConclusionUrl && <ResearchDropdown pxUrl={mainConclusionUrl} />}
+                      {mainConclusionUrl && <ResearchDropdownCompact pxUrl={mainConclusionUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2119,7 +2117,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{marketImplication}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {marketImplicationUrl && <ResearchDropdown pxUrl={marketImplicationUrl} />}
+                      {marketImplicationUrl && <ResearchDropdownCompact pxUrl={marketImplicationUrl} />}
                     </td>
                   </tr>
                 )}
@@ -2167,7 +2165,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       </ul>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {actionsUrl && <ResearchDropdown pxUrl={actionsUrl} />}
+                      {actionsUrl && <ResearchDropdownCompact pxUrl={actionsUrl} />}
                     </td>
                   </tr>
                 )}

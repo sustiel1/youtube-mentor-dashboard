@@ -2,7 +2,7 @@ import {
   DASHBOARD_TABLE_CELL_BODY_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
 } from './MorningBriefVisualPrimitives';
-import { ResearchDropdown } from '@/components/shared/ResearchDropdown';
+import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 
 export const INSIGHT_GRID_SLOT_COUNT = 3;
 
@@ -115,7 +115,7 @@ function MacroStyleInsightCardShell({
       ) : null}
       {(pxUrl || saveActions) ? (
         <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-          {pxUrl ? <ResearchDropdown pxUrl={pxUrl} /> : null}
+          {pxUrl ? <ResearchDropdownCompact pxUrl={pxUrl} /> : null}
           {saveActions ? <div className="mr-auto">{saveActions}</div> : null}
         </div>
       ) : null}

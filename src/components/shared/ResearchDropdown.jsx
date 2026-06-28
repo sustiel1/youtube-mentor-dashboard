@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
-function extractQueryFromPxUrl(pxUrl) {
+export function extractQueryFromPxUrl(pxUrl) {
   if (!pxUrl) return null;
   try { return new URL(pxUrl).searchParams.get('q') || null; }
   catch { return null; }
 }
 
-function openGoogleFinance(query) {
+export function openGoogleFinance(query) {
   if (query) {
     navigator.clipboard?.writeText(query).catch(() => {});
     toast.success('שאילתת המחקר הועתקה. הדבק אותה ב-Google Finance.', { duration: 4000 });
