@@ -2114,6 +2114,7 @@ export function VideoDetailPanel({
   const [isSubTopicEditing, setIsSubTopicEditing] = useState(false);
   const [subTopicDraft, setSubTopicDraft] = useState("");
   const [isCreatingSubTopic, setIsCreatingSubTopic] = useState(false);
+  const [isRepairingDate, setIsRepairingDate] = useState(false);
   const [newSubTopicDraft, setNewSubTopicDraft] = useState("");
   const [isSubTopicPillEditing, setIsSubTopicPillEditing] = useState(false);
   const restoredAnalysisRef = useRef(null);
@@ -6438,11 +6439,22 @@ export function VideoDetailPanel({
 
     if (!metadata) return video;
 
+    // Repair publishedAt only when YouTube returned a real publish date AND the stored
+    // value is either missing or equal to the import timestamp (suspect fallback).
+    const pubRepairPatch = (() => {
+      if (!metadata.publishedAt) return {};
+      const existingMs = video.publishedAt ? new Date(video.publishedAt).getTime() : null;
+      const importRef = video.fetchedAt || video.addedAt;
+      const importMs = importRef ? new Date(importRef).getTime() : null;
+      const isSuspect = existingMs && importMs && Math.abs(existingMs - importMs) < 10 * 60_000;
+      return (!existingMs || isSuspect) ? { publishedAt: metadata.publishedAt } : {};
+    })();
     const merged = {
       ...video,
       ...(metadata.description ? { description: metadata.description } : {}),
       ...(metadata.duration ? { duration: metadata.duration } : {}),
       ...(Number.isFinite(metadata.viewCount) ? { viewCount: metadata.viewCount } : {}),
+      ...pubRepairPatch,
     };
     onVideoPatch?.(merged);
     return merged;
@@ -7273,6 +7285,51 @@ export function VideoDetailPanel({
     videoObject: video,
   });
   const videoDateLabel = video.publishedAt ? format(new Date(video.publishedAt), "d MMMM yyyy", { locale: he }) : null;
+  const videoPublishDisplay = (() => {
+    const rawDate = video.publishedAt || null;
+
+    // Detect when publishedAt was silently set to the import timestamp instead of the YouTube
+    // publish date. This happened when metadata fetch returned no publishedAt and the ingestion
+    // code fell back to new Date(). Heuristic: if publishedAt and fetchedAt/addedAt are within
+    // 10 minutes of each other, treat publishedAt as an import-date artifact.
+    const importRef = video.fetchedAt || video.addedAt || null;
+    const isSuspectImportDate = rawDate && importRef &&
+      Math.abs(new Date(rawDate).getTime() - new Date(importRef).getTime()) < 10 * 60_000;
+
+    const usePublishDate = rawDate && !isSuspectImportDate ? rawDate : null;
+    const fallbackDate = !usePublishDate ? (video.analyzedAt || video.addedAt || null) : null;
+    const dateStr = usePublishDate || fallbackDate;
+
+    if (import.meta.env.DEV) {
+      console.log('[VideoDate]', {
+        field: usePublishDate ? 'publishedAt' : (fallbackDate ? (video.analyzedAt ? 'analyzedAt' : 'addedAt') : 'none'),
+        value: dateStr,
+        isSuspectImportDate,
+        publishedAt: rawDate,
+        fetchedAt: video.fetchedAt,
+        addedAt: video.addedAt,
+        analyzedAt: video.analyzedAt,
+      });
+    }
+
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    const exactDate = format(d, "dd/MM/yyyy");
+    const exactTime = format(d, "HH:mm");
+
+    if (!usePublishDate) {
+      return { icon: '🔬', label: `נותח ב־${exactDate}`, title: `תאריך ניתוח: ${exactDate} ${exactTime}`, canRepair: true };
+    }
+
+    const diffH = (Date.now() - d.getTime()) / 3_600_000;
+    let relative = null;
+    if (diffH < 1) relative = 'לפני פחות משעה';
+    else if (diffH < 24) relative = `לפני ${Math.floor(diffH)} שעות`;
+    else if (diffH < 48) relative = 'אתמול';
+    const label = relative ? `${relative} · ${exactDate} · ${exactTime}` : exactDate;
+    return { icon: '📅', label, title: `עלה ב־${exactDate} בשעה ${exactTime}`, canRepair: false };
+  })();
   const videoMentorLabel = mentorName && mentorName !== "לא ידוע" ? mentorName : null;
   const videoCategoryLabel = typeof video.category === "string" && video.category.trim() ? video.category.trim() : null;
   const metadataItems = [
@@ -7284,6 +7341,51 @@ export function VideoDetailPanel({
   const handleOpenYoutube = () => {
     if (videoYtId) window.open(`https://www.youtube.com/watch?v=${videoYtId}`, '_blank');
   };
+
+  // Repairs a polluted publishedAt (import timestamp) with the real YouTube publish date.
+  // Safe: only overwrites when the stored value is null or matches the import timestamp heuristic.
+  const handleRepairPublishDate = async () => {
+    if (!videoYtId || isRepairingDate) return;
+    setIsRepairingDate(true);
+    try {
+      const metadata = await fetchVideoMetadata(videoYtId);
+      const ytPublishedAt = metadata?.publishedAt || null;
+      const existingMs = video.publishedAt ? new Date(video.publishedAt).getTime() : null;
+      const importRef = video.fetchedAt || video.addedAt;
+      const importMs = importRef ? new Date(importRef).getTime() : null;
+      const isSuspect = existingMs && importMs && Math.abs(existingMs - importMs) < 10 * 60_000;
+      const shouldRepair = !existingMs || isSuspect;
+
+      if (import.meta.env.DEV) {
+        console.debug('[publishedAt repair]', {
+          oldPublishedAt: video.publishedAt,
+          newPublishedAt: ytPublishedAt,
+          fetchedAt: video.fetchedAt,
+          addedAt: video.addedAt,
+          isSuspect,
+          shouldRepair,
+          repairHappened: shouldRepair && !!ytPublishedAt,
+        });
+      }
+
+      if (!ytPublishedAt) {
+        toast.error('YouTube לא החזיר תאריך פרסום — נסה שוב מאוחר יותר');
+        return;
+      }
+      if (!shouldRepair) {
+        toast.info('התאריך השמור נראה תקין — לא נדרש תיקון');
+        return;
+      }
+      patchVideo({ publishedAt: ytPublishedAt });
+      toast.success('תאריך הפרסום עודכן מ-YouTube ✓');
+    } catch (err) {
+      console.error('[publishedAt repair] error:', err);
+      toast.error('שגיאה בשליפת מטא-דאטה מ-YouTube');
+    } finally {
+      setIsRepairingDate(false);
+    }
+  };
+
   const handleYtApiTranscript = async () => {
     const ytId = getVideoIdFromUrl(getWatchUrl(video));
     if (!ytId) {
@@ -8433,11 +8535,22 @@ export function VideoDetailPanel({
                         </span>
                       </button>
                     )}
-                    {/* Date */}
-                    {video.publishedAt && (
-                      <span className={`${BASE} ${DEF}`}>
-                        <span className="text-xs leading-none">📅</span>
-                        <span>{format(new Date(video.publishedAt), "dd/MM/yyyy", { locale: he })}</span>
+                    {/* Date — YouTube publish date, relative if recent; falls back to analysis date */}
+                    {videoPublishDisplay && (
+                      <span className={`${BASE} ${DEF} gap-x-1`} title={videoPublishDisplay.title}>
+                        <span className="text-xs leading-none">{videoPublishDisplay.icon}</span>
+                        <span>{videoPublishDisplay.label}</span>
+                        {videoPublishDisplay.canRepair && videoYtId && (
+                          <button
+                            type="button"
+                            onClick={handleRepairPublishDate}
+                            disabled={isRepairingDate}
+                            title="רענן תאריך פרסום מ-YouTube"
+                            className="text-[11px] text-indigo-400 hover:text-indigo-600 dark:text-indigo-500 dark:hover:text-indigo-400 leading-none disabled:opacity-40 transition-colors"
+                          >
+                            {isRepairingDate ? '…' : '↻'}
+                          </button>
+                        )}
                       </span>
                     )}
                     {/* Duration */}

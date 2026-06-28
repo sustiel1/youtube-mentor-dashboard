@@ -22,6 +22,7 @@ async function fetchViaYouTubeDataApi(videoId) {
   if (!item) return null;
 
   return {
+    ...(item.snippet?.publishedAt ? { publishedAt: item.snippet.publishedAt } : {}),
     ...(item.snippet?.description ? { description: item.snippet.description } : {}),
     ...(item.contentDetails?.duration ? { duration: item.contentDetails.duration } : {}),
     ...(item.statistics?.viewCount ? { viewCount: Number(item.statistics.viewCount) } : {}),
@@ -34,18 +35,31 @@ async function fetchViaYouTubeDataApi(videoId) {
 export async function fetchVideoMetadata(videoId) {
   if (!videoId) return null;
 
+  let proxyData = null;
   try {
-    const proxyData = await fetchViaDevProxy(videoId);
-    if (proxyData) return proxyData;
+    proxyData = await fetchViaDevProxy(videoId);
   } catch {
-    // fall through to optional client API key path
+    // fall through
   }
 
+  // If proxy returned data with publishedAt, it's complete — use it directly.
+  if (proxyData?.publishedAt) return proxyData;
+
+  // Proxy either failed or returned data without publishedAt.
+  // Try YouTube Data API (requires VITE_YOUTUBE_API_KEY) to fill in the gap.
+  let apiData = null;
   try {
-    return await fetchViaYouTubeDataApi(videoId);
+    apiData = await fetchViaYouTubeDataApi(videoId);
   } catch {
-    return null;
+    // fall through
   }
+
+  if (!proxyData && !apiData) return null;
+  if (!proxyData) return apiData;
+  if (!apiData) return proxyData;
+
+  // Both returned data — merge: proxy for live fields, API for publishedAt
+  return { ...proxyData, ...(apiData.publishedAt ? { publishedAt: apiData.publishedAt } : {}) };
 }
 
 /**

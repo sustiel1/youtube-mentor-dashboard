@@ -134,7 +134,7 @@ export async function buildExternalVideoObject(videoId, options = {}) {
     mentorId: resolvedMentorId && String(resolvedMentorId).trim() ? resolvedMentorId : null,
     ...(resolvedCategory ? { category: resolvedCategory } : {}),
     source,
-    publishedAt: publishedAt || now,
+    publishedAt: publishedAt || null,
     fetchedAt: now,
     addedManually: true,
     addedAt: now,

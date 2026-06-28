@@ -867,11 +867,28 @@ function makeYouTubeVideoMetadataPlugin() {
             duration = h > 0 ? `PT${h}H${m}M${s}S` : `PT${m}M${s}S`;
           }
 
-          // publishedAt — meta tag is most reliable
-          const metaDateMatch = html.match(/<meta itemprop="datePublished" content="([\d-]+)">/);
-          const jsonDateMatch = html.match(/"publishDate":"([\d-]+)"/);
-          const rawDate = metaDateMatch?.[1] || jsonDateMatch?.[1] || null;
-          const publishedAt = rawDate ? `${rawDate}T00:00:00Z` : null;
+          // publishedAt — try multiple YouTube page patterns (YouTube changes these frequently)
+          const metaDateMatch      = html.match(/<meta itemprop="datePublished" content="([\d-]+)">/);
+          const jsonPublishDate    = html.match(/"publishDate"\s*:\s*"([\d-]+)"/);
+          const jsonPublishedFull  = html.match(/"publishedAt"\s*:\s*"(\d{4}-\d{2}-\d{2}T[^"]{5,35})"/);
+          const jsonPublishedDate  = html.match(/"publishedAt"\s*:\s*"(\d{4}-\d{2}-\d{2})"/);
+          const jsonUploadDate     = html.match(/"uploadDate"\s*:\s*"(\d{4}-\d{2}-\d{2})"/);
+          const jsonLdUploadDate   = html.match(/"uploadDate"\s*:\s*"(\d{4}-\d{2}-\d{2}T[^"]{5,35})"/);
+          const metaOgUpdatedTime  = html.match(/<meta property="og:updated_time" content="([^"]+)"/);
+          // Full ISO timestamp wins; date-only patterns are padded to midnight UTC
+          const rawDate = metaDateMatch?.[1] || jsonPublishDate?.[1] || jsonPublishedDate?.[1] || jsonUploadDate?.[1] || null;
+          const publishedAt = jsonPublishedFull?.[1] || jsonLdUploadDate?.[1] || metaOgUpdatedTime?.[1] || (rawDate ? `${rawDate}T00:00:00Z` : null);
+
+          // Diagnostic: log what we found (and what we didn't) when publishedAt is null
+          if (!publishedAt) {
+            const snippets = {
+              publishDate:   (html.match(/.{0,20}"publishDate".{0,30}/)?.[0] || '').replace(/\s+/g, ' '),
+              publishedAt:   (html.match(/.{0,20}"publishedAt".{0,30}/)?.[0] || '').replace(/\s+/g, ' '),
+              uploadDate:    (html.match(/.{0,20}"uploadDate".{0,30}/)?.[0] || '').replace(/\s+/g, ' '),
+              datePublished: (html.match(/.{0,20}datePublished.{0,30}/)?.[0] || '').replace(/\s+/g, ' '),
+            };
+            console.warn(`[yt-metadata] publishedAt NOT FOUND for ${videoId}. Snippets:`, snippets);
+          }
 
           // description — extracted from ytInitialPlayerResponse shortDescription
           // YouTube JSON-encodes the full description (including chapter timestamps) here.
