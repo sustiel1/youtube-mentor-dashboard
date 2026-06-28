@@ -423,13 +423,14 @@ function MacroSectorsSection({ sectors, onSaveToBrain, bulkSelection }) {
       <MarketSectorTable
         rows={safe}
         renderLeadingCell={() => null}
-        renderTrailingCell={(_item, _i, normalized) => (
+        renderTrailingCell={(item, _i, normalized) => (
           <MacroSaveCluster
             text={normalized.rowText}
             sectionKey="brief-sectors"
             sectionLabel="🏭 סקטורים"
             onSaveToBrain={onSaveToBrain}
             bulkSelection={merged}
+            pxUrl={buildPerplexityResearchQuery(item, 'sectors')}
           />
         )}
       />
@@ -939,7 +940,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
 
               {/* Save — far left in RTL */}
               <div className="shrink-0 flex items-center">
-                <MacroSaveCluster text={rowText} sectionKey="macro-warnings" sectionLabel="🔔 אזהרות ופעולות למעקב" onSaveToBrain={onSaveToBrain} bulkSelection={merged} />
+                <MacroSaveCluster text={rowText} sectionKey="macro-warnings" sectionLabel="🔔 אזהרות ופעולות למעקב" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={buildPerplexityResearchQuery(item, 'warnings')} />
               </div>
             </div>
           );
@@ -1497,6 +1498,22 @@ function buildPerplexityResearchQuery(item, sectionType) {
     if (text)  lines.push(`סיכום: ${text}`);
     lines.push(`\nהצג:\n1. למה זה חשוב למשקיעים עכשיו\n2. אילו סקטורים ומניות מושפעים\n3. מה הסיכון\n4. מה כדאי לעקוב בהמשך\n\nענה בעברית ובצורה תמציתית.`);
     q = lines.join('\n');
+  } else if (sectionType === 'sectors') {
+    const sectorName = typeof item === 'string'
+      ? item.trim()
+      : String(item.sector || item.name || item.industry || '').trim();
+    const sentiment = typeof item === 'object'
+      ? String(item.direction || item.trend || item.performance || item.sentiment || '').trim() : '';
+    const note = typeof item === 'object'
+      ? String(item.relativeStrength || item.note || item.description || item.reason || item.why || item.catalyst || '').trim() : '';
+    if (!sectorName) return null;
+    const link = resolveGemSectorLink(sectorName);
+    const ticker = link?.ticker;
+    const lines = [`נתח את ${ticker ? `סקטור ${sectorName} (${ticker})` : `סקטור ${sectorName}`} כהשקעה:`];
+    if (sentiment) lines.push(`סנטימנט: ${sentiment}`);
+    if (note) lines.push(`הערה: ${note}`);
+    lines.push(`\nהצג:\n1. מצב הסקטור עכשיו — חיובי, ניטרלי או שלילי\n2. סיבות הסנטימנט\n3. 3-5 מניות מובילות לצפייה\n4. ETF לחשיפה${ticker ? ` (${ticker})` : ''}\n5. אינדיקטורים מרכזיים לעקוב\n6. תרחיש חיובי ושלילי\n\nענה בעברית ובצורה תמציתית.`);
+    q = lines.join('\n');
   }
 
   if (!q) return null;
@@ -1826,7 +1843,8 @@ const SC = {
   },
 };
 
-function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText, badge, ctaLabel, ctaHref, researchHref, isEmpty = false, emptyTitle }) {
+function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText, badge, ctaLabel, ctaHref, researchHref, isEmpty = false, emptyTitle,
+  saveText, onSaveToBrain, bulkSelection, sectionKey }) {
   const s = SC[accent] ?? SC.amber;
   return (
     <div className={`rounded-xl border ${s.border} ${s.bg} p-5 flex flex-col min-h-[11rem] transition-shadow hover:shadow-md`} dir="rtl">
@@ -1877,7 +1895,17 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
             {badge}
           </span>
         ) : null}
-        {!isEmpty && researchHref && <ResearchDropdownCompact pxUrl={researchHref} />}
+        {!isEmpty && (researchHref || saveText) && (
+          <MacroSaveCluster
+            text={saveText || title || category || ''}
+            sectionKey={sectionKey || 'snapshot'}
+            sectionLabel="🌍 תמונת מצב מהירה"
+            onSaveToBrain={onSaveToBrain}
+            bulkSelection={bulkSelection}
+            pxUrl={researchHref}
+            compact
+          />
+        )}
       </div>
     </div>
   );
@@ -2180,7 +2208,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
 
 // ── Executive Snapshot (quick-glance cards row) ───────────────────────
 
-function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates, inflation, bondYields, oilEnergy, dollar }) {
+function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates, inflation, bondYields, oilEnergy, dollar, onSaveToBrain, bulkSelection }) {
   const mood    = macroOverview?.macroMood || macroOverview?.mainTheme || '';
   const riskStr = macroOverview?.riskOnRiskOff || '';
   const summary = (macroOverview?.mainConclusion || macroOverview?.marketImplication || macroOverview?.summary || '').trim();
@@ -2276,6 +2304,10 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           isEmpty={!mood && !riskStr}
           emptyTitle="מצב שוק לא ידוע"
           researchHref={moodResearchHref}
+          saveText={[mood || riskStr, riskDisplay, summary].filter(Boolean).join('\n')}
+          onSaveToBrain={onSaveToBrain}
+          bulkSelection={bulkSelection}
+          sectionKey="snapshot"
         />
         <StatusCard
           accent={riskAccent}
@@ -2287,6 +2319,10 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           isEmpty={!riskTitle}
           emptyTitle="אין כרגע סיכון מרכזי"
           researchHref={riskResearchHref}
+          saveText={['סיכון מרכזי: ' + riskTitle, riskSev && 'רמת סיכון: ' + riskSev, riskBody].filter(Boolean).join('\n')}
+          onSaveToBrain={onSaveToBrain}
+          bulkSelection={bulkSelection}
+          sectionKey="snapshot"
         />
         <StatusCard
           accent="green"
@@ -2300,6 +2336,10 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           isEmpty={!oppTitle}
           emptyTitle="אין כרגע הזדמנות מרכזית"
           researchHref={oppResearchHref}
+          saveText={['הזדמנות מרכזית: ' + oppTitle, oppSubLine, oppDetail].filter(Boolean).join('\n')}
+          onSaveToBrain={onSaveToBrain}
+          bulkSelection={bulkSelection}
+          sectionKey="snapshot"
         />
       </div>
 
@@ -2423,6 +2463,8 @@ export function MacroGemDashboard({
           bondYields={bondYields}
           oilEnergy={oilEnergy}
           dollar={dollar}
+          onSaveToBrain={onSaveToBrain}
+          bulkSelection={bulkSelection}
         />
       </SectionCard>
 
