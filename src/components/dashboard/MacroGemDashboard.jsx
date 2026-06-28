@@ -2093,7 +2093,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
               </thead>
               <tbody>
                 {mainTheme && (
-                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-[12px] font-bold text-blue-700 dark:text-blue-400">🎯 סיפור השוק</span>
                     </td>
@@ -2106,7 +2106,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                   </tr>
                 )}
                 {mainConclusion && (
-                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-[12px] font-bold text-purple-700 dark:text-purple-400">📌 מסקנה מרכזית</span>
                     </td>
@@ -2119,7 +2119,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                   </tr>
                 )}
                 {marketImplication && (
-                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-[12px] font-bold text-sky-600 dark:text-sky-400">📈 השפעה על השוק</span>
                     </td>
@@ -2132,7 +2132,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                   </tr>
                 )}
                 {(winners.length > 0 || losers.length > 0) && (
-                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="text-[12px] font-bold text-slate-600 dark:text-zinc-300">📊 שוק</span>
                     </td>
@@ -2156,11 +2156,23 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                         )}
                       </div>
                     </td>
-                    <td />
+                    <td className="px-2 py-2.5 align-middle">
+                      <MacroSaveCluster
+                        text={[
+                          winners.length && `מרוויחים: ${winners.join(', ')}`,
+                          losers.length  && `תחת לחץ: ${losers.join(', ')}`,
+                        ].filter(Boolean).join('\n')}
+                        sectionKey="macro-overview"
+                        sectionLabel="🌐 תמונת מאקרו"
+                        onSaveToBrain={onSaveToBrain}
+                        bulkSelection={bulkSelection}
+                        compact
+                      />
+                    </td>
                   </tr>
                 )}
                 {actions.length > 0 && (
-                  <tr className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-[12px] font-bold text-indigo-600 dark:text-indigo-400">💡 מה לעקוב</span>
                     </td>
@@ -2180,14 +2192,23 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                   </tr>
                 )}
                 {extras.map(([k, v]) => (
-                  <tr key={k} className="border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr key={k} className="group border-b border-slate-100 dark:border-zinc-800/60 hover:bg-slate-50/60 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <span className="text-[12px] font-bold text-slate-500 dark:text-zinc-400">• {heLabel(k)}</span>
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       <p className="text-sm text-slate-700 dark:text-zinc-200 break-words [overflow-wrap:anywhere]">{String(v).trim()}</p>
                     </td>
-                    <td />
+                    <td className="px-2 py-2.5 align-middle">
+                      <MacroSaveCluster
+                        text={`${heLabel(k)}: ${String(v).trim()}`}
+                        sectionKey="macro-overview"
+                        sectionLabel="🌐 תמונת מאקרו"
+                        onSaveToBrain={onSaveToBrain}
+                        bulkSelection={bulkSelection}
+                        compact
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
