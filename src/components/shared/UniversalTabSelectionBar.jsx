@@ -9,6 +9,7 @@ export function UniversalTabSelectionBar({
   onWorkspace,
   onCopy,
   onClear,
+  onAiAnalyze,
   disabled = false,
 }) {
   if (count === 0) return null;
@@ -69,6 +70,16 @@ export function UniversalTabSelectionBar({
             className="flex items-center gap-1.5 rounded-xl bg-zinc-600 hover:bg-zinc-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
           >
             📋 העתק
+          </button>
+        )}
+        {onAiAnalyze && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onAiAnalyze}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            📈 TradingView
           </button>
         )}
       </div>

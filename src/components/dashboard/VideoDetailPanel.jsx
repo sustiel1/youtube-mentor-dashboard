@@ -161,6 +161,9 @@ import {
 } from "@/lib/universalTabSections";
 import { GemRawModal } from "@/components/dashboard/GemRawModal";
 import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
+import { detectMarketEntityType, extractTickerFromItem } from '@/lib/detectMarketEntityType';
+import { buildTradingViewChartUrl, getFinvizUrl } from '@/utils/finvizLinks';
+import { buildStockAiPrompt } from '@/lib/buildStockAiPrompt';
 import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
@@ -5306,6 +5309,24 @@ export function VideoDetailPanel({
     if (count > 0) toast.success(`🧠 ${count} פריטים נשמרו למוח`);
     multiSelectClearWithBrain();
   };
+
+  const handleOpenTradingView = useCallback(() => {
+    if (multiSelected.size === 0) return;
+    const firstItem = [...multiSelected.values()][0];
+    const entityType = detectMarketEntityType(firstItem);
+    if (entityType !== 'stock') {
+      toast.info('TradingView זמין כעת למניות בלבד — בחר שורת מניה מ"מניות שהוזכרו"');
+      return;
+    }
+    const ticker = extractTickerFromItem(firstItem);
+    if (!ticker) {
+      toast.info('לא זוהה סימבול מניה בפריט הנבחר');
+      return;
+    }
+    const tvUrl = buildTradingViewChartUrl(ticker);
+    window.open(tvUrl, '_blank', 'noopener,noreferrer');
+    toast.success(`📈 ${ticker} — נפתח ב-TradingView`);
+  }, [multiSelected]);
 
   const handleSaveSelectedToWorkspace = () => {
     if (multiSelected.size === 0) return;
@@ -11436,6 +11457,7 @@ export function VideoDetailPanel({
           onObsidian={handleBulkObsidianForTab}
           onWorkspace={handleSaveSelectedToWorkspace}
           onCopy={handleCopySelectedItems}
+          onAiAnalyze={handleOpenTradingView}
         />
 
       </DialogContent>

@@ -218,6 +218,85 @@ export function normalizeMarketSymbol(input) {
   return resolveFinvizTicker(input);
 }
 
+/** Returns a generic TradingView chart URL for any symbol string. Never returns null. */
+export function buildTradingViewUrl(symbol) {
+  const s = String(symbol || '').trim();
+  if (!s) return 'https://www.tradingview.com/chart/';
+  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s)}`;
+}
+
+// Personal TradingView chart base URL (user's saved chart layout)
+const _TV_CHART_BASE = 'https://il.tradingview.com/chart/54fxnDLz/';
+
+// Exchange map: ticker → exchange prefix used by TradingView
+// TradingView uses AMEX for NYSE Arca-listed ETFs.
+const _TV_EXCHANGE_MAP = new Map([
+  // ── NASDAQ large caps ──────────────────────────────────────────────
+  ['MSFT', 'NASDAQ'], ['AAPL', 'NASDAQ'], ['NVDA', 'NASDAQ'], ['TSLA', 'NASDAQ'],
+  ['GOOGL', 'NASDAQ'], ['GOOG', 'NASDAQ'], ['META', 'NASDAQ'], ['AMZN', 'NASDAQ'],
+  ['NFLX', 'NASDAQ'], ['COST', 'NASDAQ'], ['AVGO', 'NASDAQ'], ['AMD', 'NASDAQ'],
+  ['INTC', 'NASDAQ'], ['QCOM', 'NASDAQ'], ['TXN', 'NASDAQ'], ['AMAT', 'NASDAQ'],
+  ['LRCX', 'NASDAQ'], ['KLAC', 'NASDAQ'], ['ADI', 'NASDAQ'], ['MU', 'NASDAQ'],
+  ['ASML', 'NASDAQ'], ['MRVL', 'NASDAQ'], ['MCHP', 'NASDAQ'], ['MPWR', 'NASDAQ'],
+  ['PANW', 'NASDAQ'], ['CRWD', 'NASDAQ'], ['ZS', 'NASDAQ'], ['NET', 'NASDAQ'],
+  ['DDOG', 'NASDAQ'], ['SNOW', 'NASDAQ'], ['OKTA', 'NASDAQ'], ['FTNT', 'NASDAQ'],
+  ['CRM', 'NASDAQ'], ['ADBE', 'NASDAQ'], ['NOW', 'NASDAQ'], ['INTU', 'NASDAQ'],
+  ['ADP', 'NASDAQ'], ['ISRG', 'NASDAQ'], ['GILD', 'NASDAQ'], ['BIIB', 'NASDAQ'],
+  ['REGN', 'NASDAQ'], ['MELI', 'NASDAQ'], ['PYPL', 'NASDAQ'], ['CSCO', 'NASDAQ'],
+  ['SMH', 'NASDAQ'], ['QQQ', 'NASDAQ'], ['TLT', 'NASDAQ'],
+  // ── NYSE large caps ────────────────────────────────────────────────
+  ['JPM', 'NYSE'], ['BAC', 'NYSE'], ['GS', 'NYSE'], ['MS', 'NYSE'],
+  ['WFC', 'NYSE'], ['C', 'NYSE'], ['BLK', 'NYSE'], ['AXP', 'NYSE'],
+  ['V', 'NYSE'], ['MA', 'NYSE'], ['BRK.B', 'NYSE'], ['BRK.A', 'NYSE'],
+  ['XOM', 'NYSE'], ['CVX', 'NYSE'], ['COP', 'NYSE'], ['EOG', 'NYSE'],
+  ['WMT', 'NYSE'], ['PG', 'NYSE'], ['KO', 'NYSE'], ['PEP', 'NYSE'],
+  ['MCD', 'NYSE'], ['NKE', 'NYSE'], ['SBUX', 'NYSE'], ['HD', 'NYSE'],
+  ['JNJ', 'NYSE'], ['LLY', 'NYSE'], ['PFE', 'NYSE'], ['MRK', 'NYSE'],
+  ['ABT', 'NYSE'], ['UNH', 'NYSE'], ['MDT', 'NYSE'], ['BMY', 'NYSE'],
+  ['BA', 'NYSE'], ['CAT', 'NYSE'], ['GE', 'NYSE'], ['RTX', 'NYSE'],
+  ['HON', 'NYSE'], ['MMM', 'NYSE'], ['IBM', 'NYSE'], ['ORCL', 'NYSE'],
+  ['DELL', 'NYSE'], ['BABA', 'NYSE'], ['FDX', 'NYSE'], ['GIS', 'NYSE'],
+  ['PGR', 'NYSE'], ['ALL', 'NYSE'], ['CB', 'NYSE'], ['TRV', 'NYSE'],
+  // ── NYSE Arca ETFs (TradingView: AMEX) ─────────────────────────────
+  ['SPY', 'AMEX'], ['IWM', 'AMEX'], ['DIA', 'AMEX'],
+  ['GLD', 'AMEX'], ['SLV', 'AMEX'], ['USO', 'AMEX'],
+  ['XLK', 'AMEX'], ['XLF', 'AMEX'], ['XLE', 'AMEX'], ['XLV', 'AMEX'],
+  ['XLI', 'AMEX'], ['XLB', 'AMEX'], ['XLU', 'AMEX'], ['XLY', 'AMEX'],
+  ['XLP', 'AMEX'], ['XLC', 'AMEX'], ['XLRE', 'AMEX'],
+  ['XBI', 'AMEX'], ['XRT', 'AMEX'], ['XHB', 'AMEX'],
+  ['VNQ', 'AMEX'], ['JETS', 'AMEX'], ['TAN', 'AMEX'], ['ITA', 'AMEX'],
+  ['KRE', 'AMEX'], ['IGV', 'AMEX'],
+]);
+
+// Crypto and special symbols → TradingView full symbol (no generic EXCHANGE:X format)
+const _TV_SPECIAL_MAP = new Map([
+  ['BTC', 'BITSTAMP:BTCUSD'], ['BITCOIN', 'BITSTAMP:BTCUSD'], ['BTCUSD', 'BITSTAMP:BTCUSD'],
+  ['ETH', 'BITSTAMP:ETHUSD'], ['ETHEREUM', 'BITSTAMP:ETHUSD'],
+  ['DXY', 'TVC:DXY'], ['USDX', 'TVC:DXY'],
+  ['VIX', 'TVC:VIX'],
+  ['GOLD', 'COMEX:GC1!'], ['SILVER', 'COMEX:SI1!'],
+  ['OIL', 'TVC:USOIL'], ['WTI', 'TVC:USOIL'], ['BRENT', 'TVC:UKOIL'],
+]);
+
+/**
+ * Builds a TradingView chart URL using the user's personal chart layout.
+ * Uses exchange-qualified symbols (NASDAQ:MSFT, NYSE:JPM, AMEX:SPY, etc.).
+ * Falls back to NASDAQ for unknown US tickers.
+ * Returns the base chart URL if no symbol provided.
+ */
+export function buildTradingViewChartUrl(symbol) {
+  if (!symbol) return _TV_CHART_BASE;
+  const s = String(symbol).trim().toUpperCase();
+  if (!s) return _TV_CHART_BASE;
+
+  const special = _TV_SPECIAL_MAP.get(s);
+  if (special) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(special)}`;
+
+  const exchange = _TV_EXCHANGE_MAP.get(s);
+  const qualified = exchange ? `${exchange}:${s}` : `NASDAQ:${s}`;
+  return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(qualified)}`;
+}
+
 /**
  * Resolves a sector / market name to display metadata: { etf, he, finvizUrl }.
  * Used by getSectorMeta in MorningBriefVisualPrimitives.
