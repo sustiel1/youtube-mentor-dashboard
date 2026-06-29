@@ -163,7 +163,7 @@ import { GemRawModal } from "@/components/dashboard/GemRawModal";
 import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
 import { detectMarketEntityType, extractTickerFromItem } from '@/lib/detectMarketEntityType';
 import { buildTradingViewChartUrl, getFinvizUrl } from '@/utils/finvizLinks';
-import { buildStockAiPrompt } from '@/lib/buildStockAiPrompt';
+import { buildPerplexityAnalysisPrompt, PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
 import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
@@ -5326,6 +5326,20 @@ export function VideoDetailPanel({
     const tvUrl = buildTradingViewChartUrl(ticker);
     window.open(tvUrl, '_blank', 'noopener,noreferrer');
     toast.success(`📈 ${ticker} — נפתח ב-TradingView`);
+  }, [multiSelected]);
+
+  const handleOpenPerplexity = useCallback(() => {
+    if (multiSelected.size === 0) return;
+    const allItems = [...multiSelected.values()];
+    const prompt = buildPerplexityAnalysisPrompt(allItems);
+    if (!prompt) {
+      toast.info('לא ניתן לבנות פרומפט לפריטים הנבחרים');
+      return;
+    }
+    // Fire-and-forget clipboard write first (same pattern as ResearchDropdown)
+    navigator.clipboard?.writeText(prompt).catch(() => {});
+    toast.success('הפרומפט הועתק. הדבק אותו ב-Perplexity ולחץ Enter. 🤖', { duration: 5000 });
+    window.open(PERPLEXITY_SPACE_URL, '_blank', 'noopener,noreferrer');
   }, [multiSelected]);
 
   const handleSaveSelectedToWorkspace = () => {
@@ -11458,6 +11472,7 @@ export function VideoDetailPanel({
           onWorkspace={handleSaveSelectedToWorkspace}
           onCopy={handleCopySelectedItems}
           onAiAnalyze={handleOpenTradingView}
+          onPerplexity={handleOpenPerplexity}
         />
 
       </DialogContent>
