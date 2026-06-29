@@ -268,33 +268,182 @@ const _TV_EXCHANGE_MAP = new Map([
   ['KRE', 'AMEX'], ['IGV', 'AMEX'],
 ]);
 
-// Crypto and special symbols → TradingView full symbol (no generic EXCHANGE:X format)
-const _TV_SPECIAL_MAP = new Map([
-  ['BTC', 'BITSTAMP:BTCUSD'], ['BITCOIN', 'BITSTAMP:BTCUSD'], ['BTCUSD', 'BITSTAMP:BTCUSD'],
-  ['ETH', 'BITSTAMP:ETHUSD'], ['ETHEREUM', 'BITSTAMP:ETHUSD'],
-  ['DXY', 'TVC:DXY'], ['USDX', 'TVC:DXY'],
-  ['VIX', 'TVC:VIX'],
-  ['GOLD', 'COMEX:GC1!'], ['SILVER', 'COMEX:SI1!'],
-  ['OIL', 'TVC:USOIL'], ['WTI', 'TVC:USOIL'], ['BRENT', 'TVC:UKOIL'],
+// Normalize a raw symbol/name for TradingView alias lookup.
+// Trims, uppercases (English only — Hebrew is unchanged by toUpperCase),
+// normalizes internal whitespace, and standardizes slash spacing.
+function _normTv(s) {
+  return String(s || '').trim().toUpperCase().replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ');
+}
+
+// Unified alias map: crypto, macro, commodities, indices, sector ETF proxies.
+// English keys: UPPERCASE. Hebrew keys: exact (toUpperCase is a no-op on Hebrew).
+// All lookups go through _normTv() so slash / space variants are normalized.
+const _TV_ALIAS_MAP = new Map([
+  // ── Crypto ───────────────────────────────────────────────────────────────
+  ['BTC',                    'BITSTAMP:BTCUSD'],
+  ['BITCOIN',                'BITSTAMP:BTCUSD'],
+  ['BTCUSD',                 'BITSTAMP:BTCUSD'],
+  ['CRYPTO',                 'BITSTAMP:BTCUSD'],
+  ['ביטקוין',                'BITSTAMP:BTCUSD'],
+  ['ETH',                    'BITSTAMP:ETHUSD'],
+  ['ETHEREUM',               'BITSTAMP:ETHUSD'],
+  ['ETHUSD',                 'BITSTAMP:ETHUSD'],
+  ['אתריום',                 'BITSTAMP:ETHUSD'],
+  // ── DXY / Dollar ─────────────────────────────────────────────────────────
+  ['DXY',                    'TVC:DXY'],
+  ['USDX',                   'TVC:DXY'],
+  ['US DOLLAR',              'TVC:DXY'],
+  ['US DOLLAR INDEX',        'TVC:DXY'],
+  ['DOLLAR INDEX',           'TVC:DXY'],
+  ['מדד הדולר',              'TVC:DXY'],
+  // ── VIX / Risk-off ───────────────────────────────────────────────────────
+  ['VIX',                    'TVC:VIX'],
+  ['RISK-OFF',               'TVC:VIX'],
+  // ── Yields / Macro rates ─────────────────────────────────────────────────
+  ['US10Y',                  'TVC:US10Y'],
+  ['10Y',                    'TVC:US10Y'],
+  ['10 YEAR',                'TVC:US10Y'],
+  ['YIELDS',                 'TVC:US10Y'],
+  ['INTEREST RATES',         'TVC:US10Y'],
+  ['FED FUNDS',              'TVC:US10Y'],
+  ['INFLATION',              'TVC:US10Y'],
+  ['PCE',                    'TVC:US10Y'],
+  ['PCE INFLATION',          'TVC:US10Y'],
+  ['אינפלציה',               'TVC:US10Y'],
+  ['אינפלציית PCE',          'TVC:US10Y'],
+  // ── Gold ─────────────────────────────────────────────────────────────────
+  ['GOLD',                   'TVC:GOLD'],
+  ['XAUUSD',                 'TVC:GOLD'],
+  ['זהב',                    'TVC:GOLD'],
+  // ── Silver ───────────────────────────────────────────────────────────────
+  ['SILVER',                 'TVC:SILVER'],
+  ['XAGUSD',                 'TVC:SILVER'],
+  ['כסף',                    'TVC:SILVER'],
+  // ── Crude Oil ────────────────────────────────────────────────────────────
+  ['OIL',                    'TVC:USOIL'],
+  ['WTI',                    'TVC:USOIL'],
+  ['USOIL',                  'TVC:USOIL'],
+  ['CRUDE OIL',              'TVC:USOIL'],
+  ['CRUDE',                  'TVC:USOIL'],
+  ['FUEL',                   'TVC:USOIL'],
+  ['CRUDE OIL / FUEL',       'TVC:USOIL'],
+  ['נפט',                    'TVC:USOIL'],
+  ['נפט גולמי',              'TVC:USOIL'],
+  ['נפט גולמי / דלק',       'TVC:USOIL'],
+  ['דלק',                    'TVC:USOIL'],
+  // ── Brent ────────────────────────────────────────────────────────────────
+  ['BRENT',                  'TVC:UKOIL'],
+  ['BRENT OIL',              'TVC:UKOIL'],
+  // ── Natural Gas ──────────────────────────────────────────────────────────
+  ['NATURAL GAS',            'TVC:NATGAS'],
+  ['NATGAS',                 'TVC:NATGAS'],
+  ['גז טבעי',                'TVC:NATGAS'],
+  // ── Copper ───────────────────────────────────────────────────────────────
+  ['COPPER',                 'COMEX:HG1!'],
+  ['נחושת',                  'COMEX:HG1!'],
+  // ── US Indices ───────────────────────────────────────────────────────────
+  ['NASDAQ',                 'NASDAQ:IXIC'],
+  ['NASDAQ COMPOSITE',       'NASDAQ:IXIC'],
+  ['NASDAQ 100',             'NASDAQ:NDX'],
+  ['NDX',                    'NASDAQ:NDX'],
+  ['S&P 500',                'SP:SPX'],
+  ['S&P500',                 'SP:SPX'],
+  ['SP500',                  'SP:SPX'],
+  ['SPX',                    'SP:SPX'],
+  ['DOW JONES',              'DJ:DJI'],
+  ['DOW',                    'DJ:DJI'],
+  ['DJIA',                   'DJ:DJI'],
+  ['RUSSELL 2000',           'TVC:RUT'],
+  ['RUSSELL',                'TVC:RUT'],
+  ['RTY',                    'TVC:RUT'],
+  // ── Global Indices ───────────────────────────────────────────────────────
+  ['KOSPI',                  'KRX:KOSPI'],
+  ['SOUTH KOREAN KOSPI',     'KRX:KOSPI'],
+  ['NIKKEI',                 'TVC:NI225'],
+  ['NIKKEI 225',             'TVC:NI225'],
+  ['HANG SENG',              'TVC:HSI'],
+  ['DAX',                    'XETR:DAX'],
+  ['FTSE',                   'TVC:UKX'],
+  ['FTSE 100',               'TVC:UKX'],
+  // ── Sector ETF proxies (AMEX = NYSE Arca) ────────────────────────────────
+  ['TECHNOLOGY',             'AMEX:XLK'],
+  ['TECH',                   'AMEX:XLK'],
+  ['טכנולוגיה',              'AMEX:XLK'],
+  ['HEALTHCARE',             'AMEX:XLV'],
+  ['HEALTH CARE',            'AMEX:XLV'],
+  ['בריאות',                 'AMEX:XLV'],
+  ['FINANCIALS',             'AMEX:XLF'],
+  ['FINANCE',                'AMEX:XLF'],
+  ['פיננסים',                'AMEX:XLF'],
+  ['ENERGY',                 'AMEX:XLE'],
+  ['אנרגיה',                 'AMEX:XLE'],
+  ['UTILITIES',              'AMEX:XLU'],
+  ['תשתיות',                 'AMEX:XLU'],
+  ['תשתיות / חשמל',          'AMEX:XLU'],
+  ['REAL ESTATE',            'AMEX:XLRE'],
+  ['REAL ESTATE SECTOR',     'AMEX:XLRE'],
+  ['נדל"ן',                  'AMEX:XLRE'],
+  ['נדלן',                   'AMEX:XLRE'],
+  ['HOUSING',                'AMEX:XHB'],
+  ['US HOUSING MARKET',      'AMEX:XLRE'],
+  ['שוק הדיור בארה"ב',      'AMEX:XLRE'],
+  ['SEMICONDUCTORS',         'NASDAQ:SMH'],
+  ['CHIPS',                  'NASDAQ:SMH'],
+  ['שבבים',                  'NASDAQ:SMH'],
+  ['מוליכים למחצה',          'NASDAQ:SMH'],
+  ['BIOTECH',                'AMEX:XBI'],
+  ['BIOTECHNOLOGY',          'AMEX:XBI'],
+  ['ביוטק',                  'AMEX:XBI'],
+  ['SMALL CAPS',             'AMEX:IWM'],
+  ['SMALL CAP',              'AMEX:IWM'],
+  ['מניות קטנות',             'AMEX:IWM'],
+  ['INDUSTRIALS',            'AMEX:XLI'],
+  ['תעשייה',                 'AMEX:XLI'],
+  ['CONSUMER DISCRETIONARY', 'AMEX:XLY'],
+  ['צריכה מחזורית',          'AMEX:XLY'],
+  ['CONSUMER STAPLES',       'AMEX:XLP'],
+  ['צריכה בסיסית',           'AMEX:XLP'],
+  ['MATERIALS',              'AMEX:XLB'],
+  ['חומרי גלם',              'AMEX:XLB'],
+  // ── Sentiment proxies ────────────────────────────────────────────────────
+  ['MARKET SENTIMENT',       'SP:SPX'],
+  ['סנטימנט כללי',           'SP:SPX'],
+  ['RISK-ON',                'SP:SPX'],
+  // ── Big Tech ─────────────────────────────────────────────────────────────
+  ['BIG TECH',               'NASDAQ:QQQ'],
 ]);
 
 /**
+ * Resolves a market name/symbol to a TradingView qualified symbol string.
+ * Returns the resolved symbol (e.g. "TVC:USOIL") or null if unknown.
+ * Use this to check if a name is resolvable before building a URL.
+ */
+export function lookupTradingViewSymbol(name) {
+  if (!name) return null;
+  return _TV_ALIAS_MAP.get(_normTv(name)) || null;
+}
+
+/**
  * Builds a TradingView chart URL using the user's personal chart layout.
- * Uses exchange-qualified symbols (NASDAQ:MSFT, NYSE:JPM, AMEX:SPY, etc.).
- * Falls back to NASDAQ for unknown US tickers.
+ * Lookup order: alias map (indices/crypto/commodities/macro/sectors/Hebrew) →
+ *               exchange map (known stocks/ETFs) → NASDAQ fallback for short tickers.
  * Returns the base chart URL if no symbol provided.
  */
 export function buildTradingViewChartUrl(symbol) {
   if (!symbol) return _TV_CHART_BASE;
-  const s = String(symbol).trim().toUpperCase();
+  const s = _normTv(symbol);
   if (!s) return _TV_CHART_BASE;
 
-  const special = _TV_SPECIAL_MAP.get(s);
-  if (special) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(special)}`;
+  // 1. Named aliases: indices, crypto, commodities, macro proxies, sectors, Hebrew
+  const alias = _TV_ALIAS_MAP.get(s);
+  if (alias) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(alias)}`;
 
+  // 2. Stock/ETF ticker with known exchange
   const exchange = _TV_EXCHANGE_MAP.get(s);
-  const qualified = exchange ? `${exchange}:${s}` : `NASDAQ:${s}`;
-  return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(qualified)}`;
+  if (exchange) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`${exchange}:${s}`)}`;
+
+  // 3. Unknown short ticker — assume NASDAQ (only for pure A-Z, 1-6 chars)
+  return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`NASDAQ:${s}`)}`;
 }
 
 /**

@@ -161,8 +161,8 @@ import {
 } from "@/lib/universalTabSections";
 import { GemRawModal } from "@/components/dashboard/GemRawModal";
 import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
-import { detectMarketEntityType, extractTickerFromItem } from '@/lib/detectMarketEntityType';
-import { buildTradingViewChartUrl, getFinvizUrl } from '@/utils/finvizLinks';
+import { detectMarketEntityType, extractTickerFromItem, extractIndexNameFromItem } from '@/lib/detectMarketEntityType';
+import { buildTradingViewChartUrl, lookupTradingViewSymbol, getFinvizUrl } from '@/utils/finvizLinks';
 import { buildPerplexityAnalysisPrompt, PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
 import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
@@ -5314,18 +5314,42 @@ export function VideoDetailPanel({
     if (multiSelected.size === 0) return;
     const firstItem = [...multiSelected.values()][0];
     const entityType = detectMarketEntityType(firstItem);
-    if (entityType !== 'stock') {
-      toast.info('TradingView זמין כעת למניות בלבד — בחר שורת מניה מ"מניות שהוזכרו"');
+
+    // Stock: strict ticker extraction (e.g. "AAPL · Apple Inc. · ...")
+    if (entityType === 'stock') {
+      const ticker = extractTickerFromItem(firstItem);
+      if (!ticker) {
+        toast.info('לא זוהה סימבול מניה בפריט הנבחר');
+        return;
+      }
+      const tvUrl = buildTradingViewChartUrl(ticker);
+      window.open(tvUrl, '_blank', 'noopener,noreferrer');
+      toast.success(`📈 ${ticker} — נפתח ב-TradingView`);
       return;
     }
-    const ticker = extractTickerFromItem(firstItem);
-    if (!ticker) {
-      toast.info('לא זוהה סימבול מניה בפריט הנבחר');
-      return;
+
+    // Index / macro / sentiment / sector / unknown — try alias map on extracted name
+    console.debug('[TradingView] non-stock item:', entityType, JSON.stringify(firstItem, null, 2));
+    const name = extractIndexNameFromItem(firstItem);
+    if (name) {
+      // Check alias map first (indices, crypto, commodities, macro, sectors)
+      const resolved = lookupTradingViewSymbol(name);
+      if (resolved) {
+        const tvUrl = buildTradingViewChartUrl(name);
+        window.open(tvUrl, '_blank', 'noopener,noreferrer');
+        toast.success(`📈 ${name} — נפתח ב-TradingView`);
+        return;
+      }
+      // Fallback: if it looks like a pure stock ticker (1-6 uppercase letters), open it anyway
+      if (/^[A-Z]{1,6}$/.test(name)) {
+        const tvUrl = buildTradingViewChartUrl(name);
+        window.open(tvUrl, '_blank', 'noopener,noreferrer');
+        toast.success(`📈 ${name} — נפתח ב-TradingView`);
+        return;
+      }
     }
-    const tvUrl = buildTradingViewChartUrl(ticker);
-    window.open(tvUrl, '_blank', 'noopener,noreferrer');
-    toast.success(`📈 ${ticker} — נפתח ב-TradingView`);
+
+    toast.info('TradingView זמין למניות, מדדים, קריפטו וסחורות — בחר שורת נכס מהדשבורד');
   }, [multiSelected]);
 
   const handleOpenPerplexity = useCallback(() => {

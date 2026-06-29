@@ -66,7 +66,52 @@ https://il.tradingview.com/chart/54fxnDLz/?symbol=NASDAQ%3AMSFT
 | `AMEX:` | SPY, IWM, GLD, XLK, XLF, XLE, XBI, XRT, VNQ... |
 | Special | BTC → `BITSTAMP:BTCUSD`, DXY → `TVC:DXY`, VIX → `TVC:VIX` |
 
-**Non-stock fallback:** Toast: `"TradingView זמין כעת למניות בלבד"`
+**Non-stock / non-index fallback:** Toast: `"TradingView זמין למניות ומדדי שוק — בחר שורת מניה מ"מניות שהוזכרו" או שורה מ"שווקים""`
+
+---
+
+## TradingView Market / Index Routing
+
+Market index rows (from the **שווקים** tab) are also supported. The entity type is detected as `'index'` when:
+- `item.type === 'indices'`, or
+- `item.sectionLabel` contains `'שווקים'`
+
+**Asset name extraction** — `extractIndexNameFromItem(item)` in `detectMarketEntityType.js`:
+1. Tries structured fields in order: `symbol`, `ticker`, `name`, `title`, `label`, `asset`, `index`, `market`
+2. Falls back to first segment of `text` split by ` · ` (Morning Brief format: `"NASDAQ · bullish · strong · [comment]"`)
+
+**Index → TradingView symbol map** (`_TV_INDEX_MAP` in `finvizLinks.js`):
+
+| Asset name | TradingView symbol |
+|---|---|
+| `NASDAQ` | `NASDAQ:IXIC` |
+| `NASDAQ COMPOSITE` | `NASDAQ:IXIC` |
+| `NASDAQ 100` | `NASDAQ:NDX` |
+| `S&P 500` | `SP:SPX` |
+| `SP500` | `SP:SPX` |
+| `DOW JONES` | `DJ:DJI` |
+| `DOW` | `DJ:DJI` |
+| `RUSSELL 2000` | `TVC:RUT` |
+| `RUSSELL` | `TVC:RUT` |
+| `KOSPI` | `KRX:KOSPI` |
+| `SOUTH KOREAN KOSPI` | `KRX:KOSPI` |
+| `NIKKEI` | `TVC:NI225` |
+| `HANG SENG` | `TVC:HSI` |
+| `DAX` | `XETR:DAX` |
+| `FTSE 100` | `TVC:UKX` |
+| `BITCOIN` / `BTC` | `BITSTAMP:BTCUSD` (via `_TV_SPECIAL_MAP`) |
+
+**Debug:** When an index row is opened, `console.debug('[TradingView] market index item:', ...)` logs the raw item structure for verification.
+
+**URL examples:**
+
+| Selection | Opens |
+|---|---|
+| RUSSELL 2000 | `...?symbol=TVC%3ARUT` |
+| S&P 500 | `...?symbol=SP%3ASPX` |
+| DOW JONES | `...?symbol=DJ%3ADJI` |
+| BITCOIN | `...?symbol=BITSTAMP%3ABTCUSD` |
+| MSFT (stock) | `...?symbol=NASDAQ%3AMSFT` |
 
 ---
 
@@ -180,6 +225,31 @@ Every table row must include one of:
 - **Do not break Brain / Obsidian / Workspace / Copy** — all four remain unchanged.
 - **Do not call Perplexity API** — prompt is clipboard-only, no direct API integration.
 - **Keep this additive** — new buttons only. No existing action removed.
+
+---
+
+## TradingView Coverage Summary
+
+TradingView now supports market indices, commodities, crypto, macro proxies and sector proxies from selected dashboard rows (in addition to stocks).
+
+| Category | Examples | Resolved to |
+|---|---|---|
+| Stocks | MSFT, AAPL, NVDA | NASDAQ:MSFT etc. |
+| ETFs | SPY, QQQ, IWM, XBI | AMEX/NASDAQ:* |
+| US Indices | NASDAQ, S&P 500, DOW JONES, RUSSELL 2000 | NASDAQ:IXIC, SP:SPX… |
+| Global Indices | KOSPI, NIKKEI, HANG SENG, DAX, FTSE | KRX/TVC/XETR:* |
+| Crypto | BITCOIN, BTC, CRYPTO, ETHEREUM, ETH | BITSTAMP:BTCUSD/ETHUSD |
+| Gold / Silver | GOLD, זהב, SILVER, כסף | TVC:GOLD, TVC:SILVER |
+| Oil | CRUDE OIL, OIL, FUEL, נפט גולמי / דלק | TVC:USOIL |
+| Other Commodities | NATURAL GAS, COPPER, גז טבעי | TVC:NATGAS, COMEX:HG1! |
+| Macro / Rates | PCE INFLATION, INFLATION, INTEREST RATES, FED FUNDS | TVC:US10Y |
+| Dollar | DXY, US DOLLAR | TVC:DXY |
+| VIX | VIX, RISK-OFF | TVC:VIX |
+| Sectors (Hebrew) | טכנולוגיה, בריאות, פיננסים, אנרגיה, תשתיות, נדל"ן | AMEX:XLK/XLV/XLF/XLE/XLU/XLRE |
+| Housing | US HOUSING MARKET, HOUSING | AMEX:XLRE, AMEX:XHB |
+| Sentiment | MARKET SENTIMENT, RISK-ON | SP:SPX |
+
+**Implementation:** `_TV_ALIAS_MAP` in `src/utils/finvizLinks.js` — checked first in `buildTradingViewChartUrl`. New `lookupTradingViewSymbol(name)` export lets the handler check resolvability before opening.
 
 ---
 
