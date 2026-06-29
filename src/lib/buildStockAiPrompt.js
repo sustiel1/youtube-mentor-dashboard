@@ -1,8 +1,13 @@
 /**
- * Builds a compact stock analysis AI prompt for a given ticker.
- * Designed for Perplexity, Claude, or any AI assistant.
- * Output target: compact decision table, decision-oriented.
+ * Builds AI analysis prompts for Perplexity.
+ * Entity-aware routing: stock, etf, index, commodity, crypto, macro, sector, sentiment.
  */
+import { detectMarketEntityType, extractIndexNameFromItem } from '@/lib/detectMarketEntityType';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy exports (kept unchanged for backward compatibility)
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function buildStockAiPrompt(ticker) {
   const sym = String(ticker || '').toUpperCase().trim();
   if (!sym) return '';
@@ -16,66 +21,193 @@ export function buildStockAiPrompt(ticker) {
   );
 }
 
-/** Returns a Perplexity search URL pre-filled with the stock prompt. */
 export function buildStockPerplexityUrl(ticker) {
   const prompt = buildStockAiPrompt(ticker);
   if (!prompt) return null;
   return `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`;
 }
 
-// ── Perplexity Space analysis prompt builder ─────────────────────────────────
-
-/** User's Perplexity Space for stock fast-decision analysis. */
 export const PERPLEXITY_SPACE_URL =
   'https://www.perplexity.ai/spaces/stock-fast-decision-oOhCJwdnQKqXFNhAt5CVVw';
 
-// Self-contained instructions block appended to every prompt.
-// Does not rely on "Space instructions" — works as a standalone paste.
-const _ANALYSIS_INSTRUCTIONS =
-  '\n\nענה אך ורק בעברית. טבלאות RTL בלבד. אל תסביר — רק טבלאות.\n' +
-  'כל שורה חייבת לכלול סטטוס צבע: 🟢 חיובי / 🟡 ניטרלי / 🔴 שלילי\n\n' +
-  '## 1. החלטה מהירה\n' +
-  '| פרמטר | נתון | 🔴🟡🟢 | פירוש קצר | ציון |\n\n' +
-  '## 2. טכני\n' +
-  '| פרמטר | נתון | 🔴🟡🟢 | פירוש קצר | ציון |\n' +
-  'כלול: RSI, MACD, Bollinger Bands, EMA 20/50/200, נפח, תמיכה/התנגדות\n\n' +
-  '## 3. פנדמנטלי\n' +
-  '| פרמטר | נתון | 🔴🟡🟢 | פירוש קצר | ציון |\n' +
-  'כלול: P/E, צמיחה, מרווחים, חוב, המלצות אנליסטים\n\n' +
-  '## 4. סיכונים וקטליזטורים\n' +
-  '| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n' +
-  '## ציון כולל\n' +
-  '| ציון (0-100) | החלטה |\n' +
-  '| --- | קנה / מעקב / הימנע |\n\n' +
-  'ציין מקורות. תובנות קצרות בלבד. אין הסברים ארוכים.';
+// ─────────────────────────────────────────────────────────────────────────────
+// Entity-aware Perplexity Space prompt builder
+// ─────────────────────────────────────────────────────────────────────────────
 
-function _extractItemLabel(item) {
-  const text = String(item?.text || '').trim();
-  // Morning Brief stock rows: "AAPL · Apple Inc. · context" — use first segment if it's a ticker
-  const firstSeg = text.split(' · ')[0].trim();
-  if (/^[A-Z]{1,6}$/.test(firstSeg)) return firstSeg;
-  // Fallback: cap long text
-  return text.length > 60 ? text.slice(0, 57) + '…' : text;
+const _LANG =
+  'ענה אך ורק בעברית. טבלאות RTL בלבד. אל תסביר — רק טבלאות.\n' +
+  'כל שורה חייבת לכלול סטטוס צבע: 🟢 חיובי / 🟡 ניטרלי / 🔴 שלילי\n' +
+  'עמודות: | פרמטר | נתון | 🔴🟡🟢 | פירוש קצר | ציון |';
+
+const _CITE = 'ציין מקורות. תובנות עד 12 מילים. סיוע להחלטה בלבד.';
+
+function _label(item) {
+  return extractIndexNameFromItem(item) || String(item?.text || '').slice(0, 60) || '?';
+}
+
+function _stockEtfPrompt(label, isEtf) {
+  const desc = isEtf ? 'קרן סל (ETF)' : 'מניה או קרן סל';
+  return (
+    `הצג את גרף המחיר / כרטיס ציטוט של ${label} אם זמין.\n\n` +
+    `נתח את ${label} כ${desc}.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. טכני\n` +
+    `כלול: RSI, MACD, Bollinger Bands, EMA 20/50/200, נפח, נפח יחסי, תמיכה/התנגדות, מגמה, מומנטום\n\n` +
+    `## 3. פנדמנטלי\n` +
+    `כלול: P/E, Forward P/E, PEG, ROE/ROIC, צמיחת הכנסות, צמיחת EPS, מרווחים, FCF, חוב, אנליסטים\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון כולל\n` +
+    `| ציון כולל (0-100) | ציון טכני | ציון פנדמנטלי | ציון סיכון | החלטה |\n` +
+    `| --- | --- | --- | --- | מעקב / המתנה / להימנע / כניסה מעל טריגר |\n\n` +
+    _CITE
+  );
+}
+
+function _indexPrompt(label) {
+  return (
+    `הצג את גרף המחיר / כרטיס ציטוט של ${label} אם זמין.\n\n` +
+    `נתח את ${label} כמדד שוק.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. טכני\n` +
+    `כלול: RSI, MACD, Bollinger Bands, EMA 20/50/200, תמיכה/התנגדות\n\n` +
+    `## 3. רוחב שוק וסקטורים\n` +
+    `כלול: breadth, סקטורים מובילים, סקטורים חלשים\n\n` +
+    `## 4. מאקרו וסיכונים\n` +
+    `כלול: רגישות ריביות, רגישות אינפלציה, תנודתיות, קטליזטור ראשי, סיכון ראשי, מה לבדוק\n\n` +
+    `## מצב השוק\n` +
+    `| ציון שוק (0-100) | מצב | מה לבדוק |\n` +
+    `| --- | Risk-On / ניטרלי / Risk-Off / המתנה | --- |\n\n` +
+    _CITE
+  );
+}
+
+function _commodityPrompt(label) {
+  return (
+    `הצג את גרף המחיר / כרטיס ציטוט של ${label} אם זמין.\n\n` +
+    `נתח את ${label} כסחורה.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. טכני\n` +
+    `כלול: RSI, MACD, Bollinger Bands, EMA 20/50/200, תמיכה/התנגדות\n\n` +
+    `## 3. היצע / ביקוש / מאקרו\n` +
+    `כלול: מלאים, ייצור, השפעת אינפלציה, השפעת דולר, סיכון גיאופוליטי, סקטורים מושפעים\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון סחורה (0-100) ומה לבדוק\n\n` +
+    _CITE
+  );
+}
+
+function _cryptoPrompt(label) {
+  return (
+    `הצג את גרף המחיר / כרטיס ציטוט של ${label} אם זמין.\n\n` +
+    `נתח את ${label} כנכס קריפטו.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. טכני\n` +
+    `כלול: RSI, MACD, Bollinger Bands, EMA 20/50/200, נפח, תמיכה/התנגדות, מומנטום\n\n` +
+    `## 3. סנטימנט ונזילות\n` +
+    `כלול: Risk-On/Off, השפעת דולר, נזילות, קורלציה לנאסד"ק\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון קריפטו (0-100) ומה לבדוק\n\n` +
+    _CITE
+  );
+}
+
+function _macroPrompt(label) {
+  return (
+    `הצג גרף פרוקסי רלוונטי של ${label} אם זמין. אם אין גרף ישיר — השתמש בפרוקסי השוק הטוב ביותר.\n\n` +
+    `נתח את ${label} כגורם מאקרו.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n` +
+    `כלול: קריאה נוכחית, קריאה צפויה, כיוון הפתעה\n\n` +
+    `## 2. נתון מאקרו\n` +
+    `כלול: השפעה על אינפלציה, על ריביות, על הדולר\n\n` +
+    `## 3. השפעה על שווקים\n` +
+    `כלול: מדדים מושפעים, סקטורים מושפעים, מניות/ETFs מושפעים\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון השפעה כוללת (0-100) ומה לבדוק\n\n` +
+    _CITE
+  );
+}
+
+function _sectorPrompt(label) {
+  return (
+    `הצג את גרף המחיר / כרטיס ציטוט של קרן ה-${label} אם זמין.\n\n` +
+    `נתח את ${label} כסקטור / קרן סל פרוקסי.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. טכני\n` +
+    `כלול: RSI, MACD, EMA 20/50/200, חוזק יחסי, תמיכה/התנגדות\n\n` +
+    `## 3. רוטציה וסקטור\n` +
+    `כלול: מניות מובילות, מניות חלשות, רוטציה סקטוריאלית, רגישות מאקרו\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון סקטור (0-100) ומה לבדוק\n\n` +
+    _CITE
+  );
+}
+
+function _sentimentPrompt(label) {
+  return (
+    `הצג גרף פרוקסי שוק של ${label} אם זמין. לסנטימנט כללי — השתמש ב-S&P 500 או VIX. לסנטימנט קריפטו — השתמש ב-Bitcoin.\n\n` +
+    `נתח את ${label} כאות סנטימנט שוק.\n\n` +
+    `${_LANG}\n\n` +
+    `## 1. החלטה מהירה\n\n` +
+    `## 2. סנטימנט\n` +
+    `כלול: Fear/Greed, VIX/תנודתיות, Risk-On/Off, קמעונאים, מוסדיים\n\n` +
+    `## 3. השפעה על נכסים\n` +
+    `כלול: סקטורים מושפעים, נכסים מושפעים\n\n` +
+    `## 4. סיכונים וקטליזטורים\n` +
+    `| גורם | פרטים | 🔴🟡🟢 | השפעה |\n\n` +
+    `## ציון סנטימנט כולל (0-100) ומה לבדוק\n\n` +
+    _CITE
+  );
+}
+
+function _buildSinglePrompt(item) {
+  const entityType = detectMarketEntityType(item);
+  const lbl = _label(item);
+  if (!lbl) return '';
+  switch (entityType) {
+    case 'stock':     return _stockEtfPrompt(lbl, false);
+    case 'etf':       return _stockEtfPrompt(lbl, true);
+    case 'index':     return _indexPrompt(lbl);
+    case 'commodity': return _commodityPrompt(lbl);
+    case 'crypto':    return _cryptoPrompt(lbl);
+    case 'macro':     return _macroPrompt(lbl);
+    case 'sector':    return _sectorPrompt(lbl);
+    case 'sentiment': return _sentimentPrompt(lbl);
+    default:          return _stockEtfPrompt(lbl, false);
+  }
+}
+
+function _multiPrompt(items) {
+  const list = items.map((item) => `- ${_label(item)}`).join('\n');
+  return (
+    `נתח את הנכסים הבאים:\n${list}\n\n` +
+    `לכל נכס, זהה אם מדובר במניה, קרן סל, מדד, סחורה, קריפטו, מאקרו, סקטור או אות סנטימנט.\n\n` +
+    `הצג גרף / כרטיס ציטוט של הנכס הראשון אם זמין.\n\n` +
+    `החזר טבלת השוואה קומפקטית בעברית RTL:\n` +
+    `| נכס | סוג | מצב | 🔴🟡🟢 | ציון | מה לבדוק |\n\n` +
+    `שורה תחתונה: [משפט עברית קצר אחד]\n\n` +
+    _CITE
+  );
 }
 
 /**
  * Builds a ready-to-paste Perplexity Space analysis prompt for one or more
- * selected bulk items. Works for stocks, sectors, macros, or any row.
+ * selected bulk items. Detects entity type and returns the appropriate prompt.
  * Self-contained — no reliance on Space system instructions.
  */
 export function buildPerplexityAnalysisPrompt(selectedItems) {
   const items = Array.isArray(selectedItems) ? selectedItems.filter(Boolean) : [];
   if (items.length === 0) return '';
-
-  if (items.length === 1) {
-    const label = _extractItemLabel(items[0]);
-    return `נתח את ${label}${_ANALYSIS_INSTRUCTIONS}`;
-  }
-
-  const list = items.map((item) => `- ${_extractItemLabel(item)}`).join('\n');
-  return (
-    `נתח את הנכסים הבאים:\n${list}` +
-    '\n\nלכל נכס החזר טבלאות החלטה נפרדות.' +
-    _ANALYSIS_INSTRUCTIONS
-  );
+  if (items.length === 1) return _buildSinglePrompt(items[0]);
+  return _multiPrompt(items);
 }

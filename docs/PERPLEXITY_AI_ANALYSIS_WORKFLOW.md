@@ -32,14 +32,14 @@ When one or more items are selected via checkbox, the toolbar appears:
 | `🔮 Obsidian` | Saves selected items to Obsidian vault |
 | `⭐ Workspace` | Saves selected items to Workspace |
 | `📋 העתק` | Copies selected items as text |
-| `📈 TradingView` | Opens TradingView chart (stock tickers only) |
+| `📈 TradingView` | Opens TradingView chart (stocks, indices, commodities, crypto, sectors, macro, sentiment) |
 | `🤖 נתח עם AI` | Copies AI prompt + opens Perplexity Space (any item type) |
 
 ---
 
 ## TradingView Button
 
-**Trigger:** One stock ticker selected (type `stocks-mentioned` or text that starts with a US ticker symbol).
+**Trigger:** Any selected asset row — stock, ETF, market index, commodity, crypto, macro driver, sector, or sentiment signal.
 
 **Behavior:**
 1. Detects entity type via `detectMarketEntityType(item)` in `src/lib/detectMarketEntityType.js`.
@@ -250,6 +250,65 @@ TradingView now supports market indices, commodities, crypto, macro proxies and 
 | Sentiment | MARKET SENTIMENT, RISK-ON | SP:SPX |
 
 **Implementation:** `_TV_ALIAS_MAP` in `src/utils/finvizLinks.js` — checked first in `buildTradingViewChartUrl`. New `lookupTradingViewSymbol(name)` export lets the handler check resolvability before opening.
+
+---
+
+## Perplexity Entity-Specific Prompt Routing
+
+`buildPerplexityAnalysisPrompt(selectedItems)` in `src/lib/buildStockAiPrompt.js` detects entity type per item and selects the appropriate prompt template.
+
+### Entity Type → Prompt Template
+
+| Entity type | Detection logic | Prompt focus |
+|---|---|---|
+| `stock` | `type === 'stocks-mentioned'` / sectionLabel includes `מניות` (non-ETF ticker) | Technical + fundamental + risk score |
+| `etf` | Same as stock but ticker is in known ETF set (SPY, QQQ, XLK…) | Same as stock, labeled "קרן סל" |
+| `index` | `type === 'indices'` / sectionLabel includes `שווקים`, TV symbol is a plain index | Market breadth + macro + sector rotation |
+| `commodity` | שווקים row whose TV symbol is `TVC:USOIL`, `TVC:GOLD`, `TVC:SILVER`, `TVC:NATGAS`, `COMEX:HG1!` | Supply/demand + macro + geopolitical |
+| `crypto` | שווקים row whose TV symbol starts with `BITSTAMP:` | Technical + sentiment + liquidity |
+| `macro` | `type === 'brief-macro'` / sectionLabel includes `מאקרו`, OR שווקים row with `TVC:US10Y`, `TVC:DXY`, `TVC:VIX` | Current reading + market impact + affected assets |
+| `sector` | שווקים row whose TV symbol is `AMEX:XL*`, `NASDAQ:SMH`, `NASDAQ:QQQ` etc. | Relative strength + rotation + leading stocks |
+| `sentiment` | `type === 'brief-sentiment'` / sectionLabel includes `סנטימנט` | Fear/Greed + Risk-On/Off + VIX proxy |
+| `unknown` | Unrecognized item | Falls back to stock/ETF template |
+
+### Chart / Quote Card Request
+
+Every prompt begins with a request for a finance chart or quote card:
+
+- **Stocks / ETFs / Indices / Commodities / Crypto / Sectors:** `"הצג את גרף המחיר / כרטיס ציטוט של {LABEL} אם זמין."`
+- **Macro / Sentiment:** `"הצג גרף פרוקסי רלוונטי של {LABEL} אם זמין. אם אין גרף ישיר — השתמש בפרוקסי השוק הטוב ביותר."`
+- **Sentiment fallback:** Instructs to use S&P 500 / VIX for general market, Bitcoin for crypto sentiment.
+
+**Known limitation:** Perplexity does not always display the chart card. The prompt requests it, but the app does not depend on it.
+
+### Label Extraction
+
+`extractIndexNameFromItem(item)` is used for all entity types:
+1. Tries structured fields: `symbol`, `ticker`, `name`, `title`, `label`, `asset`, `index`, `market`
+2. Falls back to first segment of `text` split by ` · ` (Morning Brief format)
+
+Examples:
+- `{ text: "CRUDE OIL / FUEL · bearish · strong" }` → label: `"CRUDE OIL / FUEL"`
+- `{ text: "AAPL · Apple Inc. · context" }` → label: `"AAPL"`
+- `{ text: "סנטימנט כללי · bearish" }` → label: `"סנטימנט כללי"`
+
+### Multiple Selection
+
+When multiple items are selected, a single comparison prompt is built:
+
+```
+נתח את הנכסים הבאים:
+- ITEM_1
+- ITEM_2
+- ...
+
+לכל נכס, זהה אם מדובר במניה, קרן סל, מדד, סחורה, קריפטו, מאקרו, סקטור או אות סנטימנט.
+
+החזר טבלת השוואה קומפקטית:
+| נכס | סוג | מצב | 🔴🟡🟢 | ציון | מה לבדוק |
+
+שורה תחתונה: [משפט קצר]
+```
 
 ---
 
