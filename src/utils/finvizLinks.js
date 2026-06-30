@@ -521,6 +521,39 @@ const _TV_ALIAS_MAP = new Map([
   ['דולר',                   'AMEX:UUP'],
   ['SMALL CAPS (RUSSELL)',    'AMEX:IWM'],
   ['חברות קטנות',            'AMEX:IWM'],
+  // ── Individual stocks — English company names ────────────────────────────
+  ['NVIDIA',                  'NASDAQ:NVDA'],
+  ['APPLE',                   'NASDAQ:AAPL'],
+  ['TESLA',                   'NASDAQ:TSLA'],
+  ['BROADCOM',                'NASDAQ:AVGO'],
+  ['GOOGLE',                  'NASDAQ:GOOGL'],
+  ['ALPHABET',                'NASDAQ:GOOGL'],
+  ['ORACLE',                  'NYSE:ORCL'],
+  ['AMAZON',                  'NASDAQ:AMZN'],
+  ['MICROSOFT',               'NASDAQ:MSFT'],
+  ['APPLIED MATERIALS',       'NASDAQ:AMAT'],
+  ['SUPER MICRO',             'NASDAQ:SMCI'],
+  ['ROCKET LAB',              'NASDAQ:RKLB'],
+  ['VARONIS',                 'NASDAQ:VRNS'],
+  ['TRADE DESK',              'NASDAQ:TTD'],
+  ['COMCAST',                 'NASDAQ:CMCSA'],
+  ['CONCENTRIX',              'NASDAQ:CNXC'],
+  ['AEROVIRONMENT',           'NASDAQ:AVAV'],
+  ['SANDISK',                 'NASDAQ:SNDK'],
+  ['RITCHIE BROS',            'NYSE:RBA'],
+  // ── Individual stocks — Hebrew company names ─────────────────────────────
+  ['אנבידיה',                 'NASDAQ:NVDA'],
+  ['אפל',                     'NASDAQ:AAPL'],
+  ['טסלה',                    'NASDAQ:TSLA'],
+  ['ברודקום',                 'NASDAQ:AVGO'],
+  ['גוגל',                    'NASDAQ:GOOGL'],
+  ['אלפאבית',                 'NASDAQ:GOOGL'],
+  ['אורקל',                   'NYSE:ORCL'],
+  ['מטא',                     'NASDAQ:META'],
+  ['אמזון',                   'NASDAQ:AMZN'],
+  ['מיקרוסופט',               'NASDAQ:MSFT'],
+  ['איי אם די',               'NASDAQ:AMD'],
+  ['אי אם די',                'NASDAQ:AMD'],
 ]);
 
 /**
@@ -533,10 +566,18 @@ export function lookupTradingViewSymbol(name) {
   return _TV_ALIAS_MAP.get(_normTv(name)) || null;
 }
 
+/** Opens TradingView symbol search for unresolvable labels. Never returns null. */
+export function buildTradingViewSearchUrl(query) {
+  const q = String(query || '').trim();
+  if (!q) return 'https://il.tradingview.com/';
+  return `https://il.tradingview.com/search/?query=${encodeURIComponent(q)}`;
+}
+
 /**
  * Builds a TradingView chart URL using the user's personal chart layout.
- * Lookup order: alias map (indices/crypto/commodities/macro/sectors/Hebrew) →
- *               exchange map (known stocks/ETFs) → NASDAQ fallback for short tickers.
+ * Lookup order: alias map (indices/crypto/commodities/macro/sectors/stocks/Hebrew) →
+ *               exchange map (known stocks/ETFs) → NASDAQ fallback for short tickers →
+ *               TradingView search for unknown multi-word labels.
  * Returns the base chart URL if no symbol provided.
  */
 export function buildTradingViewChartUrl(symbol) {
@@ -552,8 +593,13 @@ export function buildTradingViewChartUrl(symbol) {
   const exchange = _TV_EXCHANGE_MAP.get(s);
   if (exchange) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`${exchange}:${s}`)}`;
 
-  // 3. Unknown short ticker — assume NASDAQ (only for pure A-Z, 1-6 chars)
-  return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`NASDAQ:${s}`)}`;
+  // 3. Pure A-Z ticker (1-6 chars) — NASDAQ fallback
+  if (/^[A-Z]{1,6}$/.test(s)) {
+    return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`NASDAQ:${s}`)}`;
+  }
+
+  // 4. Unknown multi-word / company name — open TradingView search
+  return buildTradingViewSearchUrl(s);
 }
 
 /**
@@ -651,6 +697,32 @@ export function resolveSectorEtfTicker(input) {
   return resolveFinvizTicker(input);
 }
 
+// ── Watch-Today: English company name → US stock ticker ───────────────────────
+// Used by enrichWatchTodayItem to resolve English company names that have no ticker prefix.
+const _EN_COMPANY_TICKER_MAP = new Map([
+  ['nvidia',            'NVDA'],
+  ['apple',             'AAPL'],
+  ['tesla',             'TSLA'],
+  ['broadcom',          'AVGO'],
+  ['google',            'GOOGL'],
+  ['alphabet',          'GOOGL'],
+  ['oracle',            'ORCL'],
+  ['meta',              'META'],
+  ['amazon',            'AMZN'],
+  ['microsoft',         'MSFT'],
+  ['amd',               'AMD'],
+  ['applied materials', 'AMAT'],
+  ['super micro',       'SMCI'],
+  ['rocket lab',        'RKLB'],
+  ['varonis',           'VRNS'],
+  ['trade desk',        'TTD'],
+  ['comcast',           'CMCSA'],
+  ['concentrix',        'CNXC'],
+  ['aerovironment',     'AVAV'],
+  ['sandisk',           'SNDK'],
+  ['ritchie bros',      'RBA'],
+]);
+
 // ── Watch-Today: Hebrew company name → US stock ticker ────────────────────────
 // Used by enrichWatchTodayItem to resolve Hebrew names that have no ticker in raw data.
 const _HE_STOCK_WATCH_MAP = new Map([
@@ -695,7 +767,12 @@ export function enrichWatchTodayItem(rawText) {
 
   // Try full string, then part before separator ("סנדיסק – הסיבה" → "סנדיסק")
   const namePart = text.split(/\s*[–·\-]\s*/)[0].trim();
-  const ticker = resolveHebrewStockTicker(text) ?? resolveHebrewStockTicker(namePart);
+  const ticker =
+    resolveHebrewStockTicker(text) ??
+    resolveHebrewStockTicker(namePart) ??
+    _EN_COMPANY_TICKER_MAP.get(text.toLowerCase()) ??
+    _EN_COMPANY_TICKER_MAP.get(namePart.toLowerCase()) ??
+    null;
 
   if (ticker) {
     return {

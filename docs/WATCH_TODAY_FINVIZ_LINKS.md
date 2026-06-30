@@ -48,6 +48,36 @@ Priority order:
 
 To add more entries: edit `_HE_STOCK_WATCH_MAP` in `src/utils/finvizLinks.js`.
 
+## English Company Name → Ticker Map
+
+Added in 2026-06-30. Lookup is case-insensitive (`.toLowerCase()`).
+
+| Input | Ticker |
+|---|---|
+| Nvidia | NVDA |
+| Apple | AAPL |
+| Tesla | TSLA |
+| Broadcom | AVGO |
+| Google | GOOGL |
+| Alphabet | GOOGL |
+| Oracle | ORCL |
+| Meta | META |
+| Amazon | AMZN |
+| Microsoft | MSFT |
+| AMD | AMD |
+| Applied Materials | AMAT |
+| Super Micro | SMCI |
+| Rocket Lab | RKLB |
+| Varonis | VRNS |
+| Trade Desk | TTD |
+| Comcast | CMCSA |
+| Concentrix | CNXC |
+| AeroVironment | AVAV |
+| Sandisk / SanDisk | SNDK |
+| Ritchie Bros | RBA |
+
+To add more entries: edit `_EN_COMPANY_TICKER_MAP` in `src/utils/finvizLinks.js`.
+
 ## Files Changed
 
 | File | Change |
@@ -83,11 +113,19 @@ Use Morning Brief 30.6.26.
 - [ ] "ברודקום" → shows "AVGO · ברודקום", opens Finviz AVGO
 - [ ] "ריצ'י ברוס" → shows "RBA · ריצ'י ברוס", opens Finviz RBA
 - [ ] "אפלייד מטריאלס" → shows "AMAT · אפלייד מטריאלס", opens Finviz AMAT
+- [ ] "Nvidia" → clickable, opens Finviz NVDA
+- [ ] "Apple" → clickable, opens Finviz AAPL
+- [ ] "Tesla" → clickable, opens Finviz TSLA
+- [ ] "Broadcom" → clickable, opens Finviz AVGO
+- [ ] "Google" → clickable, opens Finviz GOOGL
+- [ ] "Oracle" → clickable, opens Finviz ORCL
+- [ ] "Meta" → clickable, opens Finviz META
+- [ ] "Amazon" → clickable, opens Finviz AMZN
 - [ ] Checkbox selection still works
 - [ ] Save to Brain still works (saves with ticker prefix)
+- [ ] TradingView toolbar button unchanged
 - [ ] RTL layout unchanged
 - [ ] Other sections (keyInsights, keyRisks, etc.) are unchanged
-- [ ] Sectors/market tables unaffected
 - [ ] Build passes
 
 ## Build Verification
