@@ -363,6 +363,27 @@ export function detectGEMSchemaType(mbd) {
   return null;
 }
 
+// ── Diagnostic content guard ───────────────────────────────────────────
+// Filters out items that are markdown code fences, repair-report headers, or
+// other diagnostic text that should never appear in user-facing tab content.
+function isDiagnosticItem(item) {
+  if (item == null) return true;
+  if (typeof item !== 'string') return false; // objects are never diagnostic
+  const t = item.trim();
+  if (!t) return true;
+  if (t.startsWith('```')) return true;
+  if (/^#{1,3}\s*Repaired JSON/i.test(t)) return true;
+  if (/^#{1,3}\s*Original Error/i.test(t)) return true;
+  if (/^#{1,3}\s*How To Prevent/i.test(t)) return true;
+  if (/^#{1,3}\s*Suggested Prompt/i.test(t)) return true;
+  if (/^#{1,3}\s*Error (Summary|Context|Info)/i.test(t)) return true;
+  return false;
+}
+
+function filterDiagnosticItems(items) {
+  return Array.isArray(items) ? items.filter((item) => !isDiagnosticItem(item)) : [];
+}
+
 function pickArray(obj, ...keys) {
   for (const key of keys) {
     const val = obj?.[key];
@@ -515,6 +536,19 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: universalTabs.summary (object) | exists: true | itemsCount:', items.length);
         if (items.length > 0) return items;
       }
+      // rawData fallback — when universalTabs.summary is absent/empty
+      const rdSum = marketBriefData?.rawData;
+      if (rdSum && typeof rdSum === 'object') {
+        const rdItems = [
+          ...pickStringAsArray(rdSum.marketOverview, 'text', 'summary', 'briefSummary', 'overview'),
+          ...pickStringAsArray(rdSum, 'shortSummary', 'fullSummary', 'mainConclusion'),
+          ...pickArray(rdSum, 'top5Insights', 'reusableKnowledge').slice(0, 3),
+        ];
+        if (rdItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: rawData | itemsCount:', rdItems.length);
+          return rdItems;
+        }
+      }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: legacy | exists:', !!(marketBriefData || video.shortSummary));
       return [
         ...pickStringAsArray(video, 'shortSummary', 'fullSummary', 'gemSummary', 'summary', 'mainLesson'),
@@ -549,6 +583,18 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ];
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: universalTabs.usefulKnowledge (object) | exists: true | itemsCount:', items.length);
         if (items.length > 0) return items;
+      }
+      // rawData fallback
+      const rdUk = marketBriefData?.rawData;
+      if (rdUk && typeof rdUk === 'object') {
+        const rdItems = [
+          ...pickArray(rdUk, 'reusableKnowledge', 'actionChecklist', 'learningInsights'),
+          ...pickArray(rdUk, 'risks', 'keyLevels', 'watchlistLevels'),
+        ];
+        if (rdItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: rawData | itemsCount:', rdItems.length);
+          return rdItems;
+        }
       }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: useful-knowledge | sourcePath: legacy | exists:', !!marketBriefData);
       return [
@@ -617,6 +663,18 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: universalTabs.insights (object) | exists: true | itemsCount:', items.length);
         if (items.length > 0) return items;
       }
+      // rawData fallback
+      const rdIns = marketBriefData?.rawData;
+      if (rdIns && typeof rdIns === 'object') {
+        const rdItems = [
+          ...pickArray(rdIns, 'top5Insights', 'learningInsights', 'reusableKnowledge'),
+          ...pickArray(rdIns, 'tradingOpportunities', 'risks'),
+        ];
+        if (rdItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: rawData | itemsCount:', rdItems.length);
+          return rdItems;
+        }
+      }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: insights | sourcePath: legacy | exists:', !!marketBriefData);
       return [
         ...pickArray(a, 'keyInsights'),
@@ -644,11 +702,13 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
     case 'market-news': {
       const src = resolveSpecialized(marketBriefData);
       if (src) {
-        return [
+        // Extract marketOverview.text as a plain string — avoid "text: ..." / "marketMood: ..." label leakage
+        const moText = pickStringAsArray(src.marketOverview, 'text', 'summary', 'overview', 'briefSummary');
+        return filterDiagnosticItems([
           ...pickArray(src, 'marketNews', 'headlines', 'news', 'topStories'),
-          ...pickObjectAsStrings(src, 'marketOverview'),
+          ...moText,
           ...pickArray(src, 'catalysts', 'snapshot'),
-        ];
+        ]);
       }
       return [
         ...pickArray(video, 'marketConditions'),
@@ -922,6 +982,21 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: universalTabs.app/appBuilder | exists: true | itemsCount:', utItems.length);
         if (utItems.length > 0) return utItems;
       }
+      // rawData fallback — pulls appBuilding or tradingOpportunities/watchlistLevels as fallback data
+      const rdAb = marketBriefData?.rawData;
+      if (rdAb && typeof rdAb === 'object') {
+        const rdAbObj = rdAb.appBuilding || {};
+        const rdAppItems = [
+          ...pickArray(rdAbObj, 'kpiList', 'dashboards', 'prompts', 'screeningCriteria', 'suggestedFeatures'),
+          ...pickArray(rdAb, 'tradingOpportunities', 'watchlistLevels', 'keyLevels'),
+          ...pickArray(rdAb, 'economicCalendar', 'calendar'),
+          ...pickArray(rdAb, 'stocksMentioned'),
+        ];
+        if (rdAppItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: rawData | itemsCount:', rdAppItems.length);
+          return rdAppItems;
+        }
+      }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: legacy | exists:', !!marketBriefData);
       const ab = a.appBuilding || {};
       return [
@@ -948,6 +1023,19 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: universalTabs.topicsSubtopics (object) | exists: true | itemsCount:', items.length);
         if (items.length > 0) return items;
       }
+      // rawData fallback
+      const rdTop = marketBriefData?.rawData;
+      if (rdTop && typeof rdTop === 'object') {
+        const rdTopItems = [
+          ...pickArray(rdTop, 'obsidianTopics', 'tags', 'topics'),
+          ...pickArray(rdTop, 'macroFactors').filter((t) => typeof t === 'string').slice(0, 5),
+          ...pickArray(rdTop, 'stocksMentioned').filter((t) => typeof t === 'string').slice(0, 5),
+        ];
+        if (rdTopItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: rawData | itemsCount:', rdTopItems.length);
+          return rdTopItems;
+        }
+      }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: topics-subtopics | sourcePath: legacy | exists:', !!marketBriefData);
       return [
         ...pickArray(a, 'obsidianTopics', 'metadataTopics', 'tags'),
@@ -958,24 +1046,33 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
     case 'specialized': {
       const utSpec = marketBriefData?.universalTabs?.specialized;
       if (utSpec && typeof utSpec === 'object') {
-        const specItems = [
+        const specItems = filterDiagnosticItems([
           ...pickArray(utSpec, 'indices', 'indexPerformance'),
           ...pickArray(utSpec, 'marketNews', 'headlines'),
           ...pickArray(utSpec, 'stocksMentioned', 'stocks'),
           ...pickArray(utSpec, 'macro', 'macroEvents'),
           ...pickArray(utSpec, 'top5Insights', 'insights'),
-        ];
+        ]);
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: specialized | sourcePath: universalTabs.specialized | exists: true | itemsCount:', specItems.length);
         if (specItems.length > 0) return specItems;
       }
-      if (!marketBriefData) return [];
-      return [
-        ...pickArray(marketBriefData, 'indices', 'indexPerformance', 'indexData'),
-        ...pickArray(marketBriefData, 'marketNews', 'headlines', 'news', 'topStories'),
-        ...pickArray(marketBriefData, 'stocksMentioned', 'stocks', 'watchlist'),
-        ...pickArray(marketBriefData, 'macro', 'macroEvents', 'macroHighlights'),
-        ...pickArray(marketBriefData, 'top5Insights', 'reusableKnowledge'),
-      ];
+      // Fallback: resolveSpecialized merges rawData + top-level + spec so rawData fields surface here
+      const src = resolveSpecialized(marketBriefData);
+      if (!src) return [];
+      return filterDiagnosticItems([
+        ...pickArray(src, 'indices', 'indexPerformance', 'indexData'),
+        ...pickArray(src, 'marketNews', 'headlines', 'news', 'topStories'),
+        ...pickArray(src, 'stocksMentioned', 'stocks', 'watchlist'),
+        ...pickArray(src, 'macro', 'macroEvents', 'macroHighlights', 'macroFactors'),
+        ...pickArray(src, 'top5Insights', 'reusableKnowledge'),
+        ...pickArray(src, 'watchlistLevels', 'keyLevels', 'catalysts'),
+        ...pickArray(src, 'sectorRotation', 'sectors', 'sectorPerformance'),
+        ...pickArray(src, 'tradingOpportunities', 'opportunities', 'trades'),
+        ...pickArray(src, 'economicCalendar', 'calendar', 'events', 'schedule'),
+        ...pickArray(src, 'earnings'),
+        ...pickArray(src, 'risks', 'warnings', 'riskFactors'),
+        ...pickArray(src, 'sentiment', 'marketSentiment', 'fearGreed'),
+      ]);
     }
 
     default:
