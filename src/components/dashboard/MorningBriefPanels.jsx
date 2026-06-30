@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { cleanupMacroDisplayRows } from '@/lib/macroDisplayCleanup';
 import {
   extractCalendarRows,
+  mergeCalendarRows,
   extractMacroIndicatorRows,
   extractMarketDashboardRows,
   parseMacroDisplayItem,
@@ -113,6 +114,9 @@ import {
   resolveMorningBriefCardText,
   resolveMorningBriefCombinedCardText,
 } from '@/lib/morningBriefBulkSections';
+import { getSentimentSourceLink } from '@/lib/sentimentSourceLinks';
+import { getMacroIndicatorUrl } from '@/lib/macroIndicatorLinks';
+import { translateMarketLabel, translateImportanceLevel } from '@/lib/marketLabelTranslations';
 
 function morningBriefCardBulk(bulkSections, bulkSelection, sectionKey, title, { disabled = false, cardId, type } = {}) {
   if (!bulkSelection || disabled) return null;
@@ -1431,12 +1435,11 @@ function macroRowChangeContext(row) {
   return [row?.impact, row?.description, row?.indicator, row?.value].filter(Boolean).join(' ');
 }
 
-function MacroChangeCell({ change, row }) {
-  const display = getMacroChangeDisplay(change, macroRowChangeContext(row));
+function MacroChangeCell({ display }) {
   if (!display) {
     return <span className="text-slate-300 dark:text-zinc-600">—</span>;
   }
-  return <NumericChangeSpan display={display} />;
+  return <NumericChangeSpan display={{ ...display, arrow: null }} />;
 }
 
 function MacroRowSummary(row) {
@@ -1487,8 +1490,8 @@ export function MacroSection({
               <col style={{ width: BRIEF_COL.checkbox }} />
               <col style={{ width: BRIEF_COL.indicator }} />
               <col style={{ width: BRIEF_COL.macroValue }} />
-              <col style={{ width: BRIEF_COL.sentiment }} />
               <col style={{ width: BRIEF_COL.change }} />
+              <col style={{ width: BRIEF_COL.sentiment }} />
               <col />
               <col style={{ width: BRIEF_COL.save }} />
             </colgroup>
@@ -1496,9 +1499,9 @@ export function MacroSection({
               <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
                 <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>אינדיקטור</th>
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך / שינוי</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי / מגמה</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
-                <th className="py-1.5 px-2" aria-label="שינוי" />
                 <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>תיאור / השפעה</th>
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
@@ -1509,6 +1512,7 @@ export function MacroSection({
                 const rowTone = resolveTone([row.change, row.impact, row.description].filter(Boolean).join(' '));
                 const rowBorder = toneStyles(rowTone).border;
                 const sentKey = toneToSentKey(rowTone);
+                const changeDisplay = getMacroChangeDisplay(row.change, macroRowChangeContext(row));
                 return (
                   <tr
                     key={i}
@@ -1526,20 +1530,45 @@ export function MacroSection({
                       />
                     </td>
                     <td className={BRIEF_CELL.short}>
-                      <p className={`whitespace-nowrap overflow-hidden text-ellipsis ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{row.indicator || '—'}</p>
+                      <div className="flex items-center gap-1 min-w-0">
+                        {(() => {
+                          const macroUrl = row.indicator ? getMacroIndicatorUrl(row.indicator) : null;
+                          const displayIndicator = row.indicator ? translateMarketLabel(row.indicator) : '—';
+                          return macroUrl ? (
+                            <a
+                              href={macroUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="פתח מקור נתונים ↗"
+                              aria-label="פתח מקור נתונים"
+                              onClick={(e) => e.stopPropagation()}
+                              className={`truncate hover:underline cursor-pointer ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}
+                            >
+                              {displayIndicator}
+                            </a>
+                          ) : (
+                            <span className={`truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{displayIndicator}</span>
+                          );
+                        })()}
+                        {changeDisplay?.arrow && changeDisplay.arrow !== '●' && (
+                          <span className={`shrink-0 text-base font-bold leading-none ${changeDisplay.cls}`} aria-hidden>
+                            {changeDisplay.arrow}
+                          </span>
+                        )}
+                      </div>
                       {ui.showRowMetadata && row.frequency && (
                         <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency}</p>
                       )}
                     </td>
                     <td className={BRIEF_CELL.change}>
-                      {row.value && (
+                      {row.value ? (
                         <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value}</p>
-                      )}
-                      {row.change ? (
-                        <MacroChangeCell change={row.change} row={row} />
-                      ) : !row.value ? (
+                      ) : (
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
-                      ) : null}
+                      )}
+                    </td>
+                    <td className={BRIEF_CELL.change}>
+                      <MacroChangeCell display={changeDisplay} />
                     </td>
                     <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
@@ -1547,7 +1576,6 @@ export function MacroSection({
                         className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
-                    <td className={BRIEF_CELL.change} />
                     <td className={BRIEF_CELL.notes}>
                       {row.description && (
                         <BriefNewsNotesText text={row.description} row={row} />
@@ -1740,6 +1768,7 @@ export function SentimentSection({
                 const { numericText, descriptionText } = parseSentimentValueForDisplay(valueText);
                 const bulkText = `${label}: ${value}`;
                 const itemTone = resolveTone(valueText);
+                const sourceLink = getSentimentSourceLink({ label, value });
                 return (
                   <tr key={`${label}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
                     <td className={BRIEF_CELL.checkbox}>
@@ -1753,10 +1782,24 @@ export function SentimentSection({
                       />
                     </td>
                     <td className={BRIEF_CELL.short}>
-                      <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-                        <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
-                        {displayLabel}
-                      </span>
+                      {sourceLink ? (
+                        <a
+                          href={sourceLink.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="פתח מקור סנטימנט"
+                          aria-label="פתח מקור סנטימנט"
+                          className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+                        >
+                          <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
+                          {displayLabel}
+                        </a>
+                      ) : (
+                        <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                          <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
+                          {displayLabel}
+                        </span>
+                      )}
                     </td>
                     <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
@@ -1800,28 +1843,84 @@ function CalendarTypeBadge({ type }) {
   if (!type) return <span className={`text-slate-300 dark:text-zinc-600 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>—</span>;
   return (
     <span className={`inline whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} text-slate-500 dark:text-zinc-400`}>
-      {type}
+      {translateMarketLabel(type)}
     </span>
   );
 }
 
 const CALENDAR_IMPORTANCE_LABEL = {
-  CRITICAL: 'קריטי',
-  HIGH:     'גבוהה',
-  MEDIUM:   'בינונית',
-  LOW:      'נמוכה',
+  CRITICAL:      'קריטי',
+  HIGH:          'גבוהה',
+  'MEDIUM-HIGH': 'בינונית-גבוהה',
+  MEDIUM:        'בינונית',
+  'MEDIUM-LOW':  'בינונית-נמוכה',
+  LOW:           'נמוכה',
 };
 
 function CalendarImportanceDot({ level }) {
   const meta = importanceStyles(level);
   if (!meta) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
-  const label = CALENDAR_IMPORTANCE_LABEL[meta.label] ?? meta.label;
+  const label = CALENDAR_IMPORTANCE_LABEL[meta.label]
+    ?? translateImportanceLevel(meta.label)
+    ?? meta.label;
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${meta.cls}`}
     >
       {label}
     </span>
+  );
+}
+
+function CalendarTableRow({ row, bulkSections, bulkSelection }) {
+  const calendarText = [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
+
+  return (
+    <tr className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors group`} data-calendar-row>
+      <td className={BRIEF_CELL.checkbox}>
+        <MorningBriefBulkCheckbox
+          bulkSections={bulkSections}
+          sectionKey="economic-calendar"
+          text={calendarText}
+          sectionLabel="📅 לוח כלכלי"
+          tabKey="brief-calendar"
+          bulkSelection={bulkSelection}
+        />
+      </td>
+      <td className={BRIEF_CELL.short}>
+        <p className={`${BRIEF_NOTES_TEXT_CLS}`} title={row.event}>
+          {row.event || '—'}
+        </p>
+      </td>
+      <td className={BRIEF_CELL.sentiment}>
+        <CalendarImportanceDot level={row.importance} />
+      </td>
+      <td className={BRIEF_CELL.change}>
+        {row.date ? (
+          <p className={`${DASHBOARD_TABLE_CELL_DATE_CLS} whitespace-nowrap`}>{translateMarketLabel(row.date)}</p>
+        ) : (
+          <span className="text-slate-300 dark:text-zinc-600">—</span>
+        )}
+      </td>
+      <td className={BRIEF_CELL.notes}>
+        <BriefNewsNotesText
+          text={row.impact}
+          row={{ indicator: row.event, description: row.impact }}
+          empty={null}
+        />
+        {!row.impact && (
+          <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+        )}
+      </td>
+      <td className={BRIEF_CELL.save}>
+        <BriefQuickSaveActions
+          bulkSelection={bulkSelection}
+          text={calendarText}
+          sectionLabel="📅 לוח כלכלי"
+          tabKey="brief-calendar"
+        />
+      </td>
+    </tr>
   );
 }
 
@@ -1833,7 +1932,7 @@ export function EconomicCalendarSection({
   presentation,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.economicCalendar, { marketBriefData, onSaveMarketBriefSection, presentation });
-  const rows = extractCalendarRows(getSpecializedSrc(marketBriefData));
+  const rows = mergeCalendarRows(extractCalendarRows(getSpecializedSrc(marketBriefData)));
 
   return (
     <SectionCard
@@ -1874,65 +1973,14 @@ export function EconomicCalendarSection({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => {
-                const calendarText = [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
-                return (
-                  <tr
-                    key={i}
-                    className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors group`}
-                    data-calendar-row
-                  >
-                    <td className={BRIEF_CELL.checkbox}>
-                      <MorningBriefBulkCheckbox
-                        bulkSections={bulkSections}
-                        sectionKey="economic-calendar"
-                        text={calendarText}
-                        sectionLabel="📅 לוח כלכלי"
-                        tabKey="brief-calendar"
-                        bulkSelection={bulkSelection}
-                      />
-                    </td>
-                    <td className={BRIEF_CELL.short}>
-                      {row.type && (
-                        <div className="mb-0.5">
-                          <CalendarTypeBadge type={row.type} />
-                        </div>
-                      )}
-                      <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={row.event}>
-                        {row.event || '—'}
-                      </p>
-                    </td>
-                    <td className={BRIEF_CELL.sentiment}>
-                      <CalendarImportanceDot level={row.importance} />
-                    </td>
-                    <td className={BRIEF_CELL.change}>
-                      {row.date ? (
-                        <p className={`${DASHBOARD_TABLE_CELL_DATE_CLS} whitespace-nowrap`}>{row.date}</p>
-                      ) : (
-                        <span className="text-slate-300 dark:text-zinc-600">—</span>
-                      )}
-                    </td>
-                    <td className={BRIEF_CELL.notes}>
-                      <BriefNewsNotesText
-                        text={row.impact}
-                        row={{ indicator: row.event, description: row.impact }}
-                        empty={null}
-                      />
-                      {!row.impact && (
-                        <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
-                      )}
-                    </td>
-                    <td className={BRIEF_CELL.save}>
-                      <BriefQuickSaveActions
-                        bulkSelection={bulkSelection}
-                        text={calendarText}
-                        sectionLabel="📅 לוח כלכלי"
-                        tabKey="brief-calendar"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+              {rows.map((row, i) => (
+                <CalendarTableRow
+                  key={i}
+                  row={row}
+                  bulkSections={bulkSections}
+                  bulkSelection={bulkSelection}
+                />
+              ))}
             </tbody>
           </table>
         </BriefTableWrapper>
@@ -2265,9 +2313,11 @@ export function OpportunitiesRisksDashboard({
                   if (!idea) {
                     return <MacroStyleEmptyInsightCard key={`opp-empty-${i}`} variant="opportunity" slotIndex={i} />;
                   }
-                  const title = String(idea.title || '').trim();
+                  const titleText = String(idea.title || '').trim();
+                  const ticker = String(idea.ticker || '').trim().toUpperCase();
+                  const title = ticker ? `${ticker} · ${titleText}` : titleText;
                   const detail = String(idea.detail || '').trim();
-                  const description = detail && detail !== title ? detail : '';
+                  const description = detail && detail !== titleText ? detail : '';
                   const saveText = [title, description].filter(Boolean).join(' — ');
                   const pillLabel = String(idea.kindLabel || '').trim();
                   const style = getMacroOppStyle(pillLabel, title);
@@ -2572,19 +2622,17 @@ function StockMentionTableRow({
       {/* סימול */}
       <td className={BRIEF_CELL.short}>
         {ticker ? (
-          showHelperLinks ? (
-            <a
-              href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="פתח ב-Finviz ↗"
-              className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
-            >
-              {ticker}
-            </a>
-          ) : (
-            <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{ticker}</span>
-          )
+          <a
+            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}&p=d`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Open ${ticker} in Finviz`}
+            aria-label={`Open ${ticker} in Finviz`}
+            className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
+          >
+            {ticker}
+          </a>
         ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
       </td>
       {/* סקטור */}

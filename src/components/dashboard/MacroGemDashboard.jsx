@@ -1227,7 +1227,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
           const type    = isStr ? '' : (item.type || item.category || item.style || item.strategy || '').trim();
           const details = isStr ? '' : (item.details || item.description || item.note || item.thesis || '').trim();
           const assets  = isStr ? '' : (() => {
-            const a = item.assets || item.tickers || '';
+            const a = item.assets || item.tickers || item.ticker || item.symbol || '';
             return Array.isArray(a) ? a.join(', ') : String(a || '');
           })();
           const catalyst = isStr ? '' : (item.catalyst || item.trigger || '').trim();

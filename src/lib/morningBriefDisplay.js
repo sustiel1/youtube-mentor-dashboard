@@ -371,13 +371,17 @@ function normalizeOpportunity(item) {
   if (!item) return null;
   if (typeof item === 'string') {
     const t = translateMarketTextInline(item).trim();
-    return t ? { title: t, detail: '', kind: 'setup' } : null;
+    return t ? { title: t, detail: '', kind: 'setup', ticker: '' } : null;
   }
   if (typeof item !== 'object') return null;
 
-  const title = translateMarketTextInline(
-    pickString(item, 'title', 'setup', 'idea', 'symbol', 'ticker', 'sector', 'name', 'stock')
-  );
+  // Extract ticker separately before title lookup so it is not consumed as the title
+  const rawTicker = pickString(item, 'ticker', 'symbol', 'stock');
+  const titleBase = pickString(item, 'title', 'setup', 'idea', 'sector', 'name');
+  const title = translateMarketTextInline(titleBase || rawTicker);
+  // Expose ticker only when a real title was also found (avoids "AVAV · AVAV")
+  const ticker = titleBase ? rawTicker : '';
+
   const detail = translateMarketTextInline(pickString(
     item, 'rationale', 'reason', 'description', 'note', 'comment', 'setup', 'strategy', 'entry', 'trigger', 'catalyst', 'type'
   ));
@@ -386,10 +390,10 @@ function normalizeOpportunity(item) {
   if (!title && !detail) {
     const fallback = Object.values(item).find((v) => typeof v === 'string' && v.trim());
     if (!fallback) return null;
-    return { title: translateMarketTextInline(fallback).trim(), detail: '', kind: 'setup' };
+    return { title: translateMarketTextInline(fallback).trim(), detail: '', kind: 'setup', ticker: '' };
   }
 
-  return { title: title || detail, detail: title && detail && title !== detail ? detail : '', kind };
+  return { title: title || detail, detail: title && detail && title !== detail ? detail : '', kind, ticker };
 }
 
 function humanizeMarketToken(val) {

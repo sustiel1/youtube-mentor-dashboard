@@ -13,12 +13,10 @@ import { getBriefContextDisplay } from "@/lib/briefContextDisplay";
 import { TabBulkItemsRegistrar } from "./TabBulkItemsRegistrar";
 import {
   buildBulkItemsFromSections,
-  buildCardBulkItemsFromSections,
   mergeBulkSelection,
 } from "@/lib/universalTabBulkItems";
 import {
   buildMorningBriefBulkSections,
-  buildMorningBriefCardBulkItems,
 } from "@/lib/morningBriefBulkSections";
 
 const MARKET_FIELD_RE = /\b(direction|change|level)\s*:/;
@@ -134,16 +132,15 @@ export function SpecializedContentRenderer({
     />
   );
 
-  const renderBulkShell = (sections, content, { cardBulkItems = null } = {}) => {
+  const renderBulkShell = (sections, content) => {
     const sectionDefs = sections.map((s) => ({ key: s.key, label: s.label, items: s.items, tabKey: s.tabKey }));
+    // Only leaf row items are registered for Select All — card-level items are excluded
+    // to prevent parent+child duplication when all items are exported together.
+    // Card header checkboxes still work individually via direct toggleMultiSelect.
     const rowItems = bulkSelection ? buildBulkItemsFromSections(sectionDefs, 'specialized') : [];
-    const cardItems = bulkSelection
-      ? (cardBulkItems ?? buildCardBulkItemsFromSections(sectionDefs, 'specialized'))
-      : [];
-    const bulkItems = [...cardItems, ...rowItems];
     return (
       <div className="space-y-3" dir="rtl">
-        <TabBulkItemsRegistrar tab="specialized" items={bulkItems} />
+        <TabBulkItemsRegistrar tab="specialized" items={rowItems} />
         {content}
       </div>
     );
@@ -193,7 +190,6 @@ export function SpecializedContentRenderer({
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
   if (slug === 'morning-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
-    const morningCardBulkItems = buildMorningBriefCardBulkItems(morningBulkDefs);
     return wrapWithBriefHeader(
       renderBulkShell(morningBulkDefs, (
         <MorningBriefDashboard
@@ -205,7 +201,7 @@ export function SpecializedContentRenderer({
           bulkSections={morningBulkDefs}
           presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
         />
-      ), { cardBulkItems: morningCardBulkItems }),
+      )),
       { showSourceCaption: MORNING_BRIEF_SPECIALIZED_PRESENTATION.showSourceCaption },
     );
   }
