@@ -8,15 +8,19 @@
  */
 
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
+import { translateMarketTextInline } from '@/lib/marketLabelTranslations';
 
 const INDEX_OVERVIEW_KEYS = new Set([
   'spx', 'nasdaq', 'dow', 'russell', 'vix', 'dollar', 'bitcoin', 'oil', 'bonds10y',
   'bonds', 'gold', 'treasury', 'es', 'nq', 'spy', 'qqq', 'iwm',
 ]);
 
+// Metadata keys on marketOverview that should not appear as market-status indicator rows.
+const REGIME_OVERVIEW_SKIP_KEYS = new Set(['date', 'briefdate', 'timestamp', 'brieftime']);
+
 const REGIME_SPECS = [
   { keys: ['marketStatus', 'marketMood', 'marketCondition'], label: 'מצב השוק' },
-  { keys: ['summary', 'marketSummary', 'briefSummary', 'executiveSummary'], label: 'סיכום' },
+  { keys: ['summary', 'marketSummary', 'briefSummary', 'executiveSummary'], label: 'סיכום מצב השוק' },
   { keys: ['mainConclusion', 'main_conclusion', 'primaryConclusion'], label: 'מסקנה מרכזית' },
   { keys: ['marketTrend', 'trend', 'marketDirection', 'overallTrend'], label: 'מגמת שוק' },
   { keys: ['breadth', 'marketBreadth', 'breadthIndicator'], label: 'רוחב שוק' },
@@ -41,6 +45,7 @@ const TREND_TOKEN_MAP = {
   strong: 'חזק',
   weakening: 'מתחלש',
   strengthening: 'מתחזק',
+  broken: 'שבור',
 };
 
 /** Keys merged as concatenated arrays (specialized → legacy top-level → rawData priority). */
@@ -79,9 +84,15 @@ function itemMergeSignature(item) {
   if (item == null) return '';
   if (typeof item === 'string') return item.trim();
   if (typeof item !== 'object') return String(item);
-  const id = item.symbol || item.ticker || item.sector || item.event || item.name
+  // item.indicator added for macroFactors items in universalTabs.specialized
+  const id = item.indicator || item.symbol || item.ticker || item.sector || item.event || item.name
     || item.risk || item.headline || item.title;
-  return id ? String(id) : JSON.stringify(item);
+  if (!id) return JSON.stringify(item);
+  const s = String(id).trim();
+  // Normalize "Hebrew Label (EnglishCode)" → "EnglishCode" so that
+  // "הדולר (Dixie)" and "Dixie" resolve to the same dedup key.
+  const m = /\(([A-Za-z0-9]+)\)$/.exec(s);
+  return m ? m[1].toUpperCase() : s;
 }
 
 function mergeArrayLayers(specArr, legacyArr, rawArr) {
@@ -336,11 +347,12 @@ export function extractMarketRegimeCards(src) {
     }
   }
 
-  // String fields on marketOverview that are not index tickers
+  // String fields on marketOverview that are not index tickers or metadata
   const mo = src.marketOverview;
   if (mo && typeof mo === 'object' && !Array.isArray(mo)) {
     for (const [key, val] of Object.entries(mo)) {
       if (INDEX_OVERVIEW_KEYS.has(key.toLowerCase())) continue;
+      if (REGIME_OVERVIEW_SKIP_KEYS.has(key.toLowerCase())) continue;
       if (typeof val === 'object' && val !== null) continue;
       const value = formatDisplayValue(val);
       if (!value) continue;
@@ -358,21 +370,23 @@ export function extractMarketRegimeCards(src) {
 function normalizeOpportunity(item) {
   if (!item) return null;
   if (typeof item === 'string') {
-    const t = item.trim();
+    const t = translateMarketTextInline(item).trim();
     return t ? { title: t, detail: '', kind: 'setup' } : null;
   }
   if (typeof item !== 'object') return null;
 
-  const title = pickString(item, 'title', 'setup', 'idea', 'symbol', 'ticker', 'sector', 'name', 'stock');
-  const detail = pickString(
-    item, 'reason', 'description', 'note', 'comment', 'setup', 'strategy', 'entry', 'trigger', 'catalyst', 'type'
+  const title = translateMarketTextInline(
+    pickString(item, 'title', 'setup', 'idea', 'symbol', 'ticker', 'sector', 'name', 'stock')
   );
+  const detail = translateMarketTextInline(pickString(
+    item, 'rationale', 'reason', 'description', 'note', 'comment', 'setup', 'strategy', 'entry', 'trigger', 'catalyst', 'type'
+  ));
   const kind = pickString(item, 'type', 'kind', 'category', 'setupType') || 'setup';
 
   if (!title && !detail) {
     const fallback = Object.values(item).find((v) => typeof v === 'string' && v.trim());
     if (!fallback) return null;
-    return { title: fallback.trim(), detail: '', kind: 'setup' };
+    return { title: translateMarketTextInline(fallback).trim(), detail: '', kind: 'setup' };
   }
 
   return { title: title || detail, detail: title && detail && title !== detail ? detail : '', kind };
@@ -533,15 +547,15 @@ export function extractOpportunityIdeas(src) {
 function normalizeRisk(item) {
   if (!item) return null;
   if (typeof item === 'string') {
-    const t = item.trim();
+    const t = translateMarketTextInline(item).trim();
     return t ? { text: t, category: '' } : null;
   }
   if (typeof item !== 'object') return null;
-  const text = pickString(item, 'risk', 'text', 'title', 'description', 'warning', 'note');
-  const category = pickString(item, 'category', 'type', 'kind', 'severity', 'source', 'level');
+  const text = translateMarketTextInline(pickString(item, 'risk', 'text', 'title', 'description', 'warning', 'note'));
+  const category = translateMarketTextInline(pickString(item, 'category', 'type', 'kind', 'severity', 'source', 'level'));
   if (!text) {
     const fallback = Object.values(item).find((v) => typeof v === 'string' && v.trim());
-    return fallback ? { text: fallback.trim(), category } : null;
+    return fallback ? { text: translateMarketTextInline(fallback).trim(), category } : null;
   }
   return { text, category };
 }
@@ -679,6 +693,19 @@ export function parseMacroDisplayItem(item) {
   return normalizeMacroIndicatorRow(item);
 }
 
+/** Returns true when the indicator name is a raw value / number that leaked into the indicator column. */
+function _isMalformedIndicatorName(name) {
+  if (!name) return true;
+  const t = String(name).trim();
+  if (!t || t === '—' || /^-+$/.test(t)) return true;
+  if (/^n\/?a$/i.test(t)) return true;
+  // Pure number (integer or decimal, optionally with %, +, -)
+  if (/^[+\-]?\d+(\.\d+)?%?$/.test(t)) return true;
+  // "Sub 70", "Over 50", "Below 30", "Above 60"
+  if (/^(sub|over|above|below|under)\s+\d/i.test(t)) return true;
+  return false;
+}
+
 /** Presentation-only macro rows for table UI (no schema / extractor changes). */
 export function extractMacroIndicatorRows(src) {
   if (!src) return [];
@@ -689,6 +716,7 @@ export function extractMacroIndicatorRows(src) {
   const seen = new Set();
   return raw.map(normalizeMacroIndicatorRow).filter((row) => {
     if (!row) return false;
+    if (_isMalformedIndicatorName(row.indicator)) return false;
     const sig = `${row.indicator}|${row.value}|${row.change}|${row.description}`;
     if (seen.has(sig)) return false;
     seen.add(sig);
@@ -810,6 +838,9 @@ const SENTIMENT_FIELD_LABELS = {
   marketMood: 'מצב השוק',
   overall: 'סנטימנט כללי',
   generalMood: 'אווירה כללית',
+  mood: 'מצב רוח',
+  reason: 'סיבה',
+  crypto: 'קריפטו',
 };
 
 function sentimentItemFromString(raw, index = 0) {
@@ -878,7 +909,14 @@ export function extractSentimentItems(src) {
     }
   }
 
-  return items;
+  // Deduplicate by normalized label — same label from multiple source fields keeps first
+  const seenLabels = new Set();
+  return items.filter((item) => {
+    const normLabel = String(item.label || '').trim().toLowerCase();
+    if (seenLabels.has(normLabel)) return false;
+    seenLabels.add(normLabel);
+    return true;
+  });
 }
 
 export function hasSentimentData(src) {

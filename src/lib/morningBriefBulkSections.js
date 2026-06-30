@@ -42,7 +42,7 @@ function normalizeNewsStrings(items) {
     if (typeof item === 'string') return stripInternalNewsFieldLabel(item);
     if (typeof item === 'object') {
       return stripInternalNewsFieldLabel(
-        [item.headline, item.title, item.content, item.source, item.impact]
+        [item.headline, item.title, item.content, item.details, item.source, item.impact]
           .filter(Boolean)
           .join(' — '),
       );
