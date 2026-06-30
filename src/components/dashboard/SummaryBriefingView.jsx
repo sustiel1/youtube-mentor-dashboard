@@ -1,6 +1,7 @@
 import { LearningTabContent } from './LearningTabContent';
 import { CollapsibleFullSummary } from './CollapsibleFullSummary';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
+import { enrichWatchTodayItem } from '@/utils/finvizLinks';
 import { mergeBulkSelection, flattenMarketStatusItems, formatCardBulkText } from '@/lib/universalTabBulkItems';
 import {
   SUMMARY_CARD_CLASS,
@@ -163,6 +164,12 @@ export function SummaryBriefingView({
   const fullSummaryItems = briefing.fullSummaryText ? [briefing.fullSummaryText] : [];
   const execItems = briefing.executiveConclusion ?? [];
 
+  const watchEnriched = briefing.watchToday.map(enrichWatchTodayItem);
+  const watchTexts = watchEnriched.map((w) => w.displayText);
+  const watchUrlByText = new Map(
+    watchEnriched.filter((w) => w.finvizUrl).map((w) => [w.displayText, w.finvizUrl]),
+  );
+
   return (
     <div className="space-y-3" dir="rtl">
       {briefing.thirtySecond.length > 0 && (
@@ -228,15 +235,16 @@ export function SummaryBriefingView({
         <BriefingCard
           title="🎯 מה לעקוב היום"
           cardId="watch"
-          cardItems={briefing.watchToday}
+          cardItems={watchTexts}
           bulkSelection={bulkSelection}
         >
           {brain ? (
             <LearningTabContent
-              items={briefing.watchToday}
+              items={watchTexts}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'מה לעקוב היום')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
+              getItemUrl={(text) => watchUrlByText.get(text) ?? null}
               bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
                 idPrefix: 'summary:watch',
                 sectionLabel: 'מה לעקוב היום',
@@ -245,7 +253,7 @@ export function SummaryBriefingView({
               }) : null}
             />
           ) : (
-            <BulletList items={briefing.watchToday} />
+            <BulletList items={watchTexts} />
           )}
         </BriefingCard>
       )}

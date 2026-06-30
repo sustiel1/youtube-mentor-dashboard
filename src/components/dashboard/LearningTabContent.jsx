@@ -74,6 +74,7 @@ function ItemRow({
   onBulkToggle = null,
   bulkSelection = null,
   pxUrl = null,
+  url = null,
 }) {
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
@@ -125,6 +126,16 @@ function ItemRow({
           <StockStatusLine visual={stockVisual} />
         ) : macroDirection ? (
           <MacroDirectionLines text={text} />
+        ) : url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={`${DASHBOARD_TABLE_CELL_BODY_CLS} hover:underline`}
+          >
+            {text}
+          </a>
         ) : (
           <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{text}</span>
         )}
@@ -177,6 +188,7 @@ export function LearningTabContent({
   isSaved,
   macroDirection = false,
   bulkSelection = null,
+  getItemUrl = null,
 }) {
   const formatted = items.map(formatItem).filter(Boolean);
 
@@ -197,10 +209,12 @@ export function LearningTabContent({
           ? `${bulkSelection.idPrefix}:${i}`
           : null;
         const bulkSelected = bulkId && bulkSelection?.multiSelected?.has(bulkId);
+        const url = getItemUrl ? getItemUrl(text, items[i]) : null;
         return (
           <ItemRow
             key={i}
             text={text}
+            url={url}
             stockVisual={stockVisual}
             macroDirection={macroDirection}
             saved={isSaved ? isSaved(text) : false}

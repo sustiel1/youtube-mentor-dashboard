@@ -651,6 +651,63 @@ export function resolveSectorEtfTicker(input) {
   return resolveFinvizTicker(input);
 }
 
+// ── Watch-Today: Hebrew company name → US stock ticker ────────────────────────
+// Used by enrichWatchTodayItem to resolve Hebrew names that have no ticker in raw data.
+const _HE_STOCK_WATCH_MAP = new Map([
+  ['סנדיסק', 'SNDK'],
+  ['אמזון', 'AMZN'],
+  ['ארוויירונמנט', 'AVAV'],
+  ['קונסנטריקס', 'CNXC'],
+  ['איי אם די', 'AMD'],
+  ['אי אם די', 'AMD'],
+  ['ברודקום', 'AVGO'],
+  ["ריצ'י ברוס", 'RBA'],
+  ['ריצי ברוס', 'RBA'],
+  ['אפלייד מטריאלס', 'AMAT'],
+  ['אפלייד מטיריאלס', 'AMAT'],
+  ['קומקאסט', 'CMCSA'],
+  ['טרייד דסק', 'TTD'],
+  ['סופר מיקרו', 'SMCI'],
+  ['רוקט לאב', 'RKLB'],
+  ['וורוניס', 'VRNS'],
+]);
+
+/** Resolves a Hebrew company name to a US stock ticker. Returns null if unknown. */
+export function resolveHebrewStockTicker(name) {
+  return _HE_STOCK_WATCH_MAP.get(String(name || '').trim()) ?? null;
+}
+
+/**
+ * Enriches a watch-today string item with ticker prefix and Finviz URL.
+ * Priority: existing ticker prefix in string ("AVAV – reason") → Hebrew name map.
+ * Returns { displayText, ticker, finvizUrl } — ticker/finvizUrl may be null.
+ */
+export function enrichWatchTodayItem(rawText) {
+  const text = String(rawText || '').trim();
+  if (!text) return { displayText: text, ticker: null, finvizUrl: null };
+
+  // Already has uppercase ticker prefix: "AVAV – reason" or "AVAV · reason"
+  const prefixMatch = text.match(/^([A-Z]{1,6})\s*[–·\-]\s*/);
+  if (prefixMatch) {
+    const ticker = prefixMatch[1];
+    return { displayText: text, ticker, finvizUrl: buildFinvizQuoteUrl(ticker) };
+  }
+
+  // Try full string, then part before separator ("סנדיסק – הסיבה" → "סנדיסק")
+  const namePart = text.split(/\s*[–·\-]\s*/)[0].trim();
+  const ticker = resolveHebrewStockTicker(text) ?? resolveHebrewStockTicker(namePart);
+
+  if (ticker) {
+    return {
+      displayText: `${ticker} · ${text}`,
+      ticker,
+      finvizUrl: buildFinvizQuoteUrl(ticker),
+    };
+  }
+
+  return { displayText: text, ticker: null, finvizUrl: null };
+}
+
 /**
  * Resolves any sector label to a Finviz daily chart URL.
  * Falls back to Finviz search for unrecognized labels.
