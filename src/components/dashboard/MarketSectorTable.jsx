@@ -5,6 +5,7 @@ import {
 } from './MorningBriefVisualPrimitives';
 import {
   buildPerplexityEtfHoldingsUrl,
+  getSectorFinvizUrl,
   resolveSectorFinvizLink,
 } from '@/utils/finvizLinks';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
@@ -16,6 +17,7 @@ import {
   BRIEF_TABLE_HEAD_ROW_CLS,
   BriefTableWrapper,
 } from './briefTableLayout';
+import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 import { BRIEF_SENT_KEY_LABEL, BriefSentimentCell } from './BriefSentimentNotesTable';
 
 /** Column widths — matches Macro Gem sectors table. */
@@ -71,29 +73,31 @@ export function normalizeSectorTableRow(item, options = {}) {
 }
 
 function SectorNameCell({ sector, showHelperLinks = true }) {
+  const displaySector = getHebrewDisplayLabel(sector);
   if (!showHelperLinks) {
-    return <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sector || '—'}</span>;
+    return <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>;
   }
 
   const link = resolveSectorFinvizLink(sector);
+  const finvizUrl = link?.url ?? getSectorFinvizUrl(sector);
   const pxUrl = showHelperLinks && link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
 
   return (
     <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
-      {link ? (
+      {finvizUrl ? (
         <a
-          href={link.url}
+          href={finvizUrl}
           target="_blank"
           rel="noopener noreferrer"
           title="פתח ב-Finviz ↗"
           className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
           onClick={(e) => e.stopPropagation()}
-          data-finviz-link={link.ticker}
+          data-finviz-link={link?.ticker || ''}
         >
-          {sector}
+          {displaySector}
         </a>
       ) : (
-        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sector || '—'}</span>
+        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
       )}
       {pxUrl && (
         <ResearchDropdownLink
@@ -148,6 +152,7 @@ export function MarketSectorTable({
 
             if (normalized.isStringOnly) {
               const strLink = resolveSectorFinvizLink(normalized.sector);
+              const strFinvizUrl = strLink?.url ?? getSectorFinvizUrl(normalized.sector);
               const strPxUrl = showHelperLinks && strLink ? buildPerplexityEtfHoldingsUrl(strLink.ticker) : null;
               return (
                 <tr key={i} className={rowClassName}>
@@ -158,7 +163,21 @@ export function MarketSectorTable({
                   ) : null}
                   <td colSpan={4} className={BRIEF_CELL.notes}>
                     <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
-                      <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{normalized.sector}</span>
+                      {strFinvizUrl ? (
+                        <a
+                          href={strFinvizUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="פתח ב-Finviz ↗"
+                          className={`${DASHBOARD_TABLE_CELL_BODY_CLS} hover:underline cursor-pointer`}
+                          onClick={(e) => e.stopPropagation()}
+                          data-finviz-link={strLink?.ticker || ''}
+                        >
+                          {getHebrewDisplayLabel(normalized.sector)}
+                        </a>
+                      ) : (
+                        <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{getHebrewDisplayLabel(normalized.sector)}</span>
+                      )}
                       {strPxUrl && (
                         <ResearchDropdownLink
                           pxUrl={strPxUrl}

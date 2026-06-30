@@ -15,7 +15,8 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
-import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
+import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, getSectorFinvizUrl, resolveSectorMeta } from '@/utils/finvizLinks';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
@@ -409,6 +410,10 @@ export function SectorRow({
   const statusParts = buildSectorStatusParts(direction, relativeStrength);
   const meta = getSectorMeta(sectorName);
   const holdingsUrl = meta?.etf ? buildPerplexityEtfHoldingsUrl(meta.etf) : null;
+  const displayLabel = meta?.he
+    ? `${meta.he} (${sectorName})`
+    : getHebrewDisplayLabel(sectorName);
+  const finvizUrl = meta?.finvizUrl ?? getSectorFinvizUrl(sectorName);
 
   if (!sectorName && statusParts.length === 0) return null;
 
@@ -417,24 +422,19 @@ export function SectorRow({
       <div className="flex items-start gap-x-3 min-w-0">
         <div className="shrink-0 w-[55%] min-w-0 flex flex-col gap-0.5">
           <span className="inline-flex items-baseline gap-x-1 flex-wrap">
-            {meta?.finvizUrl ? (
+            {finvizUrl ? (
               <a
-                href={meta.finvizUrl}
+                href={finvizUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="פתח ETF ב-Finviz ↗"
                 className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+                onClick={(e) => e.stopPropagation()}
               >
-                {sectorName}
+                {displayLabel}
               </a>
             ) : (
-              <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{sectorName}</span>
-            )}
-            {meta?.he && (
-              <>
-                <span className="text-slate-400 dark:text-zinc-500 mx-1.5 select-none" aria-hidden>—</span>
-                <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{meta.he}</span>
-              </>
+              <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displayLabel}</span>
             )}
           </span>
           {holdingsUrl && (

@@ -1,5 +1,11 @@
 const FINVIZ_BASE = 'https://finviz.com/quote.ashx?t=';
 
+/** Daily chart URL with &p=d for sector/ETF Finviz links. */
+export function buildFinvizQuoteUrl(ticker) {
+  if (!ticker) return null;
+  return `${FINVIZ_BASE}${encodeURIComponent(ticker)}&p=d`;
+}
+
 // Named index expressions → ETF proxy (stored lowercase for case-insensitive lookup)
 const _INDEX_MAP = new Map([
   // NASDAQ
@@ -9,7 +15,9 @@ const _INDEX_MAP = new Map([
   // Dow Jones
   ['dow jones', 'DIA'], ['dow', 'DIA'], ['djia', 'DIA'],
   // Russell
-  ['russell 2000', 'IWM'], ['russell', 'IWM'], ['rty', 'IWM'],
+  ['russell 2000', 'IWM'], ['russell', 'IWM'], ['rty', 'IWM'], ['rut', 'IWM'],
+  // NASDAQ Composite ticker
+  ['ixic', 'QQQ'],
   // Commodities
   ['gold', 'GLD'], ['silver', 'SLV'], ['oil', 'XLE'],
   ['bonds', 'TLT'], ['treasuries', 'TLT'],
@@ -17,6 +25,19 @@ const _INDEX_MAP = new Map([
   ['big tech', 'QQQ'], ['defense', 'ITA'],
   // Hebrew
   ['זהב', 'GLD'], ['כסף', 'SLV'], ['נפט', 'USO'],
+]);
+
+// Index cash/cash-index tickers that have no valid Finviz stock-quote page.
+// These MUST be checked before the pure-ticker step-1 in resolveFinvizTicker,
+// which would otherwise emit a broken finviz.com/quote.ashx?t=SPX URL.
+// Each maps to its closest ETF proxy on Finviz.
+const _INDEX_TICKER_OVERRIDE = new Map([
+  ['spx',  'SPY'],  // S&P 500 cash index → SPDR S&P 500 ETF
+  ['ndx',  'QQQ'],  // NASDAQ-100 cash index → Invesco QQQ ETF
+  ['ixic', 'QQQ'],  // NASDAQ Composite cash index → Invesco QQQ ETF
+  ['djia', 'DIA'],  // Dow Jones cash index → SPDR Dow Jones ETF
+  ['rut',  'IWM'],  // Russell 2000 cash index → iShares Russell 2000 ETF
+  ['rty',  'IWM'],  // Russell 2000 futures → iShares Russell 2000 ETF
 ]);
 
 // Central sector/market name → { etf, he? } mapping.
@@ -29,13 +50,16 @@ const _SECTOR_ENTRIES = [
   ['Consumer Staples',                        { etf: 'XLP',  he: 'צריכה בסיסית' }],
   ['Consumer Defensive',                      { etf: 'XLP',  he: 'צריכה בסיסית' }],
   ['Staples',                                 { etf: 'XLP',  he: 'צריכה בסיסית' }],
+  // Compound first — prevents slash-split from resolving "Technology" alone
+  ['Technology / Semiconductors',             { etf: 'SOXX', he: 'טכנולוגיה / שבבים' }],
+  ['Technology / Mega Caps',                  { etf: 'QQQ',  he: 'טכנולוגיה / מניות ענק' }],
   ['Technology',                              { etf: 'XLK',  he: 'טכנולוגיה' }],
   ['Tech',                                    { etf: 'XLK',  he: 'טכנולוגיה' }],
-  ['Technology / Mega Caps',                  { etf: 'QQQ',  he: 'טכנולוגיה / מניות ענק' }],
   ['Software',                                { etf: 'IGV',  he: 'תוכנה' }],
-  ['Semiconductors',                          { etf: 'SMH',  he: 'מוליכים למחצה' }],
-  ['Semiconductors (SMH)',                    { etf: 'SMH',  he: 'מוליכים למחצה' }],
-  ['Chips',                                   { etf: 'SMH',  he: 'מוליכים למחצה' }],
+  ['Semiconductors',                          { etf: 'SOXX', he: 'מוליכים למחצה' }],
+  ['Semiconductors (SMH)',                    { etf: 'SOXX', he: 'מוליכים למחצה' }],
+  ['Semiconductors (SOXX)',                   { etf: 'SOXX', he: 'מוליכים למחצה' }],
+  ['Chips',                                   { etf: 'SOXX', he: 'מוליכים למחצה' }],
   ['Retail',                                  { etf: 'XRT',  he: 'קמעונאות' }],
   ['Airlines',                                { etf: 'JETS', he: 'חברות תעופה' }],
   ['Airlines (JETS)',                         { etf: 'JETS', he: 'חברות תעופה' }],
@@ -46,7 +70,7 @@ const _SECTOR_ENTRIES = [
   ['Financials',                              { etf: 'XLF',  he: 'פיננסים' }],
   ['Finance',                                 { etf: 'XLF',  he: 'פיננסים' }],
   ['Financial',                               { etf: 'XLF',  he: 'פיננסים' }],
-  ['Banks',                                   { etf: 'KRE',  he: 'בנקים אזוריים' }],
+  ['Banks',                                   { etf: 'KBE',  he: 'בנקים' }],
   ['Regional Banks',                          { etf: 'KRE',  he: 'בנקים אזוריים' }],
   ['Homebuilders',                            { etf: 'XHB',  he: 'קבלני בתים' }],
   ['REITs',                                   { etf: 'VNQ',  he: 'ריטים' }],
@@ -60,39 +84,85 @@ const _SECTOR_ENTRIES = [
   ['Communication Services',                  { etf: 'XLC',  he: 'תקשורת' }],
   ['Communications',                          { etf: 'XLC',  he: 'תקשורת' }],
   ['Consumer Discretionary',                  { etf: 'XLY',  he: 'צריכה מחזורית' }],
+  ['Consumer Cyclical',                       { etf: 'XLY',  he: 'צריכה מחזורית' }],
   ['Discretionary',                           { etf: 'XLY',  he: 'צריכה מחזורית' }],
+  ['Cybersecurity',                           { etf: 'CIBR', he: 'סייבר' }],
+  ['Cloud Computing',                         { etf: 'SKYY', he: 'ענן' }],
+  ['AI / Robotics',                           { etf: 'BOTZ', he: 'AI / רובוטיקה' }],
+  ['Gold Miners',                             { etf: 'GDX',  he: 'כורי זהב' }],
+  ['Long Treasury Bonds',                     { etf: 'TLT',  he: 'אג"ח ארה"ב ארוך' }],
+  ['Long Bonds',                              { etf: 'TLT',  he: 'אג"ח ארה"ב ארוך' }],
+  ['US Dollar',                               { etf: 'UUP',  he: 'דולר' }],
+  ['Small Caps (Russell)',                     { etf: 'IWM',  he: 'חברות קטנות' }],
+  ['Small Caps',                              { etf: 'IWM',  he: 'חברות קטנות' }],
   ['Regional Banks / Homebuilders / REITs',   { etf: 'KRE',  he: 'בנקים אזוריים / קבלני בתים / ריטים' }],
+  // ── Additional industry / theme ETFs ──────────────────────────────────────
+  ['Transportation',                          { etf: 'IYT',  he: 'תחבורה' }],
+  ['Aerospace & Defense',                     { etf: 'ITA',  he: 'ביטחון ותעופה' }],
+  ['Defense & Aerospace',                     { etf: 'ITA',  he: 'ביטחון ותעופה' }],
+  ['Cloud',                                   { etf: 'SKYY', he: 'ענן' }],
+  ['AI',                                      { etf: 'BOTZ', he: 'בינה מלאכותית' }],
+  ['Artificial Intelligence',                 { etf: 'BOTZ', he: 'בינה מלאכותית' }],
+  ['Robotics',                                { etf: 'BOTZ', he: 'רובוטיקה' }],
+  ['Clean Energy',                            { etf: 'ICLN', he: 'אנרגיה נקייה' }],
+  ['Oil Services',                            { etf: 'OIH',  he: 'שירותי נפט' }],
+  ['Metals & Mining',                         { etf: 'XME',  he: 'מתכות וכרייה' }],
+  ['Metals and Mining',                       { etf: 'XME',  he: 'מתכות וכרייה' }],
+  ['Copper Miners',                           { etf: 'COPX', he: 'כורי נחושת' }],
+  ['Uranium',                                 { etf: 'URA',  he: 'אורניום' }],
+  ['Crypto',                                  { etf: 'BITQ', he: 'קריפטו' }],
+  ['Cryptocurrency',                          { etf: 'BITQ', he: 'קריפטו' }],
+  ['Blockchain',                              { etf: 'BITQ' }],
   // ── Hebrew sector names ────────────────────────────────────────────────────
-  ['פיננסים',           { etf: 'XLF'  }],
-  ['פיננסיים',          { etf: 'XLF'  }],
-  ['בנקים',             { etf: 'KRE'  }],
-  ['בנקים אזוריים',     { etf: 'KRE'  }],
-  ['טכנולוגיה',         { etf: 'XLK'  }],
-  ['שבבים',             { etf: 'SMH'  }],
-  ['סמיקונדקטורים',     { etf: 'SMH'  }],
-  ['מוליכים למחצה',     { etf: 'SMH'  }],
-  ['ביוטק',             { etf: 'XBI'  }],
-  ['בריאות',            { etf: 'XLV'  }],
-  ['אנרגיה',            { etf: 'XLE'  }],
-  ['נפט וגז',           { etf: 'XLE'  }],
-  ['תעשייה',            { etf: 'XLI'  }],
-  ['חומרים',            { etf: 'XLB'  }],
-  ['חומרי גלם',         { etf: 'XLB'  }],
-  ['תשתיות',            { etf: 'XLU'  }],
-  ['צרכנות מחזורית',    { etf: 'XLY'  }],
-  ['צריכה מחזורית',     { etf: 'XLY'  }],
-  ['צרכנות בסיסית',     { etf: 'XLP'  }],
-  ['צריכה בסיסית',      { etf: 'XLP'  }],
-  ['נדלן',              { etf: 'XLRE' }],
-  ['נדל"ן',             { etf: 'XLRE' }],
-  ['נדל״ן',        { etf: 'XLRE' }],
-  ['תקשורת',            { etf: 'XLC'  }],
-  ['קמעונאות',          { etf: 'XRT'  }],
-  ['ריטים',             { etf: 'VNQ'  }],
-  ['קבלני בתים',        { etf: 'XHB'  }],
-  ['תוכנה',             { etf: 'IGV'  }],
-  ['חברות תעופה',       { etf: 'JETS' }],
-  ['אנרגיה סולארית',    { etf: 'TAN'  }],
+  ['פיננסים',              { etf: 'XLF'  }],
+  ['פיננסיים',             { etf: 'XLF'  }],
+  ['בנקים',                { etf: 'KBE'  }],
+  ['בנקים אזוריים',        { etf: 'KRE'  }],
+  ['טכנולוגיה / שבבים',   { etf: 'SOXX' }],
+  ['טכנולוגיה',            { etf: 'XLK'  }],
+  ['שבבים',                { etf: 'SOXX' }],
+  ['סמיקונדקטורים',        { etf: 'SOXX' }],
+  ['מוליכים למחצה',        { etf: 'SOXX' }],
+  ['ביוטק',                { etf: 'XBI'  }],
+  ['בריאות',               { etf: 'XLV'  }],
+  ['אנרגיה',               { etf: 'XLE'  }],
+  ['נפט וגז',              { etf: 'XLE'  }],
+  ['תעשייה',               { etf: 'XLI'  }],
+  ['חומרים',               { etf: 'XLB'  }],
+  ['חומרי גלם',            { etf: 'XLB'  }],
+  ['תשתיות',               { etf: 'XLU'  }],
+  ['צרכנות מחזורית',       { etf: 'XLY'  }],
+  ['צריכה מחזורית',        { etf: 'XLY'  }],
+  ['צרכנות בסיסית',        { etf: 'XLP'  }],
+  ['צריכה בסיסית',         { etf: 'XLP'  }],
+  ['נדלן',                 { etf: 'XLRE' }],
+  ['נדל"ן',                { etf: 'XLRE' }],
+  ['נדל״ן',                { etf: 'XLRE' }],
+  ['תקשורת',               { etf: 'XLC'  }],
+  ['קמעונאות',             { etf: 'XRT'  }],
+  ['ריטים',                { etf: 'VNQ'  }],
+  ['קבלני בתים',           { etf: 'XHB'  }],
+  ['תוכנה',                { etf: 'IGV'  }],
+  ['חברות תעופה',          { etf: 'JETS' }],
+  ['אנרגיה סולארית',       { etf: 'TAN'  }],
+  ['חברות קטנות',          { etf: 'IWM'  }],
+  ['סייבר',                { etf: 'CIBR' }],
+  ['ענן',                  { etf: 'SKYY' }],
+  ['כורי זהב',             { etf: 'GDX'  }],
+  ['זהב / כורים',          { etf: 'GDX'  }],
+  ['דולר',                 { etf: 'UUP'  }],
+  // ── Additional Hebrew industry / theme entries ────────────────────────────
+  ['תחבורה',               { etf: 'IYT'  }],
+  ['ביטחון ותעופה',        { etf: 'ITA'  }],
+  ['בינה מלאכותית',        { etf: 'BOTZ' }],
+  ['רובוטיקה',             { etf: 'BOTZ' }],
+  ['אנרגיה נקייה',         { etf: 'ICLN' }],
+  ['שירותי נפט',           { etf: 'OIH'  }],
+  ['מתכות וכרייה',         { etf: 'XME'  }],
+  ['כורי נחושת',           { etf: 'COPX' }],
+  ['נחושת',                { etf: 'COPX' }],
+  ['אורניום',              { etf: 'URA'  }],
+  ['קריפטו',               { etf: 'BITQ' }],
 ];
 
 const _HE_CHAR = /[֐-׿יִ-ﭏ]/;
@@ -149,6 +219,21 @@ export function resolveFinvizTicker(input) {
   const parenMatch = raw.match(/\(([A-Z]{2,6})\)/);
   if (parenMatch) return parenMatch[1];
 
+  // 3.2. Strip paren content and try the base text.
+  //      "תוכנה (Software / IGV)" → "תוכנה" → IGV
+  //      "טכנולוגיה / שבבים (Technology / Semiconductors)" → "טכנולוגיה / שבבים" → SOXX
+  const rawNoParen = raw.replace(/\s*\([^)]+\)\s*/g, '').trim();
+  if (rawNoParen && rawNoParen !== raw) {
+    const noParenMeta = _lookupByName(rawNoParen);
+    if (noParenMeta) return noParenMeta.etf;
+    if (/^[A-Z]{1,6}$/.test(rawNoParen)) return rawNoParen;
+  }
+
+  // 3.5. Full-label sector lookup before slash-splitting — catches compound names
+  //      like "Technology / Semiconductors" that would otherwise resolve to the left part only.
+  const preSplitMeta = _lookupByName(raw);
+  if (preSplitMeta) return preSplitMeta.etf;
+
   // 4. "English / Hebrew" or "English / English" — try left side, then right
   const slashIdx = raw.indexOf(' / ');
   if (slashIdx > -1) {
@@ -184,10 +269,10 @@ const _FALLBACK_URL_MAP = new Map([
   ['us dollar index',   'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['dollar index',      'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['מדד הדולר',         'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['btc',               'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
-  ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
-  ['btcusd',            'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
-  ['ביטקוין',           'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT'],
+  ['btc',               'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
+  ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
+  ['btcusd',            'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
+  ['ביטקוין',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
   ['eth',               'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
   ['ethereum',          'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
   ['אתריום',            'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
@@ -198,14 +283,18 @@ const _FALLBACK_URL_MAP = new Map([
 
 /**
  * Resolves any market symbol to an external research URL.
- * Tries Finviz first; falls back to TradingView / CNN for DXY, VIX, crypto.
+ * Priority: index-ticker override (SPX/IXIC/RUT → ETF proxy) → Finviz → TradingView fallback.
  * Returns null if no URL is known — never returns a broken link.
  */
 export function getExternalSymbolUrl(input) {
+  // Index cash tickers must be caught before Finviz — they have no valid quote page there.
+  const normKey = _norm(input);
+  const indexEtf = _INDEX_TICKER_OVERRIDE.get(normKey);
+  if (indexEtf) return `${FINVIZ_BASE}${encodeURIComponent(indexEtf)}`;
+
   const finvizUrl = getFinvizUrl(input);
   if (finvizUrl) return finvizUrl;
-  const key = _norm(input);
-  return _FALLBACK_URL_MAP.get(key) ?? null;
+  return _FALLBACK_URL_MAP.get(normKey) ?? null;
 }
 
 /** Returns true if the input resolves to a known Finviz-linkable symbol. */
@@ -244,6 +333,7 @@ const _TV_EXCHANGE_MAP = new Map([
   ['ADP', 'NASDAQ'], ['ISRG', 'NASDAQ'], ['GILD', 'NASDAQ'], ['BIIB', 'NASDAQ'],
   ['REGN', 'NASDAQ'], ['MELI', 'NASDAQ'], ['PYPL', 'NASDAQ'], ['CSCO', 'NASDAQ'],
   ['SMH', 'NASDAQ'], ['QQQ', 'NASDAQ'], ['TLT', 'NASDAQ'],
+  ['CIBR', 'NASDAQ'], ['SKYY', 'NASDAQ'], ['BOTZ', 'NASDAQ'],
   // ── NYSE large caps ────────────────────────────────────────────────
   ['JPM', 'NYSE'], ['BAC', 'NYSE'], ['GS', 'NYSE'], ['MS', 'NYSE'],
   ['WFC', 'NYSE'], ['C', 'NYSE'], ['BLK', 'NYSE'], ['AXP', 'NYSE'],
@@ -265,7 +355,8 @@ const _TV_EXCHANGE_MAP = new Map([
   ['XLP', 'AMEX'], ['XLC', 'AMEX'], ['XLRE', 'AMEX'],
   ['XBI', 'AMEX'], ['XRT', 'AMEX'], ['XHB', 'AMEX'],
   ['VNQ', 'AMEX'], ['JETS', 'AMEX'], ['TAN', 'AMEX'], ['ITA', 'AMEX'],
-  ['KRE', 'AMEX'], ['IGV', 'AMEX'],
+  ['KRE', 'AMEX'], ['KBE', 'AMEX'], ['IGV', 'AMEX'],
+  ['GDX', 'AMEX'], ['UUP', 'AMEX'],
 ]);
 
 // Normalize a raw symbol/name for TradingView alias lookup.
@@ -344,6 +435,7 @@ const _TV_ALIAS_MAP = new Map([
   // ── US Indices ───────────────────────────────────────────────────────────
   ['NASDAQ',                 'NASDAQ:IXIC'],
   ['NASDAQ COMPOSITE',       'NASDAQ:IXIC'],
+  ['IXIC',                   'NASDAQ:IXIC'],
   ['NASDAQ 100',             'NASDAQ:NDX'],
   ['NDX',                    'NASDAQ:NDX'],
   ['S&P 500',                'SP:SPX'],
@@ -356,6 +448,7 @@ const _TV_ALIAS_MAP = new Map([
   ['RUSSELL 2000',           'TVC:RUT'],
   ['RUSSELL',                'TVC:RUT'],
   ['RTY',                    'TVC:RUT'],
+  ['RUT',                    'TVC:RUT'],
   // ── Global Indices ───────────────────────────────────────────────────────
   ['KOSPI',                  'KRX:KOSPI'],
   ['SOUTH KOREAN KOSPI',     'KRX:KOSPI'],
@@ -411,6 +504,23 @@ const _TV_ALIAS_MAP = new Map([
   ['RISK-ON',                'SP:SPX'],
   // ── Big Tech ─────────────────────────────────────────────────────────────
   ['BIG TECH',               'NASDAQ:QQQ'],
+  // ── Theme ETFs ───────────────────────────────────────────────────────────
+  ['CYBERSECURITY',          'NASDAQ:CIBR'],
+  ['CYBER',                  'NASDAQ:CIBR'],
+  ['סייבר',                  'NASDAQ:CIBR'],
+  ['CLOUD COMPUTING',        'NASDAQ:SKYY'],
+  ['CLOUD',                  'NASDAQ:SKYY'],
+  ['ענן',                    'NASDAQ:SKYY'],
+  ['AI / ROBOTICS',          'NASDAQ:BOTZ'],
+  ['ROBOTICS',               'NASDAQ:BOTZ'],
+  ['רובוטיקה',               'NASDAQ:BOTZ'],
+  ['GOLD MINERS',            'AMEX:GDX'],
+  ['כורי זהב',               'AMEX:GDX'],
+  ['זהב / כורים',            'AMEX:GDX'],
+  ['US DOLLAR',              'AMEX:UUP'],
+  ['דולר',                   'AMEX:UUP'],
+  ['SMALL CAPS (RUSSELL)',    'AMEX:IWM'],
+  ['חברות קטנות',            'AMEX:IWM'],
 ]);
 
 /**
@@ -456,7 +566,7 @@ export function resolveSectorMeta(name) {
   if (!raw) return null;
 
   function _build(etf, he) {
-    return { etf, he: he ?? null, finvizUrl: `${FINVIZ_BASE}${encodeURIComponent(etf)}` };
+    return { etf, he: he ?? null, finvizUrl: buildFinvizQuoteUrl(etf) };
   }
 
   // Direct lookup (English or Hebrew)
@@ -479,6 +589,15 @@ export function resolveSectorMeta(name) {
     const baseName = raw.replace(/\s*\([^)]+\)\s*/g, '').trim();
     const base = _lookupByName(baseName);
     return _build(etf, base?.he);
+  }
+
+  // Strip paren content, look up base text.
+  // "תוכנה (Software / IGV)" → "תוכנה" → IGV
+  // "טכנולוגיה / שבבים (Technology / Semiconductors)" → "טכנולוגיה / שבבים" → SOXX
+  const baseNoParen = raw.replace(/\s*\([^)]+\)\s*/g, '').trim();
+  if (baseNoParen && baseNoParen !== raw) {
+    const baseNoParenMeta = _lookupByName(baseNoParen);
+    if (baseNoParenMeta) return _build(baseNoParenMeta.etf, baseNoParenMeta.he);
   }
 
   // "English / Hebrew" — try left side
@@ -509,15 +628,38 @@ export function resolveSectorFinvizLink(sectorStr) {
 
   const headTicker = str.match(/^([A-Z]{2,6})(?:\s*\(.*\))?$/)?.[1];
   if (headTicker) {
-    const url = getFinvizUrl(headTicker);
+    const url = buildFinvizQuoteUrl(headTicker);
     return url ? { ticker: headTicker, url } : null;
   }
 
   const ticker = resolveFinvizTicker(str);
   if (ticker) {
-    const url = getFinvizUrl(ticker);
+    const url = buildFinvizQuoteUrl(ticker);
     return url ? { ticker, url } : null;
   }
 
   return null;
+}
+
+/** Finviz search fallback for unrecognized sector labels. */
+export function buildFinvizSearchFallback(input) {
+  return `https://finviz.com/search.ashx?q=${encodeURIComponent(String(input || '').trim())}`;
+}
+
+/** Alias for resolveFinvizTicker — resolves a sector label to an ETF ticker string. */
+export function resolveSectorEtfTicker(input) {
+  return resolveFinvizTicker(input);
+}
+
+/**
+ * Resolves any sector label to a Finviz daily chart URL.
+ * Falls back to Finviz search for unrecognized labels.
+ * Always returns a URL for non-empty input (never undefined).
+ */
+export function getSectorFinvizUrl(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return null;
+  const ticker = resolveFinvizTicker(raw);
+  if (ticker) return buildFinvizQuoteUrl(ticker);
+  return buildFinvizSearchFallback(raw);
 }

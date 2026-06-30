@@ -200,6 +200,62 @@ function _multiPrompt(items) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Opportunity / Risk specialized prompt
+// ─────────────────────────────────────────────────────────────────────────────
+
+function _isOpportunity(item) {
+  return item?.type === 'brief-opportunities' ||
+    item?.tabScope === 'brief-opportunities' ||
+    /הזדמנות|הזדמנויות/i.test(item?.sectionLabel || '');
+}
+
+function _isRisk(item) {
+  return item?.type === 'brief-risks' ||
+    item?.tabScope === 'brief-risks' ||
+    /^סיכון|^סיכונים/i.test(item?.sectionLabel || '');
+}
+
+function _hasOpportunityOrRisk(items) {
+  return items.some((item) => _isOpportunity(item) || _isRisk(item));
+}
+
+function _buildOpportunityRiskPrompt(items) {
+  const opportunities = items.filter(_isOpportunity);
+  const risks = items.filter(_isRisk);
+  const others = items.filter((item) => !_isOpportunity(item) && !_isRisk(item));
+
+  const header =
+    'נתח את הפריטים הנבחרים מתוך מבזק השוק.\n' +
+    'הסבר כל הזדמנות וכל סיכון בצורה פשוטה וברורה:\n' +
+    '- מה זה אומר?\n' +
+    '- למה זה חשוב?\n' +
+    '- מי מושפע?\n' +
+    '- מה יאשר את התרחיש?\n' +
+    '- מה יבטל את התרחיש?\n' +
+    '- מה לעקוב בהמשך?\n' +
+    'אין לתת המלצת השקעה מחייבת.\n';
+
+  const parts = [];
+
+  if (opportunities.length > 0) {
+    const lines = opportunities.map((item, i) => `${i + 1}. ${_label(item)}`).join('\n');
+    parts.push(`הזדמנויות:\n${lines}`);
+  }
+
+  if (risks.length > 0) {
+    const lines = risks.map((item, i) => `${i + 1}. ${_label(item)}`).join('\n');
+    parts.push(`סיכונים:\n${lines}`);
+  }
+
+  if (others.length > 0) {
+    const lines = others.map((item, i) => `${i + 1}. ${_label(item)}`).join('\n');
+    parts.push(`אחר:\n${lines}`);
+  }
+
+  return `${header}\n${parts.join('\n\n')}\n\nנא לנתח בעברית בטבלה קומפקטית.`;
+}
+
 /**
  * Builds a ready-to-paste Perplexity Space analysis prompt for one or more
  * selected bulk items. Detects entity type and returns the appropriate prompt.
@@ -208,6 +264,7 @@ function _multiPrompt(items) {
 export function buildPerplexityAnalysisPrompt(selectedItems) {
   const items = Array.isArray(selectedItems) ? selectedItems.filter(Boolean) : [];
   if (items.length === 0) return '';
+  if (_hasOpportunityOrRisk(items)) return _buildOpportunityRiskPrompt(items);
   if (items.length === 1) return _buildSinglePrompt(items[0]);
   return _multiPrompt(items);
 }
