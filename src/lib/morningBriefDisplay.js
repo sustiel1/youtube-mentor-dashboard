@@ -658,7 +658,7 @@ function normalizeMacroIndicatorRow(item) {
   const frequency = pickString(item, 'updateFrequency', 'frequency', 'cadence', 'period', 'importance', 'priority');
   const description = pickString(
     item,
-    'description', 'comment', 'condition', 'note', 'context', 'thesis', 'status', 'reason', 'sectors',
+    'description', 'comment', 'condition', 'note', 'notes', 'context', 'thesis', 'status', 'reason', 'sectors',
   );
   const impact = pickString(item, 'impact', 'marketImpact', 'effect', 'expectedImpact', 'sentiment', 'bias');
 
@@ -735,6 +735,72 @@ export function extractCalendarRows(src) {
     seen.add(sig);
     return true;
   });
+}
+
+// Known event keyword sets → canonical Hebrew/English title.
+// Each entry matches if ANY of the keys appears in the lowercased event text.
+const _CALENDAR_PATTERN_MAP = [
+  { keys: ['nfp', 'non-farm', 'non farm', 'nonfarm', 'payroll', 'תעסוקה', 'jobs report'], canonical: 'דוח תעסוקה NFP' },
+  { keys: ['cpi', 'consumer price index', 'אינפלציה', 'מחירי צרכן', 'inflation'], canonical: 'מדד המחירים לצרכן CPI' },
+  { keys: ['fomc', 'federal reserve', 'fed rate', 'ריבית פד', 'interest rate decision', 'rate decision'], canonical: 'החלטת ריבית FOMC' },
+  { keys: ['ppi', 'producer price'], canonical: 'מחירי יצרן PPI' },
+  { keys: ['gdp', 'gross domestic', 'תוצר מקומי גולמי', 'תוצר מקומי'], canonical: 'תוצר מקומי גולמי GDP' },
+  { keys: ['jobless claims', 'unemployment claims', 'initial claims', 'דמי אבטלה'], canonical: 'תביעות אבטלה שבועיות' },
+  { keys: ['retail sales', 'מכירות קמעוניות'], canonical: 'מכירות קמעוניות' },
+  { keys: ['michigan', 'consumer sentiment', 'consumer confidence', 'אמון צרכנים'], canonical: 'אמון צרכנים' },
+  { keys: ['ism manufacturing', 'manufacturing pmi', 'pmi manufacturing'], canonical: 'מדד תעשייה PMI/ISM' },
+  { keys: ['ism services', 'services pmi', 'pmi services'], canonical: 'מדד שירותים PMI/ISM' },
+  { keys: ['tesla', 'tsla deliveries', 'מסירות טסלה', 'tesla deliveries'], canonical: 'מסירות טסלה' },
+  { keys: ['earnings season', 'עונת הדוחות', 'reporting season', 'תחילת עונת', 'דוחות'], canonical: 'עונת הדוחות' },
+  { keys: ['jackson hole', "ג'קסון הול"], canonical: "סימפוזיון ג'קסון הול" },
+  { keys: ['debt ceiling', 'תקרת חוב'], canonical: 'תקרת החוב' },
+  { keys: ['durable goods', 'מוצרי בני קיימא'], canonical: 'מוצרי בני קיימא' },
+  { keys: ['housing starts', 'building permits', 'התחלות בנייה'], canonical: 'נתוני דיור' },
+  { keys: ['trade balance', 'מאזן סחר'], canonical: 'מאזן הסחר' },
+];
+
+function _getCalendarCanonicalKey(eventText) {
+  const norm = String(eventText || '').toLowerCase().replace(/[^a-z0-9א-ת\s]/g, ' ').trim();
+  for (const { keys, canonical } of _CALENDAR_PATTERN_MAP) {
+    if (keys.some((k) => norm.includes(k))) return canonical;
+  }
+  return eventText; // no match — event is its own group
+}
+
+/**
+ * Merges near-duplicate calendar rows that refer to the same economic event.
+ * Groups rows sharing a canonical event key; keeps the richest row as primary.
+ * Returns rows with `aliases` (alternate names) and `sourceCount` (merged count).
+ */
+export function mergeCalendarRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+
+  const groups = new Map(); // canonical key → { primary, aliases, sourceCount }
+
+  for (const row of rows) {
+    const eventText = String(row.event || '').trim();
+    const canonical = _getCalendarCanonicalKey(eventText);
+
+    if (!groups.has(canonical)) {
+      groups.set(canonical, { primary: row, canonical, aliases: new Set(), sourceCount: 1 });
+    } else {
+      const g = groups.get(canonical);
+      g.sourceCount += 1;
+      // Prefer the row with more data fields filled in
+      const score = (r) => (r.importance ? 1 : 0) + (r.date ? 1 : 0) + (r.impact ? r.impact.length : 0);
+      if (score(row) > score(g.primary)) g.primary = row;
+    }
+
+    const g = groups.get(canonical);
+    if (eventText && eventText !== canonical) g.aliases.add(eventText);
+  }
+
+  return Array.from(groups.values()).map(({ primary, canonical, aliases, sourceCount }) => ({
+    ...primary,
+    event: canonical,
+    aliases: Array.from(aliases).filter((a) => a !== canonical),
+    sourceCount,
+  }));
 }
 
 const SENTIMENT_FIELD_LABELS = {
@@ -1018,14 +1084,14 @@ function stockRecordFromObject(item, category = 'general') {
   return {
     ticker,
     company,
-    context: pickString(item, 'reason', 'context', 'why', 'note', 'thesis', 'description', 'status'),
+    context: pickString(item, 'reason', 'context', 'why', 'note', 'notes', 'thesis', 'description', 'status'),
     sentiment: humanizeSentiment(
-      pickString(item, 'sentiment', 'bias', 'outlook', 'mood', 'direction')
+      pickString(item, 'sentiment', 'bias', 'outlook', 'mood', 'direction', 'action')
     ),
     category,
     actionability: humanizeActionability(category, item),
     notes: mergeContext(
-      pickString(item, 'catalyst', 'trigger', 'event'),
+      pickString(item, 'catalyst', 'trigger', 'event', 'technicalState'),
       pickString(item, 'level', 'price', 'target', 'entry')
     ),
     changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange'),

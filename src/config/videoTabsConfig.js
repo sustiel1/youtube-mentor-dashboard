@@ -20,6 +20,8 @@ const LEARNING_KEYWORDS = [
 const MORNING_BRIEF_KEYWORDS = [
   'מבזק בוקר', 'morning brief', 'premarket', 'pre-market',
   'סקירת בוקר', 'פתיחת שוק',
+  // Live opening briefs: "מבזק לייב פתיחה לתאריך DD.MM.YY"
+  'מבזק לייב פתיחה',
 ];
 
 const EVENING_BRIEF_KEYWORDS = [
@@ -422,7 +424,7 @@ function formatWatchlistItem(item) {
   if (typeof item !== 'object') return String(item);
 
   const symbol = (item.symbol || item.ticker || item.name || item.stock || '').trim();
-  const reason = (item.reason || item.why || item.note || '').trim();
+  const reason = (item.reason || item.why || item.note || item.notes || item.context || '').trim();
   const importance = (item.importance || item.priority || item.weight || '').trim();
   const catalyst = (item.catalyst || item.trigger || item.event || '').trim();
   const level = (item.level || item.price || item.target || '').trim();

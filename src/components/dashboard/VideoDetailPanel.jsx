@@ -2432,12 +2432,29 @@ export function VideoDetailPanel({
     [effectiveSubCategory]
   );
 
-  /** Brief render slug: confirmed subcategory, or infer from pasted GEM marketBrief JSON. */
+  const videoType = useMemo(
+    () => detectVideoType(effectiveVideo),
+    [
+      effectiveVideo?.category,
+      effectiveVideo?.channelName,
+      effectiveVideo?.channelTitle,
+      effectiveVideo?.contentType,
+      effectiveVideo?.mentorName,
+      effectiveVideo?.subCategory,
+      effectiveVideo?.tags,
+      effectiveVideo?.title,
+    ]
+  );
+
+  /** Brief render slug: confirmed subcategory → GEM contentType → title-detected videoType. */
   const effectiveBriefSlug = useMemo(() => {
     if (normalizedSubCategory) return normalizedSubCategory;
     if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
+    // Title-based fallback: "מבזק לייב פתיחה לתאריך" detected via MORNING_BRIEF_KEYWORDS
+    if (videoType === 'morningBrief') return 'morning-brief';
+    if (videoType === 'eveningBrief') return 'evening-brief';
     return null;
-  }, [normalizedSubCategory, marketBriefData?.contentType]);
+  }, [normalizedSubCategory, marketBriefData?.contentType, videoType]);
 
   const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
     if (!marketBriefData) return;
@@ -2616,20 +2633,6 @@ export function VideoDetailPanel({
     resolvedVideoMode.mode,
     topics,
   ]);
-
-  const videoType = useMemo(
-    () => detectVideoType(effectiveVideo),
-    [
-      effectiveVideo?.category,
-      effectiveVideo?.channelName,
-      effectiveVideo?.channelTitle,
-      effectiveVideo?.contentType,
-      effectiveVideo?.mentorName,
-      effectiveVideo?.subCategory,
-      effectiveVideo?.tags,
-      effectiveVideo?.title,
-    ]
-  );
 
   const effectiveGemInfo = useMemo(() => {
     if (!gemRec) return null;
