@@ -61,9 +61,11 @@ function filterOpportunityIdeas(marketBriefData, effectiveVideo) {
 }
 
 function formatOpportunityText(idea) {
-  const title = String(idea.title || '').trim();
+  const titleText = String(idea.title || '').trim();
+  const ticker = String(idea.ticker || '').trim().toUpperCase();
+  const title = ticker ? `${ticker} · ${titleText}` : titleText;
   const detail = String(idea.detail || '').trim();
-  const description = detail && detail !== title ? detail : '';
+  const description = detail && detail !== titleText ? detail : '';
   return [title, description].filter(Boolean).join(' — ');
 }
 
