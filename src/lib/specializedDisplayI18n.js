@@ -114,16 +114,25 @@ function normalizeLabelKey(text) {
 
 /** Market-status row labels (English keys / humanized camelCase → Hebrew). */
 export const MARKET_STATUS_LABELS_HE = {
-  summary: 'סיכום',
+  summary: 'סיכום מצב השוק',
   mainconclusion: 'מסקנה מרכזית',
   marketstatus: 'מצב השוק',
   marketmood: 'מצב השוק',
+  context: 'רקע השוק',
+  mood: 'מצב רוח השוק',
+  date: 'תאריך המבזק',
+  sentiment: 'סנטימנט שוק',
 };
 
 /** Translate מצב שוק table row labels; falls back to generic display label translation. */
 export function translateMarketStatusLabel(label) {
   const raw = String(label ?? '').trim();
   if (!raw) return raw;
+
+  // Hebrew short-label expansions \u2014 specific known labels that need a clearer form
+  if (raw === '\u05E1\u05D9\u05DB\u05D5\u05DD') return MARKET_STATUS_LABELS_HE.summary;
+  if (raw === '\u05E1\u05E0\u05D8\u05D9\u05DE\u05E0\u05D8') return MARKET_STATUS_LABELS_HE.sentiment;
+
   if (/[\u0590-\u05FF]/.test(raw)) return raw;
 
   const normalized = raw.toLowerCase().replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -133,6 +142,10 @@ export function translateMarketStatusLabel(label) {
   if (normalized === 'main conclusion' || compact === 'mainconclusion') return MARKET_STATUS_LABELS_HE.mainconclusion;
   if (normalized === 'market status' || compact === 'marketstatus') return MARKET_STATUS_LABELS_HE.marketstatus;
   if (normalized === 'market mood' || compact === 'marketmood') return MARKET_STATUS_LABELS_HE.marketmood;
+  if (normalized === 'context' || normalized === 'market context') return MARKET_STATUS_LABELS_HE.context;
+  if (normalized === 'mood') return MARKET_STATUS_LABELS_HE.mood;
+  if (normalized === 'date' || normalized === 'brief date' || compact === 'briefdate') return MARKET_STATUS_LABELS_HE.date;
+  if (normalized === 'sentiment' || normalized === 'overall sentiment' || compact === 'overallsentiment') return MARKET_STATUS_LABELS_HE.sentiment;
 
   return translateDisplayLabel(raw);
 }
