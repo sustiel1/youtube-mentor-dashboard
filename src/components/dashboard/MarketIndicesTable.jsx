@@ -1,6 +1,7 @@
 import { formatMarketChange } from '@/lib/morningBriefVisuals';
 import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
 import { getExternalSymbolUrl } from '@/utils/finvizLinks';
+import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 
 function parseIndexItem(raw) {
   if (!raw) return null;
@@ -212,6 +213,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                         : 'text-sm text-slate-600 dark:text-zinc-400 leading-relaxed';
                     if (col.key === 'name' && val) {
                       const nameUrl = getExternalSymbolUrl(val);
+                      const displayName = getHebrewDisplayLabel(val);
                       return (
                         <td key={col.key} className={`px-3 py-3 ${cellCls}`}>
                           {nameUrl ? (
@@ -223,9 +225,9 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                               className="hover:underline cursor-pointer"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {val}
+                              {displayName}
                             </a>
-                          ) : val}
+                          ) : displayName}
                         </td>
                       );
                     }
@@ -270,6 +272,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 {row.name && (() => {
                   const mobileUrl = getExternalSymbolUrl(row.name);
+                  const mobileDisplayName = getHebrewDisplayLabel(row.name);
                   return mobileUrl ? (
                     <a
                       href={mobileUrl}
@@ -279,10 +282,10 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                       className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50 hover:underline cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {row.name}
+                      {mobileDisplayName}
                     </a>
                   ) : (
-                    <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{row.name}</span>
+                    <span className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-50">{mobileDisplayName}</span>
                   );
                 })()}
                 <div className="flex items-center gap-2 shrink-0">
