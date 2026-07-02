@@ -74,37 +74,35 @@ export function normalizeSectorTableRow(item, options = {}) {
 
 function SectorNameCell({ sector, showHelperLinks = true }) {
   const displaySector = getHebrewDisplayLabel(sector);
-  if (!showHelperLinks) {
-    return <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>;
-  }
-
   const link = resolveSectorFinvizLink(sector);
   const finvizUrl = link?.url ?? getSectorFinvizUrl(sector);
   const pxUrl = showHelperLinks && link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
 
+  const nameNode = finvizUrl ? (
+    <a
+      href={finvizUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="פתח ב-Finviz ↗"
+      className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
+      onClick={(e) => e.stopPropagation()}
+      data-finviz-link={link?.ticker || ''}
+    >
+      {displaySector}
+    </a>
+  ) : (
+    <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
+  );
+
+  if (!pxUrl) return nameNode;
+
   return (
-    <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
-      {finvizUrl ? (
-        <a
-          href={finvizUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="פתח ב-Finviz ↗"
-          className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
-          onClick={(e) => e.stopPropagation()}
-          data-finviz-link={link?.ticker || ''}
-        >
-          {displaySector}
-        </a>
-      ) : (
-        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
-      )}
-      {pxUrl && (
-        <ResearchDropdownLink
-          pxUrl={pxUrl}
-          titleHe={`10 אחזקות מובילות של ${link.ticker}`}
-        />
-      )}
+    <div className="flex flex-col gap-0.5">
+      {nameNode}
+      <ResearchDropdownLink
+        pxUrl={pxUrl}
+        titleHe={`10 אחזקות מובילות של ${link.ticker}`}
+      />
     </div>
   );
 }
