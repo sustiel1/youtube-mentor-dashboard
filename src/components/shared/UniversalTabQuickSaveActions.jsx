@@ -65,57 +65,50 @@ function CompactSaveMenu({
   const [coords, setCoords] = useState(null);
   const triggerRef = useRef(null);
   const menuRef    = useRef(null);
-  const menuPointerRef = useRef(false);
 
   const close = useCallback(() => {
-    menuPointerRef.current = false;
     setOpen(false);
     setCoords(null);
   }, []);
 
-  const stopMenuEvent = useCallback((event) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-    menuPointerRef.current = true;
-  }, []);
-
-  const fire = useCallback((event, handler) => {
-    stopMenuEvent(event);
+  // Run a save/open handler then close the menu.
+  // Uses onClick (not onMouseDown) so it is a genuine user-gesture click,
+  // which avoids clipboard-permission and popup-blocker issues.
+  const runAction = useCallback((e, handler) => {
+    e.stopPropagation();
     if (!handler) return;
     try {
       handler(payload);
-      close();
     } catch (err) {
       console.error('[CompactSaveMenu] handler error:', err);
       toast.error('שגיאה בביצוע הפעולה');
     }
-  }, [close, payload, stopMenuEvent]);
+    close();
+  }, [close, payload]);
 
-  const handleCopy = useCallback((event) => {
-    stopMenuEvent(event);
-
+  const handleCopy = useCallback((e) => {
+    e.stopPropagation();
+    close(); // close immediately so user gets visual feedback at once
     const lines = [];
     if (payload.sectionLabel) lines.push(`## ${payload.sectionLabel}`);
     lines.push(payload.text);
     navigator.clipboard.writeText(lines.join('\n'))
-      .then(() => {
-        toast.success('הועתק ✓');
-        close();
-      })
+      .then(() => toast.success('הועתק ✓'))
       .catch(() => toast.error('שגיאה בהעתקה'));
-  }, [close, payload, stopMenuEvent]);
+  }, [close, payload]);
 
-  const handlePerplexity = useCallback((event) => {
-    stopMenuEvent(event);
+  const handlePerplexity = useCallback((e) => {
+    e.stopPropagation();
+    // Open window first — must be synchronous in the click handler to avoid popup blockers
     if (pxUrl) window.open(pxUrl, '_blank', 'noopener,noreferrer');
     close();
-  }, [close, pxUrl, stopMenuEvent]);
+  }, [close, pxUrl]);
 
-  const handleGoogleFinance = useCallback((event) => {
-    stopMenuEvent(event);
+  const handleGoogleFinance = useCallback((e) => {
+    e.stopPropagation();
     openGoogleFinance(extractQueryFromPxUrl(pxUrl));
     close();
-  }, [close, pxUrl, stopMenuEvent]);
+  }, [close, pxUrl]);
 
   // Calculate fixed position from trigger bounding rect when opening
   useEffect(() => {
@@ -138,31 +131,31 @@ function CompactSaveMenu({
     });
   }, [open]);
 
-  // Close on outside mousedown; ignore scroll while pointer is inside menu
+  // Outside-close uses pointerdown in CAPTURE phase.
+  // Capture fires before any element handler (including React's own delegation),
+  // so menuRef.current.contains() is always reliable here — the portal is
+  // guaranteed to be mounted and the target is the real element that was hit.
+  // This avoids the stopPropagation/stopImmediatePropagation mismatch that
+  // caused the previous mousedown-bubble approach to be unreliable with React
+  // portal events.
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => {
-      if (
-        menuRef.current && !menuRef.current.contains(e.target) &&
-        triggerRef.current && !triggerRef.current.contains(e.target)
-      ) {
-        close();
-      }
-    };
-    const onScroll = () => {
-      if (menuPointerRef.current) return;
+    const onOutside = (e) => {
+      if (menuRef.current?.contains(e.target)) return;
+      if (triggerRef.current?.contains(e.target)) return;
       close();
     };
-    document.addEventListener('mousedown', onDown);
-    window.addEventListener('scroll', onScroll, true);
+    const onScroll = () => close();
+    document.addEventListener('pointerdown', onOutside, { capture: true });
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     return () => {
-      document.removeEventListener('mousedown', onDown);
-      window.removeEventListener('scroll', onScroll, true);
+      document.removeEventListener('pointerdown', onOutside, { capture: true });
+      window.removeEventListener('scroll', onScroll, { capture: true });
     };
   }, [open, close]);
 
   return (
-    <div className={`relative shrink-0 ${VISIBILITY_CLS} ${className}`}>
+    <div className={`relative shrink-0 ${VISIBILITY_CLS} ${className || ''}`}>
       <button
         ref={triggerRef}
         type="button"
@@ -183,15 +176,13 @@ function CompactSaveMenu({
             dir="rtl"
             style={{ position: 'fixed', top: coords.top, left: coords.left }}
             className="z-[9999] min-w-[160px] rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
-            onMouseDown={stopMenuEvent}
-            onPointerDown={stopMenuEvent}
-            onClick={stopMenuEvent}
+            onClick={(e) => e.stopPropagation()}
           >
             {onBrain && (
               <button
                 type="button"
                 role="menuitem"
-                onMouseDown={(e) => fire(e, onBrain, 'save_brain')}
+                onClick={(e) => runAction(e, onBrain)}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {brainSaved ? '✓🧠 פתח במוח' : '🧠 שמור למוח'}
@@ -201,7 +192,7 @@ function CompactSaveMenu({
               <button
                 type="button"
                 role="menuitem"
-                onMouseDown={(e) => fire(e, onObsidian, 'save_obsidian')}
+                onClick={(e) => runAction(e, onObsidian)}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {obsidianSaved ? '✅ נשמר ל-Obsidian' : '🟣 שמור ל-Obsidian'}
@@ -211,7 +202,7 @@ function CompactSaveMenu({
               <button
                 type="button"
                 role="menuitem"
-                onMouseDown={(e) => fire(e, onWorkspace, 'save_workspace')}
+                onClick={(e) => runAction(e, onWorkspace)}
                 className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
               >
                 {workspaceSaved ? '✓⭐ פתח ב-Workspace' : '⭐ שמור ל-Workspace'}
@@ -221,7 +212,7 @@ function CompactSaveMenu({
             <button
               type="button"
               role="menuitem"
-              onMouseDown={handleCopy}
+              onClick={handleCopy}
               className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400"
             >
               📋 העתק
@@ -232,7 +223,7 @@ function CompactSaveMenu({
                 <button
                   type="button"
                   role="menuitem"
-                  onMouseDown={handlePerplexity}
+                  onClick={handlePerplexity}
                   className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                 >
                   🔍 מחקר AI — פרפלקסיטי
@@ -240,7 +231,7 @@ function CompactSaveMenu({
                 <button
                   type="button"
                   role="menuitem"
-                  onMouseDown={handleGoogleFinance}
+                  onClick={handleGoogleFinance}
                   className="block w-full px-3 py-1.5 text-right text-xs hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                 >
                   📊 מחקר AI — Google Finance
@@ -273,19 +264,8 @@ export function UniversalTabQuickSaveActions({
   if (!onBrain && !onObsidian && !onWorkspace && !pxUrl) return null;
 
   if (compact) {
-    return (
-      <CompactSaveMenu
-        payload={payload}
-        onBrain={onBrain}
-        onObsidian={onObsidian}
-        onWorkspace={onWorkspace}
-        brainSaved={brainSaved}
-        obsidianSaved={obsidianSaved}
-        workspaceSaved={workspaceSaved}
-        pxUrl={pxUrl}
-        className={className}
-      />
-    );
+    // Three-dots menu hidden — bottom selection toolbar handles all bulk actions
+    return null;
   }
 
   // Non-compact: inline icon buttons (no dropdown needed)

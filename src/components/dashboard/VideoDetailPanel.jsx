@@ -164,7 +164,8 @@ import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelect
 import { detectMarketEntityType, extractTickerFromItem, extractIndexNameFromItem } from '@/lib/detectMarketEntityType';
 import { buildTradingViewChartUrl, lookupTradingViewSymbol, getFinvizUrl } from '@/utils/finvizLinks';
 import { buildPerplexityAnalysisPrompt, PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
-import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
+import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
+import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
 import { UniversalTabBulkToolbar } from "@/components/dashboard/UniversalTabBulkToolbar";
@@ -2071,6 +2072,8 @@ export function VideoDetailPanel({
     multiSelected,
     toggleMultiSelect,
     multiSelectAll,
+    multiSelectSection,
+    multiDeselectSection,
     multiSelectClear,
     count: tabBulkCount,
     entriesForActiveTab,
@@ -5377,6 +5380,15 @@ export function VideoDetailPanel({
     window.open(PERPLEXITY_SPACE_URL, '_blank', 'noopener,noreferrer');
   }, [multiSelected]);
 
+  const handleCsvExport = useCallback(() => {
+    if (multiSelected.size === 0) return;
+    const items = [...multiSelected.values()];
+    const csv = buildSelectedItemsCsv(items, video?.title || '');
+    const slug = String(video?.title || 'items').slice(0, 40).replace(/[^a-zA-Zא-ת\d]/g, '-').replace(/-+/g, '-');
+    downloadCsv(csv, `${slug}.csv`);
+    toast.success(`📊 יוצאו ${items.length} פריטים ל-CSV`);
+  }, [multiSelected, video?.title]);
+
   const handleSaveSelectedToWorkspace = () => {
     if (multiSelected.size === 0) return;
     const videoId = video?.youtubeId || video?.id || 'unknown';
@@ -5632,6 +5644,8 @@ export function VideoDetailPanel({
     multiSelected,
     onToggle: toggleMultiSelect,
     onSelectAll: multiSelectAll,
+    onSectionSelect: multiSelectSection,
+    onSectionDeselect: multiDeselectSection,
     onClear: multiSelectClear,
     videoId: videoIdForQuickSave,
     obsidianItemSaveRevision,
@@ -5670,6 +5684,8 @@ export function VideoDetailPanel({
     multiSelected,
     toggleMultiSelect,
     multiSelectAll,
+    multiSelectSection,
+    multiDeselectSection,
     multiSelectClear,
     videoIdForQuickSave,
     obsidianItemSaveRevision,
@@ -11187,6 +11203,7 @@ export function VideoDetailPanel({
                               tabScope="insights"
                               type={tabKey}
                               sectionKey={key}
+                              sectionChildItems={buildSectionChildItems(items, `insights:${key}`, { sectionLabel: label, type: tabKey, tabScope: 'insights' })}
                             />
                             <LearningTabContent
                               items={items}
@@ -11329,6 +11346,7 @@ export function VideoDetailPanel({
                             tabScope="useful-knowledge"
                             type={tabKey}
                             sectionKey={key}
+                            sectionChildItems={buildSectionChildItems(items, `useful-knowledge:${key}`, { sectionLabel: label, type: tabKey, tabScope: 'useful-knowledge' })}
                           />
                           {isTemporary && (
                             <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2 text-right leading-snug px-1">
@@ -11384,6 +11402,7 @@ export function VideoDetailPanel({
                             tabScope="topics-subtopics"
                             type="topics-subtopics"
                             sectionKey="flat"
+                            sectionChildItems={buildSectionChildItems(gemTopicsFlat, 'topics-subtopics:flat', { sectionLabel: 'נושאים קשורים', type: 'topics-subtopics', tabScope: 'topics-subtopics' })}
                           />
                           <LearningTabContent
                             items={gemTopicsFlat}
@@ -11506,6 +11525,7 @@ export function VideoDetailPanel({
           onObsidian={handleBulkObsidianForTab}
           onWorkspace={handleSaveSelectedToWorkspace}
           onCopy={handleCopySelectedItems}
+          onCsvExport={handleCsvExport}
           onAiAnalyze={handleOpenTradingView}
           onPerplexity={handleOpenPerplexity}
         />

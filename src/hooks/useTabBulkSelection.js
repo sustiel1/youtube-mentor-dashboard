@@ -35,6 +35,31 @@ export function useTabBulkSelection(activeTab) {
     });
   }, [activeTab]);
 
+  // Additively add section items without replacing existing selections
+  const multiSelectSection = useCallback((items = []) => {
+    if (!items.length) return;
+    setSelectionTab(activeTab);
+    setMultiSelected((prev) => {
+      const next = new Map(prev);
+      items.forEach(({ id, ...rest }) => {
+        next.set(id, { ...rest, tabScope: rest.tabScope || activeTab });
+      });
+      return next;
+    });
+  }, [activeTab]);
+
+  // Remove specific item ids without clearing unrelated selections
+  const multiDeselectSection = useCallback((ids = []) => {
+    if (!ids.length) return;
+    setMultiSelected((prev) => {
+      if (!ids.some((id) => prev.has(id))) return prev;
+      const next = new Map(prev);
+      ids.forEach((id) => next.delete(id));
+      if (next.size === 0) setSelectionTab(null);
+      return next;
+    });
+  }, []);
+
   const multiSelectClear = useCallback(() => {
     setMultiSelected(new Map());
     setSelectionTab(null);
@@ -55,6 +80,8 @@ export function useTabBulkSelection(activeTab) {
     selectionTab,
     toggleMultiSelect,
     multiSelectAll,
+    multiSelectSection,
+    multiDeselectSection,
     multiSelectClear,
     count,
     entriesForActiveTab,

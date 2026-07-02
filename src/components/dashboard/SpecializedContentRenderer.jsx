@@ -7,14 +7,10 @@ import { BriefContextHeader } from "./BriefContextHeader";
 import { DASHBOARD_COLUMN_HEADER_CLS } from "./MorningBriefVisualPrimitives";
 import { SelectableSummaryCardHeader } from "@/components/shared/SelectableSummaryCardHeader";
 import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
-import { formatCardBulkText } from "@/lib/universalTabBulkItems";
+import { formatCardBulkText, formatBulkItemText, mergeBulkSelection, buildBulkItemsFromSections } from "@/lib/universalTabBulkItems";
 import { extractVideoTabItems } from "@/config/videoTabsConfig";
 import { getBriefContextDisplay } from "@/lib/briefContextDisplay";
 import { TabBulkItemsRegistrar } from "./TabBulkItemsRegistrar";
-import {
-  buildBulkItemsFromSections,
-  mergeBulkSelection,
-} from "@/lib/universalTabBulkItems";
 import {
   buildMorningBriefBulkSections,
 } from "@/lib/morningBriefBulkSections";
@@ -35,6 +31,17 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
   if (safe.length === 0) return null;
   const cardText = formatCardBulkText(label, safe);
   const hasCardBulk = bulkSelection && sectionKey && cardText;
+  const idPrefix = `specialized:${sectionKey || tabKey}`;
+
+  // Child bulk items for section-level select-all checkbox
+  const sectionChildItems = bulkSelection ? safe.map((item, i) => ({
+    id: `${idPrefix}:${i}`,
+    text: formatBulkItemText(item),
+    sectionLabel: label,
+    type: tabKey,
+    tabScope: 'specialized',
+  })) : null;
+
   return (
     <div className={`rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2${hasCardBulk ? ' group/card' : ''}`}>
       {hasCardBulk ? (
@@ -48,6 +55,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
           sectionLabel={label}
           titleClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100`}
           headerRowClassName="pt-0 pb-2 mb-2 px-1 border-b border-slate-200/50 dark:border-zinc-700/50"
+          sectionChildItems={sectionChildItems}
         />
       ) : (
         <UniversalTabSectionLabelRow
@@ -59,6 +67,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
           sectionKey={sectionKey || tabKey}
           labelClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}
           brainSaved={checkSaved ? checkSaved(formatCardBulkText(label, safe), tabKey) : undefined}
+          sectionChildItems={sectionChildItems}
         />
       )}
       <LearningTabContent
@@ -68,7 +77,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
         onSaveToBrain={(text) => onSaveToBrain(text, tabKey, label)}
         isSaved={checkSaved ? (text) => checkSaved(text, tabKey) : undefined}
         bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
-          idPrefix: `specialized:${sectionKey || tabKey}`,
+          idPrefix,
           sectionLabel: label,
           type: tabKey,
           tabScope: 'specialized',

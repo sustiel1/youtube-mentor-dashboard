@@ -11,6 +11,7 @@ export function UniversalTabSelectionBar({
   onClear,
   onAiAnalyze,
   onPerplexity,
+  onCsvExport,
   disabled = false,
 }) {
   if (count === 0) return null;
@@ -71,6 +72,16 @@ export function UniversalTabSelectionBar({
             className="flex items-center gap-1.5 rounded-xl bg-zinc-600 hover:bg-zinc-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
           >
             📋 העתק
+          </button>
+        )}
+        {onCsvExport && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onCsvExport}
+            className="flex items-center gap-1.5 rounded-xl bg-green-700 hover:bg-green-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            📊 ייצוא CSV
           </button>
         )}
         {onAiAnalyze && (
