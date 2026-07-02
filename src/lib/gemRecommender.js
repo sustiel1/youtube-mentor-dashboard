@@ -3,6 +3,33 @@
 
 import { getTopicRule } from "@/lib/topicRules";
 
+// Deterministic title overrides — checked before any keyword scoring.
+// Highest priority: if pattern matches, recommendation cannot be changed by subCategory or TranscriptGuard.
+const TITLE_OVERRIDE_RULES = [
+  {
+    // "מבזק לייב פתיחה לתאריך DD.MM.YY" — live opening market brief
+    pattern: 'מבזק לייב פתיחה',
+    gemKey: 'news',
+    gemLabel: 'מבזק בוקר',
+    gemIcon: '📰',
+    contentType: 'morningBrief',
+    source: 'titleOverride',
+    reason: 'הכותרת מכילה "מבזק לייב פתיחה" — מזוהה כמבזק פתיחה לייב.',
+    recommendedSubCategory: 'מבזקי בוקר',
+  },
+  {
+    // "מבזק בוקר" — standard morning brief
+    pattern: 'מבזק בוקר',
+    gemKey: 'news',
+    gemLabel: 'מבזק בוקר',
+    gemIcon: '📰',
+    contentType: 'morningBrief',
+    source: 'titleOverride',
+    reason: 'הכותרת מכילה "מבזק בוקר" — מזוהה כמבזק בוקר.',
+    recommendedSubCategory: 'מבזקי בוקר',
+  },
+];
+
 const GEM_RULES = [
   {
     key: "fundamental",
@@ -35,7 +62,9 @@ const GEM_RULES = [
     label: "מבזק בוקר",
     icon: "📰",
     titleKeywords: ["morning", "daily", "weekly", "recap", "update", "brief",
-      "premarket", "afternoon", "wrap", "watchlist", "market open"],
+      "premarket", "afternoon", "wrap", "watchlist", "market open",
+      // Hebrew morning brief patterns — ensures title-only matching even without subCategory
+      "מבזק", "מבזק לייב", "פתיחת שוק", "סקירת בוקר"],
     topicKeywords: ["macro", "news", "market", "morning", "מבזק"],
     transcriptKeywords: ["morning brief", "market update", "daily update", "this week",
       "market recap", "headline", "fed", "interest rate", "inflation", "gdp", "cpi",
@@ -493,6 +522,73 @@ export function recommendTjsGemFromTranscript(transcriptText) {
     gemIcon: TJS_GEM_META[topKey]?.icon || '📊',
     phase: 'accurate',
   };
+}
+
+// ─── Pre-Gem Classifier ──────────────────────────────────────────────────────
+// Hybrid classifier: title overrides → keyword scoring → validation fallback.
+// Returns a result with a `source` field indicating how the recommendation was made.
+// source values: 'titleOverride' | 'titleKeywords' | 'transcriptRules' | 'fallback'
+//
+// Priority order:
+//   1. TITLE_OVERRIDE_RULES (deterministic, unambiguous title patterns)
+//   2. classifyVideoForGem (keyword scoring — title + transcript)
+//   3. Validation fallback (prevent fundamental from overriding morning-brief titles)
+
+const MORNING_BRIEF_TITLE_SIGNALS = [
+  'מבזק לייב פתיחה', 'מבזק בוקר', 'morning brief', 'premarket', 'פתיחת שוק', 'סקירת בוקר',
+];
+
+export function preGemClassifier(video, transcriptText = '', options = {}) {
+  const title = String(video?.title || '').toLowerCase();
+
+  // Phase 1: Deterministic title overrides (highest priority)
+  for (const rule of TITLE_OVERRIDE_RULES) {
+    if (title.includes(rule.pattern.toLowerCase())) {
+      return {
+        gemKey: rule.gemKey,
+        gemLabel: rule.gemLabel,
+        gemIcon: rule.gemIcon,
+        confidence: 'high',
+        confidenceLabel: 'ביטחון גבוה',
+        confidencePct: 97,
+        contentType: rule.contentType,
+        source: rule.source,
+        reason: rule.reason,
+        phase: 'override',
+        recommendedCategoryCode: 'Markets',
+        recommendedCategoryLabel: 'שוק ההון',
+        recommendedSubCategory: rule.recommendedSubCategory || 'מבזקי בוקר',
+        recommendedSubCategoryConfidencePct: 97,
+      };
+    }
+  }
+
+  // Phase 2–3: Title keyword + transcript classification via existing classifier
+  const result = classifyVideoForGem(video, transcriptText, options);
+  const hasTranscript = typeof transcriptText === 'string' && transcriptText.trim().length > 200;
+  const source = hasTranscript ? 'transcriptRules' : 'titleKeywords';
+
+  // Phase 4: App-side validation fallback
+  // Morning brief titles must not be overridden to fundamental by keyword noise
+  const isMorningBriefTitle = MORNING_BRIEF_TITLE_SIGNALS.some(s => title.includes(s.toLowerCase()));
+  if (isMorningBriefTitle && result.gemKey !== 'news') {
+    return {
+      ...result,
+      gemKey: 'news',
+      gemLabel: 'מבזק בוקר',
+      gemIcon: '📰',
+      confidence: 'high',
+      confidenceLabel: 'ביטחון גבוה',
+      confidencePct: 92,
+      source: 'titleKeywords',
+      reason: 'כותרת הסרטון מזוהה כמבזק בוקר — הגם עודכן בהתאם.',
+      recommendedSubCategory: 'מבזקי בוקר',
+      recommendedCategoryCode: 'Markets',
+      recommendedCategoryLabel: 'שוק ההון',
+    };
+  }
+
+  return { ...result, source };
 }
 
 /** Related template labels for a recommended GEM (from existing subCategory rules). */

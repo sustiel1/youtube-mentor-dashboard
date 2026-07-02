@@ -107,6 +107,20 @@ node scripts/test-morning-brief-routing.mjs
 
 ---
 
+## Scope: Routing + GEM Recommendation + Gemini Prompt
+
+The Morning Brief title rule applies to ALL three layers:
+
+| Layer | What changes |
+|---|---|
+| Routing / rendering | `effectiveBriefSlug` → 'morning-brief' → `MorningBriefDashboard` |
+| GEM recommendation / auto-selection | `preGemClassifier` returns `gemKey='news'`, `source='titleOverride'` |
+| Gemini prompt selection | contentType='market' is already correct for all שוק ההון videos |
+
+Fix added 2026-06-30 (second pass): `preGemClassifier` in `gemRecommender.js` + title override in `gemRec` useMemo in `VideoDetailPanel.jsx`.
+
+---
+
 ## Files Changed (2026-06-30)
 
 | File | Change |

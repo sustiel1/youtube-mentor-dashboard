@@ -128,7 +128,7 @@ import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
-import { classifyVideoForGem, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
@@ -2552,6 +2552,14 @@ export function VideoDetailPanel({
   const gemRec = useMemo(() => {
     if (!effectiveVideo) return null;
     const transcriptText = String(effectiveVideo?.transcript || effectiveVideo?.manualTranscript || '').trim();
+
+    // Title override: highest priority — bypasses subCategory mapping and TranscriptGuard.
+    // "מבזק לייב פתיחה לתאריך" and similar patterns always route to Morning Brief.
+    const titleOverride = preGemClassifier(effectiveVideo, '');
+    if (titleOverride?.source === 'titleOverride') {
+      return titleOverride;
+    }
+
     // Priority: mentor channel → mentor name prop → stored video.category → AI
     const forcedCategoryLabel = mentorResolution?.categoryLabel ?? (effectiveVideo?.category || null);
     const firstTopicId = Array.isArray(effectiveVideo.topicIds) ? effectiveVideo.topicIds[0] : null;
