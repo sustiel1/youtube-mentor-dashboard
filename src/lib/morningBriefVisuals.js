@@ -175,17 +175,23 @@ export function toneStyles(tone) {
   return TONE_STYLES[tone] || TONE_STYLES.neutral;
 }
 
-/** CRITICAL / HIGH / MEDIUM / LOW importance badge classes. */
+/** CRITICAL / HIGH / MEDIUM-HIGH / MEDIUM / MEDIUM-LOW / LOW importance badge classes. */
 export function importanceStyles(level) {
   const l = norm(level).replace(/\s+/g, '');
   if (l.includes('critical') || l.includes('קריטי')) {
     return { label: 'CRITICAL', cls: 'bg-red-950 text-red-100 dark:bg-red-950 dark:text-red-200 border border-red-800' };
+  }
+  if (l === 'mediumhigh' || l === 'med-high' || l === 'medium-high') {
+    return { label: 'MEDIUM-HIGH', cls: 'bg-orange-200 text-orange-900 dark:bg-orange-900/60 dark:text-orange-200 border border-orange-300 dark:border-orange-700' };
   }
   if (l === 'high' || l.includes('גבוה') || l === 'highimportance') {
     return { label: 'HIGH', cls: 'bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300 border border-red-200 dark:border-red-800' };
   }
   if (l === 'medium' || l.includes('בינוני') || l === 'med') {
     return { label: 'MEDIUM', cls: 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-300 border border-orange-200 dark:border-orange-800' };
+  }
+  if (l === 'mediumlow' || l === 'medium-low') {
+    return { label: 'MEDIUM-LOW', cls: 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700' };
   }
   if (l === 'low' || l.includes('נמוך')) {
     return { label: 'LOW', cls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 border border-slate-200 dark:border-zinc-700' };

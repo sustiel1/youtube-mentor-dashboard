@@ -23,6 +23,7 @@ import {
 import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import {
   BRIEF_CELL,
   BRIEF_COL,
@@ -89,13 +90,11 @@ export function MorningBriefMarketsTable({
     return showEmpty ? <EmptyState message="אין נתוני שווקים — יוצגו כאן מדדים ומניות-מדד" /> : null;
   }
 
-  const renderMarketChange = (row) => {
+  const getMarketChangePct = (row) => {
     const contextBlob = [row.trend, row.strength, row.comment].filter(Boolean).join(' ');
     const strengthVal = String(row?.strength ?? '').trim();
     const trendVal = String(row?.trend ?? '').trim();
-    const pct = formatMarketChange(strengthVal, contextBlob) || formatMarketChange(trendVal, contextBlob);
-    if (!pct) return null;
-    return <NumericChangeSpan display={pct} />;
+    return formatMarketChange(strengthVal, contextBlob) || formatMarketChange(trendVal, contextBlob);
   };
 
   const rowDirection = (row) => getDirectionFromText(
@@ -131,7 +130,7 @@ export function MorningBriefMarketsTable({
         <tbody>
           {rows.map((row, i) => {
             const summary = formatRowText(row);
-            const changeEl = renderMarketChange(row);
+            const pct = getMarketChangePct(row);
             const direction = rowDirection(row);
             const sentKey = marketsToneToSentKey(direction.tone);
             const mergedBulk = bulkSelection
@@ -158,22 +157,33 @@ export function MorningBriefMarketsTable({
                   />
                 </td>
                 <td className={BRIEF_CELL.short}>
-                  <ExternalSymbolLink
-                    symbol={row.asset}
-                    className={`block truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}
-                  >
-                    {row.asset || '—'}
-                  </ExternalSymbolLink>
+                  <div className="flex items-center gap-1 min-w-0">
+                    <ExternalSymbolLink
+                      symbol={row.asset}
+                      className={`truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}
+                    >
+                      {row.asset || '—'}
+                    </ExternalSymbolLink>
+                    {pct?.arrow && pct.arrow !== '●' && (
+                      <span className={`shrink-0 text-base font-bold leading-none ${pct.cls}`} aria-hidden>
+                        {pct.arrow}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className={BRIEF_CELL.sentiment}>
                   <MarketsTableSentimentBadge sentKey={sentKey} />
                 </td>
                 <td className={BRIEF_CELL.change}>
-                  {changeEl || <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>}
+                  {pct ? (
+                    <NumericChangeSpan display={{ ...pct, arrow: null }} />
+                  ) : (
+                    <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+                  )}
                 </td>
                 <td className={BRIEF_CELL.notes}>
                   <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
-                    {row.comment || '—'}
+                    {renderLinkedMarketText(row.comment) || '—'}
                   </p>
                 </td>
                 <td className={BRIEF_CELL.save}>
