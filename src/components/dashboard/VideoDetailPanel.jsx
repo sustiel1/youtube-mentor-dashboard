@@ -163,7 +163,8 @@ import { GemRawModal } from "@/components/dashboard/GemRawModal";
 import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
 import { detectMarketEntityType, extractTickerFromItem, extractIndexNameFromItem } from '@/lib/detectMarketEntityType';
 import { buildTradingViewChartUrl, lookupTradingViewSymbol, getFinvizUrl } from '@/utils/finvizLinks';
-import { buildPerplexityAnalysisPrompt, PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
+import { PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
+import { buildContextualAiAnalysisPrompt } from '@/lib/aiAnalysisQuestionBank';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
 import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
@@ -5369,7 +5370,15 @@ export function VideoDetailPanel({
   const handleOpenPerplexity = useCallback(() => {
     if (multiSelected.size === 0) return;
     const allItems = [...multiSelected.values()];
-    const prompt = buildPerplexityAnalysisPrompt(allItems);
+    const dateLabel = video?.publishedAt
+      ? format(new Date(video.publishedAt), 'd MMMM yyyy', { locale: he })
+      : null;
+    const prompt = buildContextualAiAnalysisPrompt({
+      selectedItems: allItems,
+      tabSlug: activeTab,
+      sourceTitle: video?.title || '',
+      videoDate: dateLabel || '',
+    });
     if (!prompt) {
       toast.info('לא ניתן לבנות פרומפט לפריטים הנבחרים');
       return;
@@ -5378,7 +5387,7 @@ export function VideoDetailPanel({
     navigator.clipboard?.writeText(prompt).catch(() => {});
     toast.success('הפרומפט הועתק. הדבק אותו ב-Perplexity ולחץ Enter. 🤖', { duration: 5000 });
     window.open(PERPLEXITY_SPACE_URL, '_blank', 'noopener,noreferrer');
-  }, [multiSelected]);
+  }, [multiSelected, activeTab, video?.publishedAt, video?.title]);
 
   const handleCsvExport = useCallback(() => {
     if (multiSelected.size === 0) return;
