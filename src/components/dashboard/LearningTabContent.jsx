@@ -13,6 +13,7 @@ import {
 } from "@/components/shared/UniversalTabSelectRow";
 import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQuickSaveActions";
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 function formatItem(item) {
   const stockLine = formatStockStatusText(item);
@@ -137,7 +138,7 @@ function ItemRow({
             {text}
           </a>
         ) : (
-          <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{text}</span>
+          <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(text)}</span>
         )}
       </span>
     </UniversalTabSelectRow>

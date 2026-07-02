@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Link2 } from "lucide-react";
 import { loadVideos } from "@/services/videoStorage";
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 function normalizeTags(arr) {
   if (!Array.isArray(arr)) return [];
@@ -113,7 +114,7 @@ export default function RelatedKeyPointsPanel({ open, onClose, currentVideoId, c
                 className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/60 px-4 py-3 space-y-2"
               >
                 <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200">
-                  {item.text}
+                  {renderLinkedMarketText(item.text)}
                 </p>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[60%]" title={item.videoTitle}>

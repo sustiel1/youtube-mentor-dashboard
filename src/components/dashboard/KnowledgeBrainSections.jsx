@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Sparkles, Copy, Search, StickyNote, ChevronDown, ChevronUp } from "lucide-react";
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -1107,7 +1108,7 @@ function SloganCard({ text, tone, confidence, sourceIdea, useCase, onCopy }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3 text-right dark:border-zinc-800 dark:bg-zinc-950/30">
       <div className="flex items-start justify-between gap-2">
-        <span className="flex-1 text-sm font-medium leading-snug text-slate-900 dark:text-zinc-100">{text}</span>
+        <span className="flex-1 text-sm font-medium leading-snug text-slate-900 dark:text-zinc-100">{renderLinkedMarketText(text)}</span>
         <button
           type="button"
           onClick={onCopy}

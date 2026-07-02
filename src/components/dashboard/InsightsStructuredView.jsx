@@ -8,8 +8,9 @@ import {
 } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSectionLabelRow';
-import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import { mergeBulkSelection, formatBulkItemText } from '@/lib/universalTabBulkItems';
 import { DASHBOARD_TABLE_CELL_BODY_CLS } from './MorningBriefVisualPrimitives';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import {
   SUMMARY_CARD_CLASS,
   SUMMARY_CARD_TITLE_CLASS,
@@ -135,7 +136,7 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
       {insightOnly ? (
         <span className="block w-full text-right text-sm leading-[1.7] break-words whitespace-normal">
           <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>
-            {displayInsightText(cols[0].pick(row))}
+            {renderLinkedMarketText(displayInsightText(cols[0].pick(row)))}
           </span>
         </span>
       ) : (
@@ -148,7 +149,7 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
                 {col.label}
               </span>
               <span className="mt-0.5 block w-full text-right text-sm leading-[1.7] break-words whitespace-normal">
-                <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{val}</span>
+                <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(val)}</span>
               </span>
             </div>
           );
@@ -215,6 +216,14 @@ export function InsightsStructuredView({
       <div className="space-y-3" dir="rtl">
         {populatedSections.map(({ key, label, rows }) => {
           const sectionLines = rows.map((row) => rowSummary(row)).filter(Boolean);
+          const idPrefix = `${tabScope}:${key || label}`;
+          const sectionChildItems = bulkSelection ? rows.map((row, i) => ({
+            id: `${idPrefix}:${i}`,
+            text: rowSummary(row) || formatBulkItemText(row),
+            sectionLabel: label || '',
+            type: tabScope,
+            tabScope,
+          })) : null;
           return (
           <div key={key || label} className={cardClassName}>
             {label ? (
@@ -226,6 +235,7 @@ export function InsightsStructuredView({
                 type={tabScope}
                 sectionKey={key || label}
                 labelClassName={sectionLabelClassName}
+                sectionChildItems={sectionChildItems}
               />
             ) : null}
             <InsightList
@@ -233,7 +243,7 @@ export function InsightsStructuredView({
               onSaveToBrain={onSaveToBrain}
               isSaved={isSaved}
               bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
-                idPrefix: `${tabScope}:${key || label}`,
+                idPrefix,
                 sectionLabel: label || '',
                 type: tabScope,
                 tabScope,

@@ -3,6 +3,7 @@ import {
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
 } from './MorningBriefVisualPrimitives';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 export const INSIGHT_GRID_SLOT_COUNT = 3;
 
@@ -89,7 +90,7 @@ function MacroStyleInsightCardShell({
         <div className="flex-1 min-w-0 pt-0.5">
           <div className="flex items-baseline gap-2 flex-wrap" dir="rtl">
             <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>
-              {title || '—'}
+              {renderLinkedMarketText(title) || '—'}
             </p>
             {pillLabel ? (
               <span className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold leading-none ${style.badge}`}>
@@ -102,15 +103,17 @@ function MacroStyleInsightCardShell({
       </div>
       {details ? (
         <p className={`text-xs ${DASHBOARD_TABLE_CELL_BODY_CLS} mb-1 leading-relaxed line-clamp-3 break-words`}>
-          {details}
+          {renderLinkedMarketText(details)}
         </p>
       ) : null}
       {catalyst ? (
-        <p className={`text-xs italic ${DASHBOARD_TABLE_CELL_BODY_CLS} opacity-75 mb-1`}>{catalyst}</p>
+        <p className={`text-xs italic ${DASHBOARD_TABLE_CELL_BODY_CLS} opacity-75 mb-1`}>
+          {renderLinkedMarketText(catalyst)}
+        </p>
       ) : null}
       {assets ? (
         <p className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 mb-2" dir="ltr">
-          {assets}
+          {renderLinkedMarketText(assets)}
         </p>
       ) : null}
       {(pxUrl || saveActions) ? (

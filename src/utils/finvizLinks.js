@@ -750,12 +750,54 @@ const _HE_STOCK_WATCH_MAP = new Map([
   ['סופר מיקרו', 'SMCI'],
   ['רוקט לאב', 'RKLB'],
   ['וורוניס', 'VRNS'],
+  // Major company names — also used by card-text linkification
+  ['מטה',           'META'],
+  ['אנבידיה',       'NVDA'],
+  ['נבידיה',        'NVDA'],
+  ['טסלה',          'TSLA'],
+  ["לאם ריסרץ׳",    'LRCX'],
+  ["לאם ריסרץ'",    'LRCX'],
+  ['לאם ריסרץ',     'LRCX'],
+  ['לאם',           'LRCX'],
+  ['אינטל',         'INTC'],
+  ['פלנטיר',        'PLTR'],
+  ['אפל',           'AAPL'],
+  ['מיקרוסופט',     'MSFT'],
+  ['גוגל',          'GOOGL'],
+  ['אלפבית',        'GOOGL'],
+  ['נטפליקס',       'NFLX'],
 ]);
 
 /** Resolves a Hebrew company name to a US stock ticker. Returns null if unknown. */
 export function resolveHebrewStockTicker(name) {
   return _HE_STOCK_WATCH_MAP.get(String(name || '').trim()) ?? null;
 }
+
+// Sorted longest-first so the card-text regex alternation matches compound names
+// (e.g. "אפלייד מטריאלס") before their shorter prefixes (e.g. "אפל").
+export const HE_CARD_COMPANY_ALIASES = [
+  ["לאם ריסרץ׳",     'LRCX'],
+  ["לאם ריסרץ'",     'LRCX'],
+  ['אפלייד מטיריאלס', 'AMAT'],
+  ['אפלייד מטריאלס',  'AMAT'],
+  ['לאם ריסרץ',      'LRCX'],
+  ['מיקרוסופט',      'MSFT'],
+  ["סנאפצ׳אט",      'SNAP'],
+  ['אנבידיה',        'NVDA'],
+  ['נטפליקס',        'NFLX'],
+  ['ברודקום',        'AVGO'],
+  ['נבידיה',         'NVDA'],
+  ['אלפבית',         'GOOGL'],
+  ['פלנטיר',         'PLTR'],
+  ['אינטל',          'INTC'],
+  ['אמזון',          'AMZN'],
+  ['טסלה',           'TSLA'],
+  ['גוגל',           'GOOGL'],
+  ['סנאפ',           'SNAP'],
+  ['אפל',            'AAPL'],
+  ['מטה',            'META'],
+  ['לאם',            'LRCX'],
+];
 
 /**
  * Enriches a watch-today string item with ticker prefix and Finviz URL.

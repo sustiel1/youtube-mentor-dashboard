@@ -13,6 +13,7 @@ import {
 import { UNIVERSAL_TAB_CHECKBOX_COL_CLASS } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 const NEWS_CARD_SENTIMENT = {
   positive: {
@@ -104,14 +105,14 @@ export function MorningBriefNewsCard({
             {sentStyle.label}
           </span>
           <p className="flex-1 min-w-0 text-[15px] font-bold leading-snug line-clamp-2 text-slate-900 dark:text-zinc-50 break-words [overflow-wrap:anywhere]">
-            {item.title}
+            {renderLinkedMarketText(item.title)}
           </p>
         </div>
 
         {/* Row 2: Summary */}
         {item.summary ? (
           <p className={`text-sm leading-snug line-clamp-2 ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere]`}>
-            {item.summary}
+            {renderLinkedMarketText(item.summary)}
           </p>
         ) : null}
 
@@ -119,7 +120,7 @@ export function MorningBriefNewsCard({
         <p className="text-sm leading-snug break-words [overflow-wrap:anywhere]">
           <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} font-semibold`}>השפעה: </span>
           {item.impact ? (
-            <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{item.impact}</span>
+            <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(item.impact)}</span>
           ) : (
             <span className="text-slate-300 dark:text-zinc-600">—</span>
           )}

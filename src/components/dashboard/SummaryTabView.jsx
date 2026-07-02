@@ -10,6 +10,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import {
   BrainSaveToolbar,
   FundamentalKnowledgePanel,
@@ -308,7 +309,7 @@ function PoliticalNarrativeSections({ video, skipMainClaim = false }) {
     return (
       <div className={cn("rounded-xl border px-4 py-4 text-right", POLITICAL_SECTION_COLORS[color])}>
         <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-zinc-100">{title}</h4>
-        <p className="text-base leading-relaxed text-slate-800 dark:text-zinc-200">{text}</p>
+        <p className="text-base leading-relaxed text-slate-800 dark:text-zinc-200">{renderLinkedMarketText(text)}</p>
       </div>
     );
   };

@@ -2,7 +2,7 @@ import { LearningTabContent } from './LearningTabContent';
 import { CollapsibleFullSummary } from './CollapsibleFullSummary';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
 import { enrichWatchTodayItem } from '@/utils/finvizLinks';
-import { mergeBulkSelection, flattenMarketStatusItems, formatCardBulkText } from '@/lib/universalTabBulkItems';
+import { mergeBulkSelection, flattenMarketStatusItems, formatCardBulkText, formatBulkItemText } from '@/lib/universalTabBulkItems';
 import {
   SUMMARY_CARD_CLASS,
   SUMMARY_CARD_TITLE_CLASS,
@@ -11,6 +11,7 @@ import {
 import { SelectableSummaryCardHeader } from '@/components/shared/SelectableSummaryCardHeader';
 import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSectionLabelRow';
 import { cn } from '@/lib/utils';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 const TONE_STYLES = {
   Bullish: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800',
@@ -28,6 +29,16 @@ const TONE_DISPLAY = {
   'High volatility': 'תנודתיות גבוהה',
 };
 
+function buildCardChildItems(items, cardId, { sectionLabel = '', type = 'summary', tabScope = 'summary' } = {}) {
+  return items.map((item, i) => ({
+    id: `summary:${cardId}:${i}`,
+    text: formatBulkItemText(item),
+    sectionLabel,
+    type,
+    tabScope,
+  }));
+}
+
 function BriefingCard({
   title,
   cardId,
@@ -38,6 +49,10 @@ function BriefingCard({
   if (!children) return null;
   const cardText = formatCardBulkText(title, cardItems);
   const hasCardBulk = bulkSelection && cardId && cardText;
+
+  const sectionChildItems = (hasCardBulk && cardItems.length > 0)
+    ? buildCardChildItems(cardItems, cardId, { sectionLabel: title, type: 'summary', tabScope: 'summary' })
+    : null;
 
   return (
     <div className={cn(SUMMARY_CARD_CLASS, hasCardBulk && 'group/card')}>
@@ -52,6 +67,7 @@ function BriefingCard({
           sectionLabel={title}
           titleClassName={SUMMARY_CARD_TITLE_CLASS.replace(' mb-2', '')}
           headerRowClassName="pt-0 pb-2 mb-2 border-b border-slate-200/60 dark:border-zinc-700/60"
+          sectionChildItems={sectionChildItems}
         />
       ) : title ? (
         <UniversalTabSectionLabelRow
@@ -81,10 +97,10 @@ function BulletList({ items, leadFirst = false }) {
           )}
         >
           {leadFirst && i === 0 ? (
-            <p className={SUMMARY_LEAD_CLASS}>{text}</p>
+            <p className={SUMMARY_LEAD_CLASS}>{renderLinkedMarketText(text)}</p>
           ) : (
             <>
-              <span className="flex-1 text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">{text}</span>
+              <span className="flex-1 text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">{renderLinkedMarketText(text)}</span>
               <span className="text-slate-400 shrink-0">•</span>
             </>
           )}
@@ -100,7 +116,7 @@ function ChecklistList({ items }) {
     <ul className="space-y-1.5 text-right" dir="rtl">
       {items.map((text, i) => (
         <li key={i} className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed flex items-start gap-2 justify-end">
-          <span className="flex-1">{text}</span>
+          <span className="flex-1">{renderLinkedMarketText(text)}</span>
           <span className="text-slate-500 shrink-0 font-mono text-xs">□</span>
         </li>
       ))}
@@ -119,12 +135,12 @@ function MarketStatusBlock({ status }) {
       {status.factors.length > 0 && (
         <ul className="space-y-1">
           {status.factors.map((f, i) => (
-            <li key={i} className="text-sm text-slate-700 dark:text-zinc-300">• {f}</li>
+            <li key={i} className="text-sm text-slate-700 dark:text-zinc-300">• {renderLinkedMarketText(f)}</li>
           ))}
         </ul>
       )}
       {status.explanation && status.explanation !== status.tone && (
-        <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">{status.explanation}</p>
+        <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">{renderLinkedMarketText(status.explanation)}</p>
       )}
     </div>
   );

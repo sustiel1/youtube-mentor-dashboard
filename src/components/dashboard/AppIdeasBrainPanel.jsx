@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { CircleHelp } from 'lucide-react';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import {
   APP_IDEAS_BRAIN_SECTIONS,
   extractAppIdeas,
@@ -78,11 +79,11 @@ function BrainListEntry({ item, isSelected, onToggle, bulkSelection = null }) {
       )}
     >
       <p className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100 leading-relaxed">
-        {displayTitle}
+        {renderLinkedMarketText(displayTitle)}
       </p>
       {displayBody && (
         <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1 leading-relaxed whitespace-pre-wrap">
-          {displayBody}
+          {renderLinkedMarketText(displayBody)}
         </p>
       )}
     </UniversalTabSelectRow>

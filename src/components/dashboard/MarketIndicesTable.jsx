@@ -2,6 +2,7 @@ import { formatMarketChange } from '@/lib/morningBriefVisuals';
 import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
 import { getExternalSymbolUrl } from '@/utils/finvizLinks';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
 function parseIndexItem(raw) {
   if (!raw) return null;
@@ -301,7 +302,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                 <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 mb-1">ערך: {row.level}</p>
               )}
               {row.note && (
-                <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">{row.note}</p>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">{renderLinkedMarketText(row.note)}</p>
               )}
               {onSaveToBrain && (
                 <button

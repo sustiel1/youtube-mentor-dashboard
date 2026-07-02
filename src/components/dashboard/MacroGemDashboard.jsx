@@ -11,6 +11,7 @@ import { TabBulkItemsRegistrar } from './TabBulkItemsRegistrar';
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { resolveFinvizTicker } from '@/utils/finvizLinks';
+import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { MarketSectorTable } from './MarketSectorTable';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
@@ -376,7 +377,7 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                     )}
                   </td>
                   <td className="px-2 py-2 align-middle">
-                    <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{company || '—'}</span>
+                    <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{company ? renderLinkedMarketText(company) : '—'}</span>
                   </td>
                   <td className="px-2 py-2 align-middle">
                     <MacroSentimentCell value={sent} />
@@ -386,7 +387,7 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                       className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}
                       title={reason || undefined}
                     >
-                      {reason || '—'}
+                      {renderLinkedMarketText(reason) || '—'}
                     </p>
                   </td>
                   <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
@@ -655,7 +656,7 @@ function MacroResearchSection({ title, items, sectionKey, formatItem, pxUrlBuild
                 </div>
               )}
               <span className="mt-1.5 text-indigo-300 dark:text-indigo-600 shrink-0 select-none text-[10px]">▸</span>
-              <p className={`flex-1 text-sm leading-relaxed ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] whitespace-pre-line`}>{text}</p>
+              <p className={`flex-1 text-sm leading-relaxed ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] whitespace-pre-line`}>{renderLinkedMarketText(text)}</p>
               <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <MacroSaveCluster text={text} sectionKey={sectionKey} sectionLabel={title} onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
               </div>
@@ -920,7 +921,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
               {/* Content block */}
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-semibold leading-snug ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>
-                  {text}
+                  {renderLinkedMarketText(text)}
                 </p>
                 {recommendation && (
                   <p className="text-xs mt-1 text-emerald-700 dark:text-emerald-400 font-medium leading-snug">
@@ -928,7 +929,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
                   </p>
                 )}
                 {!recommendation && details && (
-                  <p className={`text-sm mt-0.5 ${DASHBOARD_TABLE_CELL_BODY_CLS} leading-snug`}>{details}</p>
+                  <p className={`text-sm mt-0.5 ${DASHBOARD_TABLE_CELL_BODY_CLS} leading-snug`}>{renderLinkedMarketText(details)}</p>
                 )}
                 {dateStr && (
                   <div className="mt-1 flex items-center gap-1 text-xs text-slate-400 dark:text-zinc-500 whitespace-nowrap">
@@ -1250,7 +1251,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-baseline gap-2 flex-wrap" dir="rtl">
-                    <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
+                    <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{renderLinkedMarketText(title) || '—'}</p>
                     {type && (
                       <span className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold leading-none ${style.badge}`}>
                         {translateOppType(type)}
@@ -1266,13 +1267,13 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
               </div>
               {/* details */}
               {details && (
-                <p className={`text-xs ${DASHBOARD_TABLE_CELL_BODY_CLS} mb-1 leading-relaxed line-clamp-3 break-words`}>{details}</p>
+                <p className={`text-xs ${DASHBOARD_TABLE_CELL_BODY_CLS} mb-1 leading-relaxed line-clamp-3 break-words`}>{renderLinkedMarketText(details)}</p>
               )}
               {catalyst && (
-                <p className={`text-xs italic ${DASHBOARD_TABLE_CELL_BODY_CLS} opacity-75 mb-1`}>{catalyst}</p>
+                <p className={`text-xs italic ${DASHBOARD_TABLE_CELL_BODY_CLS} opacity-75 mb-1`}>{renderLinkedMarketText(catalyst)}</p>
               )}
               {assets && (
-                <p className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 mb-2" dir="ltr">{assets}</p>
+                <p className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 mb-2" dir="ltr">{renderLinkedMarketText(assets)}</p>
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
@@ -1347,7 +1348,7 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-baseline gap-2 flex-wrap" dir="rtl">
-                    <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{title || '—'}</p>
+                    <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>{renderLinkedMarketText(title) || '—'}</p>
                     {severity && (
                       <span className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold leading-none ${style.badge}`}>
                         {severity}
@@ -1363,10 +1364,10 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
               </div>
               {/* details */}
               {details && (
-                <p className={`text-xs ${DASHBOARD_TABLE_CELL_BODY_CLS} mb-1 leading-relaxed line-clamp-3 break-words`}>{details}</p>
+                <p className={`text-xs ${DASHBOARD_TABLE_CELL_BODY_CLS} mb-1 leading-relaxed line-clamp-3 break-words`}>{renderLinkedMarketText(details)}</p>
               )}
               {affected && (
-                <p className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 mb-2" dir="ltr">{affected}</p>
+                <p className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 mb-2" dir="ltr">{renderLinkedMarketText(affected)}</p>
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
@@ -1656,7 +1657,7 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                   <MacroSentimentCell value={direction} />
                 </td>
                 <td className="px-2 py-2 align-middle max-w-[22rem]">
-                  <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}>{reason || '—'}</p>
+                  <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}>{renderLinkedMarketText(reason) || '—'}</p>
                 </td>
                 <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
                   <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxPxUrl} />
