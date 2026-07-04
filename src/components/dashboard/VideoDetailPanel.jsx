@@ -165,6 +165,9 @@ import { detectMarketEntityType, extractTickerFromItem, extractIndexNameFromItem
 import { buildTradingViewChartUrl, lookupTradingViewSymbol, getFinvizUrl } from '@/utils/finvizLinks';
 import { PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
 import { buildContextualAiAnalysisPrompt } from '@/lib/aiAnalysisQuestionBank';
+import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
+import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
+import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
 import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
@@ -2063,6 +2066,9 @@ export function VideoDetailPanel({
   const [transcriptDiagnostics, setTranscriptDiagnostics] = useState(null);
   const [isCheckingTranscript, setIsCheckingTranscript] = useState(false);
   const [isAutoTranscriptModalOpen, setIsAutoTranscriptModalOpen] = useState(false);
+  const [isPerplexityQuestionsOpen, setIsPerplexityQuestionsOpen] = useState(false);
+  const [perplexityQuestions, setPerplexityQuestions] = useState([]);
+  const [isFixedQuestionsOpen, setIsFixedQuestionsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
   const prevTabRef = useRef("summary");
   const appBuilderBulkRef = useRef(null);
@@ -5388,6 +5394,23 @@ export function VideoDetailPanel({
     toast.success('הפרומפט הועתק. הדבק אותו ב-Perplexity ולחץ Enter. 🤖', { duration: 5000 });
     window.open(PERPLEXITY_SPACE_URL, '_blank', 'noopener,noreferrer');
   }, [multiSelected, activeTab, video?.publishedAt, video?.title]);
+
+  const handleOpenPerplexityQuestions = useCallback(() => {
+    if (multiSelected.size === 0) return;
+    const allItems = [...multiSelected.values()];
+    const questions = generatePerplexityQuestions(allItems);
+    if (!questions.length) {
+      toast.info('לא נמצאו שאלות מתאימות לפריטים הנבחרים');
+      return;
+    }
+    setPerplexityQuestions(questions);
+    setIsPerplexityQuestionsOpen(true);
+  }, [multiSelected]);
+
+  const handleOpenFixedQuestions = useCallback(() => {
+    if (multiSelected.size === 0) return;
+    setIsFixedQuestionsOpen(true);
+  }, [multiSelected]);
 
   const handleCsvExport = useCallback(() => {
     if (multiSelected.size === 0) return;
@@ -11537,6 +11560,8 @@ export function VideoDetailPanel({
           onCsvExport={handleCsvExport}
           onAiAnalyze={handleOpenTradingView}
           onPerplexity={handleOpenPerplexity}
+          onPerplexityQuestions={handleOpenPerplexityQuestions}
+          onFixedQuestions={handleOpenFixedQuestions}
         />
 
       </DialogContent>
@@ -12460,6 +12485,18 @@ export function VideoDetailPanel({
         </div>
       </DialogContent>
     </Dialog>
+
+    <PerplexityQuestionPanel
+      isOpen={isPerplexityQuestionsOpen}
+      onClose={() => setIsPerplexityQuestionsOpen(false)}
+      questions={perplexityQuestions}
+    />
+
+    <FixedQuestionsPanel
+      isOpen={isFixedQuestionsOpen}
+      onClose={() => setIsFixedQuestionsOpen(false)}
+      selectedItems={entriesForActiveTab}
+    />
 
     </>
   );

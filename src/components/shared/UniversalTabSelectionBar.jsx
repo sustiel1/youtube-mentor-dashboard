@@ -11,6 +11,8 @@ export function UniversalTabSelectionBar({
   onClear,
   onAiAnalyze,
   onPerplexity,
+  onPerplexityQuestions,
+  onFixedQuestions,
   onCsvExport,
   disabled = false,
 }) {
@@ -102,6 +104,17 @@ export function UniversalTabSelectionBar({
             className="flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
           >
             🤖 נתח עם AI
+          </button>
+        )}
+        {onFixedQuestions && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onFixedQuestions}
+            title="שאלות לפי כותרת הסקציה, כולל העתקת הפריט"
+            className="flex items-center gap-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            📋 שאלות לפי כותרת
           </button>
         )}
       </div>
