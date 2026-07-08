@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { getFixedQuestionsForItems, buildFixedCopyText } from '@/lib/fixedQuestionBank';
+import { MARKET_BRIEF_SPACE_URL } from '@/lib/perplexitySpaces';
 import {
   Dialog,
   DialogContent,
@@ -156,7 +157,7 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
               סגור
             </button>
             <a
-              href="https://www.perplexity.ai"
+              href={MARKET_BRIEF_SPACE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap"
