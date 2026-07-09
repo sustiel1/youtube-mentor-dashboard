@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { LearningTabContent } from './LearningTabContent';
 import { CollapsibleFullSummary } from './CollapsibleFullSummary';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
 import { enrichWatchTodayItem } from '@/utils/finvizLinks';
+import { getManualFinvizMappings } from '@/utils/manualFinvizMappings';
+import { FinvizMappingModal } from '@/components/shared/FinvizMappingModal';
 import { mergeBulkSelection, flattenMarketStatusItems, formatCardBulkText, formatBulkItemText } from '@/lib/universalTabBulkItems';
 import {
   SUMMARY_CARD_CLASS,
@@ -162,6 +165,9 @@ export function SummaryBriefingView({
   bulkSelection = null,
   children = null,
 }) {
+  const [manualMappings, setManualMappings] = useState(() => getManualFinvizMappings());
+  const [connectModal, setConnectModal] = useState(null);
+
   const briefing = briefingProp ?? buildDailyBriefingView({
     effectiveVideo,
     marketBriefData,
@@ -180,11 +186,44 @@ export function SummaryBriefingView({
   const fullSummaryItems = briefing.fullSummaryText ? [briefing.fullSummaryText] : [];
   const execItems = briefing.executiveConclusion ?? [];
 
-  const watchEnriched = briefing.watchToday.map(enrichWatchTodayItem);
+  const watchEnriched = briefing.watchToday.map((raw) => {
+    const result = enrichWatchTodayItem(raw);
+    const originalRaw = String(raw || '').trim();
+    if (!result.finvizUrl) {
+      const entry = manualMappings[originalRaw];
+      if (entry?.ticker) {
+        return {
+          displayText: `${entry.ticker} · ${originalRaw}`,
+          ticker: entry.ticker,
+          finvizUrl: `https://finviz.com/quote.ashx?t=${encodeURIComponent(entry.ticker)}&p=d`,
+          originalRaw,
+        };
+      }
+    }
+    return { ...result, originalRaw };
+  });
   const watchTexts = watchEnriched.map((w) => w.displayText);
   const watchUrlByText = new Map(
     watchEnriched.filter((w) => w.finvizUrl).map((w) => [w.displayText, w.finvizUrl]),
   );
+  const watchOriginalByText = new Map(
+    watchEnriched.map((w) => [w.displayText, w.originalRaw]),
+  );
+
+  function getWatchConnectButton(text) {
+    if (watchUrlByText.has(text)) return null;
+    const originalName = watchOriginalByText.get(text) ?? text;
+    return (
+      <button
+        type="button"
+        onClick={() => setConnectModal({ originalName })}
+        title="חבר לפינביז"
+        className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-xs leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
+      >
+        🔗
+      </button>
+    );
+  }
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -261,6 +300,7 @@ export function SummaryBriefingView({
               onSaveToBrain={(text) => brain(text, 'מה לעקוב היום')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
               getItemUrl={(text) => watchUrlByText.get(text) ?? null}
+              getConnectButton={getWatchConnectButton}
               bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
                 idPrefix: 'summary:watch',
                 sectionLabel: 'מה לעקוב היום',
@@ -389,6 +429,14 @@ export function SummaryBriefingView({
             </>
           )}
         </BriefingCard>
+      )}
+
+      {connectModal && (
+        <FinvizMappingModal
+          originalName={connectModal.originalName}
+          onSaved={() => setManualMappings(getManualFinvizMappings())}
+          onClose={() => setConnectModal(null)}
+        />
       )}
     </div>
   );
