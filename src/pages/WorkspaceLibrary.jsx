@@ -395,6 +395,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             category: editItem.category,
             subCategory: editItem.subCategory,
           }}
+          sourceTab={editItem.sourceTab || null}
           onSaved={() => {
             setEditItem(null);
             reloadItems();

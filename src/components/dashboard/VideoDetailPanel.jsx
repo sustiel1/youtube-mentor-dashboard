@@ -2040,6 +2040,28 @@ function getJsonErrorContext(raw, pos, linesBefore = 3, linesAfter = 3) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+function getWorkspaceSourceTab(tabValue) {
+  const MAP = {
+    'summary':             'Summary',
+    'chapters':            'Chapters',
+    'insights':            'Insights',
+    'useful-knowledge':    'Insights',
+    'app-builder':         'App Builder',
+    'topics-subtopics':    'Topics',
+    'specialized':         'Specialized',
+    'market-news':         'Market Brief',
+    'indices':             'Market Brief',
+    'stocks-mentioned':    'Market Brief',
+    'brief-risks':         'Market Brief',
+    'brief-opportunities': 'Market Brief',
+    'brief-conclusions':   'Market Brief',
+    'ai-analysis':         'Market Brief',
+    'political':           'Political',
+    'transcript':          'Transcript',
+  };
+  return MAP[tabValue] || 'Manual';
+}
+
 export function VideoDetailPanel({
   video: videoProp,
   mentorName,
@@ -2160,6 +2182,7 @@ export function VideoDetailPanel({
   const [psCardDropOpen, setPsCardDropOpen] = useState(null); // saveKey of open card dropdown
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [workspaceSaveOpen, setWorkspaceSaveOpen] = useState(false);
+  const [workspaceSourceTab, setWorkspaceSourceTab] = useState(null);
   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
@@ -8387,7 +8410,7 @@ export function VideoDetailPanel({
                 <SaveButton isSaved={video.isSaved} onClick={() => onSaveToggle?.(video)} size="md" />
                 <button
                   type="button"
-                  onClick={() => setWorkspaceSaveOpen(true)}
+                  onClick={() => { setWorkspaceSourceTab(getWorkspaceSourceTab(activeTab)); setWorkspaceSaveOpen(true); }}
                   title={isInWorkspaceLib ? (isWorkspaceMappingCurrent ? 'עדכן ב-Workspace Library' : 'עדכן מיפוי ב-Workspace Library') : 'שמור ל-Workspace Library'}
                   className={cn(
                     'shrink-0 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all whitespace-nowrap',
@@ -8989,7 +9012,7 @@ export function VideoDetailPanel({
                       label: 'Workspace',
                       sub: currentWorkspaceDestinationLabel,
                       cn: 'text-indigo-700 dark:text-indigo-300',
-                      onClick: isInWorkspaceLib && isWorkspaceMappingCurrent ? handleOpenInWorkspace : () => setWorkspaceSaveOpen(true),
+                      onClick: isInWorkspaceLib && isWorkspaceMappingCurrent ? handleOpenInWorkspace : () => { setWorkspaceSourceTab(getWorkspaceSourceTab(activeTab)); setWorkspaceSaveOpen(true); },
                       status: { ok: isWorkspaceMappingCurrent, okLabel: 'נשמר', failLabel: 'לא נשמר' },
                     },
                   ].map(({ id, emoji, label, sub, cn, onClick, disabled, status, labelCn, subCn }) => (
@@ -12251,6 +12274,7 @@ export function VideoDetailPanel({
       open={workspaceSaveOpen}
       onOpenChange={setWorkspaceSaveOpen}
       video={effectiveVideo}
+      sourceTab={workspaceSourceTab}
       onSaved={({ topicName, subTopicName } = {}) => {
         setWorkspaceSaveOpen(false);
         // Propagate topic change through React Query so video cards + header refresh
