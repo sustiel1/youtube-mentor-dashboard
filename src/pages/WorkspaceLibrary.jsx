@@ -24,6 +24,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [filterFavorite, setFilterFavorite] = useState(false);
   const [filterImportant, setFilterImportant] = useState(false);
   const [filterMustWatch, setFilterMustWatch] = useState(false);
+  const [filterTags, setFilterTags] = useState([]);
+  const [filterSourceTab, setFilterSourceTab] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -36,6 +38,18 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     [filterTopicId, getSubTopics]
   );
 
+  const allTags = useMemo(() => {
+    const tagSet = new Set();
+    items.forEach(i => (i.tags || []).forEach(t => tagSet.add(t)));
+    return [...tagSet].sort();
+  }, [items]);
+
+  const allSourceTabs = useMemo(() => {
+    const tabSet = new Set();
+    items.forEach(i => { if (i.sourceTab) tabSet.add(i.sourceTab); });
+    return [...tabSet].sort();
+  }, [items]);
+
   const filteredItems = useMemo(() => {
     let result = [...items];
 
@@ -45,7 +59,9 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         (i.videoTitle || '').toLowerCase().includes(q) ||
         (i.channelName || '').toLowerCase().includes(q) ||
         (i.notes || '').toLowerCase().includes(q) ||
-        (i.topicName || '').toLowerCase().includes(q)
+        (i.topicName || '').toLowerCase().includes(q) ||
+        (i.tags || []).some(tag => tag.toLowerCase().includes(q)) ||
+        (i.sourceTab || '').toLowerCase().includes(q)
       );
     }
 
@@ -54,13 +70,27 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     if (filterFavorite) result = result.filter(i => i.flags?.isFavorite);
     if (filterImportant) result = result.filter(i => i.flags?.isImportant);
     if (filterMustWatch) result = result.filter(i => i.flags?.mustWatchAgain);
+    if (filterTags.length > 0) {
+      result = result.filter(i => {
+        const itemTags = i.tags || [];
+        return filterTags.some(tag => itemTags.includes(tag));
+      });
+    }
+    if (filterSourceTab) result = result.filter(i => (i.sourceTab || null) === filterSourceTab);
 
     if (sortBy === 'newest') result.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
     else if (sortBy === 'oldest') result.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
     else if (sortBy === 'title') result.sort((a, b) => (a.videoTitle || '').localeCompare(b.videoTitle || '', 'he'));
+    else if (sortBy === 'priority') {
+      const score = item =>
+        (item.flags?.isImportant ? 4 : 0) +
+        (item.flags?.isFavorite  ? 2 : 0) +
+        (item.flags?.mustWatchAgain ? 1 : 0);
+      result.sort((a, b) => score(b) - score(a) || new Date(b.savedAt) - new Date(a.savedAt));
+    }
 
     return result;
-  }, [items, search, filterTopicId, filterSubTopicId, filterFavorite, filterImportant, filterMustWatch, sortBy]);
+  }, [items, search, filterTopicId, filterSubTopicId, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
 
   const topicVideoCount = useMemo(() => {
     const counts = {};
@@ -69,6 +99,13 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     }
     return counts;
   }, [items]);
+
+  const handleDeleteTopic = (id) => {
+    const result = deleteTopic(id);
+    if (!result?.ok) {
+      toast.error(`לא ניתן למחוק — ${result.count} פריטים שמורים תחת נושא זה`);
+    }
+  };
 
   const handleVideoClick = (item) => {
     const fullVideo = videos.find(v => v.id === item.videoId || v.videoId === item.videoId);
@@ -168,7 +205,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             getSubTopics={getSubTopics}
             addTopic={addTopic}
             updateTopic={updateTopic}
-            deleteTopic={deleteTopic}
+            deleteTopic={handleDeleteTopic}
             onClose={() => setManageTopicsOpen(false)}
           />
         )}
@@ -227,8 +264,78 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             <option value="newest">חדשים ראשון</option>
             <option value="oldest">ישנים ראשון</option>
             <option value="title">לפי כותרת</option>
+            <option value="priority">לפי עדיפות</option>
           </select>
         </div>
+
+        {/* Tag filters */}
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 items-center" dir="rtl">
+            <span className="text-[11px] text-slate-400 dark:text-zinc-600 ml-1">תגיות:</span>
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() =>
+                  setFilterTags(prev =>
+                    prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                  )
+                }
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                  filterTags.includes(tag)
+                    ? 'border-indigo-500 bg-indigo-500 text-white'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                )}
+              >
+                #{tag}
+              </button>
+            ))}
+            {filterTags.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilterTags([])}
+                className="text-[11px] text-slate-400 hover:text-red-400 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
+              >
+                נקה תגיות
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* SourceTab filter */}
+        {allSourceTabs.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center" dir="rtl">
+            <span className="text-[11px] text-slate-400 dark:text-zinc-600">מקור:</span>
+            <button
+              type="button"
+              onClick={() => setFilterSourceTab('')}
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                !filterSourceTab
+                  ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
+              )}
+            >
+              הכל
+            </button>
+            {allSourceTabs.map(tab => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setFilterSourceTab(prev => prev === tab ? '' : tab)}
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                  filterSourceTab === tab
+                    ? 'border-violet-500 bg-violet-500 text-white'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Video grid */}
         {filteredItems.length === 0 ? (
@@ -399,9 +506,28 @@ function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit }) {
           </p>
         )}
 
+        {/* Tags */}
+        {(item.tags || []).length > 0 && (
+          <div className="flex flex-wrap gap-1 justify-end">
+            {(item.tags || []).map(tag => (
+              <span
+                key={tag}
+                className="rounded-full border border-indigo-100 bg-indigo-50 px-1.5 py-0.5 text-[9px] font-medium text-indigo-600 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-400"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
           <span className="text-[10px] text-slate-400 dark:text-zinc-600">{savedDate}</span>
+          {item.sourceTab && (
+            <span className="text-[9px] rounded-md border border-slate-100 dark:border-zinc-800 px-1.5 py-0.5 text-slate-400 dark:text-zinc-600">
+              {item.sourceTab}
+            </span>
+          )}
         </div>
       </div>
     </div>

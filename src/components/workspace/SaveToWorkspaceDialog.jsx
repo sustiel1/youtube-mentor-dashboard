@@ -35,7 +35,7 @@ function detectSubTopic(video, topics, mainTopicId) {
   return subs.find(t => String(t.name || '').trim().toLowerCase() === sub)?.id || null;
 }
 
-export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
+export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sourceTab = null }) {
   const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
 
   const [topicId, setTopicId] = useState('');
@@ -47,6 +47,8 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
   const [showNewTopic, setShowNewTopic] = useState(false);
   const [newSubName, setNewSubName] = useState('');
   const [showNewSub, setShowNewSub] = useState(false);
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (!open || !video) return;
@@ -57,6 +59,8 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
       setSubTopicId(existing.subTopicId || '');
       setNotes(existing.notes || '');
       setFlags(existing.flags || { isFavorite: false, isImportant: false, mustWatchAgain: false });
+      setTags(existing.tags || []);
+      setTagInput('');
       setAutoDetected(false);
       return;
     }
@@ -78,6 +82,8 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
     }
     setNotes('');
     setFlags({ isFavorite: false, isImportant: false, mustWatchAgain: false });
+    setTags([]);
+    setTagInput('');
     setShowNewTopic(false);
     setShowNewSub(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,6 +116,8 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
       subTopicName,
       notes,
       flags,
+      tags,
+      sourceTab: sourceTab || null,
       autoDetected,
       category: topicName || video?.category || null,
       subCategory: subTopicName || video?.subCategory || null,
@@ -143,6 +151,22 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
     setShowNewSub(false);
     setAutoDetected(false);
   };
+
+  function commitTag(raw) {
+    const t = raw.trim().toLowerCase().replace(/^#/, '');
+    if (t && !tags.includes(t)) setTags(prev => [...prev, t]);
+    setTagInput('');
+  }
+
+  function handleTagKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      commitTag(tagInput);
+    }
+    if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      setTags(prev => prev.slice(0, -1));
+    }
+  }
 
   if (!video) return null;
 
@@ -191,6 +215,13 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
               <span>זוהה אוטומטית — ניתן לשנות לפי הצורך</span>
             </div>
           )}
+
+          {/* Taxonomy helper */}
+          <div className="rounded-lg border border-slate-100 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-[11px] text-slate-500 dark:text-zinc-500 space-y-0.5" dir="rtl">
+            <p>• <span className="font-semibold">נושא ראשי</span> — קטגוריה רחבה וקבועה (למשל: שוק ההון, מסחר טכני)</p>
+            <p>• <span className="font-semibold">תת-נושא</span> — סיווג פנימי שחוזר (למשל: RSI, ריבית / פד)</p>
+            <p>• שם סרטון, יוצר ותאריך אפשר לציין בהערות — לא בשם הנושא</p>
+          </div>
 
           {/* Topic selector */}
           <div className="space-y-1.5">
@@ -334,6 +365,53 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved }) {
               placeholder="הוסף הערות אישיות לסרטון..."
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-right placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 resize-none"
             />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
+              תגיות <span className="font-normal text-slate-400 dark:text-zinc-500">(אופציונלי — הפרד בפסיק או Enter)</span>
+            </label>
+            <div
+              className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 px-2.5 py-2 min-h-[40px] cursor-text"
+              onClick={() => document.getElementById('ws-tag-input')?.focus()}
+            >
+              {tags.map(tag => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:text-indigo-300"
+                >
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setTags(prev => prev.filter(t => t !== tag)); }}
+                    className="text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 leading-none"
+                    aria-label={`הסר תגית ${tag}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                id="ws-tag-input"
+                type="text"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}
+                placeholder={tags.length === 0 ? 'nvda, ריבית, פד...' : ''}
+                dir="ltr"
+                className="flex-1 min-w-[80px] bg-transparent text-xs text-slate-700 dark:text-zinc-300 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Source indicator */}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-zinc-600" dir="rtl">
+            <span>מקור:</span>
+            <span className="rounded-md border border-slate-200 dark:border-zinc-700 px-1.5 py-0.5 font-medium text-slate-500 dark:text-zinc-500">
+              {sourceTab || 'Manual'}
+            </span>
           </div>
 
           {/* Flags */}

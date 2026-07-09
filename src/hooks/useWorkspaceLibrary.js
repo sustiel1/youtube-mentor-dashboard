@@ -27,8 +27,9 @@ export function useWorkspaceTopics() {
   }, []);
 
   const deleteTopic = useCallback((id) => {
-    deleteWorkspaceTopic(id);
+    const result = deleteWorkspaceTopic(id);
     setTopics(getWorkspaceTopics());
+    return result;
   }, []);
 
   const mainTopics = topics.filter(t => !t.parentId);

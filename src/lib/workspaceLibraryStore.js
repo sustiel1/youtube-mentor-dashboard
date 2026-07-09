@@ -1,47 +1,18 @@
+import { DEFAULT_WORKSPACE_TOPICS } from '@/config/workspaceTaxonomy';
+
 const ITEMS_KEY = 'workspace_library_v1';
 const TOPICS_KEY = 'workspace_topics_v1';
-const SEED_DATE = '2024-01-01T00:00:00.000Z';
-
-const DEFAULT_TOPICS = [
-  { id: 'wt-politics', name: 'פוליטיקה', parentId: null, emoji: '🏛', createdAt: SEED_DATE },
-  { id: 'wt-politics-judicial', name: 'רפורמה משפטית', parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-politics-religion', name: 'דת ומדינה', parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-politics-security', name: 'ביטחון', parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-politics-arab-jewish', name: 'יחסי ערבים-יהודים', parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-politics-economy', name: 'כלכלה פוליטית', parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
-
-  { id: 'wt-markets', name: 'שוק ההון', parentId: null, emoji: '📈', createdAt: SEED_DATE },
-  { id: 'wt-markets-fundamental', name: 'ניתוח פונדמנטלי', parentId: 'wt-markets', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-markets-technical', name: 'ניתוח טכני', parentId: 'wt-markets', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-markets-macro', name: 'מקרו', parentId: 'wt-markets', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-markets-etf', name: 'ETF', parentId: 'wt-markets', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-markets-value', name: 'השקעת ערך', parentId: 'wt-markets', emoji: null, createdAt: SEED_DATE },
-
-  { id: 'wt-ai', name: 'בינה מלאכותית וטכנולוגיה', parentId: null, emoji: '🤖', createdAt: SEED_DATE },
-  { id: 'wt-ai-tools', name: 'כלי AI', parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-ai-automation', name: 'אוטומציה', parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-ai-programming', name: 'תכנות', parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-ai-agents', name: 'סוכנים', parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
-
-  { id: 'wt-health', name: 'בריאות ותזונה', parentId: null, emoji: '🥗', createdAt: SEED_DATE },
-  { id: 'wt-health-keto', name: 'קטו', parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-health-diabetes', name: 'סוכרת', parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-health-nutrition', name: 'תזונה', parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
-  { id: 'wt-health-exercise', name: 'ספורט', parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
-
-  { id: 'wt-general', name: 'כללי', parentId: null, emoji: '📁', createdAt: SEED_DATE },
-];
 
 // ─── Topics ───────────────────────────────────────────────────────────────────
 
 export function getWorkspaceTopics() {
   try {
     const raw = localStorage.getItem(TOPICS_KEY);
-    if (!raw) return [...DEFAULT_TOPICS];
+    if (!raw) return [...DEFAULT_WORKSPACE_TOPICS];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_TOPICS];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_WORKSPACE_TOPICS];
   } catch {
-    return [...DEFAULT_TOPICS];
+    return [...DEFAULT_WORKSPACE_TOPICS];
   }
 }
 
@@ -73,10 +44,30 @@ export function updateWorkspaceTopic(id, updates) {
   saveWorkspaceTopics(topics);
 }
 
+/**
+ * Returns { ok: true } on success.
+ * Returns { ok: false, count: N } if saved items reference this topic (or its sub-topics),
+ * in which case nothing is deleted.
+ */
 export function deleteWorkspaceTopic(id) {
-  let topics = getWorkspaceTopics();
-  topics = topics.filter(t => t.id !== id && t.parentId !== id);
-  saveWorkspaceTopics(topics);
+  const allTopics = getWorkspaceTopics();
+  const items = getWorkspaceItems();
+
+  const idsToDelete = new Set([
+    id,
+    ...allTopics.filter(t => t.parentId === id).map(t => t.id),
+  ]);
+
+  const affectedCount = items.filter(
+    i => idsToDelete.has(i.topicId) || idsToDelete.has(i.subTopicId)
+  ).length;
+
+  if (affectedCount > 0) {
+    return { ok: false, count: affectedCount };
+  }
+
+  saveWorkspaceTopics(allTopics.filter(t => !idsToDelete.has(t.id)));
+  return { ok: true, count: 0 };
 }
 
 // ─── Items ────────────────────────────────────────────────────────────────────
