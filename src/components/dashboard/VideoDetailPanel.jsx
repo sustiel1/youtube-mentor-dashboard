@@ -146,6 +146,7 @@ import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGenerat
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
+import { WorkspaceSaveReviewOverlay } from "@/components/workspace/WorkspaceSaveReviewOverlay";
 import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
 import { SubTopicPillDropdown } from "@/components/dashboard/SubTopicPillDropdown";
 import { SummaryTextSaveMenu } from "@/components/dashboard/SummaryTextSaveMenu";
@@ -2183,6 +2184,9 @@ export function VideoDetailPanel({
   const [brainPickerOpen, setBrainPickerOpen] = useState(false);
   const [workspaceSaveOpen, setWorkspaceSaveOpen] = useState(false);
   const [workspaceSourceTab, setWorkspaceSourceTab] = useState(null);
+  const [workspaceDraftOpen, setWorkspaceDraftOpen] = useState(false);
+  const [workspaceDraftItems, setWorkspaceDraftItems] = useState([]);
+  const [workspaceDraftContext, setWorkspaceDraftContext] = useState({});
   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
@@ -5446,29 +5450,22 @@ export function VideoDetailPanel({
 
   const handleSaveSelectedToWorkspace = () => {
     if (multiSelected.size === 0) return;
-    const videoId = video?.youtubeId || video?.id || 'unknown';
-    const now = new Date().toISOString();
-    let count = 0;
-    multiSelected.forEach((item, id) => {
-      const title = (video?.title || '').slice(0, 40);
-      upsertKnowledgeItem({
-        id: `ws-sel:${videoId}:${id.replace(/[^a-z0-9]/gi, '_')}:${Date.now() + count}`,
-        title: `${item.sectionLabel || 'נבחר'} — ${title || videoId}`.slice(0, 80),
-        content: `${item.text}\n\n---\nמקור: ${video?.title || ''}\nקטע: ${item.sectionLabel || ''}`,
-        topicId: video?.topicIds?.[0] || null,
-        videoId,
-        videoTitle: video?.title || '',
-        sourceType: 'youtube',
-        sectionName: item.sectionLabel || 'נבחרים',
-        workspacePath: `Workspace/קטעים/${title || videoId}/${item.sectionLabel || 'נבחרים'}.md`,
-        createdAt: now,
-        updatedAt: now,
-        metadata: { perspective: 'self', contentRole: 'saved_item', selectedText: true, videoId, videoTitle: video?.title || '' },
-      });
-      count++;
+    const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+    const snapshot = [...multiSelected.entries()].map(([id, item]) => ({
+      id,
+      text: item.text || '',
+      sectionLabel: item.sectionLabel || '',
+      type: item.type || item.tabScope || '',
+    }));
+    setWorkspaceDraftItems(snapshot);
+    setWorkspaceDraftContext({
+      videoTitle: effectiveVideo?.title || '',
+      channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+      thumbnail: effectiveVideo?.thumbnail || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null),
+      videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
+      sourceTab: getWorkspaceSourceTab(activeTab),
     });
-    if (count > 0) toast.success(`⭐ ${count} פריטים נשמרו ל-Workspace`);
-    multiSelectClearWithBrain();
+    setWorkspaceDraftOpen(true);
   };
 
   const handleBulkObsidianForTab = async () => {
@@ -12283,6 +12280,15 @@ export function VideoDetailPanel({
         }
         toast.success('✅ הסרטון נשמר ל-Workspace Library');
       }}
+    />
+
+    {/* ── Workspace Save Review Overlay ────────────────────── */}
+    <WorkspaceSaveReviewOverlay
+      open={workspaceDraftOpen}
+      onOpenChange={setWorkspaceDraftOpen}
+      draftItems={workspaceDraftItems}
+      videoContext={workspaceDraftContext}
+      onSaved={() => multiSelectClearWithBrain()}
     />
 
     {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}
