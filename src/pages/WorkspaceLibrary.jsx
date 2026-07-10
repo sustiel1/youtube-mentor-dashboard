@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Star, X, Trash2, Edit2, Plus, Search, Settings } from "lucide-react";
 import { VIRTUAL_TAXONOMY } from "@/utils/workspaceVirtualTaxonomy";
 import {
@@ -21,8 +21,35 @@ import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 
+// ─── Market status workflow ────────────────────────────────────────────────────
+// These constants power the Row 3 workflow tabs that appear only when the user
+// is inside שוק ההון > מניות. The `marketStatus` field is optional on items —
+// existing items without it simply appear in the "הכל" tab.
+const MARKET_STATUS_TABS = [
+  { value: '',                label: 'הכל' },
+  { value: 'watchlist',       label: '⭐ למעקב' },
+  { value: 'candidate',       label: '🎯 מועמדות' },
+  { value: 'before_earnings', label: '📋 לפני דוחות' },
+  { value: 'risk',            label: '⚠️ בסיכון' },
+  { value: 'archive',         label: '📦 ארכיון' },
+];
+const MARKET_STATUS_LABELS = {
+  watchlist:       '⭐ למעקב',
+  candidate:       '🎯 מועמד',
+  before_earnings: '📋 לפני דוחות',
+  risk:            '⚠️ בסיכון',
+  archive:         '📦 ארכיון',
+};
+const MARKET_STATUS_COLORS = {
+  watchlist:       'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800/50',
+  candidate:       'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/50',
+  before_earnings: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800/50',
+  risk:            'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/50',
+  archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
+};
+
 export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
-  const { items, reload: reloadItems, deleteItem } = useWorkspaceItems();
+  const { items, reload: reloadItems, deleteItem, updateItem } = useWorkspaceItems();
   const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
   const { data: videos = [] } = useVideos();
   const { data: mentors = [] } = useMentors();
@@ -36,6 +63,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [filterMustWatch, setFilterMustWatch] = useState(false);
   const [filterTags, setFilterTags] = useState([]);
   const [filterSourceTab, setFilterSourceTab] = useState('');
+  const [filterMarketStatus, setFilterMarketStatus] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -133,6 +161,12 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     [allMainTabs, filterVirtTopicId]
   );
 
+  // True only when navigated to שוק ההון → מניות — triggers Row 3 workflow tabs
+  const isStocksView = filterVirtTopicId === 'vt-markets' && filterVirtSubtopic === 'vts-stocks';
+
+  // Reset workflow status filter whenever the navigation path changes
+  useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
+
   const virtSubtopicCount = useMemo(() => {
     if (!activeVirtTopic) return {};
     const counts = {};
@@ -191,6 +225,12 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         result = result.filter(i => subIdSet.has(i.topicId) || subIdSet.has(i.subTopicId));
       }
     }
+    // Workflow status filter — only active under שוק ההון > מניות; items without
+    // marketStatus are treated as having no status and appear in "הכל" only.
+    if (isStocksView && filterMarketStatus) {
+      result = result.filter(i => (i.marketStatus || '') === filterMarketStatus);
+    }
+
     if (filterFavorite) result = result.filter(i => i.flags?.isFavorite);
     if (filterImportant) result = result.filter(i => i.flags?.isImportant);
     if (filterMustWatch) result = result.filter(i => i.flags?.mustWatchAgain);
@@ -214,7 +254,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     }
 
     return result;
-  }, [items, search, filterVirtTopicId, filterVirtSubtopic, activeVirtTopic, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
+  }, [items, search, filterVirtTopicId, filterVirtSubtopic, activeVirtTopic, isStocksView, filterMarketStatus, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
 
   const handleDeleteTopic = (id) => {
     const result = deleteTopic(id);
@@ -236,6 +276,10 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const handleDelete = (item) => {
     deleteItem(item.id);
     toast.success('הסרטון הוסר מ-Workspace Library');
+  };
+
+  const handleStatusChange = (id, newStatus) => {
+    updateItem(id, { marketStatus: newStatus || null });
   };
 
   const selectedMentorName = useMemo(
@@ -507,6 +551,28 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                 ))}
               </div>
             )}
+
+            {/* Row 3: Workflow tabs — only under שוק ההון > מניות */}
+            {isStocksView && (
+              <div className="flex flex-wrap gap-1.5 pr-1 pt-0.5" dir="rtl">
+                <span className="self-center text-[10px] text-slate-400 dark:text-zinc-600 ml-1 font-semibold tracking-wide">מצב:</span>
+                {MARKET_STATUS_TABS.map(tab => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setFilterMarketStatus(tab.value)}
+                    className={cn(
+                      'rounded-md border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all',
+                      filterMarketStatus === tab.value
+                        ? 'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-400 dark:bg-teal-400 dark:text-zinc-900'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
         {/* Manage topics panel */}
@@ -661,6 +727,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                 onOpen={() => handleVideoClick(item)}
                 onDelete={() => handleDelete(item)}
                 onEdit={() => setEditItem(item)}
+                showMarketStatus={isStocksView}
+                onStatusChange={handleStatusChange}
               />
             ))}
           </div>
@@ -708,7 +776,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
 
 // ─── WorkspaceVideoCard ───────────────────────────────────────────────────────
 
-function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit }) {
+function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit, showMarketStatus = false, onStatusChange }) {
   const mainTopic = topics.find(t => t.id === item.topicId);
   const subTopic = topics.find(t => t.id === item.subTopicId);
 
@@ -746,6 +814,15 @@ function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit }) {
             {item.flags?.isFavorite && <span className="text-sm leading-none drop-shadow">⭐</span>}
             {item.flags?.isImportant && <span className="text-sm leading-none drop-shadow">🔴</span>}
             {item.flags?.mustWatchAgain && <span className="text-sm leading-none drop-shadow">🔁</span>}
+          </div>
+        )}
+
+        {/* Market status badge — shown in stocks view when status is set */}
+        {showMarketStatus && item.marketStatus && MARKET_STATUS_LABELS[item.marketStatus] && (
+          <div className="absolute bottom-1.5 right-1.5">
+            <span className={cn('rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none', MARKET_STATUS_COLORS[item.marketStatus])}>
+              {MARKET_STATUS_LABELS[item.marketStatus]}
+            </span>
           </div>
         )}
 
@@ -829,6 +906,25 @@ function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit }) {
             </span>
           )}
         </div>
+
+        {/* Market status selector — visible only in stocks workflow view */}
+        {showMarketStatus && (
+          <div className="mt-1 pt-1.5 border-t border-slate-100 dark:border-zinc-800">
+            <select
+              value={item.marketStatus || ''}
+              onChange={e => onStatusChange?.(item.id, e.target.value || null)}
+              onClick={e => e.stopPropagation()}
+              className="w-full rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-teal-400 dark:text-zinc-300"
+            >
+              <option value="">ללא סטטוס</option>
+              <option value="watchlist">⭐ למעקב</option>
+              <option value="candidate">🎯 מועמדות לכניסה</option>
+              <option value="before_earnings">📋 לפני דוחות</option>
+              <option value="risk">⚠️ בסיכון</option>
+              <option value="archive">📦 ארכיון</option>
+            </select>
+          </div>
+        )}
       </div>
     </div>
   );

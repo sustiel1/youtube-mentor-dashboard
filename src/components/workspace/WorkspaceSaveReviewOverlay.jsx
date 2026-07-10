@@ -31,6 +31,30 @@ import {
   removeCustomMainTab,
 } from "@/utils/workspaceTabPreferences";
 
+// ─── Market status workflow constants ─────────────────────────────────────────
+const MARKET_STATUS_TABS = [
+  { value: '',                label: 'הכל' },
+  { value: 'watchlist',       label: '⭐ למעקב' },
+  { value: 'candidate',       label: '🎯 מועמדות' },
+  { value: 'before_earnings', label: '📋 לפני דוחות' },
+  { value: 'risk',            label: '⚠️ בסיכון' },
+  { value: 'archive',         label: '📦 ארכיון' },
+];
+const MARKET_STATUS_LABELS = {
+  watchlist:       '⭐ למעקב',
+  candidate:       '🎯 מועמד',
+  before_earnings: '📋 לפני דוחות',
+  risk:            '⚠️ בסיכון',
+  archive:         '📦 ארכיון',
+};
+const MARKET_STATUS_COLORS = {
+  watchlist:       'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800/50',
+  candidate:       'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/50',
+  before_earnings: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800/50',
+  risk:            'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/50',
+  archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
+};
+
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
 export function WorkspaceSaveReviewOverlay({
@@ -73,6 +97,7 @@ export function WorkspaceSaveReviewOverlay({
   const [showAddTab,      setShowAddTab]      = useState(false);
   const [newTabName,      setNewTabName]      = useState('');
   const [newTabEmoji,     setNewTabEmoji]     = useState('');
+  const [filterMarketStatus, setFilterMarketStatus] = useState('');
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -85,6 +110,7 @@ export function WorkspaceSaveReviewOverlay({
       setLoadedDraftItems(null);
       setFilterVirtTopicId('');
       setFilterVirtSubtopic('');
+      setFilterMarketStatus('');
       setShowManageTabs(false);
       setEditingTabId(null);
       setEditingTabLabel('');
@@ -135,6 +161,12 @@ export function WorkspaceSaveReviewOverlay({
     [allMainTabs, filterVirtTopicId],
   );
 
+  // True only when navigated to שוק ההון → מניות — enables Row 3 workflow tabs
+  const isStocksView = filterVirtTopicId === 'vt-markets' && filterVirtSubtopic === 'vts-stocks';
+
+  // Reset workflow status filter whenever the navigation path changes
+  useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
+
   // Items within the selected main virtual topic (not yet subtopic-filtered)
   const mainFilteredItems = useMemo(() => {
     if (!filterVirtTopicId) return libraryItems;
@@ -159,6 +191,13 @@ export function WorkspaceSaveReviewOverlay({
     [mainFilteredItems, filterVirtTopicId, filterVirtSubtopic],
   );
 
+  // Applies the optional workflow status layer on top of the topic/subtopic filter.
+  // Items without marketStatus are untouched — they always appear when filterMarketStatus=''
+  const displayItems = useMemo(() => {
+    if (!isStocksView || !filterMarketStatus) return filteredLibraryItems;
+    return filteredLibraryItems.filter(i => (i.marketStatus || '') === filterMarketStatus);
+  }, [filteredLibraryItems, isStocksView, filterMarketStatus]);
+
   const hasSubtopicFilter = !!filterVirtSubtopic;
   const hasTopicFilter    = !!filterVirtTopicId;
 
@@ -170,15 +209,15 @@ export function WorkspaceSaveReviewOverlay({
     [libraryItems, recentlySavedIds],
   );
 
-  // Topics view grouping
+  // Topics view grouping — use displayItems so workflow status filter propagates
   const itemsByVirtTopic = useMemo(
-    () => groupItemsByVirtTopic(filteredLibraryItems),
-    [filteredLibraryItems],
+    () => groupItemsByVirtTopic(displayItems),
+    [displayItems],
   );
 
   const itemsByVirtSubtopic = useMemo(
-    () => filterVirtTopicId ? groupItemsByVirtSubtopic(filteredLibraryItems, filterVirtTopicId) : {},
-    [filteredLibraryItems, filterVirtTopicId],
+    () => filterVirtTopicId ? groupItemsByVirtSubtopic(displayItems, filterVirtTopicId) : {},
+    [displayItems, filterVirtTopicId],
   );
 
   const itemsByDate = useMemo(() => {
@@ -188,7 +227,7 @@ export function WorkspaceSaveReviewOverlay({
     const weekAgo   = new Date(now - 7  * 86400000);
     const monthAgo  = new Date(now - 30 * 86400000);
     const groups    = { today: [], yesterday: [], thisWeek: [], thisMonth: [], older: [] };
-    filteredLibraryItems.forEach(item => {
+    displayItems.forEach(item => {
       const d  = new Date(item.savedAt);
       const ds = d.toDateString();
       if      (ds === today)     groups.today.push(item);
@@ -198,11 +237,11 @@ export function WorkspaceSaveReviewOverlay({
       else                       groups.older.push(item);
     });
     return groups;
-  }, [filteredLibraryItems]);
+  }, [displayItems]);
 
   const pinnedItems = useMemo(
-    () => filteredLibraryItems.filter(i => i.flags?.isFavorite || i.flags?.isImportant),
-    [filteredLibraryItems],
+    () => displayItems.filter(i => i.flags?.isFavorite || i.flags?.isImportant),
+    [displayItems],
   );
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -638,6 +677,30 @@ export function WorkspaceSaveReviewOverlay({
           </div>
         )}
 
+        {/* ── Row 3 (stocks): Workflow status tabs ─────────────────────── */}
+        {isStocksView && (
+          <div className="shrink-0 bg-slate-50/60 dark:bg-zinc-900/40 px-4 py-2 border-b border-slate-100 dark:border-zinc-800 overflow-x-auto">
+            <div className="flex gap-1.5 items-center min-w-max">
+              <span className="text-[10px] text-slate-400 dark:text-zinc-600 ml-1 font-semibold tracking-wide shrink-0">מצב:</span>
+              {MARKET_STATUS_TABS.map(tab => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setFilterMarketStatus(tab.value)}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all',
+                    filterMarketStatus === tab.value
+                      ? 'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-400 dark:bg-teal-400 dark:text-zinc-900'
+                      : 'border-slate-200 text-slate-500 hover:bg-white hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Row 3: View mode tabs ─────────────────────────────────────── */}
         <div
           dir="rtl"
@@ -903,7 +966,9 @@ export function WorkspaceSaveReviewOverlay({
           {activeView === 'topics' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
-              {filteredLibraryItems.length === 0 && <EmptyState label="אין פריטים בנושא הנוכחי" />}
+              {displayItems.length === 0 && (
+                <EmptyState label={filterMarketStatus ? 'אין עדיין מניות בטאב הזה' : 'אין פריטים בנושא הנוכחי'} />
+              )}
 
               {hasTopicFilter && activeVirtTopic ? (
                 // ── Subtopic groups within the selected main topic ──────────
@@ -912,7 +977,7 @@ export function WorkspaceSaveReviewOverlay({
                   <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-zinc-800">
                     <span className="text-base">{activeVirtTopic.emoji}</span>
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">{activeVirtTopic.name}</span>
-                    <span className="text-xs text-slate-400 dark:text-zinc-600">({filteredLibraryItems.length})</span>
+                    <span className="text-xs text-slate-400 dark:text-zinc-600">({displayItems.length})</span>
                     {hasSubtopicFilter && activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic) && (
                       <span className="rounded-full border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-400">
                         › {activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic)?.name}
@@ -923,7 +988,7 @@ export function WorkspaceSaveReviewOverlay({
                   {hasSubtopicFilter ? (
                     // flat list when subtopic filter is active
                     <div className="space-y-2">
-                      {filteredLibraryItems.map(item => (
+                      {displayItems.map(item => (
                         <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
                       ))}
                     </div>
@@ -987,7 +1052,7 @@ export function WorkspaceSaveReviewOverlay({
           {activeView === 'dates' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
-              {filteredLibraryItems.length === 0 && <EmptyState label="אין פריטים בנושא הנוכחי" />}
+              {displayItems.length === 0 && <EmptyState label={filterMarketStatus ? 'אין עדיין מניות בטאב הזה' : 'אין פריטים בנושא הנוכחי'} />}
               {[
                 { key: 'today',     label: 'היום' },
                 { key: 'yesterday', label: 'אתמול' },
@@ -1109,6 +1174,11 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           {item.videoTitle || 'ללא כותרת'}
         </p>
         <div className="flex items-center gap-1.5 shrink-0 text-sm">
+          {item.marketStatus && MARKET_STATUS_LABELS[item.marketStatus] && (
+            <span className={cn('rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none', MARKET_STATUS_COLORS[item.marketStatus])}>
+              {MARKET_STATUS_LABELS[item.marketStatus]}
+            </span>
+          )}
           {item.flags?.isImportant    && <span title="חשוב">🔴</span>}
           {item.flags?.isFavorite     && <span title="מועדף">⭐</span>}
           {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
@@ -1132,6 +1202,11 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
         </div>
       </div>
+      {item.marketStatus && MARKET_STATUS_LABELS[item.marketStatus] && (
+        <span className={cn('self-start rounded-full border px-2 py-0.5 text-[10px] font-bold leading-none', MARKET_STATUS_COLORS[item.marketStatus])}>
+          {MARKET_STATUS_LABELS[item.marketStatus]}
+        </span>
+      )}
       {item.notes && (
         <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">{item.notes}</p>
       )}
