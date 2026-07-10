@@ -324,7 +324,7 @@ export function WorkspaceSaveReviewOverlay({
           'flex flex-col p-0 gap-0 border-amber-200 dark:border-amber-900/40 transition-all duration-200',
           isFullscreen
             ? 'w-[98vw] max-w-[98vw] h-[96vh] max-h-[96vh]'
-            : 'w-[min(96vw,900px)] max-h-[90vh]',
+            : 'w-[min(96vw,900px)] h-[min(90vh,700px)]',
         )}
       >
         {/* ── Header ───────────────────────────────────────────────────── */}
@@ -352,8 +352,8 @@ export function WorkspaceSaveReviewOverlay({
 
         {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
         {libraryItems.length > 0 && (
-          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-0 border-b border-slate-100 dark:border-zinc-800/60">
-            <div className="flex items-center gap-2 overflow-x-auto pb-3 min-w-max">
+          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-3 border-b border-slate-100 dark:border-zinc-800/60 overflow-x-auto">
+            <div className="flex items-center gap-2 min-w-max">
               <button
                 type="button"
                 onClick={() => handleSelectVirtTopic('')}
