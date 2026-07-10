@@ -11,6 +11,88 @@ import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 
+// ─── Virtual taxonomy ────────────────────────────────────────────────────────
+// Maps broad display categories → all stored topic IDs that belong there.
+// This is UI-only: no localStorage or schema changes.
+const VIRTUAL_TAXONOMY = [
+  {
+    id: 'vt-markets', name: 'שוק ההון', emoji: '📈',
+    realTopicIds: [
+      'wt-markets', 'wt-markets-daily', 'wt-markets-stocks', 'wt-markets-sentiment',
+      'wt-markets-events', 'wt-markets-opportunities', 'wt-markets-risks', 'wt-markets-etf',
+      'wt-markets-macro', 'wt-markets-sectors', 'wt-markets-technical', 'wt-markets-risk',
+      'wt-markets-crypto', 'wt-markets-reports', 'wt-markets-mentioned',
+      'wt-stocks', 'wt-stocks-quick', 'wt-stocks-watchlist', 'wt-stocks-chips', 'wt-stocks-ai',
+      'wt-stocks-energy', 'wt-stocks-banks', 'wt-stocks-realestate', 'wt-stocks-earnings',
+      'wt-macro', 'wt-macro-rates', 'wt-macro-inflation', 'wt-macro-bonds', 'wt-macro-dollar',
+      'wt-macro-jobs', 'wt-macro-events',
+      'wt-sectors', 'wt-sectors-tech', 'wt-sectors-energy', 'wt-sectors-financials',
+      'wt-sectors-health', 'wt-sectors-realestate', 'wt-sectors-consumer', 'wt-sectors-industrial',
+      'wt-technical', 'wt-technical-sr', 'wt-technical-trend', 'wt-technical-ma',
+      'wt-technical-rsi', 'wt-technical-macd', 'wt-technical-volume', 'wt-technical-entry',
+      'wt-risk', 'wt-risk-sizing', 'wt-risk-stoploss', 'wt-risk-diversification',
+      'wt-risk-drawdown', 'wt-risk-hedging', 'wt-risk-scenarios',
+      'wt-crypto', 'wt-crypto-btc', 'wt-crypto-eth', 'wt-crypto-alts', 'wt-crypto-defi', 'wt-crypto-macro',
+    ],
+    legacyNames: ['שוק ההון', 'מניות', 'מאקרו', 'סקטורים', 'מסחר טכני', 'ניהול סיכונים', 'קריפטו'],
+    subtopics: [
+      { id: 'vts-macro',     name: 'מאקרו',          realTopicIds: ['wt-macro', 'wt-macro-rates', 'wt-macro-inflation', 'wt-macro-bonds', 'wt-macro-dollar', 'wt-macro-jobs', 'wt-macro-events', 'wt-markets-macro'] },
+      { id: 'vts-stocks',    name: 'מניות',           realTopicIds: ['wt-stocks', 'wt-stocks-quick', 'wt-stocks-watchlist', 'wt-stocks-chips', 'wt-stocks-ai', 'wt-stocks-energy', 'wt-stocks-banks', 'wt-stocks-realestate', 'wt-stocks-earnings', 'wt-markets-stocks', 'wt-markets-mentioned'] },
+      { id: 'vts-sectors',   name: 'סקטורים',         realTopicIds: ['wt-sectors', 'wt-sectors-tech', 'wt-sectors-energy', 'wt-sectors-financials', 'wt-sectors-health', 'wt-sectors-realestate', 'wt-sectors-consumer', 'wt-sectors-industrial', 'wt-markets-sectors'] },
+      { id: 'vts-technical', name: 'מסחר טכני',       realTopicIds: ['wt-technical', 'wt-technical-sr', 'wt-technical-trend', 'wt-technical-ma', 'wt-technical-rsi', 'wt-technical-macd', 'wt-technical-volume', 'wt-technical-entry', 'wt-markets-technical'] },
+      { id: 'vts-risk',      name: 'ניהול סיכונים',   realTopicIds: ['wt-risk', 'wt-risk-sizing', 'wt-risk-stoploss', 'wt-risk-diversification', 'wt-risk-drawdown', 'wt-risk-hedging', 'wt-risk-scenarios', 'wt-markets-risk'] },
+      { id: 'vts-crypto',    name: 'קריפטו',          realTopicIds: ['wt-crypto', 'wt-crypto-btc', 'wt-crypto-eth', 'wt-crypto-alts', 'wt-crypto-defi', 'wt-crypto-macro', 'wt-markets-crypto'] },
+      { id: 'vts-etf',       name: 'ETF / מדדים',     realTopicIds: ['wt-markets-etf'] },
+      { id: 'vts-daily',     name: 'סקירת שוק יומית', realTopicIds: ['wt-markets-daily'] },
+      { id: 'vts-sentiment', name: 'סנטימנט שוק',     realTopicIds: ['wt-markets-sentiment'] },
+    ],
+  },
+  {
+    id: 'vt-ai', name: 'AI וטכנולוגיה', emoji: '🤖',
+    realTopicIds: [
+      'wt-ai', 'wt-ai-claudecode', 'wt-ai-cursor', 'wt-ai-chatgpt', 'wt-ai-perplexity',
+      'wt-ai-n8n', 'wt-ai-automation', 'wt-ai-rag', 'wt-ai-frontend', 'wt-ai-backend', 'wt-ai-apis', 'wt-ai-qa',
+      'wt-tools', 'wt-tools-finviz', 'wt-tools-tradingview', 'wt-tools-perplexity',
+      'wt-tools-notebooklm', 'wt-tools-obsidian', 'wt-tools-screeners',
+    ],
+    legacyNames: ['AI וטכנולוגיה', 'כלים וקישורים'],
+    subtopics: [
+      { id: 'vts-ai-cc',    name: 'Claude Code',      realTopicIds: ['wt-ai-claudecode'] },
+      { id: 'vts-ai-n8n',   name: 'n8n / Automation', realTopicIds: ['wt-ai-n8n', 'wt-ai-automation'] },
+      { id: 'vts-ai-tools', name: 'כלים',             realTopicIds: ['wt-tools', 'wt-tools-finviz', 'wt-tools-tradingview', 'wt-tools-perplexity', 'wt-tools-notebooklm', 'wt-tools-obsidian', 'wt-tools-screeners'] },
+    ],
+  },
+  {
+    id: 'vt-health', name: 'תזונה ובריאות', emoji: '🥗',
+    realTopicIds: ['wt-health', 'wt-health-keto', 'wt-health-diabetes', 'wt-health-lowcarb', 'wt-health-recipes', 'wt-health-exercise', 'wt-health-tests', 'wt-health-supplements', 'wt-health-general'],
+    legacyNames: ['תזונה ובריאות', 'תזונה', 'בריאות'],
+    subtopics: [],
+  },
+  {
+    id: 'vt-politics', name: 'פוליטיקה', emoji: '🏛',
+    realTopicIds: ['wt-politics', 'wt-politics-israel', 'wt-politics-security', 'wt-politics-law', 'wt-politics-religion', 'wt-politics-media', 'wt-politics-economy', 'wt-politics-geo'],
+    legacyNames: ['פוליטיקה'],
+    subtopics: [],
+  },
+  {
+    id: 'vt-personal', name: 'ידע אישי', emoji: '💡',
+    realTopicIds: [
+      'wt-personal', 'wt-personal-habits', 'wt-personal-books', 'wt-personal-mindset', 'wt-personal-tools', 'wt-personal-learning',
+      'wt-learning', 'wt-learning-methods', 'wt-learning-rules', 'wt-learning-mistakes', 'wt-learning-books', 'wt-learning-frameworks',
+    ],
+    legacyNames: ['ידע אישי', 'לימוד / אסטרטגיה', 'לימוד'],
+    subtopics: [
+      { id: 'vts-pe-learning', name: 'לימוד / אסטרטגיה', realTopicIds: ['wt-learning', 'wt-learning-methods', 'wt-learning-rules', 'wt-learning-mistakes', 'wt-learning-books', 'wt-learning-frameworks'] },
+    ],
+  },
+  {
+    id: 'vt-general', name: 'כללי', emoji: '📁',
+    realTopicIds: ['wt-general'],
+    legacyNames: ['כללי'],
+    subtopics: [],
+  },
+];
+
 export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const { items, reload: reloadItems, deleteItem } = useWorkspaceItems();
   const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
@@ -19,8 +101,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const { data: systemTopics = [] } = useTopics();
 
   const [search, setSearch] = useState('');
-  const [filterTopicId, setFilterTopicId] = useState('');
-  const [filterSubTopicId, setFilterSubTopicId] = useState('');
+  const [filterVirtTopicId, setFilterVirtTopicId] = useState('');
+  const [filterVirtSubtopic, setFilterVirtSubtopic] = useState('');
   const [filterFavorite, setFilterFavorite] = useState(false);
   const [filterImportant, setFilterImportant] = useState(false);
   const [filterMustWatch, setFilterMustWatch] = useState(false);
@@ -33,10 +115,41 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [editItem, setEditItem] = useState(null);
   const [manageTopicsOpen, setManageTopicsOpen] = useState(false);
 
-  const subTopicsForFilter = useMemo(
-    () => (filterTopicId ? getSubTopics(filterTopicId) : []),
-    [filterTopicId, getSubTopics]
+  const virtTopicCount = useMemo(() => {
+    const counts = {};
+    for (const item of items) {
+      for (const vt of VIRTUAL_TAXONOMY) {
+        if (
+          vt.realTopicIds.includes(item.topicId) ||
+          vt.realTopicIds.includes(item.subTopicId) ||
+          vt.legacyNames.includes(item.topicName)
+        ) {
+          counts[vt.id] = (counts[vt.id] || 0) + 1;
+          break;
+        }
+      }
+    }
+    return counts;
+  }, [items]);
+
+  const activeVirtTopic = useMemo(
+    () => VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId) || null,
+    [filterVirtTopicId]
   );
+
+  const virtSubtopicCount = useMemo(() => {
+    if (!activeVirtTopic) return {};
+    const counts = {};
+    for (const item of items) {
+      for (const vs of activeVirtTopic.subtopics) {
+        if (vs.realTopicIds.includes(item.topicId) || vs.realTopicIds.includes(item.subTopicId)) {
+          counts[vs.id] = (counts[vs.id] || 0) + 1;
+          break;
+        }
+      }
+    }
+    return counts;
+  }, [items, activeVirtTopic]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set();
@@ -65,8 +178,23 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
       );
     }
 
-    if (filterTopicId) result = result.filter(i => i.topicId === filterTopicId);
-    if (filterSubTopicId) result = result.filter(i => i.subTopicId === filterSubTopicId);
+    if (filterVirtTopicId) {
+      const vt = VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId);
+      if (vt) {
+        const idSet = new Set(vt.realTopicIds);
+        const nameSet = new Set(vt.legacyNames);
+        result = result.filter(i =>
+          idSet.has(i.topicId) || idSet.has(i.subTopicId) || nameSet.has(i.topicName)
+        );
+      }
+    }
+    if (filterVirtSubtopic && activeVirtTopic) {
+      const vs = activeVirtTopic.subtopics.find(s => s.id === filterVirtSubtopic);
+      if (vs) {
+        const subIdSet = new Set(vs.realTopicIds);
+        result = result.filter(i => subIdSet.has(i.topicId) || subIdSet.has(i.subTopicId));
+      }
+    }
     if (filterFavorite) result = result.filter(i => i.flags?.isFavorite);
     if (filterImportant) result = result.filter(i => i.flags?.isImportant);
     if (filterMustWatch) result = result.filter(i => i.flags?.mustWatchAgain);
@@ -90,15 +218,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     }
 
     return result;
-  }, [items, search, filterTopicId, filterSubTopicId, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
-
-  const topicVideoCount = useMemo(() => {
-    const counts = {};
-    for (const item of items) {
-      if (item.topicId) counts[item.topicId] = (counts[item.topicId] || 0) + 1;
-    }
-    return counts;
-  }, [items]);
+  }, [items, search, filterVirtTopicId, filterVirtSubtopic, activeVirtTopic, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
 
   const handleDeleteTopic = (id) => {
     const result = deleteTopic(id);
@@ -164,36 +284,73 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
       </header>
 
       <main className="px-6 py-5 max-w-7xl mx-auto space-y-5">
-        {/* Topic quick stats */}
-        {items.length > 0 && mainTopics.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => { setFilterTopicId(''); setFilterSubTopicId(''); }}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
-                !filterTopicId
-                  ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
-              )}
-            >
-              הכל ({items.length})
-            </button>
-            {mainTopics.filter(t => topicVideoCount[t.id]).map(t => (
+        {/* Virtual topic tabs — row 1: broad domains */}
+        {items.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               <button
-                key={t.id}
                 type="button"
-                onClick={() => { setFilterTopicId(t.id); setFilterSubTopicId(''); }}
+                onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
                 className={cn(
                   'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
-                  filterTopicId === t.id
-                    ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900'
+                  !filterVirtTopicId
+                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
                 )}
               >
-                {t.emoji ? `${t.emoji} ` : ''}{t.name} ({topicVideoCount[t.id] || 0})
+                הכל ({items.length})
               </button>
-            ))}
+              {VIRTUAL_TAXONOMY.filter(vt => virtTopicCount[vt.id]).map(vt => (
+                <button
+                  key={vt.id}
+                  type="button"
+                  onClick={() => { setFilterVirtTopicId(vt.id); setFilterVirtSubtopic(''); }}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                    filterVirtTopicId === vt.id
+                      ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
+                  )}
+                >
+                  {vt.emoji} {vt.name} ({virtTopicCount[vt.id]})
+                </button>
+              ))}
+            </div>
+
+            {/* Row 2: subtopics for the selected main domain */}
+            {activeVirtTopic && activeVirtTopic.subtopics.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pr-1">
+                <button
+                  type="button"
+                  onClick={() => setFilterVirtSubtopic('')}
+                  className={cn(
+                    'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
+                    !filterVirtSubtopic
+                      ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900'
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
+                  )}
+                >
+                  כולם
+                </button>
+                {activeVirtTopic.subtopics
+                  .filter(vs => virtSubtopicCount[vs.id])
+                  .map(vs => (
+                    <button
+                      key={vs.id}
+                      type="button"
+                      onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
+                        filterVirtSubtopic === vs.id
+                          ? 'border-violet-500 bg-violet-500 text-white'
+                          : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                      )}
+                    >
+                      {vs.name} ({virtSubtopicCount[vs.id]})
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -222,19 +379,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm text-right placeholder:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
             />
           </div>
-
-          {filterTopicId && subTopicsForFilter.length > 0 && (
-            <select
-              value={filterSubTopicId}
-              onChange={e => setFilterSubTopicId(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-            >
-              <option value="">כל תת-הנושאים</option>
-              {subTopicsForFilter.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          )}
 
           {[
             { key: 'favorite', label: '⭐ מועדפים', active: filterFavorite, set: () => setFilterFavorite(p => !p) },
