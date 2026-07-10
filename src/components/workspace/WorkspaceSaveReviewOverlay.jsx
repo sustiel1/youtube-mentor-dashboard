@@ -26,6 +26,9 @@ import {
   saveWorkspaceTabPreferences,
   resetWorkspaceTabPreferences,
   getVisibleMainTabs,
+  getAllMergedTabs,
+  addCustomMainTab,
+  removeCustomMainTab,
 } from "@/utils/workspaceTabPreferences";
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
@@ -67,6 +70,9 @@ export function WorkspaceSaveReviewOverlay({
   const [showManageTabs,  setShowManageTabs]  = useState(false);
   const [editingTabId,    setEditingTabId]    = useState(null);
   const [editingTabLabel, setEditingTabLabel] = useState('');
+  const [showAddTab,      setShowAddTab]      = useState(false);
+  const [newTabName,      setNewTabName]      = useState('');
+  const [newTabEmoji,     setNewTabEmoji]     = useState('');
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -82,6 +88,9 @@ export function WorkspaceSaveReviewOverlay({
       setShowManageTabs(false);
       setEditingTabId(null);
       setEditingTabLabel('');
+      setShowAddTab(false);
+      setNewTabName('');
+      setNewTabEmoji('');
     }
   }, [open, defaultView]);
 
@@ -96,21 +105,48 @@ export function WorkspaceSaveReviewOverlay({
 
   // ── Virtual taxonomy computed ────────────────────────────────────────────────
 
-  const virtTopicCount = useMemo(
+  const virtTopicCountBase = useMemo(
     () => getVirtTopicCounts(libraryItems),
     [libraryItems],
   );
 
+  const customTabCounts = useMemo(() => {
+    const counts = {};
+    for (const ct of (tabPrefs.customMainTabs || [])) {
+      if (!ct.realTopicId) continue;
+      counts[ct.id] = libraryItems.filter(i => i.topicId === ct.realTopicId).length;
+    }
+    return counts;
+  }, [libraryItems, tabPrefs.customMainTabs]);
+
+  const virtTopicCount = useMemo(
+    () => ({ ...virtTopicCountBase, ...customTabCounts }),
+    [virtTopicCountBase, customTabCounts],
+  );
+
+  // All tabs = built-in VIRTUAL_TAXONOMY + user-created custom tabs
+  const allMainTabs = useMemo(
+    () => getAllMergedTabs(VIRTUAL_TAXONOMY, tabPrefs),
+    [tabPrefs],
+  );
+
   const activeVirtTopic = useMemo(
-    () => VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId) || null,
-    [filterVirtTopicId],
+    () => allMainTabs.find(v => v.id === filterVirtTopicId) || null,
+    [allMainTabs, filterVirtTopicId],
   );
 
   // Items within the selected main virtual topic (not yet subtopic-filtered)
-  const mainFilteredItems = useMemo(
-    () => filterByVirtTopic(libraryItems, filterVirtTopicId),
-    [libraryItems, filterVirtTopicId],
-  );
+  const mainFilteredItems = useMemo(() => {
+    if (!filterVirtTopicId) return libraryItems;
+    // Custom tabs: filter by the single real topic ID they map to
+    const customTab = (tabPrefs.customMainTabs || []).find(ct => ct.id === filterVirtTopicId);
+    if (customTab) {
+      return customTab.realTopicId
+        ? libraryItems.filter(i => i.topicId === customTab.realTopicId)
+        : [];
+    }
+    return filterByVirtTopic(libraryItems, filterVirtTopicId);
+  }, [libraryItems, filterVirtTopicId, tabPrefs.customMainTabs]);
 
   const virtSubtopicCount = useMemo(
     () => getVirtSubtopicCounts(mainFilteredItems, filterVirtTopicId),
@@ -223,8 +259,8 @@ export function WorkspaceSaveReviewOverlay({
 
   // ── Tab preference handlers ────────────────────────────────────────────────
   const visibleMainTabs = useMemo(
-    () => getVisibleMainTabs(VIRTUAL_TAXONOMY, tabPrefs),
-    [tabPrefs],
+    () => getVisibleMainTabs(allMainTabs, tabPrefs),
+    [allMainTabs, tabPrefs],
   );
 
   function toggleTabVisibility(vtId) {
@@ -250,9 +286,30 @@ export function WorkspaceSaveReviewOverlay({
   }
 
   function handleResetTabPrefs() {
-    const def = { hiddenTabIds: [], labelOverrides: {} };
+    const def = { hiddenTabIds: [], labelOverrides: {}, customMainTabs: [] };
     setTabPrefs(def);
     resetWorkspaceTabPreferences();
+  }
+
+  function handleAddCustomTab() {
+    const name = newTabName.trim();
+    if (!name) return;
+    const emoji = newTabEmoji.trim() || '📌';
+    const newTopic = addTopic({ name, emoji });
+    const newPrefs = addCustomMainTab(tabPrefs, { name, emoji, topicId: newTopic.id });
+    setTabPrefs(newPrefs);
+    saveWorkspaceTabPreferences(newPrefs);
+    setNewTabName('');
+    setNewTabEmoji('');
+    setShowAddTab(false);
+    toast.success(`הטאב "${name}" נוסף`);
+  }
+
+  function handleRemoveCustomTab(tabId) {
+    const newPrefs = removeCustomMainTab(tabPrefs, tabId);
+    setTabPrefs(newPrefs);
+    saveWorkspaceTabPreferences(newPrefs);
+    if (filterVirtTopicId === tabId) setFilterVirtTopicId('');
   }
 
   const handleSaveAll = useCallback(() => {
@@ -351,52 +408,101 @@ export function WorkspaceSaveReviewOverlay({
         </DialogHeader>
 
         {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
-        {libraryItems.length > 0 && (
-          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-3 border-b border-slate-100 dark:border-zinc-800/60 overflow-x-auto">
-            <div className="flex items-center gap-2 min-w-max">
+        <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-3 border-b border-slate-100 dark:border-zinc-800/60 overflow-x-auto">
+          <div className="flex items-center gap-2 min-w-max">
+            <button
+              type="button"
+              onClick={() => handleSelectVirtTopic('')}
+              className={cn(
+                'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
+                !filterVirtTopicId
+                  ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900 shadow-sm'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+              )}
+            >
+              הכל{libraryItems.length > 0 ? ` (${libraryItems.length})` : ''}
+            </button>
+            {visibleMainTabs.map(vt => (
               <button
+                key={vt.id}
                 type="button"
-                onClick={() => handleSelectVirtTopic('')}
+                onClick={() => handleSelectVirtTopic(vt.id)}
                 className={cn(
                   'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
-                  !filterVirtTopicId
-                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900 shadow-sm'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                  filterVirtTopicId === vt.id
+                    ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900 shadow-sm'
+                    : virtTopicCount[vt.id]
+                      ? 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                      : 'border-slate-100 text-slate-400 hover:bg-slate-50 hover:border-slate-200 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900',
                 )}
               >
-                הכל ({libraryItems.length})
+                {vt.emoji} {vt.displayName}{virtTopicCount[vt.id] ? ` (${virtTopicCount[vt.id]})` : ''}
               </button>
-              {visibleMainTabs.filter(vt => virtTopicCount[vt.id]).map(vt => (
+            ))}
+            {/* Add custom tab */}
+            {showAddTab ? (
+              <div className="flex items-center gap-1.5 mr-1 shrink-0">
+                <input
+                  autoFocus
+                  type="text"
+                  value={newTabEmoji}
+                  onChange={e => setNewTabEmoji(e.target.value)}
+                  placeholder="📌"
+                  maxLength={2}
+                  className="w-12 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+                <input
+                  type="text"
+                  value={newTabName}
+                  onChange={e => setNewTabName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleAddCustomTab();
+                    if (e.key === 'Escape') { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }
+                  }}
+                  placeholder="שם הטאב..."
+                  dir="rtl"
+                  className="w-32 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
                 <button
-                  key={vt.id}
                   type="button"
-                  onClick={() => handleSelectVirtTopic(vt.id)}
-                  className={cn(
-                    'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
-                    filterVirtTopicId === vt.id
-                      ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900 shadow-sm'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
-                  )}
+                  onClick={handleAddCustomTab}
+                  disabled={!newTabName.trim()}
+                  className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-amber-600 disabled:opacity-40 whitespace-nowrap"
                 >
-                  {vt.emoji} {vt.displayName} ({virtTopicCount[vt.id]})
+                  הוסף
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }}
+                  className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-xs text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => setShowManageTabs(p => !p)}
-                title="ערוך טאבים"
-                className={cn(
-                  'mr-auto shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
-                  showManageTabs
-                    ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
-                    : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
-                )}
+                onClick={() => setShowAddTab(true)}
+                className="shrink-0 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:border-amber-400 hover:text-amber-600 dark:text-zinc-500 dark:hover:text-amber-400 transition-all whitespace-nowrap"
               >
-                ⚙ ערוך טאבים
+                + הוסף נושא
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowManageTabs(p => !p)}
+              title="ערוך טאבים"
+              className={cn(
+                'mr-auto shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
+                showManageTabs
+                  ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
+                  : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
+              )}
+            >
+              ⚙ ערוך טאבים
+            </button>
           </div>
-        )}
+        </div>
 
         {/* ── Manage tabs panel ─────────────────────────────────────────── */}
         {showManageTabs && (
@@ -421,7 +527,7 @@ export function WorkspaceSaveReviewOverlay({
               </div>
             </div>
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {VIRTUAL_TAXONOMY.map(vt => {
+              {allMainTabs.map(vt => {
                 const isHidden    = tabPrefs.hiddenTabIds.includes(vt.id);
                 const isEditing   = editingTabId === vt.id;
                 const displayName = tabPrefs.labelOverrides[vt.id] || vt.name;
@@ -432,17 +538,30 @@ export function WorkspaceSaveReviewOverlay({
                       'flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors',
                       isHidden
                         ? 'border-slate-200 bg-white/60 dark:border-zinc-800 dark:bg-zinc-950/40 opacity-55'
-                        : 'border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900',
+                        : vt.isCustom
+                          ? 'border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20'
+                          : 'border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900',
                     )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleTabVisibility(vt.id)}
-                      title={isHidden ? 'הצג טאב' : 'הסתר טאב'}
-                      className="shrink-0 text-base leading-none select-none"
-                    >
-                      {isHidden ? '🚫' : '👁'}
-                    </button>
+                    {vt.isCustom ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomTab(vt.id)}
+                        title="מחק טאב מותאם"
+                        className="shrink-0 text-base leading-none select-none text-slate-400 hover:text-red-500"
+                      >
+                        🗑
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleTabVisibility(vt.id)}
+                        title={isHidden ? 'הצג טאב' : 'הסתר טאב'}
+                        className="shrink-0 text-base leading-none select-none"
+                      >
+                        {isHidden ? '🚫' : '👁'}
+                      </button>
+                    )}
                     <span className="shrink-0 text-sm select-none">{vt.emoji}</span>
                     {isEditing ? (
                       <>
@@ -461,7 +580,10 @@ export function WorkspaceSaveReviewOverlay({
                       </>
                     ) : (
                       <>
-                        <span className={cn('text-sm flex-1 text-right', isHidden && 'line-through')}>{displayName}</span>
+                        <span className={cn('text-sm flex-1 text-right', isHidden && 'line-through')}>
+                          {displayName}
+                          {vt.isCustom && <span className="mr-1 text-[10px] text-amber-500 font-normal">מותאם</span>}
+                        </span>
                         <button
                           type="button"
                           onClick={() => { setEditingTabId(vt.id); setEditingTabLabel(displayName); }}
@@ -480,7 +602,7 @@ export function WorkspaceSaveReviewOverlay({
         )}
 
         {/* ── Row 2: Subtopic tabs ──────────────────────────────────────── */}
-        {activeVirtTopic && activeVirtTopic.subtopics.some(vs => virtSubtopicCount[vs.id] > 0) && (
+        {activeVirtTopic && activeVirtTopic.subtopics.length > 0 && (
           <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
             <div className="flex gap-2 min-w-max">
               <button
@@ -493,25 +615,25 @@ export function WorkspaceSaveReviewOverlay({
                     : 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
                 )}
               >
-                כולם ({mainFilteredItems.length})
+                כולם{mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}
               </button>
-              {activeVirtTopic.subtopics
-                .filter(vs => virtSubtopicCount[vs.id] > 0)
-                .map(vs => (
-                  <button
-                    key={vs.id}
-                    type="button"
-                    onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
-                    className={cn(
-                      'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
-                      filterVirtSubtopic === vs.id
-                        ? 'border-violet-500 bg-violet-500 text-white shadow-sm'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
-                    )}
-                  >
-                    {vs.name} ({virtSubtopicCount[vs.id]})
-                  </button>
-                ))}
+              {activeVirtTopic.subtopics.map(vs => (
+                <button
+                  key={vs.id}
+                  type="button"
+                  onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
+                  className={cn(
+                    'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
+                    filterVirtSubtopic === vs.id
+                      ? 'border-violet-500 bg-violet-500 text-white shadow-sm'
+                      : virtSubtopicCount[vs.id]
+                        ? 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        : 'border-slate-100 text-slate-400 hover:bg-slate-50 hover:border-slate-200 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900',
+                  )}
+                >
+                  {vs.name}{virtSubtopicCount[vs.id] ? ` (${virtSubtopicCount[vs.id]})` : ''}
+                </button>
+              ))}
             </div>
           </div>
         )}
