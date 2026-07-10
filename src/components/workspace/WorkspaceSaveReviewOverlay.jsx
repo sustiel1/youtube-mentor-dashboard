@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
+import { VIRTUAL_TAXONOMY, groupItemsByVirtTopic } from "@/utils/workspaceVirtualTaxonomy";
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
@@ -160,15 +161,10 @@ export function WorkspaceSaveReviewOverlay({
     [libraryItems, recentlySavedIds],
   );
 
-  const itemsByTopic = useMemo(() => {
-    const groups = {};
-    libraryItems.forEach(item => {
-      const key = item.topicId || '__none__';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(item);
-    });
-    return groups;
-  }, [libraryItems]);
+  const itemsByVirtTopic = useMemo(
+    () => groupItemsByVirtTopic(libraryItems),
+    [libraryItems],
+  );
 
   const itemsByDate = useMemo(() => {
     const now       = new Date();
@@ -500,36 +496,36 @@ export function WorkspaceSaveReviewOverlay({
             </div>
           )}
 
-          {/* By topic view */}
+          {/* By topic view — grouped by virtual taxonomy (broad domains) */}
           {activeView === 'topics' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
-              {mainTopics
-                .filter(t => itemsByTopic[t.id]?.length > 0)
-                .map(topic => (
-                  <div key={topic.id}>
+              {VIRTUAL_TAXONOMY
+                .filter(vt => itemsByVirtTopic[vt.id]?.length > 0)
+                .map(vt => (
+                  <div key={vt.id}>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-1.5">
-                      <span>{topic.emoji}</span>
-                      <span>{topic.name}</span>
-                      <span className="text-slate-400 dark:text-zinc-600 font-normal text-xs">({itemsByTopic[topic.id].length})</span>
+                      <span>{vt.emoji}</span>
+                      <span>{vt.name}</span>
+                      <span className="text-slate-400 dark:text-zinc-600 font-normal text-xs">({itemsByVirtTopic[vt.id].length})</span>
                     </h3>
                     <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
-                      {itemsByTopic[topic.id].map(item => (
+                      {itemsByVirtTopic[vt.id].map(item => (
                         <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
                       ))}
                     </div>
                   </div>
                 ))}
-              {itemsByTopic['__none__']?.length > 0 && (
+              {itemsByVirtTopic['__none__']?.length > 0 && (
                 <div>
                   <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-600 mb-2.5">
                     📁 ללא נושא
-                    <span className="font-normal text-xs mr-1">({itemsByTopic['__none__'].length})</span>
+                    <span className="font-normal text-xs mr-1">({itemsByVirtTopic['__none__'].length})</span>
                   </h3>
                   <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
-                    {itemsByTopic['__none__'].map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={[]} compact />
+                    {itemsByVirtTopic['__none__'].map(item => (
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
                     ))}
                   </div>
                 </div>
