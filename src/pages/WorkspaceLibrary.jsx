@@ -205,7 +205,10 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         (i.notes || '').toLowerCase().includes(q) ||
         (i.topicName || '').toLowerCase().includes(q) ||
         (i.tags || []).some(tag => tag.toLowerCase().includes(q)) ||
-        (i.sourceTab || '').toLowerCase().includes(q)
+        (i.sourceTab || '').toLowerCase().includes(q) ||
+        (i.symbol || '').toLowerCase().includes(q) ||
+        (i.companyName || '').toLowerCase().includes(q) ||
+        (i.fullNotes || '').toLowerCase().includes(q)
       );
     }
 
