@@ -20,6 +20,7 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
+import { StockWatchlistView } from "@/components/workspace/StockWatchlistView";
 
 // ─── Market status workflow ────────────────────────────────────────────────────
 // These constants power the Row 3 workflow tabs that appear only when the user
@@ -702,14 +703,16 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
           </div>
         )}
 
-        {/* Video grid */}
+        {/* Items — Stock table when in שוק ההון > מניות, card grid otherwise */}
         {filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-400 dark:text-zinc-600">
             <Star className="h-12 w-12 opacity-25" />
             <p className="text-sm font-medium text-center">
               {items.length === 0
                 ? 'לא נשמרו עדיין סרטונים ל-Workspace Library'
-                : 'לא נמצאו תוצאות לפי הסינון הנוכחי'}
+                : isStocksView && filterMarketStatus
+                  ? 'אין עדיין מניות בטאב הזה'
+                  : 'לא נמצאו תוצאות לפי הסינון הנוכחי'}
             </p>
             {items.length === 0 && (
               <p className="text-xs text-center text-slate-400 dark:text-zinc-600">
@@ -717,6 +720,13 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               </p>
             )}
           </div>
+        ) : isStocksView ? (
+          <StockWatchlistView
+            items={filteredItems}
+            filterMarketStatus={filterMarketStatus}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDelete}
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredItems.map(item => (

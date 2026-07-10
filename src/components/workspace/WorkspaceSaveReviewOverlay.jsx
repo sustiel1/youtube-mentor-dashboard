@@ -30,6 +30,7 @@ import {
   addCustomMainTab,
   removeCustomMainTab,
 } from "@/utils/workspaceTabPreferences";
+import { parseStockFromText, looksLikeStockSection } from "@/utils/workspaceStockItems";
 
 // ─── Market status workflow constants ─────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -361,9 +362,52 @@ export function WorkspaceSaveReviewOverlay({
 
     effectiveDraftItems.forEach((item) => {
       const id = `ws-snippet-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const titlePart = item.sectionLabel
-        ? `${item.sectionLabel} — ${(videoContext.videoTitle || '').slice(0, 40)}`
-        : (videoContext.videoTitle || '').slice(0, 60) || 'קטע נבחר';
+
+      // ── Detect stock rows and preserve structured fields ──────────────────
+      // Stock rows come from "מניות שהוזכרו" sections with type 'stocks-mentioned'.
+      // We parse the flat text back into structured fields and set the item title
+      // to "SYMBOL · Company" instead of repeating the generic session title.
+      const isStockRow = item.type === 'stocks-mentioned' ||
+        looksLikeStockSection(item.sectionLabel) ||
+        looksLikeStockSection(item.type);
+
+      let titlePart;
+      let stockExtraFields = {};
+
+      if (isStockRow) {
+        const parsed = parseStockFromText(item.text);
+        if (parsed?.symbol) {
+          // Use "AMAT · Applied Materials" as the visible item title
+          titlePart = [parsed.symbol, parsed.companyName].filter(Boolean).join(' · ');
+          stockExtraFields = {
+            itemType:      'stock',
+            symbol:        parsed.symbol,
+            companyName:   parsed.companyName   || null,
+            sentiment:     parsed.sentiment     || null,
+            percentChange: parsed.percentChange || null,
+            fullNotes:     item.text,              // complete original text — never truncated
+            rawSourceText: item.text,              // verbatim row text
+            sourceSection: item.sectionLabel || null,
+            sourceTitle:   videoContext.videoTitle || null,
+          };
+        } else {
+          // Couldn't parse ticker — still mark as stock and preserve raw text
+          titlePart = item.text.slice(0, 60) || item.sectionLabel || 'מניה';
+          stockExtraFields = {
+            itemType:      'stock',
+            fullNotes:     item.text,
+            rawSourceText: item.text,
+            sourceSection: item.sectionLabel || null,
+            sourceTitle:   videoContext.videoTitle || null,
+          };
+        }
+      } else {
+        titlePart = item.sectionLabel
+          ? `${item.sectionLabel} — ${(videoContext.videoTitle || '').slice(0, 40)}`
+          : (videoContext.videoTitle || '').slice(0, 60) || 'קטע נבחר';
+      }
+
+      // For stock items: item.text already IS the complete note; user notes appended
       const combinedNotes = [item.text, notes].filter(Boolean).join('\n\n');
 
       saveWorkspaceItem({
@@ -384,6 +428,7 @@ export function WorkspaceSaveReviewOverlay({
         category:     topicName    || null,
         subCategory:  subTopicName || null,
         savedAt:      now,
+        ...stockExtraFields, // additive: only present on stock items
       });
       savedIds.push(id);
     });
