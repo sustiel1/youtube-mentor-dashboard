@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
-import { Star, Check, Maximize2, Minimize2 } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Star, Check, Maximize2, Minimize2, BookOpen } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,8 +18,10 @@ import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
 export function WorkspaceSaveReviewOverlay({
   open,
   onOpenChange,
-  draftItems = [],      // [{ id, text, sectionLabel, type }]
-  videoContext = {},    // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
+  draftItems = [],                // [{ id, text, sectionLabel, type }] — from selection bar
+  currentAnalysisDraftItems = [], // [{ id, text, sectionLabel, type }] — from top Workspace button
+  defaultView = 'draft',          // which tab opens first
+  videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
   onSaved,
 }) {
   const { mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
@@ -36,10 +38,22 @@ export function WorkspaceSaveReviewOverlay({
   const [showNewTopic, setShowNewTopic] = useState(false);
 
   // View + layout state
-  const [activeView,       setActiveView]       = useState('draft');
+  const [activeView,       setActiveView]       = useState(defaultView);
   const [recentlySavedIds, setRecentlySavedIds] = useState([]);
   const [isSaving,         setIsSaving]         = useState(false);
   const [isFullscreen,     setIsFullscreen]     = useState(false);
+
+  // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
+  const [loadedDraftItems, setLoadedDraftItems] = useState(null);
+  const effectiveDraftItems = loadedDraftItems ?? draftItems;
+
+  // Reset to defaultView and clear loaded items each time the dialog opens
+  useEffect(() => {
+    if (open) {
+      setActiveView(defaultView);
+      setLoadedDraftItems(null);
+    }
+  }, [open, defaultView]);
 
   const subTopics        = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
   const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),    [mainTopics, topicId]);
@@ -58,11 +72,12 @@ export function WorkspaceSaveReviewOverlay({
       setTagInput('');
       setFlags({ isFavorite: false, isImportant: false, mustWatchAgain: false });
       setNotes('');
-      setActiveView('draft');
+      setActiveView(defaultView);
       setRecentlySavedIds([]);
       setShowNewTopic(false);
       setNewTopicName('');
       setIsFullscreen(false);
+      setLoadedDraftItems(null);
     }
     onOpenChange(isOpen);
   }
@@ -87,15 +102,21 @@ export function WorkspaceSaveReviewOverlay({
     setShowNewTopic(false);
   }
 
+  // Load current analysis items into the draft panel
+  function handleLoadCurrentAnalysis() {
+    setLoadedDraftItems(currentAnalysisDraftItems);
+    setActiveView('draft');
+  }
+
   const handleSaveAll = useCallback(() => {
-    if (draftItems.length === 0) return;
+    if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
     const savedIds = [];
     const now        = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
 
-    draftItems.forEach((item) => {
+    effectiveDraftItems.forEach((item) => {
       const id = `ws-snippet-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const titlePart = item.sectionLabel
         ? `${item.sectionLabel} — ${(videoContext.videoTitle || '').slice(0, 40)}`
@@ -130,7 +151,7 @@ export function WorkspaceSaveReviewOverlay({
     setIsSaving(false);
     toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
     onSaved?.({ count: savedIds.length });
-  }, [draftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
+  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
 
   // ── Computed list views ──────────────────────────────────────────────────────
 
@@ -174,12 +195,18 @@ export function WorkspaceSaveReviewOverlay({
   );
 
   const VIEWS = [
-    { key: 'draft',  label: `טיוטה (${draftItems.length})` },
+    ...(effectiveDraftItems.length > 0 || currentAnalysisDraftItems.length > 0
+      ? [{ key: 'draft', label: effectiveDraftItems.length > 0 ? `טיוטה (${effectiveDraftItems.length})` : 'טיוטה' }]
+      : []),
     { key: 'recent', label: recentlySavedIds.length > 0 ? `נשמרו עכשיו (${recentlySavedIds.length})` : 'נשמרו עכשיו' },
     { key: 'topics', label: 'לפי נושאים' },
     { key: 'dates',  label: 'לפי תאריכים' },
     { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
+
+  // ── Current analysis banner (shown in library views) ────────────────────────
+
+  const showAnalysisBanner = currentAnalysisDraftItems.length > 0 && loadedDraftItems === null && activeView !== 'draft';
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -245,181 +272,216 @@ export function WorkspaceSaveReviewOverlay({
           {/* Draft view */}
           {activeView === 'draft' && (
             <div className={cn('p-5 space-y-4', isFullscreen && 'max-w-3xl mx-auto')}>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
-                  טיוטת שמירה — {draftItems.length} פריטים נבחרו
-                </h3>
-                {videoContext.videoTitle && (
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 truncate max-w-xs">
-                    מתוך: {videoContext.videoTitle.slice(0, 60)}
-                  </span>
-                )}
-              </div>
-
-              {/* Selected snippets */}
-              <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
-                {draftItems.map(item => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 px-4 py-3"
-                  >
-                    {item.sectionLabel && (
-                      <p className="text-xs font-semibold text-slate-500 dark:text-zinc-500 mb-1">
-                        {item.sectionLabel}
+              {effectiveDraftItems.length === 0 ? (
+                // No items loaded yet — show the "load current analysis" call-to-action
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-6 text-center space-y-3">
+                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
+                    הניתוח הנוכחי
+                  </p>
+                  {currentAnalysisDraftItems.length > 0 ? (
+                    <>
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                        {currentAnalysisDraftItems.length} פריטים זמינים מהניתוח הנוכחי
                       </p>
-                    )}
-                    <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed line-clamp-3">
-                      {item.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bulk controls */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">נושא ראשי</label>
-                  <select
-                    value={topicId}
-                    onChange={e => { setTopicId(e.target.value); setSubTopicId(''); }}
-                    className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
-                  >
-                    <option value="">בחר נושא...</option>
-                    {mainTopics.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.emoji ? `${t.emoji} ` : ''}{t.name}
-                      </option>
-                    ))}
-                  </select>
-                  {showNewTopic ? (
-                    <div className="flex gap-1">
-                      <input
-                        autoFocus
-                        value={newTopicName}
-                        onChange={e => setNewTopicName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
-                        placeholder="שם נושא חדש..."
-                        className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-sm text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
-                      />
-                      <button type="button" onClick={handleAddTopic} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
-                      <button type="button" onClick={() => setShowNewTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs text-slate-500">✕</button>
-                    </div>
-                  ) : (
-                    <button type="button" onClick={() => setShowNewTopic(true)} className="text-xs text-amber-500 hover:underline">
-                      + נושא חדש
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">תת-נושא</label>
-                  <select
-                    value={subTopicId}
-                    onChange={e => setSubTopicId(e.target.value === '__none__' ? '' : e.target.value)}
-                    disabled={!topicId || subTopics.length === 0}
-                    className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
-                  >
-                    <option value="__none__">
-                      {!topicId ? 'בחר נושא תחילה' : subTopics.length === 0 ? 'אין תת-נושאים' : 'ללא תת-נושא'}
-                    </option>
-                    {subTopics.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
-                  תגיות <span className="font-normal text-slate-400">(Enter או פסיק להפרדה)</span>
-                </label>
-                <div
-                  className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 min-h-[42px] cursor-text"
-                  onClick={() => document.getElementById('ws-draft-tag-input')?.focus()}
-                >
-                  {tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300"
-                    >
-                      #{tag}
                       <button
                         type="button"
-                        onClick={e => { e.stopPropagation(); setTags(p => p.filter(t => t !== tag)); }}
-                        className="text-indigo-400 hover:text-indigo-700 leading-none"
-                      >×</button>
-                    </span>
-                  ))}
-                  <input
-                    id="ws-draft-tag-input"
-                    type="text"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}
-                    placeholder={tags.length === 0 ? 'nvda, ריבית...' : ''}
-                    dir="ltr"
-                    className="flex-1 min-w-[80px] bg-transparent text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none"
-                  />
+                        onClick={handleLoadCurrentAnalysis}
+                        className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors"
+                      >
+                        ✨ טען ניתוח נוכחי לטיוטה ({currentAnalysisDraftItems.length} פריטים)
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-xs text-indigo-500 dark:text-indigo-500">
+                      אין תוכן ניתוח זמין לשמירה
+                    </p>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                      טיוטת שמירה — {effectiveDraftItems.length} פריטים נבחרו
+                    </h3>
+                    {videoContext.videoTitle && (
+                      <span className="text-xs text-slate-400 dark:text-zinc-500 truncate max-w-xs">
+                        מתוך: {videoContext.videoTitle.slice(0, 60)}
+                      </span>
+                    )}
+                    {loadedDraftItems !== null && (
+                      <span className="rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-400">
+                        ✨ ניתוח נוכחי
+                      </span>
+                    )}
+                  </div>
 
-              {/* Flags */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">סמן כ...</label>
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    { key: 'isFavorite',     label: '⭐ מועדף',     active: 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-600 dark:text-amber-300' },
-                    { key: 'isImportant',    label: '🔴 חשוב',      active: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-950/40 dark:border-red-600 dark:text-red-300' },
-                    { key: 'mustWatchAgain', label: '🔁 לצפות שוב', active: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-950/40 dark:border-blue-600 dark:text-blue-300' },
-                  ].map(({ key, label, active }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setFlags(f => ({ ...f, [key]: !f[key] }))}
-                      className={cn(
-                        'rounded-xl border px-3 py-2 text-sm font-semibold transition-all',
-                        flags[key]
-                          ? active
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                  {/* Selected snippets */}
+                  <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
+                    {effectiveDraftItems.map(item => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 px-4 py-3"
+                      >
+                        {item.sectionLabel && (
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-500 mb-1">
+                            {item.sectionLabel}
+                          </p>
+                        )}
+                        <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed line-clamp-3">
+                          {item.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bulk controls */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">נושא ראשי</label>
+                      <select
+                        value={topicId}
+                        onChange={e => { setTopicId(e.target.value); setSubTopicId(''); }}
+                        className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      >
+                        <option value="">בחר נושא...</option>
+                        {mainTopics.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.emoji ? `${t.emoji} ` : ''}{t.name}
+                          </option>
+                        ))}
+                      </select>
+                      {showNewTopic ? (
+                        <div className="flex gap-1">
+                          <input
+                            autoFocus
+                            value={newTopicName}
+                            onChange={e => setNewTopicName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
+                            placeholder="שם נושא חדש..."
+                            className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-sm text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
+                          />
+                          <button type="button" onClick={handleAddTopic} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
+                          <button type="button" onClick={() => setShowNewTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs text-slate-500">✕</button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => setShowNewTopic(true)} className="text-xs text-amber-500 hover:underline">
+                          + נושא חדש
+                        </button>
                       )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">תת-נושא</label>
+                      <select
+                        value={subTopicId}
+                        onChange={e => setSubTopicId(e.target.value === '__none__' ? '' : e.target.value)}
+                        disabled={!topicId || subTopics.length === 0}
+                        className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
+                      >
+                        <option value="__none__">
+                          {!topicId ? 'בחר נושא תחילה' : subTopics.length === 0 ? 'אין תת-נושאים' : 'ללא תת-נושא'}
+                        </option>
+                        {subTopics.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
+                      תגיות <span className="font-normal text-slate-400">(Enter או פסיק להפרדה)</span>
+                    </label>
+                    <div
+                      className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 min-h-[42px] cursor-text"
+                      onClick={() => document.getElementById('ws-draft-tag-input')?.focus()}
                     >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      {tags.map(tag => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300"
+                        >
+                          #{tag}
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); setTags(p => p.filter(t => t !== tag)); }}
+                            className="text-indigo-400 hover:text-indigo-700 leading-none"
+                          >×</button>
+                        </span>
+                      ))}
+                      <input
+                        id="ws-draft-tag-input"
+                        type="text"
+                        value={tagInput}
+                        onChange={e => setTagInput(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}
+                        placeholder={tags.length === 0 ? 'nvda, ריבית...' : ''}
+                        dir="ltr"
+                        className="flex-1 min-w-[80px] bg-transparent text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none"
+                      />
+                    </div>
+                  </div>
 
-              {/* Extra notes */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
-                  הערות נוספות <span className="font-normal">(אופציונלי — תצורפנה לכל הפריטים)</span>
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  rows={2}
-                  dir="rtl"
-                  placeholder="הוסף הערה אישית..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed"
-                />
-              </div>
+                  {/* Flags */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">סמן כ...</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { key: 'isFavorite',     label: '⭐ מועדף',     active: 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-600 dark:text-amber-300' },
+                        { key: 'isImportant',    label: '🔴 חשוב',      active: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-950/40 dark:border-red-600 dark:text-red-300' },
+                        { key: 'mustWatchAgain', label: '🔁 לצפות שוב', active: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-950/40 dark:border-blue-600 dark:text-blue-300' },
+                      ].map(({ key, label, active }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setFlags(f => ({ ...f, [key]: !f[key] }))}
+                          className={cn(
+                            'rounded-xl border px-3 py-2 text-sm font-semibold transition-all',
+                            flags[key]
+                              ? active
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <button
-                type="button"
-                onClick={handleSaveAll}
-                disabled={isSaving || draftItems.length === 0}
-                className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
-              >
-                {isSaving ? 'שומר...' : `⭐ שמור הכל ל-Workspace (${draftItems.length} פריטים)`}
-              </button>
+                  {/* Extra notes */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
+                      הערות נוספות <span className="font-normal">(אופציונלי — תצורפנה לכל הפריטים)</span>
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      rows={2}
+                      dir="rtl"
+                      placeholder="הוסף הערה אישית..."
+                      className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveAll}
+                    disabled={isSaving || effectiveDraftItems.length === 0}
+                    className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
+                  >
+                    {isSaving ? 'שומר...' : `⭐ שמור הכל ל-Workspace (${effectiveDraftItems.length} פריטים)`}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           {/* Recently saved view */}
           {activeView === 'recent' && (
             <div className={cn('p-5', isFullscreen && 'max-w-3xl mx-auto')}>
+              <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {recentItems.length === 0 ? (
                 <EmptyState label="שמור פריטים כדי לראות אותם כאן" icon={<Check className="h-10 w-10 opacity-25" />} />
               ) : (
@@ -441,6 +503,7 @@ export function WorkspaceSaveReviewOverlay({
           {/* By topic view */}
           {activeView === 'topics' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
+              <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
               {mainTopics
                 .filter(t => itemsByTopic[t.id]?.length > 0)
@@ -477,6 +540,7 @@ export function WorkspaceSaveReviewOverlay({
           {/* By date view */}
           {activeView === 'dates' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
+              <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
               {[
                 { key: 'today',     label: 'היום' },
@@ -505,6 +569,7 @@ export function WorkspaceSaveReviewOverlay({
           {/* Pinned / favorites view */}
           {activeView === 'pinned' && (
             <div className={cn('p-5', isFullscreen && 'max-w-3xl mx-auto')}>
+              <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {pinnedItems.length === 0 ? (
                 <EmptyState label="אין פריטים מועדפים / חשובים עדיין" />
               ) : (
@@ -528,9 +593,33 @@ export function WorkspaceSaveReviewOverlay({
   );
 }
 
+// ─── Current analysis banner ──────────────────────────────────────────────────
+
+function AnalysisBanner({ show, count, onLoad }) {
+  if (!show || count === 0) return null;
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+        <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
+          הניתוח הנוכחי
+        </span>
+        <span className="text-xs text-indigo-600 dark:text-indigo-400">
+          — {count} פריטים זמינים לשמירה
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onLoad}
+        className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 transition-colors"
+      >
+        שמור ניתוח נוכחי ←
+      </button>
+    </div>
+  );
+}
+
 // ─── Library item card ────────────────────────────────────────────────────────
-// Full-detail card for "recent" and "pinned" views.
-// Compact variant used inside grouped views (by-topic, by-date).
 
 function LibraryItemCard({ item, allTopics, compact = false, showDate = false }) {
   const mainTopic = allTopics.find(t => t.id === item.topicId && !t.parentId);
@@ -541,7 +630,6 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
   })();
 
   if (compact) {
-    // Compact: single row — title + flags + optional date
     return (
       <div className="rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-3 py-2 flex items-center gap-2 justify-between">
         <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
@@ -559,11 +647,8 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
     );
   }
 
-  // Full card: 4-row layout
   return (
     <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 space-y-1.5">
-
-      {/* Row 1: title + flags */}
       <div className="flex items-start gap-2 justify-between">
         <p className="flex-1 min-w-0 text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug">
           {item.videoTitle || 'ללא כותרת'}
@@ -574,15 +659,11 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
         </div>
       </div>
-
-      {/* Row 2: notes / snippet text */}
       {item.notes && (
         <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">
           {item.notes}
         </p>
       )}
-
-      {/* Row 3: topic › subtopic */}
       {(mainTopic || subTopic) && (
         <p className="text-xs text-slate-500 dark:text-zinc-500 flex items-center gap-1">
           {mainTopic && (
@@ -594,8 +675,6 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           {subTopic && <span>{subTopic.name}</span>}
         </p>
       )}
-
-      {/* Row 4: tags + sourceTab + date */}
       {(itemTags.length > 0 || item.sourceTab || savedDate) && (
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {itemTags.slice(0, 4).map(tag => (

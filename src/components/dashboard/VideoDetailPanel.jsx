@@ -2041,6 +2041,35 @@ function getJsonErrorContext(raw, pos, linesBefore = 3, linesAfter = 3) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+const ANALYSIS_SECTIONS = [
+  { tab: 'summary',          label: 'סיכום' },
+  { tab: 'useful-knowledge', label: 'ידע שימושי' },
+  { tab: 'insights',         label: 'תובנות' },
+  { tab: 'chapters',         label: 'פרקים' },
+  { tab: 'market-news',      label: 'חדשות שוק' },
+];
+
+function buildCurrentAnalysisItems(video, marketBriefData) {
+  const seen = new Set();
+  const items = [];
+  ANALYSIS_SECTIONS.forEach(({ tab, label }) => {
+    const tabItems = extractVideoTabItems(video, tab, marketBriefData);
+    tabItems.forEach((text, i) => {
+      if (!text || typeof text !== 'string' || text.trim().length < 10) return;
+      const key = text.trim().slice(0, 120);
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({
+        id: `cur-${tab}-${i}`,
+        text: text.trim(),
+        sectionLabel: label,
+        type: tab,
+      });
+    });
+  });
+  return items;
+}
+
 function getWorkspaceSourceTab(tabValue) {
   const MAP = {
     'summary':             'Summary',
@@ -2187,6 +2216,8 @@ export function VideoDetailPanel({
   const [workspaceDraftOpen, setWorkspaceDraftOpen] = useState(false);
   const [workspaceDraftItems, setWorkspaceDraftItems] = useState([]);
   const [workspaceDraftContext, setWorkspaceDraftContext] = useState({});
+  const [workspaceDraftDefaultView, setWorkspaceDraftDefaultView] = useState('draft');
+  const [workspaceCurrentAnalysisItems, setWorkspaceCurrentAnalysisItems] = useState([]);
   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
@@ -5465,6 +5496,24 @@ export function VideoDetailPanel({
       videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
       sourceTab: getWorkspaceSourceTab(activeTab),
     });
+    setWorkspaceCurrentAnalysisItems([]);
+    setWorkspaceDraftDefaultView('draft');
+    setWorkspaceDraftOpen(true);
+  };
+
+  const handleOpenWorkspaceLibrary = () => {
+    const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+    const analysisItems = buildCurrentAnalysisItems(effectiveVideo, marketBriefData);
+    setWorkspaceDraftItems([]);
+    setWorkspaceDraftContext({
+      videoTitle: effectiveVideo?.title || '',
+      channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+      thumbnail: effectiveVideo?.thumbnail || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null),
+      videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
+      sourceTab: getWorkspaceSourceTab(activeTab),
+    });
+    setWorkspaceCurrentAnalysisItems(analysisItems);
+    setWorkspaceDraftDefaultView('recent');
     setWorkspaceDraftOpen(true);
   };
 
@@ -9009,7 +9058,7 @@ export function VideoDetailPanel({
                       label: 'Workspace',
                       sub: currentWorkspaceDestinationLabel,
                       cn: 'text-indigo-700 dark:text-indigo-300',
-                      onClick: isInWorkspaceLib && isWorkspaceMappingCurrent ? handleOpenInWorkspace : () => { setWorkspaceSourceTab(getWorkspaceSourceTab(activeTab)); setWorkspaceSaveOpen(true); },
+                      onClick: handleOpenWorkspaceLibrary,
                       status: { ok: isWorkspaceMappingCurrent, okLabel: 'נשמר', failLabel: 'לא נשמר' },
                     },
                   ].map(({ id, emoji, label, sub, cn, onClick, disabled, status, labelCn, subCn }) => (
@@ -12287,6 +12336,8 @@ export function VideoDetailPanel({
       open={workspaceDraftOpen}
       onOpenChange={setWorkspaceDraftOpen}
       draftItems={workspaceDraftItems}
+      currentAnalysisDraftItems={workspaceCurrentAnalysisItems}
+      defaultView={workspaceDraftDefaultView}
       videoContext={workspaceDraftContext}
       onSaved={() => multiSelectClearWithBrain()}
     />
