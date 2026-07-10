@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Star, Check } from "lucide-react";
+import { Star, Check, Maximize2, Minimize2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,23 +26,24 @@ export function WorkspaceSaveReviewOverlay({
   const { items: libraryItems, reload } = useWorkspaceItems();
 
   // Bulk controls state
-  const [topicId, setTopicId] = useState('');
-  const [subTopicId, setSubTopicId] = useState('');
-  const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState('');
-  const [flags, setFlags] = useState({ isFavorite: false, isImportant: false, mustWatchAgain: false });
-  const [notes, setNotes] = useState('');
+  const [topicId,      setTopicId]      = useState('');
+  const [subTopicId,   setSubTopicId]   = useState('');
+  const [tags,         setTags]         = useState([]);
+  const [tagInput,     setTagInput]     = useState('');
+  const [flags,        setFlags]        = useState({ isFavorite: false, isImportant: false, mustWatchAgain: false });
+  const [notes,        setNotes]        = useState('');
   const [newTopicName, setNewTopicName] = useState('');
   const [showNewTopic, setShowNewTopic] = useState(false);
 
-  // View state
-  const [activeView, setActiveView] = useState('draft');
+  // View + layout state
+  const [activeView,       setActiveView]       = useState('draft');
   const [recentlySavedIds, setRecentlySavedIds] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving,         setIsSaving]         = useState(false);
+  const [isFullscreen,     setIsFullscreen]     = useState(false);
 
-  const subTopics = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
-  const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId), [mainTopics, topicId]);
-  const selectedSubTopic  = useMemo(() => subTopics.find(t => t.id === subTopicId), [subTopics, subTopicId]);
+  const subTopics        = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
+  const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),    [mainTopics, topicId]);
+  const selectedSubTopic  = useMemo(() => subTopics.find(t => t.id === subTopicId),  [subTopics,  subTopicId]);
 
   const allTopics = useMemo(
     () => [...mainTopics, ...mainTopics.flatMap(t => getSubTopics(t.id))],
@@ -61,6 +62,7 @@ export function WorkspaceSaveReviewOverlay({
       setRecentlySavedIds([]);
       setShowNewTopic(false);
       setNewTopicName('');
+      setIsFullscreen(false);
     }
     onOpenChange(isOpen);
   }
@@ -89,7 +91,7 @@ export function WorkspaceSaveReviewOverlay({
     if (draftItems.length === 0) return;
     setIsSaving(true);
     const savedIds = [];
-    const now = new Date().toISOString();
+    const now        = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
 
@@ -102,20 +104,20 @@ export function WorkspaceSaveReviewOverlay({
 
       saveWorkspaceItem({
         id,
-        videoId: null,
-        videoUrl: videoContext.videoUrl || null,
-        videoTitle: titlePart.slice(0, 80),
+        videoId:     null,
+        videoUrl:    videoContext.videoUrl    || null,
+        videoTitle:  titlePart.slice(0, 80),
         channelName: videoContext.channelName || '',
-        thumbnail: videoContext.thumbnail || null,
-        topicId: topicId || null,
-        subTopicId: subTopicId || null,
+        thumbnail:   videoContext.thumbnail   || null,
+        topicId:     topicId    || null,
+        subTopicId:  subTopicId || null,
         topicName,
         subTopicName,
-        notes: combinedNotes,
+        notes:    combinedNotes,
         flags,
         tags,
         sourceTab: videoContext.sourceTab || 'Manual',
-        category: topicName || null,
+        category:    topicName    || null,
         subCategory: subTopicName || null,
         savedAt: now,
       });
@@ -130,7 +132,8 @@ export function WorkspaceSaveReviewOverlay({
     onSaved?.({ count: savedIds.length });
   }, [draftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
 
-  // Computed list views
+  // ── Computed list views ──────────────────────────────────────────────────────
+
   const recentItems = useMemo(
     () => recentlySavedIds.length > 0 ? libraryItems.filter(i => recentlySavedIds.includes(i.id)) : [],
     [libraryItems, recentlySavedIds],
@@ -147,8 +150,8 @@ export function WorkspaceSaveReviewOverlay({
   }, [libraryItems]);
 
   const itemsByDate = useMemo(() => {
-    const now = new Date();
-    const today = now.toDateString();
+    const now       = new Date();
+    const today     = now.toDateString();
     const yesterday = new Date(now - 86400000).toDateString();
     const weekAgo   = new Date(now - 7  * 86400000);
     const monthAgo  = new Date(now - 30 * 86400000);
@@ -178,22 +181,43 @@ export function WorkspaceSaveReviewOverlay({
     { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
 
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         dir="rtl"
-        className="flex flex-col w-[min(96vw,860px)] max-h-[88vh] p-0 gap-0 border-amber-200 dark:border-amber-900/40"
+        className={cn(
+          'flex flex-col p-0 gap-0 border-amber-200 dark:border-amber-900/40 transition-all duration-200',
+          isFullscreen
+            ? 'w-[98vw] max-w-[98vw] h-[96vh] max-h-[96vh]'
+            : 'w-[min(96vw,860px)] max-h-[88vh]',
+        )}
       >
-        <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-4">
-          <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
-            ⭐ Workspace Library
-            <span className="text-xs font-normal text-slate-400 dark:text-zinc-500">
-              — {libraryItems.length} פריטים שמורים
-            </span>
-          </DialogTitle>
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
+              ⭐ Workspace Library
+              <span className="text-xs font-normal text-slate-400 dark:text-zinc-500">
+                — {libraryItems.length} פריטים שמורים
+              </span>
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(f => !f)}
+              title={isFullscreen ? 'צא ממסך מלא' : 'מסך מלא'}
+              className="shrink-0 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-slate-500 dark:text-zinc-400 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5"
+            >
+              {isFullscreen
+                ? <><Minimize2 className="h-3.5 w-3.5" /><span>צמצם</span></>
+                : <><Maximize2 className="h-3.5 w-3.5" /><span>מסך מלא</span></>
+              }
+            </button>
+          </div>
         </DialogHeader>
 
-        {/* View tabs */}
+        {/* ── View tabs ──────────────────────────────────────────── */}
         <div
           dir="rtl"
           className="shrink-0 flex gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-2 bg-white dark:bg-zinc-950 overflow-x-auto"
@@ -215,36 +239,36 @@ export function WorkspaceSaveReviewOverlay({
           ))}
         </div>
 
-        {/* Scrollable body */}
+        {/* ── Scrollable body ────────────────────────────────────── */}
         <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
 
-          {/* ── Draft view ─────────────────────────────────────────── */}
+          {/* Draft view */}
           {activeView === 'draft' && (
-            <div className="p-5 space-y-4">
+            <div className={cn('p-5 space-y-4', isFullscreen && 'max-w-3xl mx-auto')}>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
                   טיוטת שמירה — {draftItems.length} פריטים נבחרו
                 </h3>
                 {videoContext.videoTitle && (
-                  <span className="text-xs text-slate-400 dark:text-zinc-600 truncate max-w-xs">
-                    מתוך: {videoContext.videoTitle.slice(0, 55)}
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 truncate max-w-xs">
+                    מתוך: {videoContext.videoTitle.slice(0, 60)}
                   </span>
                 )}
               </div>
 
-              {/* Selected snippets list */}
-              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+              {/* Selected snippets */}
+              <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
                 {draftItems.map(item => (
                   <div
                     key={item.id}
-                    className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-3 py-2"
+                    className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 px-4 py-3"
                   >
                     {item.sectionLabel && (
-                      <p className="text-[10px] font-semibold text-slate-500 dark:text-zinc-500 mb-0.5">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-zinc-500 mb-1">
                         {item.sectionLabel}
                       </p>
                     )}
-                    <p className="text-xs text-slate-700 dark:text-zinc-300 line-clamp-2">
+                    <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed line-clamp-3">
                       {item.text}
                     </p>
                   </div>
@@ -253,8 +277,7 @@ export function WorkspaceSaveReviewOverlay({
 
               {/* Bulk controls */}
               <div className="grid grid-cols-2 gap-3">
-                {/* Topic */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">נושא ראשי</label>
                   <select
                     value={topicId}
@@ -269,27 +292,26 @@ export function WorkspaceSaveReviewOverlay({
                     ))}
                   </select>
                   {showNewTopic ? (
-                    <div className="flex gap-1 mt-1">
+                    <div className="flex gap-1">
                       <input
                         autoFocus
                         value={newTopicName}
                         onChange={e => setNewTopicName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
                         placeholder="שם נושא חדש..."
-                        className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1 text-xs text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
+                        className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-sm text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
                       />
-                      <button type="button" onClick={handleAddTopic} className="rounded-lg bg-amber-500 px-2 py-1 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
-                      <button type="button" onClick={() => setShowNewTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1 text-xs text-slate-500">✕</button>
+                      <button type="button" onClick={handleAddTopic} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
+                      <button type="button" onClick={() => setShowNewTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs text-slate-500">✕</button>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => setShowNewTopic(true)} className="text-[11px] text-amber-500 hover:underline">
+                    <button type="button" onClick={() => setShowNewTopic(true)} className="text-xs text-amber-500 hover:underline">
                       + נושא חדש
                     </button>
                   )}
                 </div>
 
-                {/* Sub-topic */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">תת-נושא</label>
                   <select
                     value={subTopicId}
@@ -308,27 +330,25 @@ export function WorkspaceSaveReviewOverlay({
               </div>
 
               {/* Tags */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
                   תגיות <span className="font-normal text-slate-400">(Enter או פסיק להפרדה)</span>
                 </label>
                 <div
-                  className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-2 min-h-[38px] cursor-text"
+                  className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 min-h-[42px] cursor-text"
                   onClick={() => document.getElementById('ws-draft-tag-input')?.focus()}
                 >
                   {tags.map(tag => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:text-indigo-300"
+                      className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300"
                     >
                       #{tag}
                       <button
                         type="button"
                         onClick={e => { e.stopPropagation(); setTags(p => p.filter(t => t !== tag)); }}
                         className="text-indigo-400 hover:text-indigo-700 leading-none"
-                      >
-                        ×
-                      </button>
+                      >×</button>
                     </span>
                   ))}
                   <input
@@ -340,13 +360,13 @@ export function WorkspaceSaveReviewOverlay({
                     onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}
                     placeholder={tags.length === 0 ? 'nvda, ריבית...' : ''}
                     dir="ltr"
-                    className="flex-1 min-w-[80px] bg-transparent text-xs text-slate-700 dark:text-zinc-300 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none"
+                    className="flex-1 min-w-[80px] bg-transparent text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none"
                   />
                 </div>
               </div>
 
               {/* Flags */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">סמן כ...</label>
                 <div className="flex gap-2 flex-wrap">
                   {[
@@ -359,10 +379,10 @@ export function WorkspaceSaveReviewOverlay({
                       type="button"
                       onClick={() => setFlags(f => ({ ...f, [key]: !f[key] }))}
                       className={cn(
-                        'rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all',
+                        'rounded-xl border px-3 py-2 text-sm font-semibold transition-all',
                         flags[key]
                           ? active
-                          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400',
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
                       )}
                     >
                       {label}
@@ -372,7 +392,7 @@ export function WorkspaceSaveReviewOverlay({
               </div>
 
               {/* Extra notes */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
                   הערות נוספות <span className="font-normal">(אופציונלי — תצורפנה לכל הפריטים)</span>
                 </label>
@@ -382,7 +402,7 @@ export function WorkspaceSaveReviewOverlay({
                   rows={2}
                   dir="rtl"
                   placeholder="הוסף הערה אישית..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed"
                 />
               </div>
 
@@ -390,27 +410,27 @@ export function WorkspaceSaveReviewOverlay({
                 type="button"
                 onClick={handleSaveAll}
                 disabled={isSaving || draftItems.length === 0}
-                className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
+                className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
               >
                 {isSaving ? 'שומר...' : `⭐ שמור הכל ל-Workspace (${draftItems.length} פריטים)`}
               </button>
             </div>
           )}
 
-          {/* ── Recently saved view ─────────────────────────────────── */}
+          {/* Recently saved view */}
           {activeView === 'recent' && (
-            <div className="p-5">
+            <div className={cn('p-5', isFullscreen && 'max-w-3xl mx-auto')}>
               {recentItems.length === 0 ? (
                 <EmptyState label="שמור פריטים כדי לראות אותם כאן" icon={<Check className="h-10 w-10 opacity-25" />} />
               ) : (
                 <>
-                  <h3 className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5" />
+                  <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-4 flex items-center gap-1.5">
+                    <Check className="h-4 w-4" />
                     נשמרו עכשיו — {recentItems.length} פריטים
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {recentItems.map(item => (
-                      <MiniItemCard key={item.id} item={item} allTopics={allTopics} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} />
                     ))}
                   </div>
                 </>
@@ -418,33 +438,35 @@ export function WorkspaceSaveReviewOverlay({
             </div>
           )}
 
-          {/* ── By topic view ───────────────────────────────────────── */}
+          {/* By topic view */}
           {activeView === 'topics' && (
-            <div className="p-5 space-y-4">
+            <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
               {mainTopics
                 .filter(t => itemsByTopic[t.id]?.length > 0)
                 .map(topic => (
                   <div key={topic.id}>
-                    <h3 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2">
-                      {topic.emoji} {topic.name}
-                      <span className="mr-1 text-slate-400 font-normal">({itemsByTopic[topic.id].length})</span>
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-1.5">
+                      <span>{topic.emoji}</span>
+                      <span>{topic.name}</span>
+                      <span className="text-slate-400 dark:text-zinc-600 font-normal text-xs">({itemsByTopic[topic.id].length})</span>
                     </h3>
-                    <div className="space-y-1.5 pr-2">
+                    <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                       {itemsByTopic[topic.id].map(item => (
-                        <MiniItemCard key={item.id} item={item} allTopics={allTopics} compact />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
                       ))}
                     </div>
                   </div>
                 ))}
               {itemsByTopic['__none__']?.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-bold text-slate-400 dark:text-zinc-600 mb-2">
-                    📁 ללא נושא <span className="font-normal">({itemsByTopic['__none__'].length})</span>
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-600 mb-2.5">
+                    📁 ללא נושא
+                    <span className="font-normal text-xs mr-1">({itemsByTopic['__none__'].length})</span>
                   </h3>
-                  <div className="space-y-1.5 pr-2">
+                  <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                     {itemsByTopic['__none__'].map(item => (
-                      <MiniItemCard key={item.id} item={item} allTopics={[]} compact />
+                      <LibraryItemCard key={item.id} item={item} allTopics={[]} compact />
                     ))}
                   </div>
                 </div>
@@ -452,9 +474,9 @@ export function WorkspaceSaveReviewOverlay({
             </div>
           )}
 
-          {/* ── By date view ────────────────────────────────────────── */}
+          {/* By date view */}
           {activeView === 'dates' && (
-            <div className="p-5 space-y-4">
+            <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
               {[
                 { key: 'today',     label: 'היום' },
@@ -466,13 +488,13 @@ export function WorkspaceSaveReviewOverlay({
                 .filter(({ key }) => itemsByDate[key]?.length > 0)
                 .map(({ key, label }) => (
                   <div key={key}>
-                    <h3 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2">
-                      {label}{' '}
-                      <span className="text-slate-400 font-normal">({itemsByDate[key].length})</span>
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2.5">
+                      {label}
+                      <span className="text-slate-400 dark:text-zinc-600 font-normal text-xs mr-1">({itemsByDate[key].length})</span>
                     </h3>
-                    <div className="space-y-1.5 pr-2">
+                    <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                       {itemsByDate[key].map(item => (
-                        <MiniItemCard key={item.id} item={item} allTopics={allTopics} compact showDate />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate />
                       ))}
                     </div>
                   </div>
@@ -480,19 +502,21 @@ export function WorkspaceSaveReviewOverlay({
             </div>
           )}
 
-          {/* ── Pinned / favorites view ─────────────────────────────── */}
+          {/* Pinned / favorites view */}
           {activeView === 'pinned' && (
-            <div className="p-5 space-y-2">
+            <div className={cn('p-5', isFullscreen && 'max-w-3xl mx-auto')}>
               {pinnedItems.length === 0 ? (
                 <EmptyState label="אין פריטים מועדפים / חשובים עדיין" />
               ) : (
                 <>
-                  <h3 className="text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-3">
+                  <h3 className="text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-4">
                     {pinnedItems.length} פריטים מועדפים / חשובים
                   </h3>
-                  {pinnedItems.map(item => (
-                    <MiniItemCard key={item.id} item={item} allTopics={allTopics} />
-                  ))}
+                  <div className="space-y-3">
+                    {pinnedItems.map(item => (
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} />
+                    ))}
+                  </div>
                 </>
               )}
             </div>
@@ -504,64 +528,99 @@ export function WorkspaceSaveReviewOverlay({
   );
 }
 
-// ─── Mini item card ───────────────────────────────────────────────────────────
+// ─── Library item card ────────────────────────────────────────────────────────
+// Full-detail card for "recent" and "pinned" views.
+// Compact variant used inside grouped views (by-topic, by-date).
 
-function MiniItemCard({ item, allTopics, compact = false, showDate = false }) {
+function LibraryItemCard({ item, allTopics, compact = false, showDate = false }) {
   const mainTopic = allTopics.find(t => t.id === item.topicId && !t.parentId);
   const subTopic  = allTopics.find(t => t.id === item.subTopicId);
+  const itemTags  = item.tags || [];
   const savedDate = (() => {
     try { return format(new Date(item.savedAt), "d בMMM", { locale: he }); } catch { return ''; }
   })();
 
-  return (
-    <div className={cn(
-      'rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3',
-      compact ? 'py-1.5' : 'py-2.5',
-    )}>
-      <div className="flex items-start gap-2 justify-between">
-        <div className="flex-1 min-w-0">
-          <p className={cn('font-semibold text-slate-800 dark:text-zinc-200 truncate', compact ? 'text-[11px]' : 'text-xs')}>
-            {item.videoTitle || 'ללא כותרת'}
-          </p>
-          {!compact && item.notes && (
-            <p className="text-[10px] text-slate-500 dark:text-zinc-500 line-clamp-1 mt-0.5">
-              {item.notes.slice(0, 90)}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {item.flags?.isFavorite  && <span className="text-xs">⭐</span>}
-          {item.flags?.isImportant && <span className="text-xs">🔴</span>}
+  if (compact) {
+    // Compact: single row — title + flags + optional date
+    return (
+      <div className="rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-3 py-2 flex items-center gap-2 justify-between">
+        <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
+          {item.videoTitle || 'ללא כותרת'}
+        </p>
+        <div className="flex items-center gap-1.5 shrink-0 text-sm">
+          {item.flags?.isImportant    && <span title="חשוב">🔴</span>}
+          {item.flags?.isFavorite     && <span title="מועדף">⭐</span>}
+          {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
           {showDate && savedDate && (
-            <span className="text-[9px] text-slate-400 dark:text-zinc-600">{savedDate}</span>
+            <span className="text-xs text-slate-400 dark:text-zinc-600 mr-1">{savedDate}</span>
           )}
         </div>
       </div>
-      {!compact && (mainTopic || subTopic || (item.tags || []).length > 0) && (
-        <div className="flex flex-wrap gap-1 mt-1.5 justify-end">
+    );
+  }
+
+  // Full card: 4-row layout
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 space-y-1.5">
+
+      {/* Row 1: title + flags */}
+      <div className="flex items-start gap-2 justify-between">
+        <p className="flex-1 min-w-0 text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug">
+          {item.videoTitle || 'ללא כותרת'}
+        </p>
+        <div className="flex items-center gap-1 shrink-0 text-base pt-0.5">
+          {item.flags?.isImportant    && <span title="חשוב">🔴</span>}
+          {item.flags?.isFavorite     && <span title="מועדף">⭐</span>}
+          {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
+        </div>
+      </div>
+
+      {/* Row 2: notes / snippet text */}
+      {item.notes && (
+        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">
+          {item.notes}
+        </p>
+      )}
+
+      {/* Row 3: topic › subtopic */}
+      {(mainTopic || subTopic) && (
+        <p className="text-xs text-slate-500 dark:text-zinc-500 flex items-center gap-1">
           {mainTopic && (
-            <span className="rounded-full border border-indigo-100 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 px-1.5 py-0.5 text-[9px] font-medium text-indigo-700 dark:text-indigo-400">
-              {mainTopic.emoji} {mainTopic.name}
+            <span className="font-medium">
+              {mainTopic.emoji && `${mainTopic.emoji} `}{mainTopic.name}
             </span>
           )}
-          {subTopic && (
-            <span className="rounded-full border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] text-slate-600 dark:text-zinc-400">
-              {subTopic.name}
-            </span>
-          )}
-          {(item.tags || []).slice(0, 3).map(tag => (
+          {mainTopic && subTopic && <span className="text-slate-300 dark:text-zinc-700">›</span>}
+          {subTopic && <span>{subTopic.name}</span>}
+        </p>
+      )}
+
+      {/* Row 4: tags + sourceTab + date */}
+      {(itemTags.length > 0 || item.sourceTab || savedDate) && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          {itemTags.slice(0, 4).map(tag => (
             <span
               key={tag}
-              className="rounded-full border border-indigo-100 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 px-1.5 py-0.5 text-[9px] text-indigo-600 dark:text-indigo-400"
+              className="rounded-full border border-indigo-100 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-400"
             >
               #{tag}
             </span>
           ))}
+          {item.sourceTab && (
+            <span className="rounded-full border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-2 py-0.5 text-xs text-slate-500 dark:text-zinc-400">
+              {item.sourceTab}
+            </span>
+          )}
+          {savedDate && (
+            <span className="mr-auto text-xs text-slate-400 dark:text-zinc-600">{savedDate}</span>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ label, icon }) {
   return (
