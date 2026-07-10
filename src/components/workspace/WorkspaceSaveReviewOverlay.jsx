@@ -21,6 +21,12 @@ import {
   groupItemsByVirtTopic,
   groupItemsByVirtSubtopic,
 } from "@/utils/workspaceVirtualTaxonomy";
+import {
+  getWorkspaceTabPreferences,
+  saveWorkspaceTabPreferences,
+  resetWorkspaceTabPreferences,
+  getVisibleMainTabs,
+} from "@/utils/workspaceTabPreferences";
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
@@ -53,8 +59,14 @@ export function WorkspaceSaveReviewOverlay({
   const [isFullscreen,     setIsFullscreen]     = useState(false);
 
   // ── Virtual taxonomy navigation ──────────────────────────────────────────────
-  const [filterVirtTopicId, setFilterVirtTopicId] = useState('');
+  const [filterVirtTopicId,  setFilterVirtTopicId]  = useState('');
   const [filterVirtSubtopic, setFilterVirtSubtopic] = useState('');
+
+  // ── Tab preferences (UI-only, stored in workspace_tab_preferences_v1) ────────
+  const [tabPrefs,        setTabPrefs]        = useState(() => getWorkspaceTabPreferences());
+  const [showManageTabs,  setShowManageTabs]  = useState(false);
+  const [editingTabId,    setEditingTabId]    = useState(null);
+  const [editingTabLabel, setEditingTabLabel] = useState('');
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -67,6 +79,9 @@ export function WorkspaceSaveReviewOverlay({
       setLoadedDraftItems(null);
       setFilterVirtTopicId('');
       setFilterVirtSubtopic('');
+      setShowManageTabs(false);
+      setEditingTabId(null);
+      setEditingTabLabel('');
     }
   }, [open, defaultView]);
 
@@ -206,6 +221,40 @@ export function WorkspaceSaveReviewOverlay({
     setFilterVirtSubtopic('');
   }
 
+  // ── Tab preference handlers ────────────────────────────────────────────────
+  const visibleMainTabs = useMemo(
+    () => getVisibleMainTabs(VIRTUAL_TAXONOMY, tabPrefs),
+    [tabPrefs],
+  );
+
+  function toggleTabVisibility(vtId) {
+    const newPrefs = {
+      ...tabPrefs,
+      hiddenTabIds: tabPrefs.hiddenTabIds.includes(vtId)
+        ? tabPrefs.hiddenTabIds.filter(id => id !== vtId)
+        : [...tabPrefs.hiddenTabIds, vtId],
+    };
+    setTabPrefs(newPrefs);
+    saveWorkspaceTabPreferences(newPrefs);
+  }
+
+  function saveTabLabel(vtId, label) {
+    const overrides = { ...tabPrefs.labelOverrides };
+    if (label.trim()) overrides[vtId] = label.trim();
+    else delete overrides[vtId];
+    const newPrefs = { ...tabPrefs, labelOverrides: overrides };
+    setTabPrefs(newPrefs);
+    saveWorkspaceTabPreferences(newPrefs);
+    setEditingTabId(null);
+    setEditingTabLabel('');
+  }
+
+  function handleResetTabPrefs() {
+    const def = { hiddenTabIds: [], labelOverrides: {} };
+    setTabPrefs(def);
+    resetWorkspaceTabPreferences();
+  }
+
   const handleSaveAll = useCallback(() => {
     if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
@@ -303,51 +352,145 @@ export function WorkspaceSaveReviewOverlay({
 
         {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
         {libraryItems.length > 0 && (
-          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-2.5 pb-0 overflow-x-auto">
-            <div className="flex gap-1.5 min-w-max">
+          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-0 border-b border-slate-100 dark:border-zinc-800/60">
+            <div className="flex items-center gap-2 overflow-x-auto pb-3 min-w-max">
               <button
                 type="button"
                 onClick={() => handleSelectVirtTopic('')}
                 className={cn(
-                  'rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors',
+                  'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
                   !filterVirtTopicId
-                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900 shadow-sm'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
                 )}
               >
                 הכל ({libraryItems.length})
               </button>
-              {VIRTUAL_TAXONOMY.filter(vt => virtTopicCount[vt.id]).map(vt => (
+              {visibleMainTabs.filter(vt => virtTopicCount[vt.id]).map(vt => (
                 <button
                   key={vt.id}
                   type="button"
                   onClick={() => handleSelectVirtTopic(vt.id)}
                   className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors',
+                    'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
                     filterVirtTopicId === vt.id
-                      ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                      ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900 shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
                   )}
                 >
-                  {vt.emoji} {vt.name} ({virtTopicCount[vt.id]})
+                  {vt.emoji} {vt.displayName} ({virtTopicCount[vt.id]})
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setShowManageTabs(p => !p)}
+                title="ערוך טאבים"
+                className={cn(
+                  'mr-auto shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
+                  showManageTabs
+                    ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
+                    : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
+                )}
+              >
+                ⚙ ערוך טאבים
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Manage tabs panel ─────────────────────────────────────────── */}
+        {showManageTabs && (
+          <div className="shrink-0 bg-amber-50/70 dark:bg-zinc-900/80 border-b border-amber-200 dark:border-zinc-700 px-4 py-3" dir="rtl">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">ניהול טאבים</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResetTabPrefs}
+                  className="text-xs text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 hover:underline"
+                >
+                  ↺ איפוס לברירת מחדל
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowManageTabs(false); setEditingTabId(null); setEditingTabLabel(''); }}
+                  className="text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                >
+                  ✕ סגור
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {VIRTUAL_TAXONOMY.map(vt => {
+                const isHidden    = tabPrefs.hiddenTabIds.includes(vt.id);
+                const isEditing   = editingTabId === vt.id;
+                const displayName = tabPrefs.labelOverrides[vt.id] || vt.name;
+                return (
+                  <div
+                    key={vt.id}
+                    className={cn(
+                      'flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors',
+                      isHidden
+                        ? 'border-slate-200 bg-white/60 dark:border-zinc-800 dark:bg-zinc-950/40 opacity-55'
+                        : 'border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900',
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleTabVisibility(vt.id)}
+                      title={isHidden ? 'הצג טאב' : 'הסתר טאב'}
+                      className="shrink-0 text-base leading-none select-none"
+                    >
+                      {isHidden ? '🚫' : '👁'}
+                    </button>
+                    <span className="shrink-0 text-sm select-none">{vt.emoji}</span>
+                    {isEditing ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editingTabLabel}
+                          onChange={e => setEditingTabLabel(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter')  saveTabLabel(vt.id, editingTabLabel);
+                            if (e.key === 'Escape') { setEditingTabId(null); setEditingTabLabel(''); }
+                          }}
+                          className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-600 bg-white dark:bg-zinc-950 px-2 py-0.5 text-sm text-right dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        />
+                        <button type="button" onClick={() => saveTabLabel(vt.id, editingTabLabel)} className="shrink-0 text-xs font-semibold text-green-600 hover:underline">שמור</button>
+                        <button type="button" onClick={() => { setEditingTabId(null); setEditingTabLabel(''); }} className="shrink-0 text-xs text-slate-400 hover:underline">ביטול</button>
+                      </>
+                    ) : (
+                      <>
+                        <span className={cn('text-sm flex-1 text-right', isHidden && 'line-through')}>{displayName}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setEditingTabId(vt.id); setEditingTabLabel(displayName); }}
+                          title="ערוך שם טאב"
+                          className="shrink-0 text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-600 dark:hover:text-zinc-400"
+                        >
+                          ✏
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* ── Row 2: Subtopic tabs ──────────────────────────────────────── */}
         {activeVirtTopic && activeVirtTopic.subtopics.some(vs => virtSubtopicCount[vs.id] > 0) && (
-          <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
-            <div className="flex gap-1.5 min-w-max">
+          <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
+            <div className="flex gap-2 min-w-max">
               <button
                 type="button"
                 onClick={() => setFilterVirtSubtopic('')}
                 className={cn(
-                  'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap transition-colors',
+                  'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
                   !filterVirtSubtopic
-                    ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                    ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900 shadow-sm'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
                 )}
               >
                 כולם ({mainFilteredItems.length})
@@ -360,10 +503,10 @@ export function WorkspaceSaveReviewOverlay({
                     type="button"
                     onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
                     className={cn(
-                      'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap transition-colors',
+                      'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
                       filterVirtSubtopic === vs.id
-                        ? 'border-violet-500 bg-violet-500 text-white'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                        ? 'border-violet-500 bg-violet-500 text-white shadow-sm'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
                     )}
                   >
                     {vs.name} ({virtSubtopicCount[vs.id]})
@@ -376,7 +519,7 @@ export function WorkspaceSaveReviewOverlay({
         {/* ── Row 3: View mode tabs ─────────────────────────────────────── */}
         <div
           dir="rtl"
-          className="shrink-0 flex items-center gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-2 bg-white dark:bg-zinc-950 overflow-x-auto"
+          className="shrink-0 flex items-center gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-1 bg-white dark:bg-zinc-950 overflow-x-auto"
         >
           {VIEWS.map(v => (
             <button
@@ -384,7 +527,7 @@ export function WorkspaceSaveReviewOverlay({
               type="button"
               onClick={() => setActiveView(v.key)}
               className={cn(
-                'px-3 py-2 text-xs font-semibold rounded-t-lg whitespace-nowrap transition-colors border-b-2 -mb-px',
+                'px-4 py-2.5 text-sm font-semibold rounded-t-lg whitespace-nowrap transition-colors border-b-2 -mb-px',
                 activeView === v.key
                   ? 'border-amber-500 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20'
                   : 'border-transparent text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300',
@@ -397,7 +540,7 @@ export function WorkspaceSaveReviewOverlay({
             <button
               type="button"
               onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
-              className="mr-auto mb-1 rounded-full border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-0.5 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+              className="mr-auto mb-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
             >
               ✕ נקה סינון
             </button>
