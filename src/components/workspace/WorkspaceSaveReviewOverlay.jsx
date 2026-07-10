@@ -12,7 +12,15 @@ import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
-import { VIRTUAL_TAXONOMY, groupItemsByVirtTopic } from "@/utils/workspaceVirtualTaxonomy";
+import {
+  VIRTUAL_TAXONOMY,
+  getVirtTopicCounts,
+  getVirtSubtopicCounts,
+  filterByVirtTopic,
+  filterByVirtSubtopic,
+  groupItemsByVirtTopic,
+  groupItemsByVirtSubtopic,
+} from "@/utils/workspaceVirtualTaxonomy";
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
@@ -28,7 +36,7 @@ export function WorkspaceSaveReviewOverlay({
   const { mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
   const { items: libraryItems, reload } = useWorkspaceItems();
 
-  // Bulk controls state
+  // ── Draft / save controls ────────────────────────────────────────────────────
   const [topicId,      setTopicId]      = useState('');
   const [subTopicId,   setSubTopicId]   = useState('');
   const [tags,         setTags]         = useState([]);
@@ -38,32 +46,115 @@ export function WorkspaceSaveReviewOverlay({
   const [newTopicName, setNewTopicName] = useState('');
   const [showNewTopic, setShowNewTopic] = useState(false);
 
-  // View + layout state
+  // ── View / layout state ──────────────────────────────────────────────────────
   const [activeView,       setActiveView]       = useState(defaultView);
   const [recentlySavedIds, setRecentlySavedIds] = useState([]);
   const [isSaving,         setIsSaving]         = useState(false);
   const [isFullscreen,     setIsFullscreen]     = useState(false);
 
+  // ── Virtual taxonomy navigation ──────────────────────────────────────────────
+  const [filterVirtTopicId, setFilterVirtTopicId] = useState('');
+  const [filterVirtSubtopic, setFilterVirtSubtopic] = useState('');
+
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
   const effectiveDraftItems = loadedDraftItems ?? draftItems;
 
-  // Reset to defaultView and clear loaded items each time the dialog opens
+  // Reset on open
   useEffect(() => {
     if (open) {
       setActiveView(defaultView);
       setLoadedDraftItems(null);
+      setFilterVirtTopicId('');
+      setFilterVirtSubtopic('');
     }
   }, [open, defaultView]);
 
-  const subTopics        = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
-  const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),    [mainTopics, topicId]);
-  const selectedSubTopic  = useMemo(() => subTopics.find(t => t.id === subTopicId),  [subTopics,  subTopicId]);
+  const subTopics         = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
+  const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),   [mainTopics, topicId]);
+  const selectedSubTopic  = useMemo(() => subTopics.find(t => t.id === subTopicId), [subTopics,  subTopicId]);
 
   const allTopics = useMemo(
     () => [...mainTopics, ...mainTopics.flatMap(t => getSubTopics(t.id))],
     [mainTopics, getSubTopics],
   );
+
+  // ── Virtual taxonomy computed ────────────────────────────────────────────────
+
+  const virtTopicCount = useMemo(
+    () => getVirtTopicCounts(libraryItems),
+    [libraryItems],
+  );
+
+  const activeVirtTopic = useMemo(
+    () => VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId) || null,
+    [filterVirtTopicId],
+  );
+
+  // Items within the selected main virtual topic (not yet subtopic-filtered)
+  const mainFilteredItems = useMemo(
+    () => filterByVirtTopic(libraryItems, filterVirtTopicId),
+    [libraryItems, filterVirtTopicId],
+  );
+
+  const virtSubtopicCount = useMemo(
+    () => getVirtSubtopicCounts(mainFilteredItems, filterVirtTopicId),
+    [mainFilteredItems, filterVirtTopicId],
+  );
+
+  // Final filtered list: main topic + optional subtopic
+  const filteredLibraryItems = useMemo(
+    () => filterByVirtSubtopic(mainFilteredItems, filterVirtTopicId, filterVirtSubtopic),
+    [mainFilteredItems, filterVirtTopicId, filterVirtSubtopic],
+  );
+
+  const hasSubtopicFilter = !!filterVirtSubtopic;
+  const hasTopicFilter    = !!filterVirtTopicId;
+
+  // ── List views ───────────────────────────────────────────────────────────────
+
+  // recentItems always from unfiltered list (user needs to see what they just saved)
+  const recentItems = useMemo(
+    () => recentlySavedIds.length > 0 ? libraryItems.filter(i => recentlySavedIds.includes(i.id)) : [],
+    [libraryItems, recentlySavedIds],
+  );
+
+  // Topics view grouping
+  const itemsByVirtTopic = useMemo(
+    () => groupItemsByVirtTopic(filteredLibraryItems),
+    [filteredLibraryItems],
+  );
+
+  const itemsByVirtSubtopic = useMemo(
+    () => filterVirtTopicId ? groupItemsByVirtSubtopic(filteredLibraryItems, filterVirtTopicId) : {},
+    [filteredLibraryItems, filterVirtTopicId],
+  );
+
+  const itemsByDate = useMemo(() => {
+    const now       = new Date();
+    const today     = now.toDateString();
+    const yesterday = new Date(now - 86400000).toDateString();
+    const weekAgo   = new Date(now - 7  * 86400000);
+    const monthAgo  = new Date(now - 30 * 86400000);
+    const groups    = { today: [], yesterday: [], thisWeek: [], thisMonth: [], older: [] };
+    filteredLibraryItems.forEach(item => {
+      const d  = new Date(item.savedAt);
+      const ds = d.toDateString();
+      if      (ds === today)     groups.today.push(item);
+      else if (ds === yesterday) groups.yesterday.push(item);
+      else if (d >= weekAgo)     groups.thisWeek.push(item);
+      else if (d >= monthAgo)    groups.thisMonth.push(item);
+      else                       groups.older.push(item);
+    });
+    return groups;
+  }, [filteredLibraryItems]);
+
+  const pinnedItems = useMemo(
+    () => filteredLibraryItems.filter(i => i.flags?.isFavorite || i.flags?.isImportant),
+    [filteredLibraryItems],
+  );
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   function handleOpenChange(isOpen) {
     if (!isOpen) {
@@ -79,6 +170,8 @@ export function WorkspaceSaveReviewOverlay({
       setNewTopicName('');
       setIsFullscreen(false);
       setLoadedDraftItems(null);
+      setFilterVirtTopicId('');
+      setFilterVirtSubtopic('');
     }
     onOpenChange(isOpen);
   }
@@ -103,17 +196,21 @@ export function WorkspaceSaveReviewOverlay({
     setShowNewTopic(false);
   }
 
-  // Load current analysis items into the draft panel
   function handleLoadCurrentAnalysis() {
     setLoadedDraftItems(currentAnalysisDraftItems);
     setActiveView('draft');
   }
 
+  function handleSelectVirtTopic(vtId) {
+    setFilterVirtTopicId(vtId);
+    setFilterVirtSubtopic('');
+  }
+
   const handleSaveAll = useCallback(() => {
     if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
-    const savedIds = [];
-    const now        = new Date().toISOString();
+    const savedIds    = [];
+    const now         = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
 
@@ -126,22 +223,22 @@ export function WorkspaceSaveReviewOverlay({
 
       saveWorkspaceItem({
         id,
-        videoId:     null,
-        videoUrl:    videoContext.videoUrl    || null,
-        videoTitle:  titlePart.slice(0, 80),
-        channelName: videoContext.channelName || '',
-        thumbnail:   videoContext.thumbnail   || null,
-        topicId:     topicId    || null,
-        subTopicId:  subTopicId || null,
+        videoId:      null,
+        videoUrl:     videoContext.videoUrl    || null,
+        videoTitle:   titlePart.slice(0, 80),
+        channelName:  videoContext.channelName || '',
+        thumbnail:    videoContext.thumbnail   || null,
+        topicId:      topicId    || null,
+        subTopicId:   subTopicId || null,
         topicName,
         subTopicName,
-        notes:    combinedNotes,
+        notes:        combinedNotes,
         flags,
         tags,
-        sourceTab: videoContext.sourceTab || 'Manual',
-        category:    topicName    || null,
-        subCategory: subTopicName || null,
-        savedAt: now,
+        sourceTab:    videoContext.sourceTab || 'Manual',
+        category:     topicName    || null,
+        subCategory:  subTopicName || null,
+        savedAt:      now,
       });
       savedIds.push(id);
     });
@@ -154,41 +251,7 @@ export function WorkspaceSaveReviewOverlay({
     onSaved?.({ count: savedIds.length });
   }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
 
-  // ── Computed list views ──────────────────────────────────────────────────────
-
-  const recentItems = useMemo(
-    () => recentlySavedIds.length > 0 ? libraryItems.filter(i => recentlySavedIds.includes(i.id)) : [],
-    [libraryItems, recentlySavedIds],
-  );
-
-  const itemsByVirtTopic = useMemo(
-    () => groupItemsByVirtTopic(libraryItems),
-    [libraryItems],
-  );
-
-  const itemsByDate = useMemo(() => {
-    const now       = new Date();
-    const today     = now.toDateString();
-    const yesterday = new Date(now - 86400000).toDateString();
-    const weekAgo   = new Date(now - 7  * 86400000);
-    const monthAgo  = new Date(now - 30 * 86400000);
-    const groups = { today: [], yesterday: [], thisWeek: [], thisMonth: [], older: [] };
-    libraryItems.forEach(item => {
-      const d  = new Date(item.savedAt);
-      const ds = d.toDateString();
-      if      (ds === today)     groups.today.push(item);
-      else if (ds === yesterday) groups.yesterday.push(item);
-      else if (d >= weekAgo)     groups.thisWeek.push(item);
-      else if (d >= monthAgo)    groups.thisMonth.push(item);
-      else                       groups.older.push(item);
-    });
-    return groups;
-  }, [libraryItems]);
-
-  const pinnedItems = useMemo(
-    () => libraryItems.filter(i => i.flags?.isFavorite || i.flags?.isImportant),
-    [libraryItems],
-  );
+  // ── View tabs ─────────────────────────────────────────────────────────────────
 
   const VIEWS = [
     ...(effectiveDraftItems.length > 0 || currentAnalysisDraftItems.length > 0
@@ -200,11 +263,9 @@ export function WorkspaceSaveReviewOverlay({
     { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
 
-  // ── Current analysis banner (shown in library views) ────────────────────────
-
   const showAnalysisBanner = currentAnalysisDraftItems.length > 0 && loadedDraftItems === null && activeView !== 'draft';
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -214,10 +275,10 @@ export function WorkspaceSaveReviewOverlay({
           'flex flex-col p-0 gap-0 border-amber-200 dark:border-amber-900/40 transition-all duration-200',
           isFullscreen
             ? 'w-[98vw] max-w-[98vw] h-[96vh] max-h-[96vh]'
-            : 'w-[min(96vw,860px)] max-h-[88vh]',
+            : 'w-[min(96vw,900px)] max-h-[90vh]',
         )}
       >
-        {/* ── Header ─────────────────────────────────────────────── */}
+        {/* ── Header ───────────────────────────────────────────────────── */}
         <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-3">
           <div className="flex items-center justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
@@ -240,10 +301,82 @@ export function WorkspaceSaveReviewOverlay({
           </div>
         </DialogHeader>
 
-        {/* ── View tabs ──────────────────────────────────────────── */}
+        {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
+        {libraryItems.length > 0 && (
+          <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-2.5 pb-0 overflow-x-auto">
+            <div className="flex gap-1.5 min-w-max">
+              <button
+                type="button"
+                onClick={() => handleSelectVirtTopic('')}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors',
+                  !filterVirtTopicId
+                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                )}
+              >
+                הכל ({libraryItems.length})
+              </button>
+              {VIRTUAL_TAXONOMY.filter(vt => virtTopicCount[vt.id]).map(vt => (
+                <button
+                  key={vt.id}
+                  type="button"
+                  onClick={() => handleSelectVirtTopic(vt.id)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors',
+                    filterVirtTopicId === vt.id
+                      ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                  )}
+                >
+                  {vt.emoji} {vt.name} ({virtTopicCount[vt.id]})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 2: Subtopic tabs ──────────────────────────────────────── */}
+        {activeVirtTopic && activeVirtTopic.subtopics.some(vs => virtSubtopicCount[vs.id] > 0) && (
+          <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
+            <div className="flex gap-1.5 min-w-max">
+              <button
+                type="button"
+                onClick={() => setFilterVirtSubtopic('')}
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap transition-colors',
+                  !filterVirtSubtopic
+                    ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                )}
+              >
+                כולם ({mainFilteredItems.length})
+              </button>
+              {activeVirtTopic.subtopics
+                .filter(vs => virtSubtopicCount[vs.id] > 0)
+                .map(vs => (
+                  <button
+                    key={vs.id}
+                    type="button"
+                    onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
+                    className={cn(
+                      'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap transition-colors',
+                      filterVirtSubtopic === vs.id
+                        ? 'border-violet-500 bg-violet-500 text-white'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                    )}
+                  >
+                    {vs.name} ({virtSubtopicCount[vs.id]})
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 3: View mode tabs ─────────────────────────────────────── */}
         <div
           dir="rtl"
-          className="shrink-0 flex gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-2 bg-white dark:bg-zinc-950 overflow-x-auto"
+          className="shrink-0 flex items-center gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-2 bg-white dark:bg-zinc-950 overflow-x-auto"
         >
           {VIEWS.map(v => (
             <button
@@ -260,20 +393,26 @@ export function WorkspaceSaveReviewOverlay({
               {v.label}
             </button>
           ))}
+          {(hasTopicFilter || hasSubtopicFilter) && (
+            <button
+              type="button"
+              onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
+              className="mr-auto mb-1 rounded-full border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-0.5 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+            >
+              ✕ נקה סינון
+            </button>
+          )}
         </div>
 
-        {/* ── Scrollable body ────────────────────────────────────── */}
+        {/* ── Scrollable body ───────────────────────────────────────────── */}
         <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
 
           {/* Draft view */}
           {activeView === 'draft' && (
             <div className={cn('p-5 space-y-4', isFullscreen && 'max-w-3xl mx-auto')}>
               {effectiveDraftItems.length === 0 ? (
-                // No items loaded yet — show the "load current analysis" call-to-action
                 <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-6 text-center space-y-3">
-                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
-                    הניתוח הנוכחי
-                  </p>
+                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">הניתוח הנוכחי</p>
                   {currentAnalysisDraftItems.length > 0 ? (
                     <>
                       <p className="text-xs text-indigo-600 dark:text-indigo-400">
@@ -288,9 +427,7 @@ export function WorkspaceSaveReviewOverlay({
                       </button>
                     </>
                   ) : (
-                    <p className="text-xs text-indigo-500 dark:text-indigo-500">
-                      אין תוכן ניתוח זמין לשמירה
-                    </p>
+                    <p className="text-xs text-indigo-500">אין תוכן ניתוח זמין לשמירה</p>
                   )}
                 </div>
               ) : (
@@ -319,13 +456,9 @@ export function WorkspaceSaveReviewOverlay({
                         className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 px-4 py-3"
                       >
                         {item.sectionLabel && (
-                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-500 mb-1">
-                            {item.sectionLabel}
-                          </p>
+                          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-500 mb-1">{item.sectionLabel}</p>
                         )}
-                        <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed line-clamp-3">
-                          {item.text}
-                        </p>
+                        <p className="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed line-clamp-3">{item.text}</p>
                       </div>
                     ))}
                   </div>
@@ -341,9 +474,7 @@ export function WorkspaceSaveReviewOverlay({
                       >
                         <option value="">בחר נושא...</option>
                         {mainTopics.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.emoji ? `${t.emoji} ` : ''}{t.name}
-                          </option>
+                          <option key={t.id} value={t.id}>{t.emoji ? `${t.emoji} ` : ''}{t.name}</option>
                         ))}
                       </select>
                       {showNewTopic ? (
@@ -461,6 +592,13 @@ export function WorkspaceSaveReviewOverlay({
                     />
                   </div>
 
+                  {/* No-topic warning */}
+                  {!topicId && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                      ⚠️ לא נבחר נושא — הפריטים יישמרו ללא שיוך נושא
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleSaveAll}
@@ -496,39 +634,86 @@ export function WorkspaceSaveReviewOverlay({
             </div>
           )}
 
-          {/* By topic view — grouped by virtual taxonomy (broad domains) */}
+          {/* By topic view — folder-like grouping */}
           {activeView === 'topics' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
-              {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
-              {VIRTUAL_TAXONOMY
-                .filter(vt => itemsByVirtTopic[vt.id]?.length > 0)
-                .map(vt => (
-                  <div key={vt.id}>
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-1.5">
-                      <span>{vt.emoji}</span>
-                      <span>{vt.name}</span>
-                      <span className="text-slate-400 dark:text-zinc-600 font-normal text-xs">({itemsByVirtTopic[vt.id].length})</span>
-                    </h3>
-                    <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
-                      {itemsByVirtTopic[vt.id].map(item => (
+              {filteredLibraryItems.length === 0 && <EmptyState label="אין פריטים בנושא הנוכחי" />}
+
+              {hasTopicFilter && activeVirtTopic ? (
+                // ── Subtopic groups within the selected main topic ──────────
+                <>
+                  {/* Main topic header */}
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-base">{activeVirtTopic.emoji}</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">{activeVirtTopic.name}</span>
+                    <span className="text-xs text-slate-400 dark:text-zinc-600">({filteredLibraryItems.length})</span>
+                    {hasSubtopicFilter && activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic) && (
+                      <span className="rounded-full border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-400">
+                        › {activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic)?.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {hasSubtopicFilter ? (
+                    // flat list when subtopic filter is active
+                    <div className="space-y-2">
+                      {filteredLibraryItems.map(item => (
                         <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
                       ))}
                     </div>
-                  </div>
-                ))}
-              {itemsByVirtTopic['__none__']?.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-600 mb-2.5">
-                    📁 ללא נושא
-                    <span className="font-normal text-xs mr-1">({itemsByVirtTopic['__none__'].length})</span>
-                  </h3>
-                  <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
-                    {itemsByVirtTopic['__none__'].map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
+                  ) : (
+                    // subtopic groups
+                    <>
+                      {activeVirtTopic.subtopics
+                        .filter(vs => itemsByVirtSubtopic[vs.id]?.length > 0)
+                        .map(vs => (
+                          <FolderGroup
+                            key={vs.id}
+                            label={vs.name}
+                            count={itemsByVirtSubtopic[vs.id].length}
+                            items={itemsByVirtSubtopic[vs.id]}
+                            allTopics={allTopics}
+                            indent
+                          />
+                        ))}
+                      {itemsByVirtSubtopic['__other__']?.length > 0 && (
+                        <FolderGroup
+                          label={`${activeVirtTopic.name} — כללי`}
+                          count={itemsByVirtSubtopic['__other__'].length}
+                          items={itemsByVirtSubtopic['__other__']}
+                          allTopics={allTopics}
+                          indent
+                          muted
+                        />
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                // ── Main topic groups (no filter) ──────────────────────────
+                <>
+                  {VIRTUAL_TAXONOMY
+                    .filter(vt => itemsByVirtTopic[vt.id]?.length > 0)
+                    .map(vt => (
+                      <FolderGroup
+                        key={vt.id}
+                        label={`${vt.emoji} ${vt.name}`}
+                        count={itemsByVirtTopic[vt.id].length}
+                        items={itemsByVirtTopic[vt.id]}
+                        allTopics={allTopics}
+                      />
                     ))}
-                  </div>
-                </div>
+                  {itemsByVirtTopic['__none__']?.length > 0 && (
+                    <FolderGroup
+                      label="📁 ללא נושא"
+                      count={itemsByVirtTopic['__none__'].length}
+                      items={itemsByVirtTopic['__none__']}
+                      allTopics={allTopics}
+                      muted
+                    />
+                  )}
+                </>
               )}
             </div>
           )}
@@ -537,7 +722,7 @@ export function WorkspaceSaveReviewOverlay({
           {activeView === 'dates' && (
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
-              {libraryItems.length === 0 && <EmptyState label="אין פריטים שמורים עדיין" />}
+              {filteredLibraryItems.length === 0 && <EmptyState label="אין פריטים בנושא הנוכחי" />}
               {[
                 { key: 'today',     label: 'היום' },
                 { key: 'yesterday', label: 'אתמול' },
@@ -567,7 +752,7 @@ export function WorkspaceSaveReviewOverlay({
             <div className={cn('p-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {pinnedItems.length === 0 ? (
-                <EmptyState label="אין פריטים מועדפים / חשובים עדיין" />
+                <EmptyState label="אין פריטים מועדפים / חשובים בנושא הנוכחי" />
               ) : (
                 <>
                   <h3 className="text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-4">
@@ -589,6 +774,37 @@ export function WorkspaceSaveReviewOverlay({
   );
 }
 
+// ─── Folder group ─────────────────────────────────────────────────────────────
+
+function FolderGroup({ label, count, items, allTopics, indent = false, muted = false }) {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setCollapsed(p => !p)}
+        className={cn(
+          'flex items-center gap-1.5 mb-2 w-full text-right',
+          muted ? 'text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-300',
+        )}
+      >
+        <span className="text-[10px] text-slate-300 dark:text-zinc-600 select-none">{collapsed ? '▸' : '▾'}</span>
+        <span className={cn('text-sm font-bold', indent && 'mr-1')}>{label}</span>
+        <span className={cn('text-xs font-normal', muted ? 'text-slate-300 dark:text-zinc-700' : 'text-slate-400 dark:text-zinc-600')}>
+          ({count})
+        </span>
+      </button>
+      {!collapsed && (
+        <div className={cn('space-y-2', indent ? 'pr-3 border-r-2 border-slate-100 dark:border-zinc-800' : 'pr-2 border-r-2 border-slate-100 dark:border-zinc-800')}>
+          {items.map(item => (
+            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Current analysis banner ──────────────────────────────────────────────────
 
 function AnalysisBanner({ show, count, onLoad }) {
@@ -597,12 +813,8 @@ function AnalysisBanner({ show, count, onLoad }) {
     <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
       <div className="flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
-        <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
-          הניתוח הנוכחי
-        </span>
-        <span className="text-xs text-indigo-600 dark:text-indigo-400">
-          — {count} פריטים זמינים לשמירה
-        </span>
+        <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">הניתוח הנוכחי</span>
+        <span className="text-xs text-indigo-600 dark:text-indigo-400">— {count} פריטים זמינים לשמירה</span>
       </div>
       <button
         type="button"
@@ -656,17 +868,11 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
         </div>
       </div>
       {item.notes && (
-        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">
-          {item.notes}
-        </p>
+        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">{item.notes}</p>
       )}
       {(mainTopic || subTopic) && (
         <p className="text-xs text-slate-500 dark:text-zinc-500 flex items-center gap-1">
-          {mainTopic && (
-            <span className="font-medium">
-              {mainTopic.emoji && `${mainTopic.emoji} `}{mainTopic.name}
-            </span>
-          )}
+          {mainTopic && <span className="font-medium">{mainTopic.emoji && `${mainTopic.emoji} `}{mainTopic.name}</span>}
           {mainTopic && subTopic && <span className="text-slate-300 dark:text-zinc-700">›</span>}
           {subTopic && <span>{subTopic.name}</span>}
         </p>

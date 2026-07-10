@@ -92,6 +92,56 @@ export function itemMatchesVirtTopic(item, vt) {
          vt.legacyNames.includes(item.topicName);
 }
 
+// Item counts per virtual main topic
+export function getVirtTopicCounts(items) {
+  const counts = {};
+  for (const item of items) {
+    for (const vt of VIRTUAL_TAXONOMY) {
+      if (itemMatchesVirtTopic(item, vt)) {
+        counts[vt.id] = (counts[vt.id] || 0) + 1;
+        break;
+      }
+    }
+  }
+  return counts;
+}
+
+// Item counts per subtopic of a given virtual main topic (pass all items or pre-filtered)
+export function getVirtSubtopicCounts(items, vtId) {
+  const vt = VIRTUAL_TAXONOMY.find(v => v.id === vtId);
+  if (!vt) return {};
+  const counts = {};
+  for (const item of items) {
+    for (const vs of vt.subtopics) {
+      if (vs.realTopicIds.includes(item.topicId) || vs.realTopicIds.includes(item.subTopicId)) {
+        counts[vs.id] = (counts[vs.id] || 0) + 1;
+        break;
+      }
+    }
+  }
+  return counts;
+}
+
+// Filter items to only those matching the given virtual main topic
+export function filterByVirtTopic(items, vtId) {
+  if (!vtId) return items;
+  const vt = VIRTUAL_TAXONOMY.find(v => v.id === vtId);
+  if (!vt) return items;
+  const idSet   = new Set(vt.realTopicIds);
+  const nameSet = new Set(vt.legacyNames);
+  return items.filter(i => idSet.has(i.topicId) || idSet.has(i.subTopicId) || nameSet.has(i.topicName));
+}
+
+// Filter items to only those matching the given virtual subtopic
+export function filterByVirtSubtopic(items, vtId, vtsId) {
+  if (!vtId || !vtsId) return items;
+  const vt  = VIRTUAL_TAXONOMY.find(v => v.id === vtId);
+  const vs  = vt?.subtopics.find(s => s.id === vtsId);
+  if (!vs) return items;
+  const subIdSet = new Set(vs.realTopicIds);
+  return items.filter(i => subIdSet.has(i.topicId) || subIdSet.has(i.subTopicId));
+}
+
 // Groups items by virtual taxonomy. Unmatched items go under '__none__'.
 export function groupItemsByVirtTopic(items) {
   const groups = {};
@@ -108,6 +158,30 @@ export function groupItemsByVirtTopic(items) {
     if (!matched) {
       if (!groups['__none__']) groups['__none__'] = [];
       groups['__none__'].push(item);
+    }
+  }
+  return groups;
+}
+
+// Groups items by subtopic within a virtual main topic.
+// Items not matching any subtopic go under '__other__'.
+export function groupItemsByVirtSubtopic(items, vtId) {
+  const vt = VIRTUAL_TAXONOMY.find(v => v.id === vtId);
+  if (!vt || vt.subtopics.length === 0) return { '__all__': items };
+  const groups = {};
+  for (const item of items) {
+    let matched = false;
+    for (const vs of vt.subtopics) {
+      if (vs.realTopicIds.includes(item.topicId) || vs.realTopicIds.includes(item.subTopicId)) {
+        if (!groups[vs.id]) groups[vs.id] = [];
+        groups[vs.id].push(item);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      if (!groups['__other__']) groups['__other__'] = [];
+      groups['__other__'].push(item);
     }
   }
   return groups;
