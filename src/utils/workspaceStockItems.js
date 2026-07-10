@@ -108,6 +108,58 @@ export function getStockDisplayNotes(item) {
   return item.fullNotes || item.notes || item.trigger || item.riskNote || item.rawSourceText || null;
 }
 
+// ─── Aggregation helpers ──────────────────────────────────────────────────────
+
+/**
+ * Returns a normalized uppercase symbol, or null if input is empty/invalid.
+ */
+export function normalizeSymbol(symbol) {
+  if (!symbol) return null;
+  return String(symbol).trim().toUpperCase();
+}
+
+/**
+ * Groups workspace stock items by their normalized symbol.
+ * Items that cannot be resolved to a symbol go into `unsymbolized`.
+ * Does NOT modify or merge stored data — grouping is display-only.
+ */
+export function groupStockItemsBySymbol(items) {
+  const groups = new Map(); // normalizedSymbol → Item[]
+  const unsymbolized = [];
+
+  for (const rawItem of items) {
+    const item = normalizeStockWorkspaceItem(rawItem);
+    const sym = normalizeSymbol(item.symbol);
+    if (!sym) {
+      unsymbolized.push(rawItem);
+    } else {
+      if (!groups.has(sym)) groups.set(sym, []);
+      groups.get(sym).push(rawItem);
+    }
+  }
+
+  return { groups, unsymbolized };
+}
+
+/**
+ * Returns the item with the newest savedAt from a group.
+ */
+export function getLatestStockMention(groupItems) {
+  if (!groupItems?.length) return null;
+  return [...groupItems].sort(
+    (a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0),
+  )[0];
+}
+
+/**
+ * Returns group items sorted newest-first (timeline order).
+ */
+export function getStockTimeline(groupItems) {
+  return [...groupItems].sort(
+    (a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0),
+  );
+}
+
 // ─── Sentiment visuals ────────────────────────────────────────────────────────
 
 export const SENTIMENT_DOT = {
