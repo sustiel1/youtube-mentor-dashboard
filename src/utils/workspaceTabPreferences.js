@@ -10,7 +10,15 @@
 const PREFS_KEY = 'workspace_tab_preferences_v1';
 
 function defaultPrefs() {
-  return { hiddenTabIds: [], labelOverrides: {}, customMainTabs: [] };
+  return {
+    hiddenTabIds: [],
+    labelOverrides: {},
+    customMainTabs: [],
+    // Row 2: custom subtopics per virtual-topic — { [vtId]: [{id, name}] }
+    customSubtopics: {},
+    // Row 3: custom workflow/status tabs — [{value, label}]
+    customWorkflowTabs: [],
+  };
 }
 
 export function getWorkspaceTabPreferences() {
@@ -77,4 +85,48 @@ export function addCustomMainTab(prefs, { name, emoji, topicId }) {
 export function removeCustomMainTab(prefs, tabId) {
   const customMainTabs = (prefs.customMainTabs || []).filter(t => t.id !== tabId);
   return { ...prefs, customMainTabs };
+}
+
+// ─── Custom subtopics (Row 2) ─────────────────────────────────────────────────
+
+export function getCustomSubtopics(prefs, vtId) {
+  return (prefs.customSubtopics || {})[vtId] || [];
+}
+
+export function addCustomSubtopic(prefs, vtId, name) {
+  const id   = `cvts-${vtId}-${Date.now()}`;
+  const prev = (prefs.customSubtopics || {})[vtId] || [];
+  return {
+    ...prefs,
+    customSubtopics: { ...(prefs.customSubtopics || {}), [vtId]: [...prev, { id, name }] },
+  };
+}
+
+export function removeCustomSubtopic(prefs, vtId, id) {
+  const prev = (prefs.customSubtopics || {})[vtId] || [];
+  return {
+    ...prefs,
+    customSubtopics: { ...(prefs.customSubtopics || {}), [vtId]: prev.filter(s => s.id !== id) },
+  };
+}
+
+// ─── Custom workflow/status tabs (Row 3) ──────────────────────────────────────
+
+export function getCustomWorkflowTabs(prefs) {
+  return prefs.customWorkflowTabs || [];
+}
+
+export function addCustomWorkflowTab(prefs, name) {
+  const value = `cwf-${Date.now()}`;
+  return {
+    ...prefs,
+    customWorkflowTabs: [...(prefs.customWorkflowTabs || []), { value, label: name }],
+  };
+}
+
+export function removeCustomWorkflowTab(prefs, value) {
+  return {
+    ...prefs,
+    customWorkflowTabs: (prefs.customWorkflowTabs || []).filter(t => t.value !== value),
+  };
 }
