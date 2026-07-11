@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Star, Check, Maximize2, Minimize2, BookOpen } from "lucide-react";
+import { Star, Check, Maximize2, Minimize2, BookOpen, MoreVertical, Trash2, Archive, Edit2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
+import { ConfirmDialog } from "./ConfirmDialog";
 import {
   VIRTUAL_TAXONOMY,
   getVirtTopicCounts,
@@ -68,7 +69,7 @@ export function WorkspaceSaveReviewOverlay({
   onSaved,
 }) {
   const { mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
-  const { items: libraryItems, reload } = useWorkspaceItems();
+  const { items: libraryItems, reload, deleteItem, deleteItems, deleteAllItems, archiveItems } = useWorkspaceItems();
 
   // ── Draft / save controls ────────────────────────────────────────────────────
   const [topicId,      setTopicId]      = useState('');
@@ -85,6 +86,9 @@ export function WorkspaceSaveReviewOverlay({
   const [recentlySavedIds, setRecentlySavedIds] = useState([]);
   const [isSaving,         setIsSaving]         = useState(false);
   const [isFullscreen,     setIsFullscreen]     = useState(false);
+  const [moreActionsOpen,          setMoreActionsOpen]          = useState(false);
+  const [confirmDeleteAllVisible,  setConfirmDeleteAllVisible]  = useState(false);
+  const [confirmDeleteAllWorkspace, setConfirmDeleteAllWorkspace] = useState(false);
 
   // ── Virtual taxonomy navigation ──────────────────────────────────────────────
   const [filterVirtTopicId,  setFilterVirtTopicId]  = useState('');
@@ -99,6 +103,7 @@ export function WorkspaceSaveReviewOverlay({
   const [newTabName,      setNewTabName]      = useState('');
   const [newTabEmoji,     setNewTabEmoji]     = useState('');
   const [filterMarketStatus, setFilterMarketStatus] = useState('');
+  const [confirmDeleteSingleItem, setConfirmDeleteSingleItem] = useState(null);
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -297,6 +302,40 @@ export function WorkspaceSaveReviewOverlay({
     setFilterVirtSubtopic('');
   }
 
+  function handleConfirmDeleteAllVisible() {
+    const ids = displayItems.map(i => i.id);
+    if (!ids.length) return;
+    deleteItems(ids);
+    toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
+    setMoreActionsOpen(false);
+  }
+
+  function handleConfirmDeleteAllWorkspace() {
+    const count = libraryItems.length;
+    if (!count) return;
+    deleteAllItems();
+    toast.success(`נמחקו ${count} פריטים מה-Workspace`);
+    setMoreActionsOpen(false);
+  }
+
+  function handleDeleteSingleItem(item) {
+    setConfirmDeleteSingleItem(item);
+  }
+
+  function handleConfirmDeleteSingleItem() {
+    if (!confirmDeleteSingleItem) return;
+    deleteItem(confirmDeleteSingleItem.id);
+    toast.success('הפריט נמחק מ-Workspace');
+    reload();
+    setConfirmDeleteSingleItem(null);
+  }
+
+  function handleArchiveSingleItem(item) {
+    archiveItems([item.id], true);
+    toast.success('הפריט הועבר לארכיון');
+    reload();
+  }
+
   // ── Tab preference handlers ────────────────────────────────────────────────
   const visibleMainTabs = useMemo(
     () => getVisibleMainTabs(allMainTabs, tabPrefs),
@@ -458,6 +497,7 @@ export function WorkspaceSaveReviewOverlay({
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         dir="rtl"
@@ -477,17 +517,55 @@ export function WorkspaceSaveReviewOverlay({
                 — {libraryItems.length} פריטים שמורים
               </span>
             </DialogTitle>
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(f => !f)}
-              title={isFullscreen ? 'צא ממסך מלא' : 'מסך מלא'}
-              className="shrink-0 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-slate-500 dark:text-zinc-400 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5"
-            >
-              {isFullscreen
-                ? <><Minimize2 className="h-3.5 w-3.5" /><span>צמצם</span></>
-                : <><Maximize2 className="h-3.5 w-3.5" /><span>מסך מלא</span></>
-              }
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreActionsOpen(p => !p)}
+                  title="פעולות נוספות"
+                  className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-1.5 text-slate-400 hover:text-slate-600 hover:border-slate-300 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+                {moreActionsOpen && (
+                  <div
+                    className="absolute left-0 top-full mt-1 w-64 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1 z-50"
+                    dir="rtl"
+                    onMouseLeave={() => setMoreActionsOpen(false)}
+                  >
+                    <button
+                      type="button"
+                      disabled={displayItems.length === 0}
+                      onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllVisible(true); }}
+                      className="w-full text-right px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      מחק הכל בתצוגה הנוכחית ({displayItems.length})
+                    </button>
+                    <button
+                      type="button"
+                      disabled={libraryItems.length === 0}
+                      onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllWorkspace(true); }}
+                      className="w-full text-right px-3 py-2 text-xs text-red-700 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      מחק את כל ה-Workspace ({libraryItems.length})
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(f => !f)}
+                title={isFullscreen ? 'צא ממסך מלא' : 'מסך מלא'}
+                className="shrink-0 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-slate-500 dark:text-zinc-400 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5"
+              >
+                {isFullscreen
+                  ? <><Minimize2 className="h-3.5 w-3.5" /><span>צמצם</span></>
+                  : <><Maximize2 className="h-3.5 w-3.5" /><span>מסך מלא</span></>
+                }
+              </button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -999,7 +1077,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {recentItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
                     ))}
                   </div>
                 </>
@@ -1034,7 +1112,7 @@ export function WorkspaceSaveReviewOverlay({
                     // flat list when subtopic filter is active
                     <div className="space-y-2">
                       {displayItems.map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
                       ))}
                     </div>
                   ) : (
@@ -1050,6 +1128,8 @@ export function WorkspaceSaveReviewOverlay({
                             items={itemsByVirtSubtopic[vs.id]}
                             allTopics={allTopics}
                             indent
+                            onDelete={handleDeleteSingleItem}
+                            onArchive={handleArchiveSingleItem}
                           />
                         ))}
                       {itemsByVirtSubtopic['__other__']?.length > 0 && (
@@ -1060,6 +1140,8 @@ export function WorkspaceSaveReviewOverlay({
                           allTopics={allTopics}
                           indent
                           muted
+                          onDelete={handleDeleteSingleItem}
+                          onArchive={handleArchiveSingleItem}
                         />
                       )}
                     </>
@@ -1077,6 +1159,8 @@ export function WorkspaceSaveReviewOverlay({
                         count={itemsByVirtTopic[vt.id].length}
                         items={itemsByVirtTopic[vt.id]}
                         allTopics={allTopics}
+                        onDelete={handleDeleteSingleItem}
+                        onArchive={handleArchiveSingleItem}
                       />
                     ))}
                   {itemsByVirtTopic['__none__']?.length > 0 && (
@@ -1086,6 +1170,8 @@ export function WorkspaceSaveReviewOverlay({
                       items={itemsByVirtTopic['__none__']}
                       allTopics={allTopics}
                       muted
+                      onDelete={handleDeleteSingleItem}
+                      onArchive={handleArchiveSingleItem}
                     />
                   )}
                 </>
@@ -1114,7 +1200,7 @@ export function WorkspaceSaveReviewOverlay({
                     </h3>
                     <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                       {itemsByDate[key].map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
                       ))}
                     </div>
                   </div>
@@ -1135,7 +1221,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {pinnedItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
                     ))}
                   </div>
                 </>
@@ -1146,12 +1232,44 @@ export function WorkspaceSaveReviewOverlay({
         </div>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDialog
+      open={!!confirmDeleteSingleItem}
+      onOpenChange={open => !open && setConfirmDeleteSingleItem(null)}
+      title="למחוק את הפריט הזה מה-Workspace?"
+      description="הפריט יימחק מ-Workspace בלבד. Brain / KnowledgeItems לא יושפעו."
+      confirmLabel="מחק"
+      danger
+      onConfirm={handleConfirmDeleteSingleItem}
+    />
+
+    <ConfirmDialog
+      open={confirmDeleteAllVisible}
+      onOpenChange={setConfirmDeleteAllVisible}
+      title="מחיקת כל הפריטים בתצוגה"
+      description={`אתה עומד למחוק ${displayItems.length} פריטים שמוצגים כרגע מה-Workspace בלבד. פריטים שלא מופיעים בסינון הנוכחי לא יימחקו. להמשיך?`}
+      confirmLabel={`מחק ${displayItems.length} פריטים`}
+      danger
+      onConfirm={handleConfirmDeleteAllVisible}
+    />
+
+    <ConfirmDialog
+      open={confirmDeleteAllWorkspace}
+      onOpenChange={setConfirmDeleteAllWorkspace}
+      title="⚠️ מחיקת כל ה-Workspace"
+      description={`פעולה זו תמחק את כל ${libraryItems.length} פריטי ה-Workspace בלבד. היא לא תמחק Brain, KnowledgeItems או סרטונים מקוריים. כדי להמשיך הקלד: מחק הכל`}
+      confirmLabel="מחק את כל ה-Workspace"
+      danger
+      requireTypedWord="מחק הכל"
+      onConfirm={handleConfirmDeleteAllWorkspace}
+    />
+    </>
   );
 }
 
 // ─── Folder group ─────────────────────────────────────────────────────────────
 
-function FolderGroup({ label, count, items, allTopics, indent = false, muted = false }) {
+function FolderGroup({ label, count, items, allTopics, indent = false, muted = false, onDelete, onArchive }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div>
@@ -1172,7 +1290,7 @@ function FolderGroup({ label, count, items, allTopics, indent = false, muted = f
       {!collapsed && (
         <div className={cn('space-y-2', indent ? 'pr-3 border-r-2 border-slate-100 dark:border-zinc-800' : 'pr-2 border-r-2 border-slate-100 dark:border-zinc-800')}>
           {items.map(item => (
-            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact />
+            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={onDelete} onArchive={onArchive} />
           ))}
         </div>
       )}
@@ -1204,7 +1322,7 @@ function AnalysisBanner({ show, count, onLoad }) {
 
 // ─── Library item card ────────────────────────────────────────────────────────
 
-function LibraryItemCard({ item, allTopics, compact = false, showDate = false }) {
+function LibraryItemCard({ item, allTopics, compact = false, showDate = false, onDelete, onArchive }) {
   const mainTopic = allTopics.find(t => t.id === item.topicId && !t.parentId);
   const subTopic  = allTopics.find(t => t.id === item.subTopicId);
   const itemTags  = item.tags || [];
@@ -1229,6 +1347,26 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           {item.flags?.mustWatchAgain && <span title="לצפות שוב">🔁</span>}
           {showDate && savedDate && (
             <span className="text-xs text-slate-400 dark:text-zinc-600 mr-1">{savedDate}</span>
+          )}
+          {onArchive && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onArchive(item); }}
+              className="p-1 rounded text-slate-300 hover:text-amber-500 hover:bg-amber-50 dark:text-zinc-700 dark:hover:text-amber-400 dark:hover:bg-amber-950/20 transition-colors"
+              title="ארכיון"
+            >
+              <Archive className="h-3 w-3" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onDelete(item); }}
+              className="p-1 rounded text-red-300 hover:text-red-500 hover:bg-red-50 dark:text-red-700 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-colors"
+              title="מחק"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
           )}
         </div>
       </div>
@@ -1279,6 +1417,32 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false })
           )}
           {savedDate && (
             <span className="mr-auto text-xs text-slate-400 dark:text-zinc-600">{savedDate}</span>
+          )}
+        </div>
+      )}
+      {(onArchive || onDelete) && (
+        <div className="flex items-center justify-end gap-1 pt-1 border-t border-slate-100 dark:border-zinc-800">
+          {onArchive && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onArchive(item); }}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:text-zinc-600 dark:hover:text-amber-400 dark:hover:bg-amber-950/20 transition-colors"
+              title="ארכיון"
+            >
+              <Archive className="h-3 w-3" />
+              <span>ארכיון</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onDelete(item); }}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 dark:text-red-600 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-colors"
+              title="מחק"
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>מחק</span>
+            </button>
           )}
         </div>
       )}

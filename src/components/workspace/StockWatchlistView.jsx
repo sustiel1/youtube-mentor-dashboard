@@ -110,7 +110,7 @@ function HistoryMentionCard({ item, isLatest, onDelete }) {
         <button
           type="button"
           onClick={() => onDelete?.(item)}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:text-zinc-700 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-all"
+          className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:text-zinc-600 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-all"
           title="מחק אזכור"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ function AggregatedStockRow({
 
       {/* Col 7 — Actions */}
       <td className="py-3 px-2 align-top text-right" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-1 transition-opacity">
           {singleItem && (
             <button
               type="button"
@@ -469,7 +469,7 @@ function FallbackStockRow({ item, selected, onToggleSelect, onRequestEdit, onReq
         )}
       </td>
       <td className="py-2.5 px-2 align-middle text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-1 transition-opacity">
           <button
             type="button"
             onClick={() => onRequestEdit(item)}
