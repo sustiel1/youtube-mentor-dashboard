@@ -170,6 +170,7 @@ import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
 import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
 import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
+import { createGeminiJsonDebugReport } from '@/lib/geminiJsonDebugReport';
 import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
@@ -2202,6 +2203,7 @@ export function VideoDetailPanel({
   const [gemsErrorContext, setGemsErrorContext] = useState(null);
   const [isAiRepairingGemsJson, setIsAiRepairingGemsJson] = useState(false);
   const [gemsAiRepairResult, setGemsAiRepairResult] = useState(null);
+  const [gemsAiRepairFailed, setGemsAiRepairFailed] = useState(false);
   const [gemsJsonApplied, setGemsJsonApplied] = useState(false);
   const [marketBriefData, setMarketBriefData] = useState(null);
   const [politicalSummary, setPoliticalSummary] = useState(null);
@@ -6155,6 +6157,10 @@ export function VideoDetailPanel({
   };
 
   const handleApplyGemsJson = () => {
+    // Start of a new attempt — clear any stale repair report from a previous attempt
+    // so an old "repair candidate" is never shown alongside a fresh error.
+    setGemsAiRepairResult(null);
+    setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) { setGemsPasteError("הדבק JSON לפני לחיצה על החל"); return; }
     let parsed;
@@ -6219,6 +6225,9 @@ export function VideoDetailPanel({
   };
 
   const handleRepairGemsJson = () => {
+    // Start of a new attempt — clear any stale repair report from a previous attempt.
+    setGemsAiRepairResult(null);
+    setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) return;
     console.log(`[JSON Repair] before input length: ${raw.length}`);
@@ -6280,6 +6289,9 @@ export function VideoDetailPanel({
   };
 
   const handleAiRepairGemsJson = async () => {
+    // Start of a new attempt — clear any stale repair report from a previous attempt.
+    setGemsAiRepairResult(null);
+    setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) return;
 
@@ -6334,6 +6346,7 @@ export function VideoDetailPanel({
       });
       toast.success('תיקון AI מוכן — אשר כדי להחיל');
     } catch (err) {
+      setGemsAiRepairFailed(true);
       const fallbackReport = buildGemsJsonRepairReport({
         source: 'fallback',
         raw,
@@ -6411,6 +6424,52 @@ export function VideoDetailPanel({
     }
   }, [gemsPasteInput]);
 
+  // Shows the "copy debug report to Claude Code" action whenever the pasted
+  // GEM JSON is currently invalid, an automatic repair failed, an AI repair
+  // failed, or a repair candidate exists but still doesn't parse.
+  const showClaudeCodeDebugReport = Boolean(
+    gemsPasteError ||
+    (currentGemsJsonValidation.hasValue && !currentGemsJsonValidation.isValid) ||
+    (gemsAiRepairResult && !gemsAiRepairResult.repairedJson) ||
+    gemsAiRepairFailed
+  );
+
+  const handleCopyClaudeCodeDebugReport = async () => {
+    const videoId = video?.id || video?.youtubeId || null;
+    const videoUrl = getWatchUrl(video) || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
+    const channelName = video?.channelTitle || video?.channelName || video?.channel || '';
+    let attemptedContentType = null;
+    try { attemptedContentType = JSON.parse(gemsPasteInput)?.contentType || null; } catch { /* invalid JSON — expected here */ }
+    const parseErrorText = gemsParsedErrorInfo?.msg || currentGemsJsonValidation.error?.message || gemsPasteError || '';
+
+    const report = createGeminiJsonDebugReport({
+      videoTitle: video?.title || '',
+      videoId,
+      videoUrl,
+      channelName,
+      contentType: attemptedContentType || marketBriefData?.contentType || video?.contentType || '',
+      parseError: parseErrorText,
+      parseValid: currentGemsJsonValidation.isValid,
+      rawGeminiOutput: gemsPasteInput,
+      transcript,
+      repairCandidate: gemsAiRepairResult?.repairedJson || null,
+      aiRepairResult: gemsAiRepairResult?.source === 'ai' ? gemsAiRepairResult.report : null,
+      diagnostics: {
+        repairSource: gemsAiRepairResult?.source || null,
+        repairChanges: gemsAiRepairResult?.changes || [],
+        aiRepairFailed: gemsAiRepairFailed,
+        errorLocation: gemsParsedErrorInfo ? { line: gemsParsedErrorInfo.line, col: gemsParsedErrorInfo.col } : null,
+      },
+    });
+
+    try {
+      await navigator.clipboard.writeText(report);
+      toast.success('דוח התיקון הועתק לקלוד קוד');
+    } catch {
+      toast.error('לא ניתן היה להעתיק את דוח התיקון');
+    }
+  };
+
   const handleCopyGemsJson = async () => {
     if (!gemsPasteInput) return;
     try {
@@ -6429,6 +6488,7 @@ export function VideoDetailPanel({
     setGemsRepairApplied(false);
     setGemsErrorContext(null);
     setGemsAiRepairResult(null);
+    setGemsAiRepairFailed(false);
     setIsAiRepairingGemsJson(false);
     if (video?.id) {
       localStorage.removeItem(`gems-paste-${video.id}`);
@@ -12343,7 +12403,7 @@ export function VideoDetailPanel({
     />
 
     {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}
-    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setIsAiRepairingGemsJson(false); } }}>
+    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); } }}>
       <DialogContent dir="rtl" className="max-w-3xl w-[90vw] z-[200]">
         <DialogHeader>
           <DialogTitle className="text-right text-base font-bold">📥 הדבק JSON מ-GEMS</DialogTitle>
@@ -12374,7 +12434,7 @@ export function VideoDetailPanel({
           onChange={(e) => {
             const val = e.target.value;
             setGemsPasteInput(val);
-            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null);
+            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false);
             if (video?.id) {
               if (val.trim()) {
                 localStorage.removeItem(`gems-paste-cleared-${video.id}`);
@@ -12511,12 +12571,23 @@ export function VideoDetailPanel({
               </button>
               <button
                 type="button"
-                onClick={() => setGemsAiRepairResult(null)}
+                onClick={() => { setGemsAiRepairResult(null); setGemsAiRepairFailed(false); }}
                 className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300"
               >
                 ביטול
               </button>
             </div>
+          </div>
+        )}
+        {showClaudeCodeDebugReport && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={handleCopyClaudeCodeDebugReport}
+              className="px-3 py-1.5 text-xs border border-violet-300 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
+            >
+              📋 העתק דוח לקלוד קוד
+            </button>
           </div>
         )}
         {import.meta.env.DEV && (
@@ -12530,7 +12601,7 @@ export function VideoDetailPanel({
         )}
         <div className="flex gap-2 justify-start flex-row-reverse">
           <button
-            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setIsAiRepairingGemsJson(false); }}
+            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); }}
             className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
           >
             ביטול
