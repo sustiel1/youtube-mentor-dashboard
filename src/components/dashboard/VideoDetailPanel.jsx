@@ -5902,7 +5902,7 @@ export function VideoDetailPanel({
     setIsCreatingSubTopic(false);
     setNewSubTopicDraft("");
     setSelectedItems({});
-    setMultiSelected(new Map());
+    multiSelectClear();
     setPoliticalSummary(null);
     setPoliticalSummaryError(null);
     setActivePoliticalTab("brain-hi");
@@ -5921,7 +5921,7 @@ export function VideoDetailPanel({
     setLlamaStatus("idle");
     setLlamaMessage(null);
     setAttachedDocumentsInsights(null);
-  }, []);
+  }, [multiSelectClear]);
 
   const buildAnalysisSnapshot = (videoOverride) => {
     const v = videoOverride ?? video;
