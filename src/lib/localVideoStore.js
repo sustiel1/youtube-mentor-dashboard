@@ -14,6 +14,7 @@ import {
   isVideoDeleted,
   getDeletedVideoRestoreInfo,
   restoreDeletedVideo,
+  purgeDeletedVideoRecord,
   findArchivedDeletedVideo,
   isVideoDeletedOnly,
 } from '@/services/videoStorage';
@@ -45,6 +46,7 @@ export {
   isVideoDeleted,
   getDeletedVideoRestoreInfo,
   restoreDeletedVideo,
+  purgeDeletedVideoRecord,
   findArchivedDeletedVideo,
   isVideoDeletedOnly,
 };

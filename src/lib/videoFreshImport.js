@@ -311,6 +311,44 @@ export function buildFreshImportRecord(existingVideo, freshVideo, options = {}) 
   return next;
 }
 
+export function hasPreservableManualContent(video) {
+  if (!video || typeof video !== "object") return false;
+  return (
+    (Array.isArray(video.notes) && video.notes.length > 0) ||
+    (video.manualComments &&
+      (typeof video.manualComments !== "object" || Object.keys(video.manualComments).length > 0)) ||
+    (Array.isArray(video.attachedDocuments) && video.attachedDocuments.length > 0) ||
+    (Array.isArray(video.presentations) && video.presentations.length > 0) ||
+    Boolean(video.obsidianSavedStatus) ||
+    video.savedToBrain === true
+  );
+}
+
+/** Carry notes / manual comments / attachments / Obsidian status from an archived record onto a fresh one. */
+export function withPreservedManualContent(freshVideo, archivedVideo) {
+  if (!archivedVideo || typeof archivedVideo !== "object") return freshVideo;
+  const next = { ...freshVideo };
+  if (Array.isArray(archivedVideo.notes) && archivedVideo.notes.length > 0) {
+    next.notes = [...archivedVideo.notes];
+  }
+  if (archivedVideo.manualComments != null) {
+    next.manualComments = cloneObject(archivedVideo.manualComments, archivedVideo.manualComments);
+  }
+  if (Array.isArray(archivedVideo.attachedDocuments) && archivedVideo.attachedDocuments.length > 0) {
+    next.attachedDocuments = cloneArray(archivedVideo.attachedDocuments);
+  }
+  if (Array.isArray(archivedVideo.presentations) && archivedVideo.presentations.length > 0) {
+    next.presentations = cloneArray(archivedVideo.presentations);
+  }
+  if (archivedVideo.obsidianSavedStatus != null) {
+    next.obsidianSavedStatus = archivedVideo.obsidianSavedStatus;
+  }
+  if (archivedVideo.savedToBrain === true) {
+    next.savedToBrain = true;
+  }
+  return next;
+}
+
 export function stripFreshImportFlags(video) {
   if (!video || typeof video !== "object") return video;
   const next = { ...video };

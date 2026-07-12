@@ -483,6 +483,35 @@ export function restoreDeletedVideo({ ytId, url, patch = {} }) {
   return restored;
 }
 
+/**
+ * Permanently discard a deleted video's archived snapshot + blacklist entry
+ * without restoring it — used when the user chooses to delete the previous
+ * analysis and start fresh instead of recovering it. Idempotent: safe to call
+ * when no archive/blacklist entry exists for this video.
+ * @returns {object | null} the discarded archived snapshot, if any
+ */
+export function purgeDeletedVideoRecord({ ytId, url }) {
+  const fullUrl = url || (ytId ? `https://www.youtube.com/watch?v=${ytId}` : null);
+  const archived = findArchivedDeletedVideo(ytId, fullUrl);
+  const archiveKey = archiveKeyForVideo(archived) || ytId;
+
+  removeFromDeletedBlacklist({
+    id: archived?.id,
+    url: archived?.url || fullUrl,
+    ytId: ytId || (fullUrl ? extractVideoId(fullUrl) : null),
+  });
+
+  if (archiveKey) {
+    const archive = loadDeletedArchive();
+    if (archive[archiveKey]) {
+      delete archive[archiveKey];
+      saveDeletedArchive(archive);
+    }
+  }
+
+  return archived;
+}
+
 /** Remove one video by id from local store. Returns true if a row was removed. */
 export function deleteStoredVideo(id) {
   const videos = loadVideosRaw();

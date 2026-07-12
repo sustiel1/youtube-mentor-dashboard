@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, Link2, Loader2, RotateCcw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Link2, Loader2, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Video } from "@/api/entities";
 import {
@@ -23,11 +23,19 @@ import {
   getDeletedVideoRestoreInfo,
   getLocalVideos,
   isVideoDeleted,
+  purgeDeletedVideoRecord,
   restoreDeletedVideo,
   saveLocalVideo,
 } from "@/lib/localVideoStore";
 import { formatTopicLabel } from "@/lib/topicFilters";
-import { buildFreshImportRecord, clearVideoGeneratedCaches, saveFreshImportRecordLocally, stripFreshImportFlags } from "@/lib/videoFreshImport";
+import {
+  buildFreshImportRecord,
+  clearVideoGeneratedCaches,
+  hasPreservableManualContent,
+  saveFreshImportRecordLocally,
+  stripFreshImportFlags,
+  withPreservedManualContent,
+} from "@/lib/videoFreshImport";
 import { mergeRestoredVideoWithFreshMetadata } from "@/lib/videoRestoreMerge";
 import { isValidYouTubeUrl, parseYouTubeVideoId } from "@/lib/youtubeUrlParser";
 import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
@@ -119,7 +127,11 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
   const [errorMsg, setErrorMsg] = useState("");
   const [restoreInfo, setRestoreInfo] = useState(null);
   const [duplicateVideo, setDuplicateVideo] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteManualContentToo, setDeleteManualContentToo] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const inputRef = useRef(null);
+  const resetInFlightRef = useRef(false);
   const queryClient = useQueryClient();
   const createTopic = useCreateTopic();
 
@@ -135,6 +147,10 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     setErrorMsg("");
     setRestoreInfo(null);
     setDuplicateVideo(null);
+    setDeleteConfirmOpen(false);
+    setDeleteManualContentToo(false);
+    setIsResetting(false);
+    resetInFlightRef.current = false;
     setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
 
@@ -160,6 +176,8 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     setErrorMsg("");
     setRestoreInfo(null);
     setDuplicateVideo(null);
+    setDeleteConfirmOpen(false);
+    setDeleteManualContentToo(false);
     if (phase === STATE.restore_prompt || phase === STATE.duplicate_prompt) {
       setPhase(STATE.idle);
     }
@@ -216,6 +234,72 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
       }
       setPhase(STATE.error);
       setErrorMsg(err?.message || "שגיאה בשחזור הסרטון");
+    }
+  };
+
+  // Deletes the archived record + all generated caches for this video ID, then
+  // starts a brand-new import — same code path as adding a video that was never
+  // seen before. Manual notes / Obsidian content are carried over unless the
+  // user opted to delete them too.
+  const handleDeleteAndRestart = async () => {
+    if (resetInFlightRef.current) return;
+    const videoId = parseYouTubeVideoId(url);
+    if (!videoId || !restoreInfo) return;
+
+    resetInFlightRef.current = true;
+    setIsResetting(true);
+    setPhase(STATE.loading);
+    setErrorMsg("");
+    setTopicFieldError("");
+
+    try {
+      const targetUrl = restoreInfo.url || url.trim();
+      const archived = purgeDeletedVideoRecord({ ytId: videoId, url: targetUrl });
+      clearVideoGeneratedCaches(
+        archived || { id: `ext_${videoId}`, url: targetUrl, videoId, youtubeId: videoId }
+      );
+
+      const { topicIds, mentorId } = await buildAddOptions();
+      const fresh = await buildExternalVideoObject(videoId, {
+        titleOverride: optionalTitle,
+        mentorId,
+        topicIds,
+        source: "manual",
+      });
+
+      const finalRecord = deleteManualContentToo ? fresh : withPreservedManualContent(fresh, archived);
+
+      const added = saveLocalVideo(finalRecord);
+      if (!added) {
+        throw new Error("לא ניתן להתחיל ניתוח חדש — נסה שוב");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+      toast.success("הנתונים הקודמים נמחקו — מתחיל ניתוח חדש");
+      onVideoAdded?.(added);
+      onClose?.();
+    } catch (err) {
+      if (err?.message === "TOPIC_NAME_REQUIRED") {
+        setTopicFieldError("יש להזין שם לנושא החדש");
+        setPhase(STATE.restore_prompt);
+        setDeleteConfirmOpen(true);
+        resetInFlightRef.current = false;
+        setIsResetting(false);
+        return;
+      }
+      if (err?.message === "TOPIC_CREATE_FAILED") {
+        toast.error("לא ניתן ליצור את הנושא — נסה שוב");
+        setPhase(STATE.restore_prompt);
+        setDeleteConfirmOpen(true);
+        resetInFlightRef.current = false;
+        setIsResetting(false);
+        return;
+      }
+      setPhase(STATE.error);
+      setErrorMsg(err?.message || "שגיאה במחיקת הנתונים והתחלת ניתוח חדש");
+      resetInFlightRef.current = false;
+      setIsResetting(false);
     }
   };
 
@@ -276,6 +360,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
   const handleSubmit = async (event) => {
     event?.preventDefault();
     if (phase === STATE.restore_prompt) {
+      if (deleteConfirmOpen) return;
       await handleRestore();
       return;
     }
@@ -366,7 +451,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
 
   const videoId = url.trim() ? parseYouTubeVideoId(url) : null;
   const isLoading = phase === STATE.loading;
-  const isBusy = isLoading || createTopic.isPending;
+  const isBusy = isLoading || createTopic.isPending || isResetting;
   const isRestorePrompt = phase === STATE.restore_prompt;
   const isDuplicatePrompt = phase === STATE.duplicate_prompt;
   const isReadyState = phase === STATE.valid || isRestorePrompt || isDuplicatePrompt;
@@ -374,6 +459,9 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     (phase === STATE.valid || isRestorePrompt) &&
     !isBusy &&
     (topicChoice !== TOPIC_CHOICE_NEW || newTopicName.trim().length > 0);
+  const canResetAndRestart =
+    !isBusy && (topicChoice !== TOPIC_CHOICE_NEW || newTopicName.trim().length > 0);
+  const hasManualContent = hasPreservableManualContent(restoreInfo?.archived);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isBusy) onClose?.(); }}>
@@ -416,31 +504,92 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
                   {restoreInfo.archived.title}
                 </p>
               )}
-              <div className="mt-3 flex flex-wrap gap-2 justify-end">
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setRestoreInfo(null);
-                    setPhase(STATE.valid);
-                  }}
-                  className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-zinc-200"
-                >
-                  בטל
-                </button>
-                <button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {isBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-3.5 w-3.5" />
+
+              {deleteConfirmOpen ? (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/30">
+                  <p className="text-sm font-medium text-red-900 dark:text-red-200">
+                    למחוק את כל נתוני הניתוח הקודמים של הסרטון ולהתחיל מחדש?
+                  </p>
+                  <p className="mt-1 text-[11px] text-red-700/90 dark:text-red-300/80">
+                    הפעולה תמחק תמלול שמור, GEM JSON ולשוניות שנוצרו עבור הסרטון הזה בלבד.
+                  </p>
+                  {hasManualContent && (
+                    <label className="mt-2 flex items-center gap-2 text-[11px] text-red-800 dark:text-red-300">
+                      <input
+                        type="checkbox"
+                        checked={deleteManualContentToo}
+                        onChange={(event) => setDeleteManualContentToo(event.target.checked)}
+                        disabled={isBusy}
+                      />
+                      מחק גם הערות ותוכן ידני
+                    </label>
                   )}
-                  שחזר סרטון
-                </button>
-              </div>
+                  <div className="mt-3 flex flex-wrap gap-2 justify-end">
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => setDeleteConfirmOpen(false)}
+                      className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-zinc-200"
+                    >
+                      חזור
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canResetAndRestart}
+                      onClick={handleDeleteAndRestart}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {isResetting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                      מחק והתחל מחדש
+                    </button>
+                  </div>
+                  {isResetting && (
+                    <p className="mt-2 text-[11px] text-red-700 dark:text-red-300 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      מוחק נתונים ומתחיל ניתוח חדש…
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2 justify-end">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setRestoreInfo(null);
+                      setPhase(STATE.valid);
+                    }}
+                    className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-zinc-200"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    מחק נתונים והתחל מחדש
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!canSubmit}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {isBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    )}
+                    שחזר סרטון
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
