@@ -1,7 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { getFixedQuestionsForItems, buildFixedCopyText } from '@/lib/fixedQuestionBank';
-import { MARKET_BRIEF_SPACE_URL } from '@/lib/perplexitySpaces';
+import {
+  SELECTABLE_SPACES,
+  STOCK_FAST_DECISION_QUESTIONS,
+  getPerplexitySpaceByKey,
+  getDefaultPerplexitySpaceForQuestionSection,
+} from '@/lib/perplexitySpaces';
 import {
   Dialog,
   DialogContent,
@@ -15,13 +20,19 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
   const [selectedQIds, setSelectedQIds] = useState(new Set());
   // Snapshot items at open-time so they don't disappear if parent state clears
   const [frozenItems, setFrozenItems] = useState([]);
+  const [selectedSpaceKey, setSelectedSpaceKey] = useState('marketBrief');
 
-  const questions = useMemo(() => getFixedQuestionsForItems(frozenItems), [frozenItems]);
+  const questions = useMemo(() => {
+    if (selectedSpaceKey === 'stockFastDecision') return STOCK_FAST_DECISION_QUESTIONS;
+    return getFixedQuestionsForItems(frozenItems);
+  }, [selectedSpaceKey, frozenItems]);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedQIds(new Set());
       if (selectedItems.length > 0) setFrozenItems(selectedItems);
+      const label = (selectedItems.length > 0 ? selectedItems : frozenItems)[0]?.sectionLabel || '';
+      setSelectedSpaceKey(getDefaultPerplexitySpaceForQuestionSection(label));
+      setSelectedQIds(new Set());
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -39,6 +50,16 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
   }, [questions]);
 
   const clearAll = useCallback(() => setSelectedQIds(new Set()), []);
+
+  const handleSpaceChange = useCallback((key) => {
+    setSelectedSpaceKey(key);
+    setSelectedQIds(new Set());
+  }, []);
+
+  const openSelectedPerplexitySpace = useCallback(() => {
+    const space = getPerplexitySpaceByKey(selectedSpaceKey);
+    if (space.url) window.open(space.url, '_blank', 'noopener,noreferrer');
+  }, [selectedSpaceKey]);
 
   const _writeClipboard = useCallback(async (text) => {
     try { await navigator.clipboard.writeText(text); return true; }
@@ -60,6 +81,7 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
   }, [frozenItems, selectedQIds, questions, _writeClipboard]);
 
   const sectionLabel = frozenItems[0]?.sectionLabel || '';
+  const selectedSpace = getPerplexitySpaceByKey(selectedSpaceKey);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -88,6 +110,33 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
               {item.text}
             </p>
           ))}
+        </div>
+
+        {/* Perplexity Space selector */}
+        <div dir="rtl" className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-zinc-400 whitespace-nowrap">פתח ב-Perplexity:</span>
+          <div className="flex gap-1 flex-wrap">
+            {SELECTABLE_SPACES.map((space) => {
+              const isActive = selectedSpaceKey === space.key;
+              return (
+                <button
+                  key={space.key}
+                  type="button"
+                  title={isActive ? 'פתח את ה־Space' : undefined}
+                  onClick={() => isActive ? openSelectedPerplexitySpace() : handleSpaceChange(space.key)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isActive) openSelectedPerplexitySpace(); }}
+                  className={[
+                    'rounded-lg px-2 py-1 text-xs font-medium transition-colors whitespace-nowrap',
+                    isActive
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200',
+                  ].join(' ')}
+                >
+                  {space.label}{isActive ? ' ↗' : ''}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Select all / clear */}
@@ -156,14 +205,23 @@ export function FixedQuestionsPanel({ isOpen, onClose, selectedItems = [] }) {
             >
               סגור
             </button>
-            <a
-              href={MARKET_BRIEF_SPACE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap"
-            >
-              🔗 Perplexity
-            </a>
+            {selectedSpace.url ? (
+              <a
+                href={selectedSpace.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap"
+              >
+                🔗 Perplexity
+              </a>
+            ) : (
+              <span
+                title="חסר קישור ל־Space הזה"
+                className="rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-600 cursor-not-allowed whitespace-nowrap select-none"
+              >
+                🔗 Perplexity
+              </span>
+            )}
           </div>
 
           <div className="flex gap-2">
