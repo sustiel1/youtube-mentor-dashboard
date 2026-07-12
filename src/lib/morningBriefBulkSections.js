@@ -23,6 +23,8 @@ import {
   extractUnifiedStocks,
   getSpecializedSrc,
   isRegimeDuplicateString,
+  macroRowRichness,
+  macroSemanticKey,
   normalizeMarketDashboardRow,
 } from '@/lib/morningBriefDisplay';
 
@@ -105,17 +107,23 @@ function formatRegimeCardText(card) {
 }
 
 function mergeMacroDisplayRows(primaryRows, fallbackItems) {
-  const seen = new Set(primaryRows.map((r) => `${r.indicator}|${r.value}|${r.change}|${r.description}`));
-  const merged = [...primaryRows];
+  // Semantic (not exact-string) dedup: fallbackItems come from a separate legacy
+  // resolution path (extractVideoTabItems('brief-macro', ...)) and often re-describe
+  // the same event with different phrasing — merge by topic, keep the richer row.
+  const groups = new Map();
+  for (const row of primaryRows) {
+    groups.set(macroSemanticKey(row.indicator), row);
+  }
   for (const item of fallbackItems) {
     const parsed = parseMacroDisplayItem(item);
     if (!parsed?.indicator) continue;
-    const sig = `${parsed.indicator}|${parsed.value}|${parsed.change}|${parsed.description}`;
-    if (seen.has(sig)) continue;
-    seen.add(sig);
-    merged.push(parsed);
+    const key = macroSemanticKey(parsed.indicator);
+    const prev = groups.get(key);
+    if (!prev || macroRowRichness(parsed) > macroRowRichness(prev)) {
+      groups.set(key, parsed);
+    }
   }
-  return merged;
+  return [...groups.values()];
 }
 
 function mergeMarketRows(marketBriefData, indicesItems = []) {

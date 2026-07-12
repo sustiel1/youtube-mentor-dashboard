@@ -474,7 +474,10 @@ function formatMacroItem(item) {
   if (typeof item === 'string') return item.trim();
   if (typeof item !== 'object') return String(item);
 
-  const event = (item.event || item.title || item.name || item.subject || '').trim();
+  // 'factor' covers rawData.macroFactors items; 'status'/'note' cover the explanatory
+  // body of both rawData ({ factor, note }) and specialized ({ name, status }) shapes.
+  const event = (item.event || item.title || item.name || item.subject || item.factor || '').trim();
+  const detail = (item.status || item.note || item.description || item.comment || '').trim();
   const importance = (item.importance || item.priority || item.significance || '').trim();
   const impact = (item.impact || item.marketImpact || item.effect || item.expectedImpact || '').trim();
   const sectors = item.sectors || item.assets || item.affectedSectors;
@@ -483,7 +486,7 @@ function formatMacroItem(item) {
     : typeof sectors === 'string' ? sectors : '';
   const date = (item.date || item.time || item.when || '').trim();
 
-  if (!event && !impact) {
+  if (!event && !impact && !detail) {
     return Object.values(item).find(v => typeof v === 'string' && v.trim()) || '';
   }
 
@@ -491,6 +494,7 @@ function formatMacroItem(item) {
   if (event) parts.push(event);
   if (date) parts.push(`📅 ${date}`);
   if (importance) parts.push(`חשיבות: ${importance}`);
+  if (detail && detail !== event) parts.push(detail);
   if (impact) parts.push(`השפעה: ${impact}`);
   if (sectorsStr) parts.push(`סקטורים: ${sectorsStr}`);
   return parts.join('\n');
@@ -814,10 +818,20 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
     // ── Morning/evening brief ─────────────────────────────────────────
     case 'brief-macro': {
       const src = resolveSpecialized(marketBriefData);
+      // resolveSpecialized() shallow-spreads { ...rawData, ...specialized }, so
+      // specialized.macroFactors silently REPLACES (not merges with) rawData.macroFactors —
+      // any macro factor without a specialized counterpart (e.g. a crypto-only factor) is lost.
+      // Union both layers here so nothing present in rawData disappears.
+      const rawLayerMacro = marketBriefData?.rawData?.macroFactors;
+      const specLayerMacro = marketBriefData?.universalTabs?.specialized?.macroFactors;
+      const macroFactorsUnion = [
+        ...(Array.isArray(rawLayerMacro) ? rawLayerMacro : []),
+        ...(Array.isArray(specLayerMacro) ? specLayerMacro : []),
+      ];
       const rawMacro = src
         ? [
             ...pickArray(src, 'macro', 'macroEvents', 'macroHighlights', 'macroContext', 'economicContext', 'economicEvents'),
-            ...pickArray(src, 'macroFactors'),
+            ...(macroFactorsUnion.length > 0 ? macroFactorsUnion : pickArray(src, 'macroFactors')),
             // New Macro GEM field names (from universalTabs.specialized and rawData)
             ...pickArray(src, 'macroConditions', 'marketConditions'),
             ...pickObjectAsStrings(src, 'macroOverview'),
