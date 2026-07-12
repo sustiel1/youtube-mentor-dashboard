@@ -2413,7 +2413,8 @@ export function MacroGemDashboard({
   const growthRecession = asObj(get('growthRecession'));
 
   // Arrays — macroHighlights is a dedicated section, not merged into events
-  const sectors         = get('sectors');
+  // 'sectors' is the legacy field name; the actual GEM schema field is 'sectorRotation'.
+  const sectors         = get('sectors') || get('sectorRotation');
   const stocksMentioned = get('stocksMentioned');
   const macroEvents     = get('macroEvents') || get('macroFactors');
   const macroHighlights = get('macroHighlights');

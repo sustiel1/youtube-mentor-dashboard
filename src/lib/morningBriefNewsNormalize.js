@@ -165,7 +165,7 @@ function normalizeFromString(raw) {
 }
 
 function normalizeFromObject(item) {
-  const title = pickString(item, 'title', 'headline', 'name');
+  const title = pickString(item, 'title', 'headline', 'name', 'event');
   const summaryRaw = pickString(item, 'summary', 'description', 'note', 'content');
   const impact = pickString(item, 'impact', 'marketImpact', 'effect', 'market_effect')
     || extractImpactFromText(summaryRaw);

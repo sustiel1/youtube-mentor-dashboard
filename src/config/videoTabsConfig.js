@@ -500,6 +500,113 @@ function formatMacroItem(item) {
   return parts.join('\n');
 }
 
+// ── Specialized News / Sectors normalization ──────────────────────────
+// Same failure mode as the macroFactorsUnion fix above (see 'brief-macro'):
+// resolveSpecialized() shallow-spreads { ...rawData, ...specialized }, so an
+// empty/differently-shaped universalTabs.specialized.marketNews or .sectorRotation
+// silently REPLACES a populated rawData array. These helpers union every known
+// GEM JSON location instead of relying on that clobbering merge.
+
+/** Collects one field's array across every location a GEM JSON may place it in. */
+function collectSpecializedArrayLayers(marketBriefData, key) {
+  return [
+    marketBriefData?.universalTabs?.specialized?.[key],
+    marketBriefData?.rawData?.universalTabs?.specialized?.[key],
+    marketBriefData?.rawData?.[key],
+    marketBriefData?.[key],
+  ];
+}
+
+function itemTextRichness(item) {
+  if (typeof item === 'string') return item.length;
+  if (!item || typeof item !== 'object') return 0;
+  return Object.values(item).reduce((sum, v) => sum + (typeof v === 'string' ? v.length : 0), 0);
+}
+
+/** Unions array layers, keeping the richer item whenever the same identity repeats. */
+function unionByIdentityPreferRicher(layers, getIdentity) {
+  const byId = new Map();
+  const order = [];
+  for (const arr of layers) {
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (item == null) continue;
+      const identity = getIdentity(item);
+      const key = identity || JSON.stringify(item);
+      if (!byId.has(key)) {
+        byId.set(key, item);
+        order.push(key);
+      } else if (itemTextRichness(item) > itemTextRichness(byId.get(key))) {
+        byId.set(key, item);
+      }
+    }
+  }
+  return order.map((key) => byId.get(key));
+}
+
+function newsItemIdentity(item) {
+  if (typeof item === 'string') return item.trim().toLowerCase();
+  if (!item || typeof item !== 'object') return '';
+  return String(item.title || item.event || item.headline || item.name || '').trim().toLowerCase();
+}
+
+function sectorItemIdentity(item) {
+  if (typeof item === 'string') return item.trim().toLowerCase();
+  if (!item || typeof item !== 'object') return '';
+  return String(item.sector || item.name || '').trim().toLowerCase();
+}
+
+/** Resolves + dedupes Specialized-tab news items from every known GEM JSON location. */
+export function resolveSpecializedNewsItems(marketBriefData) {
+  const layers = collectSpecializedArrayLayers(marketBriefData, 'marketNews');
+  return unionByIdentityPreferRicher(layers, newsItemIdentity);
+}
+
+/** Resolves + dedupes Specialized-tab sector items from every known GEM JSON location. */
+export function resolveSpecializedSectorItems(marketBriefData) {
+  const layers = ['sectorRotation', 'sectors', 'sectorPerformance']
+    .flatMap((key) => collectSpecializedArrayLayers(marketBriefData, key));
+  return unionByIdentityPreferRicher(layers, sectorItemIdentity);
+}
+
+/**
+ * Formats a news item as a display string. Supports { title, description },
+ * { event }, { headline, summary } and { headline, impact } shapes — never drops
+ * a secondary description/impact field the way the shared generic item formatter would.
+ */
+export function formatNewsItem(item) {
+  if (!item) return '';
+  if (typeof item === 'string') return item.trim();
+  if (typeof item !== 'object') return String(item);
+
+  const title = (item.title || item.event || item.headline || item.name || '').trim();
+  const description = (item.description || item.summary || item.impact || item.note || '').trim();
+
+  if (!title && !description) {
+    return Object.values(item).find((v) => typeof v === 'string' && v.trim()) || '';
+  }
+  // ' — ' matches the separator normalizeFromString() in morningBriefNewsNormalize.js
+  // expects when re-splitting a flattened string back into title + summary.
+  if (title && description && title !== description) return `${title} — ${description}`;
+  return title || description;
+}
+
+/** Formats a sector item as a display string. Supports { sector, status }, { sector, trend }, { name, status }. */
+export function formatSectorItem(item) {
+  if (!item) return '';
+  if (typeof item === 'string') return item.trim();
+  if (typeof item !== 'object') return String(item);
+
+  const sector = (item.sector || item.name || '').trim();
+  const status = (item.status || item.trend || item.direction || item.note || '').trim();
+
+  if (!sector && !status) {
+    return Object.values(item).find((v) => typeof v === 'string' && v.trim()) || '';
+  }
+  if (sector && status) return `${sector}: ${status}`;
+  return sector || status;
+}
+
 /**
  * Returns an array of items for the given tab value.
  * Handles both flat (new) and nested legacy analysis structures.
@@ -708,8 +815,12 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       if (src) {
         // Extract marketOverview.text as a plain string — avoid "text: ..." / "marketMood: ..." label leakage
         const moText = pickStringAsArray(src.marketOverview, 'text', 'summary', 'overview', 'briefSummary');
+        // Union rawData + universalTabs.specialized marketNews (see resolveSpecializedNewsItems
+        // above) instead of pickArray(src, 'marketNews', ...) — src.marketNews may have been
+        // silently clobbered to an empty/thinner array by resolveSpecialized()'s shallow spread.
+        const newsUnion = resolveSpecializedNewsItems(marketBriefData);
         return filterDiagnosticItems([
-          ...pickArray(src, 'marketNews', 'headlines', 'news', 'topStories'),
+          ...(newsUnion.length > 0 ? newsUnion.map(formatNewsItem) : pickArray(src, 'marketNews', 'headlines', 'news', 'topStories')),
           ...moText,
           ...pickArray(src, 'catalysts', 'snapshot'),
         ]);
@@ -879,6 +990,11 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
 
     case 'brief-sectors': {
       const src = resolveSpecialized(marketBriefData);
+      // Union rawData + universalTabs.specialized sector fields (see
+      // resolveSpecializedSectorItems above) — pickArray(src, ...) alone can miss
+      // rawData.sectorRotation items clobbered by an empty specialized counterpart.
+      const sectorUnion = resolveSpecializedSectorItems(marketBriefData);
+      if (sectorUnion.length > 0) return sectorUnion.map(formatSectorItem);
       return src
         ? pickArray(src, 'sectorPerformance', 'sectors', 'sectorRotation')
         : pickArray(video, 'sectorPerformance', 'sectors');
