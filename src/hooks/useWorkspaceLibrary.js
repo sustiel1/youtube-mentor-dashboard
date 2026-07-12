@@ -8,6 +8,10 @@ import {
   saveWorkspaceItem,
   updateWorkspaceItem,
   deleteWorkspaceItem,
+  deleteWorkspaceItems,
+  deleteAllWorkspaceItems,
+  updateWorkspaceItemsBulk,
+  archiveWorkspaceItems,
 } from "@/lib/workspaceLibraryStore";
 
 export function useWorkspaceTopics() {
@@ -62,5 +66,25 @@ export function useWorkspaceItems() {
     setItems(getWorkspaceItems());
   }, []);
 
-  return { items, reload, saveItem, updateItem, deleteItem };
+  const deleteItems = useCallback((ids) => {
+    deleteWorkspaceItems(ids);
+    setItems(getWorkspaceItems());
+  }, []);
+
+  const deleteAllItems = useCallback(() => {
+    deleteAllWorkspaceItems();
+    setItems(getWorkspaceItems());
+  }, []);
+
+  const updateItemsBulk = useCallback((ids, updates) => {
+    updateWorkspaceItemsBulk(ids, updates);
+    setItems(getWorkspaceItems());
+  }, []);
+
+  const archiveItems = useCallback((ids, archived = true) => {
+    archiveWorkspaceItems(ids, archived);
+    setItems(getWorkspaceItems());
+  }, []);
+
+  return { items, reload, saveItem, updateItem, deleteItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems };
 }

@@ -9,8 +9,10 @@ import {
   getStockDisplayNotes,
   getStockTimeline,
   groupStockItemsBySymbol,
+  getGroupDisplaySentiment,
   SENTIMENT_DOT,
   SENTIMENT_LABEL,
+  SENTIMENT_COLOR,
 } from '@/utils/workspaceStockItems';
 import {
   getAvailableSectors,
@@ -28,6 +30,18 @@ import { EditWorkspaceItemModal } from './EditWorkspaceItemModal';
 function resolveSymbolFinvizUrl(symbol) {
   if (!symbol) return null;
   return getManualFinvizUrl(symbol) || getExternalSymbolUrl(symbol) || null;
+}
+
+// ─── Legacy companyName display guard ─────────────────────────────────────────
+// Some stock items saved before the parseStockFromText fix stored the full
+// note text as "companyName" (a 2-part "TICKER · note" text was misread as
+// "TICKER · company"). That data is already in localStorage and is never
+// rewritten here — this only decides what's safe to render under the symbol.
+function looksLikeGenuineCompanyName(name) {
+  if (!name) return false;
+  if (name.length > 32) return false;
+  if (/[.·]|בעקבות|עולה|יורדת/.test(name)) return false;
+  return true;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -48,22 +62,17 @@ const MARKET_STATUS_COLORS = {
   archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
 };
 
-const SENTIMENT_CHIP_STYLES = {
-  positive: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/50',
-  negative: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/50',
-  neutral:  'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
-};
-
-// ─── Sentiment chip ───────────────────────────────────────────────────────────
+// ─── Sentiment chip — dot + text only, no filled pill background ─────────────
+// Matches the app's own "מניות שהוזכרו" table style rather than a heavy badge.
 
 function SentimentChip({ sentiment }) {
   if (!sentiment) return <span className="text-slate-300 dark:text-zinc-700 text-xs">—</span>;
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap',
-      SENTIMENT_CHIP_STYLES[sentiment] || SENTIMENT_CHIP_STYLES.neutral,
+      'inline-flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap',
+      SENTIMENT_COLOR[sentiment] || SENTIMENT_COLOR.neutral,
     )}>
-      <span className="text-[10px]">{SENTIMENT_DOT[sentiment] || '⚪'}</span>
+      <span className="text-[10px] leading-none">{SENTIMENT_DOT[sentiment] || '⚪'}</span>
       <span>{SENTIMENT_LABEL[sentiment] || sentiment}</span>
     </span>
   );
@@ -233,22 +242,33 @@ function AggregatedStockRow({
     groupItems.find(i => i.companyName)?.companyName ||
     null;
 
+  // Real sector data only — item.category holds the Workspace *topic* name
+  // (e.g. "מניות"/"שוק ההון"), not a market sector, so it must never be used
+  // as a sector fallback here (it was, previously — that's what produced a
+  // fake "מניות" sector chip under every symbol).
   const sector =
     latestStock.sector ||
     groupItems.find(i => i.sector)?.sector ||
-    groupItems.find(i => i.category)?.category ||
     null;
 
   const latestStatus   = timeline.find(i => i.marketStatus)?.marketStatus || null;
   const latestNote     = getStockDisplayNotes(latestStock);
   const mentionCount   = groupItems.length;
   const finvizUrl      = resolveSymbolFinvizUrl(symbol);
+  // Latest mention that actually has a sentiment — not just the newest row,
+  // which may itself be silent while an earlier mention in the group isn't.
+  const displaySentiment = useMemo(() => getGroupDisplaySentiment(groupItems), [groupItems]);
 
   const latestSource =
     latestStock.sourceTitle ||
     latestStock.sourceSection ||
     latest?.sourceTab ||
     null;
+
+  // Stock rows never carry a videoId (they come from analysis text, not a
+  // specific video panel), but they do carry the plain videoUrl when the
+  // source session had one — open it directly when the source title is clicked.
+  const sourceUrl = latest?.videoUrl || null;
 
   const savedDate = (() => {
     try { return format(new Date(latest?.savedAt), "d בMMM", { locale: he }); }
@@ -284,8 +304,12 @@ function AggregatedStockRow({
         )}
       </td>
 
-      {/* Col 1 — Symbol / Company / Sector */}
-      <td className="py-3 px-4 align-top whitespace-nowrap" dir="ltr">
+      {/* Col 1 — Symbol / Company / Sector.
+          dir="ltr" is scoped only to the ticker itself (a Latin string) —
+          the cell and its flex column stay RTL, so the whole block (ticker,
+          company name, sector chip) sits flush against the checkbox column,
+          matching the header's own right alignment. */}
+      <td className="py-3.5 px-4 align-top whitespace-nowrap text-right">
         <div className="flex flex-col items-start gap-0.5">
           {finvizUrl ? (
             <a
@@ -294,18 +318,19 @@ function AggregatedStockRow({
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
               title={`פתח ${symbol} ב-Finviz`}
-              className="inline-flex items-center gap-0.5 font-mono text-[15px] font-extrabold text-slate-900 dark:text-zinc-50 tracking-tight leading-none hover:text-teal-600 dark:hover:text-teal-400 hover:underline underline-offset-2 transition-colors"
+              dir="ltr"
+              className="inline-flex items-center gap-1 font-mono text-base font-black text-slate-900 dark:text-zinc-50 tracking-tight leading-none hover:text-teal-600 dark:hover:text-teal-400 hover:underline underline-offset-2 transition-colors"
             >
               {symbol}
               <ExternalLink className="h-3 w-3 opacity-40" />
             </a>
           ) : (
-            <span className="font-mono text-[15px] font-extrabold text-slate-900 dark:text-zinc-50 tracking-tight leading-none">
+            <span dir="ltr" className="font-mono text-base font-black text-slate-900 dark:text-zinc-50 tracking-tight leading-none">
               {symbol}
             </span>
           )}
-          {companyName && (
-            <span className="text-[11px] text-slate-500 dark:text-zinc-500 max-w-[130px] truncate mt-0.5 leading-tight" dir="rtl" title={companyName}>
+          {companyName && looksLikeGenuineCompanyName(companyName) && (
+            <span className="text-[11px] font-normal text-slate-400 dark:text-zinc-500 max-w-[130px] truncate mt-0.5 leading-tight" dir="rtl" title={companyName}>
               {companyName}
             </span>
           )}
@@ -317,13 +342,8 @@ function AggregatedStockRow({
         </div>
       </td>
 
-      {/* Col 2 — Latest sentiment */}
-      <td className="py-3 px-3 align-top text-right whitespace-nowrap">
-        <SentimentChip sentiment={latestStock.sentiment} />
-      </td>
-
-      {/* Col 3 — Status */}
-      <td className="py-3 px-3 align-top text-right" onClick={e => e.stopPropagation()}>
+      {/* Col 2 — Status (kept immediately next to the symbol column) */}
+      <td className="py-3.5 px-2 align-top text-right" onClick={e => e.stopPropagation()}>
         <div className="flex flex-col items-end gap-1">
           {latestStatus && (
             <span className={cn(
@@ -348,8 +368,13 @@ function AggregatedStockRow({
         </div>
       </td>
 
+      {/* Col 3 — Sentiment (latest mention that actually has one, not just the newest row) */}
+      <td className="py-3.5 px-3 align-top text-right whitespace-nowrap">
+        <SentimentChip sentiment={displaySentiment} />
+      </td>
+
       {/* Col 4 — Mention count */}
-      <td className="py-3 px-3 align-top text-center whitespace-nowrap">
+      <td className="py-3.5 px-3 align-top text-center whitespace-nowrap">
         <span className={cn(
           'inline-flex items-center justify-center rounded-full text-xs font-bold px-2 py-0.5 min-w-[28px] border',
           mentionCount > 1
@@ -365,10 +390,11 @@ function AggregatedStockRow({
         )}
       </td>
 
-      {/* Col 5 — Latest note preview */}
-      <td className="py-3 px-3 align-top max-w-[280px] text-right">
+      {/* Col 5 — Latest note preview (widest column — the col grid gives it
+          the remaining flexible space; no max-w cap here on purpose) */}
+      <td className="py-3.5 px-3 align-top text-right">
         {latestNote ? (
-          <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug break-words line-clamp-2" dir="rtl">
+          <p className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 leading-relaxed break-words line-clamp-2" dir="rtl">
             {latestNote}
           </p>
         ) : (
@@ -377,12 +403,26 @@ function AggregatedStockRow({
       </td>
 
       {/* Col 6 — Source / Date */}
-      <td className="py-3 px-3 align-top min-w-[110px] text-right">
+      <td className="py-3.5 px-3 align-top text-right" onClick={e => e.stopPropagation()}>
         <div className="flex flex-col gap-0.5 items-end">
-          {latestSource && (
-            <span className="text-[10px] text-slate-400 dark:text-zinc-600 max-w-[130px] truncate" title={latestSource} dir="rtl">
-              {latestSource}
-            </span>
+          {latestSource ? (
+            sourceUrl ? (
+              <button
+                type="button"
+                onClick={() => window.open(sourceUrl, '_blank', 'noopener')}
+                title={latestSource}
+                className="text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 hover:underline underline-offset-2 transition-colors leading-snug line-clamp-2 break-words"
+                dir="rtl"
+              >
+                {latestSource}
+              </button>
+            ) : (
+              <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 leading-snug line-clamp-2 break-words" title={latestSource} dir="rtl">
+                {latestSource}
+              </span>
+            )
+          ) : (
+            <span className="text-slate-300 dark:text-zinc-700 text-xs">—</span>
           )}
           {savedDate && (
             <span className="text-[10px] text-slate-400 dark:text-zinc-600">{savedDate}</span>
@@ -391,7 +431,7 @@ function AggregatedStockRow({
       </td>
 
       {/* Col 7 — Actions */}
-      <td className="py-3 px-2 align-top text-right" onClick={e => e.stopPropagation()}>
+      <td className="py-3.5 px-2 align-top text-right" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1 transition-opacity">
           {singleItem && (
             <button
@@ -917,28 +957,40 @@ export function StockWatchlistView({
         /* ─── Table ─── */
         <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900" dir="rtl">
           <table className="w-full text-sm border-collapse">
+            {/* Single column-width source shared by thead and tbody — keeps
+                headers aligned with their data no matter what each row renders. */}
+            <colgroup>
+              <col className="w-10" />
+              <col className="w-36" />
+              <col className="w-28" />
+              <col className="w-20" />
+              <col className="w-16" />
+              <col />
+              <col className="w-44" />
+              <col className="w-32" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-900/80">
-                <th className="py-2.5 px-2 w-8" />
-                <th className="py-2.5 px-4 text-right text-[11px] font-semibold text-slate-500 dark:text-zinc-500 whitespace-nowrap">
+              <tr className="border-b border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900/80">
+                <th className="py-3 px-2" />
+                <th className="py-3 px-4 text-right text-[13px] font-bold text-slate-700 dark:text-zinc-300 whitespace-nowrap">
                   סימול / חברה
                 </th>
-                <th className="py-2.5 px-3 text-right text-[11px] font-semibold text-slate-500 dark:text-zinc-500 whitespace-nowrap">
-                  סנטימנט
-                </th>
-                <th className="py-2.5 px-3 text-right text-[11px] font-semibold text-slate-500 dark:text-zinc-500 whitespace-nowrap">
+                <th className="py-3 px-2 text-right text-[13px] font-bold text-slate-700 dark:text-zinc-300 whitespace-nowrap">
                   סטטוס
                 </th>
-                <th className="py-2.5 px-3 text-center text-[11px] font-semibold text-slate-500 dark:text-zinc-500 whitespace-nowrap">
+                <th className="py-3 px-3 text-right text-[13px] font-bold text-slate-700 dark:text-zinc-300 whitespace-nowrap">
+                  סנטימנט
+                </th>
+                <th className="py-3 px-3 text-center text-[13px] font-bold text-slate-700 dark:text-zinc-300 whitespace-nowrap">
                   אזכורים
                 </th>
-                <th className="py-2.5 px-3 text-right text-[11px] font-semibold text-slate-500 dark:text-zinc-500">
+                <th className="py-3 px-3 text-right text-[13px] font-bold text-slate-700 dark:text-zinc-300">
                   הערה אחרונה
                 </th>
-                <th className="py-2.5 px-3 text-right text-[11px] font-semibold text-slate-500 dark:text-zinc-500 whitespace-nowrap">
+                <th className="py-3 px-3 text-right text-[13px] font-bold text-slate-700 dark:text-zinc-300 whitespace-nowrap">
                   מקור / תאריך
                 </th>
-                <th className="py-2.5 px-3 w-16" />
+                <th className="py-3 px-3" />
               </tr>
             </thead>
             <tbody>

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, MoreVertical } from "lucide-react";
+import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, MoreVertical, Copy, FileDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
 import { VIRTUAL_TAXONOMY } from "@/utils/workspaceVirtualTaxonomy";
 import {
@@ -27,6 +27,7 @@ import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 import { StockWatchlistView } from "@/components/workspace/StockWatchlistView";
+import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy, exportWorkspaceItemsToCsv } from "@/components/workspace/WorkspaceBulkActionBar";
 
 // ─── Market status workflow ────────────────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -68,6 +69,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [filterTags, setFilterTags] = useState([]);
   const [filterSourceTab, setFilterSourceTab] = useState('');
   const [filterMarketStatus, setFilterMarketStatus] = useState('');
+  const [showAddWorkflowStatus, setShowAddWorkflowStatus] = useState(false);
+  const [newWorkflowStatusName, setNewWorkflowStatusName] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -87,9 +90,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [showManageTabs,  setShowManageTabs]  = useState(false);
   const [editingTabId,    setEditingTabId]    = useState(null);
   const [editingTabLabel, setEditingTabLabel] = useState('');
-  const [showAddTab,      setShowAddTab]      = useState(false);
-  const [newTabName,      setNewTabName]      = useState('');
-  const [newTabEmoji,     setNewTabEmoji]     = useState('');
 
   const allMainTabs = useMemo(() => getAllMergedTabs(VIRTUAL_TAXONOMY, tabPrefs), [tabPrefs]);
   const visibleMainTabs = useMemo(() => getVisibleMainTabs(allMainTabs, tabPrefs), [allMainTabs, tabPrefs]);
@@ -122,18 +122,15 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     resetWorkspaceTabPreferences();
   }
 
-  function handleAddCustomTab() {
-    const name = newTabName.trim();
-    if (!name) return;
-    const emoji = newTabEmoji.trim() || '📌';
-    const newTopic = addTopic({ name, emoji });
-    const newPrefs = addCustomMainTab(tabPrefs, { name, emoji, topicId: newTopic.id });
+  function handleAddCustomTab(name, emoji) {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    const finalEmoji = emoji?.trim() || '📌';
+    const newTopic = addTopic({ name: trimmedName, emoji: finalEmoji });
+    const newPrefs = addCustomMainTab(tabPrefs, { name: trimmedName, emoji: finalEmoji, topicId: newTopic.id });
     setTabPrefs(newPrefs);
     saveWorkspaceTabPreferences(newPrefs);
-    setNewTabName('');
-    setNewTabEmoji('');
-    setShowAddTab(false);
-    toast.success(`הטאב "${name}" נוסף`);
+    toast.success(`הטאב "${trimmedName}" נוסף`);
   }
 
   function handleRemoveCustomTab(tabId) {
@@ -258,6 +255,23 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   }, [items, search, filterVirtTopicId, filterVirtSubtopic, activeVirtTopic, isStocksView,
       filterMarketStatus, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
 
+  // Active *filters* only — topic/subtopic navigation (tabs) is intentionally excluded,
+  // this only covers the filter-bar controls (search/flags/status/source/tags).
+  const hasActiveWorkspaceFilters = !!(
+    search || filterFavorite || filterImportant || filterMustWatch ||
+    (isStocksView && filterMarketStatus) || filterSourceTab || filterTags.length > 0
+  );
+
+  function clearAllWorkspaceFilters() {
+    setSearch('');
+    setFilterFavorite(false);
+    setFilterImportant(false);
+    setFilterMustWatch(false);
+    setFilterMarketStatus('');
+    setFilterSourceTab('');
+    setFilterTags([]);
+  }
+
   const handleDeleteTopic = (id) => {
     const result = deleteTopic(id);
     if (!result?.ok) toast.error(`לא ניתן למחוק — ${result.count} פריטים שמורים תחת נושא זה`);
@@ -293,6 +307,21 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     });
   };
   const clearCardSelection = () => setSelectedCardIds(new Set());
+
+  const handleCopySelected = () => {
+    const selected = items.filter(i => selectedCardIds.has(i.id));
+    const text = formatWorkspaceItemsForCopy(selected);
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success(`הועתקו ${selected.length} פריטים ללוח`))
+      .catch(() => toast.error('לא ניתן להעתיק'));
+  };
+
+  const handleExportCsvSelected = () => {
+    const selected = items.filter(i => selectedCardIds.has(i.id));
+    if (!selected.length) return;
+    exportWorkspaceItemsToCsv(selected);
+    toast.success(`ייוצאו ${selected.length} פריטים ל-CSV`);
+  };
 
   const handleArchiveCards = (ids, archived = true) => {
     archiveItems(ids, archived);
@@ -457,96 +486,34 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         </div>
       </header>
 
-      <main className="px-4 sm:px-6 py-5 max-w-7xl mx-auto space-y-4">
+      <main className={cn("px-4 sm:px-6 py-5 max-w-7xl mx-auto space-y-4", selectedCardIds.size > 0 && "pb-20")}>
 
         {/* ══════════════════════ NAVIGATION CARD ══════════════════════ */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
 
           {/* ── Row 1: Main topics (LARGE) ─────────────────────────── */}
           <div className="px-5 pt-4 pb-4">
-            <div className="flex flex-wrap gap-2 items-center">
-              {/* "הכל" tab */}
-              <button
-                type="button"
-                onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
-                className={cn(
-                  'border transition-all whitespace-nowrap px-5 py-2.5 text-sm font-bold rounded-2xl',
-                  !filterVirtTopicId
-                    ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                )}
-              >
-                הכל{items.length > 0 ? ` (${items.length})` : ''}
-              </button>
-
-              {visibleMainTabs.map(vt => (
-                <button
-                  key={vt.id}
-                  type="button"
-                  onClick={() => { setFilterVirtTopicId(vt.id); setFilterVirtSubtopic(''); }}
-                  className={cn(
-                    'border transition-all whitespace-nowrap px-5 py-2.5 text-sm font-bold rounded-2xl',
-                    filterVirtTopicId === vt.id
-                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900'
-                      : virtTopicCount[vt.id]
-                        ? 'border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
-                        : 'border-slate-100 text-slate-400 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900'
-                  )}
-                >
-                  {vt.emoji} {vt.displayName}
-                  {virtTopicCount[vt.id] ? ` (${virtTopicCount[vt.id]})` : ''}
-                </button>
-              ))}
-
-              {/* Add custom main tab */}
-              {showAddTab ? (
-                <div className="flex items-center gap-1.5">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={newTabEmoji}
-                    onChange={e => setNewTabEmoji(e.target.value)}
-                    placeholder="📌"
-                    maxLength={2}
-                    className="w-12 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:text-zinc-200"
-                  />
-                  <input
-                    type="text"
-                    value={newTabName}
-                    onChange={e => setNewTabName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleAddCustomTab();
-                      if (e.key === 'Escape') { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }
-                    }}
-                    placeholder="שם הנושא..."
-                    dir="rtl"
-                    className="w-36 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:text-zinc-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomTab}
-                    disabled={!newTabName.trim()}
-                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
-                  >
-                    הוסף
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }}
-                    className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-xs text-slate-400 hover:text-slate-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowAddTab(true)}
-                  className="rounded-2xl border border-dashed border-slate-300 dark:border-zinc-600 px-4 py-2.5 text-sm font-semibold text-slate-400 hover:border-indigo-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400 transition-all whitespace-nowrap"
-                >
-                  + נושא
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <WorkspaceTabRow
+                  tabs={[
+                    { value: '', label: `הכל${items.length > 0 ? ` (${items.length})` : ''}` },
+                    ...visibleMainTabs.map(vt => ({
+                      value: vt.id,
+                      label: `${vt.emoji} ${vt.displayName}`,
+                      count: virtTopicCount[vt.id] || 0,
+                      empty: !virtTopicCount[vt.id],
+                    })),
+                  ]}
+                  activeValue={filterVirtTopicId}
+                  onSelect={v => { setFilterVirtTopicId(v); setFilterVirtSubtopic(''); }}
+                  onAddTab={handleAddCustomTab}
+                  size="lg"
+                  accentColor="indigo"
+                  addLabel="+ נושא"
+                  withEmoji
+                />
+              </div>
 
               {/* Manage tabs toggle — pushed to left */}
               <button
@@ -554,7 +521,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                 onClick={() => setShowManageTabs(p => !p)}
                 title="ערוך טאבים"
                 className={cn(
-                  'mr-auto rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
+                  'shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
                   showManageTabs
                     ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
                     : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800'
@@ -693,22 +660,66 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             </div>
           )}
 
-          {/* ── Row 3: Workflow/Status (SMALL) — only under שוק ההון > מניות ── */}
+          {/* ── Row 3: Workflow/Status — compact control, not a tab row — only under שוק ההון > מניות ── */}
           {isStocksView && (
-            <div className="border-t border-teal-100/60 dark:border-zinc-800 px-5 py-2.5 bg-teal-50/20 dark:bg-zinc-800/30">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 tracking-widest shrink-0 uppercase">
-                  מצב:
+            <div className="border-t border-teal-100/60 dark:border-zinc-800 px-5 py-2 bg-teal-50/20 dark:bg-zinc-800/30">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-400 shrink-0">
+                  סטטוס:
                 </span>
-                <WorkspaceTabRow
-                  tabs={allWorkflowTabs.map(t => ({ value: t.value, label: t.label }))}
-                  activeValue={filterMarketStatus}
-                  onSelect={setFilterMarketStatus}
-                  onAddTab={handleAddCustomWorkflowTab}
-                  size="sm"
-                  accentColor="teal"
-                  addLabel="+ סטטוס"
-                />
+                <select
+                  value={filterMarketStatus}
+                  onChange={e => setFilterMarketStatus(e.target.value)}
+                  className="rounded-lg border border-teal-200 dark:border-teal-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-teal-800 dark:text-teal-300 focus:outline-none focus:ring-1 focus:ring-teal-400 cursor-pointer"
+                >
+                  {allWorkflowTabs.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+                {showAddWorkflowStatus ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newWorkflowStatusName}
+                      onChange={e => setNewWorkflowStatusName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleAddCustomWorkflowTab(newWorkflowStatusName);
+                          setNewWorkflowStatusName('');
+                          setShowAddWorkflowStatus(false);
+                        }
+                        if (e.key === 'Escape') { setShowAddWorkflowStatus(false); setNewWorkflowStatusName(''); }
+                      }}
+                      placeholder="שם סטטוס..."
+                      dir="rtl"
+                      className="w-28 rounded-lg border border-teal-200 dark:border-teal-800 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-teal-400 dark:text-zinc-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { handleAddCustomWorkflowTab(newWorkflowStatusName); setNewWorkflowStatusName(''); setShowAddWorkflowStatus(false); }}
+                      disabled={!newWorkflowStatusName.trim()}
+                      className="rounded-lg bg-teal-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-teal-700 disabled:opacity-40"
+                    >
+                      הוסף
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddWorkflowStatus(false); setNewWorkflowStatusName(''); }}
+                      className="rounded-lg border border-teal-200 dark:border-teal-800 px-2 py-1 text-xs text-teal-500 hover:text-teal-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddWorkflowStatus(true)}
+                    className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline shrink-0"
+                  >
+                    + סטטוס
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -778,6 +789,19 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               </button>
             )}
 
+            {allSourceTabs.length > 0 && (
+              <select
+                value={filterSourceTab}
+                onChange={e => setFilterSourceTab(e.target.value)}
+                className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
+              >
+                <option value="">כל המקורות</option>
+                {allSourceTabs.map(tab => (
+                  <option key={tab} value={tab}>{tab}</option>
+                ))}
+              </select>
+            )}
+
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
@@ -788,7 +812,46 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               <option value="title">לפי כותרת</option>
               <option value="priority">לפי עדיפות</option>
             </select>
+
+            {hasActiveWorkspaceFilters && (
+              <button
+                type="button"
+                onClick={clearAllWorkspaceFilters}
+                className="rounded-xl border border-slate-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-red-500 hover:border-red-300 dark:text-zinc-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+              >
+                ✕ נקה הכל
+              </button>
+            )}
           </div>
+
+          {/* Active filter chips — only the filters currently applied */}
+          {hasActiveWorkspaceFilters && (
+            <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-100 dark:border-zinc-800">
+              {search && (
+                <FilterChip label={`חיפוש: "${search}"`} onRemove={() => setSearch('')} />
+              )}
+              {filterFavorite && <FilterChip label="⭐ מועדפים" onRemove={() => setFilterFavorite(false)} />}
+              {filterImportant && <FilterChip label="🔴 חשוב" onRemove={() => setFilterImportant(false)} />}
+              {filterMustWatch && <FilterChip label="🔁 לצפות שוב" onRemove={() => setFilterMustWatch(false)} />}
+              {isStocksView && filterMarketStatus && (
+                <FilterChip
+                  label={`סטטוס: ${allWorkflowTabs.find(t => t.value === filterMarketStatus)?.label || filterMarketStatus}`}
+                  onRemove={() => setFilterMarketStatus('')}
+                />
+              )}
+              {filterSourceTab && <FilterChip label={`מקור: ${filterSourceTab}`} onRemove={() => setFilterSourceTab('')} />}
+              {filterTags.map(tag => (
+                <FilterChip key={tag} label={`#${tag}`} onRemove={() => setFilterTags(prev => prev.filter(t => t !== tag))} />
+              ))}
+              <button
+                type="button"
+                onClick={clearAllWorkspaceFilters}
+                className="text-[11px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
+              >
+                נקה הכל
+              </button>
+            </div>
+          )}
 
           {/* Tags row */}
           {allTags.length > 0 && (
@@ -821,39 +884,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             </div>
           )}
 
-          {/* Source tabs row */}
-          {allSourceTabs.length > 0 && (
-            <div className="flex flex-wrap gap-2 items-center pt-1">
-              <span className="text-[11px] text-slate-400 dark:text-zinc-600">מקור:</span>
-              <button
-                type="button"
-                onClick={() => setFilterSourceTab('')}
-                className={cn(
-                  'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
-                  !filterSourceTab
-                    ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400'
-                )}
-              >
-                הכל
-              </button>
-              {allSourceTabs.map(tab => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setFilterSourceTab(prev => prev === tab ? '' : tab)}
-                  className={cn(
-                    'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
-                    filterSourceTab === tab
-                      ? 'border-violet-500 bg-violet-500 text-white'
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                  )}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ══════════════════════ CONTENT ══════════════════════ */}
@@ -886,37 +916,16 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
           />
         ) : (
           <div className="space-y-3">
-            {/* Bulk actions bar */}
-            {selectedCardIds.size > 0 && (
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/70 dark:bg-indigo-950/20 px-4 py-2.5">
-                <span className="text-xs font-bold text-indigo-800 dark:text-indigo-300">
-                  נבחרו {selectedCardIds.size} פריטים
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleArchiveCards([...selectedCardIds], true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-                >
-                  <Archive className="h-3 w-3" />
-                  ארכיון מסומנים
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmBulkDelete(true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  מחק מסומנים
-                </button>
-                <button
-                  type="button"
-                  onClick={clearCardSelection}
-                  className="mr-auto text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  נקה בחירה
-                </button>
-              </div>
-            )}
+            {/* WorkspaceBulkActionBar renders as a fixed-bottom bar when selection is active */}
+            <WorkspaceBulkActionBar
+              count={selectedCardIds.size}
+              onCopy={handleCopySelected}
+              onArchive={() => handleArchiveCards([...selectedCardIds], true)}
+              onDelete={() => setConfirmBulkDelete(true)}
+              onClearSelection={clearCardSelection}
+              onExportCsv={handleExportCsvSelected}
+              fixed
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredItems
@@ -1018,6 +1027,25 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         />
       )}
     </div>
+  );
+}
+
+// ─── FilterChip ───────────────────────────────────────────────────────────────
+// One removable active-filter chip — shows what's applied, click ✕ to clear just that one.
+
+function FilterChip({ label, onRemove }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 px-2.5 py-0.5 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 leading-none"
+        title="הסר סינון זה"
+      >
+        ✕
+      </button>
+    </span>
   );
 }
 

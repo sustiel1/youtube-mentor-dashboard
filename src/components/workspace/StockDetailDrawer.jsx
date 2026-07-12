@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { X, Trash2, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Trash2, Clock, ChevronDown, ChevronUp, Edit2, Archive } from 'lucide-react';
 import {
   normalizeStockWorkspaceItem,
   getStockDisplayNotes,
@@ -10,6 +11,8 @@ import {
   SENTIMENT_DOT,
   SENTIMENT_LABEL,
 } from '@/utils/workspaceStockItems';
+import { ConfirmDialog } from './ConfirmDialog';
+import { EditWorkspaceItemModal } from './EditWorkspaceItemModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -52,7 +55,7 @@ function SentimentChip({ sentiment }) {
 
 // ─── Single mention card ──────────────────────────────────────────────────────
 
-function MentionCard({ item, isLatest, onDelete }) {
+function MentionCard({ item, isLatest, onRequestDelete, onRequestEdit }) {
   const [showRaw, setShowRaw] = useState(false);
 
   const stock = normalizeStockWorkspaceItem(item);
@@ -102,7 +105,15 @@ function MentionCard({ item, isLatest, onDelete }) {
         </span>
         <button
           type="button"
-          onClick={() => onDelete?.(item)}
+          onClick={() => onRequestEdit?.(item)}
+          className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-300 hover:text-teal-600 hover:bg-teal-50 dark:text-zinc-700 dark:hover:text-teal-400 dark:hover:bg-teal-950/20 transition-all"
+          title="ערוך אזכור זה"
+        >
+          <Edit2 className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRequestDelete?.(item)}
           className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:text-zinc-700 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-all"
           title="מחק אזכור זה"
         >
@@ -151,7 +162,10 @@ function MentionCard({ item, isLatest, onDelete }) {
 
 // ─── Main drawer ──────────────────────────────────────────────────────────────
 
-export function StockDetailDrawer({ symbol, groupItems = [], onClose, onStatusChange, onDelete }) {
+export function StockDetailDrawer({ symbol, groupItems = [], onClose, onStatusChange, onDelete, onUpdateItem, onArchiveItems }) {
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+
   const timeline = getStockTimeline(groupItems);
   const latestItem = timeline[0];
   const latestStock = latestItem ? normalizeStockWorkspaceItem(latestItem) : {};
@@ -227,6 +241,17 @@ export function StockDetailDrawer({ symbol, groupItems = [], onClose, onStatusCh
           <span className="mr-auto shrink-0 text-xs text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 rounded-full px-2.5 py-0.5 font-medium whitespace-nowrap">
             {groupItems.length} אזכורים
           </span>
+
+          {onArchiveItems && (
+            <button
+              type="button"
+              onClick={() => onArchiveItems(groupItems.map(i => i.id), true)}
+              className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+              title="העבר לארכיון את כל האזכורים"
+            >
+              <Archive className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Status editor row */}
@@ -270,11 +295,34 @@ export function StockDetailDrawer({ symbol, groupItems = [], onClose, onStatusCh
               key={item.id}
               item={item}
               isLatest={idx === 0}
-              onDelete={onDelete}
+              onRequestDelete={setConfirmDeleteItem}
+              onRequestEdit={setEditingItem}
             />
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteItem}
+        onOpenChange={open => !open && setConfirmDeleteItem(null)}
+        title="למחוק את הפריט הזה מה-Workspace?"
+        description="הפריט יימחק מ-Workspace בלבד. Brain / KnowledgeItems והסרטון המקורי לא יושפעו."
+        confirmLabel="מחק"
+        danger
+        onConfirm={() => {
+          if (!confirmDeleteItem) return;
+          onDelete?.(confirmDeleteItem);
+          toast.success('הפריט נמחק מ-Workspace');
+        }}
+      />
+
+      {onUpdateItem && (
+        <EditWorkspaceItemModal
+          item={editingItem}
+          onOpenChange={open => !open && setEditingItem(null)}
+          onSave={(id, updates) => { onUpdateItem(id, updates); setEditingItem(null); }}
+        />
+      )}
     </div>
   );
 }

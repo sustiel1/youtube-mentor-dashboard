@@ -145,6 +145,34 @@ export function deleteWorkspaceItem(id) {
   _saveItems(getWorkspaceItems().filter(i => i.id !== id));
 }
 
+/** Bulk delete — removes all items whose id is in `ids`. */
+export function deleteWorkspaceItems(ids = []) {
+  const idSet = new Set(ids);
+  _saveItems(getWorkspaceItems().filter(i => !idSet.has(i.id)));
+}
+
+/** Deletes every Workspace item. Does not touch topics, Brain, or KnowledgeItems. */
+export function deleteAllWorkspaceItems() {
+  _saveItems([]);
+}
+
+/** Bulk field update — applies the same `updates` to every item in `ids`. */
+export function updateWorkspaceItemsBulk(ids = [], updates = {}) {
+  const idSet = new Set(ids);
+  const now = new Date().toISOString();
+  const items = getWorkspaceItems();
+  const next = items.map(i => idSet.has(i.id) ? { ...i, ...updates, updatedAt: now } : i);
+  _saveItems(next);
+}
+
+/**
+ * Sets/clears `archivedAt` for the given items. Additive field — items
+ * without it are treated as active, no migration needed.
+ */
+export function archiveWorkspaceItems(ids = [], archived = true) {
+  updateWorkspaceItemsBulk(ids, { archivedAt: archived ? new Date().toISOString() : null });
+}
+
 export function isVideoInWorkspaceLibrary(videoId) {
   if (!videoId) return false;
   try {

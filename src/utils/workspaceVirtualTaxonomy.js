@@ -163,6 +163,63 @@ export function groupItemsByVirtTopic(items) {
   return groups;
 }
 
+// ─── Canonical real save-target for a virtual nav path ────────────────────────
+// The virtual taxonomy groups MANY real topic ids under one display tab (e.g.
+// "מניות" aggregates 11 legacy topic ids). There is no 1:1 mapping, so this
+// never guesses among them — it only ever resolves to a real topic that the
+// taxonomy data itself already ties to that exact virtual node:
+//   1. An existing real topic whose id is nested under the resolved real main
+//      topic AND is declared in the virtual subtopic's own realTopicIds — the
+//      most literal match for "main topic X, subtopic Y".
+//   2. Failing that, a real top-level topic that is itself declared in the
+//      subtopic's realTopicIds (covers subtopics that exist in the real
+//      system as their own top-level topic rather than nested, e.g. "מאקרו").
+//   3. Failing that, the resolved main topic alone (no subtopic) — still an
+//      exact, unambiguous existing topic.
+// Returns null when even the main topic can't be resolved unambiguously —
+// callers must show a manual-selection prompt in that case, never guess.
+export function getCanonicalSaveTargetForVirtualPath(virtTopicId, virtSubtopicId, realTopics = []) {
+  if (!virtTopicId) return null;
+  const vt = VIRTUAL_TAXONOMY.find(v => v.id === virtTopicId);
+  if (!vt) return null;
+
+  // Canonical real main topic = an existing top-level real topic whose name
+  // exactly matches the virtual topic's display name. Never invented.
+  const realMainTopic = realTopics.find(t => !t.parentId && t.name === vt.name);
+  if (!realMainTopic) return null;
+
+  if (!virtSubtopicId) {
+    return { topicId: realMainTopic.id, subTopicId: null, topicName: realMainTopic.name, subTopicName: null };
+  }
+
+  const vs = vt.subtopics.find(s => s.id === virtSubtopicId);
+  if (!vs) {
+    return { topicId: realMainTopic.id, subTopicId: null, topicName: realMainTopic.name, subTopicName: null };
+  }
+
+  // Only ever consider real topics the taxonomy itself already declares as
+  // belonging to this subtopic — never a name-similarity guess.
+  const candidates = realTopics.filter(t => vs.realTopicIds.includes(t.id));
+
+  const nested = candidates.filter(t => t.parentId === realMainTopic.id);
+  if (nested.length === 1) {
+    return { topicId: realMainTopic.id, subTopicId: nested[0].id, topicName: realMainTopic.name, subTopicName: nested[0].name };
+  }
+
+  const topLevel = candidates.filter(t => !t.parentId);
+  const exactTopLevel = topLevel.find(t => t.name === vs.name);
+  if (exactTopLevel) {
+    return { topicId: exactTopLevel.id, subTopicId: null, topicName: exactTopLevel.name, subTopicName: null };
+  }
+  if (topLevel.length === 1) {
+    return { topicId: topLevel[0].id, subTopicId: null, topicName: topLevel[0].name, subTopicName: null };
+  }
+
+  // Subtopic is ambiguous (0 or 2+ equally-valid real candidates) — fall back
+  // to the main topic alone rather than guessing between candidates.
+  return { topicId: realMainTopic.id, subTopicId: null, topicName: realMainTopic.name, subTopicName: null };
+}
+
 // Groups items by subtopic within a virtual main topic.
 // Items not matching any subtopic go under '__other__'.
 export function groupItemsByVirtSubtopic(items, vtId) {

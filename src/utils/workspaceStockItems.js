@@ -17,6 +17,28 @@ export function looksLikeStockSection(label) {
   return STOCK_SECTION_KEYWORDS.some(kw => lc.includes(kw.toLowerCase()));
 }
 
+// Shared sentiment keyword lists — used both by the eager parse below and by
+// the display-only fallback in normalizeStockWorkspaceItem. Kept in one place
+// so the two never drift apart.
+//
+// IMPORTANT: no \b word-boundary assertions here. \w in JS regex only covers
+// [A-Za-z0-9_], so Hebrew letters never count as "word characters" — \b
+// around a Hebrew keyword silently never matches (verified: /\bעולה\b/.test
+// ('...עולה...') is always false). Plain substring matching is used instead,
+// which also has the benefit of catching prefixed Hebrew inflections
+// (e.g. "שעולה", "לירידה").
+const BEARISH_RE = /(יורד|יורדת|ירידה|נפילה|שלילי|שורט|מכירה|לחץ|הורדת דירוג|כישלון|סיכון|bearish)/i;
+const BULLISH_RE = /(עולה|עלייה|חיובי|לונג|קנייה|חזק|פריצה|breakout|momentum|bullish|דוחות טובים|גאות)/i;
+
+/** Best-effort sentiment guess from free text. Returns null when unclear. */
+export function inferSentimentFromText(text) {
+  if (!text) return null;
+  const lc = String(text).toLowerCase();
+  if (BEARISH_RE.test(lc)) return 'negative';
+  if (BULLISH_RE.test(lc)) return 'positive';
+  return null;
+}
+
 /**
  * Parse structured fields from the flat "TICKER · Company · notes · sentiment"
  * format produced by formatStockRowText.
@@ -33,23 +55,21 @@ export function parseStockFromText(text) {
 
   const symbol = firstUpper;
 
-  // Second part is company name if it doesn't itself look like a ticker
+  // A distinct company-name segment only exists when there are 3+ parts
+  // (ticker + company + notes[+ sentiment]). With exactly 2 parts, the
+  // remainder is the note/context itself — treating it as "company name"
+  // would duplicate the note as a fake subtitle under the symbol.
   let companyName = '';
   let noteStart = 1;
-  if (parts.length > 1 && !isTickerLike(parts[1].trim().toUpperCase())) {
+  if (parts.length > 2 && !isTickerLike(parts[1].trim().toUpperCase())) {
     companyName = parts[1].trim();
     noteStart = 2;
   }
 
   const notes = parts.slice(noteStart).join(' · ');
 
-  // Sentiment detection from notes text
-  let sentiment = null;
-  const lc = (notes + ' ' + companyName).toLowerCase();
-  const BEARISH = /\b(יורד|שלילי|שורט|מכירה|bearish|כישלון|ירידה|נפילה|סיכון|ירדה)\b/i;
-  const BULLISH = /\b(עולה|חיובי|לונג|קנייה|momentum|bullish|breakout|פריצה|עלייה|גאות)\b/i;
-  if (BEARISH.test(lc)) sentiment = 'negative';
-  else if (BULLISH.test(lc)) sentiment = 'positive';
+  // Sentiment detection from notes + company text
+  const sentiment = inferSentimentFromText(notes + ' ' + companyName);
 
   // Percent change
   const pctMatch = notes.match(/(\d+(?:\.\d+)?)\s*%/);
@@ -87,7 +107,17 @@ export function isStockWorkspaceItem(item) {
  */
 export function normalizeStockWorkspaceItem(item) {
   if (!item) return item;
-  if (item.symbol) return item; // already has structured fields
+  if (item.symbol) {
+    // Already has structured fields — but sentiment specifically may have
+    // been saved as null (e.g. the source text used a word form the parser
+    // didn't catch at save time). Backfill a display-only guess from the
+    // note text without touching anything else, and never overwrite an
+    // existing stored sentiment.
+    if (item.sentiment) return item;
+    const text = item.fullNotes || item.notes || item.rawSourceText;
+    const inferred = inferSentimentFromText(text);
+    return inferred ? { ...item, sentiment: inferred, _sentimentInferred: true } : item;
+  }
   const text = item.rawSourceText || item.fullNotes || item.notes;
   if (!text) return item;
   const parsed = parseStockFromText(text);
@@ -96,8 +126,23 @@ export function normalizeStockWorkspaceItem(item) {
   return {
     ...parsed,
     ...item,
+    sentiment: item.sentiment ?? parsed.sentiment ?? inferSentimentFromText(text),
     _parsedFallback: true, // marker for debugging
   };
+}
+
+/**
+ * Display-only sentiment for a whole symbol group: the sentiment of the most
+ * recent mention that actually resolves to one (stored or inferred) — not
+ * just the single latest mention, which may itself be silent on sentiment
+ * while an earlier one in the same group isn't.
+ */
+export function getGroupDisplaySentiment(groupItems) {
+  for (const item of getStockTimeline(groupItems)) {
+    const sentiment = normalizeStockWorkspaceItem(item)?.sentiment;
+    if (sentiment) return sentiment;
+  }
+  return null;
 }
 
 /**

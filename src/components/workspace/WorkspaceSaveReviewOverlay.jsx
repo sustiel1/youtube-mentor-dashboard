@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { Star, Check, Maximize2, Minimize2, BookOpen, MoreVertical, Trash2, Archive, Edit2 } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Star, Check, Maximize2, Minimize2, BookOpen, MoreVertical, Trash2, Archive, Edit2, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
   filterByVirtSubtopic,
   groupItemsByVirtTopic,
   groupItemsByVirtSubtopic,
+  getCanonicalSaveTargetForVirtualPath,
 } from "@/utils/workspaceVirtualTaxonomy";
 import {
   getWorkspaceTabPreferences,
@@ -31,7 +32,11 @@ import {
   addCustomMainTab,
   removeCustomMainTab,
 } from "@/utils/workspaceTabPreferences";
-import { parseStockFromText, looksLikeStockSection } from "@/utils/workspaceStockItems";
+import { parseStockFromText, looksLikeStockSection, normalizeStockWorkspaceItem } from "@/utils/workspaceStockItems";
+import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy } from "@/components/workspace/WorkspaceBulkActionBar";
+import { StockWatchlistView } from "./StockWatchlistView";
+import { WorkspaceContentCard } from "./WorkspaceContentCard";
+import { WorkspaceTabRow } from "./WorkspaceTabRow";
 
 // ─── Market status workflow constants ─────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -68,8 +73,8 @@ export function WorkspaceSaveReviewOverlay({
   videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
   onSaved,
 }) {
-  const { mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
-  const { items: libraryItems, reload, deleteItem, deleteItems, deleteAllItems, archiveItems } = useWorkspaceItems();
+  const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
+  const { items: libraryItems, reload, deleteItem, updateItem, deleteItems, deleteAllItems, archiveItems, updateItemsBulk } = useWorkspaceItems();
 
   // ── Draft / save controls ────────────────────────────────────────────────────
   const [topicId,      setTopicId]      = useState('');
@@ -99,11 +104,14 @@ export function WorkspaceSaveReviewOverlay({
   const [showManageTabs,  setShowManageTabs]  = useState(false);
   const [editingTabId,    setEditingTabId]    = useState(null);
   const [editingTabLabel, setEditingTabLabel] = useState('');
-  const [showAddTab,      setShowAddTab]      = useState(false);
-  const [newTabName,      setNewTabName]      = useState('');
-  const [newTabEmoji,     setNewTabEmoji]     = useState('');
   const [filterMarketStatus, setFilterMarketStatus] = useState('');
-  const [confirmDeleteSingleItem, setConfirmDeleteSingleItem] = useState(null);
+
+  // ── Compact filter bar (Phase 4) ─────────────────────────────────────────────
+  const [search, setSearch] = useState('');
+  const [filterSourceTab, setFilterSourceTab] = useState('');
+  const [confirmDeleteSingleItem,   setConfirmDeleteSingleItem]   = useState(null);
+  const [selectedOverlayIds,        setSelectedOverlayIds]        = useState(() => new Set());
+  const [confirmBulkDeleteOverlay,  setConfirmBulkDeleteOverlay]  = useState(false);
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -120,11 +128,42 @@ export function WorkspaceSaveReviewOverlay({
       setShowManageTabs(false);
       setEditingTabId(null);
       setEditingTabLabel('');
-      setShowAddTab(false);
-      setNewTabName('');
-      setNewTabEmoji('');
+      setSelectedOverlayIds(new Set());
+      lastAutoTopicRef.current = { topicId: '', subTopicId: '' };
     }
   }, [open, defaultView]);
+
+  // ── Canonical save-target auto-default (draft form) ──────────────────────────
+  // When the user navigates the top virtual tabs (e.g. שוק ההון > מניות), default
+  // the draft's own "נושא ראשי / תת-נושא" selects to the matching real topic —
+  // but only while the user hasn't manually picked something else themselves.
+  const canonicalSaveTarget = useMemo(
+    () => getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, filterVirtSubtopic, topics),
+    [filterVirtTopicId, filterVirtSubtopic, topics],
+  );
+  const lastAutoTopicRef = useRef({ topicId: '', subTopicId: '' });
+
+  useEffect(() => {
+    const last = lastAutoTopicRef.current;
+    const isUntouchedSinceLastAutoFill =
+      topicId === '' || (topicId === last.topicId && subTopicId === last.subTopicId);
+    if (!isUntouchedSinceLastAutoFill) return; // user picked their own topic — never override it
+
+    if (canonicalSaveTarget) {
+      const nextSubTopicId = canonicalSaveTarget.subTopicId || '';
+      if (topicId !== canonicalSaveTarget.topicId || subTopicId !== nextSubTopicId) {
+        setTopicId(canonicalSaveTarget.topicId);
+        setSubTopicId(nextSubTopicId);
+      }
+      lastAutoTopicRef.current = { topicId: canonicalSaveTarget.topicId, subTopicId: nextSubTopicId };
+    } else if (last.topicId) {
+      // Previously auto-filled but the new nav path has no safe target — clear it.
+      setTopicId('');
+      setSubTopicId('');
+      lastAutoTopicRef.current = { topicId: '', subTopicId: '' };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canonicalSaveTarget]);
 
   const subTopics         = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
   const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),   [mainTopics, topicId]);
@@ -197,12 +236,46 @@ export function WorkspaceSaveReviewOverlay({
     [mainFilteredItems, filterVirtTopicId, filterVirtSubtopic],
   );
 
-  // Applies the optional workflow status layer on top of the topic/subtopic filter.
-  // Items without marketStatus are untouched — they always appear when filterMarketStatus=''
+  // Applies the optional workflow status layer, then the compact filter bar
+  // (search + source) on top of the topic/subtopic filter. Items without
+  // marketStatus are untouched — they always appear when filterMarketStatus=''.
+  // Feeds topics/dates/pinned views uniformly; "recent" intentionally stays
+  // untouched (it's a fixed "what did I just save" list, not a browse view).
   const displayItems = useMemo(() => {
-    if (!isStocksView || !filterMarketStatus) return filteredLibraryItems;
-    return filteredLibraryItems.filter(i => (i.marketStatus || '') === filterMarketStatus);
-  }, [filteredLibraryItems, isStocksView, filterMarketStatus]);
+    let result = filteredLibraryItems;
+    if (isStocksView && filterMarketStatus) {
+      result = result.filter(i => (i.marketStatus || '') === filterMarketStatus);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(i =>
+        (i.videoTitle || '').toLowerCase().includes(q) ||
+        (i.channelName || '').toLowerCase().includes(q) ||
+        (i.notes || '').toLowerCase().includes(q) ||
+        (i.topicName || '').toLowerCase().includes(q) ||
+        (i.sourceTab || '').toLowerCase().includes(q) ||
+        (i.symbol || '').toLowerCase().includes(q) ||
+        (i.companyName || '').toLowerCase().includes(q) ||
+        (i.fullNotes || '').toLowerCase().includes(q)
+      );
+    }
+    if (filterSourceTab) result = result.filter(i => (i.sourceTab || null) === filterSourceTab);
+    return result;
+  }, [filteredLibraryItems, isStocksView, filterMarketStatus, search, filterSourceTab]);
+
+  const allSourceTabs = useMemo(() => {
+    const set = new Set();
+    libraryItems.forEach(i => { if (i.sourceTab) set.add(i.sourceTab); });
+    return [...set].sort();
+  }, [libraryItems]);
+
+  const hasActiveOverlayFilters = !!(search || filterSourceTab || (isStocksView && filterMarketStatus));
+
+  function clearAllOverlayFilters() {
+    setSearch('');
+    setFilterSourceTab('');
+    setFilterMarketStatus('');
+  }
 
   const hasSubtopicFilter = !!filterVirtSubtopic;
   const hasTopicFilter    = !!filterVirtTopicId;
@@ -336,6 +409,51 @@ export function WorkspaceSaveReviewOverlay({
     reload();
   }
 
+  // ── Stock table adapter (שוק ההון > מניות) ───────────────────────────────────
+  // StockWatchlistView owns its own selection state, bulk bar, delete/bulk-delete
+  // confirmations, and edit modal — mirrors exactly how WorkspaceLibrary.jsx wires it.
+  const handleStatusChange = (id, newStatus) => updateItem(id, { marketStatus: newStatus || null });
+
+  const handleDeleteStockItem = (item) => {
+    deleteItem(item.id);
+    toast.success('הפריט הוסר מ-Workspace Library');
+  };
+
+  // ── Overlay bulk selection ───────────────────────────────────────────────────
+  const toggleOverlaySelect = useCallback((id) => {
+    setSelectedOverlayIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearOverlaySelection = useCallback(() => setSelectedOverlayIds(new Set()), []);
+
+  function handleCopyOverlaySelected() {
+    const selected = libraryItems.filter(i => selectedOverlayIds.has(i.id));
+    const text = formatWorkspaceItemsForCopy(selected);
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success(`הועתקו ${selected.length} פריטים ללוח`))
+      .catch(() => toast.error('לא ניתן להעתיק'));
+  }
+
+  function handleArchiveOverlaySelected() {
+    const ids = [...selectedOverlayIds];
+    archiveItems(ids, true);
+    toast.success(`${ids.length} פריטים הועברו לארכיון`);
+    clearOverlaySelection();
+    reload();
+  }
+
+  function handleConfirmBulkDeleteOverlay() {
+    const ids = [...selectedOverlayIds];
+    deleteItems(ids);
+    toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
+    clearOverlaySelection();
+    reload();
+  }
+
   // ── Tab preference handlers ────────────────────────────────────────────────
   const visibleMainTabs = useMemo(
     () => getVisibleMainTabs(allMainTabs, tabPrefs),
@@ -370,18 +488,15 @@ export function WorkspaceSaveReviewOverlay({
     resetWorkspaceTabPreferences();
   }
 
-  function handleAddCustomTab() {
-    const name = newTabName.trim();
-    if (!name) return;
-    const emoji = newTabEmoji.trim() || '📌';
-    const newTopic = addTopic({ name, emoji });
-    const newPrefs = addCustomMainTab(tabPrefs, { name, emoji, topicId: newTopic.id });
+  function handleAddCustomTab(name, emoji) {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    const finalEmoji = emoji?.trim() || '📌';
+    const newTopic = addTopic({ name: trimmedName, emoji: finalEmoji });
+    const newPrefs = addCustomMainTab(tabPrefs, { name: trimmedName, emoji: finalEmoji, topicId: newTopic.id });
     setTabPrefs(newPrefs);
     saveWorkspaceTabPreferences(newPrefs);
-    setNewTabName('');
-    setNewTabEmoji('');
-    setShowAddTab(false);
-    toast.success(`הטאב "${name}" נוסף`);
+    toast.success(`הטאב "${trimmedName}" נוסף`);
   }
 
   function handleRemoveCustomTab(tabId) {
@@ -494,6 +609,22 @@ export function WorkspaceSaveReviewOverlay({
 
   const showAnalysisBanner = currentAnalysisDraftItems.length > 0 && loadedDraftItems === null && activeView !== 'draft';
 
+  // Shared "topic + subtopic chip" header used above the topics-view content —
+  // hoisted so the stock branch can render it inside WorkspaceContentCard
+  // without duplicating the JSX.
+  const topicHeaderNode = activeVirtTopic ? (
+    <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-zinc-800">
+      <span className="text-base">{activeVirtTopic.emoji}</span>
+      <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">{activeVirtTopic.name}</span>
+      <span className="text-xs text-slate-400 dark:text-zinc-600">({displayItems.length})</span>
+      {hasSubtopicFilter && activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic) && (
+        <span className="rounded-full border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-400">
+          › {activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic)?.name}
+        </span>
+      )}
+    </div>
+  ) : null;
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -572,84 +703,26 @@ export function WorkspaceSaveReviewOverlay({
         {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
         <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-3 border-b border-slate-100 dark:border-zinc-800/60 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
-            <button
-              type="button"
-              onClick={() => handleSelectVirtTopic('')}
-              className={cn(
-                'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
-                !filterVirtTopicId
-                  ? 'border-slate-800 bg-slate-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900 shadow-sm'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
-              )}
-            >
-              הכל{libraryItems.length > 0 ? ` (${libraryItems.length})` : ''}
-            </button>
-            {visibleMainTabs.map(vt => (
-              <button
-                key={vt.id}
-                type="button"
-                onClick={() => handleSelectVirtTopic(vt.id)}
-                className={cn(
-                  'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all',
-                  filterVirtTopicId === vt.id
-                    ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-900 shadow-sm'
-                    : virtTopicCount[vt.id]
-                      ? 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                      : 'border-slate-100 text-slate-400 hover:bg-slate-50 hover:border-slate-200 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900',
-                )}
-              >
-                {vt.emoji} {vt.displayName}{virtTopicCount[vt.id] ? ` (${virtTopicCount[vt.id]})` : ''}
-              </button>
-            ))}
-            {/* Add custom tab */}
-            {showAddTab ? (
-              <div className="flex items-center gap-1.5 mr-1 shrink-0">
-                <input
-                  autoFocus
-                  type="text"
-                  value={newTabEmoji}
-                  onChange={e => setNewTabEmoji(e.target.value)}
-                  placeholder="📌"
-                  maxLength={2}
-                  className="w-12 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-amber-400"
-                />
-                <input
-                  type="text"
-                  value={newTabName}
-                  onChange={e => setNewTabName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleAddCustomTab();
-                    if (e.key === 'Escape') { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }
-                  }}
-                  placeholder="שם הטאב..."
-                  dir="rtl"
-                  className="w-32 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCustomTab}
-                  disabled={!newTabName.trim()}
-                  className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-amber-600 disabled:opacity-40 whitespace-nowrap"
-                >
-                  הוסף
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddTab(false); setNewTabName(''); setNewTabEmoji(''); }}
-                  className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-xs text-slate-400 hover:text-slate-600"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddTab(true)}
-                className="shrink-0 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:border-amber-400 hover:text-amber-600 dark:text-zinc-500 dark:hover:text-amber-400 transition-all whitespace-nowrap"
-              >
-                + הוסף נושא
-              </button>
-            )}
+            <div className="min-w-0">
+              <WorkspaceTabRow
+                tabs={[
+                  { value: '', label: `הכל${libraryItems.length > 0 ? ` (${libraryItems.length})` : ''}` },
+                  ...visibleMainTabs.map(vt => ({
+                    value: vt.id,
+                    label: `${vt.emoji} ${vt.displayName}`,
+                    count: virtTopicCount[vt.id] || 0,
+                    empty: !virtTopicCount[vt.id],
+                  })),
+                ]}
+                activeValue={filterVirtTopicId}
+                onSelect={handleSelectVirtTopic}
+                onAddTab={handleAddCustomTab}
+                size="lg"
+                accentColor="indigo"
+                addLabel="+ הוסף נושא"
+                withEmoji
+              />
+            </div>
             <button
               type="button"
               onClick={() => setShowManageTabs(p => !p)}
@@ -766,92 +839,130 @@ export function WorkspaceSaveReviewOverlay({
         {/* ── Row 2: Subtopic tabs ──────────────────────────────────────── */}
         {activeVirtTopic && activeVirtTopic.subtopics.length > 0 && (
           <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
-            <div className="flex gap-2 min-w-max">
+            <WorkspaceTabRow
+              tabs={[
+                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
+                ...activeVirtTopic.subtopics.map(vs => ({
+                  value: vs.id,
+                  label: vs.name,
+                  count: virtSubtopicCount[vs.id] || 0,
+                  empty: !virtSubtopicCount[vs.id],
+                })),
+              ]}
+              activeValue={filterVirtSubtopic}
+              onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}
+              size="md"
+              accentColor="violet"
+              className="min-w-max"
+            />
+          </div>
+        )}
+
+        {/* ── Filter bar — one unified control area (status / view mode / search /
+              source / clear), not stacked separately-bordered strips. ───────── */}
+        <div dir="rtl" className="shrink-0 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-2 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {isStocksView && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-400">סטטוס:</span>
+                <select
+                  value={filterMarketStatus}
+                  onChange={e => setFilterMarketStatus(e.target.value)}
+                  className="rounded-lg border border-teal-200 dark:border-teal-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-teal-800 dark:text-teal-300 focus:outline-none focus:ring-1 focus:ring-teal-400 cursor-pointer"
+                >
+                  {MARKET_STATUS_TABS.map(tab => (
+                    <option key={tab.value} value={tab.value}>{tab.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">תצוגה:</span>
+              <select
+                value={activeView}
+                onChange={e => setActiveView(e.target.value)}
+                className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+              >
+                {VIEWS.map(v => (
+                  <option key={v.key} value={v.key}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {['topics', 'dates', 'pinned'].includes(activeView) && (
+              <>
+                <div className="relative min-w-[180px] flex-1 max-w-xs">
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-600 pointer-events-none" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="חפש לפי כותרת, סימול, נושא, הערות..."
+                    dir="rtl"
+                    className="w-full rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pr-8 pl-2.5 py-1 text-xs text-right placeholder:text-slate-300 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
+                  />
+                </div>
+
+                {allSourceTabs.length > 0 && (
+                  <select
+                    value={filterSourceTab}
+                    onChange={e => setFilterSourceTab(e.target.value)}
+                    className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200 cursor-pointer"
+                  >
+                    <option value="">כל המקורות</option>
+                    {allSourceTabs.map(tab => (
+                      <option key={tab} value={tab}>{tab}</option>
+                    ))}
+                  </select>
+                )}
+              </>
+            )}
+
+            <div className="mr-auto flex items-center gap-2 shrink-0">
+              {hasActiveOverlayFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllOverlayFilters}
+                  className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+                >
+                  ✕ נקה הכל
+                </button>
+              )}
+              {(hasTopicFilter || hasSubtopicFilter) && (
+                <button
+                  type="button"
+                  onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
+                  className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+                >
+                  ✕ נקה סינון
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Active filter chips — only what's actually applied */}
+          {hasActiveOverlayFilters && (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {search && (
+                <OverlayFilterChip label={`חיפוש: "${search}"`} onRemove={() => setSearch('')} />
+              )}
+              {isStocksView && filterMarketStatus && (
+                <OverlayFilterChip
+                  label={`סטטוס: ${MARKET_STATUS_TABS.find(t => t.value === filterMarketStatus)?.label || filterMarketStatus}`}
+                  onRemove={() => setFilterMarketStatus('')}
+                />
+              )}
+              {filterSourceTab && (
+                <OverlayFilterChip label={`מקור: ${filterSourceTab}`} onRemove={() => setFilterSourceTab('')} />
+              )}
               <button
                 type="button"
-                onClick={() => setFilterVirtSubtopic('')}
-                className={cn(
-                  'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
-                  !filterVirtSubtopic
-                    ? 'border-slate-700 bg-slate-700 text-white dark:border-zinc-300 dark:bg-zinc-300 dark:text-zinc-900 shadow-sm'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
-                )}
+                onClick={clearAllOverlayFilters}
+                className="text-[11px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 underline"
               >
-                כולם{mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}
+                נקה הכל
               </button>
-              {activeVirtTopic.subtopics.map(vs => (
-                <button
-                  key={vs.id}
-                  type="button"
-                  onClick={() => setFilterVirtSubtopic(prev => prev === vs.id ? '' : vs.id)}
-                  className={cn(
-                    'rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
-                    filterVirtSubtopic === vs.id
-                      ? 'border-violet-500 bg-violet-500 text-white shadow-sm'
-                      : virtSubtopicCount[vs.id]
-                        ? 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                        : 'border-slate-100 text-slate-400 hover:bg-slate-50 hover:border-slate-200 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900',
-                  )}
-                >
-                  {vs.name}{virtSubtopicCount[vs.id] ? ` (${virtSubtopicCount[vs.id]})` : ''}
-                </button>
-              ))}
             </div>
-          </div>
-        )}
-
-        {/* ── Row 3 (stocks): Workflow status tabs ─────────────────────── */}
-        {isStocksView && (
-          <div className="shrink-0 bg-slate-50/60 dark:bg-zinc-900/40 px-4 py-2 border-b border-slate-100 dark:border-zinc-800 overflow-x-auto">
-            <div className="flex gap-1.5 items-center min-w-max">
-              <span className="text-[10px] text-slate-400 dark:text-zinc-600 ml-1 font-semibold tracking-wide shrink-0">מצב:</span>
-              {MARKET_STATUS_TABS.map(tab => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setFilterMarketStatus(tab.value)}
-                  className={cn(
-                    'rounded-md border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all',
-                    filterMarketStatus === tab.value
-                      ? 'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-400 dark:bg-teal-400 dark:text-zinc-900'
-                      : 'border-slate-200 text-slate-500 hover:bg-white hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800',
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Row 3: View mode tabs ─────────────────────────────────────── */}
-        <div
-          dir="rtl"
-          className="shrink-0 flex items-center gap-0.5 border-b border-slate-200 dark:border-zinc-800 px-4 pt-1 bg-white dark:bg-zinc-950 overflow-x-auto"
-        >
-          {VIEWS.map(v => (
-            <button
-              key={v.key}
-              type="button"
-              onClick={() => setActiveView(v.key)}
-              className={cn(
-                'px-4 py-2.5 text-sm font-semibold rounded-t-lg whitespace-nowrap transition-colors border-b-2 -mb-px',
-                activeView === v.key
-                  ? 'border-amber-500 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20'
-                  : 'border-transparent text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300',
-              )}
-            >
-              {v.label}
-            </button>
-          ))}
-          {(hasTopicFilter || hasSubtopicFilter) && (
-            <button
-              type="button"
-              onClick={() => { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }}
-              className="mr-auto mb-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
-            >
-              ✕ נקה סינון
-            </button>
           )}
         </div>
 
@@ -966,6 +1077,20 @@ export function WorkspaceSaveReviewOverlay({
                     </div>
                   </div>
 
+                  {/* Canonical save-target helper text — reflects the top nav path */}
+                  {filterVirtTopicId && (
+                    canonicalSaveTarget ? (
+                      <p className="text-xs text-indigo-500 dark:text-indigo-400">
+                        ברירת מחדל לפי הטאב הנוכחי: {VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId)?.name}
+                        {filterVirtSubtopic && ` / ${VIRTUAL_TAXONOMY.find(v => v.id === filterVirtTopicId)?.subtopics.find(s => s.id === filterVirtSubtopic)?.name || ''}`}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-amber-500 dark:text-amber-400">
+                        לא נמצאה ברירת מחדל בטוחה לטאב הזה — בחר נושא ידנית
+                      </p>
+                    )
+                  )}
+
                   {/* Tags */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">
@@ -1077,7 +1202,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {recentItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
                     ))}
                   </div>
                 </>
@@ -1087,32 +1212,41 @@ export function WorkspaceSaveReviewOverlay({
 
           {/* By topic view — folder-like grouping */}
           {activeView === 'topics' && (
-            <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
+            <div className={cn('p-5 space-y-5', isFullscreen && !isStocksView && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
-              {displayItems.length === 0 && (
+              {/* StockWatchlistView renders its own empty state — skip the generic one here to avoid a duplicate message */}
+              {displayItems.length === 0 && !isStocksView && (
                 <EmptyState label={filterMarketStatus ? 'אין עדיין מניות בטאב הזה' : 'אין פריטים בנושא הנוכחי'} />
               )}
 
               {hasTopicFilter && activeVirtTopic ? (
                 // ── Subtopic groups within the selected main topic ──────────
                 <>
-                  {/* Main topic header */}
-                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-zinc-800">
-                    <span className="text-base">{activeVirtTopic.emoji}</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">{activeVirtTopic.name}</span>
-                    <span className="text-xs text-slate-400 dark:text-zinc-600">({displayItems.length})</span>
-                    {hasSubtopicFilter && activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic) && (
-                      <span className="rounded-full border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-400">
-                        › {activeVirtTopic.subtopics.find(vs => vs.id === filterVirtSubtopic)?.name}
-                      </span>
-                    )}
-                  </div>
+                  {!isStocksView && topicHeaderNode}
 
-                  {hasSubtopicFilter ? (
+                  {isStocksView ? (
+                    // Reuse the same table used on the WorkspaceLibrary page for
+                    // שוק ההון > מניות — same component, same behavior, no fork.
+                    // Wrapped in the shared content-card shell so it gets the
+                    // full overlay width instead of the narrow reading column.
+                    <WorkspaceContentCard className="p-4 space-y-3">
+                      {topicHeaderNode}
+                      <StockWatchlistView
+                        items={displayItems}
+                        filterMarketStatus={filterMarketStatus}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleDeleteStockItem}
+                        onUpdateItem={updateItem}
+                        onDeleteItems={deleteItems}
+                        onArchiveItems={archiveItems}
+                        onUpdateItemsBulk={updateItemsBulk}
+                      />
+                    </WorkspaceContentCard>
+                  ) : hasSubtopicFilter ? (
                     // flat list when subtopic filter is active
                     <div className="space-y-2">
                       {displayItems.map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
                       ))}
                     </div>
                   ) : (
@@ -1130,6 +1264,8 @@ export function WorkspaceSaveReviewOverlay({
                             indent
                             onDelete={handleDeleteSingleItem}
                             onArchive={handleArchiveSingleItem}
+                            selectedIds={selectedOverlayIds}
+                            onToggleSelect={toggleOverlaySelect}
                           />
                         ))}
                       {itemsByVirtSubtopic['__other__']?.length > 0 && (
@@ -1142,6 +1278,8 @@ export function WorkspaceSaveReviewOverlay({
                           muted
                           onDelete={handleDeleteSingleItem}
                           onArchive={handleArchiveSingleItem}
+                          selectedIds={selectedOverlayIds}
+                          onToggleSelect={toggleOverlaySelect}
                         />
                       )}
                     </>
@@ -1161,6 +1299,8 @@ export function WorkspaceSaveReviewOverlay({
                         allTopics={allTopics}
                         onDelete={handleDeleteSingleItem}
                         onArchive={handleArchiveSingleItem}
+                        selectedIds={selectedOverlayIds}
+                        onToggleSelect={toggleOverlaySelect}
                       />
                     ))}
                   {itemsByVirtTopic['__none__']?.length > 0 && (
@@ -1172,6 +1312,8 @@ export function WorkspaceSaveReviewOverlay({
                       muted
                       onDelete={handleDeleteSingleItem}
                       onArchive={handleArchiveSingleItem}
+                      selectedIds={selectedOverlayIds}
+                      onToggleSelect={toggleOverlaySelect}
                     />
                   )}
                 </>
@@ -1200,7 +1342,7 @@ export function WorkspaceSaveReviewOverlay({
                     </h3>
                     <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                       {itemsByDate[key].map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
                       ))}
                     </div>
                   </div>
@@ -1221,7 +1363,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {pinnedItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
                     ))}
                   </div>
                 </>
@@ -1230,6 +1372,15 @@ export function WorkspaceSaveReviewOverlay({
           )}
 
         </div>
+
+        {/* Bulk selection bar — sits at bottom of the flex-col DialogContent */}
+        <WorkspaceBulkActionBar
+          count={selectedOverlayIds.size}
+          onCopy={handleCopyOverlaySelected}
+          onArchive={handleArchiveOverlaySelected}
+          onDelete={() => setConfirmBulkDeleteOverlay(true)}
+          onClearSelection={clearOverlaySelection}
+        />
       </DialogContent>
     </Dialog>
 
@@ -1263,13 +1414,23 @@ export function WorkspaceSaveReviewOverlay({
       requireTypedWord="מחק הכל"
       onConfirm={handleConfirmDeleteAllWorkspace}
     />
+
+    <ConfirmDialog
+      open={confirmBulkDeleteOverlay}
+      onOpenChange={setConfirmBulkDeleteOverlay}
+      title={`למחוק ${selectedOverlayIds.size} פריטים מסומנים מה-Workspace?`}
+      description="הפעולה לא משפיעה על Brain / KnowledgeItems — היא מוחקת רק מה-Workspace."
+      confirmLabel="מחק מסומנים"
+      danger
+      onConfirm={handleConfirmBulkDeleteOverlay}
+    />
     </>
   );
 }
 
 // ─── Folder group ─────────────────────────────────────────────────────────────
 
-function FolderGroup({ label, count, items, allTopics, indent = false, muted = false, onDelete, onArchive }) {
+function FolderGroup({ label, count, items, allTopics, indent = false, muted = false, onDelete, onArchive, selectedIds, onToggleSelect }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div>
@@ -1290,7 +1451,11 @@ function FolderGroup({ label, count, items, allTopics, indent = false, muted = f
       {!collapsed && (
         <div className={cn('space-y-2', indent ? 'pr-3 border-r-2 border-slate-100 dark:border-zinc-800' : 'pr-2 border-r-2 border-slate-100 dark:border-zinc-800')}>
           {items.map(item => (
-            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={onDelete} onArchive={onArchive} />
+            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact
+              onDelete={onDelete} onArchive={onArchive}
+              selected={selectedIds?.has(item.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
         </div>
       )}
@@ -1322,7 +1487,7 @@ function AnalysisBanner({ show, count, onLoad }) {
 
 // ─── Library item card ────────────────────────────────────────────────────────
 
-function LibraryItemCard({ item, allTopics, compact = false, showDate = false, onDelete, onArchive }) {
+function LibraryItemCard({ item, allTopics, compact = false, showDate = false, onDelete, onArchive, selected = false, onToggleSelect }) {
   const mainTopic = allTopics.find(t => t.id === item.topicId && !t.parentId);
   const subTopic  = allTopics.find(t => t.id === item.subTopicId);
   const itemTags  = item.tags || [];
@@ -1333,6 +1498,15 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
   if (compact) {
     return (
       <div className="rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-3 py-2 flex items-center gap-2 justify-between">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={e => { e.stopPropagation(); onToggleSelect(item.id); }}
+            onClick={e => e.stopPropagation()}
+            className="shrink-0 h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
+          />
+        )}
         <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
           {item.videoTitle || 'ללא כותרת'}
         </p>
@@ -1376,6 +1550,15 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
   return (
     <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 space-y-1.5">
       <div className="flex items-start gap-2 justify-between">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={e => { e.stopPropagation(); onToggleSelect(item.id); }}
+            onClick={e => e.stopPropagation()}
+            className="mt-1 shrink-0 h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
+          />
+        )}
         <p className="flex-1 min-w-0 text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug">
           {item.videoTitle || 'ללא כותרת'}
         </p>
@@ -1447,6 +1630,26 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Overlay filter chip ──────────────────────────────────────────────────────
+// One removable active-filter chip in the compact filter bar — click ✕ to
+// clear just that one filter, independent of the others.
+
+function OverlayFilterChip({ label, onRemove }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 px-2.5 py-0.5 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 leading-none"
+        title="הסר סינון זה"
+      >
+        ✕
+      </button>
+    </span>
   );
 }
 
