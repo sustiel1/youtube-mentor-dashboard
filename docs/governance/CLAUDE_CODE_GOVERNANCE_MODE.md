@@ -1,140 +1,78 @@
-# Claude Code Governance Mode
+# Claude Code Governance Guide
 
-**Status:** Active Project Policy
 **Adopted:** 2026-06-17
-**Scope:** All architecture, code changes, commits, migrations, workflows, and project structure decisions.
+**Rewritten:** 2026-07-26 (Phase 4-CC-B — see `docs/DOCUMENTATION_MIGRATION_PLAN.md`)
+
+This file does not activate itself. If you were not explicitly told to apply it, treat everything below as reference material only.
 
 ---
 
-## Purpose
+## Status
 
-This document defines the mandatory governance rules Claude Code must follow when assisting in this project.
-These rules are not suggestions. They are active policy.
-
----
-
-## Rule 1 — Critical Feedback Rule
-
-Do not act as a passive executor.
-
-If Claude believes a decision is:
-- A poor architectural choice
-- Introducing technical debt
-- Creating unnecessary complexity
-- Increasing coupling
-- Violating existing project standards
-- Creating future maintenance risk
-
-Claude must:
-
-1. **Explicitly say so.**
-2. **Explain why.**
-3. **Estimate the risk level:** Low / Medium / High
-4. **Propose a safer alternative.**
-5. **Challenge assumptions when appropriate.**
-
-> Never agree automatically just because the user requested something.
+- **Optional.** This is a reference guide, not a standing policy.
+- **Explicitly invoked.** Its checklist section applies only when a task calls for it or someone asks for it by name.
+- **Not automatically loaded.** Nothing imports or opens this file at session start.
+- **Not enforced by hooks, CI, linting, or `.claude/rules/`.** No such mechanism exists in this repo referencing this document.
+- **`CLAUDE.md` and `AGENTS.md` remain the active primary instruction sources.** This guide supplements them and never overrides either one.
 
 ---
 
-## Rule 2 — Architecture Protection Rule
+## When to Use This Guide
 
-Before any major change, Claude must audit:
+Reach for this guide's checklist for work like:
 
-- Dependencies affected
-- Existing implementations that may overlap
-- Potential duplication of functionality
-- Whether the requested change already exists elsewhere
+- Architecture changes
+- Migrations
+- Broad refactors
+- Multi-agent work
+- Risky Git operations
+- Changes spanning several subsystems
 
-If a request duplicates an existing feature:
+It is normally **unnecessary** for:
 
-> **Stop and explain the overlap before implementing.**
-
----
-
-## Rule 3 — MD / Governance Detection Rule
-
-Whenever one of the following occurs:
-
-- New architecture decision
-- New project standard
-- New workflow
-- New governance rule
-- New naming convention
-- New save flow
-- New integration pattern
-- New milestone
-- New system behavior
-- New engineering principle
-
-Claude must evaluate whether project documentation should be updated.
-
-### If documentation should be updated:
-
-Report:
-
-```
-MD_UPDATE_RECOMMENDED = YES
-```
-
-Then provide:
-- Suggested file name
-- Reason
-- Section to update
-- Ready-to-paste markdown
-
-### If the update is critical:
-
-```
-MD_UPDATE_REQUIRED = YES
-```
-
-And explain why.
+- Read-only audits
+- Trivial wording changes
+- Small isolated fixes
+- Routine build or status checks
 
 ---
 
-## Rule 4 — Commit Review Rule
+## Standing Recommendations
 
-Before approving a commit, Claude must report:
+These apply as general good practice, with or without invoking the checklist below:
 
-| Field | Required |
-|---|---|
-| Scope size | ✓ |
-| Risk level | ✓ |
-| Dependency impact | ✓ |
-| Rollback difficulty | ✓ |
-| Whether commit should be split | ✓ |
-
-> Challenge oversized commits.
+- **Critical feedback.** If a requested change looks like a poor architectural choice, adds unnecessary complexity or coupling, or creates a future maintenance risk — say so, explain why, and suggest a safer alternative before proceeding.
+- **Architecture protection.** Before a major change, check whether it duplicates something that already exists. If it does, say so before implementing.
+- **Additive and backward-compatible changes.** Prefer additive changes, backward compatibility, and staged rollouts over large rewrites unless a rewrite is clearly justified.
+- **Avoid unrelated edits.** Keep changes scoped to what was asked; don't fold in unrelated cleanup.
 
 ---
 
-## Rule 5 — Refactor Rule
+## Explicitly Invoked Checklist
 
-**Prefer:**
-- Additive changes
-- Backward compatibility
-- Low-risk migrations
-- Staged rollouts
+Use this checklist only when this guide has been explicitly invoked (see **Activation** below) for a task in one of the categories listed under **When to Use This Guide**.
 
-**Avoid:**
-- Large rewrites unless clearly justified
+- [ ] **Overlap and duplication review** — does this already exist elsewhere in the codebase or docs?
+- [ ] **Affected files and protected files** — list what changes, and confirm nothing protected (config, source, settings) is touched unintentionally.
+- [ ] **Build and QA plan** — how will the change be verified before merge?
+- [ ] **Commit boundaries** — is this one focused commit, or does it need splitting?
+- [ ] **Rollback strategy** — what's the exact command to undo this if needed?
+- [ ] **Review before merge** — has the diff been shown and approved before committing?
 
 ---
 
-## Rule 6 — Final Rule
+## Relationship to Other Documents
 
-Claude's job is not only to implement.
-
-Claude's job is also to **protect the project** from:
-- Bad decisions
-- Hidden risks
-- Architectural drift
-- Missing documentation
+- **`CLAUDE.md`** — Claude-specific active project instructions, auto-loaded every session.
+- **`AGENTS.md`** — canonical cross-agent workflow document for this project.
+- **This file** — an optional governance guide only. It does not get auto-loaded, and it does not supersede either document above.
 
 ---
 
 ## Activation
 
-This governance mode is active in this project at all times.
-It applies to every task, review, commit, and architectural suggestion.
+To apply the checklist above to a task, say so explicitly, for example:
+
+> Apply the optional Claude Code governance checklist to this task.
+
+Without an instruction like this, this guide is not considered active.

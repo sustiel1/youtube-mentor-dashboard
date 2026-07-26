@@ -50,7 +50,7 @@ Phase 3C-2 source-comment cleanup in `gemContentRouter.js` remains deferred.
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
 | **4-CC** | **Claude Code rules/governance/memory/skills/commands/hooks audit** — determined only `.claude/settings.json` has real enforcement; `CLAUDE_CODE_GOVERNANCE_MODE.md` confirmed still unenforced; only `SKILL.md` in the repo is in an unrecognized location; found `MASTER_PROJECT_BIBLE.md` still referenced the now-deprecated `docs/workflow.md` as active. | **Audit completed** 2026-07-26 (read-only, no files changed). Split into sub-items below. | 2026-07-26 |
 | 4-CC-A | Correct the stale canonical-workflow reference in `docs/governance/MASTER_PROJECT_BIBLE.md` | **Completed** | 2026-07-26 |
-| 4-CC-B | Governance-mode rewrite (split Rules 1-6; Rules 1 and 3 add verbosity in tension with the global "short and concise" preference; Rules 2/4/5 already match de facto practice) | Not started — requires your explicit decision on activate/deprecate/rewrite | — |
+| 4-CC-B | Governance-mode rewrite — `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` reframed in place as an optional, explicitly-invoked governance guide; no longer claims to be automatically active or enforced | **Completed** — audit + implementation, commit pending on `docs/phase4cc-b-governance-mode-rewrite` | 2026-07-26 |
 | 4-CC-C | First `.claude/rules/` extraction pilot (candidate: GEM classification/routing, given its fresh ADR from Phase 3C) | Not started — separate approval gate | — |
 | — | Settings/permissions hardening (3 wildcard `Bash` patterns, blanket `git commit`/`git stash` allow, `additionalDirectories` scope) — flagged by the 4-CC audit, not a numbered sub-phase | Not started — separate approval gate, no specific change recommended yet | — |
 
@@ -261,6 +261,52 @@ plan.
 **Rollback:** `git restore docs/governance/MASTER_PROJECT_BIBLE.md docs/DOCUMENTATION_MIGRATION_PLAN.md`
 before commit; `git revert` the Phase 4-CC-A commit after.
 
+### Phase 4-CC-B — governance mode reframed as an optional checklist (this commit)
+
+**Audit (completed 2026-07-26, read-only, zero files changed):** confirmed
+`docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` declared itself "Active Project Policy," "not
+suggestions... active policy," and "active in this project at all times," while no mechanism in the
+repo (no `@import`, no `.claude/rules/`, no reference from `CLAUDE.md` or `AGENTS.md`, no hook or CI
+step) actually loads or enforces it — consistent with the Phase 4-CC finding that only
+`settings.json`'s permission list has real enforcement. Found 3 of its 6 rules (Critical Feedback,
+Architecture Protection, Refactor) already match how this entire engagement has actually been run,
+worth keeping; found 2 (the `MD_UPDATE_RECOMMENDED`/`MD_UPDATE_REQUIRED` token ritual, and a mandatory
+multi-field report before every commit regardless of size) impose friction with no technical backing
+and sit in tension with the "short and concise" preference. Confirmed `docs/INDEX.md`'s existing
+one-line description of this document ("not auto-loaded; open explicitly") was already accurate —
+left unchanged.
+
+**Decision approved:** rewrite `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` in place (not a
+deprecation notice over preserved legacy text, since git history already preserves the prior
+version). Reframed as `Claude Code Governance Guide` — an optional reference for standing
+recommendations plus an explicitly-invoked checklist for high-risk/architectural/migration/
+multi-agent/broad-refactor work, never active by default.
+
+**Phase 4-CC-B (this commit) does:** rewrites `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md`
+in place — new Status/When-to-Use/Standing-Recommendations/Explicitly-Invoked-Checklist/
+Relationship-to-Other-Documents/Activation structure; drops the `MD_UPDATE_RECOMMENDED`/
+`MD_UPDATE_REQUIRED` token ritual and the universal per-commit report requirement; keeps the
+critical-feedback, architecture-overlap, and prefer-additive guidance as standing recommendations;
+states plainly that `CLAUDE.md` and `AGENTS.md` remain the active primary instruction sources and
+that this guide does not activate itself. Also corrects this plan's own stale Phase 4-CC-A
+changelog entry (below), which still read "in progress... pending approval" after that commit
+(`fb8d579`) had already been made and pushed.
+
+**Phase 4-CC-B does not:** modify `CLAUDE.md`, `AGENTS.md`, `docs/workflow.md`,
+`.claude/settings.json`, or `docs/INDEX.md` (its existing description was already accurate). Does
+not create `.claude/rules/`, hooks, commands, skills, or imports. Does not change permissions,
+application code, configuration, or package files. Does not delete, rename, move, or archive any
+file — the filename and path of the governance guide are unchanged. Does not begin Phase 4-CC-C,
+permissions hardening, Phase 5, or Phase 6.
+
+**Risk:** Low-medium. Unlike prior phases' additions/notices, this is the first phase to rewrite an
+existing file's live text in place rather than only prepending a notice above preserved content —
+the prior version remains fully available via `git log`/`git show`.
+
+**Rollback:** `git restore docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md
+docs/DOCUMENTATION_MIGRATION_PLAN.md` before commit; `git revert` the Phase 4-CC-B commit after —
+fully restores the pre-rewrite text.
+
 ## Phase 4 preview — `AI_DEVELOPMENT_GUIDE.md` condensation
 
 **Risk:** High. This is the most-read rules file in the repo (README.md mandates reading it before
@@ -306,6 +352,13 @@ consolidation only.
   enforcement in this repo; `CLAUDE_CODE_GOVERNANCE_MODE.md` still unenforced; the repo's only
   `SKILL.md` still in an unrecognized location; found `MASTER_PROJECT_BIBLE.md` still referencing
   the deprecated `docs/workflow.md` as active. Split into 4-CC-A/B/C above.
-- **2026-07-26** — Phase 4-CC-A in progress: corrected `docs/governance/MASTER_PROJECT_BIBLE.md`'s
-  stale canonical-workflow reference, on branch `docs/phase4a-governance-reference-fix` (worktree,
-  based on `origin/docs/phase3c-title-override-architecture`). Commit proposed, pending approval.
+- **2026-07-26** — Phase 4-CC-A completed: commit `fb8d579` on `docs/phase4a-governance-reference-fix`,
+  pushed to `origin/docs/phase4a-governance-reference-fix`. Corrected
+  `docs/governance/MASTER_PROJECT_BIBLE.md`'s stale canonical-workflow reference.
+- **2026-07-26** — Phase 4-CC-B audit completed (read-only): confirmed
+  `CLAUDE_CODE_GOVERNANCE_MODE.md` claimed to be automatically active and enforced with no mechanism
+  backing either claim; identified which of its 6 rules matched de facto practice (keep) versus which
+  created friction with no technical backing (drop). Phase 4-CC-B implementation completed in the
+  same pass: rewrote `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` in place as an optional,
+  explicitly-invoked governance guide, on branch `docs/phase4cc-b-governance-mode-rewrite` (worktree,
+  based on `origin/docs/phase4a-governance-reference-fix`). Commit proposed, pending approval.
