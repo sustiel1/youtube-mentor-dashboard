@@ -102,7 +102,8 @@ neither has been changed.
 
 **Workflow / setup**
 - [base44-checklist.md](base44-checklist.md)
-- [workflow.md](workflow.md) — ⚠️ flagged in a prior self-audit as a near-duplicate of `AGENTS.md`; not touched this phase
+- [../AGENTS.md](../AGENTS.md) — **canonical cross-agent workflow document** (Phase 3B)
+- [workflow.md](workflow.md) — ⚠️ deprecated (Phase 3B); superseded by `AGENTS.md` above, retained here for historical reference
 
 ## Session history (chronological, historical record)
 
@@ -115,7 +116,7 @@ neither has been changed.
 - [MARKET_DASHBOARD_UI_GUIDE.md](../MARKET_DASHBOARD_UI_GUIDE.md)
 - [PROMPTS.md](../PROMPTS.md) — ready-made prompt templates
 - [SKILL.md](../SKILL.md) — app data-model/structure reference (not a functioning Claude Code skill — not located under `.claude/skills/`)
-- [AGENTS.md](../AGENTS.md) — workflow rules for non-Claude-Code agents; overlaps with `CLAUDE.md`
+- [AGENTS.md](../AGENTS.md) — canonical cross-agent workflow document (see "Workflow / setup" above); mirrors `CLAUDE.md`'s Base44/Git rules for non-Claude-Code tools
 
 ## Prior audit attempts (superseded in purpose by this file, not yet archived)
 
