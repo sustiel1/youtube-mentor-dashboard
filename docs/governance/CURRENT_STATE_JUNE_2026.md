@@ -1,5 +1,12 @@
 # CURRENT STATE — JUNE 2026
 
+> ⚠️ **Deprecated as the live status source.** This snapshot is dated June 11, 2026 and self-instructs
+> "update this document at the start of each development session" — that did not happen; it is
+> confirmed stale as of 2026-07-26 (Phase 2 of `docs/DOCUMENTATION_MIGRATION_PLAN.md`), predating
+> ~6 weeks of work recorded in `docs/session-closures/`. See
+> **[../STATUS.md](../STATUS.md)** for the current verified state. This file's original content is
+> preserved unchanged below for historical reference.
+
 ```
 SOURCE OF TRUTH
 

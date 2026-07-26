@@ -1,5 +1,7 @@
 # START HERE
 
+> New canonical documentation index: [docs/INDEX.md](INDEX.md)
+
 ## חובה לקרוא
 
 1. [Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)

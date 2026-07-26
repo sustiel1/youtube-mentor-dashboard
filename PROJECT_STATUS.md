@@ -1,5 +1,11 @@
 # Project Status — YouTube Mentor Dashboard
 
+> ⚠️ **Deprecated as the live status source.** This snapshot is from 2026-06-17 and is confirmed
+> stale as of 2026-07-26 (Phase 2 of `docs/DOCUMENTATION_MIGRATION_PLAN.md`) — later work in
+> `docs/session-closures/` is not reflected below. See
+> **[docs/STATUS.md](docs/STATUS.md)** for the current verified state. This file's original content
+> is preserved unchanged below for historical reference.
+
 **Last updated:** 2026-06-17 (end of repository cleanup session)
 **Branch:** `main`
 **Build status:** ✅ `npm run build` passes (exit 0)
