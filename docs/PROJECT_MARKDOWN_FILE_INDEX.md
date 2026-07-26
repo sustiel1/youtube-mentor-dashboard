@@ -6,6 +6,10 @@
 **Files excluded:** ~190 (node_modules READMEs, e2e test vaults, `.tmp-qa-vault`)
 **Purpose:** Practical reference for every AI session — what to open, what to trust, what to skip.
 
+> ⚠️ **Deprecated as a documentation index.** [docs/INDEX.md](INDEX.md) is now the single canonical
+> documentation entry point. This file is not deleted or archived — it is retained unchanged below
+> for historical/audit reference.
+
 ---
 
 ## Exclusion Log

@@ -17,7 +17,10 @@ approvals, and rollback notes only.
 | 0 | Verification — confirm which "closed" bugs/reports are actually resolved in the live app before archiving them | Partially covered by Phase 2's code-level (non-live) checks; live-app QA still not started | — |
 | 1 | Additive only: `docs/INDEX.md`, `docs/STATUS.md`, `docs/archive/README.md`, this file, one-line addition to `START_HERE.md`. No deletions, moves, merges, or edits to existing rule content. | **Completed** — commit `6481db3` on `docs/markdown-governance-cleanup`, pushed to `origin/docs/markdown-governance-cleanup` | 2026-07-26 |
 | **2** | **Verify & refresh status docs: cross-check `docs/STATUS.md` / `PROJECT_STATUS.md` / `docs/governance/CURRENT_STATE_JUNE_2026.md` / `docs/workspace-session-handoff.md` against the actual codebase; refresh `docs/STATUS.md` with verified findings; add deprecation notices (not archiving) to the two stale status files, content otherwise preserved.** | **Completed** (this scope only — archiving the two stale files is deferred to a future phase/decision, not done here) | 2026-07-26 |
-| 3 | Governance de-duplication — consolidate the 3-way invariants overlap across `MASTER_PROJECT_BIBLE.md` / `PROJECT_DECISIONS_HISTORY.md` / `USER_PRODUCT_INTENT_AND_FUTURE_VISION.md`; decide fate of `CLAUDE_CODE_GOVERNANCE_MODE.md` | Proposed, not approved | — |
+| **3** | **Duplicated active documentation & governance rules** — broader in scope than originally previewed below: covers `AGENTS.md`/`docs/workflow.md` duplication, the GEM "title override" rule (restated in 2 files, plus a non-identical code-level duplication), the 5 legacy documentation indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. | **Audit completed** 2026-07-26 (read-only, no files changed). Split into sub-phases below for implementation. | — |
+| 3A | Consolidate documentation entry points — deprecation notices on the 5 legacy indexes + `START_HERE.md` rewrite | **Completed** | 2026-07-26 |
+| 3B | `AGENTS.md` / `docs/workflow.md` consolidation | Not started | — |
+| 3C | GEM "title override" rule consolidation | **Deferred — pending an architecture decision** (see Phase 3 audit §6: two non-identical code copies of `TITLE_OVERRIDE_RULES` exist, one dead; must be resolved in source code before the docs are safely consolidated) | — |
 | 4 | `AI_DEVELOPMENT_GUIDE.md` condensation — remove self-declared-obsolete §24/§26/§29 fragments, template repeated per-category boilerplate | Proposed, not approved | — |
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
 
@@ -92,16 +95,52 @@ preserved below it; `docs/STATUS.md` gained new sections, no deletions.
 **Rollback:** `git revert` the Phase 2 commit — fully restores `PROJECT_STATUS.md` and
 `CURRENT_STATE_JUNE_2026.md` to their pre-notice state and `docs/STATUS.md` to its Phase-1 content.
 
-## Phase 3 preview — governance de-duplication
+## Phase 3 — audit findings and sub-phase breakdown
 
-**Risk:** Medium-High. `MASTER_PROJECT_BIBLE.md` is the most cross-referenced governance file;
-consolidating its overlap with `PROJECT_DECISIONS_HISTORY.md` and `USER_PRODUCT_INTENT_AND_FUTURE_VISION.md`
-ripples into multiple files and should be done as one reviewed diff, not incremental silent edits.
-Also decides whether `CLAUDE_CODE_GOVERNANCE_MODE.md`'s behavioral rules get folded into `CLAUDE.md`
-(changes what loads in every session — needs explicit sign-off).
+Full duplication matrix, exact file:line quotes, and per-topic risk ratings live in the Phase 3
+audit report (produced 2026-07-26, read-only, in worktree `docs/phase3-duplication-audit`). Summary:
 
-**Rollback:** single squashed commit per consolidated file pair, reviewed before merge, revertable
-as a unit.
+1. **`AGENTS.md` ≡ `docs/workflow.md`** — confirmed byte-identical (117 lines, zero `diff` output).
+   Both are stale subsets of `CLAUDE.md` (missing its Ollama-processing and locked-AI-settings
+   sections). Recommendation is asymmetric: `AGENTS.md` is kept as a distinct file because its
+   filename is a recognized convention for non-Claude-Code tools; `docs/workflow.md` has no such
+   justification. → **Phase 3B**, not started.
+2. **GEM "title override" rule** — fully restated (not just referenced) in exactly 2 files:
+   `docs/GEM_CONTENT_CLASSIFICATION_RULES.md` (canonical candidate) and
+   `docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md`. A **code-level** duplication was also found:
+   `TITLE_OVERRIDE_RULES` is independently defined (non-identically) in `src/lib/gemRecommender.js`
+   (active) and `src/ai/gemini/gemContentRouter.js` (exported, confirmed unimported anywhere). The
+   documentation asserts the two must stay "aligned," which has no runtime effect while one copy is
+   dead code. → **Phase 3C, deferred** until an engineering decision is made on the code duplication
+   — consolidating the docs first risks asserting an alignment guarantee the code doesn't back up.
+3. **5 legacy documentation indexes** (`PROJECT_DOCUMENTATION_AUDIT.md`, `PROJECT_DOCUMENTATION_INDEX.md`,
+   `PROJECT_MARKDOWN_FILE_INDEX.md`, `PROJECT_MD_INDEX.md`, `HEBREW_DOCUMENTATION_CATALOG.md`) plus
+   `docs/START_HERE.md` presenting two competing entry points. → **Phase 3A**, this pass.
+4. **`docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md`** — declares itself "active at all times" with
+   no actual loading mechanism (no `@import`, not in `.claude/rules/`, absent from
+   `MASTER_PROJECT_BIBLE.md`'s own governance index). Three resolution options identified (fold into
+   `CLAUDE.md`, reframe as opt-in, or build real enforcement) — **no sub-phase started**; needs your
+   decision first, since folding it into `CLAUDE.md` changes what loads every session.
+
+### Phase 3A — consolidate documentation entry points (this commit)
+
+**Does:** adds a short, non-destructive deprecation notice (pointing to `docs/INDEX.md`) to the top
+of each of the 5 legacy index files, with all original content preserved unchanged below; rewrites
+`docs/START_HERE.md`'s top section so `docs/INDEX.md` is the sole stated entry point instead of two
+competing ones, correcting the links inside that rewritten section to resolve correctly from
+`docs/START_HERE.md`'s actual location.
+
+**Does not:** touch `AGENTS.md`, `docs/workflow.md`, any title-override documentation,
+`docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md`, `CLAUDE.md`, or any file outside the 7 listed above.
+Does not delete, archive, rename, or move any file. `docs/START_HERE.md`'s topic-shortcut sections
+(Morning Brief / Chapters / Obsidian / Brain / UI / Architecture) were left untouched — their
+pre-existing broken relative links predate this phase and fixing them was out of this phase's scope.
+
+**Risk:** Low. Every legacy-index change is a short prepended notice; `START_HERE.md`'s change
+replaces one small block (the old "חובה לקרוא" list) rather than the whole file.
+
+**Rollback:** `git restore` the exact 6 changed files listed in the commit before commit; `git revert`
+the Phase 3A commit after.
 
 ## Phase 4 preview — `AI_DEVELOPMENT_GUIDE.md` condensation
 
@@ -115,10 +154,12 @@ pre-condensation text.
 
 ## Phase 5 preview — small-rule consolidation
 
-**Risk:** Medium, concentrated in the three files that restate the "title override" hard rule
-(`GEM_CONTENT_CLASSIFICATION_RULES.md`, `GEMS_TAB_MAPPING_REGRESSION_RULES.md`,
-`MORNING_BRIEF_GEMS_ROUTING.md`) — must verify all three copies are worded identically before
-picking one as canonical and cross-referencing the others, to avoid silently narrowing the rule.
+**Risk:** Medium. Superseded in part by the Phase 3 audit: the "title override" rule is now
+tracked as **Phase 3C** (see above), confirmed as a full restatement in exactly 2 files
+(`GEM_CONTENT_CLASSIFICATION_RULES.md`, `GEMS_TAB_MAPPING_REGRESSION_RULES.md` — not 3;
+`MORNING_BRIEF_GEMS_ROUTING.md` contains only a brief implementation-log mention, not a
+restatement) and deferred pending a code-level architecture decision, not just a docs merge.
+Remaining Phase 5 scope: Chapters-priority, Sector-Finviz, and Perplexity-routing consolidation.
 
 **Rollback:** one commit per merged pair, independently revertable.
 
@@ -128,6 +169,11 @@ picking one as canonical and cross-referencing the others, to avoid silently nar
 
 - **2026-07-26** — Phase 1 completed: commit `6481db3` on `docs/markdown-governance-cleanup`,
   pushed to `origin/docs/markdown-governance-cleanup`.
-- **2026-07-26** — Phase 2 completed (this scope): status verification + `docs/STATUS.md` refresh +
-  deprecation notices, on branch `docs/phase2-status-refresh` (worktree, based on
-  `origin/docs/markdown-governance-cleanup`). Commit proposed, pending approval.
+- **2026-07-26** — Phase 2 completed: commit `19e74fa` on `docs/phase2-status-refresh`, pushed to
+  `origin/docs/phase2-status-refresh`.
+- **2026-07-26** — Phase 3 audit completed (read-only): duplication matrix covering `AGENTS.md`/
+  `docs/workflow.md`, the GEM title-override rule (docs + a code-level finding), the 5 legacy
+  indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. Split into Phase 3A/3B/3C above.
+- **2026-07-26** — Phase 3A in progress: entry-point consolidation on branch
+  `docs/phase3-duplication-audit` (worktree, based on `origin/docs/phase2-status-refresh`). Commit
+  proposed, pending approval.

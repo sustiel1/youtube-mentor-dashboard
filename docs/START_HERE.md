@@ -1,12 +1,15 @@
 # START HERE
 
-> New canonical documentation index: [docs/INDEX.md](INDEX.md)
+## Documentation Index
 
-## חובה לקרוא
+**[docs/INDEX.md](INDEX.md)** is the single canonical entry point for all project documentation —
+start there. It supersedes the older `PROJECT_DOCUMENTATION_INDEX.md`,
+`PROJECT_DOCUMENTATION_AUDIT.md`, `PROJECT_MARKDOWN_FILE_INDEX.md`, `PROJECT_MD_INDEX.md`, and
+`HEBREW_DOCUMENTATION_CATALOG.md` — each of those now carries a notice pointing back here and is
+retained only for historical/audit reference.
 
-1. [Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
-2. [Hebrew Documentation Catalog](docs/HEBREW_DOCUMENTATION_CATALOG.md)
-3. [AI_DEVELOPMENT_GUIDE](AI_DEVELOPMENT_GUIDE.md)
+Also mandatory reading before UI, save-flow, topic, Workspace, Obsidian, Brain, GEM, or analysis
+changes: [AI_DEVELOPMENT_GUIDE.md](../AI_DEVELOPMENT_GUIDE.md).
 
 ---
 
