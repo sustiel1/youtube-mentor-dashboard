@@ -1,9 +1,16 @@
 # Archive
 
-**This directory is currently empty.** It is created in Phase 1 of
-`docs/DOCUMENTATION_MIGRATION_PLAN.md` to define policy ahead of time — no files have been moved
-here yet. Moving files into this directory is scoped to later migration phases, each requiring
-separate explicit approval.
+This directory was created in Phase 1 of `docs/DOCUMENTATION_MIGRATION_PLAN.md` to define policy
+ahead of time. As of Phase 5A, it holds the first archived file (below); all other moves are
+scoped to later migration phases, each requiring separate explicit approval.
+
+## Archived files
+
+- **`session-closures/SESSION_CLOSURE_PUSH_2026-07-02.md`** (originally
+  `docs/session-closures/SESSION_CLOSURE_PUSH_2026-07-02.md`) — archived in Phase 5A. Reason:
+  fully closed push summary with zero remaining open items and zero inbound Markdown links found
+  repo-wide (one plain-text mention of its path exists in the protected `docs/STATUS.md`, left
+  unchanged).
 
 ## What belongs here
 

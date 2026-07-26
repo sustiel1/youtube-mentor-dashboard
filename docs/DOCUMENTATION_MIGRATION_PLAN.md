@@ -17,6 +17,11 @@ approvals, and rollback notes only.
 > rules/governance/memory/skills/commands/hooks was also informally called "Phase 4" when
 > requested — to avoid colliding with the row below, it is tracked here as **`4-CC`** (Claude Code)
 > with sub-items `4-CC-A`/`4-CC-B`/`4-CC-C`. The original row `4` is unrelated and unchanged.
+>
+> The same collision recurs at "Phase 5": row `5` below is the original small-rule-consolidation
+> item. A separate, later request for a full Markdown archive-eligibility audit was also informally
+> called "Phase 5" — to avoid collision it is tracked here as **`5-ARCH`**, with implementation
+> sub-item **`5-ARCH-A`**. The original row `5` is unrelated and unchanged.
 
 | Phase | Description | Status | Approved on |
 |---|---|---|---|
@@ -36,6 +41,9 @@ approvals, and rollback notes only.
 | 4-CC-B | Governance-mode rewrite — `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` reframed in place as an optional, explicitly-invoked governance guide; no longer claims to be automatically active or enforced | **Completed** — audit + implementation, commit pending on `docs/phase4cc-b-governance-mode-rewrite` | 2026-07-26 |
 | 4-CC-C | First `.claude/rules/` extraction pilot (candidate: GEM classification/routing, given its fresh ADR from Phase 3C) | Not started — separate approval gate | — |
 | — | Settings/permissions hardening (3 wildcard `Bash` patterns, blanket `git commit`/`git stash` allow, `additionalDirectories` scope) — flagged by the 4-CC audit, not a numbered sub-phase | Not started — separate approval gate, no specific change recommended yet | — |
+| **5-ARCH** | **Documentation archive-eligibility audit** — classified all 72 repo Markdown files into 6 categories (Safe to archive / Archive after verification / Keep active / Keep as historical evidence / Phase 6 deletion candidate / Protected). Read-only; ran in an isolated worktree on branch `audit/phase5-documentation-archive`, based on verified commit `d526b1e`. | **Audit completed** 2026-07-26 (read-only, no files changed). Result: 1 file safe to archive now, 13 files deferred pending verification (see audit artifact for the per-file list), 0 approved deletion candidates. | 2026-07-26 |
+| 5-ARCH-A | Archive the single approved "safe to archive now" file (`docs/session-closures/SESSION_CLOSURE_PUSH_2026-07-02.md`) only — the 13 deferred candidates are explicitly out of scope for this sub-phase and remain pending their listed verification steps. | **Completed** — commit pending on `docs/phase5a-single-safe-archive` (worktree, based on `origin/chore/claude-permissions-hardening` @ `d526b1e`) | 2026-07-26 |
+| 6 | Deletion of confirmed-redundant documents (candidates identified by 5-ARCH's audit) | **Not started.** 5-ARCH's audit approved zero deletion candidates — every near-duplicate examined retained some unique historical value or an active reference. Phase 6 has no approved scope yet. | — |
 
 ---
 
@@ -352,3 +360,20 @@ consolidation only.
   same pass: rewrote `docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md` in place as an optional,
   explicitly-invoked governance guide, on branch `docs/phase4cc-b-governance-mode-rewrite` (worktree,
   based on `origin/docs/phase4a-governance-reference-fix`). Commit proposed, pending approval.
+- **2026-07-26** — Phase 5-ARCH audit completed (read-only): classified all 72 repo Markdown files
+  for archive eligibility on branch `audit/phase5-documentation-archive` (worktree, based on verified
+  commit `d526b1e`). Found exactly 1 file safe to archive now
+  (`docs/session-closures/SESSION_CLOSURE_PUSH_2026-07-02.md`), 13 files deferred pending specific
+  verification steps, 0 approved Phase 6 deletion candidates, and reconfirmed
+  `docs/workspace-session-handoff.md` as protected (at least 3 of its tracked items independently
+  verified still open).
+- **2026-07-26** — Phase 5-ARCH-A completed: archived the single approved file via `git mv` to
+  `docs/archive/session-closures/SESSION_CLOSURE_PUSH_2026-07-02.md`, added the corresponding entry
+  to `docs/archive/README.md`, on branch `docs/phase5a-single-safe-archive` (worktree, based on
+  `origin/chore/claude-permissions-hardening` @ `d526b1e`). `docs/INDEX.md` was **not** modified —
+  it references the `session-closures/` directory as a whole under a "historical record" heading,
+  not this file by name, so the link still resolves. One pre-existing plain-text mention of the old
+  path remains in the protected `docs/STATUS.md` (line 128) and was intentionally left unchanged
+  because `docs/STATUS.md` is protected; it may be corrected during a future verified status
+  refresh (in the style of Phase 2), not as part of Phase 5A.
+  Commit proposed, pending approval. The 13 deferred candidates and Phase 6 remain untouched.
