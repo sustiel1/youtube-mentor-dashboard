@@ -106,11 +106,18 @@ If `video.title` contains `"מבזק לייב פתיחה"` or `"מבזק בוק�
 - Specialized tab → `MorningBriefDashboard`
 - `contentType` in GEM JSON must be `'marketBrief'`
 
-Implemented in:
+Implemented in (active runtime path):
 - `TITLE_OVERRIDE_RULES` in `src/lib/gemRecommender.js`
-- `preGemClassifier()` in `src/lib/gemRecommender.js` (called from `VideoDetailPanel.jsx`)
+- `preGemClassifier()` in `src/lib/gemRecommender.js` (called from `VideoDetailPanel.jsx`'s `gemRec` useMemo — this is the sole active call path)
 - `MORNING_BRIEF_KEYWORDS` in `src/config/videoTabsConfig.js`
-- `TITLE_OVERRIDE_RULES` in `src/ai/gemini/gemContentRouter.js`
+
+Also present, but **dormant — not part of the active runtime path** (verified 2026-07-26, not
+imported anywhere in `src/`, `scripts/`, or `e2e/`):
+- `TITLE_OVERRIDE_RULES` in `src/ai/gemini/gemContentRouter.js` — a separately-defined array with the
+  same 2 patterns but a different field shape and `contentType` value (`'marketBrief'` vs.
+  `gemRecommender.js`'s `'morningBrief'`). Retained pending a separate lifecycle decision; not
+  mechanically synchronized with the active copy above. See
+  `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`.
 
 ---
 
@@ -151,3 +158,9 @@ Expected behavior after fix:
 - Market rows show complete data (not truncated via pickObjectAsStrings)
 
 Test script: `scripts/test-morning-brief-routing.mjs`
+
+> ⚠️ **Not a production-code regression test.** This script contains manually copied "minimal"
+> reimplementations of the classification/mapping logic (see its own "Minimal copy of ..." comments)
+> and does not import `gemRecommender.js`, `gemContentRouter.js`, or `videoTabsConfig.js`. A pass
+> confirms the copied logic behaves as specified — it does not verify the real production files
+> still match. See `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`.
