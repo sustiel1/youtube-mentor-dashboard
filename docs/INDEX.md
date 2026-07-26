@@ -31,6 +31,7 @@ are still listed as-is — resolving them is scoped to a later phase, not this o
 
 | Doc | Purpose |
 |---|---|
+| [adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md](adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md) | Decision record: `gemRecommender.js` is the active title-override source of truth; `gemContentRouter.js` is dormant |
 | [MASTER_PROJECT_BIBLE.md](governance/MASTER_PROJECT_BIBLE.md) | Architectural invariants, knowledge-flow diagram |
 | [PROJECT_DECISIONS_HISTORY.md](governance/PROJECT_DECISIONS_HISTORY.md) | Why/evidence log of past decisions |
 | [USER_PRODUCT_INTENT_AND_FUTURE_VISION.md](governance/USER_PRODUCT_INTENT_AND_FUTURE_VISION.md) | Product vision and long-term direction |

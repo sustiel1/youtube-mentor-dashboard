@@ -19,13 +19,18 @@ The GEM recommendation system classifies each video into one of:
 | `appBuilder` | בניית אפליקציה | — |
 | `general` | כללי | `general` |
 
-Two classification layers exist:
-- **UI recommendation layer** (`preGemClassifier` in `src/lib/gemRecommender.js`) — controls the GEM recommendation card and GEM selection modal
-- **Routing/analysis layer** (`resolveContentClassification` in `src/ai/gemini/gemContentRouter.js`) — controls `metadata.contentClassification` and Gemini prompt dispatch
+Two classification layers exist in the codebase, but only one is currently active:
+- **UI recommendation layer** (`preGemClassifier` in `src/lib/gemRecommender.js`) — **active**. Called from `VideoDetailPanel.jsx`'s `gemRec` `useMemo`; controls the GEM recommendation card and GEM selection modal.
+- **Routing/analysis layer** (`resolveContentClassification` in `src/ai/gemini/gemContentRouter.js`) — **dormant**. Verified (2026-07-26, Phase 3C architecture audit) that this module is not imported anywhere in `src/`, `scripts/`, or `e2e/`. It does not control `metadata.contentClassification` or Gemini prompt dispatch today — the real client call (`fetchGeminiVideoContent` in `src/services/geminiVideoContent.js`) sends no `contentType` field at all. See `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` for the full verified call graph and the decision to retain this code as dormant pending a separate lifecycle decision.
 
 ---
 
 ## metadata.contentClassification
+
+> ⚠️ **This section documents the dormant `gemContentRouter.js` design, not currently active
+> behavior.** `resolveContentClassification()` is not called by any live code path (verified
+> 2026-07-26 — see the ADR linked above). The "How it controls the app" table below describes what
+> this module *would* control if it were wired in, not what happens today.
 
 `resolveContentClassification(video, transcriptText)` returns:
 
@@ -49,14 +54,18 @@ Wrapped via `wrapAsMetadataClassification()` as:
 }
 ```
 
-### How it controls the app
+### What this module would control, if wired in (currently: nothing)
 
-| Field | Controls |
+| Field | Would control |
 |---|---|
 | `metadata.contentClassification.contentType` | Gemini prompt selection via `getGeminiDispatchType(contentType)` |
 | `metadata.contentClassification.recommendedGem` | GEM recommendation UI (recommendation card, selection modal) |
 
-Use `getGemPromptConfig(contentType)` from `gemContentRouter.js` to look up `promptBuilderKey`, `schemaKey`, `validatorKey`.
+`getGemPromptConfig(contentType)` from `gemContentRouter.js` looks up `promptBuilderKey`,
+`schemaKey`, `validatorKey` — but nothing currently calls `getGemPromptConfig` or
+`resolveContentClassification` to produce a `contentType` for it to look up. The GEM recommendation
+UI's actual `recommendedGem` comes from the **active** layer instead: `preGemClassifier` /
+`classifyVideoForGem` in `src/lib/gemRecommender.js`.
 
 ---
 
@@ -160,14 +169,15 @@ Applied in `preGemClassifier` Phase 4:
 
 | File | Role |
 |---|---|
-| `src/ai/gemini/gemContentRouter.js` | Source-of-truth routing layer: `TITLE_OVERRIDE_RULES`, `CONTENT_SIGNALS`, `GEM_PROMPT_CONFIG_TABLE`, `resolveContentClassification`, `getGemPromptConfig` |
-| `src/lib/gemRecommender.js` | UI recommendation layer: `TITLE_OVERRIDE_RULES` (aligned), `preGemClassifier`, `classifyVideoForGem` |
-| `src/components/dashboard/VideoDetailPanel.jsx` | `gemRec` useMemo — title override (via `preGemClassifier`) runs first |
+| `src/ai/gemini/gemContentRouter.js` | **Dormant.** Not imported anywhere (verified 2026-07-26). Contains its own `TITLE_OVERRIDE_RULES`, `CONTENT_SIGNALS`, `GEM_PROMPT_CONFIG_TABLE`, `resolveContentClassification`, `getGemPromptConfig` — none currently called by live code. Not the source of truth; retained as dormant scaffolding pending a separate lifecycle decision. See `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`. |
+| `src/lib/gemRecommender.js` | **Active — authoritative source of truth** for title-override/GEM-recommendation behavior: `TITLE_OVERRIDE_RULES`, `preGemClassifier`, `classifyVideoForGem`. Its `TITLE_OVERRIDE_RULES` array is not mechanically synchronized with `gemContentRouter.js`'s copy — the two currently differ in field shape and in the `contentType` value used (`'morningBrief'` here vs. `'marketBrief'` there); this has no live effect since only this file's copy executes. |
+| `src/components/dashboard/VideoDetailPanel.jsx` | `gemRec` useMemo — calls `preGemClassifier` (the active layer) first |
 | `src/components/dashboard/GemRecommendationCard.jsx` | UI display of recommendation |
 | `src/components/dashboard/GemSelectionModal.jsx` | UI selection modal using `recommendedGemKey` |
-| `scripts/test-morning-brief-routing.mjs` | Regression fixture |
+| `scripts/test-morning-brief-routing.mjs` | **Not a production-code regression test.** Contains manually copied "minimal" reimplementations of the classification logic (explicitly labeled as such in its own comments) and does not import `gemRecommender.js` or `gemContentRouter.js`. Its assertions validate the hand-copied logic, not the real source files. |
 | `docs/MORNING_BRIEF_GEMS_ROUTING.md` | Morning Brief routing source-of-truth |
 | `docs/GEMS_OUTPUT_LANGUAGE_RULES.md` | Language rules for GEM prompt output |
+| `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` | Verified runtime call graph, architecture decision, and rationale for the active/dormant split above |
 
 ---
 
@@ -178,4 +188,11 @@ node scripts/test-morning-brief-routing.mjs
 # → passes (see current count in file header)
 ```
 
-Covers: title override (sections 6-7), transcript classification (section 8), non-market isolation (section 9), `resolveContentClassification` (section 10).
+Covers: title override (sections 6-7), transcript classification (section 8), non-market isolation
+(section 9), a hand-copied `resolveContentClassification`-style function (section 10).
+
+> ⚠️ **This script does not import `src/lib/gemRecommender.js` or `src/ai/gemini/gemContentRouter.js`.**
+> It re-implements their logic inline (see the script's own "Minimal copy of ..." comments). A pass
+> here confirms the copied logic behaves as expected — it does **not** prove the real production
+> files still behave the same way. Treat it as a specification/regression-intent document, not a
+> production-code test. See `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` for the verified detail.

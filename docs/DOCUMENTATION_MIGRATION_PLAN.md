@@ -20,7 +20,9 @@ approvals, and rollback notes only.
 | **3** | **Duplicated active documentation & governance rules** — broader in scope than originally previewed below: covers `AGENTS.md`/`docs/workflow.md` duplication, the GEM "title override" rule (restated in 2 files, plus a non-identical code-level duplication), the 5 legacy documentation indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. | **Audit completed** 2026-07-26 (read-only, no files changed). Split into sub-phases below for implementation. | — |
 | 3A | Consolidate documentation entry points — deprecation notices on the 5 legacy indexes + `START_HERE.md` rewrite | **Completed** | 2026-07-26 |
 | 3B | `AGENTS.md` / `docs/workflow.md` consolidation — `AGENTS.md` established as canonical cross-agent workflow document; `docs/workflow.md` retained as deprecated historical reference | **Completed** | 2026-07-26 |
-| 3C | GEM "title override" rule consolidation | **Deferred — pending an architecture decision** (see Phase 3 audit §6: two non-identical code copies of `TITLE_OVERRIDE_RULES` exist, one dead; must be resolved in source code before the docs are safely consolidated) | — |
+| 3C | GEM "title override" architecture audit — determine the source of truth between `gemRecommender.js` and `gemContentRouter.js` before touching code or docs | **Completed — architecture decision and documentation.** `gemRecommender.js` is authoritative/active; `gemContentRouter.js` is dormant, retained, not deleted. See `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`. | 2026-07-26 |
+| 3C-1 | Document the verified title-override architecture — correct the 2 rule docs, add the ADR, no code touched | **Completed** | 2026-07-26 |
+| 3C-2 | *(optional, separately gated)* Correct the stale "used by..." claim in `gemContentRouter.js`'s header comment | Not started — optional source-comment correction requiring a separate approval gate | — |
 | 4 | `AI_DEVELOPMENT_GUIDE.md` condensation — remove self-declared-obsolete §24/§26/§29 fragments, template repeated per-category boilerplate | Proposed, not approved | — |
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
 
@@ -110,9 +112,12 @@ audit report (produced 2026-07-26, read-only, in worktree `docs/phase3-duplicati
    `docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md`. A **code-level** duplication was also found:
    `TITLE_OVERRIDE_RULES` is independently defined (non-identically) in `src/lib/gemRecommender.js`
    (active) and `src/ai/gemini/gemContentRouter.js` (exported, confirmed unimported anywhere). The
-   documentation asserts the two must stay "aligned," which has no runtime effect while one copy is
-   dead code. → **Phase 3C, deferred** until an engineering decision is made on the code duplication
-   — consolidating the docs first risks asserting an alignment guarantee the code doesn't back up.
+   documentation asserted the two must stay "aligned," which had no runtime effect while one copy
+   is dead code. → **Resolved by the Phase 3C architecture audit**: `gemRecommender.js` is the
+   verified active/authoritative implementation; `gemContentRouter.js` is verified dormant (not
+   imported anywhere, and its own header comment's claim of being used by `vite.config.js` /
+   `analyzeVideoWithGemini.js` is false — see the ADR for the full call-graph evidence). Documented
+   in Phase 3C-1; no source-code change made or required for the active path.
 3. **5 legacy documentation indexes** (`PROJECT_DOCUMENTATION_AUDIT.md`, `PROJECT_DOCUMENTATION_INDEX.md`,
    `PROJECT_MARKDOWN_FILE_INDEX.md`, `PROJECT_MD_INDEX.md`, `HEBREW_DOCUMENTATION_CATALOG.md`) plus
    `docs/START_HERE.md` presenting two competing entry points. → **Phase 3A**, this pass.
@@ -162,6 +167,44 @@ it; `docs/INDEX.md` gains a new line plus a short wording adjustment to one exis
 **Rollback:** `git restore` the exact files changed in this commit; `git revert` the Phase 3B commit
 after.
 
+### Phase 3C — title-override architecture audit (completed, read-only) + Phase 3C-1 (this commit)
+
+**Audit (completed 2026-07-26, read-only, zero files changed):** traced the full runtime call graph
+for GEM title-override classification. Verified `src/lib/gemRecommender.js`'s `preGemClassifier`
+(called from `VideoDetailPanel.jsx`'s `gemRec` useMemo) is the sole active path. Verified
+`src/ai/gemini/gemContentRouter.js` is unimported anywhere — and that its own header comment's claim
+of being used by `vite.config.js` and `analyzeVideoWithGemini.js` is false on both counts (neither
+imports it; `analyzeVideoWithGemini.js` is itself dead code). Verified
+`scripts/test-morning-brief-routing.mjs` imports neither real file, validating hand-copied
+reimplementations instead. Full findings, rule-by-rule comparison, and 4 architecture options are in
+the standalone audit report (not committed to the repo).
+
+**Decision approved:** Option A — `gemRecommender.js` is authoritative/active;
+`gemContentRouter.js` is dormant legacy/scaffolding, retained (not deleted), pending a separate
+lifecycle decision. No source-code change required or made for the active runtime path.
+
+**Phase 3C-1 (this commit) does:** corrects `docs/GEM_CONTENT_CLASSIFICATION_RULES.md` and
+`docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md` to state the verified active/dormant split instead of
+claiming both modules are active and must stay synchronized; corrects the claim that
+`scripts/test-morning-brief-routing.mjs` verifies production behavior; adds
+`docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` recording the decision, verified facts,
+alternatives considered, consequences, deferred work, and rollback considerations; adds one link to
+the ADR in `docs/INDEX.md`.
+
+**Phase 3C-1 does not:** modify any file under `src/` (including `gemContentRouter.js`'s stale header
+comment — tracked separately as Phase 3C-2, its own approval gate), `scripts/test-morning-brief-routing.mjs`,
+`CLAUDE.md`, `AGENTS.md`, `docs/workflow.md`, `.claude/rules/`, the actual title-override rule arrays,
+or any runtime behavior. Does not delete, rename, move, or archive `gemContentRouter.js` or any other
+file.
+
+**Risk:** Low. Markdown-only; the two rule-doc edits add corrective context and preserve the
+underlying technical reference content (reframed, not deleted); the ADR and index link are new
+additions.
+
+**Rollback:** `git restore` the two modified existing files; `git clean -f --
+docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` to remove the new ADR (or `git revert` the commit as
+a whole once made).
+
 ## Phase 4 preview — `AI_DEVELOPMENT_GUIDE.md` condensation
 
 **Risk:** High. This is the most-read rules file in the repo (README.md mandates reading it before
@@ -174,12 +217,11 @@ pre-condensation text.
 
 ## Phase 5 preview — small-rule consolidation
 
-**Risk:** Medium. Superseded in part by the Phase 3 audit: the "title override" rule is now
-tracked as **Phase 3C** (see above), confirmed as a full restatement in exactly 2 files
-(`GEM_CONTENT_CLASSIFICATION_RULES.md`, `GEMS_TAB_MAPPING_REGRESSION_RULES.md` — not 3;
-`MORNING_BRIEF_GEMS_ROUTING.md` contains only a brief implementation-log mention, not a
-restatement) and deferred pending a code-level architecture decision, not just a docs merge.
-Remaining Phase 5 scope: Chapters-priority, Sector-Finviz, and Perplexity-routing consolidation.
+**Risk:** Low-Medium. The "title override" rule item is now fully handled by **Phase 3C/3C-1**
+(see above) — the architecture decision is made and the 2 documentation files
+(`GEM_CONTENT_CLASSIFICATION_RULES.md`, `GEMS_TAB_MAPPING_REGRESSION_RULES.md`) are corrected, not
+merely merged. Remaining Phase 5 scope: Chapters-priority, Sector-Finviz, and Perplexity-routing
+consolidation only.
 
 **Rollback:** one commit per merged pair, independently revertable.
 
@@ -196,6 +238,14 @@ Remaining Phase 5 scope: Chapters-priority, Sector-Finviz, and Perplexity-routin
   indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. Split into Phase 3A/3B/3C above.
 - **2026-07-26** — Phase 3A completed: commit `112f723` on `docs/phase3-duplication-audit`, pushed to
   `origin/docs/phase3-duplication-audit`.
-- **2026-07-26** — Phase 3B in progress: `AGENTS.md` established as canonical cross-agent workflow
-  document, `docs/workflow.md` deprecated, on branch `docs/phase3b-agent-workflow` (worktree, based
-  on `origin/docs/phase3-duplication-audit`). Commit proposed, pending approval.
+- **2026-07-26** — Phase 3B completed: commit `6cf8857` on `docs/phase3b-agent-workflow`, pushed to
+  `origin/docs/phase3b-agent-workflow`.
+- **2026-07-26** — Phase 3C architecture audit completed (read-only): verified `gemRecommender.js` is
+  the sole active title-override path; verified `gemContentRouter.js` is fully dormant, including
+  that its own header comment's claimed usage is false. Option A approved as the decision.
+- **2026-07-26** — Phase 3C-1 in progress: documented the verified architecture in
+  `docs/GEM_CONTENT_CLASSIFICATION_RULES.md`, `docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md`, and new
+  `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`, on branch
+  `docs/phase3c-title-override-architecture` (worktree, based on `origin/docs/phase3b-agent-workflow`).
+  Commit proposed, pending approval. Phase 3C-2 (comment fix in `gemContentRouter.js`) remains a
+  separate, not-yet-approved task.
