@@ -14,9 +14,9 @@ approvals, and rollback notes only.
 
 | Phase | Description | Status | Approved on |
 |---|---|---|---|
-| 0 | Verification — confirm which "closed" bugs/reports are actually resolved in the live app before archiving them | Not started | — |
-| **1** | **Additive only: `docs/INDEX.md`, `docs/STATUS.md`, `docs/archive/README.md`, this file, one-line addition to `START_HERE.md`. No deletions, moves, merges, or edits to existing rule content.** | **In progress** | 2026-07-26 |
-| 2 | Status consolidation — merge `PROJECT_STATUS.md` + `docs/governance/CURRENT_STATE_JUNE_2026.md` into `docs/STATUS.md`; archive the two originals | Proposed, not approved | — |
+| 0 | Verification — confirm which "closed" bugs/reports are actually resolved in the live app before archiving them | Partially covered by Phase 2's code-level (non-live) checks; live-app QA still not started | — |
+| 1 | Additive only: `docs/INDEX.md`, `docs/STATUS.md`, `docs/archive/README.md`, this file, one-line addition to `START_HERE.md`. No deletions, moves, merges, or edits to existing rule content. | **Completed** — commit `6481db3` on `docs/markdown-governance-cleanup`, pushed to `origin/docs/markdown-governance-cleanup` | 2026-07-26 |
+| **2** | **Verify & refresh status docs: cross-check `docs/STATUS.md` / `PROJECT_STATUS.md` / `docs/governance/CURRENT_STATE_JUNE_2026.md` / `docs/workspace-session-handoff.md` against the actual codebase; refresh `docs/STATUS.md` with verified findings; add deprecation notices (not archiving) to the two stale status files, content otherwise preserved.** | **Completed** (this scope only — archiving the two stale files is deferred to a future phase/decision, not done here) | 2026-07-26 |
 | 3 | Governance de-duplication — consolidate the 3-way invariants overlap across `MASTER_PROJECT_BIBLE.md` / `PROJECT_DECISIONS_HISTORY.md` / `USER_PRODUCT_INTENT_AND_FUTURE_VISION.md`; decide fate of `CLAUDE_CODE_GOVERNANCE_MODE.md` | Proposed, not approved | — |
 | 4 | `AI_DEVELOPMENT_GUIDE.md` condensation — remove self-declared-obsolete §24/§26/§29 fragments, template repeated per-category boilerplate | Proposed, not approved | — |
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
@@ -54,14 +54,43 @@ before merge — no other branch or file depends on this branch's existence.
 
 ---
 
-## Phase 2 preview — status consolidation
+## Phase 2 — what this phase did and did not do
 
-**Risk:** Medium. `docs/governance/CURRENT_STATE_JUNE_2026.md` contains a 4-gate release-blocker
-table that may still reflect real open bugs (chapters timestamps, DirectionChip error, etc.) —
-these must be confirmed via Phase 0 and copied into `docs/STATUS.md` before the source files are
-archived, not lost in the process.
+Executed in an isolated worktree (`docs/phase2-status-refresh`, branched from the pushed
+`origin/docs/markdown-governance-cleanup`), never touching the original repo's dirty working
+directory.
 
-**Rollback:** `git mv` based archiving preserves history; `git revert` restores original paths.
+**Did:**
+- Cross-checked `docs/STATUS.md`, `PROJECT_STATUS.md`, `docs/governance/CURRENT_STATE_JUNE_2026.md`,
+  and `docs/workspace-session-handoff.md` against `package.json`, `src/pages.config.js`, and a
+  targeted grep of the source tree (see `docs/STATUS.md` "Phase 2 findings" section for the full
+  settings-drift table and the 4-gate code-level check).
+- Refreshed `docs/STATUS.md` with those verified findings, clearly separating "verified", "code
+  evidence but not live-QA'd", and "not verified — needs live app testing."
+- Added a short deprecation notice (pointer to `docs/STATUS.md`) to the top of `PROJECT_STATUS.md`
+  and `docs/governance/CURRENT_STATE_JUNE_2026.md`. All original content in both files is preserved
+  unchanged below the notice.
+- Read `docs/workspace-session-handoff.md` in full (both the 323-line committed version in this
+  worktree and the fuller 633-line uncommitted version from the original directory) without
+  modifying, moving, condensing, or archiving it.
+
+**Did not:**
+- Archive, move, delete, or merge `PROJECT_STATUS.md` or `CURRENT_STATE_JUNE_2026.md` — only a
+  notice was added; the original "archive the two originals" idea from this plan's first draft is
+  deferred to a later, separately-approved step.
+- Run the app or a browser — the 4 old release gates (CH-1/MB-2/MB-3/MB-4) are only checked at the
+  static-code level; live behavior remains unverified (see `docs/STATUS.md`).
+- Modify `CLAUDE.md`, `AGENTS.md`, source code, config, or package files, even though a concrete
+  settings discrepancy was found in `backend/analyze-video.function.js` (see `docs/STATUS.md`) —
+  reported only, not fixed.
+- Touch any file belonging to the concurrent sessions' uncommitted work in the original directory —
+  this phase ran entirely in a separate worktree that never had that working tree state.
+
+**Risk:** Low. Two files gained a short notice at the top with all other content byte-for-byte
+preserved below it; `docs/STATUS.md` gained new sections, no deletions.
+
+**Rollback:** `git revert` the Phase 2 commit — fully restores `PROJECT_STATUS.md` and
+`CURRENT_STATE_JUNE_2026.md` to their pre-notice state and `docs/STATUS.md` to its Phase-1 content.
 
 ## Phase 3 preview — governance de-duplication
 
@@ -97,4 +126,8 @@ picking one as canonical and cross-referencing the others, to avoid silently nar
 
 ## Changelog
 
-- **2026-07-26** — Phase 1 started on branch `docs/markdown-governance-cleanup`.
+- **2026-07-26** — Phase 1 completed: commit `6481db3` on `docs/markdown-governance-cleanup`,
+  pushed to `origin/docs/markdown-governance-cleanup`.
+- **2026-07-26** — Phase 2 completed (this scope): status verification + `docs/STATUS.md` refresh +
+  deprecation notices, on branch `docs/phase2-status-refresh` (worktree, based on
+  `origin/docs/markdown-governance-cleanup`). Commit proposed, pending approval.
