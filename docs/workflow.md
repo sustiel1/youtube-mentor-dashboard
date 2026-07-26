@@ -1,5 +1,9 @@
 # Base44 + Claude Code Workflow
 
+> ⚠️ **Deprecated as the canonical workflow document.** [`../AGENTS.md`](../AGENTS.md) is the active
+> canonical cross-agent workflow document. This file is not deleted or archived — it is retained
+> unchanged below for historical reference.
+
 מטרת הקובץ:
 לעבוד בצורה מסודרת, קבועה ובטוחה בכל פרויקט Base44.
 

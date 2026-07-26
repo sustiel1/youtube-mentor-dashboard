@@ -19,7 +19,7 @@ approvals, and rollback notes only.
 | **2** | **Verify & refresh status docs: cross-check `docs/STATUS.md` / `PROJECT_STATUS.md` / `docs/governance/CURRENT_STATE_JUNE_2026.md` / `docs/workspace-session-handoff.md` against the actual codebase; refresh `docs/STATUS.md` with verified findings; add deprecation notices (not archiving) to the two stale status files, content otherwise preserved.** | **Completed** (this scope only — archiving the two stale files is deferred to a future phase/decision, not done here) | 2026-07-26 |
 | **3** | **Duplicated active documentation & governance rules** — broader in scope than originally previewed below: covers `AGENTS.md`/`docs/workflow.md` duplication, the GEM "title override" rule (restated in 2 files, plus a non-identical code-level duplication), the 5 legacy documentation indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. | **Audit completed** 2026-07-26 (read-only, no files changed). Split into sub-phases below for implementation. | — |
 | 3A | Consolidate documentation entry points — deprecation notices on the 5 legacy indexes + `START_HERE.md` rewrite | **Completed** | 2026-07-26 |
-| 3B | `AGENTS.md` / `docs/workflow.md` consolidation | Not started | — |
+| 3B | `AGENTS.md` / `docs/workflow.md` consolidation — `AGENTS.md` established as canonical cross-agent workflow document; `docs/workflow.md` retained as deprecated historical reference | **Completed** | 2026-07-26 |
 | 3C | GEM "title override" rule consolidation | **Deferred — pending an architecture decision** (see Phase 3 audit §6: two non-identical code copies of `TITLE_OVERRIDE_RULES` exist, one dead; must be resolved in source code before the docs are safely consolidated) | — |
 | 4 | `AI_DEVELOPMENT_GUIDE.md` condensation — remove self-declared-obsolete §24/§26/§29 fragments, template repeated per-category boilerplate | Proposed, not approved | — |
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
@@ -104,7 +104,7 @@ audit report (produced 2026-07-26, read-only, in worktree `docs/phase3-duplicati
    Both are stale subsets of `CLAUDE.md` (missing its Ollama-processing and locked-AI-settings
    sections). Recommendation is asymmetric: `AGENTS.md` is kept as a distinct file because its
    filename is a recognized convention for non-Claude-Code tools; `docs/workflow.md` has no such
-   justification. → **Phase 3B**, not started.
+   justification. → **Phase 3B** (see below).
 2. **GEM "title override" rule** — fully restated (not just referenced) in exactly 2 files:
    `docs/GEM_CONTENT_CLASSIFICATION_RULES.md` (canonical candidate) and
    `docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md`. A **code-level** duplication was also found:
@@ -142,6 +142,26 @@ replaces one small block (the old "חובה לקרוא" list) rather than the wh
 **Rollback:** `git restore` the exact 6 changed files listed in the commit before commit; `git revert`
 the Phase 3A commit after.
 
+### Phase 3B — establish the canonical agent workflow document (this commit)
+
+Re-verified before editing: `AGENTS.md` and `docs/workflow.md` are still byte-identical (117 lines,
+zero `diff` output) — unchanged since the Phase 3 audit.
+
+**Does:** keeps `AGENTS.md` as the canonical cross-agent workflow document (no edit made to it);
+adds a short deprecation notice to the top of `docs/workflow.md` pointing to `../AGENTS.md`, with all
+existing content preserved unchanged below; updates `docs/INDEX.md`'s "Workflow / setup" section (and
+aligns its "Root-level reports" `AGENTS.md` entry) so active workflow guidance points to `AGENTS.md`.
+
+**Does not:** modify `AGENTS.md` or `CLAUDE.md`; touch title-override documentation/code,
+`docs/governance/CLAUDE_CODE_GOVERNANCE_MODE.md`, `.claude/rules/`, application code, or config;
+delete, move, rename, or archive any file.
+
+**Risk:** Low. `docs/workflow.md` gains a short prepended notice, all prior content preserved below
+it; `docs/INDEX.md` gains a new line plus a short wording adjustment to one existing line.
+
+**Rollback:** `git restore` the exact files changed in this commit; `git revert` the Phase 3B commit
+after.
+
 ## Phase 4 preview — `AI_DEVELOPMENT_GUIDE.md` condensation
 
 **Risk:** High. This is the most-read rules file in the repo (README.md mandates reading it before
@@ -174,6 +194,8 @@ Remaining Phase 5 scope: Chapters-priority, Sector-Finviz, and Perplexity-routin
 - **2026-07-26** — Phase 3 audit completed (read-only): duplication matrix covering `AGENTS.md`/
   `docs/workflow.md`, the GEM title-override rule (docs + a code-level finding), the 5 legacy
   indexes, and `CLAUDE_CODE_GOVERNANCE_MODE.md`'s enforcement gap. Split into Phase 3A/3B/3C above.
-- **2026-07-26** — Phase 3A in progress: entry-point consolidation on branch
-  `docs/phase3-duplication-audit` (worktree, based on `origin/docs/phase2-status-refresh`). Commit
-  proposed, pending approval.
+- **2026-07-26** — Phase 3A completed: commit `112f723` on `docs/phase3-duplication-audit`, pushed to
+  `origin/docs/phase3-duplication-audit`.
+- **2026-07-26** — Phase 3B in progress: `AGENTS.md` established as canonical cross-agent workflow
+  document, `docs/workflow.md` deprecated, on branch `docs/phase3b-agent-workflow` (worktree, based
+  on `origin/docs/phase3-duplication-audit`). Commit proposed, pending approval.
