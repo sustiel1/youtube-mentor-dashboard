@@ -52,8 +52,8 @@ report the contradiction before modifying code.
 |----------|------|
 | `AI_DEVELOPMENT_GUIDE.md` | Original UX/architecture constitution (§1–§34) |
 | `PROJECT_STATUS.md` | Live status tracker (updated per session) |
-| `CLAUDE.md` / `AGENTS.md` | Workflow + approved AI settings |
-| `docs/workflow.md` | Base44 + Git workflow |
+| `CLAUDE.md` / `AGENTS.md` | Workflow + approved AI settings. `AGENTS.md` is the active canonical cross-agent workflow document (decision recorded in `docs/DOCUMENTATION_MIGRATION_PLAN.md`, Phase 3B). |
+| `docs/workflow.md` | **Deprecated historical reference only** — superseded by `AGENTS.md` above (Phase 3B, 2026-07-26). Not the active workflow source; retained unchanged for historical record. |
 | `docs/OBSIDIAN_PERSONAL_BRAIN_PHASE.md` | Obsidian-first brain checkpoint |
 
 **Hierarchy:** Governance docs in `/docs/governance/` supersede scattered sections in `AI_DEVELOPMENT_GUIDE.md` where contradictions exist. Report contradictions before modifying code.

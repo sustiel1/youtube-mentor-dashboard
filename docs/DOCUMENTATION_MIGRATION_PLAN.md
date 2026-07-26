@@ -12,6 +12,12 @@ approvals, and rollback notes only.
 
 ## Phase status
 
+> **Naming note:** the original 6-phase plan below already uses "Phase 4" for
+> `AI_DEVELOPMENT_GUIDE.md` condensation (row `4`). A separate, later audit of Claude Code
+> rules/governance/memory/skills/commands/hooks was also informally called "Phase 4" when
+> requested — to avoid colliding with the row below, it is tracked here as **`4-CC`** (Claude Code)
+> with sub-items `4-CC-A`/`4-CC-B`/`4-CC-C`. The original row `4` is unrelated and unchanged.
+
 | Phase | Description | Status | Approved on |
 |---|---|---|---|
 | 0 | Verification — confirm which "closed" bugs/reports are actually resolved in the live app before archiving them | Partially covered by Phase 2's code-level (non-live) checks; live-app QA still not started | — |
@@ -25,6 +31,11 @@ approvals, and rollback notes only.
 | 3C-2 | *(optional, separately gated)* Correct the stale "used by..." claim in `gemContentRouter.js`'s header comment | Not started — optional source-comment correction requiring a separate approval gate | — |
 | 4 | `AI_DEVELOPMENT_GUIDE.md` condensation — remove self-declared-obsolete §24/§26/§29 fragments, template repeated per-category boilerplate | Proposed, not approved | — |
 | 5 | Small-rule consolidation — merge remaining overlapping pairs (Chapters-priority, Sector-Finviz, Perplexity-routing, Morning-Brief sub-rules, 3-way "title override" restatement) into `.claude/rules/` | Proposed, not approved | — |
+| **4-CC** | **Claude Code rules/governance/memory/skills/commands/hooks audit** — determined only `.claude/settings.json` has real enforcement; `CLAUDE_CODE_GOVERNANCE_MODE.md` confirmed still unenforced; only `SKILL.md` in the repo is in an unrecognized location; found `MASTER_PROJECT_BIBLE.md` still referenced the now-deprecated `docs/workflow.md` as active. | **Audit completed** 2026-07-26 (read-only, no files changed). Split into sub-items below. | 2026-07-26 |
+| 4-CC-A | Correct the stale canonical-workflow reference in `docs/governance/MASTER_PROJECT_BIBLE.md` | **Completed** | 2026-07-26 |
+| 4-CC-B | Governance-mode rewrite (split Rules 1-6; Rules 1 and 3 add verbosity in tension with the global "short and concise" preference; Rules 2/4/5 already match de facto practice) | Not started — requires your explicit decision on activate/deprecate/rewrite | — |
+| 4-CC-C | First `.claude/rules/` extraction pilot (candidate: GEM classification/routing, given its fresh ADR from Phase 3C) | Not started — separate approval gate | — |
+| — | Settings/permissions hardening (3 wildcard `Bash` patterns, blanket `git commit`/`git stash` allow, `additionalDirectories` scope) — flagged by the 4-CC audit, not a numbered sub-phase | Not started — separate approval gate, no specific change recommended yet | — |
 
 ---
 
@@ -205,6 +216,41 @@ additions.
 docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md` to remove the new ADR (or `git revert` the commit as
 a whole once made).
 
+### Phase 4-CC — Claude Code rules/governance audit (completed, read-only) + 4-CC-A (this commit)
+
+**Audit (completed 2026-07-26, read-only, zero files changed):** confirmed this repo has no
+`.claude/rules/`, `.claude/skills/`, `.claude/commands/`, `CLAUDE.local.md`, or
+`.claude/settings.local.json` — `.claude/` contains only `settings.json`. Confirmed the only
+mechanically-enforced item in the whole repo is `settings.json`'s `permissions.allow` list; every
+Markdown rule/standard (including `CLAUDE_CODE_GOVERNANCE_MODE.md`) is advisory only, with no lint,
+hook, or CI check behind it (`.github/workflows/e2e.yml` runs Playwright tests only). Reconfirmed
+`CLAUDE_CODE_GOVERNANCE_MODE.md` is still unloaded and still absent from
+`MASTER_PROJECT_BIBLE.md`'s own governance index. Confirmed the repo's only `SKILL.md` remains at
+the root, not in a location the skill loader recognizes. **New finding:** `MASTER_PROJECT_BIBLE.md`
+still listed `docs/workflow.md` as the active workflow reference, unaware of the Phase 3B decision.
+Also flagged (not fixed): 3 wildcard `Bash` permission patterns and a blanket `git commit`/`git
+stash` allow broader than this engagement's own approval-gated practice; an `additionalDirectories`
+entry reaching outside the project. Full findings in the standalone audit report (not committed to
+the repo).
+
+**Phase 4-CC-A (this commit) does:** corrects `docs/governance/MASTER_PROJECT_BIBLE.md`'s "External
+References" table so `AGENTS.md` is stated as the active canonical cross-agent workflow document and
+`docs/workflow.md` is clearly marked a deprecated historical reference, consistent with the
+completed Phase 3B decision. No other file needed a matching correction — `docs/INDEX.md` already
+reflects this state correctly from Phase 3B/3A and was left untouched.
+
+**Phase 4-CC-A does not:** modify `CLAUDE.md`, `AGENTS.md`, `docs/workflow.md`,
+`.claude/settings.json`, any `.claude/rules/` (none exist), any `SKILL.md`, application code,
+configuration, or governance-mode behavior. Does not add the 3 orphaned governance documents to
+`docs/INDEX.md` (deferred pending their own active/historical status decision). Does not change
+permissions or create Claude rules.
+
+**Risk:** Low. Single table-cell-level correction in one file, plus a status/tracking update in this
+plan.
+
+**Rollback:** `git restore docs/governance/MASTER_PROJECT_BIBLE.md docs/DOCUMENTATION_MIGRATION_PLAN.md`
+before commit; `git revert` the Phase 4-CC-A commit after.
+
 ## Phase 4 preview — `AI_DEVELOPMENT_GUIDE.md` condensation
 
 **Risk:** High. This is the most-read rules file in the repo (README.md mandates reading it before
@@ -243,9 +289,13 @@ consolidation only.
 - **2026-07-26** — Phase 3C architecture audit completed (read-only): verified `gemRecommender.js` is
   the sole active title-override path; verified `gemContentRouter.js` is fully dormant, including
   that its own header comment's claimed usage is false. Option A approved as the decision.
-- **2026-07-26** — Phase 3C-1 in progress: documented the verified architecture in
-  `docs/GEM_CONTENT_CLASSIFICATION_RULES.md`, `docs/GEMS_TAB_MAPPING_REGRESSION_RULES.md`, and new
-  `docs/adr/ADR_TITLE_OVERRIDE_SOURCE_OF_TRUTH.md`, on branch
-  `docs/phase3c-title-override-architecture` (worktree, based on `origin/docs/phase3b-agent-workflow`).
-  Commit proposed, pending approval. Phase 3C-2 (comment fix in `gemContentRouter.js`) remains a
-  separate, not-yet-approved task.
+- **2026-07-26** — Phase 3C-1 completed: commit `a31aba3` on `docs/phase3c-title-override-architecture`,
+  pushed to `origin/docs/phase3c-title-override-architecture`. Phase 3C-2 (comment fix in
+  `gemContentRouter.js`) remains a separate, not-yet-approved task.
+- **2026-07-26** — Phase 4-CC audit completed (read-only): confirmed only `settings.json` has real
+  enforcement in this repo; `CLAUDE_CODE_GOVERNANCE_MODE.md` still unenforced; the repo's only
+  `SKILL.md` still in an unrecognized location; found `MASTER_PROJECT_BIBLE.md` still referencing
+  the deprecated `docs/workflow.md` as active. Split into 4-CC-A/B/C above.
+- **2026-07-26** — Phase 4-CC-A in progress: corrected `docs/governance/MASTER_PROJECT_BIBLE.md`'s
+  stale canonical-workflow reference, on branch `docs/phase4a-governance-reference-fix` (worktree,
+  based on `origin/docs/phase3c-title-override-architecture`). Commit proposed, pending approval.
