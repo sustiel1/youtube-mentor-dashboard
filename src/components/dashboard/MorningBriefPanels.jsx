@@ -115,6 +115,8 @@ import { normalizeNewsItems } from '@/lib/morningBriefNewsNormalize';
 import {
   resolveMorningBriefCardText,
   resolveMorningBriefCombinedCardText,
+  resolveMorningBriefSectionChildItems,
+  resolveMorningBriefCombinedSectionChildItems,
 } from '@/lib/morningBriefBulkSections';
 import { getSentimentSourceLink } from '@/lib/sentimentSourceLinks';
 import { getMacroIndicatorUrl } from '@/lib/macroIndicatorLinks';
@@ -1111,6 +1113,8 @@ export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection,
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'market-regime', '📊 מצב שוק', { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'market-regime') : null}
+      bulkSelection={bulkSelection}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -1155,6 +1159,8 @@ export function MarketsSection({
       tone={TONE.NEUTRAL}
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'markets', DISPLAY_SECTION_TITLES.markets, { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'markets') : null}
+      bulkSelection={bulkSelection}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -1320,6 +1326,8 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sectors', '🏭 סקטורים', { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'sectors') : null}
+      bulkSelection={bulkSelection}
       headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ThreeToneSummaryPills
           bullishCount={split.bullishCount}
@@ -1399,6 +1407,8 @@ export function NewsSection({
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'news', '📰 חדשות', { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'news') : null}
+      bulkSelection={bulkSelection}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -1483,6 +1493,8 @@ export function MacroSection({
       emptyMessage="גורמי מאקרו, אירועים כלכליים ו-VIX יוצגו כאן"
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'macro', DISPLAY_SECTION_TITLES.macro, { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'macro') : null}
+      bulkSelection={bulkSelection}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -1747,6 +1759,8 @@ export function SentimentSection({
       isEmpty={items.length === 0}
       emptyMessage="סנטימנט קמעונאי, מוסדי ופחד וחמדנות יוצגו כאן"
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sentiment', DISPLAY_SECTION_TITLES.sentiment)}
+      sectionSelectAllItems={resolveMorningBriefSectionChildItems(bulkSections, 'sentiment')}
+      bulkSelection={bulkSelection}
     >
       <div dir="rtl" data-sentiment-list>
         <BriefTableWrapper>
@@ -1951,6 +1965,8 @@ export function EconomicCalendarSection({
       emptyMessage="אירועים כלכליים, דוחות ו-CPI יוצגו כאן"
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'economic-calendar', DISPLAY_SECTION_TITLES.economicCalendar, { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'economic-calendar') : null}
+      bulkSelection={bulkSelection}
     >
       {edit.editing ? (
         <ManualEditGrid
@@ -2290,6 +2306,8 @@ export function OpportunitiesRisksDashboard({
         '🎯 הזדמנויות וסיכונים',
         { disabled: edit.editing, cardId: 'opportunities-risks' },
       )}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefCombinedSectionChildItems(bulkSections, ['opportunities', 'risks']) : null}
+      bulkSelection={bulkSelection}
       headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ComparisonSummaryPills
           pills={[
@@ -2760,6 +2778,8 @@ export function StocksMentionedSection({
       plainSurface
       headerActions={edit.headerActions}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'stocks-mentioned', '⭐ מניות שהוזכרו', { disabled: edit.editing })}
+      sectionSelectAllItems={!edit.editing ? resolveMorningBriefSectionChildItems(bulkSections, 'stocks-mentioned') : null}
+      bulkSelection={bulkSelection}
       headerPills={morningBriefShowsSummaryCounters(presentation) && !edit.editing ? (
         <ComparisonSummaryPills
           pills={[
