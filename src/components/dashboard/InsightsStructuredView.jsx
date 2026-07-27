@@ -32,7 +32,9 @@ const COLUMNS = [
       if (typeof row === 'string') return row.trim();
       if (!row || typeof row !== 'object') return String(row ?? '').trim();
       return String(
-        row.insight || row.text || row.title || row.content || row.point || row.summary || ''
+        // `note` is a fallback (lowest priority) — market-brief top5Insights-shaped
+        // rows carry their text there instead of insight/text/title/etc.
+        row.insight || row.text || row.title || row.content || row.point || row.summary || row.note || ''
       ).trim();
     },
   },
