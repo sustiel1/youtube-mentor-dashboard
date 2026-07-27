@@ -76,6 +76,14 @@ function formatObjectLine(obj) {
     obj.title || obj.name || obj.rule || obj.description || obj.risk || ''
   ).trim();
   if (text) return text;
+  // `note` is a lower-priority fallback — market-brief shaped objects (e.g.
+  // top5Insights) carry their content there. asset/ticker are contextual
+  // metadata only, prefixed as a subject label, never the primary text.
+  const noteText = String(obj.note ?? '').trim();
+  if (noteText) {
+    const subject = String(obj.asset || obj.ticker || '').trim();
+    return subject ? `${subject}: ${noteText}` : noteText;
+  }
   return Object.entries(obj)
     .filter(([, v]) => v != null && typeof v !== 'object')
     .map(([k, v]) => `${k}: ${v}`)
