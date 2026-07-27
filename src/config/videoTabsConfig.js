@@ -675,11 +675,27 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: universalTabs.chapters | exists: true | itemsCount:', utChapters.length);
         return utChapters;
       }
-      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: legacy | exists: false');
-      return [
+      const legacyChapters = [
         ...pickArray(video, 'chapters', 'aiChapters'),
         ...pickArray(a, 'chapters', 'aiChapters'),
       ];
+      if (legacyChapters.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: legacy | exists: true | itemsCount:', legacyChapters.length);
+        return legacyChapters;
+      }
+      // Persisted raw fallback — some GEM payloads (e.g. contentType: 'marketBrief')
+      // are stored verbatim without ever being mapped into universalTabs.chapters.
+      // Lowest priority: only reached when universalTabs.chapters and the legacy
+      // video/analysis fields above are all empty. Mirrors the rawData fallback
+      // already used by the 'summary'/'useful-knowledge' cases in this switch.
+      const rawChapters = pickArray(marketBriefData?.rawData, 'chapters');
+      if (rawChapters.length > 0) {
+        if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath: rawData.chapters | itemsCount:', rawChapters.length);
+        return rawChapters;
+      }
+      const mbdChapters = pickArray(marketBriefData, 'chapters');
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: chapters | sourcePath:', mbdChapters.length > 0 ? 'marketBriefData.chapters' : 'none', '| itemsCount:', mbdChapters.length);
+      return mbdChapters;
     }
 
     case 'useful-knowledge': {
