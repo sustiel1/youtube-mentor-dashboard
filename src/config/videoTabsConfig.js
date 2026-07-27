@@ -729,7 +729,7 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(video, 'actionItems', 'usefulKnowledge', 'keyTakeaways'),
         ...pickArray(al, 'keyTakeaways', 'actionItems'),
         ...(marketBriefData
-          ? pickArray(marketBriefData, 'reusableKnowledge', 'keyTakeaways', 'actionChecklist')
+          ? pickArray(marketBriefData, 'reusableKnowledge', 'keyTakeaways', 'actionChecklist', 'learningInsights')
           : []),
         ...filterAllPoints(video, a, ['rule', 'strategy', 'checklist']),
       ];
