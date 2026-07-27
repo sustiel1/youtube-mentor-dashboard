@@ -1646,6 +1646,40 @@ function finalizeIdea(partial) {
   };
 }
 
+/** Maps a marketBriefData.appBuilding.dashboardIdeas item into normalizeDiscoveryIdea's raw shape. */
+function mapDashboardIdeaToDiscoveryRaw(item) {
+  if (!item || typeof item !== 'object') return null;
+  const titleHe = s(item.idea);
+  const titleEn = s(item.component);
+  if (!titleHe && !titleEn) return null;
+  return {
+    titleHe: titleHe || undefined,
+    titleEn: titleEn || undefined,
+    productIdea: titleEn || titleHe,
+    sourceInsight: titleHe || s(item.whyUseful),
+    userValue: item.whyUseful,
+    shortDescription: item.whyUseful,
+    components: titleEn ? [titleEn] : [],
+  };
+}
+
+/** Maps a marketBriefData.appBuilding.newIndicators item into normalizeDiscoveryIdea's raw shape. */
+function mapNewIndicatorToDiscoveryRaw(item) {
+  if (!item || typeof item !== 'object') return null;
+  const titleHe = s(item.name);
+  const titleEn = s(item.componentSuggestion) || s(item.ticker) || titleHe;
+  if (!titleHe && !titleEn) return null;
+  return {
+    titleHe: titleHe || undefined,
+    titleEn: titleEn || undefined,
+    productIdea: titleEn || titleHe,
+    sourceInsight: titleHe || s(item.whyUseful),
+    userValue: item.whyUseful,
+    shortDescription: item.whyUseful,
+    components: item.componentSuggestion ? [item.componentSuggestion] : [],
+  };
+}
+
 /** Normalizes legacy / GEM idea objects into discovery shape. */
 export function normalizeDiscoveryIdea(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
@@ -1691,6 +1725,26 @@ export function discoverFeaturesFromMacro(marketBriefData) {
     seen.add(key);
     ideas.push(idea);
   }
+
+  function addNormalized(idea) {
+    if (!idea) return;
+    const key = idea.titleEn.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    ideas.push(idea);
+  }
+
+  // Explicit appBuilding ideas take priority: added first so the `seen` dedup
+  // above keeps the explicit version whenever a later heuristic/rawData idea
+  // below describes the same feature (same titleEn). Legacy videos without
+  // marketBriefData.appBuilding contribute nothing here — behavior for them
+  // is unchanged.
+  (marketBriefData.appBuilding?.dashboardIdeas || []).forEach((item, index) => {
+    addNormalized(normalizeDiscoveryIdea(mapDashboardIdeaToDiscoveryRaw(item), `appbuilding-dash-${index}`));
+  });
+  (marketBriefData.appBuilding?.newIndicators || []).forEach((item, index) => {
+    addNormalized(normalizeDiscoveryIdea(mapNewIndicatorToDiscoveryRaw(item), `appbuilding-ind-${index}`));
+  });
 
   for (const opp of raw.opportunities || []) {
     if (!opp?.title || s(opp.title).length < 6) continue;
