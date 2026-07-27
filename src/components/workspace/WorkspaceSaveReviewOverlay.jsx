@@ -212,6 +212,16 @@ export function WorkspaceSaveReviewOverlay({
   // Reset workflow status filter whenever the navigation path changes
   useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
 
+  // Default to the stock table ("topics" view) the moment the user enters
+  // שוק ההון → מניות, so they land on the table instead of whichever view
+  // (draft/recent/dates) happened to be active before. Only fires on the
+  // false→true transition so a manual switch to "לפי תאריכים" afterwards sticks.
+  const wasStocksViewRef = useRef(false);
+  useEffect(() => {
+    if (isStocksView && !wasStocksViewRef.current) setActiveView('topics');
+    wasStocksViewRef.current = isStocksView;
+  }, [isStocksView]);
+
   // Items within the selected main virtual topic (not yet subtopic-filtered)
   const mainFilteredItems = useMemo(() => {
     if (!filterVirtTopicId) return libraryItems;
@@ -602,7 +612,7 @@ export function WorkspaceSaveReviewOverlay({
       ? [{ key: 'draft', label: effectiveDraftItems.length > 0 ? `טיוטה (${effectiveDraftItems.length})` : 'טיוטה' }]
       : []),
     { key: 'recent', label: recentlySavedIds.length > 0 ? `נשמרו עכשיו (${recentlySavedIds.length})` : 'נשמרו עכשיו' },
-    { key: 'topics', label: 'לפי נושאים' },
+    { key: 'topics', label: isStocksView ? 'טבלת מניות' : 'לפי נושאים' },
     { key: 'dates',  label: 'לפי תאריכים' },
     { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
@@ -841,13 +851,13 @@ export function WorkspaceSaveReviewOverlay({
           <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
             <WorkspaceTabRow
               tabs={[
-                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
                 ...activeVirtTopic.subtopics.map(vs => ({
                   value: vs.id,
                   label: vs.name,
                   count: virtSubtopicCount[vs.id] || 0,
                   empty: !virtSubtopicCount[vs.id],
                 })),
+                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
               ]}
               activeValue={filterVirtSubtopic}
               onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}

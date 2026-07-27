@@ -27,14 +27,16 @@ export const VIRTUAL_TAXONOMY = [
       'wt-crypto', 'wt-crypto-btc', 'wt-crypto-eth', 'wt-crypto-alts', 'wt-crypto-defi', 'wt-crypto-macro',
     ],
     legacyNames: ['שוק ההון', 'מניות', 'מאקרו', 'סקטורים', 'מסחר טכני', 'ניהול סיכונים', 'קריפטו'],
+    // Order below is the intended tab display order (מניות first, then סקטורים,
+    // ...). "כולם" is appended last by the two UI callers, not defined here.
     subtopics: [
-      { id: 'vts-macro',     name: 'מאקרו',          realTopicIds: ['wt-macro', 'wt-macro-rates', 'wt-macro-inflation', 'wt-macro-bonds', 'wt-macro-dollar', 'wt-macro-jobs', 'wt-macro-events', 'wt-markets-macro'] },
       { id: 'vts-stocks',    name: 'מניות',           realTopicIds: ['wt-stocks', 'wt-stocks-quick', 'wt-stocks-watchlist', 'wt-stocks-chips', 'wt-stocks-ai', 'wt-stocks-energy', 'wt-stocks-banks', 'wt-stocks-realestate', 'wt-stocks-earnings', 'wt-markets-stocks', 'wt-markets-mentioned'] },
       { id: 'vts-sectors',   name: 'סקטורים',         realTopicIds: ['wt-sectors', 'wt-sectors-tech', 'wt-sectors-energy', 'wt-sectors-financials', 'wt-sectors-health', 'wt-sectors-realestate', 'wt-sectors-consumer', 'wt-sectors-industrial', 'wt-markets-sectors'] },
+      { id: 'vts-macro',     name: 'מאקרו',          realTopicIds: ['wt-macro', 'wt-macro-rates', 'wt-macro-inflation', 'wt-macro-bonds', 'wt-macro-dollar', 'wt-macro-jobs', 'wt-macro-events', 'wt-markets-macro'] },
       { id: 'vts-technical', name: 'מסחר טכני',       realTopicIds: ['wt-technical', 'wt-technical-sr', 'wt-technical-trend', 'wt-technical-ma', 'wt-technical-rsi', 'wt-technical-macd', 'wt-technical-volume', 'wt-technical-entry', 'wt-markets-technical'] },
       { id: 'vts-risk',      name: 'ניהול סיכונים',   realTopicIds: ['wt-risk', 'wt-risk-sizing', 'wt-risk-stoploss', 'wt-risk-diversification', 'wt-risk-drawdown', 'wt-risk-hedging', 'wt-risk-scenarios', 'wt-markets-risk'] },
-      { id: 'vts-crypto',    name: 'קריפטו',          realTopicIds: ['wt-crypto', 'wt-crypto-btc', 'wt-crypto-eth', 'wt-crypto-alts', 'wt-crypto-defi', 'wt-crypto-macro', 'wt-markets-crypto'] },
       { id: 'vts-etf',       name: 'ETF / מדדים',     realTopicIds: ['wt-markets-etf'] },
+      { id: 'vts-crypto',    name: 'קריפטו',          realTopicIds: ['wt-crypto', 'wt-crypto-btc', 'wt-crypto-eth', 'wt-crypto-alts', 'wt-crypto-defi', 'wt-crypto-macro', 'wt-markets-crypto'] },
       { id: 'vts-daily',     name: 'סקירת שוק יומית', realTopicIds: ['wt-markets-daily'] },
       { id: 'vts-sentiment', name: 'סנטימנט שוק',     realTopicIds: ['wt-markets-sentiment'] },
     ],
