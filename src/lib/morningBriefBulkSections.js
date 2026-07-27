@@ -276,3 +276,24 @@ export function resolveMorningBriefBulkId(sections, sectionKey, text) {
   if (idx < 0) return null;
   return `specialized:${sectionKey}:${idx}`;
 }
+
+/**
+ * Converts a section's items into {id, text, sectionLabel, type, tabScope} format
+ * for section-level select-all. IDs match resolveMorningBriefBulkId output.
+ */
+export function resolveMorningBriefSectionChildItems(sections, sectionKey) {
+  const sec = sections.find((s) => s.key === sectionKey);
+  if (!sec?.items?.length) return [];
+  return sec.items.map((item, i) => ({
+    id: `specialized:${sectionKey}:${i}`,
+    text: String(formatBulkItemText(item)).trim(),
+    sectionLabel: sec.label,
+    type: sec.tabKey || 'specialized',
+    tabScope: 'specialized',
+  }));
+}
+
+/** Combined child items from multiple section keys (e.g. opportunities + risks). */
+export function resolveMorningBriefCombinedSectionChildItems(sections, sectionKeys) {
+  return sectionKeys.flatMap((key) => resolveMorningBriefSectionChildItems(sections, key));
+}
