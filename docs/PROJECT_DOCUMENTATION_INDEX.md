@@ -3,6 +3,10 @@
 **Project:** YouTube Mentor Dashboard
 **Purpose:** Central documentation registry and source-of-truth index for all future development sessions.
 
+> ⚠️ **Deprecated as a documentation index.** [docs/INDEX.md](INDEX.md) is now the single canonical
+> documentation entry point. This file is not deleted or archived — it is retained unchanged below
+> for historical/audit reference.
+
 ---
 
 # Documentation Hierarchy (Source of Truth)

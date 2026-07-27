@@ -4,6 +4,10 @@
 > **Status:** Audit only — no files moved, no code changed
 > **Scope:** All `.md` files in the repository (excluding `.tmp-*` vaults and `e2e/` test artifacts)
 
+> ⚠️ **Deprecated as a documentation index.** [docs/INDEX.md](INDEX.md) is now the single canonical
+> documentation entry point. This file is not deleted or archived — it is retained unchanged below
+> for historical/audit reference.
+
 ---
 
 ## SECTION 1 — Files Audited
