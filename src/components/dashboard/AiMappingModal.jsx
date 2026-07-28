@@ -277,7 +277,7 @@ const UNIVERSAL_TAB_DISPLAY_KEY = {
   'specialized':     'specialized',
 };
 
-function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData, userConfirmedSubCategory, confirmedAt }) {
+export function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTabsConfigKey, gemRec, marketBriefData, userConfirmedSubCategory, confirmedAt }) {
   const a  = v.analysis || {};
   const transcriptSegs  = Array.isArray(v.transcriptSegments) ? v.transcriptSegments : [];
   const transcriptText  = typeof v.transcript === 'string' ? v.transcript : '';
@@ -300,28 +300,56 @@ function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTa
       ? finalChaps
       : extractVideoTabItems(v, tabValue, marketBriefData).length;
 
+    // sourceItemCount: how much raw source data exists for this tab,
+    // regardless of whether extractVideoTabItems successfully rendered it.
+    // Used only to distinguish a genuine mapping failure (source data exists
+    // but items === 0) from content that simply hasn't been generated yet
+    // (no source data anywhere). Does not affect extraction/rendering.
     const sources = [];
+    let sourceItemCount = 0;
+    const addSource = (label, arr) => {
+      const len = Array.isArray(arr) ? arr.length : (arr ? 1 : 0);
+      if (len > 0) { sources.push(label); sourceItemCount += len; }
+    };
     if (tabValue === 'summary') {
-      if (v.shortSummary) sources.push('video.shortSummary');
-      if (v.fullSummary)  sources.push('video.fullSummary');
-      if (v.gemSummary)   sources.push('video.gemSummary');
+      addSource('video.shortSummary', v.shortSummary ? [v.shortSummary] : []);
+      addSource('video.fullSummary', v.fullSummary ? [v.fullSummary] : []);
+      addSource('video.gemSummary', v.gemSummary ? [v.gemSummary] : []);
+      addSource('marketBriefData.top5Insights', marketBriefData?.top5Insights);
     } else if (tabValue === 'chapters') {
-      if (youtubeChaps) sources.push('video.chapters (youtube)');
-      if (aiChaps)      sources.push('video.aiChapters');
-      if (analysisChaps)sources.push('analysis.chapters');
+      addSource('video.chapters (youtube)', youtubeChaps > 0 ? new Array(youtubeChaps).fill(1) : []);
+      addSource('video.aiChapters', v.aiChapters);
+      addSource('analysis.chapters', a.chapters);
+      addSource('marketBriefData.chapters', marketBriefData?.chapters);
+      addSource('marketBriefData.rawData.chapters', marketBriefData?.rawData?.chapters);
     } else if (tabValue === 'insights') {
-      if (Array.isArray(v.keyInsights)         && v.keyInsights.length)          sources.push('video.keyInsights');
-      if (Array.isArray(v.brainHighlights)     && v.brainHighlights.length)      sources.push('video.brainHighlights');
-      if (Array.isArray(v.tradingPrinciples)   && v.tradingPrinciples.length)    sources.push('video.tradingPrinciples');
-      if (Array.isArray(v.top5Insights)        && v.top5Insights.length)         sources.push('video.top5Insights');
-      if (v.mainLesson)                                                           sources.push('video.mainLesson');
+      addSource('video.keyInsights', v.keyInsights);
+      addSource('video.brainHighlights', v.brainHighlights);
+      addSource('video.tradingPrinciples', v.tradingPrinciples);
+      addSource('video.top5Insights', v.top5Insights);
+      addSource('video.mainLesson', v.mainLesson ? [v.mainLesson] : []);
+      addSource('marketBriefData.top5Insights', marketBriefData?.top5Insights);
+      addSource('marketBriefData.learningInsights', marketBriefData?.learningInsights);
     } else if (tabValue === 'useful-knowledge') {
-      if (Array.isArray(v.actionItems)         && v.actionItems.length)          sources.push('video.actionItems');
-      if (Array.isArray(v.usefulKnowledge)     && v.usefulKnowledge.length)      sources.push('video.usefulKnowledge');
-      if (Array.isArray(v.definitions)         && v.definitions.length)          sources.push('video.definitions');
-      if (Array.isArray(v.checklists)          && v.checklists.length)           sources.push('video.checklists');
+      addSource('video.actionItems', v.actionItems);
+      addSource('video.usefulKnowledge', v.usefulKnowledge);
+      addSource('video.definitions', v.definitions);
+      addSource('video.checklists', v.checklists);
+      addSource('marketBriefData.learningInsights', marketBriefData?.learningInsights);
+      addSource('marketBriefData.reusableKnowledge', marketBriefData?.reusableKnowledge);
+    } else if (tabValue === 'app-builder') {
+      addSource('analysis.appBuilding', Object.values(a.appBuilding || {}).flatMap(x => Array.isArray(x) ? x : []));
+      addSource('marketBriefData.appBuilding.dashboardIdeas', marketBriefData?.appBuilding?.dashboardIdeas);
+      addSource('marketBriefData.appBuilding.newIndicators', marketBriefData?.appBuilding?.newIndicators);
+    } else if (tabValue === 'topics-subtopics') {
+      addSource('video.tags', v.tags);
+      addSource('video.obsidianTopics', v.obsidianTopics);
+      addSource('marketBriefData.tags', marketBriefData?.tags);
+    } else if (tabValue === 'specialized') {
+      addSource('marketBriefData.universalTabs.specialized', marketBriefData?.universalTabs?.specialized ? [1] : []);
+      addSource('marketBriefData.rawData', marketBriefData?.rawData ? [1] : []);
     }
-    tabs[displayKey] = { items, sources };
+    tabs[displayKey] = { items, sources, sourceItemCount };
   }
 
   const warnings = [];
@@ -747,9 +775,34 @@ function parseGeminiErrorReason(fetchError, data) {
   return 'unknown';
 }
 
-function buildLocalDiagResult(report, { droppedFields }) {
+// Tabs whose emptiness has a known user-triggerable next step when no
+// source data exists yet (as opposed to a proven mapping failure).
+const TAB_NOT_GENERATED_MESSAGE = {
+  chapters: 'קיים תמלול — ניתן ליצור ממנו פרקים',
+  usefulKnowledge: 'הידע השימושי ייווצר לאחר ניתוח הסרטון',
+  appBuilder: 'רעיונות ל-APP Builder ייווצרו לאחר ניתוח הסרטון',
+};
+const TAB_ACTION = {
+  chapters: 'generateChapters',
+  usefulKnowledge: 'runAnalysis',
+  appBuilder: 'runAnalysis',
+};
+
+/**
+ * Classifies a diagnostic report into three buckets, per tab/warning:
+ *   - issues: a PROVEN mapping failure — source data exists (sourceItemCount > 0)
+ *     but the rendered tab has zero items. Only these may generate a fix prompt.
+ *   - actionsNeeded: no source data exists yet, because AI analysis or chapter
+ *     generation was never run (or, if analysis did run, it legitimately found
+ *     nothing for that section). Informational — not a code bug.
+ *   - working: unchanged from before.
+ * Does not change extraction, rendering, or the report shape produced by
+ * buildDiagnosticReport(); only reinterprets it.
+ */
+export function buildLocalDiagResult(report, { droppedFields }) {
   const working = [];
   const issues = [];
+  const actionsNeeded = [];
   const missingData = [];
   const unmappedData = [];
 
@@ -760,12 +813,74 @@ function buildLocalDiagResult(report, { droppedFields }) {
     if ((data.items ?? 0) > 0) working.push(`טאב ${key}: ${data.items} פריטים`);
   }
 
+  // ── Blanket warnings: classify each by whether it can possibly reflect a
+  // provable code bug, or is simply describing analysis/generation that
+  // hasn't happened yet (or a data-quality note with no code fix). ──
   for (const w of report.warnings) {
+    if (w === 'Missing AI analysis') {
+      actionsNeeded.push({ area: 'analysis', message: 'טרם בוצע ניתוח AI', action: report.transcript.exists ? 'runAnalysis' : null });
+      continue;
+    }
+    if (w === 'No chapters') {
+      // Handled together with the per-tab chapters check below so it isn't
+      // reported twice; skip here.
+      continue;
+    }
+    if (w === 'No specialized content') {
+      const specializedSourceExists = (report.tabs?.specialized?.sourceItemCount ?? 0) > 0;
+      if (specializedSourceExists) {
+        issues.push({
+          area: 'tab:specialized', problem: 'תוכן ייעודי קיים במקור אך לא מוצג',
+          evidence: `sourceItemCount=${report.tabs.specialized.sourceItemCount}, items=0`,
+          severity: 'high', recommendedFix: 'בדוק מיפוי שדות לתוכן ייעודי', provenMappingFailure: true,
+        });
+      } else {
+        actionsNeeded.push({
+          area: 'specialized',
+          message: report.analysis.exists ? 'הניתוח הושלם אך לא נמצא תוכן ייעודי לסרטון זה' : 'תוכן ייעודי ייווצר לאחר ניתוח הסרטון',
+          action: report.analysis.exists ? null : (report.transcript.exists ? 'runAnalysis' : null),
+        });
+      }
+      continue;
+    }
+    if (w === 'No subCategory — falling back to keyword detection') {
+      actionsNeeded.push({ area: 'classification', message: 'לא הוגדרה תת-קטגוריה — הסיווג מבוסס מילות מפתח (עובד, לא תקול)', action: null });
+      continue;
+    }
+    if (w === 'Missing category') {
+      actionsNeeded.push({ area: 'classification', message: 'לא הוגדרה קטגוריה לסרטון', action: null });
+      continue;
+    }
+    if (w === 'Missing transcript') {
+      actionsNeeded.push({ area: 'transcript', message: 'אין עדיין תמלול לסרטון זה', action: null });
+      continue;
+    }
+    // Unrecognized/future warning: keep the previous conservative behavior
+    // rather than silently hiding a signal we don't have a rule for yet.
     issues.push({ area: 'warnings', problem: w, severity: 'high', recommendedFix: null });
   }
+
+  // ── Per-tab empty checks: only a proven mapping failure when source data
+  // exists but rendering produced zero items. ──
   for (const [key, data] of Object.entries(report.tabs || {})) {
-    if ((data.items ?? 0) === 0) {
-      issues.push({ area: `tab:${key}`, problem: `טאב "${key}" ריק`, evidence: 'items=0', severity: 'medium', recommendedFix: `בדוק מיפוי שדות ל-${key}` });
+    if ((data.items ?? 0) !== 0) continue;
+    const sourceItemCount = data.sourceItemCount ?? 0;
+    if (sourceItemCount > 0) {
+      issues.push({
+        area: `tab:${key}`, problem: `טאב "${key}" ריק למרות שקיים מידע מקור`,
+        evidence: `sourceItemCount=${sourceItemCount}, items=0`,
+        severity: 'high', recommendedFix: `בדוק מיפוי שדות ל-${key}`, provenMappingFailure: true,
+      });
+    } else if (key === 'chapters' && !report.transcript.exists) {
+      actionsNeeded.push({ area: key, message: 'אין עדיין תמלול ליצירת פרקים', action: null });
+    } else if (report.analysis.exists) {
+      actionsNeeded.push({ area: key, message: `הניתוח הושלם אך לא נמצא תוכן עבור ${key}`, action: null });
+    } else {
+      actionsNeeded.push({
+        area: key,
+        message: TAB_NOT_GENERATED_MESSAGE[key] || `הטאב "${key}" ייווצר לאחר ניתוח הסרטון`,
+        action: report.transcript.exists ? (TAB_ACTION[key] || null) : null,
+      });
     }
   }
 
@@ -773,11 +888,12 @@ function buildLocalDiagResult(report, { droppedFields }) {
   if (!report.analysis.exists) missingData.push('analysis');
   for (const f of (droppedFields || [])) unmappedData.push(`${f.field} (${f.count} items)`);
 
-  const emptyTabs = Object.entries(report.tabs || {}).filter(([, d]) => (d.items ?? 0) === 0).map(([k]) => k);
+  const provenIssues = issues.filter(i => i.provenMappingFailure);
+  const hasProvenMappingFailure = provenIssues.length > 0;
 
-  const fixPromptForClaudeCode = [
+  const fixPromptForClaudeCode = hasProvenMappingFailure ? [
     `Problem:`,
-    `Universal tabs are empty after video load or GEM paste.`,
+    `Universal tabs have source data that failed to render (proven mapping failure).`,
     ``,
     `Evidence:`,
     `- Video: ${report.video.title || report.video.id}`,
@@ -786,7 +902,7 @@ function buildLocalDiagResult(report, { droppedFields }) {
     `- analysisFlow: ${report.video.analysisFlow}`,
     `- Analysis exists: ${report.analysis.exists}`,
     `- Transcript: ${report.transcript.exists ? `${report.transcript.length} chars` : 'MISSING'}`,
-    `- Empty tabs: ${emptyTabs.length > 0 ? emptyTabs.join(', ') : 'none'}`,
+    `- Proven mapping failures: ${provenIssues.map(i => `${i.area} (${i.evidence})`).join('; ')}`,
     `- Warnings: ${report.warnings.length > 0 ? report.warnings.join('; ') : 'none'}`,
     droppedFields?.length > 0 ? `- Unmapped fields: ${droppedFields.map(f => f.field).join(', ')}` : '',
     ``,
@@ -795,17 +911,17 @@ function buildLocalDiagResult(report, { droppedFields }) {
     `- src/config/videoTabsConfig.js`,
     ``,
     `Recommended fix:`,
-    `1. Ensure effectiveVideo useMemo includes marketBriefData in deps`,
-    `2. Ensure extractVideoTabItems reads from marketBriefData for empty tabs`,
-    `3. Reset activeTab to 'summary' when normalizedSubCategory changes`,
+    `1. Trace why the source field(s) above aren't reaching extractVideoTabItems's output for the affected tab(s).`,
+    `2. Add the smallest additive fallback, preserving existing field precedence.`,
     ``,
     `Acceptance criteria:`,
-    `- All 7 universal tabs show items when analysis/GEM data exists`,
-    `- Tab content updates immediately after GEM paste`,
+    `- The tab(s) listed above show items when their proven source data exists.`,
     `- Build passes with EXIT=0`,
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n') : null;
 
-  return { working, issues, missingData, unmappedData, fixPromptForClaudeCode };
+  const noMappingFailureMessage = hasProvenMappingFailure ? null : 'לא נמצאה תקלה במיפוי שדורשת שינוי קוד';
+
+  return { working, issues, actionsNeeded, missingData, unmappedData, fixPromptForClaudeCode, noMappingFailureMessage, hasProvenMappingFailure };
 }
 
 /**
@@ -840,6 +956,8 @@ export function AiMappingModal({
   hasTranscript = false,
   confirmedAt = null,
   onSaveVideoFields,
+  onRunAnalysis,
+  onGenerateChapters,
 }) {
   const v  = video || {};
   const a  = v.analysis || {};
@@ -1179,6 +1297,16 @@ export function AiMappingModal({
       .catch(() => toast.error('שגיאה בהעתקה'));
   }, [aiDiagResult]);
 
+  const handleDiagnosticAction = useCallback((action) => {
+    if (action === 'runAnalysis' && typeof onRunAnalysis === 'function') {
+      onOpenChange(false);
+      onRunAnalysis();
+    } else if (action === 'generateChapters' && typeof onGenerateChapters === 'function') {
+      onOpenChange(false);
+      onGenerateChapters();
+    }
+  }, [onRunAnalysis, onGenerateChapters, onOpenChange]);
+
   const handleDownloadAiReport = useCallback(() => {
     if (!aiDiagResult) return;
     const blob = new Blob([JSON.stringify(aiDiagResult, null, 2)], { type: 'application/json' });
@@ -1319,6 +1447,9 @@ export function AiMappingModal({
                     <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
                       המערכת עברה אוטומטית ל-Local Diagnostic Mode.
                     </p>
+                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                      Local Diagnostic Mode אינו יכול להוכיח באופן עצמאי תקלת מיפוי קוד — הוא רק מזהה טאבים ריקים ומסמן פעולות נדרשות. פרומפט תיקון קוד יוצע רק אם נמצאה תקלה מוכחת (מידע מקור קיים אך לא מוצג).
+                    </p>
                   </div>
                 )}
                 {!isRunningAiDiag && aiDiagResult && (
@@ -1384,6 +1515,31 @@ export function AiMappingModal({
                       </section>
                     )}
 
+                    {Array.isArray(aiDiagResult.actionsNeeded) && aiDiagResult.actionsNeeded.length > 0 && (
+                      <section>
+                        <SectionHeader>🟡 פעולות נדרשות ({aiDiagResult.actionsNeeded.length})</SectionHeader>
+                        <div className="space-y-2">
+                          {aiDiagResult.actionsNeeded.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/40 dark:bg-sky-950/20">
+                              <div>
+                                <span className="font-mono text-xs text-slate-500 dark:text-zinc-500">{item.area}</span>
+                                <p className="text-sm font-medium text-sky-800 dark:text-sky-300">{item.message}</p>
+                              </div>
+                              {item.action && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDiagnosticAction(item.action)}
+                                  className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 transition-colors"
+                                >
+                                  {item.action === 'generateChapters' ? '📑 צור פרקים מהתמלול' : '🚀 נתח את הסרטון'}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
                       {Array.isArray(aiDiagResult.missingData) && aiDiagResult.missingData.length > 0 && (
                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
@@ -1420,7 +1576,7 @@ export function AiMappingModal({
                       </section>
                     )}
 
-                    {aiDiagResult.fixPromptForClaudeCode && (
+                    {aiDiagResult.fixPromptForClaudeCode ? (
                       <section>
                         <div className="flex items-center justify-between mb-2">
                           <SectionHeader>🤖 פרומפט לתיקון — Claude Code</SectionHeader>
@@ -1434,6 +1590,10 @@ export function AiMappingModal({
                           {aiDiagResult.fixPromptForClaudeCode}
                         </pre>
                       </section>
+                    ) : aiDiagResult.noMappingFailureMessage && (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                        <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">✅ {aiDiagResult.noMappingFailureMessage}</p>
+                      </div>
                     )}
                   </>
                 )}
