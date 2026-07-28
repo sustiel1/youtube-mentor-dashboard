@@ -12101,6 +12101,8 @@ export function VideoDetailPanel({
         hasTranscript={!!(video?.transcript || '').trim()}
         confirmedAt={video?.confirmedAt ?? null}
         onSaveVideoFields={saveVideoFields}
+        onRunAnalysis={() => { setActiveTab("ai-analysis"); handleGeminiContent(); }}
+        onGenerateChapters={handleGenerateTranscriptChapters}
       />
     )}
 
