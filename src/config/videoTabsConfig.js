@@ -1143,6 +1143,22 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
           return rdAppItems;
         }
       }
+      // Direct marketBriefData.appBuilding fallback — the current GEM schema
+      // stores dashboardIdeas/newIndicators here with no rawData/universalTabs
+      // wrapper. This is the same explicit source AppBuilderTab already renders
+      // via discoverFeaturesFromMacro(), so the tab badge (which counts this
+      // array) matches what the tab actually shows.
+      const mbdAb = marketBriefData?.appBuilding;
+      if (mbdAb && typeof mbdAb === 'object') {
+        const mbdAppItems = [
+          ...pickArray(mbdAb, 'dashboardIdeas'),
+          ...pickArray(mbdAb, 'newIndicators'),
+        ];
+        if (mbdAppItems.length > 0) {
+          if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: marketBriefData.appBuilding | itemsCount:', mbdAppItems.length);
+          return mbdAppItems;
+        }
+      }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: app-builder | sourcePath: legacy | exists:', !!marketBriefData);
       const ab = a.appBuilding || {};
       return [
