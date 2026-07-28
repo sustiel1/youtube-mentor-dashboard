@@ -87,6 +87,36 @@ const legacySchemaMarketBriefData = {
   marketOverview: { generalMood: 'neutral', summary: 'בדיקת legacy' },
 };
 
+// ── APP Builder badge/content parity fixtures ──────────────────────────
+// A video with no marketBriefData at all, only the oldest legacy shape
+// (video.analysis.appBuilding.kpiList) — must resolve exactly as before
+// this fix, since marketBriefData?.appBuilding is falsy and the new
+// fallback tier never fires.
+const legacyAppBuilderVideo = {
+  id: 'marketbrief-fields-e2e-legacy-appbuilder',
+  analysis: { appBuilding: { kpiList: ['Legacy KPI Item 1', 'Legacy KPI Item 2'] } },
+};
+const LEGACY_APP_BUILDER_EXPECTED_COUNT = 2;
+
+// A payload where a higher-priority tier (universalTabs.app) AND the new
+// marketBriefData.appBuilding tier both have data — the higher-priority
+// tier must win outright (2 items), never merged/summed with the lower
+// tier's 3 items (which would wrongly total 5).
+const dedupPrecedenceMarketBriefData = {
+  contentType: 'market',
+  universalTabs: {
+    app: { newIndicators: ['UT Indicator A', 'UT Indicator B'] },
+  },
+  appBuilding: {
+    dashboardIdeas: [
+      { idea: 'Should not be counted 1' },
+      { idea: 'Should not be counted 2' },
+      { idea: 'Should not be counted 3' },
+    ],
+  },
+};
+const DEDUP_PRECEDENCE_EXPECTED_COUNT = 2;
+
 function buildVideo(id, marketBriefData, title) {
   return {
     id,
@@ -150,6 +180,23 @@ async function bodyContains(page, text) {
   return (await page.getByText(text).count()) > 0;
 }
 
+/**
+ * Evaluates getTabBadge()/extractVideoTabItems() for the 'app-builder' tab
+ * directly inside the already-loaded page, via a dynamic import of the real
+ * source module served by the Vite dev server. This runs the actual code
+ * (including import.meta.env.DEV) with no shim/loader needed — the page is
+ * already a genuine Vite-served module graph.
+ */
+async function evalAppBuilderCounts(page, video, marketBriefData) {
+  return page.evaluate(async ({ video, marketBriefData }) => {
+    const mod = await import('/src/config/videoTabsConfig.js');
+    return {
+      badge: mod.getTabBadge(video, 'app-builder', marketBriefData),
+      items: mod.extractVideoTabItems(video, 'app-builder', marketBriefData).length,
+    };
+  }, { video, marketBriefData });
+}
+
 async function main() {
   const results = [];
   const browser = await chromium.launch({ headless: true });
@@ -188,6 +235,27 @@ async function main() {
   const legacyWronglyPrefixed = await bodyContains(page, `${LEGACY_SUBJECT_THAT_MUST_NOT_PREFIX}:`);
   record(results, '6-legacy-text-field-unchanged', legacyRendersOwnText, `looked for "${LEGACY_INSIGHT_TEXT}"`);
   record(results, '7-legacy-not-wrongly-prefixed', !legacyWronglyPrefixed, `checked absence of "${LEGACY_SUBJECT_THAT_MUST_NOT_PREFIX}:" — found=${legacyWronglyPrefixed}`);
+
+  // ── APP Builder badge/content parity (getTabBadge vs rendered content) ──
+  const newSchemaCounts = await evalAppBuilderCounts(page, newVideo, newSchemaMarketBriefData);
+  record(results, '8-app-builder-badge-nonzero', newSchemaCounts.badge > 0, `badge=${newSchemaCounts.badge}`);
+  record(results, '9-app-builder-badge-matches-fixture-count', newSchemaCounts.badge === 1 && newSchemaCounts.items === 1, `badge=${newSchemaCounts.badge}, items=${newSchemaCounts.items}, expected=1 (1 dashboardIdeas + 0 newIndicators)`);
+
+  const legacyCounts = await evalAppBuilderCounts(page, legacyAppBuilderVideo, null);
+  record(
+    results,
+    '10-app-builder-legacy-badge-unchanged',
+    legacyCounts.badge === LEGACY_APP_BUILDER_EXPECTED_COUNT && legacyCounts.items === LEGACY_APP_BUILDER_EXPECTED_COUNT,
+    `badge=${legacyCounts.badge}, items=${legacyCounts.items}, expected=${LEGACY_APP_BUILDER_EXPECTED_COUNT} (video.analysis.appBuilding.kpiList, no marketBriefData — new fallback tier must not fire)`,
+  );
+
+  const dedupCounts = await evalAppBuilderCounts(page, { id: 'dedup-precedence-probe' }, dedupPrecedenceMarketBriefData);
+  record(
+    results,
+    '11-app-builder-no-double-count-across-tiers',
+    dedupCounts.badge === DEDUP_PRECEDENCE_EXPECTED_COUNT && dedupCounts.items === DEDUP_PRECEDENCE_EXPECTED_COUNT,
+    `badge=${dedupCounts.badge}, items=${dedupCounts.items}, expected=${DEDUP_PRECEDENCE_EXPECTED_COUNT} (universalTabs.app must win over appBuilding, not be summed with it: 2, not 2+3=5)`,
+  );
 
   await browser.close();
 
