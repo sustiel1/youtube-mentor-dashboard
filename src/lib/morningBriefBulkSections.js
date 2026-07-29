@@ -21,6 +21,8 @@ import {
   extractSectorRows,
   extractSentimentItems,
   extractUnifiedStocks,
+  extractWatchlistLevelRows,
+  extractKeyLevelRows,
   getSpecializedSrc,
   isRegimeDuplicateString,
   macroRowRichness,
@@ -68,11 +70,19 @@ function formatOpportunityText(idea) {
   const title = ticker ? `${ticker} · ${titleText}` : titleText;
   const detail = String(idea.detail || '').trim();
   const description = detail && detail !== titleText ? detail : '';
-  return [title, description].filter(Boolean).join(' — ');
+  const tradePlan = [
+    idea.entry && `כניסה: ${idea.entry}`,
+    idea.stop && `סטופ: ${idea.stop}`,
+    idea.target && `יעד: ${idea.target}`,
+    idea.rrRatio && `יחס סיכון/סיכוי: ${idea.rrRatio}`,
+    idea.timeframe && `טווח: ${idea.timeframe}`,
+    idea.confidence && `ביטחון: ${idea.confidence}`,
+  ].filter(Boolean);
+  return [title, description, ...tradePlan].filter(Boolean).join(' · ');
 }
 
 function formatMarketRowText(row) {
-  return [row.asset, row.trend, row.strength, row.comment].filter(Boolean).join(' · ');
+  return [row.asset, row.trend, row.strength, row.level, row.comment].filter(Boolean).join(' · ');
 }
 
 function formatMacroRowText(row) {
@@ -82,15 +92,77 @@ function formatMacroRowText(row) {
 }
 
 function formatSectorRowText(row) {
-  return [row.sector, row.direction, row.relativeStrength].filter(Boolean).join(' · ');
+  return [
+    row.sector,
+    row.direction && `זרימת כספים: ${row.direction}`,
+    row.relativeStrength,
+    row.reason,
+    row.etf && `ETF: ${row.etf}`,
+    row.stocks?.length && `מניות: ${row.stocks.join(', ')}`,
+  ].filter(Boolean).join(' · ');
 }
 
 function formatCalendarRowText(row) {
-  return [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
+  return [
+    row.event,
+    row.date,
+    row.importance,
+    row.impact && `השפעה: ${row.impact}`,
+    row.timeframe && `תזמון: ${row.timeframe}`,
+    row.affectedStocks?.length && `מושפעות: ${row.affectedStocks.join(', ')}`,
+  ].filter(Boolean).join(' · ');
 }
 
 function formatStockRowText(stock) {
-  return [stock.ticker, stock.company, stock.context, stock.sentiment].filter(Boolean).join(' · ');
+  return [
+    stock.ticker,
+    stock.company,
+    stock.context,
+    stock.sentiment,
+    stock.changePercent,
+    stock.actionability && `פעולה: ${stock.actionability}`,
+    stock.notes,
+    stock.timeframe && `טווח: ${stock.timeframe}`,
+    stock.priority && `עדיפות: ${stock.priority}`,
+    stock.isNewToWatch != null && `חדש למעקב: ${stock.isNewToWatch ? 'כן' : 'לא'}`,
+  ].filter(Boolean).join(' · ');
+}
+
+function formatLevelRowText(row) {
+  return [
+    row.symbol,
+    row.level,
+    row.type,
+    row.note,
+    row.condition && `תנאי: ${row.condition}`,
+    row.importance && `חשיבות: ${row.importance}`,
+    row.action && `פעולה: ${row.action}`,
+  ].filter(Boolean).join(' · ');
+}
+
+function formatStructuredFact(item) {
+  if (typeof item === 'string') return item.trim();
+  if (!item || typeof item !== 'object') return '';
+  const preferred = [
+    item.rank != null && `#${item.rank}`,
+    item.ticker || item.asset || item.insight || item.point || item.title,
+    item.level,
+    item.note || item.reason || item.whyImportant,
+    item.action && `פעולה: ${item.action}`,
+    item.significance && `חשיבות: ${item.significance}`,
+    item.category && `קטגוריה: ${item.category}`,
+    item.applicableToApp != null && `יישומי לאפליקציה: ${item.applicableToApp ? 'כן' : 'לא'}`,
+  ].filter(Boolean);
+  return preferred.join(' · ');
+}
+
+function uniqueTexts(items) {
+  const seen = new Set();
+  return items.map(formatStructuredFact).filter((text) => {
+    if (!text || seen.has(text)) return false;
+    seen.add(text);
+    return true;
+  });
 }
 
 function stripInternalFieldLabels(text) {
@@ -227,6 +299,29 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
     .filter(Boolean);
   if (marketItems.length) {
     sections.push({ key: 'markets', label: '📈 שווקים', items: marketItems, tabKey: 'indices' });
+  }
+
+  const levelItems = [
+    ...extractWatchlistLevelRows(src),
+    ...extractKeyLevelRows(src),
+  ].map(formatLevelRowText).filter(Boolean);
+  if (levelItems.length) {
+    sections.push({ key: 'levels', label: '🎚️ רמות מפתח', items: levelItems, tabKey: 'key-levels' });
+  }
+
+  const insightItems = uniqueTexts(Array.isArray(src?.top5Insights) ? src.top5Insights : []);
+  if (insightItems.length) {
+    sections.push({ key: 'top-insights', label: '💡 תובנות מובילות', items: insightItems, tabKey: 'brief-conclusions' });
+  }
+
+  const learningItems = uniqueTexts(Array.isArray(src?.learningInsights) ? src.learningInsights : []);
+  if (learningItems.length) {
+    sections.push({ key: 'learning-insights', label: '🧠 לקחים', items: learningItems, tabKey: 'brief-conclusions' });
+  }
+
+  const allPointItems = uniqueTexts(Array.isArray(src?.allPoints) ? src.allPoints : []);
+  if (allPointItems.length) {
+    sections.push({ key: 'all-points', label: '📌 נקודות נוספות', items: allPointItems, tabKey: 'brief-conclusions' });
   }
 
   return sections;
