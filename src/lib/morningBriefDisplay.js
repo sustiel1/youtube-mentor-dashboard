@@ -393,7 +393,18 @@ function normalizeOpportunity(item) {
     return { title: translateMarketTextInline(fallback).trim(), detail: '', kind: 'setup', ticker: '' };
   }
 
-  return { title: title || detail, detail: title && detail && title !== detail ? detail : '', kind, ticker };
+  return {
+    title: title || detail,
+    detail: title && detail && title !== detail ? detail : '',
+    kind,
+    ticker,
+    entry: pickString(item, 'entry'),
+    stop: pickString(item, 'stop', 'stopLoss'),
+    target: pickString(item, 'target'),
+    rrRatio: pickString(item, 'rrRatio', 'riskReward'),
+    timeframe: pickString(item, 'timeframe'),
+    confidence: pickString(item, 'confidence'),
+  };
 }
 
 function humanizeMarketToken(val) {
@@ -438,6 +449,7 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
     raw, 'strength', 'momentum', 'relativeStrength', 'mediumTermTrend', 'rs', 'power'
   );
   const changeRaw = pickString(raw, 'change', 'pct', 'changePercent');
+  const level = pickString(raw, 'level', 'price', 'value');
   const condition = pickString(raw, 'condition', 'state', 'status');
   const note = pickString(raw, 'note', 'comment', 'description', 'insight', 'context');
 
@@ -449,22 +461,13 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
     trend = condition;
   }
 
-  let strength = humanizeMarketToken(strengthRaw) || changeRaw;
-  if (!strength && raw.level && !note) {
-    const lvl = String(raw.level || raw.price || raw.value || '').trim();
-    if (lvl && !/^\d/.test(lvl)) strength = lvl;
-  }
+  const strength = humanizeMarketToken(strengthRaw) || changeRaw;
 
   let comment = note;
   if (!comment && condition && condition !== trend) comment = condition;
-  if (!comment && raw.level) {
-    const lvl = String(raw.level || raw.price || raw.value || '').trim();
-    if (lvl && /below|above|support|resistance|ma|average|trendline/i.test(lvl)) comment = lvl;
-    else if (lvl && !strength) comment = lvl;
-  }
 
-  if (!asset && !trend && !strength && !comment) return null;
-  return { asset: asset || '—', trend, strength, comment };
+  if (!asset) return null;
+  return { asset, trend, strength, level, comment };
 }
 
 /** Markets dashboard rows from indices + marketOverview tickers. */
@@ -788,7 +791,17 @@ function normalizeCalendarRow(item) {
   const type = pickString(item, 'type', 'category') || detectEventType(event);
 
   if (!event && !date) return null;
-  return { event: event || date, date, importance, type, impact };
+  return {
+    event: event || date,
+    date,
+    importance,
+    type,
+    impact,
+    timeframe: pickString(item, 'timeframe', 'when'),
+    affectedStocks: Array.isArray(item.affectedStocks)
+      ? item.affectedStocks.map(safeCoerceString).filter(Boolean)
+      : [],
+  };
 }
 
 export function extractCalendarRows(src) {
@@ -998,9 +1011,12 @@ function normalizeLevelRow(item, defaultLabel = '') {
   const level = pickString(item, 'level', 'price', 'target', 'value');
   const type = pickString(item, 'type', 'kind', 'category');
   const note = pickString(item, 'description', 'note', 'comment', 'context');
+  const condition = pickString(item, 'condition');
+  const importance = pickString(item, 'importance', 'significance');
+  const action = pickString(item, 'action');
 
   if (!symbol && !level && !note) return null;
-  return { symbol: symbol || '—', level, type, note };
+  return { symbol: symbol || '—', level, type, note, condition, importance, action };
 }
 
 export function extractWatchlistLevelRows(src) {
@@ -1032,9 +1048,25 @@ function normalizeSectorRow(item) {
   if (!sector) {
     const name = pickString(item, 'symbol', 'ticker');
     if (!name) return null;
-    return { sector: name, direction, relativeStrength, sentiment };
+    return {
+      sector: name,
+      direction,
+      relativeStrength,
+      sentiment,
+      reason: pickString(item, 'reason', 'note', 'description'),
+      stocks: Array.isArray(item.stocks) ? item.stocks.map(safeCoerceString).filter(Boolean) : [],
+      etf: pickString(item, 'etf'),
+    };
   }
-  return { sector, direction, relativeStrength, sentiment };
+  return {
+    sector,
+    direction,
+    relativeStrength,
+    sentiment,
+    reason: pickString(item, 'reason', 'note', 'description'),
+    stocks: Array.isArray(item.stocks) ? item.stocks.map(safeCoerceString).filter(Boolean) : [],
+    etf: pickString(item, 'etf'),
+  };
 }
 
 export function extractSectorRows(src) {
@@ -1172,9 +1204,12 @@ function stockRecordFromObject(item, category = 'general') {
     actionability: humanizeActionability(category, item),
     notes: mergeContext(
       pickString(item, 'catalyst', 'trigger', 'event', 'technicalState'),
-      pickString(item, 'level', 'price', 'target', 'entry')
+      pickString(item, 'level', 'price', 'priceLevel', 'target', 'entry')
     ),
-    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange'),
+    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange', 'change'),
+    timeframe: pickString(item, 'timeframe'),
+    priority: pickString(item, 'priority', 'importance'),
+    isNewToWatch: typeof item.isNewToWatch === 'boolean' ? item.isNewToWatch : null,
   };
 }
 
@@ -1199,6 +1234,9 @@ function upsertStock(map, record) {
     actionability: humanizeActionability(category, { importance: prev.actionability || record.actionability }),
     notes: mergeContext(prev.notes, record.notes),
     changePercent: prev.changePercent || record.changePercent,
+    timeframe: prev.timeframe || record.timeframe,
+    priority: prev.priority || record.priority,
+    isNewToWatch: prev.isNewToWatch ?? record.isNewToWatch,
   });
 }
 

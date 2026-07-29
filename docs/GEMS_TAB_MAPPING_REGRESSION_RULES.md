@@ -134,6 +134,21 @@ All three are supported. `resolveSpecialized` and rawData fallbacks cover the th
 - Do NOT remove the Morning Brief title override rules (commit cf8c3cf)
 - Do NOT change `universalTabs` priority over rawData in `resolveSpecialized`
 
+## Specialized Coverage and Export Contract
+
+- `buildMorningBriefBulkSections` is the shared source of truth for visible Specialized rows and selected-item export.
+- No fixed item-count limit is applied; payloads with more than 30 meaningful rows remain available.
+- Enum/status values must include their semantic label and must not render as standalone `mixed`, `out`, or `into`.
+- Market rows require a real asset label; partial objects must never render as `— · status`.
+- Preserve meaningful `0` and `false` values.
+- Preserve valid scalar market levels and enrich their existing parent rows; never create a second row for the same source asset.
+- Preserve known contextual level fields such as condition, importance, and action on the existing level row.
+- Do not indiscriminately expose unknown raw properties, nested objects, or arrays; every displayed field requires a known semantic contract.
+- Levels, top insights, learning insights, and `allPoints` are explicit Specialized sections when present.
+- Deduplicate only identical source facts within a section; do not collapse distinct facts solely because their wording is similar.
+
+Regression script: `scripts/test-specialized-content-coverage.mjs`
+
 ---
 
 ## Regression Test: "מבזק לייב פתיחה לתאריך 18.6.26"

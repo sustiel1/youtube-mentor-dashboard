@@ -838,7 +838,7 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         return filterDiagnosticItems([
           ...(newsUnion.length > 0 ? newsUnion.map(formatNewsItem) : pickArray(src, 'marketNews', 'headlines', 'news', 'topStories')),
           ...moText,
-          ...pickArray(src, 'catalysts', 'snapshot'),
+          ...pickArray(src, 'snapshot'),
         ]);
       }
       return [
@@ -852,8 +852,6 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       if (src) {
         return [
           ...pickArray(src, 'indices', 'indexPerformance', 'indexData'),
-          ...pickArray(src, 'keyLevels'),
-          ...pickArray(src, 'sectorRotation'),
         ];
       }
       return [
