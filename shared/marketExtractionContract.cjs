@@ -1,4 +1,9 @@
-const CONTRACT_VERSION = 1;
+const CONTRACT_VERSION = 2;
+const {
+  MARKET_BRIEF_RESPONSE_SCHEMA,
+  parseCoreMarketBriefResponse,
+  validateCoreMarketBriefPayload,
+} = require('./marketBriefStructuredCore.cjs');
 const DEFAULT_CHUNK_CHARS = 7000;
 const DEFAULT_OVERLAP_CHARS = 400;
 const DEFAULT_MAX_CHUNKS = 8;
@@ -220,36 +225,16 @@ function splitTranscript(transcript, {
   return chunks;
 }
 
-function stripJsonFence(raw) {
-  return String(raw || '').trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-}
-
-function parseStructuredMarketResponse(raw) {
-  const cleaned = stripJsonFence(raw);
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (cause) {
-    const error = new Error('Provider returned invalid market JSON');
-    error.code = 'INVALID_MARKET_JSON';
-    error.cause = cause;
-    error.raw = cleaned;
-    throw error;
-  }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    const error = new Error('Provider market response must be a JSON object');
-    error.code = 'INVALID_MARKET_SCHEMA';
-    throw error;
-  }
-  return normalizeMarketBriefPayload(parsed);
+function parseStructuredMarketResponse(raw, { normalize = true, allowEmpty = false } = {}) {
+  const parsed = parseCoreMarketBriefResponse(raw, { allowEmpty });
+  return normalize ? normalizeMarketBriefPayload(parsed) : parsed;
 }
 
 function buildMarketExtractionPrompt({ title = '', transcriptChunk = '', chunkIndex = 0, chunkCount = 1 }) {
   return [
     'Return one valid JSON object only. Do not use Markdown.',
+    'Use strict JSON serialization and escape internal ASCII double quotes.',
+    'Do not add commentary before or after the JSON object.',
     'Extract only market facts explicitly supported by this transcript chunk.',
     'Never invent symbols, prices, percentages, dates, targets, confidence, actions, or relationships.',
     'Preserve exact numeric values, units, numeric 0, and meaningful boolean false.',
@@ -330,7 +315,9 @@ async function runMarketExtraction({
   }
   const successes = [];
   const failedChunks = [];
+  const parseOutcomes = [];
   for (const chunk of chunks) {
+    let repairAttemptCount = 0;
     const prompt = buildMarketExtractionPrompt({
       title,
       transcriptChunk: chunk.text,
@@ -340,14 +327,31 @@ async function runMarketExtraction({
     try {
       const raw = await callProvider(prompt, chunk);
       try {
-        successes.push(parseStructuredMarketResponse(raw));
+        successes.push(parseStructuredMarketResponse(raw, { allowEmpty: true }));
+        parseOutcomes.push({ index: chunk.index, status: 'parsed-directly' });
       } catch (parseError) {
-        if (!repairProvider) throw parseError;
+        if (!repairProvider) {
+          parseError.repairEligibilityReason = 'No repair provider is connected to this extraction route.';
+          throw parseError;
+        }
+        repairAttemptCount = 1;
         const repaired = await repairProvider(parseError.raw, chunk);
-        successes.push(parseStructuredMarketResponse(repaired));
+        successes.push(parseStructuredMarketResponse(repaired, { allowEmpty: true }));
+        parseOutcomes.push({ index: chunk.index, status: 'repaired-once' });
       }
     } catch (error) {
-      failedChunks.push({ index: chunk.index, code: error?.code || 'CHUNK_FAILED' });
+      const failure = {
+        index: chunk.index,
+        code: error?.code || 'CHUNK_FAILED',
+        repairAttemptCount,
+        repairEligible: Boolean(repairProvider),
+        repairEligibilityReason: error?.repairEligibilityReason || (repairProvider
+          ? 'One bounded repair attempt ran but the repaired response was still invalid.'
+          : 'No repair provider is connected to this extraction route.'),
+        diagnostics: error?.diagnostics || null,
+      };
+      failedChunks.push(failure);
+      parseOutcomes.push({ ...failure, status: 'rejected' });
     }
   }
   if (!successes.length) {
@@ -360,6 +364,7 @@ async function runMarketExtraction({
   marketBriefData.extractionMeta.transcriptChars = String(transcript || '').trim().length;
   marketBriefData.extractionMeta.coveredChars = chunks[chunks.length - 1].end;
   marketBriefData.extractionMeta.truncated = chunks[chunks.length - 1].end < String(transcript || '').trim().length;
+  marketBriefData.extractionMeta.parseOutcomes = parseOutcomes;
   return {
     marketBriefData,
     quality: evaluateMarketCompleteness(marketBriefData),
@@ -368,11 +373,13 @@ async function runMarketExtraction({
 
 module.exports = {
   CONTRACT_VERSION,
+  MARKET_BRIEF_RESPONSE_SCHEMA,
   EMPTY_MARKET_BRIEF,
   normalizeMarketBriefPayload,
   aggregateMarketBriefChunks,
   splitTranscript,
   parseStructuredMarketResponse,
+  validateMarketBriefPayload: validateCoreMarketBriefPayload,
   buildMarketExtractionPrompt,
   evaluateMarketCompleteness,
   runMarketExtraction,

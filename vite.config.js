@@ -14,6 +14,9 @@ import {
   mergeItemsIntoObsidianNote,
   noteContainsItemMarker,
 } from './src/lib/obsidianNoteMerge.js'
+import marketExtractionContract from './shared/marketExtractionContract.cjs'
+
+const { MARKET_BRIEF_RESPONSE_SCHEMA, runMarketExtraction } = marketExtractionContract
 
 // ─── RSS Proxy Plugin ─────────────────────────────────────────────────────────
 // Route: GET /api/rss?channelId=UCxxxxxxxx
@@ -343,6 +346,7 @@ function makeGeminiVideoContentPlugin(env) {
         }
 
         const {
+          contentType = 'general',
           videoId,
           title = '',
           channelName = '',
@@ -364,6 +368,55 @@ function makeGeminiVideoContentPlugin(env) {
         try {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(apiKey);
+
+          if (contentType === 'market' || contentType === 'marketBrief') {
+            const marketTranscript = buildTxText(transcriptText, transcriptSegments);
+            if (!marketTranscript || marketTranscript.length < 300) {
+              res.writeHead(422, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: 'Market Brief analysis requires a transcript' }));
+              return;
+            }
+            const marketModel = genAI.getGenerativeModel({
+              model: 'gemini-2.0-flash',
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: MARKET_BRIEF_RESPONSE_SCHEMA,
+                temperature: 0.1,
+                maxOutputTokens: 8192,
+              },
+            });
+            const callMarketProvider = async (marketPrompt) => {
+              const result = await marketModel.generateContent(marketPrompt);
+              return result.response.text();
+            };
+            const repairMarketProvider = async (invalidJson) => callMarketProvider([
+              'Repair JSON syntax only and preserve every supported fact.',
+              'Do not add facts, change numbers, summarize, or translate.',
+              'Return one valid JSON object only.',
+              invalidJson,
+            ].join('\n'));
+            const extracted = await runMarketExtraction({
+              title,
+              transcript: marketTranscript,
+              callProvider: callMarketProvider,
+              repairProvider: repairMarketProvider,
+            });
+            if (extracted.marketBriefData?.extractionMeta?.partial) {
+              throw Object.assign(
+                new Error('Market Brief output was partial and was not accepted'),
+                { code: 'PARTIAL_MARKET_OUTPUT' },
+              );
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              ...extracted.marketBriefData,
+              marketBriefData: extracted.marketBriefData,
+              marketExtractionQuality: extracted.quality,
+              analysisSource: 'transcript',
+              analysisMode: 'structured-market',
+            }));
+            return;
+          }
           const prompt = buildGeminiAnalysisPrompt({ title, channelName, mentor, category, chaptersTarget, durationSeconds, userNotes, attachedDocumentsMetadata });
 
           let urlAnalysisResult = null;
@@ -439,7 +492,7 @@ function makeGeminiVideoContentPlugin(env) {
         } catch (err) {
           const status = err?.status ?? err?.statusCode ?? 500;
           const isQuotaZero = status === 429 && String(err?.message || '').includes('limit: 0');
-          const code = isQuotaZero ? 'QUOTA_ZERO' : status === 429 ? 'RATE_LIMIT' : status === 401 ? 'INVALID_KEY' : 'GEMINI_ERROR';
+          const code = err?.code || (isQuotaZero ? 'QUOTA_ZERO' : status === 429 ? 'RATE_LIMIT' : status === 401 ? 'INVALID_KEY' : 'GEMINI_ERROR');
           res.writeHead(status, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: code, message: err?.message }));
         }

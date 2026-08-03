@@ -48,7 +48,7 @@ assert.equal(complete.marketOverview.vix.level, 0, 'numeric zero must survive no
 assert.equal(complete.stocksMentioned[0].isNewToWatch, false, 'boolean false must survive normalization');
 assert.equal(complete.unknownProviderField, undefined, 'unknown provider fields must be ignored');
 assert.equal(parseStructuredMarketResponse(`\`\`\`json\n${JSON.stringify(complete)}\n\`\`\``).contentType, 'marketBrief');
-assert.throws(() => parseStructuredMarketResponse('{broken'), { code: 'INVALID_MARKET_JSON' });
+assert.throws(() => parseStructuredMarketResponse('{broken'), { code: 'TRUNCATED_MARKET_JSON' });
 
 const longTranscript = [
   'START_FACT VIX is explicitly 0. ',
@@ -91,6 +91,7 @@ const extracted = await runMarketExtraction({
 });
 
 assert.equal(repairCalls, 1, 'malformed JSON must receive one bounded repair');
+assert.ok(extracted.marketBriefData.extractionMeta.parseOutcomes.some(({ status }) => status === 'repaired-once'));
 assert.equal(extracted.marketBriefData.marketOverview.vix.level, 0);
 assert.equal(extracted.marketBriefData.stocksMentioned.length, 1, 'overlap must not duplicate a stock fact');
 assert.equal(extracted.marketBriefData.watchlistLevels[0].level, 0, 'end-only fact and zero must survive aggregation');
