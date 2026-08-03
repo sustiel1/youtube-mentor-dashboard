@@ -127,6 +127,7 @@ import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabCont
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
+import { resolveMarketBriefSlug } from "@/lib/marketBriefSession";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
@@ -2518,13 +2519,12 @@ export function VideoDetailPanel({
 
   /** Brief render slug: confirmed subcategory → GEM contentType → title-detected videoType. */
   const effectiveBriefSlug = useMemo(() => {
-    if (normalizedSubCategory) return normalizedSubCategory;
-    if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
-    // Title-based fallback: "מבזק לייב פתיחה לתאריך" detected via MORNING_BRIEF_KEYWORDS
-    if (videoType === 'morningBrief') return 'morning-brief';
-    if (videoType === 'eveningBrief') return 'evening-brief';
-    return null;
-  }, [normalizedSubCategory, marketBriefData?.contentType, videoType]);
+    return resolveMarketBriefSlug({
+      video: effectiveVideo,
+      marketBriefData,
+      normalizedSubCategory,
+    });
+  }, [effectiveVideo, normalizedSubCategory, marketBriefData]);
 
   const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
     if (!marketBriefData) return;
@@ -12040,6 +12040,10 @@ export function VideoDetailPanel({
       recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
       tjsRecommendation={tjsRec}
+      videoType={videoType}
+      tabsKey={selectedTabsConfigKey}
+      contentType={marketBriefData?.contentType || effectiveVideo?.contentType || null}
+      marketBriefMetadata={marketBriefData}
       fullTranscriptText={fullTranscriptText}
       onSave={async (key) => {
         setGemOverride(key);

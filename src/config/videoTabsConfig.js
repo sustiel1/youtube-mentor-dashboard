@@ -1,4 +1,5 @@
 import { getSpecializedSrc } from '@/lib/morningBriefDisplay';
+import { getMarketBriefSessionDisplay, resolveMarketBriefSession } from '@/lib/marketBriefSession';
 
 /**
  * Dynamic tab configuration per video type.
@@ -85,8 +86,10 @@ export function detectVideoType(video) {
 
   if (ct === 'political' || category.includes('פוליטיק')) return 'political';
 
-  if (matchesAny(title, MORNING_BRIEF_KEYWORDS) || ct === 'marketbrief') return 'morningBrief';
-  if (matchesAny(title, EVENING_BRIEF_KEYWORDS)) return 'eveningBrief';
+  const briefSession = resolveMarketBriefSession(video);
+  const detectedBriefType = getMarketBriefSessionDisplay(briefSession.session).videoType;
+  if (detectedBriefType) return detectedBriefType;
+  if (ct === 'marketbrief') return 'morningBrief';
 
   const isMarketCat     = category.includes('שוק') || category === 'markets' || category.includes('מסחר');
   const isTechnicalType = ct === 'technical' || ct === 'market' || subCat.includes('טכני') || subCat.includes('technical');

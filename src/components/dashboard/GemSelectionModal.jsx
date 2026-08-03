@@ -7,6 +7,13 @@ import { getGemUrl, isGeminiGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } fr
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { cn } from "@/lib/utils";
 import { loadTopics } from "@/services/topicStorage";
+import {
+  MARKET_BRIEF_GEM,
+  buildMarketBriefGemPayload,
+  resolveGemLaunchUrl,
+  resolveMarketBriefLaunchContext,
+} from "@/lib/marketBriefGemLauncher";
+import { getMarketBriefSessionDisplay } from "@/lib/marketBriefSession";
 
 // ── Fixed GEM definitions ─────────────────────────────────────────────────────
 
@@ -102,6 +109,10 @@ export function GemSelectionModal({
   onGemOpened = null,
   onGemSummaryPaste = null,
   tjsRecommendation = null,
+  videoType = null,
+  tabsKey = null,
+  contentType = null,
+  marketBriefMetadata = null,
 }) {
   const [selected, setSelected]                 = useState(savedGemKey || recommendedGemKey || "general");
   const [gemUrls, setGemUrls]                   = useState(() => {
@@ -120,6 +131,7 @@ export function GemSelectionModal({
   const [isSummaryPasteOpen, setIsSummaryPasteOpen] = useState(false);
   const [summaryDraft, setSummaryDraft]         = useState('');
   const [summaryError, setSummaryError]         = useState('');
+  const [manualBriefSession, setManualBriefSession] = useState(null);
   const [expandedCategory, setExpandedCategory] = useState(() =>
     getCategoryForKey(savedGemKey || recommendedGemKey || "general", [])
   );
@@ -174,6 +186,7 @@ export function GemSelectionModal({
       setIsSummaryPasteOpen(false);
       setSummaryDraft('');
       setSummaryError('');
+      setManualBriefSession(null);
     }
   }, [open, savedGemKey, recommendedGemKey, refreshUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -193,6 +206,19 @@ export function GemSelectionModal({
   const category       = topics[0]?.name || video?.category || "";
   const subCategory    = topics[1]?.name || video?.subCategory || "";
   const recommendedGem = allGems.find((g) => g.key === recommendedGemKey);
+  const marketBriefLaunch = resolveMarketBriefLaunchContext({
+    video,
+    videoType,
+    tabsKey,
+    contentType,
+    marketBriefData: marketBriefMetadata,
+    manualSession: manualBriefSession,
+  });
+  const marketBriefDisplay = getMarketBriefSessionDisplay(marketBriefLaunch.session);
+  const activeGemUrl = resolveGemLaunchUrl({
+    isMarketBrief: marketBriefLaunch.isMarketBrief,
+    selectedGemUrl,
+  });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -203,14 +229,22 @@ export function GemSelectionModal({
   };
 
   const handleOpenGem = async () => {
-    const resolvedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
+    const resolvedGemUrl = activeGemUrl;
     if (!fullTranscriptText) { toast.error("אין תמלול להעתקה — ייבא תמלול קודם"); return; }
+    if (marketBriefLaunch.isMarketBrief && marketBriefLaunch.session === 'unknown') {
+      toast.error("יש לבחור אם זה מבזק בוקר או מבזק ערב");
+      return;
+    }
     if (!resolvedGemUrl || !isGeminiGemUrl(resolvedGemUrl)) {
       setIsConfiguringUrl(true);
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
-    const payload = [
+    const payload = marketBriefLaunch.isMarketBrief ? buildMarketBriefGemPayload({
+      video,
+      fullTranscriptText,
+      session: marketBriefLaunch.session,
+    }) : [
       `Title: ${video?.title || ""}`,
       `Channel: ${video?.channelTitle || video?.channelName || ""}`,
       `Category: ${category}`,
@@ -231,7 +265,7 @@ export function GemSelectionModal({
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
-    onGemOpened?.(selected);
+    onGemOpened?.(marketBriefLaunch.isMarketBrief ? MARKET_BRIEF_GEM.key : selected);
     if (!summaryReceived) {
       setGemWaiting(true);
       if (video?.id) localStorage.setItem(`gem-summary-waiting-${video.id}`, 'true');
@@ -423,7 +457,38 @@ export function GemSelectionModal({
               </div>
 
               {/* ── 2. Recommended GEM card ───────────────── */}
-              {recommendedGem && (
+              {marketBriefLaunch.isMarketBrief ? (
+                <div className="space-y-3">
+                  <div className="w-full rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-4 text-right shadow-sm dark:border-amber-700 dark:bg-amber-950/20">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl leading-none" aria-hidden="true">
+                        {marketBriefLaunch.session === "morning" ? "🌅" : marketBriefLaunch.session === "evening" ? "🌙" : "📰"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-bold text-slate-900 dark:text-zinc-100">{marketBriefDisplay.gemLabel}</span>
+                          <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-white">GEM מומלץ</span>
+                        </div>
+                        <div className="mt-1 text-sm font-semibold text-amber-800 dark:text-amber-200">{marketBriefDisplay.context}</div>
+                        <div className="mt-1 text-xs text-slate-600 dark:text-zinc-400">ניתוח שוק מובנה לפני או אחרי יום המסחר</div>
+                        <div className="mt-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">{MARKET_BRIEF_GEM.labelHe}</div>
+                        <div className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-zinc-400">Gemini</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {marketBriefLaunch.session === "unknown" && (
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="בחירת הקשר למבזק שוק">
+                      <button type="button" onClick={() => setManualBriefSession("morning")} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        🌅 לפני המסחר
+                      </button>
+                      <button type="button" onClick={() => setManualBriefSession("evening")} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        🌙 אחרי המסחר
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : recommendedGem && (
                 <button
                   type="button"
                   onClick={() => handleSelect(recommendedGem.key)}
@@ -451,7 +516,7 @@ export function GemSelectionModal({
               )}
 
               {/* ── 3. Accordion category list ────────────── */}
-              <div>
+              {!marketBriefLaunch.isMarketBrief && <div>
                 <div className="mb-2.5 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500">בחר GEM</span>
                   <button type="button" onClick={handleManageAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline">
@@ -468,10 +533,10 @@ export function GemSelectionModal({
                   {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
                   {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
                 </div>
-              </div>
+              </div>}
 
               {/* ── 4. Selected GEM details + URL ─────────── */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
+              {!marketBriefLaunch.isMarketBrief && <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
                 <div className="flex items-center gap-2">
                   <span className="text-lg leading-none">{selectedGem.icon}</span>
                   <span className="font-bold text-slate-800 dark:text-zinc-100">{selectedGem.label}</span>
@@ -544,7 +609,7 @@ export function GemSelectionModal({
                     )}
                   </div>
                 )}
-              </div>
+              </div>}
 
             </div>
 
@@ -622,7 +687,9 @@ export function GemSelectionModal({
               <button
                 type="button"
                 onClick={handleOpenGem}
-                disabled={!fullTranscriptText}
+                disabled={!fullTranscriptText || (marketBriefLaunch.isMarketBrief && marketBriefLaunch.session === 'unknown')}
+                title={marketBriefLaunch.isMarketBrief ? `פתח את ${MARKET_BRIEF_GEM.labelHe} ב-Gemini והעתק את התמלול המובנה` : undefined}
+                aria-label={marketBriefLaunch.isMarketBrief ? `העתק את התמלול ופתח את ${MARKET_BRIEF_GEM.labelHe} ב-Gemini` : undefined}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >
                 <ExternalLink className="h-4 w-4 shrink-0" />
