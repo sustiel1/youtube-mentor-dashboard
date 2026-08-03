@@ -42,6 +42,11 @@ try {
   assert.match(modalSource, /resolveGemLaunchUrl/);
   assert.match(modalSource, /marketBriefLaunch\.isMarketBrief \? MARKET_BRIEF_GEM\.key : selected/);
   assert.match(modalSource, /marketBriefLaunch\.session === 'unknown'/);
+  assert.match(modalSource, /marketBriefLaunch\.isMarketBrief \? \(/);
+  assert.match(modalSource, /!marketBriefLaunch\.isMarketBrief && <div>/);
+  assert.match(modalSource, /\{marketBriefDisplay\.gemLabel\}/);
+  assert.match(modalSource, /MARKET_BRIEF_GEM\.labelHe/);
+  assert.match(modalSource, /בחירת הקשר למבזק שוק/);
 
   console.log(JSON.stringify({ status: 'passed', canonicalId, morning: morning.session, lateNight: lateNight.session, unknown: unknown.session }, null, 2));
 } finally {
