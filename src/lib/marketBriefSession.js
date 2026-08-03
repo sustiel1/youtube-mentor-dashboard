@@ -39,7 +39,7 @@ function normalizeExplicitSession(value) {
   if (['morning', 'morningbrief', 'morning-brief', 'before-market', 'premarket', 'opening'].includes(normalized)) {
     return 'morning';
   }
-  if (['evening', 'eveningbrief', 'evening-brief', 'late-night', 'after-market', 'afterhours', 'after-hours', 'closing'].includes(normalized)) {
+  if (['evening', 'eveningbrief', 'evening-brief', 'late-night', 'after-market', 'post-market', 'afterhours', 'after-hours', 'closing', 'close'].includes(normalized)) {
     return 'evening';
   }
   return null;
@@ -49,13 +49,19 @@ function normalizeExplicitSession(value) {
 export function resolveMarketBriefSession(video, marketBriefData = null) {
   const explicitCandidates = [
     video?.briefType,
+    video?.briefSession,
     video?.marketSession,
+    video?.marketPhase,
     video?.videoType,
     video?.analysis?.briefType,
+    video?.analysis?.briefSession,
     video?.analysis?.marketSession,
+    video?.analysis?.marketPhase,
     video?.analysis?.videoType,
     marketBriefData?.briefType,
+    marketBriefData?.briefSession,
     marketBriefData?.marketSession,
+    marketBriefData?.marketPhase,
     marketBriefData?.videoType,
   ];
   for (const candidate of explicitCandidates) {

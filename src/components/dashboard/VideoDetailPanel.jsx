@@ -12040,6 +12040,10 @@ export function VideoDetailPanel({
       recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
       tjsRecommendation={tjsRec}
+      videoType={videoType}
+      tabsKey={selectedTabsConfigKey}
+      contentType={marketBriefData?.contentType || effectiveVideo?.contentType || null}
+      marketBriefMetadata={marketBriefData}
       fullTranscriptText={fullTranscriptText}
       onSave={async (key) => {
         setGemOverride(key);

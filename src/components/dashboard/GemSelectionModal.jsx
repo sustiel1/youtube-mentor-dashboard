@@ -7,6 +7,12 @@ import { getGemUrl, isGeminiGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } fr
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { cn } from "@/lib/utils";
 import { loadTopics } from "@/services/topicStorage";
+import {
+  MARKET_BRIEF_GEM,
+  buildMarketBriefGemPayload,
+  resolveGemLaunchUrl,
+  resolveMarketBriefLaunchContext,
+} from "@/lib/marketBriefGemLauncher";
 
 // ── Fixed GEM definitions ─────────────────────────────────────────────────────
 
@@ -102,6 +108,10 @@ export function GemSelectionModal({
   onGemOpened = null,
   onGemSummaryPaste = null,
   tjsRecommendation = null,
+  videoType = null,
+  tabsKey = null,
+  contentType = null,
+  marketBriefMetadata = null,
 }) {
   const [selected, setSelected]                 = useState(savedGemKey || recommendedGemKey || "general");
   const [gemUrls, setGemUrls]                   = useState(() => {
@@ -123,6 +133,7 @@ export function GemSelectionModal({
   const [expandedCategory, setExpandedCategory] = useState(() =>
     getCategoryForKey(savedGemKey || recommendedGemKey || "general", [])
   );
+  const [manualBriefSession, setManualBriefSession] = useState(null);
 
   // Load dynamic topic-based GEMs
   useEffect(() => {
@@ -174,6 +185,7 @@ export function GemSelectionModal({
       setIsSummaryPasteOpen(false);
       setSummaryDraft('');
       setSummaryError('');
+      setManualBriefSession(null);
     }
   }, [open, savedGemKey, recommendedGemKey, refreshUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -193,6 +205,18 @@ export function GemSelectionModal({
   const category       = topics[0]?.name || video?.category || "";
   const subCategory    = topics[1]?.name || video?.subCategory || "";
   const recommendedGem = allGems.find((g) => g.key === recommendedGemKey);
+  const marketBriefLaunch = resolveMarketBriefLaunchContext({
+    video,
+    videoType,
+    tabsKey,
+    contentType,
+    marketBriefData: marketBriefMetadata,
+    manualSession: manualBriefSession,
+  });
+  const activeGemUrl = resolveGemLaunchUrl({
+    isMarketBrief: marketBriefLaunch.isMarketBrief,
+    selectedGemUrl,
+  });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -203,14 +227,22 @@ export function GemSelectionModal({
   };
 
   const handleOpenGem = async () => {
-    const resolvedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
+    const resolvedGemUrl = activeGemUrl;
     if (!fullTranscriptText) { toast.error("אין תמלול להעתקה — ייבא תמלול קודם"); return; }
+    if (marketBriefLaunch.isMarketBrief && marketBriefLaunch.session === 'unknown') {
+      toast.error("יש לבחור אם זה מבזק בוקר או מבזק ערב");
+      return;
+    }
     if (!resolvedGemUrl || !isGeminiGemUrl(resolvedGemUrl)) {
       setIsConfiguringUrl(true);
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
-    const payload = [
+    const payload = marketBriefLaunch.isMarketBrief ? buildMarketBriefGemPayload({
+      video,
+      fullTranscriptText,
+      session: marketBriefLaunch.session,
+    }) : [
       `Title: ${video?.title || ""}`,
       `Channel: ${video?.channelTitle || video?.channelName || ""}`,
       `Category: ${category}`,
@@ -231,7 +263,7 @@ export function GemSelectionModal({
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
-    onGemOpened?.(selected);
+    onGemOpened?.(marketBriefLaunch.isMarketBrief ? MARKET_BRIEF_GEM.key : selected);
     if (!summaryReceived) {
       setGemWaiting(true);
       if (video?.id) localStorage.setItem(`gem-summary-waiting-${video.id}`, 'true');
@@ -619,10 +651,16 @@ export function GemSelectionModal({
 
             {/* ── Sticky footer ───────────────────────────────────────────── */}
             <div className="shrink-0 flex gap-2 border-t border-slate-100 dark:border-zinc-800 px-5 py-4 bg-white dark:bg-zinc-950">
+              {marketBriefLaunch.isMarketBrief && marketBriefLaunch.session === 'unknown' && (
+                <div className="flex gap-2" role="group" aria-label="בחירת מועד מבזק השוק">
+                  <button type="button" onClick={() => setManualBriefSession('morning')} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">מבזק בוקר</button>
+                  <button type="button" onClick={() => setManualBriefSession('evening')} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">מבזק ערב</button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleOpenGem}
-                disabled={!fullTranscriptText}
+                disabled={!fullTranscriptText || (marketBriefLaunch.isMarketBrief && marketBriefLaunch.session === 'unknown')}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >
                 <ExternalLink className="h-4 w-4 shrink-0" />
