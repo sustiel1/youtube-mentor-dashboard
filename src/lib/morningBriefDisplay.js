@@ -59,6 +59,7 @@ export const SPECIALIZED_MERGE_ARRAY_KEYS = [
   'tradingOpportunities', 'opportunities', 'trades', 'breakoutCandidates',
   'economicCalendar', 'calendar', 'events', 'upcomingEvents', 'schedule',
   'earnings', 'risks', 'warnings', 'riskFactors',
+  'top5Insights', 'learningInsights', 'allPoints',
   // ── Step 1 (weekly/earnings brief support) — same field names the legacy
   // extraction in videoTabsConfig.js already reads from `video`; listing them
   // here just lets the merge also pull them from rawData / universalTabs.specialized.
@@ -95,10 +96,10 @@ function itemMergeSignature(item) {
   return m ? m[1].toUpperCase() : s;
 }
 
-function mergeArrayLayers(specArr, legacyArr, rawArr) {
+function mergeArrayLayers(...layers) {
   const out = [];
   const seen = new Set();
-  for (const arr of [specArr, legacyArr, rawArr]) {
+  for (const arr of layers) {
     if (!Array.isArray(arr)) continue;
     for (const item of arr) {
       const sig = itemMergeSignature(item);
@@ -141,6 +142,9 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
     : {};
   const spec = marketBriefData.universalTabs?.specialized;
   const specObj = spec && typeof spec === 'object' ? spec : {};
+  const nestedUniversal = marketBriefData.universalTabs && typeof marketBriefData.universalTabs === 'object'
+    ? marketBriefData.universalTabs
+    : {};
 
   const legacy = {};
   for (const [k, v] of Object.entries(marketBriefData)) {
@@ -153,7 +157,7 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
 
   for (const key of SPECIALIZED_MERGE_ARRAY_KEYS) {
     // rawData → top-level → specialized; empty specialized arrays cannot block rawData items
-    const combined = mergeArrayLayers(raw[key], legacy[key], specObj[key]);
+    const combined = mergeArrayLayers(specObj[key], nestedUniversal[key], legacy[key], raw[key]);
     if (combined.length > 0) merged[key] = combined;
   }
 
@@ -162,12 +166,14 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
       const objCombined = mergeObjectLayers(
         Array.isArray(raw[key]) ? null : raw[key],
         Array.isArray(legacy[key]) ? null : legacy[key],
+        Array.isArray(nestedUniversal[key]) ? null : nestedUniversal[key],
         Array.isArray(specObj[key]) ? null : specObj[key],
       );
       const arrCombined = mergeArrayLayers(
-        Array.isArray(raw[key]) ? raw[key] : null,
-        Array.isArray(legacy[key]) ? legacy[key] : null,
         Array.isArray(specObj[key]) ? specObj[key] : null,
+        Array.isArray(nestedUniversal[key]) ? nestedUniversal[key] : null,
+        Array.isArray(legacy[key]) ? legacy[key] : null,
+        Array.isArray(raw[key]) ? raw[key] : null,
       );
       if (Object.keys(objCombined).length > 0) {
         merged[key] = objCombined;
@@ -176,19 +182,20 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
       }
       continue;
     }
-    const combined = mergeObjectLayers(raw[key], legacy[key], specObj[key]);
+    const combined = mergeObjectLayers(raw[key], legacy[key], nestedUniversal[key], specObj[key]);
     if (Object.keys(combined).length > 0) merged[key] = combined;
   }
 
   const allKeys = new Set([
     ...Object.keys(raw),
     ...Object.keys(legacy),
+    ...Object.keys(nestedUniversal),
     ...Object.keys(specObj),
   ]);
   for (const key of allKeys) {
     if (SPECIALIZED_MERGE_ARRAY_KEYS.includes(key) || SPECIALIZED_MERGE_OBJECT_KEYS.includes(key)) continue;
     if (merged[key] != null) continue;
-    const v = specObj[key] ?? legacy[key] ?? raw[key];
+    const v = specObj[key] ?? nestedUniversal[key] ?? legacy[key] ?? raw[key];
     if (v != null && typeof v !== 'object') merged[key] = v;
   }
 

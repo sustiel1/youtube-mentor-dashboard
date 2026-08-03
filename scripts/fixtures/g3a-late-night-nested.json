@@ -1,0 +1,26 @@
+{
+  "contentType": "marketBrief",
+  "universalTabs": {
+    "marketNews": [
+      { "headline": "Late headline", "impact": "Late impact" }
+    ],
+    "stocksMentioned": [
+      { "ticker": "LATE", "reason": "Late stock" }
+    ],
+    "top5Insights": [
+      { "rank": 1, "asset": "LATE", "insight": "Late insight" }
+    ],
+    "learningInsights": [
+      { "lesson": "Late lesson", "whyImportant": "Late reason" }
+    ],
+    "specialized": {
+      "marketNews": [
+        { "headline": "Late headline", "impact": "Late impact" },
+        { "headline": "Distinct headline", "impact": "Distinct impact" }
+      ],
+      "stocksMentioned": [
+        { "ticker": "LATE", "reason": "Late stock" }
+      ]
+    }
+  }
+}
