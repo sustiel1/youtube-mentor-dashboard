@@ -1219,7 +1219,7 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       // Fallback: resolveSpecialized merges rawData + top-level + spec so rawData fields surface here
       const src = resolveSpecialized(marketBriefData);
       if (!src) return [];
-      return filterDiagnosticItems([
+      const fallbackItems = filterDiagnosticItems([
         ...pickArray(src, 'indices', 'indexPerformance', 'indexData'),
         ...pickArray(src, 'marketNews', 'headlines', 'news', 'topStories'),
         ...pickArray(src, 'stocksMentioned', 'stocks', 'watchlist'),
@@ -1233,6 +1233,8 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(src, 'risks', 'warnings', 'riskFactors'),
         ...pickArray(src, 'sentiment', 'marketSentiment', 'fearGreed'),
       ]);
+      if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: specialized | sourcePath: shared-specialized-fallback | exists: true | itemsCount:', fallbackItems.length);
+      return fallbackItems;
     }
 
     default:

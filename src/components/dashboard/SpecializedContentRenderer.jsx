@@ -197,7 +197,7 @@ export function SpecializedContentRenderer({
   }
 
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
-  if (slug === 'morning-brief') {
+  if (slug === 'morning-brief' || slug === 'evening-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
     return wrapWithBriefHeader(
       renderBulkShell(morningBulkDefs, (
