@@ -2,6 +2,7 @@
 // Classifies a video to the most suitable Gemini Gem based on metadata + transcript.
 
 import { getTopicRule } from "@/lib/topicRules";
+import { getMarketBriefSessionDisplay, resolveMarketBriefSession } from "@/lib/marketBriefSession";
 
 // Deterministic title overrides — checked before any keyword scoring.
 // Highest priority: if pattern matches, recommendation cannot be changed by subCategory or TranscriptGuard.
@@ -540,6 +541,27 @@ const MORNING_BRIEF_TITLE_SIGNALS = [
 
 export function preGemClassifier(video, transcriptText = '', options = {}) {
   const title = String(video?.title || '').toLowerCase();
+
+  const briefSession = resolveMarketBriefSession(video);
+  if (briefSession.session !== 'unknown') {
+    const briefDisplay = getMarketBriefSessionDisplay(briefSession.session);
+    return {
+      gemKey: 'news',
+      gemLabel: briefDisplay.gemLabel,
+      gemIcon: '📰',
+      confidence: 'high',
+      confidenceLabel: 'ביטחון גבוה',
+      confidencePct: 97,
+      contentType: briefDisplay.videoType,
+      source: briefSession.source === 'title' ? 'titleOverride' : 'explicit',
+      reason: `זוהה ${briefDisplay.gemLabel} לפי מטא-דאטה או כותרת מפורשת.`,
+      phase: 'override',
+      recommendedCategoryCode: 'Markets',
+      recommendedCategoryLabel: 'שוק ההון',
+      recommendedSubCategory: briefDisplay.gemLabel,
+      recommendedSubCategoryConfidencePct: 97,
+    };
+  }
 
   // Phase 1: Deterministic title overrides (highest priority)
   for (const rule of TITLE_OVERRIDE_RULES) {

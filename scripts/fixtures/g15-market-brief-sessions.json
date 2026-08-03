@@ -1,0 +1,14 @@
+{
+  "morning": {
+    "title": "מבזק לייב פתיחה לתאריך 28.7.26",
+    "contentType": "marketBrief"
+  },
+  "generic": {
+    "title": "סקירת שוק ההון",
+    "contentType": "marketBrief"
+  },
+  "lateNight": {
+    "title": "לייט נייט - קראודסטרייק וברודקום מדווחות",
+    "contentType": "marketBrief"
+  }
+}
