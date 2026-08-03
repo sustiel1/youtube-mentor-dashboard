@@ -1,3 +1,5 @@
+import { getSpecializedSrc } from '@/lib/morningBriefDisplay';
+
 /**
  * Dynamic tab configuration per video type.
  *
@@ -332,11 +334,7 @@ export function getTabsForVideo(video, {
  * Priority: universalTabs.specialized > rawData > top-level mbd fields.
  */
 function resolveSpecialized(mbd) {
-  if (!mbd || typeof mbd !== 'object') return mbd;
-  const spec = mbd.universalTabs?.specialized;
-  const raw = (mbd.rawData && typeof mbd.rawData === 'object') ? mbd.rawData : null;
-  if (!spec && !raw) return mbd;
-  return { ...mbd, ...(raw || {}), ...(spec || {}) };
+  return getSpecializedSrc(mbd) || mbd;
 }
 
 /**

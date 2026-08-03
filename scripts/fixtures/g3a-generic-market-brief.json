@@ -1,0 +1,11 @@
+{
+  "contentType": "marketBrief",
+  "marketNews": [
+    { "headline": "Generic headline", "impact": "Generic impact" }
+  ],
+  "rawData": {
+    "stocksMentioned": [
+      { "ticker": "GEN", "reason": "Generic stock" }
+    ]
+  }
+}

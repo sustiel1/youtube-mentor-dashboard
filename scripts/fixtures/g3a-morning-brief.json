@@ -1,0 +1,13 @@
+{
+  "contentType": "marketBrief",
+  "universalTabs": {
+    "specialized": {
+      "marketNews": [
+        { "headline": "Morning headline", "impact": "Morning impact" }
+      ],
+      "stocksMentioned": [
+        { "ticker": "MORN", "reason": "Morning stock" }
+      ]
+    }
+  }
+}
