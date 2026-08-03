@@ -1,0 +1,39 @@
+{
+  "contentType": "marketBrief",
+  "universalTabs": {
+    "specialized": {},
+    "marketNews": [
+      {
+        "headline": "Late Night market headline"
+      }
+    ],
+    "stocksMentioned": [
+      {
+        "symbol": "ORCL",
+        "reason": "Earnings reaction"
+      }
+    ],
+    "macroFactors": [
+      {
+        "indicator": "WTI",
+        "direction": "up"
+      }
+    ],
+    "tradingOpportunities": [
+      {
+        "title": "Confirmed opportunity"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "Confirmed risk"
+      }
+    ],
+    "top5Insights": [
+      "Confirmed insight"
+    ],
+    "learningInsights": [
+      "Confirmed lesson"
+    ]
+  }
+}

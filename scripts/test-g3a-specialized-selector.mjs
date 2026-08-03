@@ -12,6 +12,7 @@ const readFixture = (name) => JSON.parse(fs.readFileSync(
 const morning = readFixture('g3a-morning-brief.json');
 const generic = readFixture('g3a-generic-market-brief.json');
 const lateNight = readFixture('g3a-late-night-nested.json');
+const lateNightSiblingSpecialized = readFixture('g3a-late-night-sibling-specialized.json');
 const vite = await createServer({
   root,
   server: { middlewareMode: true },
@@ -22,6 +23,7 @@ const vite = await createServer({
 try {
   const display = await vite.ssrLoadModule('/src/lib/morningBriefDisplay.js');
   const bulk = await vite.ssrLoadModule('/src/lib/morningBriefBulkSections.js');
+  const tabs = await vite.ssrLoadModule('/src/config/videoTabsConfig.js');
   const knowledge = await vite.ssrLoadModule('/src/lib/videoKnowledgePackage.js');
   const obsidian = await vite.ssrLoadModule('/src/lib/obsidianVideoMergeItems.js');
 
@@ -70,11 +72,35 @@ try {
     .find((section) => section.key === 'specialized').count);
   assertExportParity(lateNight, lateSections, 'late-night');
 
+  const siblingSections = snapshot(lateNightSiblingSpecialized);
+  const directSiblingItems = tabs.extractVideoTabItems({}, 'specialized', lateNightSiblingSpecialized);
+  assert.ok(directSiblingItems.length > 0, 'empty universalTabs.specialized must fall back to populated sibling fields');
+  assert.ok(siblingSections.find((section) => section.key === 'news')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'stocks-mentioned')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'macro')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'opportunities')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'risks')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'top-insights')?.items.length > 0);
+  assert.ok(siblingSections.find((section) => section.key === 'learning-insights')?.items.length > 0);
+  assert.deepEqual(tabs.extractVideoTabItems({}, 'specialized', { universalTabs: { specialized: {} } }), []);
+
+  const rendererSource = fs.readFileSync(
+    path.join(root, 'src', 'components', 'dashboard', 'SpecializedContentRenderer.jsx'),
+    'utf8',
+  );
+  assert.match(
+    rendererSource,
+    /if \(slug === 'morning-brief' \|\| slug === 'evening-brief'\)/,
+    'Morning and Evening renderers must share the normalized bulk selector',
+  );
+
   console.log(JSON.stringify({
     status: 'passed',
     morning: count(morningSections),
     generic: count(genericSections),
     lateNight: count(lateSections),
+    lateNightSiblingSpecialized: count(siblingSections),
+    directSiblingItems: directSiblingItems.length,
   }, null, 2));
 } finally {
   await vite.close();
