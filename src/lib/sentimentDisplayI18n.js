@@ -52,6 +52,7 @@ export const SENTIMENT_LABEL_TRANSLATIONS = {
   'retail traders': 'משקיעים פרטיים',
   'institutional investors': 'משקיעים מוסדיים',
   'overall sentiment': 'סנטימנט כללי',
+  'overall': 'סנטימנט כללי',
   'market sentiment': 'סנטימנט שוק',
   'sentiment': 'סנטימנט',
 };

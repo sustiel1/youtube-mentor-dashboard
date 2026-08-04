@@ -1,0 +1,109 @@
+{
+  "morning": {
+    "contentType": "marketBrief",
+    "universalTabs": {
+      "specialized": {
+        "sentiment": [
+          {
+            "label": "AAII",
+            "direction": "bullish",
+            "value": 40.2,
+            "source": "AAII",
+            "sourceUrl": "https://www.aaii.com/sentimentsurvey",
+            "date": "2026-08-01",
+            "scope": "שוק המניות בארה״ב",
+            "evidence": "40.2% מהמשיבים דיווחו על ציפייה חיובית",
+            "drivers": ["שיפור ברוחב השוק", "ירידה בתנודתיות"],
+            "confidence": 0.85,
+            "verificationState": "external-verified",
+            "verified": true,
+            "externallyVerified": true,
+            "etfTarget": null
+          },
+          {
+            "label": "סנטימנט מוסדי",
+            "direction": "bearish",
+            "value": 0,
+            "source": "video",
+            "date": "2026-08-01T19:30:15.250Z",
+            "scope": "מניות טכנולוגיה",
+            "evidence": "הדובר ציין במפורש הטיה דובית",
+            "drivers": ["מימושים לאחר דוחות"],
+            "confidence": 0,
+            "verificationState": "video-unverified",
+            "verified": false,
+            "etfTarget": null,
+            "fullTranscript": "תוכן תמלול מלא שאסור להציג",
+            "rawProviderPayload": { "secret": "אסור להציג" }
+          },
+          {
+            "label": "מצב רוח כללי",
+            "direction": "neutral",
+            "value": false,
+            "source": "video",
+            "scope": "השוק הרחב",
+            "evidence": "ערך boolean false נשמר כמידע תקף",
+            "drivers": [],
+            "confidence": 0.5,
+            "verified": false,
+            "etfTarget": null
+          },
+          "Bullish לפי הדיון בלבד",
+          {
+            "label": "נכס לא מוכר",
+            "direction": "neutral",
+            "source": "video",
+            "scope": "XYZ_UNKNOWN",
+            "evidence": "הנכס אינו ממופה ליעד שוק",
+            "confidence": false,
+            "verified": false,
+            "etfTarget": null
+          }
+        ]
+      }
+    }
+  },
+  "generic": {
+    "contentType": "marketBrief",
+    "sentiment": {
+      "retail": {
+        "direction": "bullish",
+        "value": 0,
+        "source": "video",
+        "scope": "משקיעים פרטיים",
+        "evidence": "כיוון שורי הוצהר במפורש",
+        "verified": false
+      },
+      "institutional": "bearish legacy text only"
+    }
+  },
+  "evening": {
+    "contentType": "marketBrief",
+    "rawData": {
+      "sentiment": [
+        {
+          "label": "סיכום ערב",
+          "direction": "neutral",
+          "value": 17.3,
+          "source": "video",
+          "date": "2026-08-01",
+          "scope": "סגירת המסחר",
+          "evidence": "הכיוון הניטרלי נאמר במפורש",
+          "drivers": "מסחר מעורב",
+          "confidence": 0.6,
+          "verified": false,
+          "etfTarget": null
+        }
+      ]
+    }
+  },
+  "legacy": {
+    "contentType": "marketBrief",
+    "marketSentiment": [
+      "Bearish is present only as free text"
+    ]
+  },
+  "empty": {
+    "contentType": "marketBrief"
+  }
+}

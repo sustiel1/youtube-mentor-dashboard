@@ -22,6 +22,7 @@ const EMPTY_MARKET_BRIEF = Object.freeze({
   top5Insights: [],
   learningInsights: [],
   risks: [],
+  sentiment: [],
   allPoints: [],
 });
 
@@ -37,6 +38,7 @@ const ARRAY_FIELDS = [
   'top5Insights',
   'learningInsights',
   'risks',
+  'sentiment',
   'allPoints',
   'chapters',
   'keyPoints',
@@ -55,6 +57,7 @@ const ARRAY_IDENTITY_FIELDS = {
   top5Insights: ['rank', 'ticker', 'asset', 'subject', 'insight'],
   learningInsights: ['insight', 'lesson'],
   risks: ['risk', 'description', 'trigger'],
+  sentiment: ['label', 'scope', 'source', 'date', 'direction', 'evidence'],
   allPoints: ['point'],
   chapters: ['title', 'startSeconds'],
 };
@@ -237,6 +240,8 @@ function buildMarketExtractionPrompt({ title = '', transcriptChunk = '', chunkIn
     'Do not add commentary before or after the JSON object.',
     'Extract only market facts explicitly supported by this transcript chunk.',
     'Never invent symbols, prices, percentages, dates, targets, confidence, actions, or relationships.',
+    'For sentiment, set direction only from an explicit statement; never infer bullish or bearish from descriptive free text.',
+    'Treat transcript-only sentiment as verificationState "video-unverified" and do not invent a source URL or ETF target.',
     'Preserve exact numeric values, units, numeric 0, and meaningful boolean false.',
     'Keep every status, enum, level, reason, and action attached to its parent asset or event.',
     'Omit unsupported optional fields. Do not emit arbitrary properties.',
@@ -271,6 +276,7 @@ function buildMarketExtractionPrompt({ title = '', transcriptChunk = '', chunkIn
       top5Insights: [{ rank: 1, asset: '', level: 0, note: '', action: '', significance: '', category: '' }],
       learningInsights: [{ insight: '', whyImportant: '', category: '', applicableToApp: false }],
       risks: [{ risk: '', affectedAssets: [], trigger: '', invalidation: '', severity: '', timeframe: '' }],
+      sentiment: [{ label: '', direction: 'unverified', value: '', score: 0, source: 'video', sourceUrl: '', date: '', scope: '', evidence: '', drivers: [], confidence: 0, verificationState: 'video-unverified', verified: false, externallyVerified: false, etfTarget: '' }],
       allPoints: [{ point: '', category: '' }],
       keyPoints: [],
       tags: [],

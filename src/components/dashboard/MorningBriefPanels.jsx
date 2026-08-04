@@ -16,7 +16,7 @@ import {
   macroRowRichness,
   macroSemanticKey,
 } from '@/lib/morningBriefDisplay';
-import { translateSentimentLabel, translateSentimentValue } from '@/lib/sentimentDisplayI18n';
+import { translateSentimentLabel } from '@/lib/sentimentDisplayI18n';
 import {
   DISPLAY_COLUMN_TITLES,
   DISPLAY_SECTION_TITLES,
@@ -89,6 +89,11 @@ import {
   resolveMorningBriefOpportunitiesAndRisks,
 } from '@/lib/morningBriefBulkSections';
 import {
+  formatSentimentEvidenceText,
+  formatSentimentScalar,
+  getSentimentVerificationLabel,
+} from '@/lib/sentimentEvidence';
+import {
   BriefSectionManualHeaderExtras,
   ManualEditGrid,
   ManualOpportunitiesRisksEdit,
@@ -119,7 +124,6 @@ import {
   resolveMorningBriefSectionChildItems,
   resolveMorningBriefCombinedSectionChildItems,
 } from '@/lib/morningBriefBulkSections';
-import { getSentimentSourceLink } from '@/lib/sentimentSourceLinks';
 import { getMacroIndicatorUrl } from '@/lib/macroIndicatorLinks';
 import { translateMarketLabel, translateImportanceLevel } from '@/lib/marketLabelTranslations';
 
@@ -503,11 +507,16 @@ const INLINE_SENTIMENT_STYLE = {
     dot: 'bg-amber-400',
     label: 'ניטרלי',
   },
+  unverified: {
+    dot: 'bg-slate-400',
+    label: 'לא אומת',
+  },
 };
 
 function normalizeInlineSentKey(sentKey) {
   if (sentKey === 'bullish' || sentKey === TONE.BULLISH || sentKey === 'positive') return 'positive';
   if (sentKey === 'bearish' || sentKey === TONE.BEARISH || sentKey === 'negative') return 'negative';
+  if (sentKey === 'unverified') return 'unverified';
   return 'neutral';
 }
 
@@ -1692,54 +1701,50 @@ function sentimentLabelEmoji(label) {
   return '🧠';
 }
 
-function SentimentListItem({
-  label,
-  value,
-  bulkSelection = null,
-  bulkSections = [],
-}) {
-  const valueText = String(value || '').trim();
-  const displayLabel = translateSentimentLabel(label);
-  const displayValue = translateSentimentValue(valueText);
-  const rowCtx = { indicator: displayLabel, description: displayValue, impact: valueText };
-  const display = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
-  const bulkText = `${label}: ${value}`;
-
+function SentimentEvidenceField({ label, children }) {
   return (
-    <UniversalTabSelectRow
-      className={`${DASHBOARD_ITEM_ROW_CLS} text-right border-b border-slate-200/70 dark:border-zinc-700/50 last:border-b-0`}
-      data-sentiment-item
-      checkbox={(
-        <MorningBriefBulkCheckbox
-          bulkSections={bulkSections}
-          sectionKey="sentiment"
-          text={bulkText}
-          sectionLabel="📊 סנטימנט"
-          tabKey="brief-sentiment"
-          bulkSelection={bulkSelection}
-        />
-      )}
-      actions={(
-        <BriefQuickSaveActions
-          bulkSelection={bulkSelection}
-          text={bulkText}
-          sectionLabel="📊 סנטימנט"
-          tabKey="brief-sentiment"
-        />
-      )}
+    <div className="min-w-0">
+      <dt className={`${DASHBOARD_TABLE_HEAD_CLS} text-slate-500 dark:text-zinc-400`}>{label}</dt>
+      <dd className={`${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] text-slate-800 dark:text-zinc-100`}>
+        {children || 'לא צוין'}
+      </dd>
+    </div>
+  );
+}
+
+function SentimentEvidenceDetails({ item }) {
+  const drivers = item.drivers?.length ? item.drivers.join(', ') : 'לא צוינו';
+  const confidence = formatSentimentScalar(item.confidence) || 'לא צוין';
+  return (
+    <dl
+      className="grid grid-cols-1 xl:grid-cols-2 gap-x-4 gap-y-1.5 text-right"
+      dir="rtl"
+      data-sentiment-evidence-center
     >
-      <p className={`mb-1.5 ${DASHBOARD_TABLE_HEAD_CLS} text-slate-700 dark:text-zinc-200`}>
-        <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
-        {displayLabel}
-      </p>
-      {displayValue && (
-        display ? (
-          <NumericChangeSpan display={display} />
-        ) : (
-          <p className={DASHBOARD_TABLE_CELL_BODY_CLS}>{displayValue}</p>
-        )
+      <SentimentEvidenceField label="מקור">
+        {item.sourceUrl ? (
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {item.source || 'מקור חיצוני'}
+          </a>
+        ) : (item.source || 'ניתוח הסרטון')}
+      </SentimentEvidenceField>
+      <SentimentEvidenceField label="תאריך">{item.date || 'לא צוין'}</SentimentEvidenceField>
+      <SentimentEvidenceField label="היקף">{item.scope || 'לא צוין'}</SentimentEvidenceField>
+      <SentimentEvidenceField label="ראיות">{item.evidence || 'לא צוינו'}</SentimentEvidenceField>
+      <SentimentEvidenceField label="מניעים">{drivers}</SentimentEvidenceField>
+      <SentimentEvidenceField label="ביטחון">{confidence}</SentimentEvidenceField>
+      <SentimentEvidenceField label="מצב אימות">
+        {getSentimentVerificationLabel(item.verificationState)}
+      </SentimentEvidenceField>
+      {item.etfTarget && (
+        <SentimentEvidenceField label="ETF מפורש">{item.etfTarget}</SentimentEvidenceField>
       )}
-    </UniversalTabSelectRow>
+    </dl>
   );
 }
 
@@ -1750,9 +1755,13 @@ export function SentimentSection({
   presentation,
 }) {
   const items = extractSentimentItems(getSpecializedSrc(marketBriefData));
-  const tone = items.length > 0
-    ? resolveTone(items.map((i) => i.value).join(' '))
-    : TONE.NEUTRAL;
+  const hasBullish = items.some((item) => item.direction === 'bullish');
+  const hasBearish = items.some((item) => item.direction === 'bearish');
+  const tone = hasBullish && !hasBearish
+    ? TONE.BULLISH
+    : hasBearish && !hasBullish
+      ? TONE.BEARISH
+      : TONE.NEUTRAL;
 
   return (
     <SectionCard
@@ -1780,22 +1789,21 @@ export function SentimentSection({
               <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
                 <th className="py-1.5 pr-2 pl-0" />
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סוג</th>
-                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>כיוון</th>
                 <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך</th>
-                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>מרכז ראיות</th>
                 <th className="py-1.5 pl-1 pr-0" />
               </tr>
             </thead>
             <tbody>
-              {items.map(({ label, value }, i) => {
-                const valueText = String(value || '').trim();
+              {items.map((item, i) => {
+                const { label, value } = item;
+                const valueText = formatSentimentScalar(value);
                 const displayLabel = translateSentimentLabel(label);
                 const { numericText, descriptionText } = parseSentimentValueForDisplay(valueText);
-                const bulkText = `${label}: ${value}`;
-                const itemTone = resolveTone(valueText);
-                const sourceLink = getSentimentSourceLink({ label, value });
+                const bulkText = formatSentimentEvidenceText(item);
                 return (
-                  <tr key={`${label}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
+                  <tr key={`${bulkText}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
                     <td className={BRIEF_CELL.checkbox}>
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
@@ -1807,42 +1815,31 @@ export function SentimentSection({
                       />
                     </td>
                     <td className={BRIEF_CELL.short}>
-                      {sourceLink ? (
-                        <a
-                          href={sourceLink.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="פתח מקור סנטימנט"
-                          aria-label="פתח מקור סנטימנט"
-                          className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
-                        >
-                          <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
-                          {displayLabel}
-                        </a>
-                      ) : (
-                        <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-                          <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
-                          {displayLabel}
-                        </span>
-                      )}
+                      <span className={`whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                        <span className="me-1.5" aria-hidden>{sentimentLabelEmoji(displayLabel)}</span>
+                        {displayLabel}
+                      </span>
+                      <span className={`block mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
+                        {item.scope || 'היקף לא צוין'}
+                      </span>
                     </td>
                     <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
-                        sentKey={toneToSentKey(itemTone)}
+                        sentKey={item.direction}
                         className={BRIEF_SENTIMENT_INLINE_CLS}
                       />
                     </td>
                     <td className={BRIEF_CELL.change}>
                       {numericText ? (
                         <span className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{numericText}</span>
+                      ) : descriptionText ? (
+                        <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{descriptionText}</span>
                       ) : (
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
                     <td className={BRIEF_CELL.notes}>
-                      <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
-                        {descriptionText || '—'}
-                      </p>
+                      <SentimentEvidenceDetails item={item} />
                     </td>
                     <td className={BRIEF_CELL.save}>
                       <BriefQuickSaveActions

@@ -16,6 +16,16 @@ const validPayload = {
   shortSummary: 'Market opened higher',
   chapters: [{ title: 'Open', startSeconds: 0, endSeconds: 0.56 }],
   stocksMentioned: [{ ticker: 'AMD', isNewToWatch: false }],
+  sentiment: [{
+    label: 'AAII',
+    direction: 'neutral',
+    score: 0,
+    source: 'video',
+    evidence: 'Explicit transcript evidence',
+    confidence: 0,
+    verificationState: 'video-unverified',
+    verified: false,
+  }],
   risks: [],
 };
 
@@ -24,9 +34,15 @@ assert.ok(MARKET_BRIEF_RESPONSE_SCHEMA?.properties?.chapters);
 assert.equal(MARKET_BRIEF_RESPONSE_SCHEMA.properties.keyPoints.items.type, 'STRING');
 assert.equal(MARKET_BRIEF_RESPONSE_SCHEMA.properties.tags.items.type, 'STRING');
 assert.equal('marketNews' in MARKET_BRIEF_RESPONSE_SCHEMA.properties, false);
-assert.equal('sentiment' in MARKET_BRIEF_RESPONSE_SCHEMA.properties, false);
+assert.ok(MARKET_BRIEF_RESPONSE_SCHEMA.properties.sentiment);
+assert.deepEqual(MARKET_BRIEF_RESPONSE_SCHEMA.properties.sentiment.items.properties.direction.enum, [
+  'bullish', 'bearish', 'neutral', 'unverified',
+]);
 assert.deepEqual(parseStructuredMarketResponse(validPayload, { normalize: false }), validPayload);
-assert.equal(parseStructuredMarketResponse(JSON.stringify(validPayload)).chapters[0].startSeconds, 0);
+const normalizedPayload = parseStructuredMarketResponse(JSON.stringify(validPayload));
+assert.equal(normalizedPayload.chapters[0].startSeconds, 0);
+assert.equal(normalizedPayload.sentiment[0].score, 0);
+assert.equal(normalizedPayload.sentiment[0].verified, false);
 assert.throws(() => validateMarketBriefPayload([]), { code: 'INVALID_MARKET_SCHEMA' });
 assert.throws(() => parseStructuredMarketResponse(''), { code: 'EMPTY_PROVIDER_RESPONSE' });
 assert.throws(() => parseStructuredMarketResponse('{"contentType":"marketBrief","chapters":['), { code: 'TRUNCATED_MARKET_JSON' });

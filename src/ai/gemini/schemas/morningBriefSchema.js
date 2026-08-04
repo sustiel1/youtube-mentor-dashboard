@@ -52,8 +52,20 @@ export function getMorningBriefSchemaExample() {
           { event: "CPI Release", date: "Thursday 8:30 AM", importance: "high", impact: "Rate-sensitive sectors" }
         ],
         sentiment: [
-          "Fear & Greed index at 62 — Greed territory",
-          "Put/Call ratio 0.82 — mildly bullish"
+          {
+            label: "Fear & Greed",
+            direction: "neutral",
+            value: "62",
+            source: "video",
+            scope: "US market",
+            evidence: "The video explicitly states the index value is 62",
+            drivers: ["risk appetite discussed in the video"],
+            confidence: 0.7,
+            verificationState: "video-unverified",
+            verified: false,
+            externallyVerified: false,
+            etfTarget: null
+          }
         ],
         calendar: [
           { event: "US CPI Release", date: "Thursday 8:30 AM", importance: "high", impact: "Rate-sensitive sectors could reprice" },
@@ -81,7 +93,7 @@ export function getMorningBriefSchemaExample() {
     indices: [],
     stocksMentioned: [],
     macro: [],
-    sentiment: ["..."],
+    sentiment: [{ label: "...", direction: "bullish|bearish|neutral|unverified", source: "video", evidence: "...", verificationState: "video-unverified" }],
     calendar: [{ event: "...", date: "...", importance: "high|medium|low", impact: "..." }],
     opportunities: ["..."],
     risks: ["..."],

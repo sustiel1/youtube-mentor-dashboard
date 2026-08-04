@@ -9,6 +9,7 @@
 
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { translateMarketTextInline } from '@/lib/marketLabelTranslations';
+import { selectSentimentEvidenceItems } from '@/lib/sentimentEvidence';
 
 const INDEX_OVERVIEW_KEYS = new Set([
   'spx', 'nasdaq', 'dow', 'russell', 'vix', 'dollar', 'bitcoin', 'oil', 'bonds10y',
@@ -59,6 +60,7 @@ export const SPECIALIZED_MERGE_ARRAY_KEYS = [
   'tradingOpportunities', 'opportunities', 'trades', 'breakoutCandidates',
   'economicCalendar', 'calendar', 'events', 'upcomingEvents', 'schedule',
   'earnings', 'risks', 'warnings', 'riskFactors',
+  'marketSentiment', 'sentimentAnalysis', 'fearGreed',
   'top5Insights', 'learningInsights', 'allPoints',
   // ── Step 1 (weekly/earnings brief support) — same field names the legacy
   // extraction in videoTabsConfig.js already reads from `video`; listing them
@@ -111,6 +113,22 @@ function mergeArrayLayers(...layers) {
     }
   }
   return out;
+}
+
+function sentimentLayerItems(layer) {
+  if (Array.isArray(layer)) return layer;
+  if (!layer || typeof layer !== 'object') return layer == null ? [] : [layer];
+  const itemKeys = new Set([
+    'label', 'name', 'type', 'category', 'direction', 'sentimentDirection', 'sentiment',
+    'bias', 'value', 'evidence', 'drivers', 'source', 'sourceName', 'sourceUrl',
+    'date', 'scope', 'confidence', 'verificationState', 'verified', 'externallyVerified',
+  ]);
+  if (Object.keys(layer).some((key) => itemKeys.has(key))) return [layer];
+  return Object.entries(layer).map(([label, value]) => (
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? { label, ...value }
+      : { label, value }
+  ));
 }
 
 function mergeObjectLayers(...layers) {
@@ -174,23 +192,13 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
 
   for (const key of SPECIALIZED_MERGE_OBJECT_KEYS) {
     if (key === 'sentiment') {
-      const objCombined = mergeObjectLayers(
-        Array.isArray(raw[key]) ? null : raw[key],
-        Array.isArray(legacy[key]) ? null : legacy[key],
-        Array.isArray(nestedUniversal[key]) ? null : nestedUniversal[key],
-        Array.isArray(specObj[key]) ? null : specObj[key],
+      const combined = mergeArrayLayers(
+        sentimentLayerItems(specObj[key]),
+        sentimentLayerItems(nestedUniversal[key]),
+        sentimentLayerItems(legacy[key]),
+        sentimentLayerItems(raw[key]),
       );
-      const arrCombined = mergeArrayLayers(
-        Array.isArray(specObj[key]) ? specObj[key] : null,
-        Array.isArray(nestedUniversal[key]) ? nestedUniversal[key] : null,
-        Array.isArray(legacy[key]) ? legacy[key] : null,
-        Array.isArray(raw[key]) ? raw[key] : null,
-      );
-      if (Object.keys(objCombined).length > 0) {
-        merged[key] = objCombined;
-      } else if (arrCombined.length > 0) {
-        merged[key] = arrCombined;
-      }
+      if (combined.length > 0) merged[key] = combined;
       continue;
     }
     const combined = mergeObjectLayers(raw[key], legacy[key], nestedUniversal[key], specObj[key]);
@@ -918,92 +926,9 @@ export function mergeCalendarRows(rows) {
   }));
 }
 
-const SENTIMENT_FIELD_LABELS = {
-  retail: 'סנטימנט קמעונאי',
-  institutional: 'סנטימנט מוסדי',
-  fearGreed: 'פחד וחמדנות',
-  marketMood: 'מצב השוק',
-  overall: 'סנטימנט כללי',
-  generalMood: 'אווירה כללית',
-  mood: 'מצב רוח',
-  reason: 'סיבה',
-  crypto: 'קריפטו',
-};
-
-function sentimentItemFromString(raw, index = 0) {
-  const t = String(raw || '').trim();
-  if (!t) return null;
-  const split = t.split(' — ');
-  if (split.length >= 2) {
-    return { label: split[0].trim(), value: split.slice(1).join(' — ').trim() };
-  }
-  return { label: index === 0 ? 'סנטימנט שוק' : `סנטימנט ${index + 1}`, value: t };
-}
-
-function sentimentItemFromObject(item) {
-  if (!item || typeof item !== 'object') return null;
-  const label = pickString(item, 'label', 'name', 'type', 'category') || 'סנטימנט שוק';
-
-  // Try standard value fields first
-  const stdValue = item.value ?? item.text ?? item.description ?? item.summary ?? item.mood;
-  if (stdValue != null) {
-    const value = formatDisplayValue(stdValue);
-    return value ? { label, value } : null;
-  }
-
-  // Avoid full-object serialization: combine tone field + note field instead
-  const sentPart = pickString(item, 'sentiment', 'direction', 'bias', 'status');
-  const notePart = pickString(item, 'note', 'notes', 'reason', 'comment', 'content');
-  const value = [sentPart, notePart].filter(Boolean).join(' · ');
-
-  return value ? { label, value } : null;
-}
-
-/** Object or array sentiment → labeled cards for UI. */
+/** Canonical Sentiment evidence rows shared by UI, export, counts and diagnostics. */
 export function extractSentimentItems(src) {
-  if (!src) return [];
-  const items = [];
-
-  const sent = src.sentiment;
-  if (Array.isArray(sent)) {
-    sent.forEach((item, index) => {
-      if (typeof item === 'string') {
-        const card = sentimentItemFromString(item, index);
-        if (card) items.push(card);
-      } else {
-        const card = sentimentItemFromObject(item);
-        if (card) items.push(card);
-      }
-    });
-  } else if (sent && typeof sent === 'object') {
-    for (const [key, val] of Object.entries(sent)) {
-      const value = formatDisplayValue(val);
-      if (!value) continue;
-      items.push({
-        label: SENTIMENT_FIELD_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()),
-        value,
-      });
-    }
-  }
-
-  for (const item of pickArray(src, 'marketSentiment', 'sentimentAnalysis', 'fearGreed')) {
-    if (typeof item === 'string') {
-      const card = sentimentItemFromString(item, items.length);
-      if (card) items.push(card);
-    } else {
-      const card = sentimentItemFromObject(item);
-      if (card) items.push(card);
-    }
-  }
-
-  // Deduplicate by normalized label — same label from multiple source fields keeps first
-  const seenLabels = new Set();
-  return items.filter((item) => {
-    const normLabel = String(item.label || '').trim().toLowerCase();
-    if (seenLabels.has(normLabel)) return false;
-    seenLabels.add(normLabel);
-    return true;
-  });
+  return selectSentimentEvidenceItems(src);
 }
 
 export function hasSentimentData(src) {

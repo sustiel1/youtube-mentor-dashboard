@@ -1,7 +1,7 @@
 const CORE_ARRAY_FIELDS = Object.freeze([
   'sectorRotation', 'tradingOpportunities', 'stocksMentioned', 'catalysts',
   'macroFactors', 'indices', 'keyLevels', 'watchlistLevels', 'top5Insights',
-  'learningInsights', 'risks', 'allPoints', 'chapters', 'keyPoints', 'tags',
+  'learningInsights', 'risks', 'sentiment', 'allPoints', 'chapters', 'keyPoints', 'tags',
 ]);
 
 const CORE_FIELDS = new Set([
@@ -38,6 +38,23 @@ const MARKET_BRIEF_RESPONSE_SCHEMA = Object.freeze({
     top5Insights: objects({ rank: number, asset: string(), level: number, note: string(), action: string(), significance: string(), category: string() }),
     learningInsights: objects({ insight: string(), whyImportant: string(), category: string(), applicableToApp: boolean }),
     risks: objects({ risk: string(), affectedAssets: strings, trigger: string(), invalidation: string(), severity: string(), timeframe: string() }),
+    sentiment: objects({
+      label: string(),
+      direction: { type: 'STRING', enum: ['bullish', 'bearish', 'neutral', 'unverified'], nullable: true },
+      value: string(),
+      score: number,
+      source: string(),
+      sourceUrl: string(),
+      date: string(),
+      scope: string(),
+      evidence: string(),
+      drivers: strings,
+      confidence: number,
+      verificationState: { type: 'STRING', enum: ['external-verified', 'video-unverified', 'unverified'], nullable: true },
+      verified: boolean,
+      externallyVerified: boolean,
+      etfTarget: string(),
+    }),
     allPoints: objects({ point: string(), category: string() }),
     keyPoints: strings,
     tags: strings,

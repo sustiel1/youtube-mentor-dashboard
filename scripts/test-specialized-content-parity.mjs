@@ -58,7 +58,12 @@ try {
   assert.match(byKey['stocks-mentioned'][0], /חדש למעקב: לא/);
   assert.ok(byKey.markets.some((text) => /VIX/.test(text) && /0/.test(text)));
   assert.ok(byKey.macro.some((text) => /0/.test(text) && /לא/.test(text)));
-  assert.ok(byKey.sentiment.some((text) => /^סנטימנט כללי: לא$/.test(text)));
+  assert.ok(byKey.sentiment.some((text) => (
+    text.includes('סנטימנט כללי')
+    && text.includes('ערך: לא')
+    && text.includes('כיוון: לא אומת')
+    && text.includes('ניתוח הסרטון — לא אומת חיצונית')
+  )));
   assert.match(byKey['top-insights'][0], /^#1 · SPX · תובנה מרכזית נקייה/);
   assert.match(byKey['learning-insights'][0], /לקח מרכזי שאסור לאבד/);
   assert.match(byKey['learning-insights'][0], /הסבר מדוע הלקח חשוב/);

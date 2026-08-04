@@ -6,6 +6,7 @@ import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { cleanupMacroDisplayRows, cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { parseMacroDisplayItem } from '@/lib/morningBriefDisplay';
 import { translateDisplayLabel, translateMarketStatusLabel } from '@/lib/specializedDisplayI18n';
+import { formatSentimentEvidenceText } from '@/lib/sentimentEvidence';
 import {
   buildCardBulkItemsFromSections,
   formatBulkItemText,
@@ -366,7 +367,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   }
 
   const sentimentItems = extractSentimentItems(src)
-    .map(({ label, value }) => `${translateDisplayLabel(label)}: ${formatDisplayAtom(value)}`)
+    .map(formatSentimentEvidenceText)
     .filter(Boolean);
   if (sentimentItems.length) {
     sections.push({ key: 'sentiment', label: '📊 סנטימנט', items: sentimentItems, tabKey: 'brief-sentiment' });

@@ -1,5 +1,9 @@
 import { getSpecializedSrc } from '@/lib/morningBriefDisplay';
 import { getMarketBriefSessionDisplay, resolveMarketBriefSession } from '@/lib/marketBriefSession';
+import {
+  formatSentimentEvidenceText,
+  selectSentimentEvidenceItems,
+} from '@/lib/sentimentEvidence';
 
 /**
  * Dynamic tab configuration per video type.
@@ -1016,15 +1020,11 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
     case 'brief-sentiment': {
       const src = resolveSpecialized(marketBriefData);
       if (src) {
-        return [
-          ...pickArray(src, 'sentiment', 'marketSentiment', 'sentimentAnalysis', 'marketMood', 'fearGreed'),
-          ...pickArray(src, 'sectorRotation'),
-        ];
+        return selectSentimentEvidenceItems(src).map(formatSentimentEvidenceText).filter(Boolean);
       }
-      return [
-        ...pickArray(video, 'marketSentiment', 'sentiment'),
-        ...pickArray(video, 'tradingPrinciples', 'mentalModels'),
-      ];
+      return selectSentimentEvidenceItems({
+        sentiment: pickArray(video, 'marketSentiment', 'sentiment'),
+      }).map(formatSentimentEvidenceText).filter(Boolean);
     }
 
     case 'brief-calendar': {
