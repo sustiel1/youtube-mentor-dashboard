@@ -4,6 +4,8 @@
  * and external GEM JSON format (timestamp strings, nested ideologyAnalysis, etc).
  */
 
+import { normalizeChapterTiming } from '@/lib/chapterTimingSafety';
+
 function tsToSec(ts) {
   if (typeof ts === 'number' && Number.isFinite(ts)) return ts;
   if (typeof ts !== 'string') return null;
@@ -100,14 +102,20 @@ export function normalizePoliticalResult(parsed) {
   // chapters — support both startSeconds (Claude) and timestamp "HH:MM:SS" (GEM)
   const chapters = Array.isArray(parsed?.chapters)
     ? parsed.chapters.map((ch, i, arr) => {
-        const startSeconds = tsToSec(ch.startSeconds) ?? tsToSec(ch.timestamp) ?? (i * 120);
+        const explicitTimestamp = tsToSec(ch.timestamp);
+        const startSeconds = tsToSec(ch.startSeconds) ?? explicitTimestamp;
         const nextCh = arr[i + 1];
         const endSeconds = tsToSec(ch.endSeconds)
           ?? (nextCh ? (tsToSec(nextCh.startSeconds) ?? tsToSec(nextCh.timestamp)) : null);
-        return {
+        const timing = normalizeChapterTiming({
           ...ch,
           startSeconds,
-          endSeconds: endSeconds ?? null,
+          endSeconds,
+          timestampSource: ch.timestampSource || (explicitTimestamp != null ? 'explicit-input' : 'unavailable'),
+        });
+        return {
+          ...ch,
+          ...timing,
           title: String(ch.title || '').trim(),
           summary: String(ch.summary || '').trim(),
           keyPoints: Array.isArray(ch.keyPoints)
@@ -251,13 +259,6 @@ export function validatePoliticalQuality({ parsed, transcriptLength = 0 }) {
   if (!allowChapterless && chapters.length === 0) {
     reasons.push('political analysis missing chapters');
   }
-  if (
-    !allowChapterless &&
-    chapters.some((c) => !Number.isFinite(Number(c?.startSeconds)))
-  ) {
-    reasons.push('political chapter timestamp missing');
-  }
-
   return { ok: reasons.length === 0, reasons };
 }
 

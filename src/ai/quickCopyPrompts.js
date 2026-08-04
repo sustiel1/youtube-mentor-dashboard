@@ -65,7 +65,7 @@ export function buildGeminiPoliticalQuickPrompt({ title, duration, transcript })
     '• זהה סתירות פנימיות בטיעונים',
     '• chapters: מעברים אידיאולוגיים/נושאיים אמיתיים — חובה, אל תחזיר []',
     '• כותרות פרקים: שם אדם/מפלגה/נושא פוליטי קונקרטי מהתמלול',
-    '• אם אין timestamps — הערך לפי סדר הטקסט',
+    '• זמני פרקים מותרים רק אם הם מופיעים במפורש בתמלול; אחרת החזר startSeconds: null, endSeconds: null, timestampSource: unavailable',
     '',
     'JSON schema:',
     schema,

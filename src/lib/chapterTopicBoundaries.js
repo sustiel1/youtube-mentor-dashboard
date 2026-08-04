@@ -249,10 +249,10 @@ export function buildChaptersFromBoundaries(lines, boundaries, video, durationSe
     const startIdx = boundary.lineIndex;
     const endIdx = next ? next.lineIndex : lines.length;
     const blob = segmentTextFromLines(lines, startIdx, endIdx);
-    const startSeconds = Math.floor(boundary.startSeconds);
+    const startSeconds = boundary.startSeconds;
     const endSeconds = next
-      ? Math.floor(next.startSeconds)
-      : Math.floor(dur);
+      ? next.startSeconds
+      : null;
 
     const title = buildTopicChapterTitle(blob, boundary, index, video?.title, usedMacroIds);
     const topicContext = {
@@ -269,6 +269,8 @@ export function buildChaptersFromBoundaries(lines, boundaries, video, durationSe
       endSeconds: Number.isFinite(endSeconds) && endSeconds >= startSeconds ? endSeconds : null,
       timestamp: formatMmSs(startSeconds),
       timeSource: 'transcript',
+      timestampSource: 'timed-transcript-alignment',
+      timestampConfidence: 0.8,
       chapterSource: 'transcript_topic_heuristic',
       boundaryMethod: 'topic',
       _topicContext: topicContext,
@@ -360,8 +362,10 @@ export function buildEqualChunkChapters(lines, video) {
       title: buildTranscriptChunkTitle(blob, i, video?.title),
       description: blob.length > 220 ? `${blob.slice(0, 217)}…` : blob,
       timestamp: formatMmSs(start),
-      startSeconds: Math.floor(start),
+      startSeconds: start,
       timeSource: 'transcript',
+      timestampSource: 'timed-transcript-alignment',
+      timestampConfidence: 0.75,
       chapterSource: 'transcript_heuristic',
       boundaryMethod: 'chunk',
       analysisQuality: 'low',

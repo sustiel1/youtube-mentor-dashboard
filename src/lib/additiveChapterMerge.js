@@ -23,7 +23,10 @@ function identity(chapter) {
 
 function classify(existing, candidate) {
   const candidateIdentity = identity(candidate);
-  if (candidateIdentity && existing.some((chapter) => identity(chapter) === candidateIdentity)) return 'duplicate';
+  if (candidateIdentity) {
+    const index = existing.findIndex((chapter) => identity(chapter) === candidateIdentity);
+    if (index >= 0) return { kind: 'duplicate', index };
+  }
   const title = normalizeChapterComparisonText(candidate.title);
   const start = finiteTime(candidate.startSeconds);
   const end = finiteTime(candidate.endSeconds);
@@ -33,10 +36,20 @@ function classify(existing, candidate) {
     const existingEnd = finiteTime(chapter.endSeconds);
     const sameStart = start != null && existingStart != null && Math.abs(start - existingStart) <= TOLERANCE_SECONDS;
     const sameEnd = end != null && existingEnd != null && Math.abs(end - existingEnd) <= TOLERANCE_SECONDS;
-    if (title === existingTitle && (sameStart || sameEnd || (start == null && existingStart == null))) return 'duplicate';
-    if (sameStart && title !== existingTitle) return 'uncertain';
+    if (title === existingTitle && (sameStart || sameEnd || start == null || existingStart == null)) {
+      return { kind: 'duplicate', index: existing.indexOf(chapter) };
+    }
+    if (sameStart && title !== existingTitle) return { kind: 'uncertain', index: -1 };
   }
-  return 'unique';
+  return { kind: 'unique', index: -1 };
+}
+
+function timingStrength(chapter) {
+  const start = finiteTime(chapter?.startSeconds);
+  if (start == null || start < 0) return 0;
+  const source = String(chapter?.timestampSource || chapter?.timeSource || '').trim();
+  if (/estimated|fallback|outline|unavailable/.test(source)) return 0;
+  return source ? 2 : 1;
 }
 
 export function prepareAdditiveChapterMerge(existingChapters, candidateChapters) {
@@ -51,8 +64,22 @@ export function prepareAdditiveChapterMerge(existingChapters, candidateChapters)
   let uncertainCount = 0;
   for (const candidate of candidates) {
     const result = classify(chapters, candidate);
-    if (result === 'duplicate') { duplicateCount += 1; continue; }
-    if (result === 'uncertain') { uncertainCount += 1; continue; }
+    if (result.kind === 'duplicate') {
+      duplicateCount += 1;
+      const existing = chapters[result.index];
+      if (timingStrength(candidate) > timingStrength(existing)) {
+        chapters[result.index] = {
+          ...existing,
+          startSeconds: candidate.startSeconds,
+          endSeconds: candidate.endSeconds ?? existing.endSeconds ?? null,
+          timestamp: candidate.timestamp ?? existing.timestamp ?? '',
+          timestampSource: candidate.timestampSource || candidate.timeSource,
+          timestampConfidence: candidate.timestampConfidence ?? null,
+        };
+      }
+      continue;
+    }
+    if (result.kind === 'uncertain') { uncertainCount += 1; continue; }
     const start = finiteTime(candidate.startSeconds);
     const index = start == null ? -1 : chapters.findIndex((chapter) => {
       const existingStart = finiteTime(chapter.startSeconds);

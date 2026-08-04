@@ -2,10 +2,12 @@
  * JSON schema example for market/trading content analysis.
  */
 export function getMarketSchemaExample({ chaptersTarget = 4 } = {}) {
-  const chapters = Array.from({ length: Math.min(chaptersTarget, 3) }, (_, i) => ({
+  const chapters = Array.from({ length: Math.min(chaptersTarget, 3) }, () => ({
     title: '...',
-    startSeconds: i * 150,
-    endSeconds: (i + 1) * 150,
+    startSeconds: null,
+    endSeconds: null,
+    timestampSource: 'unavailable',
+    timestampConfidence: null,
     summary: '...',
     keyPoints: ['...'],
   }));

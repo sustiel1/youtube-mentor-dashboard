@@ -47,6 +47,7 @@ export function buildMarketAnalysisPrompt({
     'כותרות תקינות: "NVDA: פריצת resistance 480$" | "SPY vs QQQ — רוטציה" | "VIX מעל 20 — שינוי גישה".',
     'כותרות אסורות: "ניתוח השוק", "כלים מעשיים", "פתיח", "סיכום", "המצב הכלכלי".',
     chapterInstruction,
+    'זמני פרקים מותרים רק כאשר הם מופיעים במפורש בתמלול או ברמזי YouTube. אחרת החזר startSeconds: null, endSeconds: null, timestampSource: unavailable; לעולם אל תעריך זמן לפי מיקום בטקסט או משך הסרטון.',
     '',
     `כותרת: ${title}`,
     mentor ? `מנטור: ${mentor}` : null,

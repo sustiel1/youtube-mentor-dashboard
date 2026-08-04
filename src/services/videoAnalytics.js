@@ -14,6 +14,8 @@ import {
   buildEqualChunkChapters,
   tryTopicDrivenChapters,
 } from '@/lib/chapterTopicBoundaries';
+import { normalizeChapterTiming } from '@/lib/chapterTimingSafety';
+import { alignItemToTimedSegments } from '@/lib/evidenceTimestamp';
 
 export function hasNonEmptyChapters(chapters) {
   return Array.isArray(chapters) && chapters.length > 0;
@@ -53,20 +55,17 @@ export function getVideoDurationSeconds(video) {
 }
 
 /**
- * Structural chapter outline — timestamps estimated from video duration.
- * Each chapter gets startSeconds = index * (durationSec / total) when durationSec > 0.
+ * Structural chapter outline. Timing stays unavailable without evidence.
  */
-function estimatedChapters(list, durationSec = 0) {
-  const total = list.length;
-  return list.map((c, idx) => {
-    const secs = durationSec > 0 ? Math.round(idx * durationSec / total) : null;
-    return {
-      ...c,
-      // No duration → outline only (gray in UI); with duration → estimated orange navigation
-      timeSource: secs !== null ? 'estimated' : 'outline',
-      ...(secs !== null ? { startSeconds: secs, timestamp: formatMmSsFromSeconds(secs) } : {}),
-    };
-  });
+function estimatedChapters(list) {
+  return list.map((chapter) => ({
+    ...chapter,
+    startSeconds: null,
+    endSeconds: null,
+    timestampSource: 'unavailable',
+    timestampConfidence: null,
+    timeSource: 'unavailable',
+  }));
 }
 
 // ── Tag detection rules ───────────────────────────────────────────────────────
@@ -565,9 +564,8 @@ export function chaptersFromAiAnalysisResult(result) {
       keyPoints,
       endSeconds,
       ...(startSeconds != null ? { startSeconds, timestamp } : {}),
-      timeSource:
-        raw.timeSource ||
-        (startSeconds != null ? "transcript" : "outline"),
+      timeSource: raw.timeSource || (startSeconds != null ? "explicit-input" : "unavailable"),
+      timestampSource: raw.timestampSource || (startSeconds != null ? "explicit-input" : "unavailable"),
     };
     return base;
   };
@@ -1405,6 +1403,7 @@ export function validateChaptersForSave(chapters, options = {}) {
     requireKeyPoints = true,
     allowNullEndSecondsForLast = true,
     maxGenericTitleRatio = 0.3,
+    allowUntimed = true,
   } = options;
 
   const list = Array.isArray(chapters) ? chapters : [];
@@ -1416,20 +1415,21 @@ export function validateChaptersForSave(chapters, options = {}) {
     .map((c, i) => {
       const title = String(c?.title || "").trim();
       const summary = String(c?.summary || c?.description || "").trim();
-      const startSeconds = Number(c?.startSeconds);
+      const startSeconds = c?.startSeconds == null ? null : Number(c.startSeconds);
       const endRaw = c?.endSeconds;
       const endSeconds = endRaw == null ? null : Number(endRaw);
       const keyPoints = Array.isArray(c?.keyPoints) ? c.keyPoints.filter(Boolean) : [];
 
       if (!title) return null;
-      if (!Number.isFinite(startSeconds) || startSeconds < 0) return null;
+      if (startSeconds != null && (!Number.isFinite(startSeconds) || startSeconds < 0)) return null;
+      if (startSeconds == null && !allowUntimed) return null;
       if (summary.length < minSummaryChars) return null;
       if (requireKeyPoints && keyPoints.length === 0) return null;
 
       const isLast = i === list.length - 1;
       if (endRaw == null) {
-        if (!allowNullEndSecondsForLast || !isLast) return null;
-      } else if (!Number.isFinite(endSeconds) || endSeconds < startSeconds) {
+        if (startSeconds != null && !allowNullEndSecondsForLast && !isLast) return null;
+      } else if (startSeconds == null || !Number.isFinite(endSeconds) || endSeconds < startSeconds) {
         return null;
       }
 
@@ -1438,22 +1438,29 @@ export function validateChaptersForSave(chapters, options = {}) {
         title,
         summary,
         description: summary,
-        startSeconds: Math.floor(startSeconds),
-        endSeconds: endRaw == null ? null : Math.floor(endSeconds),
+        startSeconds,
+        endSeconds: endRaw == null ? null : endSeconds,
+        timestampSource: startSeconds == null ? 'unavailable' : (c.timestampSource || c.timeSource || 'explicit-input'),
+        timestampConfidence: startSeconds == null ? null : (c.timestampConfidence ?? null),
         keyPoints: requireKeyPoints ? keyPoints : Array.isArray(c?.keyPoints) ? c.keyPoints : [],
       };
     })
-    .filter(Boolean)
-    .sort((a, b) => a.startSeconds - b.startSeconds);
+    .filter(Boolean);
+
+  if (normalized.every((chapter) => Number.isFinite(chapter.startSeconds))) {
+    normalized.sort((a, b) => a.startSeconds - b.startSeconds);
+  }
 
   if (normalized.length < minChapters) {
     return { ok: false, reason: "חלק מהפרקים חסרים שדות חובה", chapters: [] };
   }
 
   // Monotonic starts
-  for (let i = 1; i < normalized.length; i += 1) {
-    if (normalized[i].startSeconds < normalized[i - 1].startSeconds) {
-      return { ok: false, reason: "סדר זמנים לא תקין בפרקים", chapters: [] };
+  if (normalized.every((chapter) => Number.isFinite(chapter.startSeconds))) {
+    for (let i = 1; i < normalized.length; i += 1) {
+      if (normalized[i].startSeconds < normalized[i - 1].startSeconds) {
+        return { ok: false, reason: "סדר זמנים לא תקין בפרקים", chapters: [] };
+      }
     }
   }
 
@@ -1487,7 +1494,7 @@ export function validateChapterTimelineCoverage(chapters, durationSeconds, { min
     .sort((a, b) => a - b);
 
   if (starts.length < 2) {
-    return { ok: false, reason: 'חסרים timestamps בפרקים — לא ניתן לוודא כיסוי מלא', lastStartSeconds: null, durationSeconds: dur };
+    return { ok: true, skipped: true, reason: null, lastStartSeconds: null, durationSeconds: dur };
   }
 
   const lastStart = starts[starts.length - 1];
@@ -1506,47 +1513,16 @@ export function validateChapterTimelineCoverage(chapters, durationSeconds, { min
 }
 
 export function chaptersNeedEstimatedTimes(chapters, video) {
-  const normalized = normalizeChapterArray(chapters);
-  if (normalized.length === 0) return false;
-  return getVideoDurationSeconds(video) > 0 && normalized.some((chapter) => !Number.isFinite(chapter?.startSeconds));
+  return false;
 }
 
-export function ensureChaptersHaveNavigation(chapters, video) {
+export function ensureChaptersHaveNavigation(chapters) {
   const normalized = normalizeChapterArray(chapters);
-  if (normalized.length === 0) return [];
-  if (!chaptersNeedEstimatedTimes(normalized, video)) return normalized;
-  return outlineWithEstimatedTimes(normalized, video);
+  return normalized.map((chapter) => ({ ...chapter, ...normalizeChapterTiming(chapter, { defaultSource: 'explicit-input' }) }));
 }
 
-export function buildDurationFallbackChapters(video) {
-  const durationSec = getVideoDurationSeconds(video);
-  if (durationSec <= 0) return [];
-
-  const count =
-    durationSec < 3 * 60 ? 2 :
-    durationSec < 8 * 60 ? 3 :
-    durationSec < 20 * 60 ? 4 :
-    durationSec < 40 * 60 ? 5 :
-    durationSec < 70 * 60 ? 6 : 7;
-
-  const segSec = Math.floor(durationSec / count);
-
-  return Array.from({ length: count }, (_, i) => {
-    const startSec = i * segSec;
-    const endSec = i < count - 1 ? (i + 1) * segSec : durationSec;
-    const m = Math.floor(startSec / 60);
-    const s = startSec % 60;
-    const timeLabel = `${m}:${String(s).padStart(2, '0')}`;
-    return {
-      title: timeLabel,
-      description: '',
-      startSeconds: startSec,
-      endSeconds: endSec,
-      timeSource: 'estimated',
-      chapterSource: 'duration_fallback',
-      analysisQuality: 'low',
-    };
-  });
+export function buildDurationFallbackChapters() {
+  return [];
 }
 
 function isManualChapterSource(source) {
@@ -1941,23 +1917,11 @@ export function resolveCanonicalChapters(video) {
 }
 
 /**
- * Fill missing startSeconds using even splits across video duration (same heuristic as estimatedChapters).
+ * Preserve outlines without inventing navigation timing.
  */
-export function outlineWithEstimatedTimes(chapters, video) {
+export function outlineWithEstimatedTimes(chapters) {
   if (!Array.isArray(chapters) || chapters.length === 0) return [];
-  const durationSec = getVideoDurationSeconds(video);
-  const n = chapters.length;
-  return chapters.map((c, idx) => {
-    if (Number.isFinite(c.startSeconds) && c.startSeconds >= 0) return { ...c };
-    const secs = durationSec > 0 ? Math.round((idx * durationSec) / n) : null;
-    return {
-      ...c,
-      timeSource: secs != null ? "estimated" : c.timeSource || "outline",
-      ...(secs != null
-        ? { startSeconds: secs, timestamp: formatMmSsFromSeconds(secs) }
-        : {}),
-    };
-  });
+  return chapters.map((chapter) => ({ ...chapter, ...normalizeChapterTiming(chapter, { defaultSource: 'explicit-input' }) }));
 }
 
 /** Shape expected by TopicLearningPage / Video entity videoTopics field */
@@ -1965,7 +1929,7 @@ export function chaptersToVideoTopics(chapters) {
   if (!Array.isArray(chapters)) return [];
   return chapters.map((c, i) => {
     const hasSec = Number.isFinite(c.startSeconds) && c.startSeconds >= 0;
-    const sec = hasSec ? Math.floor(c.startSeconds) : undefined;
+    const sec = hasSec ? c.startSeconds : undefined;
     return {
       title: c.title || `פרק ${i + 1}`,
       summary: c.description || "",
@@ -2021,62 +1985,22 @@ export function generateChaptersFromTranscript(transcript, video) {
 export function matchChaptersToTranscript(chapters, transcript) {
   const lines = transcript?.lines;
   if (!Array.isArray(lines) || lines.length < 5 || !chapters?.length) return null;
-
-  const n = chapters.length;
-  const chunkSize = Math.ceil(lines.length / n);
-
-  function kwTokens(text) {
-    return String(text || '')
-      .toLowerCase()
-      .replace(/[^a-zא-ת0-9]/g, ' ')
-      .split(/\s+/)
-      .filter((w) => w.length >= 3);
-  }
-
-  let minLineIdx = 0;
   let anyMatched = false;
 
-  const result = chapters.map((chapter, i) => {
-    // Already valid — advance cursor and keep unchanged
+  const result = chapters.map((chapter) => {
     if (Number.isFinite(chapter.startSeconds) && chapter.startSeconds >= 0) {
-      const next = lines.findIndex((l) => l.start > chapter.startSeconds);
-      minLineIdx = next >= 0 ? next : lines.length;
       return chapter;
     }
-
-    // Window: minLineIdx → end of chapter's allocated segment (+10% overlap for last)
-    const nominalEnd = Math.ceil((i + 1) * chunkSize * 1.1);
-    const windowEnd = i === n - 1 ? lines.length : Math.min(lines.length, nominalEnd);
-    const window = lines.slice(minLineIdx, windowEnd);
-    if (!window.length) return chapter; // No lines left — leave unchanged
-
-    const query = kwTokens((chapter.title || '') + ' ' + (chapter.description || ''));
-
-    let bestScore = -1;
-    let bestIdx = 0;
-
-    for (let j = 0; j < window.length; j++) {
-      const lineTokens = kwTokens(window[j].text);
-      let score = 0;
-      for (const q of query) {
-        if (lineTokens.some((t) => t.includes(q) || q.includes(t))) score++;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = j;
-      }
-    }
-
-    const chosen = window[bestScore > 0 ? bestIdx : 0];
-    const startSeconds = Math.floor(chosen.start);
-    const next = lines.findIndex((l) => l.start > chosen.start);
-    minLineIdx = next >= 0 ? next : lines.length;
+    const timing = alignItemToTimedSegments(
+      `${chapter.title || ''} ${chapter.description || chapter.summary || ''}`,
+      lines,
+    );
+    if (!timing) return chapter;
     anyMatched = true;
-
     return {
       ...chapter,
-      startSeconds,
-      timestamp: formatMmSsFromSeconds(startSeconds),
+      ...timing,
+      timestamp: formatMmSsFromSeconds(timing.startSeconds),
       timeSource: 'transcript',
     };
   });

@@ -13,7 +13,7 @@ export function getMorningBriefSchemaExample() {
         "Key watch: CPI data due Thursday could shift momentum."
       ],
       chapters: [
-        { title: "Pre-market Overview", startSeconds: 0, endSeconds: 120, summary: "SPY gap-down reversed at open" }
+        { title: "Pre-market Overview", startSeconds: null, endSeconds: null, timestampSource: "unavailable", timestampConfidence: null, summary: "SPY gap-down reversed at open" }
       ],
       insights: [
         "Market is pricing in 2 rate cuts before year-end — watch FOMC minutes.",

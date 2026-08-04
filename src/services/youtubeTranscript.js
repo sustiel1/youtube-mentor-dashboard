@@ -63,10 +63,11 @@ function writeCache(map) {
 }
 
 function normalizeSegment(segment) {
-  const startSeconds = Number(segment?.startSeconds ?? segment?.start ?? 0);
+  if (segment?.startSeconds == null && segment?.start == null) return null;
+  const startSeconds = Number(segment?.startSeconds ?? segment?.start);
   const durationSeconds = Number(segment?.durationSeconds ?? segment?.duration ?? segment?.dur ?? 0);
   const text = String(segment?.text || '').trim();
-  if (!Number.isFinite(startSeconds) || !text) return null;
+  if (!Number.isFinite(startSeconds) || startSeconds < 0 || !text) return null;
   return {
     text,
     startSeconds,

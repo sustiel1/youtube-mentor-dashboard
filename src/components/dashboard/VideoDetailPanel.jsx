@@ -128,6 +128,7 @@ import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import { resolveMarketBriefSlug } from "@/lib/marketBriefSession";
+import { normalizeChapterTiming, removeEvenlyDistributedTiming } from "@/lib/chapterTimingSafety";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
@@ -487,7 +488,7 @@ function parseManualTranscript(text) {
   }
 
   return {
-    segments: [{ text: raw, startSeconds: 0, durationSeconds: 0, start: 0 }],
+    segments: [{ text: raw }],
     hasTimestamps: false,
   };
 }
@@ -498,10 +499,8 @@ function normalizeManualChapters(chapters) {
       const title = String(ch?.title || '').trim();
       const summary = String(ch?.summary || ch?.description || '').trim();
       if (!title || !summary) return null;
-      const startSeconds = Math.max(0, Math.floor(Number(ch?.startSeconds) || 0));
-      const endRaw = Number(ch?.endSeconds);
-      const endSeconds = Number.isFinite(endRaw) && endRaw >= startSeconds ? Math.floor(endRaw) : null;
-      return { ...ch, title, summary, description: summary, startSeconds, endSeconds, timeSource: 'manual_ai', chapterSource: 'manual_transcript' };
+      const timing = normalizeChapterTiming(ch, { defaultSource: 'manual-input' });
+      return { ...ch, title, summary, description: summary, ...timing, timeSource: timing.timestampSource, chapterSource: 'manual_transcript' };
     })
     .filter(Boolean)
     .sort((a, b) => a.startSeconds - b.startSeconds);
@@ -509,7 +508,7 @@ function normalizeManualChapters(chapters) {
 
 /** Parses GEM chapter time values: numeric seconds, numeric strings, or "MM:SS" / "HH:MM:SS". */
 function gemTimeToSeconds(value) {
-  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.floor(value);
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return value;
   if (typeof value === 'string' && value.trim() !== '') {
     const str = value.trim();
     if (str.includes(':')) {
@@ -521,7 +520,7 @@ function gemTimeToSeconds(value) {
       return null;
     }
     const n = Number(str);
-    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+    if (Number.isFinite(n) && n >= 0) return n;
   }
   return null;
 }
@@ -541,27 +540,7 @@ function formatChapterTimestamp(totalSeconds) {
  * rather than real transcript transitions). Threshold: ≥4 valid timestamps, all gaps
  * within 8% of the average gap. Marks affected chapters with isEstimated + timestampSource.
  */
-function markEstimatedIfEvenlySpaced(chapters) {
-  const seconds = chapters
-    .map((ch) => ch?.startSeconds)
-    .filter((v) => Number.isFinite(v));
-
-  if (seconds.length < 4) return chapters;
-
-  const gaps = seconds.slice(1).map((s, i) => s - seconds[i]);
-  const avg = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
-
-  if (!Number.isFinite(avg) || avg <= 0) return chapters;
-
-  const evenlySpaced = gaps.every((g) => Math.abs(g - avg) / avg < 0.08);
-  if (!evenlySpaced) return chapters;
-
-  return chapters.map((ch) => ({
-    ...ch,
-    isEstimated: true,
-    timestampSource: 'estimated_proportional',
-  }));
-}
+const markEstimatedIfEvenlySpaced = removeEvenlyDistributedTiming;
 
 /** Normalizes universalTabs.chapters (GEM) into ChapterItem-compatible rows. */
 function normalizeGemChapters(raw) {
@@ -582,18 +561,25 @@ function normalizeGemChapters(raw) {
       gemTimeToSeconds(rawStamp);
     const endSeconds = gemTimeToSeconds(ch.endSeconds) ?? gemTimeToSeconds(ch.end);
 
-    const timestamp = startSeconds != null ? formatChapterTimestamp(startSeconds) : rawStamp;
+    const timing = normalizeChapterTiming({
+      ...ch,
+      startSeconds,
+      endSeconds,
+      timestampSource: ch.timestampSource || 'explicit-input',
+    }, { defaultSource: 'explicit-input' });
+    const timestamp = timing.startSeconds != null ? formatChapterTimestamp(timing.startSeconds) : '';
     const summary = String(ch.summary || ch.description || '').trim();
-    const hasTimestamp = startSeconds != null;
+    const hasTimestamp = timing.startSeconds != null;
     return {
       title,
       timestamp,
       summary,
       chapterSource: 'gem',
       isEstimated: !hasTimestamp,
-      timestampSource: hasTimestamp ? 'gem' : 'missing',
-      ...(startSeconds != null ? { startSeconds } : {}),
-      ...(endSeconds != null && (startSeconds == null || endSeconds >= startSeconds) ? { endSeconds } : {}),
+      timestampSource: timing.timestampSource,
+      timestampConfidence: timing.timestampConfidence,
+      startSeconds: timing.startSeconds,
+      endSeconds: timing.endSeconds,
     };
   }).filter(Boolean);
 
@@ -724,7 +710,7 @@ function retitleGenericChapters(chapters, { transcriptSegments } = {}) {
   });
 }
 
-function splitPlainTranscriptToChapters(text, videoDurationSeconds) {
+function splitPlainTranscriptToChapters(text) {
   const raw = String(text || "").trim();
   if (!raw) return [];
 
@@ -757,14 +743,7 @@ function splitPlainTranscriptToChapters(text, videoDurationSeconds) {
   }
   if (acc) chunks.push(acc);
 
-  const durationSec = Number.isFinite(videoDurationSeconds) && videoDurationSeconds > 0 ? videoDurationSeconds : null;
-
   const chapters = chunks.map((chunk, i) => {
-    const startSeconds = durationSec ? Math.floor((i / chunks.length) * durationSec) : i * 60;
-    const endSeconds =
-      durationSec
-        ? (i < chunks.length - 1 ? Math.floor(((i + 1) / chunks.length) * durationSec) : durationSec)
-        : (i < chunks.length - 1 ? (i + 1) * 60 : null);
     const cleanedChunk = stripTranscriptNoiseMarkers(chunk);
     const keywordTitle = makeTitleFromText(cleanedChunk);
     const title = isObviousTranscriptFragmentTitle(keywordTitle)
@@ -774,11 +753,13 @@ function splitPlainTranscriptToChapters(text, videoDurationSeconds) {
     const summary = chunk.split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 2).join(" ");
     return {
       title,
-      startSeconds,
-      endSeconds: endSeconds == null ? null : Math.max(startSeconds, endSeconds),
+      startSeconds: null,
+      endSeconds: null,
+      timestampSource: 'unavailable',
+      timestampConfidence: null,
       summary: summary || "קטע מתוך התמלול",
       keyPoints: keyPoints.length ? keyPoints : [title].filter(Boolean),
-      timeSource: durationSec ? "estimated_from_text" : "outline",
+      timeSource: "unavailable",
       chapterSource: "manual_transcript",
     };
   });
@@ -6601,9 +6582,11 @@ export function VideoDetailPanel({
           title,
           summary,
           description: summary,
-          startSeconds: Math.floor(startSeconds),
-          endSeconds: Number.isFinite(endSeconds) && endSeconds >= 0 ? Math.floor(endSeconds) : null,
-          timeSource: "transcript",
+          startSeconds,
+          endSeconds: Number.isFinite(endSeconds) && endSeconds >= startSeconds ? endSeconds : null,
+          timeSource: "youtube-timedtext",
+          timestampSource: "youtube-timedtext",
+          timestampConfidence: 1,
         };
       })
       .filter(Boolean)
@@ -6957,7 +6940,11 @@ export function VideoDetailPanel({
       const transcriptText = isManualTranscript && !manualHasTimestamps
         ? transcriptRaw
         : transcriptSegments
-            .map((line) => `[${Math.floor(line.startSeconds ?? line.start ?? 0)}] ${line.text}`)
+            .filter((line) => {
+              const start = Number(line.startSeconds ?? line.start);
+              return Number.isFinite(start) && start >= 0;
+            })
+            .map((line) => `[${Number(line.startSeconds ?? line.start)}] ${line.text}`)
             .join("\n");
       console.log("[transcript] full text length", transcriptText?.length ?? 0);
 
@@ -7824,11 +7811,12 @@ export function VideoDetailPanel({
         ? normalizeTranscriptBackedChapters(rawChapters, txSegments)
         : rawChapters.map((c, i) => ({
             title: String(c?.title || `פרק ${i + 1}`).trim(),
-            startSeconds: Number.isFinite(c?.startSeconds) ? c.startSeconds : i * 120,
-            endSeconds: Number.isFinite(c?.endSeconds) ? c.endSeconds : null,
+            ...normalizeChapterTiming(c, {
+              defaultSource: analysisSource === 'youtube_url' ? 'unavailable' : 'explicit-input',
+            }),
             summary: String(c?.summary || '').trim(),
             keyPoints: Array.isArray(c?.keyPoints) ? c.keyPoints : [],
-            timeSource: analysisSource === 'youtube_url' ? 'estimated' : 'real',
+            timeSource: analysisSource === 'youtube_url' ? 'unavailable' : 'explicit-input',
           }));
 
       const chaptersValidation = validateChaptersForSave(normalizedChapters, {

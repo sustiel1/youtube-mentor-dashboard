@@ -17,7 +17,13 @@ import { getSegments } from "@/lib/localSegmentStore";
 import { parseTranscript } from "@/services/youtubeTranscript";
 
 const MIN_CHARS = 40;
-const MIN_CHAPTER_CHARS = 400;
+
+function resolveYouTubeSegmentKey(video) {
+  const explicit = video?.videoId || video?.youtubeId;
+  if (explicit) return explicit;
+  const url = String(video?.url || video?.videoUrl || video?.youtubeUrl || '');
+  return url.match(/(?:youtu\.be\/|[?&]v=|\/embed\/)([A-Za-z0-9_-]{11})/)?.[1] || video?.id || null;
+}
 
 function joinSegments(segments) {
   if (!Array.isArray(segments) || segments.length === 0) return null;
@@ -63,7 +69,7 @@ export function getVideoTranscriptText(video) {
   }
 
   // 7: localStorage segment store (fetched transcript stored by youtubeTranscript.js)
-  const videoId = video.videoId || video.id;
+  const videoId = resolveYouTubeSegmentKey(video);
   if (videoId) {
     const storedSegs = getSegments(videoId);
     const joined = joinSegments(storedSegs);
@@ -76,16 +82,19 @@ export function getVideoTranscriptText(video) {
 function normalizeSegmentList(segments) {
   if (!Array.isArray(segments) || segments.length === 0) return [];
   return segments
-    .map((s, index) => {
-      if (typeof s === "string") {
-        const text = s.trim();
-        return text ? { text, startSeconds: index * 5, start: index * 5 } : null;
-      }
+    .map((s) => {
+      if (typeof s === "string") return null;
       const text = String(s?.text || s?.content || "").trim();
       if (!text) return null;
-      const startSeconds = Number(s?.startSeconds ?? s?.start ?? index * 5);
-      const start = Number.isFinite(startSeconds) ? startSeconds : index * 5;
-      return { text, startSeconds: start, start };
+      const startSeconds = Number(s?.startSeconds ?? s?.start);
+      if (!Number.isFinite(startSeconds) || startSeconds < 0) return null;
+      const duration = Number(s?.durationSeconds ?? s?.duration ?? s?.dur);
+      return {
+        text,
+        startSeconds,
+        start: startSeconds,
+        durationSeconds: Number.isFinite(duration) && duration >= 0 ? duration : 0,
+      };
     })
     .filter(Boolean);
 }
@@ -99,52 +108,7 @@ function segmentsToLines(segments) {
 }
 
 /** Split plain transcript text into timed pseudo-lines for chapter generation. */
-function plainTextToEstimatedLines(text, durationSeconds) {
-  const raw = String(text || "").trim();
-  if (raw.length < MIN_CHAPTER_CHARS) return [];
-
-  const paragraphs = raw
-    .split(/\n{2,}/g)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const blocks =
-    paragraphs.length > 0
-      ? paragraphs
-      : raw.split(/\n+/g).map((p) => p.trim()).filter(Boolean);
-
-  const joined = blocks.join("\n\n");
-  const totalChars = joined.length || 1;
-  const desired =
-    totalChars < 1200 ? 3 :
-    totalChars < 2600 ? 4 :
-    totalChars < 5200 ? 5 :
-    totalChars < 9000 ? 6 : 7;
-  const targetChars = Math.max(400, Math.floor(totalChars / desired));
-
-  const chunks = [];
-  let acc = "";
-  for (const block of blocks) {
-    if (!acc) acc = block;
-    else if (acc.length + block.length < targetChars) acc = `${acc}\n\n${block}`;
-    else {
-      chunks.push(acc);
-      acc = block;
-    }
-  }
-  if (acc) chunks.push(acc);
-
-  const dur =
-    Number.isFinite(durationSeconds) && durationSeconds > 0
-      ? durationSeconds
-      : Math.max(chunks.length * 60, 600);
-
-  return chunks.map((chunk, index) => {
-    const start = Math.floor((index / chunks.length) * dur);
-    return { text: chunk, start, startSeconds: start };
-  });
-}
-
-function parseStringTranscript(raw, durationSeconds) {
+function parseStringTranscript(raw) {
   const text = String(raw || "").trim();
   if (!text) return { lines: [], source: null };
 
@@ -158,11 +122,6 @@ function parseStringTranscript(raw, durationSeconds) {
       })),
       source: "parsed_transcript",
     };
-  }
-
-  const estimated = plainTextToEstimatedLines(text, durationSeconds);
-  if (estimated.length >= 2) {
-    return { lines: estimated, source: "plain_text_estimated" };
   }
 
   return { lines: [], source: null };
@@ -184,7 +143,7 @@ export function resolveTranscriptForChapters(video, savedAnalysis = null, durati
   };
 
   const pushString = (raw, source) => {
-    const parsed = parseStringTranscript(raw, durationSeconds);
+    const parsed = parseStringTranscript(raw);
     if (parsed.lines.length > 0) {
       sources.push({
         segments: parsed.lines.map((line) => ({
@@ -198,7 +157,7 @@ export function resolveTranscriptForChapters(video, savedAnalysis = null, durati
     }
   };
 
-  const videoId = video?.videoId || video?.id;
+  const videoId = resolveYouTubeSegmentKey(video);
 
   pushSegments(video?.transcriptSegments, "video.transcriptSegments");
   pushSegments(video?.storedTranscriptSegments, "video.storedTranscriptSegments");

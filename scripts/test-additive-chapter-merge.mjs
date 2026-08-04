@@ -26,6 +26,14 @@ const uncertain = prepareAdditiveChapterMerge(existing, [{ title: 'Different tit
 assert.equal(uncertain.uncertainCount, 1);
 assert.equal(uncertain.addedCount, 0);
 
+const enriched = prepareAdditiveChapterMerge(
+  [{ title: 'Same chapter', startSeconds: null, timestampSource: 'unavailable' }],
+  [{ title: 'Same chapter', startSeconds: 0.56, endSeconds: 4.2, timestampSource: 'youtube-timedtext', timestampConfidence: 1 }],
+);
+assert.equal(enriched.chapters.length, 1);
+assert.equal(enriched.chapters[0].startSeconds, 0.56);
+assert.equal(enriched.chapters[0].timestampSource, 'youtube-timedtext');
+
 const zero = prepareAdditiveChapterMerge([], [{ title: 'Zero', startSeconds: 0, endSeconds: 0.56 }]);
 assert.equal(zero.chapters[0].startSeconds, 0);
 for (const invalid of [

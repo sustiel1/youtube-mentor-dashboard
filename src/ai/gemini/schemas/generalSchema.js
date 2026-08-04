@@ -10,8 +10,10 @@ export function getGeneralSchemaExample() {
     chapters: [
       {
         title: '...',
-        startSeconds: 0,
-        endSeconds: 120,
+        startSeconds: null,
+        endSeconds: null,
+        timestampSource: 'unavailable',
+        timestampConfidence: null,
         summary: '...',
         keyPoints: ['...'],
       },

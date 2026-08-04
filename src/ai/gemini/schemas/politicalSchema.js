@@ -3,10 +3,12 @@
  * Extracted from vite.config.js geminiPoliticalJsonSchemaExample.
  */
 export function getPoliticalSchemaExample({ chaptersTarget = 4 } = {}) {
-  const chapters = Array.from({ length: Math.min(chaptersTarget, 3) }, (_, i) => ({
+  const chapters = Array.from({ length: Math.min(chaptersTarget, 3) }, () => ({
     title: '...',
-    startSeconds: i * 120,
-    endSeconds: (i + 1) * 120,
+    startSeconds: null,
+    endSeconds: null,
+    timestampSource: 'unavailable',
+    timestampConfidence: null,
     summary: '...',
   }));
   return JSON.stringify({

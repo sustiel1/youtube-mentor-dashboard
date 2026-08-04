@@ -3,6 +3,8 @@
  * Extracted from vite.config.js mergeGeminiExtendedAnalysisFields + validateGeminiFinalAnalysis (general path).
  */
 
+import { normalizeChapterTiming } from '@/lib/chapterTimingSafety';
+
 function pickStrings(arr) {
   return (Array.isArray(arr) ? arr : []).map((x) => String(x || '').trim()).filter(Boolean);
 }
@@ -41,6 +43,9 @@ export function normalizeGeneralResult(parsed) {
     keyInsights,
     actionItems,
     fullSummary,
+    chapters: Array.isArray(parsed?.chapters)
+      ? parsed.chapters.map((chapter) => ({ ...chapter, ...normalizeChapterTiming(chapter) }))
+      : [],
   };
 }
 
@@ -62,9 +67,6 @@ export function validateGeneralQuality({ parsed, chunkAnalyses = [], transcriptL
   if (!String(parsed?.mainLesson || '').trim()) reasons.push('mainLesson missing');
   if (!allowChapterless && chapters.length < Math.min(Math.max(chunkAnalyses.length, 2), 6)) {
     reasons.push(`not enough chapters (${chapters.length})`);
-  }
-  if (!allowChapterless && chapters.some((c) => !Number.isFinite(Number(c?.startSeconds)))) {
-    reasons.push('chapter timestamp missing');
   }
   if (chunkAnalyses.some((chunk) => !String(chunk?.mainClaim || '').trim())) {
     reasons.push('specific claims missing');

@@ -2,6 +2,8 @@
  * Normalizes and validates market/trading content analysis results.
  */
 
+import { normalizeChapterTiming } from '@/lib/chapterTimingSafety';
+
 function pickStrings(arr) {
   return (Array.isArray(arr) ? arr : []).map((x) => String(x || '').trim()).filter(Boolean);
 }
@@ -22,7 +24,9 @@ export function normalizeMarketResult(parsed) {
     keyLevels: pickStrings(parsed?.keyLevels),
     indicators: pickStrings(parsed?.indicators),
     marketConditions: pickStrings(parsed?.marketConditions),
-    chapters: Array.isArray(parsed?.chapters) ? parsed.chapters : [],
+    chapters: Array.isArray(parsed?.chapters)
+      ? parsed.chapters.map((chapter) => ({ ...chapter, ...normalizeChapterTiming(chapter) }))
+      : [],
     tags: pickStrings(parsed?.tags),
   };
 }
@@ -41,10 +45,6 @@ export function validateMarketQuality({ parsed, transcriptLength = 0 }) {
   if (!allowChapterless && chapters.length < 2) {
     reasons.push(`not enough market chapters (${chapters.length})`);
   }
-  if (!allowChapterless && chapters.some((c) => !Number.isFinite(Number(c?.startSeconds)))) {
-    reasons.push('market chapter timestamp missing');
-  }
-
   return { ok: reasons.length === 0, reasons };
 }
 
