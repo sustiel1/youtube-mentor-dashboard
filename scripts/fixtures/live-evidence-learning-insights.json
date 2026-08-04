@@ -1,0 +1,56 @@
+{
+  "universalTabs": {
+    "insights": {
+      "top5Insights": [
+        {
+          "insight": "מדד הפחד נותר יציב",
+          "whyImportant": "הסיכון אינו מתרחב",
+          "category": "סנטימנט",
+          "applicableToApp": false
+        }
+      ],
+      "learningInsights": [
+        {
+          "lesson": "התגובה הראשונית לחדשות אינה תמיד המגמה",
+          "whyImportant": "נדרש אישור לפני פעולה",
+          "category": "ניהול סיכונים",
+          "applicableToApp": false,
+          "startSeconds": 480.25,
+          "endSeconds": 493.75,
+          "timestampSource": "timed-transcript-alignment",
+          "timestampConfidence": 0.95,
+          "timestampBasis": "matching transcript segment",
+          "timingScope": "video-absolute",
+          "providerPayload": {
+            "raw": "must-not-render"
+          }
+        },
+        {
+          "lesson": 0,
+          "whyImportant": false,
+          "manual": true
+        }
+      ]
+    },
+    "usefulKnowledge": {
+      "learningInsights": [
+        {
+          "lesson": "בדקו הקשר לפני הסקת מסקנה",
+          "evidence": "השוואה בין שני קטעים",
+          "startSeconds": 0,
+          "endSeconds": 8.5,
+          "timestampSource": "explicit-input",
+          "timestampConfidence": 1
+        }
+      ],
+      "lessons": [
+        {
+          "text": "לקח legacy נשמר"
+        }
+      ],
+      "rules": [
+        "כלל ישיר נשמר"
+      ]
+    }
+  }
+}

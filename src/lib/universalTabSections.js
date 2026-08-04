@@ -4,6 +4,7 @@
  */
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { formatStockStatusText } from '@/lib/stockStatusDisplay';
+import { normalizeUniversalInsightItem } from '@/lib/universalInsightNormalization';
 
 const TAB_UT_KEYS = {
   summary: 'summary',
@@ -31,6 +32,8 @@ const OBJECT_FIELD_LABELS = {
     conclusions: 'מסקנות',
   },
   usefulKnowledge: {
+    learningInsights: 'תובנות למידה',
+    lessons: 'לקחים',
     reusableKnowledge: 'ידע לשימוש חוזר',
     actionChecklist: 'צ\'קליסט פעולה',
     keyTakeaways: 'נקודות מפתח',
@@ -91,7 +94,7 @@ function formatObjectLine(obj) {
 }
 
 /** Flatten one JSON value into display strings (no section titles). */
-export function valueToDisplayItems(val) {
+export function valueToDisplayItems(val, { preserveStructured = false } = {}) {
   if (val == null) return [];
   if (typeof val === 'string') {
     const t = val.trim();
@@ -101,17 +104,21 @@ export function valueToDisplayItems(val) {
     return [String(val)];
   }
   if (Array.isArray(val)) {
-    return val.flatMap((entry) => valueToDisplayItems(entry));
+    return val.flatMap((entry) => valueToDisplayItems(entry, { preserveStructured }));
   }
   if (typeof val === 'object') {
     if (Array.isArray(val.items)) {
-      return val.items.flatMap((child) => valueToDisplayItems(child));
+      return val.items.flatMap((child) => valueToDisplayItems(child, { preserveStructured }));
     }
     if (Array.isArray(val.bullets)) {
-      return val.bullets.flatMap((child) => valueToDisplayItems(child));
+      return val.bullets.flatMap((child) => valueToDisplayItems(child, { preserveStructured }));
     }
     if (Array.isArray(val.points)) {
-      return val.points.flatMap((child) => valueToDisplayItems(child));
+      return val.points.flatMap((child) => valueToDisplayItems(child, { preserveStructured }));
+    }
+    if (preserveStructured) {
+      const normalized = normalizeUniversalInsightItem(val);
+      return normalized ? [normalized] : [];
     }
     const line = formatObjectLine(val);
     return line ? [line] : [];
@@ -129,10 +136,10 @@ function getUtRaw(marketBriefData, tabValue) {
   return key ? ut[key] : undefined;
 }
 
-function sectionsFromObject(obj, fieldLabels) {
+function sectionsFromObject(obj, fieldLabels, preserveStructured = false) {
   const sections = [];
   for (const [fieldKey, label] of Object.entries(fieldLabels)) {
-    const items = valueToDisplayItems(obj[fieldKey]);
+    const items = valueToDisplayItems(obj[fieldKey], { preserveStructured });
     if (items.length > 0) {
       sections.push({ key: fieldKey, label, items });
     }
@@ -140,18 +147,18 @@ function sectionsFromObject(obj, fieldLabels) {
   return sections;
 }
 
-function sectionsFromArray(raw) {
+function sectionsFromArray(raw, preserveStructured = false) {
   const sections = [];
   const flatItems = [];
 
   for (const entry of raw) {
     if (entry && typeof entry === 'object' && Array.isArray(entry.items)) {
       const label = (entry.title || entry.label || entry.name || entry.section || 'סעיף').trim();
-      const items = valueToDisplayItems(entry.items);
+      const items = valueToDisplayItems(entry.items, { preserveStructured });
       if (items.length > 0) sections.push({ key: label, label, items });
       continue;
     }
-    flatItems.push(...valueToDisplayItems(entry));
+    flatItems.push(...valueToDisplayItems(entry, { preserveStructured }));
   }
 
   if (sections.length > 0) {
@@ -169,30 +176,31 @@ function sectionsFromArray(raw) {
 export function extractUniversalTabContent(_video, tabValue, marketBriefData) {
   const raw = getUtRaw(marketBriefData, tabValue);
   if (raw == null) return null;
+  const preserveStructured = tabValue === 'insights' || tabValue === 'useful-knowledge';
 
   if (Array.isArray(raw)) {
     if (raw.length === 0) return null;
-    const nested = sectionsFromArray(raw);
+    const nested = sectionsFromArray(raw, preserveStructured);
     if (nested?.length) {
       return { mode: 'sections', sections: nested };
     }
-    const items = raw.flatMap((e) => valueToDisplayItems(e));
+    const items = raw.flatMap((e) => valueToDisplayItems(e, { preserveStructured }));
     return items.length ? { mode: 'flat', items } : null;
   }
 
   if (typeof raw === 'object') {
     const labels = OBJECT_FIELD_LABELS[TAB_UT_KEYS[tabValue]] || OBJECT_FIELD_LABELS[tabValue === 'app-builder' ? 'appBuilder' : ''];
     if (labels) {
-      const sections = sectionsFromObject(raw, labels);
+      const sections = sectionsFromObject(raw, labels, preserveStructured);
       if (sections.length > 0) {
         return { mode: 'sections', sections };
       }
     }
-    const items = valueToDisplayItems(raw);
+    const items = valueToDisplayItems(raw, { preserveStructured });
     return items.length ? { mode: 'flat', items } : null;
   }
 
-  const items = valueToDisplayItems(raw);
+  const items = valueToDisplayItems(raw, { preserveStructured });
   return items.length ? { mode: 'flat', items } : null;
 }
 
