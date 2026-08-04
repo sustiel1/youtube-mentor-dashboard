@@ -1,0 +1,77 @@
+{
+  "morningRich": {
+    "contentType": "marketBrief",
+    "marketSession": "morning",
+    "shortSummary": "סיכום בוקר מאומת ועשיר",
+    "universalTabs": {
+      "summary": [
+        {
+          "text": "תובנת בוקר",
+          "startSeconds": 0,
+          "verified": false
+        }
+      ],
+      "specialized": {
+        "macro": [
+          {
+            "indicator": "מדד לדוגמה",
+            "actualValue": -1.25,
+            "targetValue": 0,
+            "confidence": 0.95
+          }
+        ]
+      }
+    },
+    "chapters": [
+      {
+        "title": "פתיחה",
+        "startSeconds": 0,
+        "endSeconds": 12.75,
+        "timestampSource": "youtube-timedtext"
+      }
+    ],
+    "transcriptSegments": [
+      {
+        "text": "קטע עברי שמור",
+        "startSeconds": 0,
+        "durationSeconds": 2.25
+      }
+    ],
+    "manualOverrides": {
+      "markets": {
+        "source": "manual",
+        "updatedAt": "2026-08-04T10:00:00.000Z",
+        "rows": [
+          {
+            "asset": "VIX",
+            "value": 0,
+            "active": false,
+            "change": -0.75
+          }
+        ]
+      }
+    }
+  },
+  "genericLegacy": {
+    "shortSummary": "מבזק כללי במבנה legacy",
+    "keyPoints": [
+      "נקודה כללית"
+    ],
+    "chapters": []
+  },
+  "eveningPartial": {
+    "contentType": "marketBrief",
+    "marketSession": "evening",
+    "shortSummary": "פלט ערב חלקי",
+    "extractionMeta": {
+      "partial": true
+    }
+  },
+  "malformed": {
+    "contentType": "marketBrief",
+    "chapters": {
+      "unexpected": true
+    },
+    "shortSummary": "מבנה פרקים פגום"
+  }
+}
