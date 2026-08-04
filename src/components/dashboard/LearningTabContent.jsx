@@ -14,6 +14,8 @@ import {
 import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQuickSaveActions";
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { EvidenceTimestampButton } from '@/components/shared/EvidenceTimestampButton';
+import { resolveItemEvidenceTime } from '@/lib/evidenceTimestamp';
 
 function formatItem(item) {
   const stockLine = formatStockStatusText(item);
@@ -77,10 +79,13 @@ function ItemRow({
   pxUrl = null,
   url = null,
   connectButton = null,
+  timing = null,
+  onSeek = null,
 }) {
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
       {connectButton}
+      <EvidenceTimestampButton timing={timing} onSeek={onSeek} itemType="פיסת הידע" />
       <UniversalTabQuickSaveFromBulk
         bulkSelection={bulkSelection}
         text={text}
@@ -193,6 +198,8 @@ export function LearningTabContent({
   bulkSelection = null,
   getItemUrl = null,
   getConnectButton = null,
+  transcriptSegments = [],
+  onSeek = null,
 }) {
   const formatted = items.map(formatItem).filter(Boolean);
 
@@ -215,12 +222,15 @@ export function LearningTabContent({
         const bulkSelected = bulkId && bulkSelection?.multiSelected?.has(bulkId);
         const url = getItemUrl ? getItemUrl(text, items[i]) : null;
         const connectButton = getConnectButton ? getConnectButton(text, items[i]) : null;
+        const timing = resolveItemEvidenceTime(items[i], text, transcriptSegments);
         return (
           <ItemRow
             key={i}
             text={text}
             url={url}
             connectButton={connectButton}
+            timing={timing}
+            onSeek={onSeek}
             stockVisual={stockVisual}
             macroDirection={macroDirection}
             saved={isSaved ? isSaved(text) : false}

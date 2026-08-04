@@ -56,6 +56,7 @@ import {
 } from "@/services/youtubeChapterCache";
 import { loadVideos } from "@/services/videoStorage";
 import { usePersistedVideo } from "@/hooks/usePersistedVideo";
+import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { formatVideoDuration } from "@/lib/videoDuration";
@@ -2172,6 +2173,14 @@ export function VideoDetailPanel({
   const { video: persistedVideo, patch: patchVideo, setVideo: setVideoState } = usePersistedVideo(videoProp?.id, videoProp);
   // Use videoProp as fallback while the persisted-state hook initializes on first select
   const video = persistedVideo ?? videoProp;
+  const activeYouTubeId = video?.videoId || video?.youtubeId || getVideoIdFromUrl(getWatchUrl(video));
+  const {
+    containerRef: videoPlayerContainerRef,
+    playerRef: videoPlayerRef,
+    isReady: isVideoPlayerReady,
+    error: videoPlayerError,
+    seekTo: seekVideoTo,
+  } = useYouTubePlayer(activeYouTubeId);
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
   const [isTranscriptViewerOpen, setIsTranscriptViewerOpen] = useState(false);
@@ -9197,18 +9206,16 @@ export function VideoDetailPanel({
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
                   <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
-                    <PanelThumbnail video={video} />
-                    <a
-                      href={getWatchUrl(video) || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
-                      onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
-                    >
-                      <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                        <ExternalLink className="h-5 w-5 text-slate-800" />
-                      </div>
-                    </a>
+                    {activeYouTubeId && !videoPlayerError ? (
+                      <>
+                        <div className={cn("absolute inset-0 z-10 pointer-events-none transition-opacity", isVideoPlayerReady ? "opacity-0" : "opacity-100")}>
+                          <PanelThumbnail video={video} />
+                        </div>
+                        <div ref={videoPlayerContainerRef} className="absolute inset-0 h-full w-full" aria-label="נגן YouTube של הסרטון" />
+                      </>
+                    ) : (
+                      <PanelThumbnail video={video} />
+                    )}
                   </div>
                 </div>
               )}
@@ -10516,7 +10523,7 @@ export function VideoDetailPanel({
                                     section={hebrewTitlesMap[index]
                                       ? { ...chapter, hebrewTitle: hebrewTitlesMap[index].hebrewTitle, originalTitle: hebrewTitlesMap[index].originalTitle || chapter.title }
                                       : chapter}
-                                    playerRef={undefined}
+                                    playerRef={videoPlayerRef}
                                     videoUrl={getWatchUrl(video)}
                                     isHighlighted={index === highlightedChapterIndex}
                                   />
@@ -11330,6 +11337,8 @@ export function VideoDetailPanel({
                           isSaved={isInsightSaved}
                           bulkSelection={bulkSelectionShare}
                           tabScope="insights"
+                          transcriptSegments={storedTranscriptSegments}
+                          onSeek={seekVideoTo}
                         />
                       )}
                       {sections.map(({ key, label, items, highlight, tabKey }) => {
@@ -11343,6 +11352,8 @@ export function VideoDetailPanel({
                               isSaved={(text) => isBrainItemSaved(text, tabKey)}
                               bulkSelection={bulkSelectionShare}
                               tabScope="insights"
+                              transcriptSegments={storedTranscriptSegments}
+                              onSeek={seekVideoTo}
                             />
                           );
                         }
@@ -11368,6 +11379,8 @@ export function VideoDetailPanel({
                                 type: tabKey,
                                 tabScope: 'insights',
                               })}
+                              transcriptSegments={storedTranscriptSegments}
+                              onSeek={seekVideoTo}
                             />
                           </div>
                         );
@@ -11516,6 +11529,8 @@ export function VideoDetailPanel({
                               type: tabKey,
                               tabScope: 'useful-knowledge',
                             })}
+                            transcriptSegments={storedTranscriptSegments}
+                            onSeek={seekVideoTo}
                           />
                         </div>
                       ))}
