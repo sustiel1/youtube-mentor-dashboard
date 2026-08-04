@@ -4,6 +4,12 @@ import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import { X, ClipboardList, Download, Copy, ArrowRight } from "lucide-react";
 import { extractVideoTabItems, detectGEMSchemaType } from "@/config/videoTabsConfig";
 import { getKnowledgeItems } from "@/lib/localKnowledgeItemStore";
+import {
+  buildExcludedItemDiagnostics,
+  countActiveMappedFields,
+  diagnosticValueCount,
+  resolveAiMappingTab,
+} from "@/lib/aiMappingDiagnostics";
 import { toast } from "sonner";
 
 // ── Learning fields → target tab ──────────────────────────────────────────────
@@ -298,7 +304,12 @@ export function buildDiagnosticReport({ v, videoType, normalizedSubCategory, sel
     const displayKey = UNIVERSAL_TAB_DISPLAY_KEY[tabValue];
     const items = tabValue === 'chapters'
       ? finalChaps
-      : extractVideoTabItems(v, tabValue, marketBriefData).length;
+      : resolveAiMappingTab({
+          video: v,
+          marketBriefData,
+          normalizedSubCategory,
+          tabKey: tabValue,
+        }).count;
 
     // sourceItemCount: how much raw source data exists for this tab,
     // regardless of whether extractVideoTabItems successfully rendered it.
@@ -524,8 +535,7 @@ function PipelineFacts({ trace }) {
 }
 
 function countArr(obj, key) {
-  const v = obj?.[key];
-  return Array.isArray(v) ? v.length : (typeof v === 'string' && v.trim() ? 1 : 0);
+  return diagnosticValueCount(obj?.[key]);
 }
 
 function getPathValue({ video, marketBriefData }, path) {
@@ -687,7 +697,12 @@ function buildPipelineTrace({ tabKey, label, video, marketBriefData, normalizedS
   const context = { video, marketBriefData };
   const resolvedSourcePaths = sourcePaths.length > 0 ? sourcePaths : getTabSourcePaths(tabKey, mappingRows);
   const sourceTrace = getSourceTrace(context, resolvedSourcePaths);
-  const extractorReturnedItems = extractVideoTabItems(video, tabKey, marketBriefData).length;
+  const extractorReturnedItems = resolveAiMappingTab({
+    video,
+    marketBriefData,
+    normalizedSubCategory,
+    tabKey,
+  }).count;
   const rendererTrace = getRendererTrace(tabKey, normalizedSubCategory);
   const extractorExists = rendererTrace.reachableAnywhere || UNIVERSAL_TAB_KEYS.includes(tabKey);
   const uiRendered = rendererTrace.rendererExists
@@ -967,10 +982,19 @@ export function AiMappingModal({
   const tabMapping = useMemo(() => {
     if (!Array.isArray(visibleTabDefinitions)) return [];
     return visibleTabDefinitions.map(tab => {
-      const items = extractVideoTabItems(v, tab.value, marketBriefData);
-      return { value: tab.value, label: tab.label || TAB_LABEL[tab.value] || tab.value, count: items.length };
+      const resolved = resolveAiMappingTab({
+        video: v,
+        marketBriefData,
+        normalizedSubCategory,
+        tabKey: tab.value,
+      });
+      return {
+        value: tab.value,
+        label: tab.label || TAB_LABEL[tab.value] || tab.value,
+        count: resolved.count,
+      };
     });
-  }, [v, visibleTabDefinitions, marketBriefData]);
+  }, [v, visibleTabDefinitions, marketBriefData, normalizedSubCategory]);
 
   // ── §2a Learning field mapping ──────────────────────────────────────────
   const learningFieldMapping = useMemo(() =>
@@ -1051,8 +1075,18 @@ export function AiMappingModal({
 
   const totalTabItems  = tabMapping.reduce((s, r) => s + r.count, 0);
   const activeLearning = learningFieldMapping.filter(r => r.count > 0).length;
-  const activeBrief    = briefFieldMapping.length;
-  const totalActive    = activeLearning + activeBrief;
+  const totalActive = useMemo(() => countActiveMappedFields({
+    video: v,
+    marketBriefData,
+    learningFieldToTab: LEARNING_FIELD_TO_TAB,
+    briefFieldToTab: BRIEF_FIELD_TO_TAB,
+  }), [v, marketBriefData]);
+  const excludedEntries = useMemo(() => buildExcludedItemDiagnostics({
+    video: v,
+    marketBriefData,
+    learningFieldToTab: LEARNING_FIELD_TO_TAB,
+    briefFieldToTab: BRIEF_FIELD_TO_TAB,
+  }), [v, marketBriefData]);
 
   // ── §7 Debug Report ─────────────────────────────────────────────────────────
   const [showReport, setShowReport] = useState(false);
@@ -1637,16 +1671,81 @@ export function AiMappingModal({
             </section>
 
             {/* §1 Tab Mapping */}
-            <section>
+            <section data-testid="ai-mapping-coverage-summary" dir="rtl">
+              <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">שדות פעילים</p>
+                  <p data-testid="active-field-count" className="mt-0.5 text-lg font-bold text-slate-900 dark:text-zinc-100">{totalActive}</p>
+                </div>
+                <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">פריטים מוצגים בסך הכול</p>
+                  <p data-testid="total-rendered-item-count" className="mt-0.5 text-lg font-bold text-slate-900 dark:text-zinc-100">{totalTabItems}</p>
+                </div>
+              </div>
               <SectionHeader>📑 מיפוי טאבים — מה כל טאב מציג</SectionHeader>
               <DataTable
                 headers={["שם טאב", "key", "פריטים"]}
                 rows={tabMapping.map(r => [
                   <span className="font-medium text-slate-800 dark:text-zinc-200">{r.label}</span>,
                   <span className="font-mono text-xs text-slate-400 dark:text-zinc-500">{r.value}</span>,
-                  <StatusPill count={r.count} />,
+                  <span data-testid={r.value === 'specialized' ? 'specialized-rendered-count' : undefined}>
+                    <StatusPill count={r.count} />
+                  </span>,
                 ])}
               />
+            </section>
+
+            <section data-testid="excluded-items-section" dir="rtl">
+              <SectionHeader>פריטים שהוחרגו ({excludedEntries.length})</SectionHeader>
+              {excludedEntries.length === 0 ? (
+                <p data-testid="excluded-items-empty" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                  אין פריטים שהוחרגו.
+                </p>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700 md:block">
+                    <table className="w-full min-w-[760px] table-fixed text-right text-xs">
+                      <thead className="bg-slate-50 text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">
+                        <tr>
+                          <th className="w-[19%] px-3 py-2">נתיב מקור</th>
+                          <th className="w-[20%] px-3 py-2">תצוגה מקוצרת</th>
+                          <th className="w-[23%] px-3 py-2">סיבת החרגה</th>
+                          <th className="w-[13%] px-3 py-2">טאב יעד</th>
+                          <th className="w-[12%] px-3 py-2">מוצג במקום אחר</th>
+                          <th className="w-[13%] px-3 py-2">נדרשת פעולה</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                        {excludedEntries.map((entry, index) => (
+                          <tr key={`${entry.sourcePath}:${index}`} data-testid="excluded-item-row" className="align-top">
+                            <td className="break-all px-3 py-2 font-mono text-[10px] text-slate-500 dark:text-zinc-400">{entry.sourcePath}</td>
+                            <td className="break-words px-3 py-2 text-slate-700 dark:text-zinc-300">{entry.preview || '—'}</td>
+                            <td className="break-words px-3 py-2 text-slate-700 dark:text-zinc-300">{entry.reasonHe}</td>
+                            <td className="break-words px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.destinationLabelHe}</td>
+                            <td className="px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.displayedElsewhere ? 'כן' : 'לא'}</td>
+                            <td className="break-words px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.actionRequired ? `כן — ${entry.actionLabelHe}` : 'לא'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="grid min-w-0 gap-2 md:hidden">
+                    {excludedEntries.map((entry, index) => (
+                      <article key={`${entry.sourcePath}:mobile:${index}`} data-testid="excluded-item-card" className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-zinc-700 dark:bg-zinc-900">
+                        <p className="break-all font-mono text-[10px] text-slate-500 dark:text-zinc-400">{entry.sourcePath}</p>
+                        <dl className="mt-2 grid min-w-0 gap-2">
+                          <div className="min-w-0"><dt className="font-semibold text-slate-500">תצוגה מקוצרת</dt><dd className="break-words text-slate-700 dark:text-zinc-300">{entry.preview || '—'}</dd></div>
+                          <div className="min-w-0"><dt className="font-semibold text-slate-500">סיבת החרגה</dt><dd className="break-words text-slate-700 dark:text-zinc-300">{entry.reasonHe}</dd></div>
+                          <div><dt className="font-semibold text-slate-500">טאב יעד</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.destinationLabelHe}</dd></div>
+                          <div><dt className="font-semibold text-slate-500">מוצג במקום אחר</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.displayedElsewhere ? 'כן' : 'לא'}</dd></div>
+                          <div><dt className="font-semibold text-slate-500">נדרשת פעולה</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.actionRequired ? `כן — ${entry.actionLabelHe}` : 'לא'}</dd></div>
+                        </dl>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
 
             {/* §2a Learning field mapping — only when data present */}

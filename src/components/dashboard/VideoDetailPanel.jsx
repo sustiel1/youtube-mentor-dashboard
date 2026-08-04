@@ -12101,7 +12101,7 @@ export function VideoDetailPanel({
         visibleTabDefinitions={visibleTabDefinitions}
         category={effectiveCategory}
         subCategory={effectiveSubCategory}
-        normalizedSubCategory={normalizedSubCategory}
+        normalizedSubCategory={effectiveBriefSlug ?? normalizedSubCategory}
         selectedTabsConfigKey={selectedTabsConfigKey}
         gemRec={gemRec}
         marketBriefData={marketBriefData}
