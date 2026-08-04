@@ -16,6 +16,18 @@ import {
 } from "@/lib/morningBriefBulkSections";
 
 const MARKET_FIELD_RE = /\b(direction|change|level)\s*:/;
+const MORNING_DASHBOARD_SECTION_KEYS = new Set([
+  'news',
+  'market-regime',
+  'sectors',
+  'opportunities',
+  'risks',
+  'stocks-mentioned',
+  'economic-calendar',
+  'macro',
+  'sentiment',
+  'markets',
+]);
 function looksLikeMarketIndex(item) {
   if (item && typeof item === 'object') return true;
   if (typeof item !== 'string') return false;
@@ -130,7 +142,7 @@ export function SpecializedContentRenderer({
 
   const sect = (label, items, tabKey, sectionKey = tabKey) => (
     <Section
-      key={tabKey}
+      key={sectionKey}
       label={label}
       items={items}
       tabKey={tabKey}
@@ -199,17 +211,27 @@ export function SpecializedContentRenderer({
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
   if (slug === 'morning-brief' || slug === 'evening-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
+    const additionalSections = morningBulkDefs
+      .filter((section) => !MORNING_DASHBOARD_SECTION_KEYS.has(section.key))
+      .map((section) => sect(section.label, section.items, section.tabKey, section.key));
     return wrapWithBriefHeader(
       renderBulkShell(morningBulkDefs, (
-        <MorningBriefDashboard
-          effectiveVideo={effectiveVideo}
-          marketBriefData={marketBriefData}
-          onSaveToBrain={onSaveToBrain}
-          onSaveMarketBriefSection={onSaveMarketBriefSection}
-          bulkSelection={bulkSelection}
-          bulkSections={morningBulkDefs}
-          presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
-        />
+        <>
+          <MorningBriefDashboard
+            effectiveVideo={effectiveVideo}
+            marketBriefData={marketBriefData}
+            onSaveToBrain={onSaveToBrain}
+            onSaveMarketBriefSection={onSaveMarketBriefSection}
+            bulkSelection={bulkSelection}
+            bulkSections={morningBulkDefs}
+            presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+          />
+          {additionalSections.length > 0 && (
+            <div className="space-y-3" data-specialized-additional-sections>
+              {additionalSections}
+            </div>
+          )}
+        </>
       )),
       { showSourceCaption: MORNING_BRIEF_SPECIALIZED_PRESENTATION.showSourceCaption },
     );

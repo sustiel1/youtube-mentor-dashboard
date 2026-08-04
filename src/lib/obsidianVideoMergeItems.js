@@ -5,7 +5,7 @@ import { buildObsidianItemIdentityKey } from '@/lib/obsidianItemSaveStore';
 import { APP_BUILDER_SECTIONS } from '@/lib/appBuilderStore';
 import { extractUniversalTabContent, extractUniversalTabFlatItems } from '@/lib/universalTabSections';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
-import { buildMorningBriefBulkSections, buildMorningBriefCardBulkItems } from '@/lib/morningBriefBulkSections';
+import { buildMorningBriefBulkSections } from '@/lib/morningBriefBulkSections';
 import {
   buildBulkItemsFromSections,
   buildBulkItemsFromTexts,
@@ -223,7 +223,6 @@ export function collectVideoObsidianMergeItems({
   }
 
   const specializedSections = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
-  bulkEntries.push(...buildMorningBriefCardBulkItems(specializedSections));
   bulkEntries.push(...buildBulkItemsFromSections(specializedSections, 'specialized'));
 
   pushLegacyArrayItems(bulkEntries, effectiveVideo, 'keyInsights', '⚡ תובנות מרכזיות', 'insights');

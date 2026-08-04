@@ -30,6 +30,7 @@ export const DISPLAY_LABEL_MAP = {
   'economic calendar': 'לוח כלכלי',
   macro: 'מאקרו',
   sentiment: 'סנטימנט',
+  overall: 'סנטימנט כללי',
   positive: 'חיובי',
   negative: 'שלילי',
   neutral: 'ניטרלי',

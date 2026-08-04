@@ -49,13 +49,16 @@ export function MorningBriefDashboard({
   const plainNewsItems = allNewsItems
     .filter((i) => !looksLikeMarketIndex(i))
     .filter((i) => typeof i !== 'string' || !isRegimeDuplicateString(i));
+  const selectedNewsItems = bulkSections.length > 0
+    ? (bulkSections.find((section) => section.key === 'news')?.items || [])
+    : plainNewsItems;
   const macroItems = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
   const shared = sectionProps(presentation, bulkSelection, bulkSections);
 
   return (
     <div className="space-y-3" dir="rtl" data-morning-brief-dashboard>
       <NewsSection
-        items={plainNewsItems}
+        items={selectedNewsItems}
         onSaveToBrain={onSaveToBrain}
         marketBriefData={marketBriefData}
         onSaveMarketBriefSection={onSaveMarketBriefSection}

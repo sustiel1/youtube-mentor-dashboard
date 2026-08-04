@@ -7,8 +7,6 @@ import {
   extractMarketDashboardRows,
   parseMacroDisplayItem,
   extractMarketRegimeCards,
-  extractOpportunityIdeas,
-  extractRiskItems,
   extractSectorRows,
   extractSentimentItems,
   extractUnifiedStocks,
@@ -86,7 +84,10 @@ import {
 } from '@/lib/manualBriefOverrides';
 import { getStockSectorMeta } from '@/lib/stockSectorMap';
 import { resolveMorningBriefPresentation, morningBriefSectionCount, morningBriefShowsSummaryCounters, morningBriefSubsectionTitle, countOpportunitiesAndRisks } from '@/lib/morningBriefPresentation';
-import { getMorningBriefMarketRows } from '@/lib/morningBriefBulkSections';
+import {
+  getMorningBriefMarketRows,
+  resolveMorningBriefOpportunitiesAndRisks,
+} from '@/lib/morningBriefBulkSections';
 import {
   BriefSectionManualHeaderExtras,
   ManualEditGrid,
@@ -2018,12 +2019,7 @@ export function EconomicCalendarSection({
 
 // ── 8. Opportunities & Risks (compact list renderers) ────────────────
 function filterOpportunityIdeas(marketBriefData, effectiveVideo) {
-  const stockTickers = new Set(extractUnifiedStocks(marketBriefData, effectiveVideo).map((s) => s.ticker));
-  return extractOpportunityIdeas(getSpecializedSrc(marketBriefData)).filter((idea) => {
-    const title = (idea.title || '').trim().toUpperCase();
-    if (stockTickers.has(title) && title.length <= 5) return false;
-    return true;
-  });
+  return resolveMorningBriefOpportunitiesAndRisks(marketBriefData, effectiveVideo).opportunities;
 }
 
 const SEVERITY_LABELS = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
@@ -2286,8 +2282,12 @@ export function OpportunitiesRisksDashboard({
     onSaveMarketBriefSection,
     presentation,
   });
-  const ideas = filterOpportunityIdeas(marketBriefData, effectiveVideo);
-  const risks = extractRiskItems(getSpecializedSrc(marketBriefData));
+  const resolvedOpportunitiesRisks = resolveMorningBriefOpportunitiesAndRisks(
+    marketBriefData,
+    effectiveVideo,
+  );
+  const ideas = resolvedOpportunitiesRisks.opportunities;
+  const risks = resolvedOpportunitiesRisks.risks;
   const opportunitySlots = padInsightSlots(ideas, INSIGHT_GRID_SLOT_COUNT);
   const riskSlots = padInsightSlots(risks, INSIGHT_GRID_SLOT_COUNT);
   const oppRiskCount = countOpportunitiesAndRisks(ideas, risks);
@@ -2467,7 +2467,7 @@ export function OpportunitiesSection({ marketBriefData, effectiveVideo, onSaveTo
 
 // ── 9. Risks ─────────────────────────────────────────────────────────
 export function RisksWarningSection({ marketBriefData, onSaveToBrain }) {
-  const risks = extractRiskItems(getSpecializedSrc(marketBriefData));
+  const risks = resolveMorningBriefOpportunitiesAndRisks(marketBriefData).risks;
 
   return (
     <SectionCard
@@ -2877,11 +2877,11 @@ export function hasEnhancedCalendar(marketBriefData) {
 }
 
 export function hasEnhancedOpportunities(marketBriefData) {
-  return extractOpportunityIdeas(getSpecializedSrc(marketBriefData)).length > 0;
+  return resolveMorningBriefOpportunitiesAndRisks(marketBriefData).opportunities.length > 0;
 }
 
 export function hasEnhancedRisks(marketBriefData) {
-  return extractRiskItems(getSpecializedSrc(marketBriefData)).length > 0;
+  return resolveMorningBriefOpportunitiesAndRisks(marketBriefData).risks.length > 0;
 }
 
 export function hasEnhancedWatchlist(marketBriefData, effectiveVideo = null) {

@@ -512,7 +512,9 @@ function formatMacroItem(item) {
 function collectSpecializedArrayLayers(marketBriefData, key) {
   return [
     marketBriefData?.universalTabs?.specialized?.[key],
+    marketBriefData?.universalTabs?.[key],
     marketBriefData?.rawData?.universalTabs?.specialized?.[key],
+    marketBriefData?.rawData?.universalTabs?.[key],
     marketBriefData?.rawData?.[key],
     marketBriefData?.[key],
   ];
@@ -551,6 +553,39 @@ function newsItemIdentity(item) {
   return String(item.title || item.event || item.headline || item.name || '').trim().toLowerCase();
 }
 
+function newsItemDetail(item) {
+  if (!item || typeof item !== 'object') return '';
+  return String(item.description || item.summary || item.impact || item.note || item.content || '')
+    .trim()
+    .toLowerCase();
+}
+
+function newsItemsAreDuplicates(left, right) {
+  const leftIdentity = newsItemIdentity(left);
+  const rightIdentity = newsItemIdentity(right);
+  if (!leftIdentity || leftIdentity !== rightIdentity) return false;
+  const leftDetail = newsItemDetail(left);
+  const rightDetail = newsItemDetail(right);
+  return !leftDetail || !rightDetail || leftDetail === rightDetail;
+}
+
+function unionNewsItemsPreferRicher(layers) {
+  const items = [];
+  for (const layer of layers) {
+    if (!Array.isArray(layer)) continue;
+    for (const item of layer) {
+      if (item == null) continue;
+      const duplicateIndex = items.findIndex((existing) => newsItemsAreDuplicates(existing, item));
+      if (duplicateIndex < 0) {
+        items.push(item);
+      } else if (itemTextRichness(item) > itemTextRichness(items[duplicateIndex])) {
+        items[duplicateIndex] = item;
+      }
+    }
+  }
+  return items;
+}
+
 function sectorItemIdentity(item) {
   if (typeof item === 'string') return item.trim().toLowerCase();
   if (!item || typeof item !== 'object') return '';
@@ -560,7 +595,7 @@ function sectorItemIdentity(item) {
 /** Resolves + dedupes Specialized-tab news items from every known GEM JSON location. */
 export function resolveSpecializedNewsItems(marketBriefData) {
   const layers = collectSpecializedArrayLayers(marketBriefData, 'marketNews');
-  return unionByIdentityPreferRicher(layers, newsItemIdentity);
+  return unionNewsItemsPreferRicher(layers);
 }
 
 /** Resolves + dedupes Specialized-tab sector items from every known GEM JSON location. */

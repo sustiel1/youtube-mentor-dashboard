@@ -13,6 +13,7 @@ import {
 } from '@/lib/universalTabBulkItems';
 import {
   extractCalendarRows,
+  extractCompanyEventRows,
   extractMacroIndicatorRows,
   extractMarketDashboardRows,
   extractMarketRegimeCards,
@@ -31,6 +32,18 @@ import {
 } from '@/lib/morningBriefDisplay';
 
 const INTERNAL_NEWS_FIELD_RE = /^(headline|title|content|source|impact)\s*:\s*/i;
+
+const isPresentDisplayValue = (value) => (
+  value !== null
+  && value !== undefined
+  && String(value).trim() !== ''
+);
+
+function formatDisplayAtom(value) {
+  if (value === true || value === 'true') return 'כן';
+  if (value === false || value === 'false') return 'לא';
+  return String(value ?? '').trim();
+}
 
 function stripInternalNewsFieldLabel(text) {
   let s = String(text || '').trim();
@@ -55,13 +68,49 @@ function normalizeNewsStrings(items) {
   }).filter(Boolean);
 }
 
-function filterOpportunityIdeas(marketBriefData, effectiveVideo) {
+function firstSummaryArray(marketBriefData, key) {
+  const sources = [
+    marketBriefData?.universalTabs?.summary,
+    marketBriefData?.rawData?.universalTabs?.summary,
+    marketBriefData?.summary,
+    marketBriefData?.rawData?.summary,
+    marketBriefData,
+    marketBriefData?.rawData,
+  ];
+  for (const source of sources) {
+    if (Array.isArray(source?.[key]) && source[key].length > 0) return source[key];
+  }
+  return [];
+}
+
+function filterTickerOnlyOpportunities(ideas, marketBriefData, effectiveVideo) {
   const stockTickers = new Set(extractUnifiedStocks(marketBriefData, effectiveVideo).map((s) => s.ticker));
-  return extractOpportunityIdeas(getSpecializedSrc(marketBriefData)).filter((idea) => {
+  return ideas.filter((idea) => {
     const title = (idea.title || '').trim().toUpperCase();
     if (stockTickers.has(title) && title.length <= 5) return false;
     return true;
   });
+}
+
+/** Canonical opportunity/risk rows shared by the dashboard and export/count selector. */
+export function resolveMorningBriefOpportunitiesAndRisks(marketBriefData, effectiveVideo = {}) {
+  const src = getSpecializedSrc(marketBriefData);
+  const structuredOpportunities = filterTickerOnlyOpportunities(
+    extractOpportunityIdeas(src),
+    marketBriefData,
+    effectiveVideo,
+  );
+  const fallbackOpportunities = filterTickerOnlyOpportunities(
+    extractOpportunityIdeas({ opportunities: firstSummaryArray(marketBriefData, 'keyOpportunities') }),
+    marketBriefData,
+    effectiveVideo,
+  );
+  const structuredRisks = extractRiskItems(src);
+  const fallbackRisks = extractRiskItems({ risks: firstSummaryArray(marketBriefData, 'importantWarnings') });
+  return {
+    opportunities: structuredOpportunities.length ? structuredOpportunities : fallbackOpportunities,
+    risks: structuredRisks.length ? structuredRisks : fallbackRisks,
+  };
 }
 
 function formatOpportunityText(idea) {
@@ -82,12 +131,16 @@ function formatOpportunityText(idea) {
 }
 
 function formatMarketRowText(row) {
-  return [row.asset, row.trend, row.strength, row.level, row.comment].filter(Boolean).join(' · ');
+  return [row.asset, row.trend, row.strength, row.level, row.comment]
+    .filter(isPresentDisplayValue)
+    .map(formatDisplayAtom)
+    .join(' · ');
 }
 
 function formatMacroRowText(row) {
   return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
-    .filter(Boolean)
+    .filter(isPresentDisplayValue)
+    .map(formatDisplayAtom)
     .join(' · ');
 }
 
@@ -98,8 +151,8 @@ function formatSectorRowText(row) {
     row.relativeStrength,
     row.reason,
     row.etf && `ETF: ${row.etf}`,
-    row.stocks?.length && `מניות: ${row.stocks.join(', ')}`,
-  ].filter(Boolean).join(' · ');
+    row.stocks?.length > 0 ? `מניות: ${row.stocks.join(', ')}` : '',
+  ].filter(isPresentDisplayValue).map(formatDisplayAtom).join(' · ');
 }
 
 function formatCalendarRowText(row) {
@@ -109,8 +162,17 @@ function formatCalendarRowText(row) {
     row.importance,
     row.impact && `השפעה: ${row.impact}`,
     row.timeframe && `תזמון: ${row.timeframe}`,
-    row.affectedStocks?.length && `מושפעות: ${row.affectedStocks.join(', ')}`,
-  ].filter(Boolean).join(' · ');
+    row.affectedStocks?.length > 0 ? `מושפעות: ${row.affectedStocks.join(', ')}` : '',
+  ].filter(isPresentDisplayValue).map(formatDisplayAtom).join(' · ');
+}
+
+function formatCompanyEventText(row) {
+  return [
+    row.event,
+    row.affectedStocks?.length ? `נכסים: ${row.affectedStocks.join(', ')}` : '',
+    (row.timeframe || row.date) && `מועד: ${row.timeframe || row.date}`,
+    row.impact && `השפעה: ${row.impact}`,
+  ].filter(isPresentDisplayValue).map(formatDisplayAtom).join(' · ');
 }
 
 function formatStockRowText(stock) {
@@ -124,8 +186,8 @@ function formatStockRowText(stock) {
     stock.notes,
     stock.timeframe && `טווח: ${stock.timeframe}`,
     stock.priority && `עדיפות: ${stock.priority}`,
-    stock.isNewToWatch != null && `חדש למעקב: ${stock.isNewToWatch ? 'כן' : 'לא'}`,
-  ].filter(Boolean).join(' · ');
+    stock.isNewToWatch != null ? `חדש למעקב: ${stock.isNewToWatch ? 'כן' : 'לא'}` : '',
+  ].filter(isPresentDisplayValue).map(formatDisplayAtom).join(' · ');
 }
 
 function formatLevelRowText(row) {
@@ -143,17 +205,21 @@ function formatLevelRowText(row) {
 function formatStructuredFact(item) {
   if (typeof item === 'string') return item.trim();
   if (!item || typeof item !== 'object') return '';
+  const subject = item.ticker || item.asset || '';
+  const mainText = item.insight || item.lesson || item.point || item.title || '';
+  const explanation = item.note || item.reason || item.whyImportant || '';
   const preferred = [
-    item.rank != null && `#${item.rank}`,
-    item.ticker || item.asset || item.insight || item.point || item.title,
+    item.rank != null ? `#${item.rank}` : '',
+    subject,
+    mainText,
     item.level,
-    item.note || item.reason || item.whyImportant,
-    item.action && `פעולה: ${item.action}`,
-    item.significance && `חשיבות: ${item.significance}`,
-    item.category && `קטגוריה: ${item.category}`,
-    item.applicableToApp != null && `יישומי לאפליקציה: ${item.applicableToApp ? 'כן' : 'לא'}`,
-  ].filter(Boolean);
-  return preferred.join(' · ');
+    explanation && explanation !== mainText ? explanation : '',
+    item.action ? `פעולה: ${item.action}` : '',
+    item.significance ? `חשיבות: ${item.significance}` : '',
+    item.category ? `נושא: ${item.category}` : '',
+    item.applicableToApp != null ? `מתאים ליישום: ${item.applicableToApp ? 'כן' : 'לא'}` : '',
+  ].filter(isPresentDisplayValue);
+  return preferred.map(formatDisplayAtom).join(' · ');
 }
 
 function uniqueTexts(items) {
@@ -231,9 +297,12 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   const src = getSpecializedSrc(marketBriefData);
   const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
   const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
+  const regimeCards = extractMarketRegimeCards(src);
+  const regimeValues = new Set(regimeCards.map((card) => String(card.value || '').trim()).filter(Boolean));
   const plainNewsItems = allNewsItems
     .filter((i) => {
       if (typeof i === 'string' && isRegimeDuplicateString(i)) return false;
+      if (typeof i === 'string' && regimeValues.has(i.trim())) return false;
       return true;
     })
     .filter((i) => typeof i !== 'string' || !(/\b(direction|change|level)\s*:/.test(i) && i.indexOf(':') > 0 && i.slice(0, i.indexOf(':')).trim().length <= 12));
@@ -245,7 +314,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
     sections.push({ key: 'news', label: '📰 חדשות', items: newsItems, tabKey: 'market-news' });
   }
 
-  const regimeItems = extractMarketRegimeCards(src).map(formatRegimeCardText).filter(Boolean);
+  const regimeItems = regimeCards.map(formatRegimeCardText).filter(Boolean);
   if (regimeItems.length) {
     sections.push({ key: 'market-regime', label: '📊 מצב שוק', items: regimeItems, tabKey: 'market-regime' });
   }
@@ -255,14 +324,18 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
     sections.push({ key: 'sectors', label: '📊 סקטורים', items: sectorItems, tabKey: 'brief-sectors' });
   }
 
-  const opportunityItems = filterOpportunityIdeas(marketBriefData, effectiveVideo)
+  const resolvedOpportunitiesRisks = resolveMorningBriefOpportunitiesAndRisks(
+    marketBriefData,
+    effectiveVideo,
+  );
+  const opportunityItems = resolvedOpportunitiesRisks.opportunities
     .map(formatOpportunityText)
     .filter(Boolean);
   if (opportunityItems.length) {
     sections.push({ key: 'opportunities', label: '🎯 הזדמנויות', items: opportunityItems, tabKey: 'brief-opportunities' });
   }
 
-  const riskItems = extractRiskItems(src).map((r) => r.text).filter(Boolean);
+  const riskItems = resolvedOpportunitiesRisks.risks.map((r) => r.text).filter(Boolean);
   if (riskItems.length) {
     sections.push({ key: 'risks', label: '⚠️ סיכונים', items: riskItems, tabKey: 'brief-risks' });
   }
@@ -279,6 +352,11 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
     sections.push({ key: 'economic-calendar', label: '📅 לוח כלכלי', items: calendarItems, tabKey: 'brief-calendar' });
   }
 
+  const companyEventItems = extractCompanyEventRows(src).map(formatCompanyEventText).filter(Boolean);
+  if (companyEventItems.length) {
+    sections.push({ key: 'company-events', label: '🏢 אירועי חברות', items: companyEventItems, tabKey: 'company-events' });
+  }
+
   const macroFallback = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
   const macroItems = getMacroDisplayRows(marketBriefData, macroFallback)
     .map(formatMacroRowText)
@@ -288,7 +366,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   }
 
   const sentimentItems = extractSentimentItems(src)
-    .map(({ label, value }) => `${label}: ${value}`)
+    .map(({ label, value }) => `${translateDisplayLabel(label)}: ${formatDisplayAtom(value)}`)
     .filter(Boolean);
   if (sentimentItems.length) {
     sections.push({ key: 'sentiment', label: '📊 סנטימנט', items: sentimentItems, tabKey: 'brief-sentiment' });

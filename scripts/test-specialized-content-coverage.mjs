@@ -84,7 +84,7 @@ try {
   assert.ok(texts.some((text) => text.includes('ETF: SOXX') && text.includes('MU, SNDK')), 'sector details must be preserved');
   assert.ok(texts.some((text) => text.includes('כניסה: 100') && text.includes('יחס סיכון/סיכוי: 1:2')), 'trade plan must be complete');
   assert.ok(texts.some((text) => text.includes('0%') && text.includes('חדש למעקב: לא')), 'zero and false values must be preserved');
-  assert.ok(texts.some((text) => text.includes('Wait for stabilization') && text.includes('יישומי לאפליקציה: לא')), 'learning false value must be preserved');
+  assert.ok(texts.some((text) => text.includes('Wait for stabilization') && text.includes('מתאים ליישום: לא')), 'learning false value must be preserved');
   assert.ok(texts.some((text) => text.startsWith('VIX ·') && text.includes('· 0 ·')), 'numeric zero market level must be preserved');
   assert.ok(texts.some((text) => text.startsWith('OIL ·') && text.includes('· 80 ·')), 'oil level must enrich its existing market row');
   assert.ok(texts.some((text) => text.startsWith('BITCOIN ·') && text.includes('· 63400 ·')), 'bitcoin level must enrich its existing market row');

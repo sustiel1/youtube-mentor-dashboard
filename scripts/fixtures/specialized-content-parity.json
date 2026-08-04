@@ -1,0 +1,135 @@
+{
+  "contentType": "marketBrief",
+  "universalTabs": {
+    "summary": {
+      "keyOpportunities": [
+        "הזדמנות מאומתת מסיכום המבזק"
+      ],
+      "importantWarnings": [
+        "אזהרה מאומתת מסיכום המבזק"
+      ]
+    },
+    "insights": {
+      "top5Insights": [
+        {
+          "rank": 1,
+          "asset": "SPX",
+          "insight": "תובנה מרכזית נקייה",
+          "significance": "מסבירה את מצב השוק",
+          "category": "מבנה שוק"
+        }
+      ],
+      "learningInsights": [
+        {
+          "lesson": "לקח מרכזי שאסור לאבד",
+          "whyImportant": "הסבר מדוע הלקח חשוב",
+          "category": "ניהול סיכונים",
+          "applicableToApp": false
+        }
+      ]
+    },
+    "allPoints": [
+      {
+        "point": "נקודה ישירה משדה sibling",
+        "category": "מידע נוסף"
+      }
+    ],
+    "specialized": {
+      "marketOverview": {
+        "summary": "מצב שוק מאומת",
+        "vix": {
+          "asset": "VIX",
+          "level": 0,
+          "direction": "flat",
+          "note": "ערך אפס נשמר"
+        }
+      },
+      "marketNews": [
+        {
+          "headline": "כותרת משותפת"
+        },
+        {
+          "headline": "כותרת משותפת",
+          "impact": "השפעה ראשונה"
+        },
+        {
+          "headline": "כותרת משותפת",
+          "impact": "השפעה שנייה"
+        },
+        {
+          "headline": "כותרת משותפת",
+          "impact": "השפעה ראשונה"
+        }
+      ],
+      "sectorRotation": [
+        {
+          "sector": "טכנולוגיה",
+          "direction": "into",
+          "reason": "זרימה חיובית",
+          "stocks": []
+        }
+      ],
+      "tradingOpportunities": [],
+      "risks": [],
+      "stocksMentioned": [
+        {
+          "ticker": "AI",
+          "nameHebrew": "סי 3 איי",
+          "reason": "דוח מאומת",
+          "change": 0,
+          "isNewToWatch": false
+        }
+      ],
+      "catalysts": [
+        {
+          "description": "דוח רבעוני של AI",
+          "type": "earnings",
+          "impact": "high",
+          "affectedStocks": ["AI"],
+          "timeframe": "after-market"
+        },
+        {
+          "description": "פרסום נתון מאקרו",
+          "type": "macro",
+          "impact": "medium",
+          "timeframe": "tomorrow"
+        }
+      ],
+      "economicCalendar": [
+        {
+          "event": "החלטת ריבית",
+          "importance": "high",
+          "date": "מחר"
+        }
+      ],
+      "macroFactors": [
+        {
+          "indicator": "ריבית",
+          "value": 0,
+          "impact": false
+        }
+      ],
+      "sentiment": [
+        {
+          "label": "overall",
+          "value": false
+        }
+      ],
+      "indices": [
+        {
+          "asset": "SPX",
+          "direction": "flat",
+          "level": 0
+        }
+      ],
+      "keyLevels": [
+        {
+          "asset": "SPX",
+          "level": 0,
+          "type": "support",
+          "note": "רמת אפס לבדיקה"
+        }
+      ]
+    }
+  }
+}

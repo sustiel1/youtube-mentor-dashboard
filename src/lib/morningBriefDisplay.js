@@ -74,6 +74,8 @@ export const SPECIALIZED_MERGE_ARRAY_KEYS = [
   'financialMetrics',
 ];
 
+const INSIGHT_ARRAY_KEYS = new Set(['top5Insights', 'learningInsights', 'allPoints']);
+
 /** Keys deep-merged as objects (later layers override leaf fields). */
 export const SPECIALIZED_MERGE_OBJECT_KEYS = ['marketOverview', 'sentiment'];
 
@@ -157,7 +159,16 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
 
   for (const key of SPECIALIZED_MERGE_ARRAY_KEYS) {
     // rawData → top-level → specialized; empty specialized arrays cannot block rawData items
-    const combined = mergeArrayLayers(specObj[key], nestedUniversal[key], legacy[key], raw[key]);
+    const nestedInsights = INSIGHT_ARRAY_KEYS.has(key)
+      ? [nestedUniversal.insights?.[key], raw.universalTabs?.insights?.[key]]
+      : [];
+    const combined = mergeArrayLayers(
+      specObj[key],
+      nestedUniversal[key],
+      ...nestedInsights,
+      legacy[key],
+      raw[key],
+    );
     if (combined.length > 0) merged[key] = combined;
   }
 
@@ -811,11 +822,25 @@ function normalizeCalendarRow(item) {
   };
 }
 
+function isCompanyEvent(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  const type = pickString(item, 'type', 'category').toLowerCase();
+  return ['earnings', 'corporate', 'company'].some((token) => type.includes(token));
+}
+
+export function extractCompanyEventRows(src) {
+  if (!src) return [];
+  return pickArray(src, 'catalysts')
+    .filter(isCompanyEvent)
+    .map(normalizeCalendarRow)
+    .filter(Boolean);
+}
+
 export function extractCalendarRows(src) {
   if (!src) return [];
   const raw = [
     ...pickArray(src, 'calendar', 'economicCalendar', 'events', 'upcomingEvents', 'schedule', 'earningsCalendar'),
-    ...pickArray(src, 'catalysts'),
+    ...pickArray(src, 'catalysts').filter((item) => !isCompanyEvent(item)),
   ];
   const seen = new Set();
   return raw.map(normalizeCalendarRow).filter((row) => {
@@ -1135,6 +1160,11 @@ function normalizeTicker(raw) {
   return t;
 }
 
+function normalizeExplicitTicker(raw) {
+  const ticker = String(raw || '').trim().toUpperCase().replace(/^\$/, '');
+  return /^[A-Z][A-Z0-9.]{0,5}$/.test(ticker) ? ticker : '';
+}
+
 function tickersInText(text) {
   if (!text || typeof text !== 'string') return [];
   const found = new Set();
@@ -1191,9 +1221,10 @@ function stockRecordFromObject(item, category = 'general') {
   }
   if (typeof item !== 'object') return null;
 
-  const ticker = normalizeTicker(
-    pickString(item, 'symbol', 'ticker', 'stock', 'title', 'name')
-  ) || tickersInText(pickString(item, 'description', 'setup', 'idea'))[0];
+  const explicitTicker = pickString(item, 'symbol', 'ticker', 'stock');
+  const ticker = normalizeExplicitTicker(explicitTicker)
+    || normalizeTicker(pickString(item, 'title', 'name'))
+    || tickersInText(pickString(item, 'description', 'setup', 'idea'))[0];
   if (!ticker) return null;
 
   const nameField = pickString(item, 'name');
