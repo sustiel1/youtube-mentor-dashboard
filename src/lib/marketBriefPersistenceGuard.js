@@ -1,7 +1,8 @@
 const CONTENT_FIELDS = Object.freeze([
   'shortSummary', 'fullSummary', 'mainLesson', 'chapters', 'marketOverview',
   'sectorRotation', 'tradingOpportunities', 'stocksMentioned', 'catalysts',
-  'macroFactors', 'indices', 'keyLevels', 'watchlistLevels', 'top5Insights',
+  'macroFactors', 'macro', 'macroEvents', 'macroHighlights',
+  'indices', 'keyLevels', 'watchlistLevels', 'top5Insights',
   'learningInsights', 'risks', 'sentiment', 'allPoints', 'keyPoints', 'tags',
   'universalTabs', 'rawData',
 ]);

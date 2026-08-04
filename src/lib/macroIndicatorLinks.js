@@ -1,9 +1,11 @@
 /**
- * Macro indicator link resolver — il.investing.com primary.
+ * Macro indicator link resolver — explicit official sources first, then the
+ * approved Investing Israel destinations for known market instruments.
  *
  * Priority chain:
- *   1. INVESTING_IL_MAP  — specific il.investing.com pages for market instruments
- *   2. buildInvestingSearchUrl — search fallback (always returns something)
+ *   1. OFFICIAL_SOURCE_MAP — exact approved BLS / Federal Reserve destinations
+ *   2. INVESTING_IL_MAP — exact approved market-instrument destinations
+ *   3. Unknown labels remain plain text (no generated search URL)
  *
  * Legacy FRED/MACRO_INDICATOR_LINKS retained below for reference only.
  */
@@ -36,6 +38,39 @@ function _stripParens(norm) {
 // ── il.investing.com URL map ─────────────────────────────────────────────────
 
 const IL = 'https://il.investing.com';
+
+const OFFICIAL_SOURCE_MAP = [
+  {
+    kind: 'bls',
+    label: 'BLS',
+    url: 'https://www.bls.gov/cpi/',
+    aliases: ['cpi', 'us cpi', 'consumer price index', 'מדד המחירים לצרכן', 'cpi ליבה', 'core cpi'],
+  },
+  {
+    kind: 'bls',
+    label: 'BLS',
+    url: 'https://www.bls.gov/ppi/',
+    aliases: ['ppi', 'us ppi', 'producer price index', 'מדד המחירים ליצרן'],
+  },
+  {
+    kind: 'bls',
+    label: 'BLS',
+    url: 'https://www.bls.gov/news.release/empsit.htm',
+    aliases: ['nfp', 'nonfarm payrolls', 'jobs report', 'employment situation', 'unemployment rate', 'דוח התעסוקה', 'שיעור האבטלה'],
+  },
+  {
+    kind: 'federal-reserve',
+    label: 'Federal Reserve',
+    url: 'https://www.federalreserve.gov/monetarypolicy/fomc.htm',
+    aliases: ['fed', 'fomc', 'federal reserve', 'fed policy', 'fed rate decision', 'הפד', 'ריבית הפד', 'החלטת הריבית של הפד'],
+  },
+  {
+    kind: 'federal-reserve',
+    label: 'Federal Reserve',
+    url: 'https://www.federalreserve.gov/monetarypolicy.htm',
+    aliases: ['federal reserve inflation target', 'fed inflation target', 'יעד האינפלציה של הפד'],
+  },
+];
 
 const INVESTING_IL_MAP = [
   // ── Volatility / Fear ──────────────────────────────────────────────────
@@ -212,15 +247,46 @@ const _IL_NORMALIZED = INVESTING_IL_MAP.map((entry) => ({
   _aliases: entry.aliases.map((a) => String(a).trim().toLowerCase()),
 }));
 
+const _OFFICIAL_NORMALIZED = OFFICIAL_SOURCE_MAP.map((entry) => ({
+  ...entry,
+  _aliases: entry.aliases.map((alias) => _norm(alias)),
+}));
+
+const APPROVED_SOURCE_HOSTS = new Set([
+  'www.bls.gov',
+  'bls.gov',
+  'www.federalreserve.gov',
+  'federalreserve.gov',
+  'il.investing.com',
+]);
+
 // ── Exported helpers ─────────────────────────────────────────────────────────
 
 /**
- * Builds an il.investing.com search URL for any label.
- * Used as the fallback for unknown indicators.
+ * Legacy utility for callers that explicitly request an Investing search URL.
+ * The Macro renderer and canonical destination resolver never use it as a fallback.
  */
 export function buildInvestingSearchUrl(input) {
   const clean = _clean(input);
   return `${IL}/search/?q=${encodeURIComponent(clean)}`;
+}
+
+/** Only explicit approved source URLs may be retained from payload data. */
+export function sanitizeMacroSourceUrl(input) {
+  const raw = String(input || '').trim();
+  if (!/^https:\/\//i.test(raw)) return '';
+  try {
+    const parsed = new URL(raw);
+    if (!APPROVED_SOURCE_HOSTS.has(parsed.hostname.toLowerCase())) return '';
+    if (parsed.username || parsed.password) return '';
+    parsed.hash = '';
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (/token|secret|password|auth|api.?key/i.test(key)) parsed.searchParams.delete(key);
+    }
+    return parsed.toString();
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -246,7 +312,6 @@ function _resolveKnown(input) {
     for (const alias of entry._aliases) {
       for (const candidate of candidates) {
         if (candidate === alias) return entry.url;
-        if (candidate.includes(alias) || alias.includes(candidate)) return entry.url;
       }
     }
   }
@@ -254,23 +319,34 @@ function _resolveKnown(input) {
 }
 
 /**
- * Resolves an indicator name to an il.investing.com URL.
- * Returns a specific page URL if known, otherwise an il.investing.com search URL.
- * Never returns null — every indicator becomes a link.
+ * Resolves an explicit known market indicator to its approved Investing Israel URL.
+ * Unknown labels remain unlinked.
  */
 export function resolveMacroIndicatorInvestingUrl(input) {
-  const known = _resolveKnown(input);
-  if (known) return known;
-  return buildInvestingSearchUrl(input);
+  return _resolveKnown(input);
+}
+
+export function getMacroIndicatorDestination(indicator) {
+  const normalized = _norm(indicator);
+  const stripped = _stripParens(normalized);
+  const parenthetical = _parenContent(normalized);
+  const candidates = [normalized, stripped, parenthetical].filter(Boolean);
+  for (const entry of _OFFICIAL_NORMALIZED) {
+    if (entry._aliases.some((alias) => candidates.includes(alias))) {
+      return { url: entry.url, label: entry.label, kind: entry.kind };
+    }
+  }
+  const investingUrl = _resolveKnown(indicator);
+  return investingUrl ? { url: investingUrl, label: 'Investing Israel', kind: 'investing-israel' } : null;
 }
 
 /**
  * Primary entry point used by MacroSection rendering.
- * Always returns a URL (specific page or search fallback).
+ * Returns null for unknown labels instead of inventing a destination.
  */
 export function getMacroIndicatorUrl(indicator) {
   if (!indicator) return null;
-  return resolveMacroIndicatorInvestingUrl(indicator);
+  return getMacroIndicatorDestination(indicator)?.url || null;
 }
 
 // ── Legacy FRED reference map (not used for links, kept for documentation) ───

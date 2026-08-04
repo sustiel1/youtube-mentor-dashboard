@@ -5,6 +5,11 @@
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { cleanupMacroDisplayRows, cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { parseMacroDisplayItem } from '@/lib/morningBriefDisplay';
+import {
+  formatMacroValueText,
+  mergeMacroValueRows,
+  selectMacroValueRowsFromMarketBrief,
+} from '@/lib/macroValueSemantics';
 import { translateDisplayLabel, translateMarketStatusLabel } from '@/lib/specializedDisplayI18n';
 import { formatSentimentEvidenceText } from '@/lib/sentimentEvidence';
 import {
@@ -27,8 +32,6 @@ import {
   extractKeyLevelRows,
   getSpecializedSrc,
   isRegimeDuplicateString,
-  macroRowRichness,
-  macroSemanticKey,
   normalizeMarketDashboardRow,
 } from '@/lib/morningBriefDisplay';
 
@@ -138,12 +141,7 @@ function formatMarketRowText(row) {
     .join(' · ');
 }
 
-function formatMacroRowText(row) {
-  return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
-    .filter(isPresentDisplayValue)
-    .map(formatDisplayAtom)
-    .join(' · ');
-}
+const formatMacroRowText = formatMacroValueText;
 
 function formatSectorRowText(row) {
   return [
@@ -245,26 +243,6 @@ function formatRegimeCardText(card) {
   return `${translateMarketStatusLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
 }
 
-function mergeMacroDisplayRows(primaryRows, fallbackItems) {
-  // Semantic (not exact-string) dedup: fallbackItems come from a separate legacy
-  // resolution path (extractVideoTabItems('brief-macro', ...)) and often re-describe
-  // the same event with different phrasing — merge by topic, keep the richer row.
-  const groups = new Map();
-  for (const row of primaryRows) {
-    groups.set(macroSemanticKey(row.indicator), row);
-  }
-  for (const item of fallbackItems) {
-    const parsed = parseMacroDisplayItem(item);
-    if (!parsed?.indicator) continue;
-    const key = macroSemanticKey(parsed.indicator);
-    const prev = groups.get(key);
-    if (!prev || macroRowRichness(parsed) > macroRowRichness(prev)) {
-      groups.set(key, parsed);
-    }
-  }
-  return [...groups.values()];
-}
-
 function mergeMarketRows(marketBriefData, indicesItems = []) {
   const fromSrc = extractMarketDashboardRows(getSpecializedSrc(marketBriefData));
   const fromItems = indicesItems.map((i) => normalizeMarketDashboardRow(i)).filter(Boolean);
@@ -283,12 +261,16 @@ export function getMorningBriefMarketRows(marketBriefData, indicesItems = []) {
   return mergeMarketRows(marketBriefData, indicesItems);
 }
 
-function getMacroDisplayRows(marketBriefData, fallbackItems = []) {
+export function resolveMorningBriefMacroRows(marketBriefData, fallbackItems = []) {
   const src = getSpecializedSrc(marketBriefData);
-  const fromSrc = extractMacroIndicatorRows(src);
+  const canonicalRows = selectMacroValueRowsFromMarketBrief(marketBriefData);
+  const fromSrc = canonicalRows.length > 0 ? canonicalRows : extractMacroIndicatorRows(src);
   const marketRows = extractMarketDashboardRows(src);
   const safeItems = Array.isArray(fallbackItems) ? fallbackItems.filter(Boolean) : [];
-  return cleanupMacroDisplayRows(mergeMacroDisplayRows(fromSrc, safeItems), marketRows);
+  const fallbackRows = fromSrc.length > 0
+    ? []
+    : safeItems.map(parseMacroDisplayItem).filter(Boolean);
+  return cleanupMacroDisplayRows(mergeMacroValueRows([...fromSrc, ...fallbackRows]), marketRows);
 }
 
 /**
@@ -359,7 +341,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   }
 
   const macroFallback = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
-  const macroItems = getMacroDisplayRows(marketBriefData, macroFallback)
+  const macroItems = resolveMorningBriefMacroRows(marketBriefData, macroFallback)
     .map(formatMacroRowText)
     .filter(Boolean);
   if (macroItems.length) {

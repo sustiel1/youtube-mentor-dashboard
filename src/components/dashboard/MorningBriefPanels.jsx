@@ -1,11 +1,8 @@
 import { useCallback, useState } from 'react';
-import { cleanupMacroDisplayRows } from '@/lib/macroDisplayCleanup';
 import {
   extractCalendarRows,
   mergeCalendarRows,
-  extractMacroIndicatorRows,
   extractMarketDashboardRows,
-  parseMacroDisplayItem,
   extractMarketRegimeCards,
   extractSectorRows,
   extractSentimentItems,
@@ -13,8 +10,6 @@ import {
   getSpecializedSrc,
   hasSentimentData,
   hasUnifiedStocks,
-  macroRowRichness,
-  macroSemanticKey,
 } from '@/lib/morningBriefDisplay';
 import { translateSentimentLabel } from '@/lib/sentimentDisplayI18n';
 import {
@@ -86,8 +81,10 @@ import { getStockSectorMeta } from '@/lib/stockSectorMap';
 import { resolveMorningBriefPresentation, morningBriefSectionCount, morningBriefShowsSummaryCounters, morningBriefSubsectionTitle, countOpportunitiesAndRisks } from '@/lib/morningBriefPresentation';
 import {
   getMorningBriefMarketRows,
+  resolveMorningBriefMacroRows,
   resolveMorningBriefOpportunitiesAndRisks,
 } from '@/lib/morningBriefBulkSections';
+import { formatMacroScalar, formatMacroValueText } from '@/lib/macroValueSemantics';
 import {
   formatSentimentEvidenceText,
   formatSentimentScalar,
@@ -1441,28 +1438,12 @@ export function NewsSection({
 }
 
 // ── 5. Macro ─────────────────────────────────────────────────────────
-function mergeMacroDisplayRows(primaryRows, fallbackItems) {
-  // Semantic (not exact-string) dedup: fallbackItems come from a separate legacy
-  // resolution path (extractVideoTabItems('brief-macro', ...)) and often re-describe
-  // the same event with different phrasing — merge by topic, keep the richer row.
-  const groups = new Map();
-  for (const row of primaryRows) {
-    groups.set(macroSemanticKey(row.indicator), row);
-  }
-  for (const item of fallbackItems) {
-    const parsed = parseMacroDisplayItem(item);
-    if (!parsed?.indicator) continue;
-    const key = macroSemanticKey(parsed.indicator);
-    const prev = groups.get(key);
-    if (!prev || macroRowRichness(parsed) > macroRowRichness(prev)) {
-      groups.set(key, parsed);
-    }
-  }
-  return [...groups.values()];
-}
-
 function macroRowChangeContext(row) {
-  return [row?.impact, row?.description, row?.indicator, row?.value].filter(Boolean).join(' ');
+  return [
+    row?.impact, row?.description, row?.meaning, row?.indicator,
+    row?.actualValue, row?.currentValue, row?.legacyValue,
+    row?.targetValue, row?.referenceValue, row?.forecastValue, row?.previousValue,
+  ].filter((value) => value !== null && value !== undefined && value !== '').join(' ');
 }
 
 function MacroChangeCell({ display }) {
@@ -1473,9 +1454,65 @@ function MacroChangeCell({ display }) {
 }
 
 function MacroRowSummary(row) {
-  return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
-    .filter(Boolean)
-    .join(' · ');
+  return formatMacroValueText(row);
+}
+
+function MacroSemanticValue({ label, value, unit = '' }) {
+  const formatted = formatMacroScalar(value);
+  if (!formatted) return null;
+  const suffix = unit && !formatted.includes(unit) ? unit : '';
+  return (
+    <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>
+      <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{label}: </span>
+      {formatted}{suffix}
+    </p>
+  );
+}
+
+function MacroSemanticValues({ row }) {
+  const fields = [
+    ['בפועל', row.actualValue],
+    ['נוכחי', row.currentValue],
+    ['ערך מדווח', row.legacyValue],
+  ].filter(([, value]) => formatMacroScalar(value));
+  if (!fields.length) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
+  return (
+    <div data-macro-value-semantics>
+      {fields.map(([label, value]) => (
+        <MacroSemanticValue key={label} label={label} value={value} unit={row.unit} />
+      ))}
+    </div>
+  );
+}
+
+function MacroSemanticDetails({ row }) {
+  const roleFields = [
+    ['יעד', row.targetValue],
+    ['ייחוס', row.referenceValue],
+    ['תחזית', row.forecastValue],
+    ['קודם', row.previousValue],
+    ['פער מהיעד', row.gapToTarget],
+  ].filter(([, value]) => formatMacroScalar(value));
+  const texts = [
+    row.period && `תקופה: ${row.period}`,
+    row.description && `תיאור: ${row.description}`,
+    row.meaning && `משמעות: ${row.meaning}`,
+    row.impact && `השפעה: ${row.impact}`,
+    row.source && `מקור: ${row.source}`,
+    row.date && `תאריך: ${row.date}`,
+    row.timestamp && `חותמת זמן: ${row.timestamp}`,
+  ].filter(Boolean);
+  if (!roleFields.length && !texts.length) {
+    return <span className="text-slate-300 dark:text-zinc-600">—</span>;
+  }
+  return (
+    <div className="space-y-0.5" data-macro-semantic-details>
+      {roleFields.map(([label, value]) => (
+        <MacroSemanticValue key={label} label={label} value={value} unit={row.unit} />
+      ))}
+      {texts.map((text) => <BriefNewsNotesText key={text} text={text} row={row} />)}
+    </div>
+  );
 }
 
 export function MacroSection({
@@ -1489,12 +1526,8 @@ export function MacroSection({
 }) {
   const ui = resolveMorningBriefPresentation(presentation);
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.macro, { marketBriefData, onSaveMarketBriefSection, presentation });
-  const src = getSpecializedSrc(marketBriefData);
-  const fromSrc = extractMacroIndicatorRows(src);
-  const marketRows = extractMarketDashboardRows(src);
   const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
-  const rows = cleanupMacroDisplayRows(mergeMacroDisplayRows(fromSrc, safeItems), marketRows)
-    .filter((row) => Boolean(row.value || row.change || row.description || row.impact || row.frequency));
+  const rows = resolveMorningBriefMacroRows(marketBriefData, safeItems);
 
   return (
     <SectionCard
@@ -1541,7 +1574,7 @@ export function MacroSection({
             <tbody>
               {rows.map((row, i) => {
                 const summary = MacroRowSummary(row);
-                const rowTone = resolveTone([row.change, row.impact, row.description].filter(Boolean).join(' '));
+                const rowTone = resolveTone([row.change, row.trend, row.impact, row.description, row.meaning].filter(Boolean).join(' '));
                 const rowBorder = toneStyles(rowTone).border;
                 const sentKey = toneToSentKey(rowTone);
                 const changeDisplay = getMacroChangeDisplay(row.change, macroRowChangeContext(row));
@@ -1564,7 +1597,7 @@ export function MacroSection({
                     <td className={BRIEF_CELL.short}>
                       <div className="flex items-center gap-1 min-w-0">
                         {(() => {
-                          const macroUrl = row.indicator ? getMacroIndicatorUrl(row.indicator) : null;
+                          const macroUrl = row.sourceUrl || (row.indicator ? getMacroIndicatorUrl(row.indicator) : null);
                           const displayIndicator = row.indicator ? translateMarketLabel(row.indicator) : '—';
                           return macroUrl ? (
                             <a
@@ -1588,19 +1621,16 @@ export function MacroSection({
                           </span>
                         )}
                       </div>
-                      {ui.showRowMetadata && row.frequency && (
-                        <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.frequency}</p>
+                      {ui.showRowMetadata && (row.frequency || row.period) && (
+                        <p className={`mt-0.5 ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>{row.period || row.frequency}</p>
                       )}
                     </td>
                     <td className={BRIEF_CELL.change}>
-                      {row.value ? (
-                        <p className={`tabular-nums ${DASHBOARD_TABLE_CELL_BODY_CLS}`}>{row.value}</p>
-                      ) : (
-                        <span className="text-slate-300 dark:text-zinc-600">—</span>
-                      )}
+                      <MacroSemanticValues row={row} />
                     </td>
                     <td className={BRIEF_CELL.change}>
                       <MacroChangeCell display={changeDisplay} />
+                      {row.trend && <p className={DASHBOARD_TABLE_CELL_MUTED_CLS}>מגמה: {row.trend}</p>}
                     </td>
                     <td className={BRIEF_CELL.sentiment}>
                       <InlineSentimentBadge
@@ -1609,19 +1639,7 @@ export function MacroSection({
                       />
                     </td>
                     <td className={BRIEF_CELL.notes}>
-                      {row.description && (
-                        <BriefNewsNotesText text={row.description} row={row} />
-                      )}
-                      {row.impact && (
-                        <BriefNewsNotesText
-                          text={row.impact}
-                          row={row}
-                          className={row.description ? 'mt-0.5' : ''}
-                        />
-                      )}
-                      {!row.description && !row.impact && (
-                        <span className="text-slate-300 dark:text-zinc-600">—</span>
-                      )}
+                      <MacroSemanticDetails row={row} />
                     </td>
                     <td className={BRIEF_CELL.save}>
                       {onSaveToBrain ? (

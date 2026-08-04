@@ -1,6 +1,10 @@
 import { getSpecializedSrc } from '@/lib/morningBriefDisplay';
 import { getMarketBriefSessionDisplay, resolveMarketBriefSession } from '@/lib/marketBriefSession';
 import {
+  formatMacroValueText,
+  selectMacroValueRowsFromMarketBrief,
+} from '@/lib/macroValueSemantics';
+import {
   formatSentimentEvidenceText,
   selectSentimentEvidenceItems,
 } from '@/lib/sentimentEvidence';
@@ -982,6 +986,10 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
 
     // ── Morning/evening brief ─────────────────────────────────────────
     case 'brief-macro': {
+      const canonicalMacroRows = selectMacroValueRowsFromMarketBrief(marketBriefData);
+      if (canonicalMacroRows.length > 0) {
+        return canonicalMacroRows.map(formatMacroValueText).filter(Boolean);
+      }
       const src = resolveSpecialized(marketBriefData);
       // resolveSpecialized() shallow-spreads { ...rawData, ...specialized }, so
       // specialized.macroFactors silently REPLACES (not merges with) rawData.macroFactors —

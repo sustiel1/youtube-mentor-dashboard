@@ -1,0 +1,103 @@
+{
+  "morning": {
+    "contentType": "marketBrief",
+    "universalTabs": {
+      "specialized": {
+        "macroFactors": [
+          {
+            "indicator": "US CPI",
+            "actualValue": 3.2,
+            "forecastValue": 3.1,
+            "previousValue": 3.3,
+            "change": "-0.1 נקודת אחוז",
+            "period": "יולי 2026",
+            "description": "מדד המחירים הנוכחי",
+            "meaning": "האינפלציה נותרה מעל יעד המדיניות",
+            "gapToTarget": 1.2,
+            "unit": "%",
+            "source": "BLS",
+            "sourceUrl": "https://www.bls.gov/cpi/",
+            "date": "2026-08-01"
+          },
+          {
+            "indicator": "Federal Reserve inflation target",
+            "targetValue": 2,
+            "unit": "%",
+            "description": "יעד מדיניות ארוך טווח, לא ערך CPI נוכחי",
+            "source": "Federal Reserve",
+            "sourceUrl": "https://www.federalreserve.gov/monetarypolicy.htm"
+          },
+          {
+            "indicator": "מדד עברי",
+            "actualValue": 0,
+            "currentValue": false,
+            "isPreliminary": false,
+            "meaning": "אפס ו-false הם ערכים תקפים"
+          },
+          {
+            "indicator": "נתון חסר",
+            "actualValue": null,
+            "targetValue": null,
+            "description": "שדות חסרים אינם גורמים לקריסה"
+          }
+        ]
+      }
+    }
+  },
+  "generic": {
+    "contentType": "marketBrief",
+    "macro": [
+      {
+        "name": "Legacy reported value",
+        "value": "4.5%",
+        "note": "מבנה legacy נשמר"
+      },
+      {
+        "indicator": "US10Y",
+        "currentValue": 4.125,
+        "change": "-0.075",
+        "period": "נוכחי",
+        "unit": "%"
+      }
+    ]
+  },
+  "evening": {
+    "contentType": "marketBrief",
+    "rawData": {
+      "macroFactors": [
+        {
+          "indicator": "Fed rate decision",
+          "currentValue": -0.25,
+          "referenceValue": 0,
+          "forecastValue": -0.2,
+          "previousValue": -0.1,
+          "change": "-0.15",
+          "period": "אוגוסט 2026",
+          "unit": "%",
+          "meaning": "ערכים שליליים ועשרוניים נשמרים",
+          "source": "Federal Reserve"
+        },
+        {
+          "indicator": "Unknown macro asset",
+          "currentValue": 7,
+          "sourceUrl": "https://example.com/?token=secret",
+          "rawProviderPayload": {
+            "secret": "אסור להציג"
+          },
+          "fullTranscript": "תמלול מלא שאסור להציג"
+        }
+      ]
+    }
+  },
+  "legacy": {
+    "contentType": "marketBrief",
+    "rawData": {
+      "macroFactors": [
+        "Legacy indicator | 12.5% | שינוי: -1.25% | תקופה: רבעון שני"
+      ]
+    }
+  },
+  "empty": {
+    "contentType": "marketBrief"
+  }
+}

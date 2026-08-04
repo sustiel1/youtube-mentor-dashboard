@@ -16,6 +16,14 @@ const validPayload = {
   shortSummary: 'Market opened higher',
   chapters: [{ title: 'Open', startSeconds: 0, endSeconds: 0.56 }],
   stocksMentioned: [{ ticker: 'AMD', isNewToWatch: false }],
+  macroFactors: [{
+    indicator: 'US CPI',
+    actualValue: 3.2,
+    targetValue: 2,
+    gapToTarget: 1.2,
+    unit: '%',
+    verified: false,
+  }],
   sentiment: [{
     label: 'AAII',
     direction: 'neutral',
@@ -43,6 +51,10 @@ const normalizedPayload = parseStructuredMarketResponse(JSON.stringify(validPayl
 assert.equal(normalizedPayload.chapters[0].startSeconds, 0);
 assert.equal(normalizedPayload.sentiment[0].score, 0);
 assert.equal(normalizedPayload.sentiment[0].verified, false);
+assert.equal(normalizedPayload.macroFactors[0].actualValue, 3.2);
+assert.equal(normalizedPayload.macroFactors[0].targetValue, 2);
+assert.equal(normalizedPayload.macroFactors[0].gapToTarget, 1.2);
+assert.equal(normalizedPayload.macroFactors[0].verified, false);
 assert.throws(() => validateMarketBriefPayload([]), { code: 'INVALID_MARKET_SCHEMA' });
 assert.throws(() => parseStructuredMarketResponse(''), { code: 'EMPTY_PROVIDER_RESPONSE' });
 assert.throws(() => parseStructuredMarketResponse('{"contentType":"marketBrief","chapters":['), { code: 'TRUNCATED_MARKET_JSON' });

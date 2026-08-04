@@ -66,8 +66,13 @@ export function sanitizeMacroChangeValue(change) {
 }
 
 function macroRowContext(row) {
-  return [row?.impact, row?.description, row?.indicator, row?.value, row?.change]
-    .filter(Boolean)
+  return [
+    row?.impact, row?.description, row?.meaning, row?.indicator,
+    row?.actualValue, row?.currentValue, row?.legacyValue,
+    row?.targetValue, row?.referenceValue, row?.forecastValue,
+    row?.previousValue, row?.change, row?.trend,
+  ]
+    .filter((value) => value !== null && value !== undefined && value !== '')
     .join(' ');
 }
 
@@ -112,7 +117,10 @@ function rowDisplayScore(row, nameKey = 'indicator') {
   const change = row.change ?? row.strength ?? '';
   if (/%/.test(change) || parseNumericChangeDisplay(change, macroRowContext(row))) score += 10;
   if (row.description || row.comment) score += 3;
-  if (row.value) score += 1;
+  if ([
+    row.actualValue, row.currentValue, row.legacyValue, row.targetValue,
+    row.referenceValue, row.forecastValue, row.previousValue,
+  ].some((value) => value !== null && value !== undefined && value !== '')) score += 1;
   return score;
 }
 

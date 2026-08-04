@@ -8,6 +8,12 @@
  */
 
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
+import {
+  macroRowRichness,
+  macroSemanticKey,
+  normalizeMacroValueItem,
+  selectMacroValueRows,
+} from '@/lib/macroValueSemantics';
 import { translateMarketTextInline } from '@/lib/marketLabelTranslations';
 import { selectSentimentEvidenceItems } from '@/lib/sentimentEvidence';
 
@@ -633,98 +639,9 @@ function detectEventType(text) {
   return '';
 }
 
-function formatMacroChange(item) {
-  const direct = pickString(item, 'change', 'delta', 'movement');
-  if (direct) return direct;
-  const pct = item?.changePercent ?? item?.change_percent;
-  if (pct != null && pct !== '') {
-    const num = Number(pct);
-    if (!Number.isNaN(num)) return `${num > 0 ? '+' : ''}${num}%`;
-  }
-  const dir = pickString(item, 'direction', 'trend');
-  return dir || '';
-}
-
-function normalizeMacroIndicatorRow(item) {
-  if (!item) return null;
-
-  if (typeof item === 'string') {
-    const t = item.trim();
-    if (!t) return null;
-
-    if (t.includes('|')) {
-      const parts = t.split('|').map((p) => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        return {
-          indicator: parts[0] || '',
-          value: parts[1] || '',
-          change: parts[2] || '',
-          frequency: parts[3] || '',
-          description: parts[4] || '',
-          impact: parts[5] || '',
-        };
-      }
-    }
-
-    const lines = t.split('\n').map((l) => l.trim()).filter(Boolean);
-    if (lines.length === 1) {
-      return {
-        indicator: lines[0],
-        value: '',
-        change: '',
-        frequency: '',
-        description: '',
-        impact: '',
-      };
-    }
-
-    const row = {
-      indicator: lines[0] || '',
-      value: '',
-      change: '',
-      frequency: '',
-      description: '',
-      impact: '',
-    };
-    for (const line of lines.slice(1)) {
-      if (line.startsWith('📅')) row.value = row.value || line.replace(/^📅\s*/, '').trim();
-      else if (line.startsWith('חשיבות:')) row.frequency = line.replace(/^חשיבות:\s*/, '').trim();
-      else if (line.startsWith('השפעה:')) row.impact = line.replace(/^השפעה:\s*/, '').trim();
-      else if (line.startsWith('סקטורים:')) row.description = mergeContext(row.description, line.replace(/^סקטורים:\s*/, '').trim());
-      else row.description = mergeContext(row.description, line);
-    }
-    return row;
-  }
-
-  if (typeof item !== 'object') return null;
-
-  const eventName = pickString(item, 'event', 'title', 'subject');
-  // 'factor' added for rawData.macroFactors items shaped { factor, note } (GEM macro schema).
-  const indicator = pickString(item, 'name', 'factor', 'symbol', 'indicator', 'ticker', 'stock') || eventName;
-  const value = pickString(item, 'value', 'level', 'currentValue', 'price', 'current', 'when', 'date', 'time');
-  const change = formatMacroChange(item);
-  const frequency = pickString(item, 'updateFrequency', 'frequency', 'cadence', 'period', 'importance', 'priority');
-  const description = pickString(
-    item,
-    'description', 'comment', 'condition', 'note', 'notes', 'context', 'thesis', 'status', 'reason', 'sectors',
-  );
-  const impact = pickString(item, 'impact', 'marketImpact', 'effect', 'expectedImpact', 'sentiment', 'bias');
-
-  if (!indicator && !value && !description && !impact) return null;
-
-  return {
-    indicator: indicator || eventName || value || '—',
-    value: eventName && indicator !== eventName ? pickString(item, 'date', 'time', 'when', 'value') : value,
-    change,
-    frequency,
-    description,
-    impact,
-  };
-}
-
 /** Parse one macro item (object or formatted string) for table display. */
 export function parseMacroDisplayItem(item) {
-  return normalizeMacroIndicatorRow(item);
+  return normalizeMacroValueItem(item);
 }
 
 /** Returns true when the indicator name is a raw value / number that leaked into the indicator column. */
@@ -740,59 +657,12 @@ function _isMalformedIndicatorName(name) {
   return false;
 }
 
-// Topic buckets for semantic macro dedup: the same underlying event is often described
-// twice — once in rawData.macroFactors (rich) and once in universalTabs.specialized.macroFactors
-// (a shorter AI paraphrase with a different indicator label) — so exact-string dedup misses it.
-const MACRO_TOPIC_BUCKETS = [
-  { keys: ['fed', 'fomc', 'ריבית', 'הפד', 'federal reserve', 'rate decision', 'ועדות'], canonical: 'fed-policy' },
-  { keys: ['אורקל', 'oracle', 'orcl', 'דירוג אג', 'דירוג אשראי', 'bond rating', 'credit rating'], canonical: 'credit-rating' },
-  { keys: ['ביטקוין', 'bitcoin', 'btc', 'אתריום', 'ethereum', 'eth', 'קריפטו', 'crypto'], canonical: 'crypto-market' },
-  { keys: ['דולר', 'dollar', 'dxy', 'dixie'], canonical: 'dollar-index' },
-  { keys: ['נפט', 'oil', 'wti', 'brent'], canonical: 'oil' },
-  { keys: ['אינפלציה', 'cpi', 'inflation', 'מדד מחירים'], canonical: 'inflation' },
-  { keys: ['תעסוקה', 'jobs', 'nfp', 'payroll'], canonical: 'jobs' },
-  { keys: ['vix', 'תנודתיות', 'volatility'], canonical: 'volatility' },
-  { keys: ['תשואת', 'תשואות', 'אג"ח', 'אגח', 'bond yield', 'treasury', 'us10y'], canonical: 'bond-yield' },
-];
-
-/** Maps a macro indicator label to a canonical topic key for cross-source dedup. */
-export function macroSemanticKey(indicatorText) {
-  const norm = String(indicatorText || '').toLowerCase();
-  for (const { keys, canonical } of MACRO_TOPIC_BUCKETS) {
-    if (keys.some((k) => norm.includes(k))) return canonical;
-  }
-  // Fallback: first two significant words — stable across near-identical phrasing,
-  // but still distinct per unmatched topic (no bucket collapse of unrelated items).
-  const words = norm.replace(/[^\wא-ת\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2);
-  return words.slice(0, 2).join(' ') || norm;
-}
-
-export function macroRowRichness(row) {
-  return (row.indicator?.length || 0) + (row.description?.length || 0)
-    + (row.value?.length || 0) + (row.impact?.length || 0);
-}
+export { macroRowRichness, macroSemanticKey };
 
 /** Presentation-only macro rows for table UI (no schema / extractor changes). */
 export function extractMacroIndicatorRows(src) {
-  if (!src) return [];
-  const raw = [
-    ...pickArray(src, 'macroFactors'),
-    ...pickArray(src, 'macro', 'macroEvents', 'macroHighlights', 'macroContext', 'economicContext', 'economicEvents'),
-  ];
-  const rows = raw
-    .map(normalizeMacroIndicatorRow)
+  return selectMacroValueRows(src)
     .filter((row) => row && !_isMalformedIndicatorName(row.indicator));
-
-  // Merge by semantic topic key — never by exact-string signature — so the same event
-  // reported once with rich rawData text and once with a shorter specialized paraphrase
-  // collapses into a single card, keeping the richer (more detailed) version.
-  const groups = new Map();
-  for (const row of rows) {
-    const key = macroSemanticKey(row.indicator);
-    const prev = groups.get(key);
-    groups.set(key, !prev || macroRowRichness(row) > macroRowRichness(prev) ? row : prev);
-  }
-  return [...groups.values()];
 }
 
 function normalizeCalendarRow(item) {

@@ -138,6 +138,12 @@ function countSpecializedItems(video, marketBriefData) {
     .reduce((sum, section) => sum + (Array.isArray(section.items) ? section.items.length : 0), 0);
 }
 
+function countCanonicalSectionItems(video, marketBriefData, tabKey) {
+  return buildMorningBriefBulkSections(video, marketBriefData)
+    .filter((section) => section.tabKey === tabKey)
+    .reduce((sum, section) => sum + (Array.isArray(section.items) ? section.items.length : 0), 0);
+}
+
 export function resolveAiMappingTab({
   video = {},
   marketBriefData = null,
@@ -146,10 +152,14 @@ export function resolveAiMappingTab({
 } = {}) {
   const usesCanonicalSpecializedSelector = tabKey === 'specialized'
     && MARKET_BRIEF_RENDERER_SLUGS.has(normalizedSubCategory);
+  const usesCanonicalMacroSelector = tabKey === 'brief-macro'
+    && MARKET_BRIEF_RENDERER_SLUGS.has(normalizedSubCategory);
   const count = usesCanonicalSpecializedSelector
     ? countSpecializedItems(video, marketBriefData)
-    : extractVideoTabItems(video, tabKey, marketBriefData).length;
-  return { tabKey, count, usesCanonicalSpecializedSelector };
+    : usesCanonicalMacroSelector
+      ? countCanonicalSectionItems(video, marketBriefData, tabKey)
+      : extractVideoTabItems(video, tabKey, marketBriefData).length;
+  return { tabKey, count, usesCanonicalSpecializedSelector, usesCanonicalMacroSelector };
 }
 
 export function buildAiMappingCoverage({

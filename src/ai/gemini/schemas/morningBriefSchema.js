@@ -49,7 +49,27 @@ export function getMorningBriefSchemaExample() {
           { symbol: "SPY", reason: "Key support at 5,200", importance: "medium" }
         ],
         macro: [
-          { event: "CPI Release", date: "Thursday 8:30 AM", importance: "high", impact: "Rate-sensitive sectors" }
+          {
+            indicator: "US CPI",
+            actualValue: 3.2,
+            forecastValue: 3.1,
+            previousValue: 3.3,
+            change: "-0.1 percentage point",
+            period: "July 2026",
+            unit: "%",
+            description: "Current CPI reading",
+            meaning: "Inflation remains above the Federal Reserve goal",
+            source: "BLS",
+            sourceUrl: "https://www.bls.gov/cpi/"
+          },
+          {
+            indicator: "Federal Reserve inflation target",
+            targetValue: 2,
+            unit: "%",
+            description: "Long-run policy goal, not the current CPI value",
+            source: "Federal Reserve",
+            sourceUrl: "https://www.federalreserve.gov/monetarypolicy.htm"
+          }
         ],
         sentiment: [
           {
@@ -92,7 +112,7 @@ export function getMorningBriefSchemaExample() {
     marketNews: ["..."],
     indices: [],
     stocksMentioned: [],
-    macro: [],
+    macro: [{ indicator: "...", actualValue: 0, targetValue: null, forecastValue: null, previousValue: null, change: "...", period: "...", unit: "%", meaning: "..." }],
     sentiment: [{ label: "...", direction: "bullish|bearish|neutral|unverified", source: "video", evidence: "...", verificationState: "video-unverified" }],
     calendar: [{ event: "...", date: "...", importance: "high|medium|low", impact: "..." }],
     opportunities: ["..."],
