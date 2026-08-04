@@ -14,6 +14,7 @@ import {
   extractUnifiedStocks,
   getSpecializedSrc,
 } from '@/lib/morningBriefDisplay';
+import { persistGuardedMarketBrief } from '@/lib/marketBriefPersistenceGuard';
 
 export const BRIEF_MANUAL_SECTION_IDS = {
   news: 'news',
@@ -113,18 +114,14 @@ export function buildMarketBriefWithSectionOverride(marketBriefData, sectionId, 
   };
 }
 
-export function persistMarketBriefData(videoId, data, patchVideo) {
-  if (videoId) {
-    try {
-      localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(data));
-    } catch (e) {
-      console.warn('[manualBriefOverrides] localStorage save failed:', e?.message);
-    }
-  }
-  if (typeof patchVideo === 'function') {
-    patchVideo({ marketBriefData: data });
-  }
-  return data;
+export function persistMarketBriefData(videoId, data, patchVideo, previousData = null, videoPatch = {}) {
+  return persistGuardedMarketBrief({
+    previous: previousData,
+    candidate: data,
+    videoId,
+    writeLocal: (key, accepted) => localStorage.setItem(key, JSON.stringify(accepted)),
+    writeVideo: (accepted) => patchVideo?.({ ...videoPatch, marketBriefData: accepted }),
+  });
 }
 
 /** Keep manual overrides when new GEM JSON is applied. */

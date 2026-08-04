@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { createServer } from 'vite';
 
 const vite = await createServer({
@@ -52,12 +53,15 @@ try {
     { code: 'PARTIAL_ANALYSIS' },
   );
 
+  const runtimeSource = fs.readFileSync(new URL('../src/lib/manualBriefOverrides.js', import.meta.url), 'utf8');
+  assert.ok(runtimeSource.includes('persistGuardedMarketBrief'));
+
   console.log(JSON.stringify({
     status: 'passed',
     validAccepted: true,
     invalidPreserved: true,
     partialPreserved: true,
-    runtimeWiring: false,
+    runtimeWiring: true,
   }, null, 2));
 } finally {
   await vite.close();

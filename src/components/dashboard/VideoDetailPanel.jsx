@@ -2530,8 +2530,12 @@ export function VideoDetailPanel({
     if (!marketBriefData) return;
     const videoId = video?.id || video?.youtubeId;
     const next = buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
-    persistMarketBriefData(videoId, next, patchVideo);
-    setMarketBriefData(next);
+    const result = persistMarketBriefData(videoId, next, patchVideo, marketBriefData);
+    if (!result.accepted) {
+      toast.error('השינויים לא נשמרו — הנתונים הקודמים נשמרו');
+      return;
+    }
+    setMarketBriefData(result.data);
     toast.success('השינויים נשמרו');
   }, [marketBriefData, video?.id, video?.youtubeId, patchVideo]);
 
@@ -6019,18 +6023,17 @@ export function VideoDetailPanel({
     if (parsed?.contentType === 'marketBrief') {
       const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
       const videoId = video?.id || video?.youtubeId;
-      if (videoId) {
-        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
-        localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      }
-      // Persist into video entity so tabs refresh and data survives navigation
-      patchVideo({
-        marketBriefData: parsedWithOverrides,
+      const persistence = persistMarketBriefData(videoId, parsedWithOverrides, patchVideo, marketBriefData, {
         analysisProvider: 'gems',
         analysisStatus: 'analyzed',
         analyzedAt: new Date().toISOString(),
       });
-      setMarketBriefData(parsedWithOverrides);
+      if (!persistence.accepted) {
+        setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
+        return false;
+      }
+      if (videoId) localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      setMarketBriefData(persistence.data);
       setGemsJsonApplied(true);
       setGemsPasteError('');
       setGemsParsedErrorInfo(null);
@@ -6066,17 +6069,17 @@ export function VideoDetailPanel({
     if (parsed?.contentType === 'market' && parsed?.universalTabs && typeof parsed.universalTabs === 'object') {
       const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
       const videoId = video?.id || video?.youtubeId;
-      if (videoId) {
-        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
-        localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      }
-      patchVideo({
-        marketBriefData: parsedWithOverrides,
+      const persistence = persistMarketBriefData(videoId, parsedWithOverrides, patchVideo, marketBriefData, {
         analysisProvider: 'gems',
         analysisStatus: 'analyzed',
         analyzedAt: new Date().toISOString(),
       });
-      setMarketBriefData(parsedWithOverrides);
+      if (!persistence.accepted) {
+        setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
+        return false;
+      }
+      if (videoId) localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      setMarketBriefData(persistence.data);
       setGemsJsonApplied(true);
       setGemsPasteError('');
       setGemsParsedErrorInfo(null);
