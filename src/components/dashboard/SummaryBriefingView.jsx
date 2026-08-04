@@ -3,6 +3,7 @@ import { LearningTabContent } from './LearningTabContent';
 import { CollapsibleFullSummary } from './CollapsibleFullSummary';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
 import { enrichWatchTodayItem } from '@/utils/finvizLinks';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { getManualFinvizMappings } from '@/utils/manualFinvizMappings';
 import { FinvizMappingModal } from '@/components/shared/FinvizMappingModal';
 import { mergeBulkSelection, flattenMarketStatusItems, formatCardBulkText, formatBulkItemText } from '@/lib/universalTabBulkItems';
@@ -189,7 +190,8 @@ export function SummaryBriefingView({
   const watchEnriched = briefing.watchToday.map((raw) => {
     const result = enrichWatchTodayItem(raw);
     const originalRaw = String(raw || '').trim();
-    if (!result.finvizUrl) {
+    const destination = getMarketAssetDestination(result.ticker);
+    if (!destination) {
       const entry = manualMappings[originalRaw];
       if (entry?.ticker) {
         return {
@@ -199,8 +201,9 @@ export function SummaryBriefingView({
           originalRaw,
         };
       }
+      return { displayText: originalRaw, ticker: null, finvizUrl: null, originalRaw };
     }
-    return { ...result, originalRaw };
+    return { ...result, finvizUrl: destination.url, originalRaw };
   });
   const watchTexts = watchEnriched.map((w) => w.displayText);
   const watchUrlByText = new Map(

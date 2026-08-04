@@ -1,6 +1,6 @@
 import { formatMarketChange } from '@/lib/morningBriefVisuals';
 import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
-import { getExternalSymbolUrl } from '@/utils/finvizLinks';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 
@@ -213,7 +213,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                         ? 'font-mono text-sm text-slate-700 dark:text-zinc-200 whitespace-nowrap'
                         : 'text-sm text-slate-600 dark:text-zinc-400 leading-relaxed';
                     if (col.key === 'name' && val) {
-                      const nameUrl = getExternalSymbolUrl(val);
+                      const nameUrl = getMarketAssetDestination(val)?.url || null;
                       const displayName = getHebrewDisplayLabel(val);
                       return (
                         <td key={col.key} className={`px-3 py-3 ${cellCls}`}>
@@ -272,7 +272,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
             >
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 {row.name && (() => {
-                  const mobileUrl = getExternalSymbolUrl(row.name);
+                  const mobileUrl = getMarketAssetDestination(row.name)?.url || null;
                   const mobileDisplayName = getHebrewDisplayLabel(row.name);
                   return mobileUrl ? (
                     <a

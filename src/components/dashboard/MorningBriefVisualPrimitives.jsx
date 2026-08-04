@@ -16,7 +16,9 @@ import {
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
-import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, getSectorFinvizUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { buildPerplexityEtfHoldingsUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
+import { resolveSectorTools } from '@/lib/sectorTools';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
@@ -95,12 +97,12 @@ export const DASHBOARD_ITEM_ROW_CLS = 'py-2.5';
  * Resolves via Finviz (stocks/ETFs/indices) with fallback to TradingView for DXY/crypto.
  */
 export function ExternalSymbolLink({ symbol, className = '', children }) {
-  const url = symbol ? getExternalSymbolUrl(symbol) : null;
+  const destination = symbol ? getMarketAssetDestination(symbol) : null;
   const display = children ?? symbol ?? '—';
-  if (!url) return <span className={className}>{display}</span>;
+  if (!destination) return <span className={className}>{display}</span>;
   return (
     <a
-      href={url}
+      href={destination.url}
       target="_blank"
       rel="noopener noreferrer"
       title={`פתח ${symbol} ↗`}
@@ -440,11 +442,12 @@ export function SectorRow({
   const sectorName = String(sector || '').trim();
   const statusParts = buildSectorStatusParts(direction, relativeStrength);
   const meta = getSectorMeta(sectorName);
-  const holdingsUrl = meta?.etf ? buildPerplexityEtfHoldingsUrl(meta.etf) : null;
+  const tools = resolveSectorTools({ sector: sectorName, etf: meta?.etf });
+  const holdingsUrl = tools?.etf ? buildPerplexityEtfHoldingsUrl(tools.etf) : null;
   const displayLabel = meta?.he
     ? `${meta.he} (${sectorName})`
     : getHebrewDisplayLabel(sectorName);
-  const finvizUrl = meta?.finvizUrl ?? getSectorFinvizUrl(sectorName);
+  const finvizUrl = tools?.etfDestination?.url || null;
 
   if (!sectorName && statusParts.length === 0) return null;
 

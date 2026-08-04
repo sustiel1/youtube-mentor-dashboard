@@ -78,6 +78,7 @@ import {
   getEditableRowsForSection,
 } from '@/lib/manualBriefOverrides';
 import { getStockSectorMeta } from '@/lib/stockSectorMap';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { resolveMorningBriefPresentation, morningBriefSectionCount, morningBriefShowsSummaryCounters, morningBriefSubsectionTitle, countOpportunitiesAndRisks } from '@/lib/morningBriefPresentation';
 import {
   getMorningBriefMarketRows,
@@ -2649,6 +2650,8 @@ function StockMentionTableRow({
   const ticker = String(stock.ticker || '').trim();
   const notesText = [stock.context, stock.notes].filter(Boolean).map((s) => String(s).trim()).filter(Boolean).join(' · ');
   const sectorMeta = getStockSectorMeta(ticker);
+  const stockDestination = getMarketAssetDestination(ticker);
+  const sectorDestination = getMarketAssetDestination(sectorMeta?.sectorEtf);
 
   return (
     <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
@@ -2664,9 +2667,9 @@ function StockMentionTableRow({
       </td>
       {/* סימול */}
       <td className={BRIEF_CELL.short}>
-        {ticker ? (
+        {stockDestination ? (
           <a
-            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}&p=d`}
+            href={stockDestination.url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -2676,21 +2679,26 @@ function StockMentionTableRow({
           >
             {ticker}
           </a>
+        ) : ticker ? (
+          <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{ticker}</span>
         ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
       </td>
       {/* סקטור */}
       <td className={BRIEF_CELL.short}>
         {sectorMeta?.sectorEtf ? (
           showHelperLinks ? (
-            <a
-              href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(sectorMeta.sectorEtf)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={`פתח ${sectorMeta.sectorEtf} ב-Finviz ↗`}
-              className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} hover:underline`}
-            >
-              {sectorMeta.sectorHe}
-            </a>
+            sectorDestination ? (
+              <a
+                href={sectorDestination.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                title={`פתח ${sectorMeta.sectorEtf} ב-Finviz`}
+                className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} hover:underline`}
+              >
+                {sectorMeta.sectorHe}
+              </a>
+            ) : <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorMeta.sectorHe}</span>
           ) : (
             <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{sectorMeta.sectorHe}</span>
           )

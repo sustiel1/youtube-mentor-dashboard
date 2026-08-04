@@ -1,0 +1,41 @@
+{
+  "textCases": [
+    {
+      "name": "hebrew-boundary",
+      "input": "האפליקציה נשארת טקסט; אפל, AAPL.",
+      "linkedText": ["אפל", "AAPL"],
+      "plainText": ["האפליקציה"]
+    },
+    {
+      "name": "english-boundary",
+      "input": "Apple עלתה; Applejack ו-MYST נשארים טקסט.",
+      "linkedText": ["Apple"],
+      "plainText": ["Applejack", "MYST"]
+    },
+    {
+      "name": "market-punctuation",
+      "input": "SPX, NASDAQ; VIX / WTI — BTC ו-US10Y.",
+      "linkedText": ["SPX", "NASDAQ", "VIX", "WTI", "BTC", "US10Y"],
+      "plainText": []
+    },
+    {
+      "name": "company-events-and-levels",
+      "input": "AAPL: דוחות; SPX תמיכה 5,200; UNKNOWN_LEVEL נשאר טקסט.",
+      "linkedText": ["AAPL", "SPX"],
+      "plainText": ["UNKNOWN_LEVEL"]
+    }
+  ],
+  "sectors": [
+    { "name": "Technology", "etf": "XLK" },
+    { "name": "Communication Services", "etf": "XLC" },
+    { "name": "Consumer Discretionary", "etf": "XLY" },
+    { "name": "Consumer Staples", "etf": "XLP" },
+    { "name": "Energy", "etf": "XLE" },
+    { "name": "Financials", "etf": "XLF" },
+    { "name": "Health Care", "etf": "XLV" },
+    { "name": "Industrials", "etf": "XLI" },
+    { "name": "Materials", "etf": "XLB" },
+    { "name": "Real Estate", "etf": "XLRE" },
+    { "name": "Utilities", "etf": "XLU" }
+  ]
+}

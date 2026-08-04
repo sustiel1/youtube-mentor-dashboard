@@ -361,6 +361,12 @@ const _TV_EXCHANGE_MAP = new Map([
   ['GDX', 'AMEX'], ['UUP', 'AMEX'],
 ]);
 
+export function getVerifiedMarketSecurityExchange(value) {
+  const ticker = String(value ?? '').trim().toUpperCase();
+  if (!/^[A-Z]{1,6}(?:\.[AB])?$/.test(ticker) || ticker === 'BRK') return null;
+  return _TV_EXCHANGE_MAP.get(ticker) || null;
+}
+
 // Normalize a raw symbol/name for TradingView alias lookup.
 // Trims, uppercases (English only — Hebrew is unchanged by toUpperCase),
 // normalizes internal whitespace, and standardizes slash spacing.
@@ -739,6 +745,12 @@ const _EN_COMPANY_TICKER_MAP = new Map([
 
 // ── Watch-Today: Hebrew company name → US stock ticker ────────────────────────
 // Used by enrichWatchTodayItem to resolve Hebrew names that have no ticker in raw data.
+// Text-linking consumers reuse this registry, then validate every ticker through
+// the canonical destination resolver before rendering a link.
+export const EN_CARD_COMPANY_ALIASES = Object.freeze(
+  Array.from(_EN_COMPANY_TICKER_MAP.entries()),
+);
+
 const _HE_STOCK_WATCH_MAP = new Map([
   ['סנדיסק', 'SNDK'],
   ['אמזון', 'AMZN'],

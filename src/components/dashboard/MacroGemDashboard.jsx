@@ -4,15 +4,15 @@ import {
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_CELL_BODY_CLS,
   SectionCard,
-  getSectorMeta,
 } from './MorningBriefVisualPrimitives';
 import { LearningTabContent } from './LearningTabContent';
 import { TabBulkItemsRegistrar } from './TabBulkItemsRegistrar';
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
-import { resolveFinvizTicker } from '@/utils/finvizLinks';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { MarketSectorTable } from './MarketSectorTable';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
+import { resolveSectorTools } from '@/lib/sectorTools';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
@@ -316,14 +316,15 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                 // Extract ticker from strings like "AVGO", "AVGO - Broadcom", "AVGO (Broadcom)"
                 const tickerMatch = item.match(/\b([A-Z]{2,5})\b/);
                 const strTicker = tickerMatch?.[1] || null;
-                const strPxUrl  = strTicker ? buildPerplexityStockUrl(strTicker) : null;
+                const strDestination = getMarketAssetDestination(strTicker);
+                const strPxUrl = strDestination ? buildPerplexityStockUrl(strTicker) : null;
                 return (
                   <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 group">
                     <td className="py-2 pr-2 pl-0 w-5 align-middle" />
                     <td colSpan={4} className="px-2 py-2 align-middle">
-                      {strTicker ? (
+                      {strDestination ? (
                         <a
-                          href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(strTicker)}`}
+                          href={strDestination.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="פתח ב-Finviz ↗"
@@ -350,7 +351,8 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
               const sent = String(item.sentiment || item.direction || item.tone || '').trim();
               const reason = String(item.reason || item.note || item.why || item.comment || item.analysis || item.thesis || '').trim();
               const rowText = [symbol, company, sent, reason].filter(Boolean).join(' · ');
-              const stockPxUrl = symbol ? buildPerplexityStockUrl(symbol) : null;
+              const stockDestination = getMarketAssetDestination(symbol);
+              const stockPxUrl = stockDestination ? buildPerplexityStockUrl(symbol) : null;
 
               return (
                 <tr
@@ -359,9 +361,9 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                 >
                   <td className="py-2 pr-2 pl-0 w-5 align-middle" />
                   <td className="px-2 py-2 align-middle whitespace-nowrap">
-                    {symbol ? (
+                    {stockDestination ? (
                       <a
-                        href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(symbol)}`}
+                        href={stockDestination.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="פתח ב-Finviz ↗"
@@ -372,9 +374,9 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                       >
                         {symbol}
                       </a>
-                    ) : (
-                      <span className="text-slate-400 dark:text-zinc-500">—</span>
-                    )}
+                    ) : symbol ? (
+                      <span className={`font-mono font-bold ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`} dir="ltr">{symbol}</span>
+                    ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
                   </td>
                   <td className="px-2 py-2 align-middle">
                     <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{company ? renderLinkedMarketText(company) : '—'}</span>
@@ -1383,37 +1385,6 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
   );
 }
 
-// ── Sector name → Finviz link resolver ──────────────────────────────
-// Handles: bare ETF "XLF", "XLF (Financials)", English name, Hebrew name.
-
-const SECTOR_HE_TO_EN = {
-  'פיננסים': 'Financials', 'בנקים': 'Financials',
-  'טכנולוגיה': 'Technology',
-  'בריאות': 'Healthcare',
-  'תעשייה': 'Industrials',
-  'אנרגיה': 'Energy',
-  'נדל"ן': 'Real Estate', 'נדל׳ן': 'Real Estate', 'נדלן': 'Real Estate',
-  'תקשורת': 'Communication Services',
-  'צריכה מחזורית': 'Consumer Discretionary',
-  'צריכה בסיסית': 'Consumer Staples',
-  'חומרי גלם': 'Materials',
-  'תשתיות': 'Utilities',
-  'ביוטק': 'Biotechnology',
-  'מוליכים למחצה': 'Semiconductors',
-};
-
-const EXTRA_SECTOR_TICKER = {
-  'Biotech': 'XBI', 'Biotechnology': 'XBI',
-  'Big Tech': 'QQQ',
-  'Defense': 'ITA',
-  'Gold': 'GLD', 'Silver': 'SLV',
-  'Oil': 'XLE', 'Banks': 'XLF',
-};
-
-function _finvizUrl(ticker) {
-  return `https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}`;
-}
-
 function buildPerplexityEtfHoldingsUrl(symbol) {
   if (!symbol) return null;
   const q = `נתח את קרן ${symbol}.\n\nהצג:\n1. 10 האחזקות הגדולות ביותר לפי משקל\n2. שם החברה\n3. סימבול\n4. משקל בקרן באחוזים\n5. אילו מניות מובילות את ביצועי הקרן\n6. אילו מניות מהוות סיכון לקרן\n7. האם הקרן במומנטום חיובי, ניטרלי או שלילי\n8. סיכום קצר למשקיע סווינג\n\nענה בעברית ובטבלה מסודרת.`;
@@ -1524,29 +1495,9 @@ function buildPerplexityResearchQuery(item, sectionType) {
 function resolveGemSectorLink(sectorStr) {
   const str = String(sectorStr || '').trim();
   if (!str) return null;
-
-  // 1. Bare ETF ticker or "ETF (Name)": "XLF", "XBI (Biotech)"
   const headTicker = str.match(/^([A-Z]{2,6})(?:\s*\(.*\))?$/)?.[1];
-  if (headTicker) return { ticker: headTicker, url: _finvizUrl(headTicker) };
-
-  const englishPart = str.includes('/') ? str.split('/')[0].trim() : str;
-
-  // 2. English name in SECTOR_METADATA
-  const meta = getSectorMeta(englishPart) || getSectorMeta(str);
-  if (meta?.finvizUrl) return { ticker: meta.etf, url: meta.finvizUrl };
-
-  // 3. Hebrew name → translate → getSectorMeta
-  const heKey = Object.keys(SECTOR_HE_TO_EN).find(k => str.includes(k) || englishPart.includes(k));
-  if (heKey) {
-    const heMeta = getSectorMeta(SECTOR_HE_TO_EN[heKey]);
-    if (heMeta?.finvizUrl) return { ticker: heMeta.etf, url: heMeta.finvizUrl };
-  }
-
-  // 4. Extra aliases not in SECTOR_METADATA
-  const extraTicker = EXTRA_SECTOR_TICKER[englishPart] || EXTRA_SECTOR_TICKER[str];
-  if (extraTicker) return { ticker: extraTicker, url: _finvizUrl(extraTicker) };
-
-  return null;
+  const tools = resolveSectorTools({ sector: str, etf: headTicker || '' });
+  return tools ? { ticker: tools.etf, url: tools.etfDestination.url } : null;
 }
 
 // ── Custom indices table: checkbox | מדד/נכס | שינוי | סנטימנט | סיבה | save ──
@@ -1588,15 +1539,16 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
         <tbody>
           {safe.map((item, i) => {
             if (typeof item === 'string') {
-              const ft = resolveFinvizTicker(item.trim());
-              const idxStrPxUrl = ft ? buildPerplexityStockUrl(ft) : null;
+              const destination = getMarketAssetDestination(item.trim());
+              const ft = destination?.destinationSymbol || null;
+              const idxStrPxUrl = destination ? buildPerplexityStockUrl(ft) : null;
               return (
                 <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 group">
                   <td className="py-2 pr-2 pl-0 w-5 align-middle" />
                   <td colSpan={4} className="px-2 py-2 align-middle">
-                    {ft ? (
+                    {destination ? (
                       <a
-                        href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ft)}`}
+                        href={destination.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="פתח ב-Finviz ↗"
@@ -1626,16 +1578,17 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
 
             const rowText = [name, change, direction, reason].filter(Boolean).join(' · ');
             // Resolve ticker: prefer the original raw name for named indices (e.g. "Nasdaq" → QQQ)
-            const ft = resolveFinvizTicker(rawName) || resolveFinvizTicker(name);
-            const idxPxUrl = ft ? buildPerplexityStockUrl(ft) : null;
+            const destination = getMarketAssetDestination(rawName) || getMarketAssetDestination(name);
+            const ft = destination?.destinationSymbol || null;
+            const idxPxUrl = destination ? buildPerplexityStockUrl(ft) : null;
 
             return (
               <tr key={i} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group">
                 <td className="py-2 pr-2 pl-0 w-5 align-middle" />
                 <td className="px-2 py-2 align-middle whitespace-nowrap">
-                  {ft ? (
+                  {destination ? (
                     <a
-                      href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ft)}`}
+                      href={destination.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       title="פתח ב-Finviz ↗"
@@ -2251,7 +2204,8 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
     ? (oppRaw.details || oppRaw.description || oppRaw.thesis || '').trim() : '';
   const oppTickerM = (oppTitle + ' ' + oppAssets).match(/\b([A-Z]{2,5})\b/);
   const oppTicker  = oppTickerM?.[1] || null;
-  const oppLink    = oppTicker ? `https://finviz.com/quote.ashx?t=${encodeURIComponent(oppTicker)}`
+  const oppDestination = getMarketAssetDestination(oppTicker);
+  const oppLink    = oppDestination ? oppDestination.url
     : (resolveGemSectorLink(oppAssets)?.url || null);
   const oppSubLine = [oppType, oppAssets].filter(Boolean).join(' · ') || null;
 

@@ -1,13 +1,12 @@
+import { Fragment, useState } from 'react';
 import {
-  DASHBOARD_TABLE_CELL_BODY_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
 } from './MorningBriefVisualPrimitives';
 import {
   buildPerplexityEtfHoldingsUrl,
-  getSectorFinvizUrl,
-  resolveSectorFinvizLink,
 } from '@/utils/finvizLinks';
+import { resolveSectorTools } from '@/lib/sectorTools';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 import {
   BRIEF_CELL,
@@ -65,6 +64,7 @@ export function normalizeSectorTableRow(item, options = {}) {
 
   return {
     sector,
+    sourceEtf: String(item.etf || item.sectorEtf || '').trim().toUpperCase(),
     sentiment: sentimentLabel,
     note: noteText,
     rowText: [sector, sentimentLabel, noteText].filter(Boolean).join(' · '),
@@ -72,37 +72,77 @@ export function normalizeSectorTableRow(item, options = {}) {
   };
 }
 
-function SectorNameCell({ sector, showHelperLinks = true }) {
+function SectorNameCell({ sector, tools, showHelperLinks = true, expanded, onToggle, controlsId }) {
   const displaySector = getHebrewDisplayLabel(sector);
-  const link = resolveSectorFinvizLink(sector);
-  const finvizUrl = link?.url ?? getSectorFinvizUrl(sector);
-  const pxUrl = showHelperLinks && link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
-
-  const nameNode = finvizUrl ? (
-    <a
-      href={finvizUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      title="פתח ב-Finviz ↗"
-      className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
-      onClick={(e) => e.stopPropagation()}
-      data-finviz-link={link?.ticker || ''}
-    >
-      {displaySector}
-    </a>
-  ) : (
-    <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
-  );
-
-  if (!pxUrl) return nameNode;
+  const pxUrl = showHelperLinks && tools
+    ? buildPerplexityEtfHoldingsUrl(tools.etf)
+    : null;
 
   return (
     <div className="flex flex-col gap-0.5">
-      {nameNode}
-      <ResearchDropdownLink
-        pxUrl={pxUrl}
-        titleHe={`10 אחזקות מובילות של ${link.ticker}`}
-      />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
+        {tools ? (
+          <a
+            href={tools.etfDestination.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`פתח ${tools.etf} ב-Finviz`}
+            className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-bold text-indigo-700 hover:underline dark:bg-zinc-800 dark:text-indigo-300"
+            onClick={(event) => event.stopPropagation()}
+            data-sector-etf={tools.etf}
+          >
+            {tools.etf}
+          </a>
+        ) : null}
+        {tools ? (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={controlsId}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggle();
+            }}
+            className="text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-300"
+            data-sector-tools-toggle
+          >
+            כלי סקטור {expanded ? '▴' : '▾'}
+          </button>
+        ) : null}
+      </div>
+      {pxUrl ? (
+        <ResearchDropdownLink
+          pxUrl={pxUrl}
+          titleHe={`10 אחזקות מובילות של ${tools.etf}`}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function SectorToolsPanel({ tools, id }) {
+  if (!tools) return null;
+  const links = [
+    ...tools.researchTools,
+    { id: 'tradingview-technicals', labelHe: 'RSI וניתוח טכני', provider: 'TradingView', url: tools.technicalsUrl },
+  ];
+  return (
+    <div id={id} className="flex flex-wrap gap-2 py-2" data-sector-tools-panel>
+      {links.map((link) => (
+        <a
+          key={link.id}
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => event.stopPropagation()}
+          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          title={`${link.labelHe} — ${link.provider}`}
+          data-sector-tool={link.id}
+        >
+          {link.labelHe}
+        </a>
+      ))}
     </div>
   );
 }
@@ -119,6 +159,7 @@ export function MarketSectorTable({
   rowClassName = 'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group',
   showHelperLinks = true,
 }) {
+  const [expandedRow, setExpandedRow] = useState(null);
   const safe = Array.isArray(rows) ? rows.filter(Boolean) : [];
   if (!safe.length) return null;
 
@@ -147,42 +188,69 @@ export function MarketSectorTable({
           {safe.map((item, i) => {
             const options = typeof getRowOptions === 'function' ? getRowOptions(item, i) : {};
             const normalized = normalizeSectorTableRow(item, options);
+            const tools = resolveSectorTools({
+              sector: normalized.sector,
+              etf: normalized.sourceEtf,
+            });
+            const rowKey = `sector-${i}`;
+            const controlsId = `sector-tools-${i}`;
+            const expanded = expandedRow === rowKey;
+            const nameCell = (
+              <SectorNameCell
+                sector={normalized.sector}
+                tools={tools}
+                showHelperLinks={showHelperLinks}
+                expanded={expanded}
+                controlsId={controlsId}
+                onToggle={() => setExpandedRow(expanded ? null : rowKey)}
+              />
+            );
+            const toolsRow = expanded && tools ? (
+              <tr className="border-b border-slate-200/70 bg-slate-50/60 dark:border-zinc-700/50 dark:bg-zinc-900/60">
+                <td colSpan={4 + (renderLeadingCell ? 1 : 0) + (renderTrailingCell ? 1 : 0)} className="px-3">
+                  <SectorToolsPanel tools={tools} id={controlsId} />
+                </td>
+              </tr>
+            ) : null;
 
             if (normalized.isStringOnly) {
-              const strLink = resolveSectorFinvizLink(normalized.sector);
-              const strFinvizUrl = strLink?.url ?? getSectorFinvizUrl(normalized.sector);
-              const strPxUrl = showHelperLinks && strLink ? buildPerplexityEtfHoldingsUrl(strLink.ticker) : null;
               return (
-                <tr key={i} className={rowClassName}>
+                <Fragment key={rowKey}>
+                  <tr className={rowClassName} data-sector-item>
+                    {renderLeadingCell ? (
+                      <td className={BRIEF_CELL.checkbox}>
+                        {renderLeadingCell(item, i, normalized)}
+                      </td>
+                    ) : null}
+                    <td colSpan={4} className={BRIEF_CELL.notes}>{nameCell}</td>
+                    {renderTrailingCell ? (
+                      <td className={BRIEF_CELL.save}>
+                        {renderTrailingCell(item, i, normalized)}
+                      </td>
+                    ) : null}
+                  </tr>
+                  {toolsRow}
+                </Fragment>
+              );
+            }
+
+            return (
+              <Fragment key={rowKey}>
+                <tr className={rowClassName} data-sector-item>
                   {renderLeadingCell ? (
                     <td className={BRIEF_CELL.checkbox}>
                       {renderLeadingCell(item, i, normalized)}
                     </td>
                   ) : null}
-                  <td colSpan={4} className={BRIEF_CELL.notes}>
-                    <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
-                      {strFinvizUrl ? (
-                        <a
-                          href={strFinvizUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="פתח ב-Finviz ↗"
-                          className={`${DASHBOARD_TABLE_CELL_BODY_CLS} hover:underline cursor-pointer`}
-                          onClick={(e) => e.stopPropagation()}
-                          data-finviz-link={strLink?.ticker || ''}
-                        >
-                          {getHebrewDisplayLabel(normalized.sector)}
-                        </a>
-                      ) : (
-                        <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{getHebrewDisplayLabel(normalized.sector)}</span>
-                      )}
-                      {strPxUrl && (
-                        <ResearchDropdownLink
-                          pxUrl={strPxUrl}
-                          titleHe={`10 אחזקות מובילות של ${strLink.ticker}`}
-                        />
-                      )}
-                    </div>
+                  <td className={BRIEF_CELL.short}>{nameCell}</td>
+                  <td className={BRIEF_CELL.sentiment}>
+                    <BriefSentimentCell value={normalized.sentiment} />
+                  </td>
+                  <td className={BRIEF_CELL.change} />
+                  <td className={BRIEF_CELL.notes}>
+                    <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
+                      {normalized.note || '—'}
+                    </p>
                   </td>
                   {renderTrailingCell ? (
                     <td className={BRIEF_CELL.save}>
@@ -190,34 +258,8 @@ export function MarketSectorTable({
                     </td>
                   ) : null}
                 </tr>
-              );
-            }
-
-            return (
-              <tr key={i} className={rowClassName} data-sector-item>
-                {renderLeadingCell ? (
-                  <td className={BRIEF_CELL.checkbox}>
-                    {renderLeadingCell(item, i, normalized)}
-                  </td>
-                ) : null}
-                <td className={BRIEF_CELL.short}>
-                  <SectorNameCell sector={normalized.sector} showHelperLinks={showHelperLinks} />
-                </td>
-                <td className={BRIEF_CELL.sentiment}>
-                  <BriefSentimentCell value={normalized.sentiment} />
-                </td>
-                <td className={BRIEF_CELL.change} />
-                <td className={BRIEF_CELL.notes}>
-                  <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
-                    {normalized.note || '—'}
-                  </p>
-                </td>
-                {renderTrailingCell ? (
-                  <td className={BRIEF_CELL.save}>
-                    {renderTrailingCell(item, i, normalized)}
-                  </td>
-                ) : null}
-              </tr>
+                {toolsRow}
+              </Fragment>
             );
           })}
         </tbody>

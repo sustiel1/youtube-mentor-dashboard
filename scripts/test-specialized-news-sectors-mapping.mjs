@@ -10,13 +10,20 @@
  *   News:    { title, description } | { event } | { headline, summary/impact }
  *   Sectors: { sector, status } | { sector, trend } | { name, status }
  */
-import {
+import { createServer } from 'vite';
+
+const vite = await createServer({
+  server: { middlewareMode: true },
+  appType: 'custom',
+  optimizeDeps: { noDiscovery: true },
+});
+const {
   extractVideoTabItems,
   resolveSpecializedNewsItems,
   resolveSpecializedSectorItems,
   formatNewsItem,
   formatSectorItem,
-} from '../src/config/videoTabsConfig.js';
+} = await vite.ssrLoadModule('/src/config/videoTabsConfig.js');
 
 let passed = 0;
 let failed = 0;
@@ -180,4 +187,5 @@ console.log('\n11. extractVideoTabItems integration — clobbering bug reproduct
 
 // ── Result ──────────────────────────────────────────────────────────────
 console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`);
+await vite.close();
 if (failed > 0) process.exit(1);
