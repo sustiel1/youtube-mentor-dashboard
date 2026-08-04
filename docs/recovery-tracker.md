@@ -1,7 +1,7 @@
 # מעקב שחזור — YouTube Mentor Dashboard
 
-עודכן: `2026-08-04 20:54:57 +03:00`
-מקור אמת: היסטוריית Git, קבצי ה־repository, בדיקות שבוצעו על HEAD הנוכחי, build ו־runtime פעיל.
+עודכן: `2026-08-04 21:40:36 +03:00`
+מקור אמת: היסטוריית Git, קבצי ה־repository ותצפיות audit מתוארכות. כל HEAD, PID או מצב runtime הרשומים כאן הם תצפית היסטורית שיש לאמת מחדש לפני פעולה.
 הקובץ החיצוני `C:\Users\11\Desktop\מונית\youtube-mentor-recovery-tracker.md` הוא מקור היסטורי בלבד ומסומן כמוחלף על ידי קובץ זה.
 
 ## כללי ניהול מחייבים
@@ -29,24 +29,20 @@
 - [x] לאחר אישור, כל commit נבדק ומבוצע לפי סדר התלות ורק מנתיבים או hunks מפורשים; `git add .` ו־`git add -A` אסורים.
 - [x] אם ההפרדה נעשית עמומה בכל שלב, עוצרים לפני commit ומציעים commit משולב אחד.
 
-## 🆕 מצב קנוני נוכחי
+## 🆕 בסיס קוד ותצפית audit אחרונה
 
 - Repository משותף: `C:\Users\11\Desktop\Workspace\new-project\projects\youtube-mentor-dashboard`
 - Worktree קנוני: `C:\tmp\ymd-recent-app-integration`
 - Branch: `integration/recent-app-improvements`
-- HEAD לפני commit התיעוד הנוכחי: `0260514bbede7153e9028e707037252d217acfd1`
-- Subject: `fix: reconcile Market Brief storage after partial writes`
-- Upstream: אין upstream מוגדר לענף; ה־commits מקומיים בלבד.
-- Runtime PID: `8452`
-- Runtime command: `"node" "C:\tmp\ymd-recent-app-integration\node_modules\.bin\\..\vite\bin\vite.js"`
-- URL: `http://localhost:5184`
-- [x] localhost מאזין ב־PID `8452` ומגיש את ה־worktree הקנוני.
-- [x] cache-busting request החזיר HTTP `200`.
-- [x] מודול UI ייחודי מ־HEAD הנוכחי הוגש מהשרת.
-- [x] 🆕 runtime module audit החזיר HTTP `200` וכלל `normalizeUniversalInsightItem` ו־`preserveStructured`, ולכן localhost מגיש את ה־working tree המשתנה של ה־batch.
-- [x] localhost מגיש את קוד האפליקציה committed מ־`888a1ac20d091cf3d31b1019724ef654caffd3e5`; commit `89c09d06174ba2ec56080d1ecb3dec89676de7bc` מוסיף בדיקת interaction בלבד ואינו משנה runtime.
+- Application code baseline: `0260514bbede7153e9028e707037252d217acfd1` — `fix: reconcile Market Brief storage after partial writes`.
+- Latest completed documentation commit observed before reconciliation: `ba135ec0b9515c0db081bbde9635ef2e5a656998` — `docs: record storage consistency recovery verification`.
+- Last verified audit observation: `2026-08-04 21:40:36 +03:00`, branch `integration/recent-app-improvements`, clean HEAD `ba135ec0b9515c0db081bbde9635ef2e5a656998`.
+- Runtime observation באותו audit: PID `8452`, command `"node" "C:\tmp\ymd-recent-app-integration\node_modules\.bin\\..\vite\bin\vite.js"`, URL `http://localhost:5184`, cache-busting HTTP `200`.
+- [x] מודולי runtime שנבדקו החזירו HTTP `200` וכללו את `resolveMarketBriefHydration` ואת `PARTIAL_PERSISTENCE`; ה־runtime הגיש את קוד ה־application baseline מתוך ה־worktree הנקי שנצפה.
+- Upstream בתצפית: אין upstream מוגדר. לפי remote refs השמורים, `41` commits בענף לא היו נגישים מאף remote ref; לא בוצע fetch.
+- [x] אין כאן טענת “HEAD נוכחי” או “runtime נוכחי” קבועה: יש לאמת branch, HEAD, status, PID ו־HTTP לפני כל save, integration או release.
 
-### 🆕 Git classification במהלך batch `evidence-live-renderer-batch`
+### 🆕 Git classification היסטורי בסיום `evidence-live-renderer-batch`
 
 - Staged לפני commit התיעוד: אין.
 - Unstaged tracked לפני commit התיעוד: `docs/recovery-tracker.md` בלבד.
@@ -57,16 +53,28 @@
 
 ## משימה פעילה והמשימה הבאה
 
-- [x] 🆕 משימה פעילה: חבילות הבדיקה והיישום של `storage-consistency-recovery-batch` committed והתקבלו; נותר commit התיעוד המאושר בלבד.
+- [x] 🆕 Application recovery implementation: `COMPLETE`; ביקורת הסיום לא הוכיחה פער יישום נוסף.
+- [x] 🆕 `storage-consistency-recovery-batch` הושלם והתקבל במלואו ב־`fc73e3b4355ada5c7f1a11d1910cabacebb0deee`, `0260514bbede7153e9028e707037252d217acfd1` ו־`ba135ec0b9515c0db081bbde9635ef2e5a656998`.
 - [x] 🆕 חבילת UI נשמרה ב־commit `95acf502f4c14c1c8e104c963270beb1d2279b76`.
 - [x] 🆕 tracker נשמר ב־commit `1ba1640d298049f3de3de6c3a51b0f5ad0c2fc07` (`docs: add verified recovery tracker`).
 - [x] 🆕 נבדקו כל חמש הרשומות המקומיות הזמינות; שלוש רשומות עם מצב ניתוח/GEMS נפתחו ונבדקו דרך ה־UI.
 - [x] 🆕 defect ה־live renderer ברשומה `ידיעה אחר ידיעה - לייט נייט` תוקן והתקבל: מטא־דאטת הראיות נשמרת, שדות גולמיים אינם מוצגים, וכפתורי evidence timestamp עברו click/seek/keyboard/checkbox-separation.
 - [x] 🆕 בשתי רשומות Evening בעלות Specialized מאוכלס סעיף הסקטורים ריק; populated Sector Tools סומן `not available in current local data` ותוצאת fixture/regression נשארת בתוקף.
 - [x] 🆕 **Base44 proxy read-only QA**: התוסף מפעיל proxy רק כאשר `VITE_BASE44_APP_BASE_URL` מוגדר; ב־worktree אין `.env` או `.env.local`, ובקשת probe מקומית לנתיב `/api` לא מוכר חזרה כ־HTML של Vite. זהו פער תצורת סביבה/runtime, לא כשל build או defect בקוד.
-- [ ] 🆕 המשימה הבאה המדויקת: לשמור את reconciliation זה ב־commit התיעוד המאושר, בלי לרשום בקובץ את ה־SHA של עצמו.
+- [ ] 🆕 המשימה הבאה המדויקת: לבחור באישור נפרד אפשרות integration/release. לפני כל פעולה יש לאמת מחדש branch, HEAD, status, upstream, remote refs ויעד deployment; אין יעד מאושר כרגע.
 
-## 🆕 Batch פעיל — `evidence-live-renderer-batch`
+## 🆕 סיווג שחזור יציב
+
+- [x] Application recovery implementation — `COMPLETE`; `35/35` בדיקות עברו, production build עבר Exit `0`, ו־Git נצפה נקי ב־`ba135ec0b9515c0db081bbde9635ef2e5a656998`.
+- [x] Cross-storage recovery — `COMPLETE_WITH_LIMITATION`; partial failures מזוהים ומתיישבים לאחר reload, אך אין transaction אטומי אמיתי בין מנגנוני האחסון הנפרדים.
+- [x] Evidence seek — `COMPLETE_WITH_LIMITATION`; click, Enter, Space, checkbox isolation ו־`seekTo(480.25)` אומתו, אך זמן הניגון המדויק בתוך iframe אינו קריא cross-origin.
+- [ ] Sector Tools live QA — `TESTED_ONLY`; fixture/regression עברו, אך אין populated sector row ברשומות המקומיות שנבדקו.
+- [ ] Base44 proxy — `ENVIRONMENT_BLOCKED`; `VITE_BASE44_APP_BASE_URL` אינו מוגדר והפעלה דורשת env ו־server restart מאושרים.
+- [ ] Paid AI E2E — `ENVIRONMENT_BLOCKED`; mocks/contracts עברו, אך לא בוצעה קריאת provider אמיתית בתשלום.
+- [x] Final audit observation — cache-busting HTTP `200`, אפס application warnings/errors ולא הוכח פער implementation נוסף.
+- [x] לא בוצעו push, merge או deploy; remote refs לא רועננו.
+
+## [x] 🆕 Batch שהושלם — `evidence-live-renderer-batch`
 
 - Starting HEAD: `1ba1640d298049f3de3de6c3a51b0f5ad0c2fc07`.
 - Branch/worktree: `integration/recent-app-improvements` / `C:\tmp\ymd-recent-app-integration`.
@@ -129,15 +137,15 @@
 - סבבי תיקון: `0` בחבילה 3; סך ה־batch `3`.
 - תלות: חבילות 1–2 וה־runtime הקנוני הפעיל.
 - חפיפות: אין קוד; `docs/recovery-tracker.md` הוא דלתא משותפת של כל ה־batch ויוקצה ל־commit התיעוד האחרון.
-- Proposed commit: `docs: record evidence live-renderer batch verification`.
+- Documentation commit completed: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8` — `docs: record evidence live-renderer batch verification`.
 
-## 🆕 Batch פעיל — `storage-consistency-recovery-batch`
+## [x] 🆕 Batch שהושלם — `storage-consistency-recovery-batch`
 
 - Starting HEAD: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8`.
 - Branch/worktree: `integration/recent-app-improvements` / `C:\tmp\ymd-recent-app-integration`.
 - Runtime: PID `8452`, URL `http://localhost:5184`, Vite command מצביע ל־worktree הקנוני; cache-busting HTTP `200` לפני היישום.
 - True atomic transaction: אינה אפשרית בשכבה הנוכחית בין שני ערכי `localStorage` נפרדים; ה־design הקיים הוא ordered dual write בלבד.
-- Staging/commits במהלך ה־batch: אין.
+- Staging/commits במהלך היישום: לא בוצעו; לאחר אישור נשמרו שלושת ה־commits המתועדים להלן.
 
 ### [x] Package 1 — consistency and failure-mode audit — committed
 
@@ -209,20 +217,20 @@
 - Correction rounds: `0` בחבילה 3; סך סבבי תיקון הקוד ב־batch הוא `1`.
 - Dependencies: Packages 1–2, runtime PID `8452` וה־working tree המשולב.
 - Overlap: `docs/recovery-tracker.md` הוא הנתיב המשותף היחיד; אין hunk חופף בין manifests של application/tests. Package 2 test צורך את fixture של Package 1.
-- Proposed commit: `docs: record storage consistency recovery verification`.
+- Documentation commit completed: `ba135ec0b9515c0db081bbde9635ef2e5a656998` — `docs: record storage consistency recovery verification`.
 
-### 🆕 Gate מוצע — `storage-consistency-recovery-batch`
+### [x] 🆕 Gate שהושלם — `storage-consistency-recovery-batch`
 
-- Starting HEAD: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8`; current HEAD לפני commit התיעוד: `0260514bbede7153e9028e707037252d217acfd1`.
+- Starting HEAD: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8`.
 - Commit 1 completed: `fc73e3b4355ada5c7f1a11d1910cabacebb0deee` — `test: characterize Market Brief storage failure modes`.
 - Commit 2 completed: `0260514bbede7153e9028e707037252d217acfd1` — `fix: reconcile Market Brief storage after partial writes`; child של Commit 1.
-- Proposed commit 3: `docs: record storage consistency recovery verification` — tracker בלבד; תלוי ב־commits 1–2.
+- Commit 3 completed: `ba135ec0b9515c0db081bbde9635ef2e5a656998` — `docs: record storage consistency recovery verification`; tracker בלבד ו־child של Commit 2.
 - Separation: חד־משמעית לפי נתיבים; אין צורך ב־hunk staging עמום.
 - Rollback לאחר commit, ורק באישור נפרד: revert של commit 3, אחריו commit 2, ואחריו commit 1.
 
 ## רצף commits מאומת
 
-כל ה־commits הבאים קיימים ונמצאים ב־first-parent ancestry של HEAD הנוכחי:
+כל ה־commits הבאים קיימים ונמצאו ב־first-parent ancestry של תצפית ה־audit ב־`ba135ec0b9515c0db081bbde9635ef2e5a656998`:
 
 | מצב | SHA | קבצים | Subject | Rollback בטוח |
 |---|---|---:|---|---|
@@ -251,6 +259,7 @@
 | [x] 🆕 | `89c09d06174ba2ec56080d1ecb3dec89676de7bc` | 1 | `test: verify live evidence timestamp interactions` | `git revert 89c09d06174ba2ec56080d1ecb3dec89676de7bc` |
 | [x] 🆕 | `fc73e3b4355ada5c7f1a11d1910cabacebb0deee` | 2 | `test: characterize Market Brief storage failure modes` | `git revert fc73e3b4355ada5c7f1a11d1910cabacebb0deee` |
 | [x] 🆕 | `0260514bbede7153e9028e707037252d217acfd1` | 4 | `fix: reconcile Market Brief storage after partial writes` | `git revert 0260514bbede7153e9028e707037252d217acfd1` |
+| [x] 🆕 | `ba135ec0b9515c0db081bbde9635ef2e5a656998` | 1 | `docs: record storage consistency recovery verification` | `git revert ba135ec0b9515c0db081bbde9635ef2e5a656998` |
 
 אין לבצע אף rollback ללא אישור מפורש.
 
@@ -406,11 +415,11 @@
 - [x] Persistence guard ו־runtime persistence עברו.
 - [x] Chapters, additive merge ו־evidence/event timestamps עברו.
 - [x] Runtime warning stability, analysis failure contract ו־Gemini debug report עברו.
-- [x] 🆕 production build עבר Exit `0` על HEAD הנוכחי.
+- [x] 🆕 production build עבר Exit `0` על application baseline `0260514bbede7153e9028e707037252d217acfd1`; commit התיעוד `ba135ec0b9515c0db081bbde9635ef2e5a656998` לא שינה קוד application.
 - [x] build הודיע `Base44 Proxy not enabled` בגלל env חסר; זו אינה שגיאת compilation.
 - [x] `git diff --check` עבר לפני commit חבילת UI וה־worktree היה נקי לאחריו.
 - [x] browser QA מתועד ל־323×697, 355×767, 640×900, 768×1024 ו־1280×800.
-- [x] 🆕 browser reload נוסף על HEAD הנוכחי נטען ב־RTL וללא overflow ברוחב 929px.
+- [x] 🆕 בתצפית ה־audit ב־`ba135ec0b9515c0db081bbde9635ef2e5a656998`, browser reload נטען ב־RTL וללא overflow ברוחב 929px.
 - [x] 🆕 Live-data QA: הרשומה `ידיעה אחר ידיעה - לייט נייט` מציגה Evidence Timestamp פעיל, טקסט עברי נקי, seek/keyboard/checkbox separation ונגן יחיד; שורת סקטור מאוכלסת לא נמצאה.
 - [x] 🆕 cache-busting reload נוסף החזיר מסמך RTL תקין ללא overflow וללא application warnings; הודעות הקונסולה היחידות הגיעו מ־Chrome extensions.
 - [x] 🆕 audit ל־`favicon.ico`: ה־404 הקודם לא שוחזר; בקשה ישירה ל־`/favicon.ico?audit=20260804` החזירה HTTP `200` דרך fallback של Vite, `index.html` אינו מפנה ל־favicon ואין תיקיית `public`. לא הוכח defect יישומי בבדיקה הנוכחית.
@@ -433,12 +442,13 @@
 - [x] אין upstream לענף הנוכחי ולא בוצעו push, merge או deploy במסגרת השחזור.
 - [x] worktrees וענפי documentation/secondary נשארו ללא שינוי במשימה זו.
 
-## Gate נוכחי
+## Verify before action
 
-- חבילת application אחרונה: `888a1ac20d091cf3d31b1019724ef654caffd3e5`, committed ומאומתת.
-- בדיקת ה־interaction: `89c09d06174ba2ec56080d1ecb3dec89676de7bc`, committed ומאומתת.
-- tracker: reconciliation תיעודי סופי; commit 3 אינו רושם את ה־SHA של עצמו כדי למנוע לולאה self-referential.
-- `evidence-live-renderer-batch`: חבילות 1–2 committed והתקבלו; תיעוד חבילה 3 נשמר ב־commit המכיל קובץ זה.
-- מבנה commit שבוצע: (1) normalization + fixture/test, (2) interaction regression, (3) tracker documentation.
-- Base44 proxy נשאר מחוץ ל־scope ודורש בנפרד env ו־server restart מאושרים.
-- [x] 🆕 שער ה־batch אושר במפורש; שלושת ה־commits האטומיים בוצעו לפי סדר התלות, ללא push, merge או deploy.
+- Application code baseline: `0260514bbede7153e9028e707037252d217acfd1`.
+- Latest completed documentation commit observed before reconciliation: `ba135ec0b9515c0db081bbde9635ef2e5a656998`.
+- [x] `evidence-live-renderer-batch` ו־`storage-consistency-recovery-batch` הושלמו; אין commit recovery מוצע או ממתין.
+- [x] ביקורת הסיום לא הוכיחה פער קוד נוסף.
+- [ ] לפני commit, integration, push או deploy יש לאמת מחדש repository, worktree, branch, HEAD, Git status, upstream, remote refs, runtime ויעד deployment.
+- [ ] אין להניח ש־`main`, `origin/main`, Base44 או יעד אחר אושרו כיעד.
+- [ ] Base44 proxy ו־Paid AI E2E נשארים מחוץ ל־scope ודורשים אישור וסביבה מתאימים.
+- [x] אין לרשום כאן SHA עתידי של commit tracker; commit תיעוד עתידי מתועד רק בתצפית audit עוקבת, אם תתבצע.
