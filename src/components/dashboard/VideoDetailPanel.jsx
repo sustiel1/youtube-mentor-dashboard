@@ -8434,13 +8434,6 @@ export function VideoDetailPanel({
             צפייה בפרטי הסרטון, סיכום, פרקים, נקודות מפתח והערות.
           </DialogDescription>
         </DialogHeader>
-        {/* Close button */}
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute top-3 left-3 z-50 p-1.5 rounded-full bg-white/85 shadow-sm transition-colors text-slate-600 hover:bg-slate-100 dark:bg-zinc-900/85 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          <X className="h-4 w-4" />
-        </button>
         {toggleTheme && (
           <button
             onClick={toggleTheme}

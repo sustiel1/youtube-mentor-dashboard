@@ -57,11 +57,17 @@ export function UniversalTabCheckbox({
     <input
       type="checkbox"
       checked={checked}
-      onChange={onChange}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        event.stopPropagation();
+        onChange?.(event);
+      }}
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
         UNIVERSAL_TAB_CHECKBOX_INPUT_CLASS,
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
         disabled && 'cursor-not-allowed opacity-30',
         className,
       )}

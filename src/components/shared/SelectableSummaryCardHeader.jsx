@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
   SectionHeaderTitle,
@@ -8,6 +7,7 @@ import {
 } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabSectionHeaderActions } from '@/components/shared/UniversalTabSectionHeaderActions';
 import { mergeBulkSelection, formatSectionCopyFromCardText } from '@/lib/universalTabBulkItems';
+import { SectionBulkSelectControl } from '@/components/shared/SectionBulkSelectControl';
 
 /**
  * Indeterminate-aware checkbox for section select-all (card header variant).
@@ -15,40 +15,30 @@ import { mergeBulkSelection, formatSectionCopyFromCardText } from '@/lib/univers
  * Without sectionChildItems, falls back to single-card toggle (legacy behavior).
  */
 function CardSectionCheckbox({ sectionChildItems, bulkSelection, bulkId, meta }) {
-  const ref = useRef(null);
+  if (sectionChildItems?.length) {
+    return (
+      <SectionBulkSelectControl
+        items={sectionChildItems}
+        bulkSelection={bulkSelection}
+        sectionLabel={meta?.sectionLabel || ''}
+        className="min-h-7"
+      />
+    );
+  }
 
-  const ids = sectionChildItems ? sectionChildItems.map((i) => i.id) : null;
-  const selectedCount = ids
-    ? ids.filter((id) => bulkSelection?.multiSelected?.has(id)).length
-    : (bulkSelection?.multiSelected?.has(bulkId) ? 1 : 0);
-  const totalCount = ids ? ids.length : 1;
-  const allSelected = totalCount > 0 && selectedCount === totalCount;
-  const someSelected = selectedCount > 0 && !allSelected;
-
-  useEffect(() => {
-    if (ref.current) ref.current.indeterminate = someSelected;
-  }, [someSelected]);
-
-  const handleChange = () => {
-    if (ids) {
-      if (allSelected) {
-        bulkSelection.onSectionDeselect?.(ids);
-      } else {
-        bulkSelection.onSectionSelect?.(sectionChildItems);
-      }
-    } else {
-      bulkSelection.onToggle?.(bulkId, meta);
-    }
-  };
-
+  const checked = bulkSelection?.multiSelected?.has(bulkId) ?? false;
   return (
     <input
-      ref={ref}
       type="checkbox"
-      checked={allSelected}
-      onChange={handleChange}
+      checked={checked}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        event.stopPropagation();
+        bulkSelection.onToggle?.(bulkId, meta);
+      }}
       aria-label={`בחר כרטיס: ${meta?.sectionLabel || ''}`}
-      className="h-4 w-4 rounded cursor-pointer accent-indigo-600"
+      className="h-4 w-4 rounded cursor-pointer accent-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
     />
   );
 }

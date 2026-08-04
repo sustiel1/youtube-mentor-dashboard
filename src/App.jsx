@@ -103,7 +103,7 @@ function AppLayout({ theme, toggleTheme, isDark }) {
         toggleTheme={toggleTheme}
         onSaveToBrain={(brainId) => { setSaveToBrainBrainId(brainId || ""); setSaveToBrainOpen(true); }}
       />
-      <main className="flex-1 overflow-y-auto bg-transparent">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-transparent pt-16 md:pt-0">
         <PageComponent
           filters={filters}
           setFilters={updateFilters}

@@ -1,3 +1,5 @@
+import { resolveSemanticVisualState, semanticSurfaceClass } from '@/lib/specializedSemanticVisualState';
+
 /**
  * Shared Morning Brief table layout — fixed columns, RTL-safe, horizontal scroll on narrow viewports.
  * Macro Gem dashboard tables are the visual reference (MCOL percentages).
@@ -63,5 +65,19 @@ export function BriefTableWrapper({ children, className = '' }) {
     <div className={`${BRIEF_TABLE_WRAPPER_CLS} ${className}`.trim()} dir="rtl">
       {children}
     </div>
+  );
+}
+
+/** Shared full-width semantic row. Evidence must contain explicit structured status fields. */
+export function SemanticTableRow({ evidence, className = '', children, ...props }) {
+  const state = resolveSemanticVisualState(evidence);
+  return (
+    <tr
+      {...props}
+      data-semantic-visual-state={state}
+      className={`border-b border-slate-200/70 dark:border-zinc-700/50 transition-colors focus-within:ring-2 focus-within:ring-indigo-500/60 ${semanticSurfaceClass(evidence)} ${className}`.trim()}
+    >
+      {children}
+    </tr>
   );
 }

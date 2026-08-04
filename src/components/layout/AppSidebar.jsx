@@ -4,13 +4,13 @@ import {
   Settings, UserPlus, BookPlus, ChevronDown, GripVertical,
   Pencil, Trash2, Check, X, BookMarked,
   Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash, Moon, Sun,
-  Layers, Cloud,
+  Layers, Cloud, Menu,
 } from "lucide-react";
 import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
 import { useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
 import { useDeleteMentor } from "@/hooks/useMentors";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 
 // Map topic.icon string → Lucide component (fallback for topics using the icon field)
@@ -102,6 +102,10 @@ export function AppSidebar({
   const [draggingId, setDraggingId]           = useState(null);
   const [editingTopic, setEditingTopic]       = useState(null); // topic object being edited
   const [deletingId, setDeletingId]           = useState(null); // topic id awaiting confirm
+  const [mobileOpen, setMobileOpen]           = useState(false);
+  const mobileTriggerRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const mobileWasOpen = useRef(false);
 
   const deleteTopic  = useDeleteTopic();
   const deleteMentor = useDeleteMentor();
@@ -201,8 +205,105 @@ export function AppSidebar({
   const toggleTopic = (id) =>
     setExpandedTopicId((prev) => (prev === id ? null : id));
 
+  useEffect(() => {
+    if (!mobileOpen) {
+      if (mobileWasOpen.current) mobileTriggerRef.current?.focus();
+      mobileWasOpen.current = false;
+      return undefined;
+    }
+
+    mobileWasOpen.current = true;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => {
+      sidebarRef.current?.querySelector('[data-mobile-sidebar-close]')?.focus();
+    });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [currentPage, pageParams]);
+
+  const handleMobileKeyDown = (event) => {
+    if (!mobileOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setMobileOpen(false);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...(sidebarRef.current?.querySelectorAll(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ) || [])].filter((element) => element.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-l border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/95">
+    <>
+      <button
+        ref={mobileTriggerRef}
+        type="button"
+        aria-label="פתח תפריט ניווט"
+        aria-expanded={mobileOpen}
+        aria-controls="app-sidebar-navigation"
+        onClick={() => setMobileOpen(true)}
+        className="fixed right-3 top-3 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white/95 text-slate-800 shadow-lg backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-950/95 dark:text-zinc-100 md:hidden"
+        data-mobile-sidebar-trigger
+      >
+        <Menu className="h-5 w-5" aria-hidden />
+      </button>
+
+      {mobileOpen ? (
+        <button
+          type="button"
+          aria-label="סגור תפריט ניווט"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          data-mobile-sidebar-backdrop
+        />
+      ) : null}
+
+      <aside
+        ref={sidebarRef}
+        id="app-sidebar-navigation"
+        role={mobileOpen ? 'dialog' : undefined}
+        aria-modal={mobileOpen || undefined}
+        aria-labelledby={mobileOpen ? 'mobile-sidebar-title' : undefined}
+        aria-describedby={mobileOpen ? 'mobile-sidebar-description' : undefined}
+        onKeyDown={handleMobileKeyDown}
+        className={cn(
+          'fixed inset-y-0 right-0 z-50 flex h-dvh w-[min(18rem,calc(100vw-2rem))] shrink-0 flex-col border-l border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 motion-reduce:transition-none dark:border-zinc-800/80 dark:bg-zinc-950/95 md:sticky md:top-0 md:h-screen md:w-64 md:translate-x-0',
+          mobileOpen
+            ? 'visible translate-x-0'
+            : 'invisible translate-x-full pointer-events-none md:visible md:pointer-events-auto',
+        )}
+        data-mobile-sidebar-open={mobileOpen ? 'true' : 'false'}
+      >
+      <div className="sr-only">
+        <h2 id="mobile-sidebar-title">תפריט ניווט ראשי</h2>
+        <p id="mobile-sidebar-description">ניווט בין הסרטונים, מרחב הידע, המנטורים והגדרות היישום.</p>
+      </div>
+      <button
+        type="button"
+        aria-label="סגור תפריט ניווט"
+        onClick={() => setMobileOpen(false)}
+        className="absolute left-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-zinc-300 dark:hover:bg-zinc-800 md:hidden"
+        data-mobile-sidebar-close
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
 
       {/* Logo + Home button */}
       <div className="border-b border-slate-200 px-4 py-5 dark:border-zinc-800/80">
@@ -596,7 +697,8 @@ export function AppSidebar({
         topic={editingTopic}
         onClose={() => setEditingTopic(null)}
       />
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -620,11 +722,14 @@ function EditTopicDialog({ topic, onClose }) {
 
   return (
     <Dialog open={!!topic} onOpenChange={onClose}>
-      <DialogContent dir="rtl" className="max-w-sm border-zinc-800 bg-zinc-950 text-white" aria-describedby={undefined}>
+      <DialogContent dir="rtl" className="max-w-sm border-zinc-800 bg-zinc-950 text-white">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold text-white">
             עריכת נושא
           </DialogTitle>
+          <DialogDescription className="text-right text-zinc-400">
+            עדכון שם הנושא ישפיע על הצגתו בניווט ובמסכי הידע.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-1">
           <div className="space-y-1.5">

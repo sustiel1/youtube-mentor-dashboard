@@ -1404,7 +1404,11 @@ export function AiMappingModal({
                   </button>
                 </>
               )}
-              <DialogPrimitive.Close className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
+              <DialogPrimitive.Close
+                aria-label="סגור AI Mapping"
+                title="סגור"
+                className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+              >
                 <X className="h-4 w-4" />
               </DialogPrimitive.Close>
             </div>

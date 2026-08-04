@@ -6,7 +6,13 @@ import {
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
   BriefTableWrapper,
+  SemanticTableRow,
 } from './briefTableLayout';
+import {
+  resolveSemanticVisualState,
+  SEMANTIC_DOT_CLASS,
+  SEMANTIC_TEXT_CLASS,
+} from '@/lib/specializedSemanticVisualState';
 
 export const BRIEF_SENT_KEY_LABEL = {
   positive: 'חיובי',
@@ -17,25 +23,16 @@ export const BRIEF_SENT_KEY_LABEL = {
 /** Dot + colored sentiment label — shared by Sectors, Market State, and Macro Gem. */
 export function BriefSentimentCell({ value }) {
   if (!value) return <span className="text-slate-400 dark:text-zinc-500">—</span>;
-  const v = String(value).toLowerCase();
-  const isPositive = v.includes('חיובי') || v.includes('bullish') || v.includes('long') || v.includes('buy') || v.includes('up') || v.includes('outperform') || v.includes('strong');
-  const isNegative = v.includes('שלילי') || v.includes('bearish') || v.includes('short') || v.includes('sell') || v.includes('down') || v.includes('underperform') || v.includes('weak');
-  const dot = isPositive ? 'bg-emerald-500' : isNegative ? 'bg-red-500' : 'bg-amber-400';
-  const textCls = isPositive
-    ? 'text-emerald-700 dark:text-emerald-400'
-    : isNegative
-      ? 'text-red-700 dark:text-red-400'
-      : 'text-amber-600 dark:text-amber-400';
+  const state = resolveSemanticVisualState({ sentiment: value });
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${textCls}`}>
-      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dot}`} aria-hidden />
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${SEMANTIC_TEXT_CLASS[state]}`}>
+      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${SEMANTIC_DOT_CLASS[state]}`} aria-hidden />
       <span>{value}</span>
     </span>
   );
 }
 
-const DEFAULT_ROW_CLS =
-  'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group';
+const DEFAULT_ROW_CLS = 'group';
 
 /**
  * Shared Morning Brief table: ☐ | label | סנטימנט | הערה / סיבה | save
@@ -47,6 +44,7 @@ export function BriefSentimentNotesTable({
   rows = [],
   getRowKey = (_row, i) => i,
   getRowMeta = () => ({}),
+  getRowSemanticEvidence = null,
   renderLabelCell,
   renderSentimentValue,
   renderNotesCell,
@@ -84,7 +82,12 @@ export function BriefSentimentNotesTable({
             const rowProps = rowDataAttr ? { [rowDataAttr.attr]: rowDataAttr.value } : {};
 
             return (
-              <tr key={getRowKey(row, i)} className={rowClassName} {...rowProps}>
+              <SemanticTableRow
+                key={getRowKey(row, i)}
+                evidence={getRowSemanticEvidence?.(row, i) || { sentiment: sentimentValue }}
+                className={rowClassName}
+                {...rowProps}
+              >
                 {renderLeadingCell ? (
                   <td className={BRIEF_CELL.checkbox}>
                     {renderLeadingCell(row, i, meta)}
@@ -104,7 +107,7 @@ export function BriefSentimentNotesTable({
                     {renderTrailingCell(row, i, meta)}
                   </td>
                 ) : null}
-              </tr>
+              </SemanticTableRow>
             );
           })}
         </tbody>

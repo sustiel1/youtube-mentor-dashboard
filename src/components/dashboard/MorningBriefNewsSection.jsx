@@ -14,6 +14,7 @@ import { UNIVERSAL_TAB_CHECKBOX_COL_CLASS } from '@/components/shared/UniversalT
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { resolveSemanticVisualState, semanticSurfaceClass } from '@/lib/specializedSemanticVisualState';
 
 const NEWS_CARD_SENTIMENT = {
   positive: {
@@ -27,8 +28,8 @@ const NEWS_CARD_SENTIMENT = {
     label: 'שלילי',
   },
   neutral: {
-    border: 'border-r-amber-500 dark:border-r-amber-400',
-    badge: 'text-amber-600 dark:text-amber-400',
+    border: 'border-r-slate-400 dark:border-r-zinc-500',
+    badge: 'text-slate-600 dark:text-zinc-300',
     label: 'ניטרלי',
   },
 };
@@ -76,13 +77,15 @@ export function MorningBriefNewsCard({
 }) {
   const sentKey = NEWS_CARD_SENTIMENT[item.sentiment] ? item.sentiment : 'neutral';
   const sentStyle = NEWS_CARD_SENTIMENT[sentKey];
+  const semanticState = resolveSemanticVisualState({ sentiment: item.sentiment });
   const saveText = item.saveText || [item.title, item.summary, item.impact].filter(Boolean).join(' — ');
 
   return (
     <div
       dir="rtl"
-      className={`group flex items-start gap-3 rounded-xl border border-r-4 border-slate-200 dark:border-zinc-700/60 ${sentStyle.border} bg-white dark:bg-zinc-900 px-3 py-3 shadow-sm hover:shadow-md transition-shadow`}
+      className={`group flex items-start gap-3 rounded-xl border border-r-4 border-slate-200 dark:border-zinc-700/60 ${sentStyle.border} ${semanticSurfaceClass({ sentiment: item.sentiment })} px-3 py-3 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-indigo-500/60`}
       data-news-card
+      data-semantic-visual-state={semanticState}
     >
       {/* Checkbox */}
       <div className={UNIVERSAL_TAB_CHECKBOX_COL_CLASS}>

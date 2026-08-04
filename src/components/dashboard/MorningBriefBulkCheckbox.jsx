@@ -24,13 +24,18 @@ export function MorningBriefBulkCheckbox({
     <input
       type="checkbox"
       checked={checked}
-      onChange={() => bulkSelection.onToggle(id, {
-        text: String(text).trim(),
-        sectionLabel: sectionLabel || sectionKey,
-        type: tabKey,
-        tabScope: 'specialized',
-      })}
-      className={className}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        event.stopPropagation();
+        bulkSelection.onToggle(id, {
+          text: String(text).trim(),
+          sectionLabel: sectionLabel || sectionKey,
+          type: tabKey,
+          tabScope: 'specialized',
+        });
+      }}
+      className={`${className} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2`.trim()}
       aria-label="בחר פריט"
     />
   );

@@ -14,6 +14,12 @@ import { MarketSectorTable } from './MarketSectorTable';
 import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { resolveSectorTools } from '@/lib/sectorTools';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import {
+  resolveSemanticVisualState,
+  semanticSurfaceClass,
+  SEMANTIC_DOT_CLASS,
+  SEMANTIC_TEXT_CLASS,
+} from '@/lib/specializedSemanticVisualState';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 
@@ -246,18 +252,10 @@ function MacroObjectSection({ title, objects, sectionKey, onSaveToBrain, bulkSel
 
 function MacroSentimentCell({ value }) {
   if (!value) return <span className="text-slate-400 dark:text-zinc-500">—</span>;
-  const v = String(value).toLowerCase();
-  const isPositive = v.includes('חיובי') || v.includes('bullish') || v.includes('long') || v.includes('buy') || v.includes('up') || v.includes('outperform') || v.includes('strong');
-  const isNegative = v.includes('שלילי') || v.includes('bearish') || v.includes('short') || v.includes('sell') || v.includes('down') || v.includes('underperform') || v.includes('weak');
-  const dot = isPositive ? 'bg-emerald-500' : isNegative ? 'bg-red-500' : 'bg-amber-400';
-  const textCls = isPositive
-    ? 'text-emerald-700 dark:text-emerald-400'
-    : isNegative
-    ? 'text-red-700 dark:text-red-400'
-    : 'text-amber-600 dark:text-amber-400';
+  const state = resolveSemanticVisualState({ sentiment: value });
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${textCls}`}>
-      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dot}`} />
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${SEMANTIC_TEXT_CLASS[state]}`}>
+      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${SEMANTIC_DOT_CLASS[state]}`} />
       <span>{value}</span>
     </span>
   );
@@ -674,7 +672,7 @@ function MacroResearchSection({ title, items, sectionKey, formatItem, pxUrlBuild
 
 const HIGHLIGHT_TONE_CSS = {
   green: {
-    card:      'bg-gradient-to-br from-emerald-50/90 via-green-50/60 to-white dark:from-emerald-950/25 dark:via-green-950/10 dark:to-zinc-900 border-emerald-200/80 dark:border-emerald-800/50',
+    card:      'border-emerald-200/80 dark:border-emerald-800/50',
     accent:    'bg-emerald-500',
     badge:     'text-emerald-700 dark:text-emerald-300 border border-emerald-400/60 dark:border-emerald-600/50',
     iconBg:    'bg-emerald-50 dark:bg-emerald-950/30',
@@ -682,7 +680,7 @@ const HIGHLIGHT_TONE_CSS = {
     sentLabel: 'חיובי',
   },
   red: {
-    card:      'bg-gradient-to-br from-red-50/90 via-rose-50/60 to-white dark:from-red-950/25 dark:via-rose-950/10 dark:to-zinc-900 border-red-200/80 dark:border-red-800/50',
+    card:      'border-red-200/80 dark:border-red-800/50',
     accent:    'bg-red-500',
     badge:     'text-red-700 dark:text-red-300 border border-red-400/60 dark:border-red-600/50',
     iconBg:    'bg-red-50 dark:bg-red-950/30',
@@ -690,20 +688,19 @@ const HIGHLIGHT_TONE_CSS = {
     sentLabel: 'שלילי',
   },
   amber: {
-    card:      'bg-gradient-to-br from-amber-50/90 via-yellow-50/60 to-white dark:from-amber-950/25 dark:via-yellow-950/10 dark:to-zinc-900 border-amber-200/80 dark:border-amber-800/50',
-    accent:    'bg-amber-400',
-    badge:     'text-amber-700 dark:text-amber-300 border border-amber-400/60 dark:border-amber-600/50',
-    iconBg:    'bg-amber-50 dark:bg-amber-950/30',
+    card:      'border-slate-200/80 dark:border-zinc-700/60',
+    accent:    'bg-slate-400',
+    badge:     'text-slate-700 dark:text-zinc-300 border border-slate-400/60 dark:border-zinc-600/60',
+    iconBg:    'bg-slate-100 dark:bg-zinc-800/60',
     iconEmoji: '⚖️',
     sentLabel: 'ניטרלי',
   },
 };
 
 function getHighlightTone(item) {
-  const raw = typeof item === 'string' ? item : (item?.sentiment || item?.direction || item?.tone || '');
-  const sl = String(raw).toLowerCase();
-  if (sl.includes('חיובי') || sl.includes('bullish') || sl.includes('positive') || sl.includes('buy') || sl.includes('long')) return 'green';
-  if (sl.includes('שלילי') || sl.includes('bearish') || sl.includes('negative') || sl.includes('sell') || sl.includes('short')) return 'red';
+  const state = resolveSemanticVisualState(typeof item === 'object' ? item : {});
+  if (state === 'positive') return 'green';
+  if (state === 'negative') return 'red';
   return 'amber';
 }
 
@@ -719,9 +716,10 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
         tabScope: 'specialized',
       })
     : null;
+  const sectionItems = buildMacroSectionBulkItems(safe, formatHighlightItem, 'macro-highlights', '⭐ היילייטים');
 
   return (
-    <SectionCard title="⭐ היילייטים" count={safe.length} tone={TONE.NEUTRAL}>
+    <SectionCard title="⭐ היילייטים" count={safe.length} tone={TONE.NEUTRAL} sectionSelectAllItems={sectionItems} bulkSelection={bulkSelection}>
       <div className="space-y-3" dir="rtl">
         {safe.map((item, i) => {
           const title   = (typeof item === 'string' ? item : (item.title || item.headline || item.name || item.subject || item.highlight || '')).trim();
@@ -741,7 +739,7 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
           return (
             <div
               key={i}
-              className={`group relative rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden ${css.card}`}
+              className={`group relative rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden ${css.card} ${semanticSurfaceClass(typeof item === 'object' ? item : {})}`}
             >
               {/* Sentiment accent bar — right edge in RTL */}
               <div className={`absolute right-0 top-0 bottom-0 w-[3px] ${css.accent}`} />
@@ -875,6 +873,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
         tabScope: 'specialized',
       })
     : null;
+  const sectionItems = buildMacroSectionBulkItems(safe, formatWarningItem, 'macro-warnings', '🔔 אזהרות ופעולות למעקב');
 
   const PRIORITY_ORDER = ['קריטי', 'חשוב', 'מעקב', 'מידע', 'פעולה'];
   const priorityCounts = safe.reduce((acc, item) => {
@@ -884,7 +883,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
   }, {});
 
   return (
-    <SectionCard title="🔔 אזהרות ופעולות למעקב" count={safe.length} tone={TONE.NEUTRAL}>
+    <SectionCard title="🔔 אזהרות ופעולות למעקב" count={safe.length} tone={TONE.NEUTRAL} sectionSelectAllItems={sectionItems} bulkSelection={bulkSelection}>
       <div className="space-y-2" dir="rtl">
         {safe.map((item, i) => {
           const text = typeof item === 'string' ? item.trim()
@@ -911,7 +910,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
             <div
               key={i}
               dir="rtl"
-              className={`group flex items-start gap-3 rounded-xl border border-r-4 ${css.border} border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 shadow-sm hover:shadow-md transition-shadow`}
+              className={`group flex items-start gap-3 rounded-xl border border-r-4 ${css.border} border-slate-200 dark:border-zinc-700 ${semanticSurfaceClass({ status: 'warning' })} px-4 py-3 shadow-sm hover:shadow-md transition-shadow`}
             >
               {/* Checkbox — far right in RTL (first in DOM) */}
               {onToggle && (
@@ -992,9 +991,10 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
         tabScope: 'specialized',
       })
     : null;
+  const sectionItems = buildMacroSectionBulkItems(safe, formatMacroEventItem, 'brief-macro', '🌍 אירועי מאקרו');
 
   return (
-    <SectionCard title="🌍 אירועי מאקרו" count={safe.length} tone={TONE.NEUTRAL}>
+    <SectionCard title="🌍 אירועי מאקרו" count={safe.length} tone={TONE.NEUTRAL} sectionSelectAllItems={sectionItems} bulkSelection={bulkSelection}>
       <p className="text-[12px] text-slate-500 dark:text-zinc-400 mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
         אירועים נקודתיים שיכולים להזיז את השוק
       </p>
@@ -1056,7 +1056,8 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
               return (
                 <tr
                   key={i}
-                  className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors group"
+                  data-semantic-visual-state={resolveSemanticVisualState(typeof item === 'object' ? item : {})}
+                  className={`border-b border-slate-200/70 dark:border-zinc-700/50 transition-colors group ${semanticSurfaceClass(typeof item === 'object' ? item : {})}`}
                 >
                   <td className="py-2 pr-2 pl-0 align-middle">
                     {onToggle && <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />}
@@ -1220,9 +1221,10 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
         tabScope: 'specialized',
       })
     : null;
+  const sectionItems = buildMacroSectionBulkItems(safe, formatOpportunityItem, 'brief-opportunities', '💡 הזדמנויות');
 
   return (
-    <SectionCard title="💡 הזדמנויות" count={safe.length} tone={TONE.NEUTRAL}>
+    <SectionCard title="💡 הזדמנויות" count={safe.length} tone={TONE.NEUTRAL} sectionSelectAllItems={sectionItems} bulkSelection={bulkSelection}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" dir="rtl">
         {safe.map((item, i) => {
           const isStr   = typeof item === 'string';
@@ -1245,7 +1247,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
             : null;
 
           return (
-            <div key={i} className={`group flex flex-col rounded-xl border ${style.border} ${style.bg} p-4 shadow-sm hover:shadow-md transition-shadow`}>
+            <div key={i} className={`group flex flex-col rounded-xl border ${style.border} ${semanticSurfaceClass({ direction: 'positive' })} p-4 shadow-sm hover:shadow-md transition-shadow`}>
               {/* Header: icon | title+badge | checkbox — unified row */}
               <div className="flex items-start gap-3 mb-3">
                 <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white/70 dark:bg-zinc-900/50 shadow-sm text-xl">
@@ -1318,9 +1320,10 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
         tabScope: 'specialized',
       })
     : null;
+  const sectionItems = buildMacroSectionBulkItems(safe, formatRiskItem, 'brief-risks', '⚠️ סיכונים');
 
   return (
-    <SectionCard title="⚠️ סיכונים" count={safe.length} tone={TONE.NEUTRAL}>
+    <SectionCard title="⚠️ סיכונים" count={safe.length} tone={TONE.NEUTRAL} sectionSelectAllItems={sectionItems} bulkSelection={bulkSelection}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" dir="rtl">
         {safe.map((item, i) => {
           const isStr    = typeof item === 'string';
@@ -1342,7 +1345,7 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
             : null;
 
           return (
-            <div key={i} className={`group flex flex-col rounded-xl border ${style.border} ${style.bg} p-4 shadow-sm hover:shadow-md transition-shadow`}>
+            <div key={i} className={`group flex flex-col rounded-xl border ${style.border} ${semanticSurfaceClass({ status: 'warning' })} p-4 shadow-sm hover:shadow-md transition-shadow`}>
               {/* Header: icon | title+badge | checkbox — unified row */}
               <div className="flex items-start gap-3 mb-3">
                 <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white/70 dark:bg-zinc-900/50 shadow-sm text-xl">
@@ -1498,6 +1501,21 @@ function resolveGemSectorLink(sectorStr) {
   const headTicker = str.match(/^([A-Z]{2,6})(?:\s*\(.*\))?$/)?.[1];
   const tools = resolveSectorTools({ sector: str, etf: headTicker || '' });
   return tools ? { ticker: tools.etf, url: tools.etfDestination.url } : null;
+}
+
+function buildMacroSectionBulkItems(items, formatItem, sectionKey, sectionLabel) {
+  const safe = Array.isArray(items) ? items.filter((item) => item != null && item !== '') : [];
+  return safe.map((item, index) => {
+    const text = formatItem(item);
+    if (!text) return null;
+    return {
+      id: `macro-gem:${sectionKey}:${index}`,
+      text,
+      sectionLabel,
+      type: sectionKey,
+      tabScope: 'specialized',
+    };
+  }).filter(Boolean);
 }
 
 // ── Custom indices table: checkbox | מדד/נכס | שינוי | סנטימנט | סיבה | save ──
@@ -2412,9 +2430,7 @@ export function MacroGemDashboard({
     const out = [];
     const add = (arr, fmt, sectionKey, sectionLabel) => {
       const safe = Array.isArray(arr) ? arr.filter(Boolean) : [];
-      safe.map(fmt).filter(Boolean).forEach((text, i) => {
-        out.push({ id: `macro-gem:${sectionKey}:${i}`, text, sectionLabel, type: sectionKey, tabScope: 'specialized' });
-      });
+      out.push(...buildMacroSectionBulkItems(safe, fmt, sectionKey, sectionLabel));
     };
     add(macroHighlights,    formatHighlightItem,   'macro-highlights',    '⭐ היילייטים');
     add(macroEvents,        formatMacroEventItem,  'brief-macro',         '🌍 אירועי מאקרו');

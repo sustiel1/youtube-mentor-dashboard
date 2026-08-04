@@ -3,8 +3,6 @@
  * Presentation only; does not mutate stored GEM data.
  */
 
-import { resolveTone, TONE } from '@/lib/morningBriefVisuals';
-
 export const MAX_NEWS_ITEMS = 6;
 export const COLLAPSED_NEWS_ITEMS = 3;
 
@@ -87,14 +85,11 @@ function extractImpactFromText(text) {
   return '';
 }
 
-export function normalizeNewsSentiment(raw, contextText = '') {
-  const s = safeString(raw).toLowerCase();
-  if (/חיוב|bull|positive|שורי/.test(s)) return 'positive';
-  if (/שליל|bear|negative|דובי/.test(s)) return 'negative';
-  if (/ניטרל|neutral|כללי/.test(s)) return 'neutral';
-  const tone = resolveTone(contextText || s);
-  if (tone === TONE.BULLISH) return 'positive';
-  if (tone === TONE.BEARISH) return 'negative';
+export function normalizeNewsSentiment(raw) {
+  const s = safeString(raw).toLowerCase().replace(/[_-]+/g, ' ').trim();
+  if (['חיובי', 'bullish', 'positive', 'שורי'].includes(s)) return 'positive';
+  if (['שלילי', 'bearish', 'negative', 'דובי'].includes(s)) return 'negative';
+  if (['ניטרלי', 'neutral', 'כללי', 'mixed', 'מעורב'].includes(s)) return 'neutral';
   return 'neutral';
 }
 
@@ -157,7 +152,7 @@ function normalizeFromString(raw) {
   return {
     title: headline,
     summary,
-    sentiment: normalizeNewsSentiment('', cleaned),
+    sentiment: normalizeNewsSentiment(''),
     impact,
     tags: inferTags(cleaned),
     saveText: cleaned,
@@ -170,7 +165,6 @@ function normalizeFromObject(item) {
   const impact = pickString(item, 'impact', 'marketImpact', 'effect', 'market_effect')
     || extractImpactFromText(summaryRaw);
 
-  const contextForTone = [title, summaryRaw, impact].filter(Boolean).join(' ');
   let sentimentField = pickString(item, 'sentiment', 'status', 'tone');
   const valueField = safeString(item.value);
   if (!sentimentField && valueField.length > 0 && valueField.length < 40) {
@@ -188,7 +182,7 @@ function normalizeFromObject(item) {
   return {
     title: titleFinal,
     summary: summarizeLine(summaryFinal, impact),
-    sentiment: normalizeNewsSentiment(sentimentField, contextForTone),
+    sentiment: normalizeNewsSentiment(sentimentField),
     impact: stripInternalFieldLabels(impact),
     tags: inferTags([titleFinal, summaryFinal, impact].join(' '), collectExplicitTags(item)),
     saveText: [titleFinal, summaryFinal, impact].filter(Boolean).join(' — '),

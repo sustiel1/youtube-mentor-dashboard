@@ -45,7 +45,9 @@ import {
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
   BriefTableWrapper,
+  SemanticTableRow,
 } from './briefTableLayout';
+import { resolveSemanticVisualState } from '@/lib/specializedSemanticVisualState';
 import {
   ChangeValue,
   DirectionText,
@@ -502,8 +504,12 @@ const INLINE_SENTIMENT_STYLE = {
     label: 'שלילי',
   },
   neutral: {
-    dot: 'bg-amber-400',
+    dot: 'bg-slate-400',
     label: 'ניטרלי',
+  },
+  warning: {
+    dot: 'bg-orange-500',
+    label: 'אזהרה',
   },
   unverified: {
     dot: 'bg-slate-400',
@@ -514,6 +520,7 @@ const INLINE_SENTIMENT_STYLE = {
 function normalizeInlineSentKey(sentKey) {
   if (sentKey === 'bullish' || sentKey === TONE.BULLISH || sentKey === 'positive') return 'positive';
   if (sentKey === 'bearish' || sentKey === TONE.BEARISH || sentKey === 'negative') return 'negative';
+  if (sentKey === 'warning') return 'warning';
   if (sentKey === 'unverified') return 'unverified';
   return 'neutral';
 }
@@ -1575,14 +1582,19 @@ export function MacroSection({
             <tbody>
               {rows.map((row, i) => {
                 const summary = MacroRowSummary(row);
-                const rowTone = resolveTone([row.change, row.trend, row.impact, row.description, row.meaning].filter(Boolean).join(' '));
-                const rowBorder = toneStyles(rowTone).border;
-                const sentKey = toneToSentKey(rowTone);
+                const semanticEvidence = {
+                  direction: row.direction,
+                  sentiment: row.sentiment,
+                  trend: row.trend,
+                  change: row.change,
+                };
+                const sentKey = resolveSemanticVisualState(semanticEvidence);
                 const changeDisplay = getMacroChangeDisplay(row.change, macroRowChangeContext(row));
                 return (
-                  <tr
+                  <SemanticTableRow
                     key={i}
-                    className={`border-b border-slate-100 dark:border-zinc-800/60 ${COMPARISON_ROW_HOVER} transition-colors group border-r-2 ${rowBorder}`}
+                    evidence={semanticEvidence}
+                    className="group"
                     data-macro-row
                   >
                     <td className={BRIEF_CELL.checkbox}>
@@ -1660,7 +1672,7 @@ export function MacroSection({
                         />
                       )}
                     </td>
-                  </tr>
+                  </SemanticTableRow>
                 );
               })}
             </tbody>
@@ -1822,7 +1834,12 @@ export function SentimentSection({
                 const { numericText, descriptionText } = parseSentimentValueForDisplay(valueText);
                 const bulkText = formatSentimentEvidenceText(item);
                 return (
-                  <tr key={`${bulkText}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
+                  <SemanticTableRow
+                    key={`${bulkText}-${i}`}
+                    evidence={{ direction: item.direction, sentiment: item.sentiment, status: item.verificationState }}
+                    className="group"
+                    data-sentiment-item
+                  >
                     <td className={BRIEF_CELL.checkbox}>
                       <MorningBriefBulkCheckbox
                         bulkSections={bulkSections}
@@ -1868,7 +1885,7 @@ export function SentimentSection({
                         tabKey="brief-sentiment"
                       />
                     </td>
-                  </tr>
+                  </SemanticTableRow>
                 );
               })}
             </tbody>
@@ -2654,7 +2671,11 @@ function StockMentionTableRow({
   const sectorDestination = getMarketAssetDestination(sectorMeta?.sectorEtf);
 
   return (
-    <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
+    <SemanticTableRow
+      evidence={{ sentiment: stock.sentiment, direction: stock.direction, changePercent: stock.changePercent }}
+      className="group"
+      data-stock-item
+    >
       <td className={BRIEF_CELL.checkbox}>
         <MorningBriefBulkCheckbox
           bulkSections={bulkSections}
@@ -2754,7 +2775,7 @@ function StockMentionTableRow({
           onSaveToBrain={onSaveToBrain}
         />
       </td>
-    </tr>
+    </SemanticTableRow>
   );
 }
 

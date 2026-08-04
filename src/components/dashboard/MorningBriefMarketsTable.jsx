@@ -12,14 +12,11 @@ import {
   DASHBOARD_TABLE_CELL_MUTED_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
-  COMPARISON_ROW_HOVER,
 } from './MorningBriefVisualPrimitives';
 import {
   formatMarketChange,
-  getDirectionFromText,
-  toneStyles,
-  TONE,
 } from '@/lib/morningBriefVisuals';
+import { resolveSemanticVisualState } from '@/lib/specializedSemanticVisualState';
 import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
@@ -33,19 +30,15 @@ import {
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
   BriefTableWrapper,
+  SemanticTableRow,
 } from './briefTableLayout';
 
 const MARKETS_SENTIMENT_STYLE = {
   positive: { dot: 'bg-emerald-500', label: 'חיובי' },
   negative: { dot: 'bg-red-500', label: 'שלילי' },
-  neutral: { dot: 'bg-amber-400', label: 'ניטרלי' },
+  neutral: { dot: 'bg-slate-400', label: 'ניטרלי' },
+  warning: { dot: 'bg-orange-500', label: 'אזהרה' },
 };
-
-function marketsToneToSentKey(tone) {
-  if (tone === TONE.BULLISH) return 'positive';
-  if (tone === TONE.BEARISH) return 'negative';
-  return 'neutral';
-}
 
 /** Matches Morning Brief InlineSentimentBadge (dot + dark text, RTL). */
 function MarketsTableSentimentBadge({ sentKey }) {
@@ -97,10 +90,12 @@ export function MorningBriefMarketsTable({
     return formatMarketChange(strengthVal, contextBlob) || formatMarketChange(trendVal, contextBlob);
   };
 
-  const rowDirection = (row) => getDirectionFromText(
-    [row.trend, row.strength, row.comment].filter(Boolean).join(' '),
-  );
-  const rowBorder = (row) => toneStyles(rowDirection(row).tone).border;
+  const rowSemanticEvidence = (row) => ({
+    direction: row.direction,
+    sentiment: row.sentiment,
+    trend: row.trend,
+    changePercent: row.changePercent,
+  });
   const formatRowText = (row) => [row.asset, row.trend, row.strength, row.comment].filter(Boolean).join(' · ');
 
   const hasQuickSave = (sel) =>
@@ -131,8 +126,7 @@ export function MorningBriefMarketsTable({
           {rows.map((row, i) => {
             const summary = formatRowText(row);
             const pct = getMarketChangePct(row);
-            const direction = rowDirection(row);
-            const sentKey = marketsToneToSentKey(direction.tone);
+            const sentKey = resolveSemanticVisualState(rowSemanticEvidence(row));
             const mergedBulk = bulkSelection
               ? mergeBulkSelection(bulkSelection, {
                   sectionLabel: '📈 שווקים',
@@ -142,9 +136,11 @@ export function MorningBriefMarketsTable({
               : null;
 
             return (
-              <tr
+              <SemanticTableRow
                 key={i}
-                className={`border-b border-slate-200/70 dark:border-zinc-700/50 ${COMPARISON_ROW_HOVER} group border-r-2 ${rowBorder(row)}`}
+                evidence={rowSemanticEvidence(row)}
+                className="group"
+                data-market-row
               >
                 <td className={BRIEF_CELL.checkbox}>
                   <MorningBriefBulkCheckbox
@@ -200,7 +196,7 @@ export function MorningBriefMarketsTable({
                     </button>
                   ) : null}
                 </td>
-              </tr>
+              </SemanticTableRow>
             );
           })}
         </tbody>

@@ -15,6 +15,7 @@ import {
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
   BriefTableWrapper,
+  SemanticTableRow,
 } from './briefTableLayout';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 import { BRIEF_SENT_KEY_LABEL, BriefSentimentCell } from './BriefSentimentNotesTable';
@@ -156,7 +157,7 @@ export function MarketSectorTable({
   renderLeadingCell = null,
   renderTrailingCell = null,
   getRowOptions = null,
-  rowClassName = 'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group',
+  rowClassName = 'group',
   showHelperLinks = true,
 }) {
   const [expandedRow, setExpandedRow] = useState(null);
@@ -216,7 +217,7 @@ export function MarketSectorTable({
             if (normalized.isStringOnly) {
               return (
                 <Fragment key={rowKey}>
-                  <tr className={rowClassName} data-sector-item>
+                  <SemanticTableRow evidence={{}} className={rowClassName} data-sector-item>
                     {renderLeadingCell ? (
                       <td className={BRIEF_CELL.checkbox}>
                         {renderLeadingCell(item, i, normalized)}
@@ -228,7 +229,7 @@ export function MarketSectorTable({
                         {renderTrailingCell(item, i, normalized)}
                       </td>
                     ) : null}
-                  </tr>
+                  </SemanticTableRow>
                   {toolsRow}
                 </Fragment>
               );
@@ -236,7 +237,16 @@ export function MarketSectorTable({
 
             return (
               <Fragment key={rowKey}>
-                <tr className={rowClassName} data-sector-item>
+                <SemanticTableRow
+                  evidence={{
+                    direction: item?.direction,
+                    sentiment: item?.sentiment || options.sentKey,
+                    trend: item?.trend,
+                    changePercent: item?.changePercent,
+                  }}
+                  className={rowClassName}
+                  data-sector-item
+                >
                   {renderLeadingCell ? (
                     <td className={BRIEF_CELL.checkbox}>
                       {renderLeadingCell(item, i, normalized)}
@@ -257,7 +267,7 @@ export function MarketSectorTable({
                       {renderTrailingCell(item, i, normalized)}
                     </td>
                   ) : null}
-                </tr>
+                </SemanticTableRow>
                 {toolsRow}
               </Fragment>
             );

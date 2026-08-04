@@ -3,6 +3,11 @@ import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
 import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import {
+  resolveSemanticVisualState,
+  semanticSurfaceClass,
+  SEMANTIC_TEXT_CLASS,
+} from '@/lib/specializedSemanticVisualState';
 
 function parseIndexItem(raw) {
   if (!raw) return null;
@@ -54,14 +59,18 @@ function isStructuredRow(row) {
 }
 
 function dirInfo(dir) {
-  const d = (dir || '').toLowerCase();
-  if (d === 'up' || d === 'bullish' || d === 'positive')
-    return { emoji: '🟢', label: 'עלייה', badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300', rowCls: 'bg-emerald-50/60 dark:bg-emerald-950/15' };
-  if (d === 'down' || d === 'bearish' || d === 'negative')
-    return { emoji: '🔴', label: 'ירידה', badgeCls: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300', rowCls: 'bg-red-50/60 dark:bg-red-950/15' };
-  if (d === 'flat' || d === 'neutral' || d === 'unchanged')
-    return { emoji: '⚪', label: 'ניטרלי', badgeCls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400', rowCls: 'bg-slate-50/40 dark:bg-zinc-900/20' };
-  return { emoji: null, label: dir || null, badgeCls: 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400', rowCls: '' };
+  const state = resolveSemanticVisualState({ direction: dir });
+  const label = state === 'positive' ? 'עלייה'
+    : state === 'negative' ? 'ירידה'
+      : state === 'warning' ? 'אזהרה'
+        : (dir ? 'ניטרלי' : null);
+  return {
+    state,
+    emoji: state === 'positive' ? '🟢' : state === 'negative' ? '🔴' : state === 'warning' ? '🟠' : '⚪',
+    label,
+    badgeCls: `${SEMANTIC_TEXT_CLASS[state]} bg-white/70 dark:bg-zinc-950/30`,
+    rowCls: semanticSurfaceClass({ direction: dir }),
+  };
 }
 
 function renderChangeCell(change, direction) {
@@ -179,12 +188,11 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
           <tbody>
             {structuredRows.map((row, i) => {
               const dir = dirInfo(row.direction);
-              const isEven = i % 2 === 0;
-              const zebraCls = dir.rowCls || (isEven ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/60 dark:bg-zinc-800/30');
               return (
                 <tr
                   key={i}
-                  className={`border-b border-slate-100 dark:border-zinc-800/60 hover:brightness-[0.97] dark:hover:brightness-110 transition-colors group ${zebraCls}`}
+                  data-semantic-visual-state={dir.state}
+                  className={`border-b border-slate-100 dark:border-zinc-800/60 hover:brightness-[0.97] dark:hover:brightness-110 transition-colors group ${dir.rowCls}`}
                 >
                   {activeCols.map((col) => {
                     const val = col.pick(row);
@@ -267,7 +275,8 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
           return (
             <div
               key={i}
-              className={`rounded-xl border border-slate-200 dark:border-zinc-700 px-4 py-3 shadow-sm ${dir.rowCls || 'bg-white dark:bg-zinc-900'}`}
+              data-semantic-visual-state={dir.state}
+              className={`rounded-xl border border-slate-200 dark:border-zinc-700 px-4 py-3 shadow-sm ${dir.rowCls}`}
               dir="rtl"
             >
               <div className="flex items-center justify-between gap-2 mb-1.5">
