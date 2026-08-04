@@ -158,8 +158,10 @@ export function saveVideos(videos) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
     // If we successfully wrote videos, the store is no longer in "cleared" state.
     localStorage.removeItem(CLEARED_MARK_KEY);
+    return true;
   } catch (e) {
     console.warn("[videoStorage] write failed:", e.message);
+    return false;
   }
 }
 
@@ -273,7 +275,7 @@ export function updateStoredVideo(id, updates) {
   }
   const updated = { ...videos[idx], ...safeUpdates };
   videos[idx] = updated;
-  saveVideos(videos);
+  if (!saveVideos(videos)) return null;
 
   // Auto-strip heavy fields from localStorage after analysis is saved.
   // Transcript text is kept intentionally — user deletes it explicitly via "מחק תמלול".

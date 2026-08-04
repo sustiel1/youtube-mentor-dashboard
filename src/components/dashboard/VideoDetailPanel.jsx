@@ -144,6 +144,7 @@ import {
   persistMarketBriefData,
   preserveManualOverridesOnReanalysis,
 } from "@/lib/manualBriefOverrides";
+import { resolveMarketBriefHydration } from "@/lib/marketBriefPersistenceGuard";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
 import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
 import { updateLocalVideo } from "@/lib/localVideoStore";
@@ -2310,34 +2311,36 @@ export function VideoDetailPanel({
   useEffect(() => {
     if (!video?.id && !video?.youtubeId) { setMarketBriefData(null); return; }
     const ids = [...new Set([video.id, video.youtubeId].filter(Boolean))];
-    let loaded = null;
-    let loadedFromKey = null;
+    const localCandidates = [];
     for (const id of ids) {
       const key = `market_brief_${id}`;
       try {
         const stored = localStorage.getItem(key);
         if (stored) {
-          loaded = JSON.parse(stored);
-          loadedFromKey = key;
-          break;
+          localCandidates.push({ source: key, data: JSON.parse(stored) });
         }
       } catch {
-        loaded = null;
+        localCandidates.push({ source: key, data: 'invalid-json' });
       }
     }
-    if (!loaded) loaded = video?.marketBriefData ?? null;
-    setMarketBriefData(loaded);
+    const hydration = resolveMarketBriefHydration({
+      localCandidates,
+      videoData: video?.marketBriefData ?? null,
+    });
+    setMarketBriefData(hydration.data);
     if (import.meta.env.DEV) {
       console.log('[MarketBriefLoad]', {
         videoId: video.id ?? null,
         youtubeId: video.youtubeId ?? null,
         keysTried: ids.map((id) => `market_brief_${id}`),
-        loadedFromKey,
-        exists: !!loaded,
-        contentType: loaded?.contentType ?? null,
-        hasRawData: !!loaded?.rawData,
-        hasUtSummary: !!loaded?.universalTabs?.summary,
-        hasUtSpecialized: !!loaded?.universalTabs?.specialized,
+        loadedFromKey: hydration.source,
+        reconciled: hydration.reconciled,
+        rejectedSources: hydration.diagnostic.rejectedSources,
+        exists: !!hydration.data,
+        contentType: hydration.data?.contentType ?? null,
+        hasRawData: !!hydration.data?.rawData,
+        hasUtSummary: !!hydration.data?.universalTabs?.summary,
+        hasUtSpecialized: !!hydration.data?.universalTabs?.specialized,
       });
     }
   }, [video?.id, video?.youtubeId, video?.marketBriefData]);
@@ -2518,6 +2521,11 @@ export function VideoDetailPanel({
     const next = buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
     const result = persistMarketBriefData(videoId, next, patchVideo, marketBriefData);
     if (!result.accepted) {
+      if (result.partialWrite && result.recoveryData) {
+        setMarketBriefData(result.recoveryData);
+        toast.warning('השינויים נשמרו בעותק אחד ויושלמו מהעותק התקין לאחר טעינה מחדש');
+        return;
+      }
       toast.error('השינויים לא נשמרו — הנתונים הקודמים נשמרו');
       return;
     }
@@ -6015,18 +6023,23 @@ export function VideoDetailPanel({
         analyzedAt: new Date().toISOString(),
       });
       if (!persistence.accepted) {
-        setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
-        return false;
+        if (!persistence.partialWrite || !persistence.recoveryData) {
+          setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
+          return false;
+        }
+        toast.warning('המבזק נשמר בעותק אחד ויושלם מהעותק התקין לאחר טעינה מחדש');
       }
-      if (videoId) localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      setMarketBriefData(persistence.data);
+      if (videoId) {
+        try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
+      }
+      setMarketBriefData(persistence.accepted ? persistence.data : persistence.recoveryData);
       setGemsJsonApplied(true);
       setGemsPasteError('');
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('specialized'), 50);
-      toast.success('📈 מבזק שוק נקלט בהצלחה ✓');
+      if (persistence.accepted) toast.success('📈 מבזק שוק נקלט בהצלחה ✓');
       return true;
     }
 
@@ -6061,18 +6074,23 @@ export function VideoDetailPanel({
         analyzedAt: new Date().toISOString(),
       });
       if (!persistence.accepted) {
-        setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
-        return false;
+        if (!persistence.partialWrite || !persistence.recoveryData) {
+          setGemsPasteError('הפלט נדחה — הנתונים התקינים הקודמים נשמרו');
+          return false;
+        }
+        toast.warning('הניתוח נשמר בעותק אחד ויושלם מהעותק התקין לאחר טעינה מחדש');
       }
-      if (videoId) localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      setMarketBriefData(persistence.data);
+      if (videoId) {
+        try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
+      }
+      setMarketBriefData(persistence.accepted ? persistence.data : persistence.recoveryData);
       setGemsJsonApplied(true);
       setGemsPasteError('');
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('summary'), 50);
-      toast.success('📊 מאקרו GEM נקלט בהצלחה ✓');
+      if (persistence.accepted) toast.success('📊 מאקרו GEM נקלט בהצלחה ✓');
       return true;
     }
 
