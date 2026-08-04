@@ -1,6 +1,6 @@
 # מעקב שחזור — YouTube Mentor Dashboard
 
-עודכן: `2026-08-04 19:39:35 +03:00`
+עודכן: `2026-08-04 20:54:57 +03:00`
 מקור אמת: היסטוריית Git, קבצי ה־repository, בדיקות שבוצעו על HEAD הנוכחי, build ו־runtime פעיל.
 הקובץ החיצוני `C:\Users\11\Desktop\מונית\youtube-mentor-recovery-tracker.md` הוא מקור היסטורי בלבד ומסומן כמוחלף על ידי קובץ זה.
 
@@ -34,8 +34,8 @@
 - Repository משותף: `C:\Users\11\Desktop\Workspace\new-project\projects\youtube-mentor-dashboard`
 - Worktree קנוני: `C:\tmp\ymd-recent-app-integration`
 - Branch: `integration/recent-app-improvements`
-- Parent HEAD המאומת של commit התיעוד הנוכחי: `89c09d06174ba2ec56080d1ecb3dec89676de7bc`
-- Parent subject: `test: verify live evidence timestamp interactions`
+- HEAD לפני commit התיעוד הנוכחי: `0260514bbede7153e9028e707037252d217acfd1`
+- Subject: `fix: reconcile Market Brief storage after partial writes`
 - Upstream: אין upstream מוגדר לענף; ה־commits מקומיים בלבד.
 - Runtime PID: `8452`
 - Runtime command: `"node" "C:\tmp\ymd-recent-app-integration\node_modules\.bin\\..\vite\bin\vite.js"`
@@ -57,14 +57,14 @@
 
 ## משימה פעילה והמשימה הבאה
 
-- [x] 🆕 משימה פעילה: reconciliation תיעודי סופי של batch `evidence-live-renderer-batch`; חבילות היישום וה־interaction committed והתקבלו.
+- [x] 🆕 משימה פעילה: חבילות הבדיקה והיישום של `storage-consistency-recovery-batch` committed והתקבלו; נותר commit התיעוד המאושר בלבד.
 - [x] 🆕 חבילת UI נשמרה ב־commit `95acf502f4c14c1c8e104c963270beb1d2279b76`.
 - [x] 🆕 tracker נשמר ב־commit `1ba1640d298049f3de3de6c3a51b0f5ad0c2fc07` (`docs: add verified recovery tracker`).
 - [x] 🆕 נבדקו כל חמש הרשומות המקומיות הזמינות; שלוש רשומות עם מצב ניתוח/GEMS נפתחו ונבדקו דרך ה־UI.
 - [x] 🆕 defect ה־live renderer ברשומה `ידיעה אחר ידיעה - לייט נייט` תוקן והתקבל: מטא־דאטת הראיות נשמרת, שדות גולמיים אינם מוצגים, וכפתורי evidence timestamp עברו click/seek/keyboard/checkbox-separation.
 - [x] 🆕 בשתי רשומות Evening בעלות Specialized מאוכלס סעיף הסקטורים ריק; populated Sector Tools סומן `not available in current local data` ותוצאת fixture/regression נשארת בתוקף.
 - [x] 🆕 **Base44 proxy read-only QA**: התוסף מפעיל proxy רק כאשר `VITE_BASE44_APP_BASE_URL` מוגדר; ב־worktree אין `.env` או `.env.local`, ובקשת probe מקומית לנתיב `/api` לא מוכר חזרה כ־HTML של Vite. זהו פער תצורת סביבה/runtime, לא כשל build או defect בקוד.
-- [x] 🆕 המשימה הבאה המדויקת: שמירת reconciliation זה ב־commit התיעוד המאושר `docs: record evidence live-renderer batch verification`; SHA עצמי אינו נרשם בקובץ כדי למנוע לולאת תיעוד.
+- [ ] 🆕 המשימה הבאה המדויקת: לשמור את reconciliation זה ב־commit התיעוד המאושר, בלי לרשום בקובץ את ה־SHA של עצמו.
 
 ## 🆕 Batch פעיל — `evidence-live-renderer-batch`
 
@@ -131,6 +131,95 @@
 - חפיפות: אין קוד; `docs/recovery-tracker.md` הוא דלתא משותפת של כל ה־batch ויוקצה ל־commit התיעוד האחרון.
 - Proposed commit: `docs: record evidence live-renderer batch verification`.
 
+## 🆕 Batch פעיל — `storage-consistency-recovery-batch`
+
+- Starting HEAD: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8`.
+- Branch/worktree: `integration/recent-app-improvements` / `C:\tmp\ymd-recent-app-integration`.
+- Runtime: PID `8452`, URL `http://localhost:5184`, Vite command מצביע ל־worktree הקנוני; cache-busting HTTP `200` לפני היישום.
+- True atomic transaction: אינה אפשרית בשכבה הנוכחית בין שני ערכי `localStorage` נפרדים; ה־design הקיים הוא ordered dual write בלבד.
+- Staging/commits במהלך ה־batch: אין.
+
+### [x] Package 1 — consistency and failure-mode audit — committed
+
+- Acceptance: עבר; failure injection בוצע בזיכרון בלבד וללא שינוי production/local records; committed ב־`fc73e3b4355ada5c7f1a11d1910cabacebb0deee`.
+- Root cause מאומת 1: הכתיבה מתבצעת בסדר `market_brief_<videoId>` ואז `yt_mentor_videos_v2`; כשל בכתיבה השנייה משאיר כתיבה מקומית חדשה אך מחזיר שהנתון הקודם נשמר.
+- Root cause מאומת 2: ערך חזרה `false`/`null` מ־`writeVideo` אינו נבדק, ולכן כשל שקט מסומן בטעות כהצלחה מלאה.
+- Root cause מאומת 3: hydration נותן עדיפות עיוורת ל־JSON הראשון שנמצא ב־`market_brief_*` ורק בהיעדרו נופל ל־`video.marketBriefData`; אין validation, דירוג richness או reconciliation בין המקורות.
+- Missing ID: הנתיב המקומי מדולג אך callback הווידאו עדיין נקרא; כשל שקט שלו יכול להיות מסומן כהצלחה.
+- Malformed/partial payload: ה־guard הקיים דוחה ושומר previous; זהו mitigation תקין שכבר קיים.
+- Older rich versus newer partial: שמירת candidate משתמשת ב־rich-field preservation, אך reload בין שני ה־stores אינו משתמש בו ולכן עדיין פגום.
+- Manual/transcript/chapters: guard שומר `manualOverrides`, `transcriptSegments`, `storedTranscriptSegments` ושדות rich חסרים; `0`, `false`, ערכים שליליים, decimals וזמני ראיה נשמרו בבדיקת ה־audit.
+- Retry: ניסיון חוזר תקין וכותב payload זהה לשני היעדים; אין retry אוטומטי או journal.
+- Added fixture: `scripts/fixtures/storage-consistency-failure-matrix.json`.
+- Added test: `scripts/test-storage-consistency-audit.mjs`.
+- Test result: Exit `0`, `auditOutcome: verified-implementation-defect`; בדיקות ה־guard וה־runtime persistence הקיימות עברו Exit `0`.
+- `git diff --check`: עבר; whitespace checks לשני הקבצים החדשים עברו.
+- Correction rounds: `0`.
+- Review patch: `C:\tmp\ymd-review-patches\storage-consistency-recovery-batch\01-storage-audit-tests.patch`.
+- Patch SHA-256: `94B00DE53B1C92BEDB3F0434294C8ECA9E3C7D688B18B247B451721610C58817`.
+- Patch manifest: fixture ובדיקת audit בלבד; `docs/recovery-tracker.md` הוא דלתא תיעודית משותפת ואינו כלול ב־patch.
+- Dependencies: persistence guard הקנוני, `persistMarketBriefData`, `usePersistedVideo` ו־hydration ב־`VideoDetailPanel.jsx`.
+- Overlap forecast: Package 2 צפוי להרחיב את אותו guard ולשנות hunk hydration ממוקד ב־`VideoDetailPanel.jsx`; בדיקת Package 1 נשארת characterization ואינה owner מתחרה.
+- Committed: `fc73e3b4355ada5c7f1a11d1910cabacebb0deee` — `test: characterize Market Brief storage failure modes`.
+- Exact manifest: `scripts/fixtures/storage-consistency-failure-matrix.json`, `scripts/test-storage-consistency-audit.mjs`.
+- Save verification: staged patch-id היה זהה ל־review patch המאושר; complete staged diff, exact manifest ו־`git diff --cached --check` עברו.
+
+### [x] Package 2 — minimal deterministic recovery — committed
+
+- Acceptance: עבר בבדיקות הממוקדות לאחר סבב תיקון אחד; committed ב־`0260514bbede7153e9028e707037252d217acfd1`.
+- Implemented guarantee: ה־guard הקנוני מדרג רק payloads תקינים, בוחר את המקור העשיר ביותר באופן דטרמיניסטי ומשלים ממנו שדות חסרים ומקטעי manual override לפי `updatedAt`.
+- Ordered dual write נשמר: `market_brief_<videoId>` נכתב לפני רשומת הווידאו; לא נטענת טענת atomicity שאינה קיימת.
+- Partial failure: אם הכתיבה הראשונה הצליחה והשנייה נכשלה, התוצאה מסומנת `PARTIAL_PERSISTENCE`, ה־recovery payload נשמר ל־UI ול־reload, והמשתמש מקבל warning במקום הצלחה שקטה.
+- First-write failure: הכתיבה השנייה אינה מתבצעת והנתון הקודם נשאר מקור התצוגה.
+- Silent video-store failure: `saveVideos` מחזיר boolean ו־`updateStoredVideo` מחזיר `null` כשה־write נכשל; ה־guard מזהה `false`/`null` מ־writer.
+- Missing video ID או writer: נדחים לפני כתיבה עם diagnostics מסוננים וללא raw payload.
+- Hydration: `VideoDetailPanel.jsx` קורא את שני aliases המקומיים ואת `video.marketBriefData`, מעביר אותם ל־`resolveMarketBriefHydration` ואינו נותן עוד עדיפות עיוורת ל־local JSON.
+- Malformed/partial storage: נדחה בלי crash; diagnostic כולל source/reason בלבד ואינו חושף payload, transcript או JSON.
+- Manual edits: sections שונים מתמזגים; באותו section נבחר `updatedAt` החדש יותר. עברית, `0`, `false`, ערכים שליליים, decimals, timestamps, transcript segments ו־chapters נשמרים.
+- Recovery idempotence: resolver חוזר על אותו payload לאחר reconciliation; retry תקין משלים את שתי הכתיבות באותו payload.
+- Modified production: `src/lib/marketBriefPersistenceGuard.js`, `src/services/videoStorage.js`, `src/components/dashboard/VideoDetailPanel.jsx`.
+- Added test: `scripts/test-storage-consistency-recovery.mjs`.
+- Focused tests: audit characterization, recovery failure injection, persistence guard ו־runtime persistence — כולן Exit `0`.
+- `git diff --check`: עבר.
+- Correction rounds: `1` — boolean `true`, missing writer ו־GEMS marker throwing הוקשחו באותו scope; כל הבדיקות עברו מחדש.
+- Review patch: `C:\tmp\ymd-review-patches\storage-consistency-recovery-batch\02-storage-recovery.patch`.
+- Patch SHA-256: `6E316018DBF05563466335F97DD80D55AA2CF0DDE8F377085C5FDA57F1B443AD`.
+- Patch manifest: שלושת קבצי production ובדיקת recovery בלבד; אין line-ending-only rewrite (`videoStorage.js` הוא `3/1` ב־numstat).
+- Dependencies: Package 1 fixture וה־guard הקנוני הקיים.
+- Overlap: אין קובץ application/test משותף עם Package 1; `scripts/test-storage-consistency-recovery.mjs` צורך את fixture של Package 1. `docs/recovery-tracker.md` הוא overlap תיעודי משותף בלבד.
+- Committed: `0260514bbede7153e9028e707037252d217acfd1` — `fix: reconcile Market Brief storage after partial writes`.
+- Exact manifest: `src/components/dashboard/VideoDetailPanel.jsx`, `src/lib/marketBriefPersistenceGuard.js`, `src/services/videoStorage.js`, `scripts/test-storage-consistency-recovery.mjs`.
+- Save verification: staged patch-id היה זהה ל־review patch המאושר; כל hunk ב־`VideoDetailPanel.jsx`, ה־staged diff המלא, exact manifest ו־`git diff --cached --check` עברו.
+
+### [x] Package 3 — combined regression and runtime closure
+
+- Acceptance: עבר; אין שינוי application נוסף בחבילה זו מעבר לדלתת התיעוד המשותפת.
+- Combined tests: כל `35/35` סקריפטי `scripts/test-*.mjs` עברו. בדיקות עם alias bootstrap הורצו דרך `--import ./scripts/register-src-aliases.mjs` לפי ה־contract הקיים.
+- Coverage: storage audit/recovery, persistence/runtime persistence, extraction, G3A/G15/G15b, routing, Specialized, AI Mapping, Macro, Sentiment, chapters/timestamps, evidence/live interactions, mentor/GEMS, market links/sectors, runtime warnings ו־UI accessibility.
+- Build: הניסיון הראשון נעצר לפני compilation ב־`EPERM` סביב `dist/assets`; retry יחיד באותו command ובנתיב הביצוע המאושר עבר Exit `0`. לא השתנה קובץ מקור ולא נספר סבב תיקון קוד נוסף.
+- Diff hygiene: `git diff --check` עבר לאחר ה־build; whitespace checks לשלושת הקבצים החדשים עברו; לא הופיעו `dist` או generated files ב־Git status.
+- Browser QA חי: רשומת Evening מאוכלסת (`לייט נייט - דיווחים של פלנטיר וסנאפצאט`) ורשומת Morning ריקה נפתחו מהנתונים המקומיים הקיימים; populated/empty, RTL ו־reload נבדקו ללא שינוי הרשומות.
+- Manual save/cancel/reload: לא הופעלו על רשומה אמיתית כדי לא לשנות production/local data; מסלולי הפעולה, כשל הכתיבה, retry ו־reload אומתו בבדיקות המבודדות.
+- Responsive: לא נמצא document overflow ב־viewport החי `1745×828`; narrow `323/355px` מכוסה ברגרסיות ה־UI שעברו, אך לא ניתן היה לשנות את רוחב Chrome החי בממשק הנוכחי.
+- Console: אפס warnings/errors שמקורם ב־`localhost:5184`; הודעות שנצפו הגיעו רק מ־`chrome-extension://` חיצוני.
+- Cache-busting/runtime: reload אל `http://localhost:5184/?storageQa=20260804-2` נטען במלואו, RTL תקין; אימות HTTP ישיר ו־PID נרשמים בשער הסופי.
+- Git classification לפני אישור: staged אין; modified הם `docs/recovery-tracker.md`, `src/components/dashboard/VideoDetailPanel.jsx`, `src/lib/marketBriefPersistenceGuard.js`, `src/services/videoStorage.js`; untracked הם `scripts/fixtures/storage-consistency-failure-matrix.json`, `scripts/test-storage-consistency-audit.mjs`, `scripts/test-storage-consistency-recovery.mjs`.
+- Git classification לאחר Commits 1–2: `docs/recovery-tracker.md` הוא השינוי היחיד; staged אין ו־untracked אין.
+- Review patch: `C:\tmp\ymd-review-patches\storage-consistency-recovery-batch\03-storage-regression-closure.patch` — דלתת tracker משותפת של ה־batch. ה־SHA הסופי מדווח בשער ולא מוטמע בקובץ עצמו כדי למנוע לולאת hash self-referential.
+- Correction rounds: `0` בחבילה 3; סך סבבי תיקון הקוד ב־batch הוא `1`.
+- Dependencies: Packages 1–2, runtime PID `8452` וה־working tree המשולב.
+- Overlap: `docs/recovery-tracker.md` הוא הנתיב המשותף היחיד; אין hunk חופף בין manifests של application/tests. Package 2 test צורך את fixture של Package 1.
+- Proposed commit: `docs: record storage consistency recovery verification`.
+
+### 🆕 Gate מוצע — `storage-consistency-recovery-batch`
+
+- Starting HEAD: `f3e84e744e12adfd1ace6b3488f1c6de8db051e8`; current HEAD לפני commit התיעוד: `0260514bbede7153e9028e707037252d217acfd1`.
+- Commit 1 completed: `fc73e3b4355ada5c7f1a11d1910cabacebb0deee` — `test: characterize Market Brief storage failure modes`.
+- Commit 2 completed: `0260514bbede7153e9028e707037252d217acfd1` — `fix: reconcile Market Brief storage after partial writes`; child של Commit 1.
+- Proposed commit 3: `docs: record storage consistency recovery verification` — tracker בלבד; תלוי ב־commits 1–2.
+- Separation: חד־משמעית לפי נתיבים; אין צורך ב־hunk staging עמום.
+- Rollback לאחר commit, ורק באישור נפרד: revert של commit 3, אחריו commit 2, ואחריו commit 1.
+
 ## רצף commits מאומת
 
 כל ה־commits הבאים קיימים ונמצאים ב־first-parent ancestry של HEAD הנוכחי:
@@ -160,6 +249,8 @@
 | [x] 🆕 | `1ba1640d298049f3de3de6c3a51b0f5ad0c2fc07` | 1 | `docs: add verified recovery tracker` | `git revert 1ba1640d298049f3de3de6c3a51b0f5ad0c2fc07` |
 | [x] 🆕 | `888a1ac20d091cf3d31b1019724ef654caffd3e5` | 4 | `fix: preserve live insight evidence metadata` | `git revert 888a1ac20d091cf3d31b1019724ef654caffd3e5` |
 | [x] 🆕 | `89c09d06174ba2ec56080d1ecb3dec89676de7bc` | 1 | `test: verify live evidence timestamp interactions` | `git revert 89c09d06174ba2ec56080d1ecb3dec89676de7bc` |
+| [x] 🆕 | `fc73e3b4355ada5c7f1a11d1910cabacebb0deee` | 2 | `test: characterize Market Brief storage failure modes` | `git revert fc73e3b4355ada5c7f1a11d1910cabacebb0deee` |
+| [x] 🆕 | `0260514bbede7153e9028e707037252d217acfd1` | 4 | `fix: reconcile Market Brief storage after partial writes` | `git revert 0260514bbede7153e9028e707037252d217acfd1` |
 
 אין לבצע אף rollback ללא אישור מפורש.
 
