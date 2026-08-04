@@ -122,6 +122,8 @@ import { getSentimentSourceLink } from '@/lib/sentimentSourceLinks';
 import { getMacroIndicatorUrl } from '@/lib/macroIndicatorLinks';
 import { translateMarketLabel, translateImportanceLevel } from '@/lib/marketLabelTranslations';
 
+const EMPTY_MARKET_BRIEF_DATA = Object.freeze({});
+
 function morningBriefCardBulk(bulkSections, bulkSelection, sectionKey, title, { disabled = false, cardId, type } = {}) {
   if (!bulkSelection || disabled) return null;
   const cardText = resolveMorningBriefCardText(bulkSections, sectionKey, title);
@@ -215,7 +217,7 @@ function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo
 
   const edit = useBriefSectionManualEdit({
     sectionId,
-    marketBriefData: marketBriefData || {},
+    marketBriefData: marketBriefData || EMPTY_MARKET_BRIEF_DATA,
     getDraftRows,
     onSaveSection: onSaveMarketBriefSection || (async () => {}),
   });

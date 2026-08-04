@@ -6,6 +6,12 @@ import {
 } from '@/lib/manualBriefOverrides';
 import { AiSourceBadge } from './AiSourceBadge';
 
+export function retainEquivalentEditableDraft(currentDraft, nextDraft) {
+  return JSON.stringify(currentDraft ?? []) === JSON.stringify(nextDraft ?? [])
+    ? currentDraft
+    : nextDraft;
+}
+
 export function ManualSourceBadge({ marketBriefData, sectionId, showAiBadge }) {
   const source = getManualSectionSource(marketBriefData, sectionId);
   return (
@@ -179,8 +185,11 @@ export function useBriefSectionManualEdit({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!editing) setDraft(cloneEditableRows(getDraftRows()));
-  }, [marketBriefData, editing]);
+    if (!editing) {
+      const nextDraft = cloneEditableRows(getDraftRows());
+      setDraft((currentDraft) => retainEquivalentEditableDraft(currentDraft, nextDraft));
+    }
+  }, [marketBriefData, editing, getDraftRows]);
 
   const startEdit = () => {
     setDraft(cloneEditableRows(getDraftRows()));

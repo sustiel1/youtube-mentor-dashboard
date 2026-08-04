@@ -1374,14 +1374,14 @@ export function AiMappingModal({
                 <DialogPrimitive.Title className="text-base font-bold text-slate-900 dark:text-zinc-100">
                   {showReport ? '📋 Export Debug Report' : showAiDiag ? '🤖 AI Mapping Diagnosis' : '🗺️ AI Mapping'}
                 </DialogPrimitive.Title>
-                <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">
+                <DialogPrimitive.Description className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">
                   {showReport
                     ? `${report.warnings.length} אזהרות · JSON מוכן לשליחה`
                     : showAiDiag
                       ? (isRunningAiDiag ? 'מנתח...' : aiDiagMode === 'local' ? `מצב מקומי · ${(aiDiagResult?.issues || []).length} בעיות זוהו` : aiDiagResult ? `${(aiDiagResult.issues || []).length} בעיות זוהו` : aiDiagError ? 'ניתוח נכשל' : '')
                       : <>{totalActive} שדות פעילים · {totalTabItems} פריטים בסך הכל{marketBriefData && <span className="mr-2 rounded-full bg-sky-50 px-2 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">📈 Market Brief</span>}{gemSchemaType === 'universal' && <span className="mr-1 rounded-full bg-emerald-50 px-2 text-[10px] font-medium text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">✦ universalTabs</span>}{gemSchemaType === 'mixed' && <span className="mr-1 rounded-full bg-amber-50 px-2 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">◐ mixed schema</span>}{gemSchemaType === 'legacy' && <span className="mr-1 rounded-full bg-slate-100 px-2 text-[10px] font-medium text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">▤ legacy schema</span>}</>
                   }
-                </p>
+                </DialogPrimitive.Description>
               </div>
             </div>
             <div className="flex items-center gap-2">
