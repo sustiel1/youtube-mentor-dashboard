@@ -3,6 +3,8 @@
  * Used by Add Mentor dialog, local mentor save, RSS helpers, and channel links.
  */
 
+import { getMentorChannelHomeUrl } from '@/lib/mentorRegistry';
+
 const DISALLOWED_YOUTUBE_PATHS = /\/(watch|embed|shorts|live|playlist)(\/|\?|$)/i;
 
 /** UC… channel id length (YouTube convention). */
@@ -126,27 +128,5 @@ export function isAcceptableMentorSourceUrl(raw) {
  * Priority: channelUrl → youtubeChannelUrl → youtubeUrl/youtubePageUrl → channelId → handle.
  */
 export function resolveMentorChannelUrl(mentor) {
-  if (!mentor) return null;
-
-  for (const raw of [
-    mentor.channelUrl,
-    mentor.youtubeChannelUrl,
-    mentor.youtubeUrl,
-    mentor.youtubePageUrl,
-  ]) {
-    const url = String(raw || "").trim();
-    if (url.startsWith("http")) return url;
-  }
-
-  const channelId = mentor.youtubeChannelId || mentor.channelId;
-  if (channelId && String(channelId).startsWith("UC")) {
-    return `https://www.youtube.com/channel/${String(channelId).trim()}`;
-  }
-
-  const handle = mentor.handle;
-  if (handle) {
-    return `https://www.youtube.com/@${String(handle).replace(/^@/, "")}`;
-  }
-
-  return null;
+  return getMentorChannelHomeUrl(mentor);
 }

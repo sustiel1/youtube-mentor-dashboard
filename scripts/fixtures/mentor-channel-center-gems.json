@@ -1,0 +1,63 @@
+{
+  "mentors": [
+    {
+      "id": "m1",
+      "name": "Micha.Stocks",
+      "youtubeChannelId": "UCSxjNbPriyBh9RNl_QNSAtw",
+      "channelLinks": {
+        "home": "https://www.youtube.com/@Micha.Stocks/featured",
+        "videos": "https://www.youtube.com/@Micha.Stocks/videos",
+        "live": "https://www.youtube.com/@Micha.Stocks/streams",
+        "courses": "https://www.youtube.com/@Micha.Stocks/courses",
+        "playlists": "https://www.youtube.com/@Micha.Stocks/playlists",
+        "posts": "https://www.youtube.com/@Micha.Stocks/posts"
+      }
+    },
+    {
+      "id": "mentor-two",
+      "name": "מנטור שני",
+      "youtubePageUrl": "https://www.youtube.com/@SecondMentor",
+      "videosUrl": "https://www.youtube.com/@SecondMentor/videos",
+      "streamsUrl": "https://www.youtube.com/@SecondMentor/streams",
+      "coursesUrl": "https://www.youtube.com/@SecondMentor/courses",
+      "playlistsUrl": "https://www.youtube.com/@SecondMentor/playlists",
+      "postsUrl": "https://www.youtube.com/@SecondMentor/posts",
+      "active": false,
+      "priority": 0
+    },
+    {
+      "id": "mentor-partial",
+      "name": "Partial Mentor",
+      "channelLinks": {
+        "home": "https://www.youtube.com/@PartialMentor",
+        "videos": "",
+        "playlists": "https://www.youtube.com/@PartialMentor/playlists"
+      },
+      "active": false,
+      "priority": 0
+    },
+    {
+      "id": "mentor-malformed",
+      "name": "מנטור לא תקין",
+      "channelLinks": {
+        "home": "javascript:alert(1)",
+        "videos": "https://example.com/videos",
+        "posts": "http://www.youtube.com/@Unsafe/posts"
+      }
+    }
+  ],
+  "routing": {
+    "morning": { "title": "מבזק לייב פתיחה לתאריך 4.8.26" },
+    "preMarket": { "title": "Pre-Market Opening Brief" },
+    "evening": { "title": "מבזק ערב — סיכום יום המסחר" },
+    "afterMarket": { "title": "After Market Review" },
+    "lateNight": { "title": "לייט נייט - דוחות ועדכונים" },
+    "generic": { "title": "סקירת שוק כללית", "contentType": "marketBrief" },
+    "unknown": { "title": "עדכון כללי ללא הקשר" },
+    "confirmedNonBrief": {
+      "title": "לייט נייט - מדריך מסחר",
+      "userConfirmedSubCategory": true,
+      "confirmedSubCategory": "מסחר יומי"
+    }
+  }
+}

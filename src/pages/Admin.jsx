@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bot, TrendingUp, Pencil, Trash2, Globe, Youtube, Rss, Hash, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, Code, ChevronsUp, ListVideo, Download, Archive, FolderTree, Snowflake, Play, Search, X, FolderSync, GitMerge, BookOpen, Lightbulb, Copy, Network, CreditCard, ExternalLink } from "lucide-react";
 import { TOPIC_ICON_MAP, getTopicConfig, CATEGORY_CONFIG, getCategoryCodeForTopicName } from "@/config/topicConfig";
@@ -38,7 +39,9 @@ import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { buildBrainStructureZip, countBrainStructure } from "@/lib/buildBrainStructureZip";
 import { getFrozenMentorIds, toggleMentorFreeze } from "@/services/mentorScanStorage";
 import StorageManager from "@/components/admin/StorageManager";
+import MentorChannelLinksEditor from "@/components/admin/MentorChannelLinksEditor";
 import { getMentorTopicOverride } from "@/lib/mentorTopicOverrides";
+import { getMentorChannelLinkDraft, validateMentorChannelLinks } from "@/lib/mentorRegistry";
 import { updateChannelCollectionByChannelId, updateChannelCollectionByChannelName } from "@/lib/localChannelCollectionsStore";
 import { GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
 import { CATEGORY_TO_NAME } from "@/config/topicConfig";
@@ -159,12 +162,21 @@ function EditMentorDialog({ mentor, topics, onClose }) {
     category: mentor.category || "",
     defaultSubTopic: mentor.defaultSubTopic || mentor.subTopic || "",
     defaultGem: mentor.defaultGem || "",
+    channelLinks: getMentorChannelLinkDraft(mentor),
   });
+  const [channelLinksError, setChannelLinksError] = useState("");
   const updateMentor = useUpdateMentor();
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleTopic = (id) => set("topicIds", form.topicIds.includes(id) ? form.topicIds.filter((t) => t !== id) : [...form.topicIds, id]);
 
   const handleSave = async () => {
+    const channelLinksValidation = validateMentorChannelLinks(form.channelLinks);
+    if (!channelLinksValidation.valid) {
+      const message = channelLinksValidation.errors[0]?.message || "קישורי הערוץ אינם תקינים";
+      setChannelLinksError(message);
+      toast.error(message);
+      return;
+    }
     await updateMentor.mutateAsync({
       id: mentor.id,
       name: form.name,
@@ -175,13 +187,14 @@ function EditMentorDialog({ mentor, topics, onClose }) {
       subTopic: form.defaultSubTopic || undefined,
       defaultSubTopic: form.defaultSubTopic || undefined,
       defaultGem: form.defaultGem || undefined,
+      channelLinks: channelLinksValidation.channelLinks,
     });
     onClose();
   };
 
   const isMarket = form.category === "Markets";
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
         <h3 className="text-base font-semibold text-gray-900">עריכת מנטור</h3>
@@ -246,6 +259,14 @@ function EditMentorDialog({ mentor, topics, onClose }) {
             </div>
           </div>
         )}
+        <MentorChannelLinksEditor
+          value={form.channelLinks}
+          error={channelLinksError}
+          onChange={(channelLinks) => {
+            set("channelLinks", channelLinks);
+            if (channelLinksError) setChannelLinksError("");
+          }}
+        />
         <div className="flex gap-2 pt-1">
           <button onClick={handleSave} disabled={updateMentor.isPending}
             className="flex-1 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
@@ -254,7 +275,8 @@ function EditMentorDialog({ mentor, topics, onClose }) {
           <button onClick={onClose} className="flex-1 py-1.5 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">ביטול</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

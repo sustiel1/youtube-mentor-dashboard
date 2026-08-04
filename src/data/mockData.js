@@ -42,6 +42,14 @@ export const MENTORS = [
     topicIds: ["t2", "t7", "t3"],
     avatarUrl: "",
     youtubeChannelId: "UCSxjNbPriyBh9RNl_QNSAtw",
+    channelLinks: {
+      home: "https://www.youtube.com/@Micha.Stocks/featured",
+      videos: "https://www.youtube.com/@Micha.Stocks/videos",
+      live: "https://www.youtube.com/@Micha.Stocks/streams",
+      courses: "https://www.youtube.com/@Micha.Stocks/courses",
+      playlists: "https://www.youtube.com/@Micha.Stocks/playlists",
+      posts: "https://www.youtube.com/@Micha.Stocks/posts",
+    },
     active: true,
   },
   {

@@ -135,7 +135,7 @@ import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, G
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
-import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
+import { MentorChannelCenter } from "@/components/mentors/MentorChannelCenter";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatusFromPath, logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
@@ -2434,17 +2434,13 @@ export function VideoDetailPanel({
     return mentorResolved ?? mentorByName ?? null;
   }, [mentorName, video]);
 
-  const mentorChannelUrl = useMemo(() => {
-    const fromMentor = resolveMentorChannelUrl(mentorResolution?.mentor);
-    if (fromMentor) return fromMentor;
-    const videoUrl = String(video?.channelUrl || "").trim();
-    if (videoUrl.startsWith("http")) return videoUrl;
-    const channelId = String(video?.channelId || "").trim();
-    if (channelId.startsWith("UC") && channelId.length === 24) {
-      return `https://www.youtube.com/channel/${channelId}`;
-    }
-    return null;
-  }, [mentorResolution, video?.channelUrl, video?.channelId]);
+  const channelCenterMentor = useMemo(() => mentorResolution?.mentor || {
+    id: video?.mentorId || video?.channelId || '',
+    name: mentorName || video?.channelTitle || video?.channelName || '',
+    channelUrl: video?.channelUrl || '',
+    youtubeChannelId: video?.youtubeChannelId || video?.channelId || '',
+    handle: video?.handle || video?.channelHandle || '',
+  }, [mentorName, mentorResolution, video]);
 
   const effectiveCategory = useMemo(() => {
     const normalizedCategoryCandidates = [
@@ -8553,7 +8549,7 @@ export function VideoDetailPanel({
               )}
               {/* Channel name */}
               {(() => {
-                const channelMentorId = resolveChannelToMentor(video)?.mentor?.id ?? null;
+                const channelMentorId = mentorResolution?.mentor?.id ?? null;
                 const label = mentorName || video.channelTitle || video.channelName || "";
                 if (!label) return null;
                 if (channelMentorId && navigateTo) {
@@ -8580,6 +8576,10 @@ export function VideoDetailPanel({
                 }
                 return <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">{label}</span>;
               })()}
+              <MentorChannelCenter
+                mentor={channelCenterMentor}
+                variant="text-link"
+              />
               {/* Metadata chips — redesigned: pill style, consistent height, RTL order */}
               {(() => {
                 const transcriptChip = (() => {
@@ -8824,19 +8824,6 @@ export function VideoDetailPanel({
                       >
                         {ytLogo}
                         <span>YouTube</span>
-                      </a>
-                    )}
-                    {/* Mentor channel link */}
-                    {mentorChannelUrl && (
-                      <a
-                        href={mentorChannelUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${BASE} border-indigo-200/60 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700/50`}
-                        title="פתח את ערוץ המנטור ביוטיוב"
-                      >
-                        <span className="text-xs leading-none">📺</span>
-                        <span>ערוץ המנטור</span>
                       </a>
                     )}
                     {/* Transcript status */}

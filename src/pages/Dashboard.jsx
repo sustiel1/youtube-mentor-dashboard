@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { RefreshCw, X, GraduationCap, Play, Trash2, Moon, Sun, Plus, ExternalLink } from "lucide-react";
+import { RefreshCw, X, GraduationCap, Play, Trash2, Moon, Sun, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { FilterBar } from "@/components/dashboard/FilterBar";
@@ -7,6 +7,7 @@ import { ExternalVideoModal } from "@/components/dashboard/ExternalVideoModal";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { VideoCard } from "@/components/dashboard/VideoCard";
+import { MentorChannelCenter } from "@/components/mentors/MentorChannelCenter";
 import { ErrorsBar } from "@/components/dashboard/ErrorsBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo, useUpdateVideo } from "@/hooks/useVideos";
@@ -79,17 +80,6 @@ const LEARNING_STATUS_FILTERS = [
   { value: "learned", label: "נלמד", active: "border-emerald-400 bg-emerald-50 text-emerald-700 dark:text-white" },
   { value: "completed", label: "הושלם", active: "border-blue-400 bg-blue-50 text-blue-700 dark:text-white" },
 ];
-
-function buildMentorYouTubeUrl(mentor) {
-  if (!mentor) return null;
-  const url = mentor.youtubeUrl || mentor.channelUrl || mentor.youtubePageUrl;
-  if (url && url.startsWith("http")) return url;
-  const handle = mentor.handle;
-  if (handle) return `https://www.youtube.com/@${handle.replace(/^@/, "")}`;
-  const channelId = mentor.youtubeChannelId || mentor.channelId;
-  if (channelId && channelId.startsWith("UC")) return `https://www.youtube.com/channel/${channelId}`;
-  return null;
-}
 
 function computeStats(videos) {
   return {
@@ -921,23 +911,11 @@ export default function Dashboard({
               />
 
               {/* YouTube channel link — shown only when a specific mentor is selected */}
-              {filters.mentor !== "all" && (() => {
-                const selectedMentor = mentors.find((m) => m.id === filters.mentor);
-                const ytUrl = buildMentorYouTubeUrl(selectedMentor);
-                if (!ytUrl) return null;
-                return (
-                  <a
-                    href={ytUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-red-200/80 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
-                    title={`פתח ערוץ יוטיוב של ${selectedMentor?.name}`}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">ערוץ המנטור</span>
-                  </a>
-                );
-              })()}
+              {filters.mentor !== "all" ? (
+                <MentorChannelCenter
+                  mentor={mentors.find((mentor) => mentor.id === filters.mentor) || null}
+                />
+              ) : null}
 
               <button
                 type="button"

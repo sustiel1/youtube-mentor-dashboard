@@ -424,11 +424,12 @@ export function GemSelectionModal({
           <DialogPrimitive.Overlay className="fixed inset-0 z-[340] bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
           <DialogPrimitive.Content
             dir="rtl"
-            aria-describedby="gem-modal-desc"
             className="fixed left-[50%] top-[50%] z-[350] flex flex-col w-full max-w-[520px] max-h-[90vh] translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden"
           >
             <DialogPrimitive.Title className="sr-only">בחירת GEM</DialogPrimitive.Title>
-            <p id="gem-modal-desc" className="sr-only">בחר GEM ושלח אליו את התמלול</p>
+            <DialogPrimitive.Description className="sr-only">
+              בחר GEM ושלח אליו את התמלול
+            </DialogPrimitive.Description>
 
             <DialogPrimitive.Close className="absolute left-4 top-4 z-10 rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors">
               <X className="h-4 w-4" />

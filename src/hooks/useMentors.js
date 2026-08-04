@@ -14,6 +14,7 @@ import { loadTopics } from '@/services/topicStorage';
 import { getMainTopicForTopic } from '@/lib/topicFilters';
 import { appendChannelCollection } from '@/lib/localChannelCollectionsStore';
 import { applyTopicOverridesToMentors, setMentorTopicOverride } from '@/lib/mentorTopicOverrides';
+import { normalizeMentorRecords } from '@/lib/mentorRegistry';
 import {
   hideMentor,
   restoreMentor,
@@ -22,7 +23,9 @@ import {
 } from '@/services/mentorStorage';
 
 function mergeAllMentors() {
-  return applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
+  return normalizeMentorRecords(
+    applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]),
+  );
 }
 
 function normalizeChannelId(value) {
@@ -253,6 +256,7 @@ export function useUpdateMentor() {
       if (data.subTopicId !== undefined) topicFields.subTopicId = data.subTopicId;
       if (data.defaultSubTopic !== undefined) topicFields.defaultSubTopic = data.defaultSubTopic;
       if (data.defaultGem !== undefined) topicFields.defaultGem = data.defaultGem;
+      if (data.channelLinks !== undefined) topicFields.channelLinks = data.channelLinks;
       if (Object.keys(topicFields).length) setMentorTopicOverride(id, topicFields);
 
       if (!isBase44Enabled()) {

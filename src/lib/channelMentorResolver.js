@@ -6,6 +6,7 @@ import { getLocalCustomMentors } from '@/lib/localCustomMentorsStore';
 import { applyTopicOverridesToMentors } from '@/lib/mentorTopicOverrides';
 import { loadTopics } from '@/services/topicStorage';
 import { getMainTopicForTopic } from '@/lib/topicFilters';
+import { normalizeMentorRecords } from '@/lib/mentorRegistry';
 
 const CATEGORY_CODE_TO_LABEL = {
   Markets: 'שוק ההון',
@@ -50,7 +51,9 @@ function deriveCategoryLabel(mentor) {
 export function resolveChannelToMentor(video) {
   if (!video) return null;
 
-  const allMentors = applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
+  const allMentors = normalizeMentorRecords(
+    applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]),
+  );
   const videoChannelId  = normalizeChannelId(video.channelId);
   const videoChannelUrl = normalizeUrl(video.channelUrl || '');
   const videoChannelName = normalizeName(
@@ -117,7 +120,9 @@ export function resolveChannelToMentor(video) {
  */
 export function resolveMentorByName(displayName) {
   if (!displayName) return null;
-  const allMentors = applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
+  const allMentors = normalizeMentorRecords(
+    applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]),
+  );
   const normalized = normalizeName(displayName);
   const matched = allMentors.find(m => normalizeName(m.name) === normalized);
   if (!matched) return null;

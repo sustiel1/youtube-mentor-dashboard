@@ -4,7 +4,7 @@
 // Key: "yt_mentor_topic_overrides_v1" → { [mentorId]: OverrideEntry }
 //
 // OverrideEntry shape:
-//   { topicIds, category, subTopic, subTopicId, updatedAt }
+//   { topicIds, category, subTopic, subTopicId, channelLinks, updatedAt }
 
 const STORAGE_KEY = "yt_mentor_topic_overrides_v1";
 
@@ -56,7 +56,7 @@ export function clearMentorTopicOverride(mentorId) {
 }
 
 // Apply stored overrides on top of a mentor array (non-destructive merge).
-// Fields overwritten: topicIds, category, subTopic, subTopicId, updatedAt.
+// Stored fields are merged non-destructively over the source mentor record.
 export function applyTopicOverridesToMentors(mentors) {
   const overrides = readAll();
   if (!Object.keys(overrides).length) return mentors;
