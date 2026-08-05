@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
-import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
+import { saveWorkspaceItem, findWorkspaceItemByContentHash } from "@/lib/workspaceLibraryStore";
+import { computeContentHash } from "@/lib/contentHash";
 import { ConfirmDialog } from "./ConfirmDialog";
 import {
   VIRTUAL_TAXONOMY,
@@ -211,6 +212,16 @@ export function WorkspaceSaveReviewOverlay({
 
   // Reset workflow status filter whenever the navigation path changes
   useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
+
+  // Default to the stock table ("topics" view) the moment the user enters
+  // שוק ההון → מניות, so they land on the table instead of whichever view
+  // (draft/recent/dates) happened to be active before. Only fires on the
+  // false→true transition so a manual switch to "לפי תאריכים" afterwards sticks.
+  const wasStocksViewRef = useRef(false);
+  useEffect(() => {
+    if (isStocksView && !wasStocksViewRef.current) setActiveView('topics');
+    wasStocksViewRef.current = isStocksView;
+  }, [isStocksView]);
 
   // Items within the selected main virtual topic (not yet subtopic-filtered)
   const mainFilteredItems = useMemo(() => {
@@ -506,16 +517,30 @@ export function WorkspaceSaveReviewOverlay({
     if (filterVirtTopicId === tabId) setFilterVirtTopicId('');
   }
 
-  const handleSaveAll = useCallback(() => {
+  const handleSaveAll = useCallback(async () => {
     if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
     const savedIds    = [];
+    let   skippedCount = 0;
     const now         = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
+    // Tracks hashes saved earlier in this same batch, so saving the same
+    // snippet twice in one click doesn't slip past the store-level check.
+    const seenHashesThisRun = new Set();
 
-    effectiveDraftItems.forEach((item) => {
+    for (const item of effectiveDraftItems) {
       const id = `ws-snippet-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const contentHash = await computeContentHash(item.text);
+
+      if (contentHash && (
+        seenHashesThisRun.has(contentHash) ||
+        findWorkspaceItemByContentHash(contentHash)
+      )) {
+        skippedCount++;
+        continue;
+      }
+      if (contentHash) seenHashesThisRun.add(contentHash);
 
       // ── Detect stock rows and preserve structured fields ──────────────────
       // Stock rows come from "מניות שהוזכרו" sections with type 'stocks-mentioned'.
@@ -582,17 +607,22 @@ export function WorkspaceSaveReviewOverlay({
         category:     topicName    || null,
         subCategory:  subTopicName || null,
         savedAt:      now,
+        contentHash,
         ...stockExtraFields, // additive: only present on stock items
       });
       savedIds.push(id);
-    });
+    }
 
     reload();
     setRecentlySavedIds(savedIds);
     setActiveView('recent');
     setIsSaving(false);
-    toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
-    onSaved?.({ count: savedIds.length });
+    if (skippedCount > 0) {
+      toast.success(`⭐ ${savedIds.length} פריטים נשמרו, ${skippedCount} כבר נשמרו קודם ולא נוספו שוב`);
+    } else {
+      toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
+    }
+    onSaved?.({ count: savedIds.length, skipped: skippedCount });
   }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
 
   // ── View tabs ─────────────────────────────────────────────────────────────────
@@ -602,7 +632,7 @@ export function WorkspaceSaveReviewOverlay({
       ? [{ key: 'draft', label: effectiveDraftItems.length > 0 ? `טיוטה (${effectiveDraftItems.length})` : 'טיוטה' }]
       : []),
     { key: 'recent', label: recentlySavedIds.length > 0 ? `נשמרו עכשיו (${recentlySavedIds.length})` : 'נשמרו עכשיו' },
-    { key: 'topics', label: 'לפי נושאים' },
+    { key: 'topics', label: isStocksView ? 'טבלת מניות' : 'לפי נושאים' },
     { key: 'dates',  label: 'לפי תאריכים' },
     { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
@@ -841,13 +871,13 @@ export function WorkspaceSaveReviewOverlay({
           <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
             <WorkspaceTabRow
               tabs={[
-                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
                 ...activeVirtTopic.subtopics.map(vs => ({
                   value: vs.id,
                   label: vs.name,
                   count: virtSubtopicCount[vs.id] || 0,
                   empty: !virtSubtopicCount[vs.id],
                 })),
+                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
               ]}
               activeValue={filterVirtSubtopic}
               onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}
