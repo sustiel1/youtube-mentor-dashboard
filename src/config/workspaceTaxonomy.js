@@ -85,6 +85,49 @@ export const DEFAULT_WORKSPACE_TOPICS = [
   { id: 'wt-tools-obsidian',       name: 'Obsidian',           parentId: 'wt-tools', emoji: null, createdAt: SEED_DATE },
   { id: 'wt-tools-screeners',      name: 'Screeners',          parentId: 'wt-tools', emoji: null, createdAt: SEED_DATE },
 
+  // AI וטכנולוגיה
+  { id: 'wt-ai',                   name: 'AI וטכנולוגיה',      parentId: null,   emoji: '🤖', createdAt: SEED_DATE },
+  { id: 'wt-ai-claudecode',        name: 'Claude Code',        parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-cursor',            name: 'Cursor',             parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-chatgpt',           name: 'ChatGPT',            parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-perplexity',        name: 'Perplexity',         parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-n8n',               name: 'n8n',                parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-automation',        name: 'Automation',         parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-rag',               name: 'RAG',                parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-frontend',          name: 'Frontend',           parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-backend',           name: 'Backend',            parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-apis',              name: 'APIs',               parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-ai-qa',                name: 'QA',                 parentId: 'wt-ai', emoji: null, createdAt: SEED_DATE },
+
+  // תזונה ובריאות
+  { id: 'wt-health',               name: 'תזונה ובריאות',      parentId: null,       emoji: '🥗', createdAt: SEED_DATE },
+  { id: 'wt-health-keto',          name: 'קטו',                parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-diabetes',      name: 'סוכרת',              parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-lowcarb',       name: 'דל פחמימות',         parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-recipes',       name: 'מתכונים',            parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-exercise',      name: 'פעילות גופנית',      parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-tests',         name: 'בדיקות',             parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-supplements',   name: 'תוספים',             parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-health-general',       name: 'כללי',               parentId: 'wt-health', emoji: null, createdAt: SEED_DATE },
+
+  // פוליטיקה
+  { id: 'wt-politics',             name: 'פוליטיקה',           parentId: null,         emoji: '🏛', createdAt: SEED_DATE },
+  { id: 'wt-politics-israel',      name: 'ישראל',              parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-security',    name: 'ביטחון',             parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-law',         name: 'משפט',               parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-religion',    name: 'דת',                 parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-media',       name: 'תקשורת',             parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-economy',     name: 'כלכלה',              parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-politics-geo',         name: 'גיאופוליטיקה',       parentId: 'wt-politics', emoji: null, createdAt: SEED_DATE },
+
+  // ידע אישי
+  { id: 'wt-personal',             name: 'ידע אישי',           parentId: null,         emoji: '💡', createdAt: SEED_DATE },
+  { id: 'wt-personal-habits',      name: 'הרגלים',             parentId: 'wt-personal', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-personal-books',       name: 'ספרים',              parentId: 'wt-personal', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-personal-mindset',     name: 'חשיבה',              parentId: 'wt-personal', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-personal-tools',       name: 'כלים אישיים',        parentId: 'wt-personal', emoji: null, createdAt: SEED_DATE },
+  { id: 'wt-personal-learning',    name: 'למידה אישית',        parentId: 'wt-personal', emoji: null, createdAt: SEED_DATE },
+
   // כללי
   { id: 'wt-general',              name: 'כללי',               parentId: null, emoji: '📁', createdAt: SEED_DATE },
 ];
