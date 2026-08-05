@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
-import { saveWorkspaceItem } from "@/lib/workspaceLibraryStore";
+import { saveWorkspaceItem, findWorkspaceItemByContentHash } from "@/lib/workspaceLibraryStore";
+import { computeContentHash } from "@/lib/contentHash";
 import { ConfirmDialog } from "./ConfirmDialog";
 import {
   VIRTUAL_TAXONOMY,
@@ -516,16 +517,30 @@ export function WorkspaceSaveReviewOverlay({
     if (filterVirtTopicId === tabId) setFilterVirtTopicId('');
   }
 
-  const handleSaveAll = useCallback(() => {
+  const handleSaveAll = useCallback(async () => {
     if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
     const savedIds    = [];
+    let   skippedCount = 0;
     const now         = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
+    // Tracks hashes saved earlier in this same batch, so saving the same
+    // snippet twice in one click doesn't slip past the store-level check.
+    const seenHashesThisRun = new Set();
 
-    effectiveDraftItems.forEach((item) => {
+    for (const item of effectiveDraftItems) {
       const id = `ws-snippet-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const contentHash = await computeContentHash(item.text);
+
+      if (contentHash && (
+        seenHashesThisRun.has(contentHash) ||
+        findWorkspaceItemByContentHash(contentHash)
+      )) {
+        skippedCount++;
+        continue;
+      }
+      if (contentHash) seenHashesThisRun.add(contentHash);
 
       // ── Detect stock rows and preserve structured fields ──────────────────
       // Stock rows come from "מניות שהוזכרו" sections with type 'stocks-mentioned'.
@@ -592,17 +607,22 @@ export function WorkspaceSaveReviewOverlay({
         category:     topicName    || null,
         subCategory:  subTopicName || null,
         savedAt:      now,
+        contentHash,
         ...stockExtraFields, // additive: only present on stock items
       });
       savedIds.push(id);
-    });
+    }
 
     reload();
     setRecentlySavedIds(savedIds);
     setActiveView('recent');
     setIsSaving(false);
-    toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
-    onSaved?.({ count: savedIds.length });
+    if (skippedCount > 0) {
+      toast.success(`⭐ ${savedIds.length} פריטים נשמרו, ${skippedCount} כבר נשמרו קודם ולא נוספו שוב`);
+    } else {
+      toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
+    }
+    onSaved?.({ count: savedIds.length, skipped: skippedCount });
   }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
 
   // ── View tabs ─────────────────────────────────────────────────────────────────

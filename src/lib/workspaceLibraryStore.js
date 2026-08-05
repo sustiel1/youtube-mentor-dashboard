@@ -191,6 +191,28 @@ export function getWorkspaceItemByVideoId(videoId) {
   }
 }
 
+/**
+ * Finds an existing item with the same contentHash anywhere in the library.
+ * Used to prevent duplicate snippet saves (independent of the videoId-based upsert
+ * in saveWorkspaceItem). Items saved before contentHash existed simply won't match
+ * (contentHash is undefined), so backward compatibility is unaffected.
+ *
+ * Deliberately NOT scoped to topicId/subTopicId: those are the save dialog's
+ * current UI selection, not a stable property of the item, so scoping by them
+ * made the check fail whenever the selected topic differed from the topic the
+ * item was originally saved under (e.g. after a page reload resets the dialog's
+ * topic dropdown to blank) — every re-save then looked "new" and duplicated the
+ * whole batch instead of being skipped.
+ */
+export function findWorkspaceItemByContentHash(contentHash) {
+  if (!contentHash) return null;
+  try {
+    return getWorkspaceItems().find((i) => i.contentHash === contentHash) || null;
+  } catch {
+    return null;
+  }
+}
+
 export function updateWorkspaceItemByVideoId(videoId, updates) {
   if (!videoId) return;
   const items = getWorkspaceItems();
