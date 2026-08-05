@@ -165,3 +165,88 @@ GEMINI_MOCK=false
 ```
 
 > **שים לב:** `ANTHROPIC_API_KEY` ללא prefix של `VITE_` — זה בכוונה. המפתח נחשף רק ב-vite.config.js (server-side), לא ב-client bundle.
+
+---
+
+## Bounded Self-Improvement and Verification Workflow
+
+For every implementation task:
+
+1. Understand the request and inspect the relevant code before making changes.
+
+2. Define explicit acceptance criteria.
+
+3. Check the working tree and identify pre-existing modified or untracked files.
+   - Preserve unrelated user changes.
+   - Do not overwrite or include unrelated work.
+
+4. Implement the smallest safe and backward-compatible change.
+
+5. Review the result critically:
+   - Does it fully satisfy the acceptance criteria?
+   - Are there logic errors, regressions, missing edge cases, or unnecessary changes?
+   - Does it follow the repository architecture and existing conventions?
+   - Were any unrelated files changed?
+
+6. Run all relevant verification available for the affected scope:
+   - Build
+   - Tests
+   - Lint
+   - Type-check
+   - Focused runtime or UI verification
+   - Review of the final diff
+
+7. If verification fails or the review identifies a concrete issue:
+   - Identify and document the root cause.
+   - Apply the smallest safe correction.
+   - Repeat the review and relevant verification.
+
+8. Stop after a maximum of 3 improvement iterations.
+
+9. Do not perform speculative rewrites, architecture changes, dependency upgrades, or unrelated refactors.
+
+10. Do not hide, weaken, skip, rewrite, or delete tests merely to obtain a passing result.
+
+11. If the task cannot be verified after 3 iterations, stop and report:
+    - What remains unresolved
+    - Root cause, if known
+    - Evidence collected
+    - Verification commands and results
+    - Files changed
+    - Safest recommended next step
+
+12. Do not commit, push, publish, deploy, merge, or modify production data unless explicitly requested.
+
+13. Before any commit, provide:
+    - Concise change summary
+    - Files changed
+    - Verification results
+    - Known limitations or remaining risks
+    - Rollback strategy
+    - Proposed commit message
+
+### Claude Code Environment Diagnostics
+
+Use `/doctor` only when one or more of the following conditions apply:
+- Claude Code installation or configuration appears broken.
+- Tools, hooks, skills, plugins, permissions, or integrations are not working as expected.
+- An unexpected environment-level error prevents normal work.
+- The user explicitly requests an environment diagnostic.
+
+Do not run `/doctor` automatically for ordinary implementation tasks.
+
+When `/doctor` is used:
+- Report the relevant findings.
+- Distinguish environment problems from application-code problems.
+- Do not change project code merely to work around a Claude Code installation problem.
+
+### Completion Report
+
+At the end of every implementation task, report:
+- Acceptance criteria status
+- Files changed
+- Verification performed
+- Improvement iterations used
+- Remaining risks or limitations
+- Commit status
+- Recommended next step

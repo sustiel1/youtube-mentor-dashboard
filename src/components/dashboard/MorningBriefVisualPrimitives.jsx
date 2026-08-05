@@ -124,6 +124,30 @@ export function EmptyState({ message = 'אין נתונים זמינים לסע�
   );
 }
 
+/**
+ * Compact "בחר הכל" / "נקה" pill button for section-level selection.
+ * Shows only when sectionItems is non-empty and bulkSelection supports section ops.
+ */
+export function SectionSelectAllButton({ sectionItems, bulkSelection }) {
+  if (!sectionItems?.length || !bulkSelection?.onSectionSelect || !bulkSelection?.onSectionDeselect) return null;
+  const ids = sectionItems.map((i) => i.id);
+  const selectedCount = ids.filter((id) => bulkSelection.multiSelected?.has(id)).length;
+  const allSelected = ids.length > 0 && selectedCount === ids.length;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (allSelected) bulkSelection.onSectionDeselect(ids);
+        else bulkSelection.onSectionSelect(sectionItems);
+      }}
+      className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-slate-300 dark:border-zinc-600 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors whitespace-nowrap shrink-0"
+    >
+      {allSelected ? 'נקה' : 'בחר הכל'}
+    </button>
+  );
+}
+
 export function SectionCard({
   title,
   count,
@@ -135,6 +159,8 @@ export function SectionCard({
   headerActions,
   plainSurface = false,
   cardBulk = null,
+  sectionSelectAllItems = null,
+  bulkSelection = null,
 }) {
   const borderCls = COMPARISON_SECTION_BORDER;
   const surfaceCls = COMPARISON_SURFACE_BG;
@@ -155,7 +181,12 @@ export function SectionCard({
         data-section-header
       >
         <div className="flex items-center justify-between gap-x-3">
-          <SectionHeaderTitle title={title} count={count} />
+          <div className="flex items-center gap-x-2 min-w-0">
+            <SectionHeaderTitle title={title} count={count} />
+            {sectionSelectAllItems?.length > 0 && (
+              <SectionSelectAllButton sectionItems={sectionSelectAllItems} bulkSelection={bulkSelection} />
+            )}
+          </div>
           <div className="flex items-center gap-x-2 shrink-0">
             {headerActions}
           </div>

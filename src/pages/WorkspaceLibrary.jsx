@@ -634,10 +634,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             <div className="border-t border-slate-100 dark:border-zinc-800 px-5 py-3 bg-slate-50/40 dark:bg-zinc-800/20">
               <WorkspaceTabRow
                 tabs={[
-                  {
-                    value: '',
-                    label: `כולם${virtTopicCount[filterVirtTopicId] ? ` (${virtTopicCount[filterVirtTopicId]})` : ''}`,
-                  },
                   ...(activeVirtTopic?.subtopics || []).map(vs => ({
                     value: vs.id,
                     label: vs.name,
@@ -649,6 +645,10 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                     label: cs.name,
                     empty: true,
                   })),
+                  {
+                    value: '',
+                    label: `כולם${virtTopicCount[filterVirtTopicId] ? ` (${virtTopicCount[filterVirtTopicId]})` : ''}`,
+                  },
                 ]}
                 activeValue={filterVirtSubtopic}
                 onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}

@@ -58,6 +58,9 @@ export const BRIEF_NOTES_TEXT_CLS =
 export const BRIEF_SENTIMENT_INLINE_CLS =
   'text-sm font-medium text-slate-900 dark:text-zinc-50 shrink-0';
 
+export const BRIEF_TABLE_LINK_CLS =
+  'text-xs font-medium text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline';
+
 export function BriefTableWrapper({ children, className = '' }) {
   return (
     <div className={`${BRIEF_TABLE_WRAPPER_CLS} ${className}`.trim()} dir="rtl">

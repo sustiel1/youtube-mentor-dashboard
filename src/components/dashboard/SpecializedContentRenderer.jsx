@@ -1,13 +1,12 @@
 import { LearningTabContent } from "./LearningTabContent";
+import { DedicatedContentSection } from "./DedicatedContentSection";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { MorningBriefDashboard } from "./MorningBriefDashboard";
 import { MORNING_BRIEF_SPECIALIZED_PRESENTATION } from "@/lib/morningBriefPresentation";
 import { MacroGemDashboard } from "./MacroGemDashboard";
 import { BriefContextHeader } from "./BriefContextHeader";
 import { DASHBOARD_COLUMN_HEADER_CLS } from "./MorningBriefVisualPrimitives";
-import { SelectableSummaryCardHeader } from "@/components/shared/SelectableSummaryCardHeader";
-import { UniversalTabSectionLabelRow } from "@/components/shared/UniversalTabSectionLabelRow";
-import { formatCardBulkText, formatBulkItemText, mergeBulkSelection, buildBulkItemsFromSections } from "@/lib/universalTabBulkItems";
+import { buildBulkItemsFromSections } from "@/lib/universalTabBulkItems";
 import { extractVideoTabItems } from "@/config/videoTabsConfig";
 import { getBriefContextDisplay } from "@/lib/briefContextDisplay";
 import { TabBulkItemsRegistrar } from "./TabBulkItemsRegistrar";
@@ -27,63 +26,17 @@ function looksLikeMarketIndex(item) {
 }
 
 function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, bulkSelection }) {
-  const safe = Array.isArray(items) ? items : [];
-  if (safe.length === 0) return null;
-  const cardText = formatCardBulkText(label, safe);
-  const hasCardBulk = bulkSelection && sectionKey && cardText;
-  const idPrefix = `specialized:${sectionKey || tabKey}`;
-
-  // Child bulk items for section-level select-all checkbox
-  const sectionChildItems = bulkSelection ? safe.map((item, i) => ({
-    id: `${idPrefix}:${i}`,
-    text: formatBulkItemText(item),
-    sectionLabel: label,
-    type: tabKey,
-    tabScope: 'specialized',
-  })) : null;
-
   return (
-    <div className={`rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2${hasCardBulk ? ' group/card' : ''}`}>
-      {hasCardBulk ? (
-        <SelectableSummaryCardHeader
-          title={label}
-          cardId={sectionKey}
-          cardText={cardText}
-          bulkSelection={bulkSelection}
-          tabScope="specialized"
-          type={tabKey}
-          sectionLabel={label}
-          titleClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100`}
-          headerRowClassName="pt-0 pb-2 mb-2 px-1 border-b border-slate-200/50 dark:border-zinc-700/50"
-          sectionChildItems={sectionChildItems}
-        />
-      ) : (
-        <UniversalTabSectionLabelRow
-          label={label}
-          items={safe}
-          bulkSelection={bulkSelection}
-          tabScope="specialized"
-          type={tabKey}
-          sectionKey={sectionKey || tabKey}
-          labelClassName={`${DASHBOARD_COLUMN_HEADER_CLS} text-slate-800 dark:text-zinc-100 mb-2 px-1 text-right`}
-          brainSaved={checkSaved ? checkSaved(formatCardBulkText(label, safe), tabKey) : undefined}
-          sectionChildItems={sectionChildItems}
-        />
-      )}
-      <LearningTabContent
-        items={safe}
-        emptyLabel=""
-        macroDirection={tabKey === 'brief-macro'}
-        onSaveToBrain={(text) => onSaveToBrain(text, tabKey, label)}
-        isSaved={checkSaved ? (text) => checkSaved(text, tabKey) : undefined}
-        bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
-          idPrefix,
-          sectionLabel: label,
-          type: tabKey,
-          tabScope: 'specialized',
-        }) : null}
-      />
-    </div>
+    <DedicatedContentSection
+      label={label}
+      items={items}
+      tabKey={tabKey}
+      sectionKey={sectionKey}
+      onSaveToBrain={onSaveToBrain}
+      checkSaved={checkSaved}
+      bulkSelection={bulkSelection}
+      macroDirection={tabKey === 'brief-macro'}
+    />
   );
 }
 

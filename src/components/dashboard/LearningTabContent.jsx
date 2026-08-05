@@ -77,6 +77,7 @@ function ItemRow({
   pxUrl = null,
   url = null,
   connectButton = null,
+  rowClassName = 'group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors',
 }) {
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
@@ -118,7 +119,7 @@ function ItemRow({
 
   return (
     <UniversalTabSelectRow
-      className="group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors"
+      className={rowClassName}
       checkbox={onBulkToggle ? (
         <UniversalTabCheckbox checked={bulkSelected} onChange={onBulkToggle} />
       ) : null}
@@ -193,6 +194,7 @@ export function LearningTabContent({
   bulkSelection = null,
   getItemUrl = null,
   getConnectButton = null,
+  rowClassName,
 }) {
   const formatted = items.map(formatItem).filter(Boolean);
 
@@ -234,6 +236,7 @@ export function LearningTabContent({
             }) : null}
             bulkSelection={bulkSelection}
             pxUrl={buildPxUrl(text)}
+            rowClassName={rowClassName}
           />
         );
       })}

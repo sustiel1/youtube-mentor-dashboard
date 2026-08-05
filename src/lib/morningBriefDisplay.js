@@ -393,7 +393,18 @@ function normalizeOpportunity(item) {
     return { title: translateMarketTextInline(fallback).trim(), detail: '', kind: 'setup', ticker: '' };
   }
 
-  return { title: title || detail, detail: title && detail && title !== detail ? detail : '', kind, ticker };
+  return {
+    title: title || detail,
+    detail: title && detail && title !== detail ? detail : '',
+    kind,
+    ticker,
+    entry: pickString(item, 'entry'),
+    stop: pickString(item, 'stop', 'stopLoss'),
+    target: pickString(item, 'target'),
+    rrRatio: pickString(item, 'rrRatio', 'riskReward'),
+    timeframe: pickString(item, 'timeframe'),
+    confidence: pickString(item, 'confidence'),
+  };
 }
 
 function humanizeMarketToken(val) {
@@ -463,8 +474,8 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
     else if (lvl && !strength) comment = lvl;
   }
 
-  if (!asset && !trend && !strength && !comment) return null;
-  return { asset: asset || '—', trend, strength, comment };
+  if (!asset) return null;
+  return { asset, trend, strength, comment };
 }
 
 /** Markets dashboard rows from indices + marketOverview tickers. */
@@ -788,7 +799,17 @@ function normalizeCalendarRow(item) {
   const type = pickString(item, 'type', 'category') || detectEventType(event);
 
   if (!event && !date) return null;
-  return { event: event || date, date, importance, type, impact };
+  return {
+    event: event || date,
+    date,
+    importance,
+    type,
+    impact,
+    timeframe: pickString(item, 'timeframe', 'when'),
+    affectedStocks: Array.isArray(item.affectedStocks)
+      ? item.affectedStocks.map(safeCoerceString).filter(Boolean)
+      : [],
+  };
 }
 
 export function extractCalendarRows(src) {
@@ -1032,9 +1053,25 @@ function normalizeSectorRow(item) {
   if (!sector) {
     const name = pickString(item, 'symbol', 'ticker');
     if (!name) return null;
-    return { sector: name, direction, relativeStrength, sentiment };
+    return {
+      sector: name,
+      direction,
+      relativeStrength,
+      sentiment,
+      reason: pickString(item, 'reason', 'note', 'description'),
+      stocks: Array.isArray(item.stocks) ? item.stocks.map(safeCoerceString).filter(Boolean) : [],
+      etf: pickString(item, 'etf'),
+    };
   }
-  return { sector, direction, relativeStrength, sentiment };
+  return {
+    sector,
+    direction,
+    relativeStrength,
+    sentiment,
+    reason: pickString(item, 'reason', 'note', 'description'),
+    stocks: Array.isArray(item.stocks) ? item.stocks.map(safeCoerceString).filter(Boolean) : [],
+    etf: pickString(item, 'etf'),
+  };
 }
 
 export function extractSectorRows(src) {
@@ -1174,7 +1211,10 @@ function stockRecordFromObject(item, category = 'general') {
       pickString(item, 'catalyst', 'trigger', 'event', 'technicalState'),
       pickString(item, 'level', 'price', 'target', 'entry')
     ),
-    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange'),
+    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange', 'change'),
+    timeframe: pickString(item, 'timeframe'),
+    priority: pickString(item, 'priority', 'importance'),
+    isNewToWatch: typeof item.isNewToWatch === 'boolean' ? item.isNewToWatch : null,
   };
 }
 
@@ -1199,6 +1239,9 @@ function upsertStock(map, record) {
     actionability: humanizeActionability(category, { importance: prev.actionability || record.actionability }),
     notes: mergeContext(prev.notes, record.notes),
     changePercent: prev.changePercent || record.changePercent,
+    timeframe: prev.timeframe || record.timeframe,
+    priority: prev.priority || record.priority,
+    isNewToWatch: prev.isNewToWatch ?? record.isNewToWatch,
   });
 }
 
