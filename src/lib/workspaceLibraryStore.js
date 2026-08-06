@@ -226,6 +226,30 @@ export function findWorkspaceItemByContentHash(contentHash) {
   }
 }
 
+/**
+ * Groups the given items by contentHash and returns only groups with 2+
+ * members (actual duplicates). Each group keeps the OLDEST item by savedAt
+ * (the original save) and lists the rest as removable. Items without a
+ * contentHash (saved before it existed) are ignored — same backward
+ * compatibility rule as findWorkspaceItemByContentHash.
+ */
+export function findDuplicateGroups(items = []) {
+  const byHash = new Map();
+  for (const item of items) {
+    if (!item.contentHash) continue;
+    const group = byHash.get(item.contentHash);
+    if (group) group.push(item);
+    else byHash.set(item.contentHash, [item]);
+  }
+  const groups = [];
+  for (const group of byHash.values()) {
+    if (group.length < 2) continue;
+    const sorted = [...group].sort((a, b) => new Date(a.savedAt || 0) - new Date(b.savedAt || 0));
+    groups.push({ keep: sorted[0], remove: sorted.slice(1) });
+  }
+  return groups;
+}
+
 export function updateWorkspaceItemByVideoId(videoId, updates) {
   if (!videoId) return;
   const items = getWorkspaceItems();

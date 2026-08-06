@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { Star, Check, Maximize2, Minimize2, BookOpen, MoreVertical, Trash2, Archive, Edit2, Search } from "lucide-react";
+import { Star, Check, Maximize2, Minimize2, BookOpen, Trash2, Archive, Edit2, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,7 @@ import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy } from "@/component
 import { StockWatchlistView } from "./StockWatchlistView";
 import { WorkspaceContentCard } from "./WorkspaceContentCard";
 import { WorkspaceTabRow } from "./WorkspaceTabRow";
+import { DangerZoneMenu } from "./DangerZoneMenu";
 
 // Virtual subtopic tabs hidden entirely from Row 2 (top filter row) — display
 // only, underlying real topics/items are untouched and still reachable via
@@ -129,9 +130,6 @@ export function WorkspaceSaveReviewOverlay({
   const [recentlySavedIds, setRecentlySavedIds] = useState([]);
   const [isSaving,         setIsSaving]         = useState(false);
   const [isFullscreen,     setIsFullscreen]     = useState(false);
-  const [moreActionsOpen,          setMoreActionsOpen]          = useState(false);
-  const [confirmDeleteAllVisible,  setConfirmDeleteAllVisible]  = useState(false);
-  const [confirmDeleteAllWorkspace, setConfirmDeleteAllWorkspace] = useState(false);
 
   // ── Virtual taxonomy navigation ──────────────────────────────────────────────
   const [filterVirtTopicId,  setFilterVirtTopicId]  = useState('');
@@ -788,22 +786,6 @@ export function WorkspaceSaveReviewOverlay({
     setFilterVirtSubtopic('');
   }
 
-  function handleConfirmDeleteAllVisible() {
-    const ids = displayItems.map(i => i.id);
-    if (!ids.length) return;
-    deleteItems(ids);
-    toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
-    setMoreActionsOpen(false);
-  }
-
-  function handleConfirmDeleteAllWorkspace() {
-    const count = libraryItems.length;
-    if (!count) return;
-    deleteAllItems();
-    toast.success(`נמחקו ${count} פריטים מה-Workspace`);
-    setMoreActionsOpen(false);
-  }
-
   function handleDeleteSingleItem(item) {
     setConfirmDeleteSingleItem(item);
   }
@@ -1087,42 +1069,12 @@ export function WorkspaceSaveReviewOverlay({
               </span>
             </DialogTitle>
             <div className="flex items-center gap-2 shrink-0">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreActionsOpen(p => !p)}
-                  title="פעולות נוספות"
-                  className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-1.5 text-slate-400 hover:text-slate-600 hover:border-slate-300 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </button>
-                {moreActionsOpen && (
-                  <div
-                    className="absolute left-0 top-full mt-1 w-64 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1 z-50"
-                    dir="rtl"
-                    onMouseLeave={() => setMoreActionsOpen(false)}
-                  >
-                    <button
-                      type="button"
-                      disabled={displayItems.length === 0}
-                      onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllVisible(true); }}
-                      className="w-full text-right px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      מחק הכל בתצוגה הנוכחית ({displayItems.length})
-                    </button>
-                    <button
-                      type="button"
-                      disabled={libraryItems.length === 0}
-                      onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllWorkspace(true); }}
-                      className="w-full text-right px-3 py-2 text-xs text-red-700 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      מחק את כל ה-Workspace ({libraryItems.length})
-                    </button>
-                  </div>
-                )}
-              </div>
+              <DangerZoneMenu
+                allItems={libraryItems}
+                visibleItems={displayItems}
+                deleteItems={deleteItems}
+                deleteAllItems={deleteAllItems}
+              />
               <button
                 type="button"
                 onClick={() => setIsFullscreen(f => !f)}
@@ -2161,27 +2113,6 @@ export function WorkspaceSaveReviewOverlay({
       confirmLabel="מחק"
       danger
       onConfirm={handleConfirmDeleteSingleItem}
-    />
-
-    <ConfirmDialog
-      open={confirmDeleteAllVisible}
-      onOpenChange={setConfirmDeleteAllVisible}
-      title="מחיקת כל הפריטים בתצוגה"
-      description={`אתה עומד למחוק ${displayItems.length} פריטים שמוצגים כרגע מה-Workspace בלבד. פריטים שלא מופיעים בסינון הנוכחי לא יימחקו. להמשיך?`}
-      confirmLabel={`מחק ${displayItems.length} פריטים`}
-      danger
-      onConfirm={handleConfirmDeleteAllVisible}
-    />
-
-    <ConfirmDialog
-      open={confirmDeleteAllWorkspace}
-      onOpenChange={setConfirmDeleteAllWorkspace}
-      title="⚠️ מחיקת כל ה-Workspace"
-      description={`פעולה זו תמחק את כל ${libraryItems.length} פריטי ה-Workspace בלבד. היא לא תמחק Brain, KnowledgeItems או סרטונים מקוריים. כדי להמשיך הקלד: מחק הכל`}
-      confirmLabel="מחק את כל ה-Workspace"
-      danger
-      requireTypedWord="מחק הכל"
-      onConfirm={handleConfirmDeleteAllWorkspace}
     />
 
     <ConfirmDialog

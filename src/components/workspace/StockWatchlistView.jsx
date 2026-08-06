@@ -24,6 +24,7 @@ import { getManualFinvizUrl } from '@/utils/manualFinvizMappings';
 import { StockDetailDrawer } from './StockDetailDrawer';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EditWorkspaceItemModal } from './EditWorkspaceItemModal';
+import { DangerZoneMenu } from './DangerZoneMenu';
 
 // ─── Finviz link resolution ───────────────────────────────────────────────────
 
@@ -809,6 +810,18 @@ export function StockWatchlistView({
             {showArchived ? 'חזרה לפעילים' : `ארכיון (${archivedCount})`}
           </button>
         )}
+
+        {/* Cleanup actions scoped to whatever stock items this view currently
+            holds (not the full workspace) — consistent with the archived
+            toggle above, which is scoped the same way. Only the two cleanup
+            actions are exposed here; "מחק הכל"/"מחק את כל ה-Workspace" stay
+            out since this view only ever sees a filtered item subset and
+            already has its own "מחק מסומנים" selection-based delete. */}
+        <DangerZoneMenu
+          allItems={items}
+          deleteItems={onDeleteItems}
+          triggerClassName="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 transition-colors"
+        />
 
         <span className="mr-auto text-[11px] text-slate-400 dark:text-zinc-600 whitespace-nowrap">
           {shownStocks === totalStocks

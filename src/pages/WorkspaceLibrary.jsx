@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, MoreVertical, Copy, FileDown } from "lucide-react";
+import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, Copy, FileDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
+import { DangerZoneMenu } from "@/components/workspace/DangerZoneMenu";
 import { VIRTUAL_TAXONOMY } from "@/utils/workspaceVirtualTaxonomy";
 import {
   getWorkspaceTabPreferences,
@@ -82,9 +83,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [selectedCardIds, setSelectedCardIds] = useState(() => new Set());
   const [confirmDeleteItem, setConfirmDeleteItem] = useState(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const [confirmDeleteAllVisible, setConfirmDeleteAllVisible] = useState(false);
-  const [confirmDeleteAllWorkspace, setConfirmDeleteAllWorkspace] = useState(false);
-  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
 
   const [tabPrefs,        setTabPrefs]        = useState(() => getWorkspaceTabPreferences());
   const [showManageTabs,  setShowManageTabs]  = useState(false);
@@ -344,23 +342,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     [filteredItems, showArchivedCards],
   );
 
-  const handleConfirmDeleteAllVisible = () => {
-    const ids = deletableVisibleItems.map(i => i.id);
-    if (!ids.length) return;
-    deleteItems(ids);
-    toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
-    clearCardSelection();
-    setMoreActionsOpen(false);
-  };
-
-  const handleConfirmDeleteAllWorkspace = () => {
-    const count = items.length;
-    if (!count) return;
-    deleteAllItems();
-    toast.success(`נמחקו ${count} פריטים מה-Workspace`);
-    clearCardSelection();
-    setMoreActionsOpen(false);
-  };
 
   const selectedMentorName = useMemo(
     () => mentors.find(m => m.id === selectedVideo?.mentorId)?.name || '',
@@ -441,47 +422,18 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               ניהול נושאים
             </button>
 
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setMoreActionsOpen(p => !p)}
-                title="פעולות נוספות"
-                className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 dark:text-zinc-600 dark:hover:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-              {moreActionsOpen && (
-                <div
-                  className="absolute left-0 top-full mt-1 w-64 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1 z-50"
-                  dir="rtl"
-                  onMouseLeave={() => setMoreActionsOpen(false)}
-                >
-                  {/* Hidden in the stocks view: StockWatchlistView owns its own archived
-                      toggle internally, so this page can't know what's actually rendered
-                      there — it already has its own correctly-scoped "מחק מסומנים" action. */}
-                  {!isStocksView && (
-                    <button
-                      type="button"
-                      disabled={deletableVisibleItems.length === 0}
-                      onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllVisible(true); }}
-                      className="w-full text-right px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      מחק הכל בתצוגה הנוכחית ({deletableVisibleItems.length})
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    disabled={items.length === 0}
-                    onClick={() => { setMoreActionsOpen(false); setConfirmDeleteAllWorkspace(true); }}
-                    className="w-full text-right px-3 py-2 text-xs text-red-700 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    מחק את כל ה-Workspace ({items.length})
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* "מחק הכל בתצוגה" is omitted in the stocks view: StockWatchlistView
+                owns its own archived toggle + correctly-scoped "מחק מסומנים"
+                action internally, so this page can't know what's actually
+                rendered there. Duplicates/archived stay workspace-wide either way. */}
+            <DangerZoneMenu
+              allItems={items}
+              visibleItems={isStocksView ? null : deletableVisibleItems}
+              deleteItems={deleteItems}
+              deleteAllItems={deleteAllItems}
+              onAfterDelete={clearCardSelection}
+              triggerClassName="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 dark:text-zinc-600 dark:hover:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            />
           </div>
         </div>
       </header>
@@ -971,27 +923,6 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         confirmLabel="מחק מסומנים"
         danger
         onConfirm={handleConfirmBulkDeleteCards}
-      />
-
-      <ConfirmDialog
-        open={confirmDeleteAllVisible}
-        onOpenChange={setConfirmDeleteAllVisible}
-        title="מחיקת כל הפריטים בתצוגה"
-        description={`אתה עומד למחוק ${deletableVisibleItems.length} פריטים שמוצגים כרגע מה-Workspace בלבד. פריטים שלא מופיעים בסינון הנוכחי לא יימחקו. להמשיך?`}
-        confirmLabel={`מחק ${deletableVisibleItems.length} פריטים`}
-        danger
-        onConfirm={handleConfirmDeleteAllVisible}
-      />
-
-      <ConfirmDialog
-        open={confirmDeleteAllWorkspace}
-        onOpenChange={setConfirmDeleteAllWorkspace}
-        title="⚠️ מחיקת כל ה-Workspace"
-        description={`פעולה זו תמחק את כל ${items.length} פריטי ה-Workspace בלבד. היא לא תמחק Brain, KnowledgeItems או סרטונים מקוריים. כדי להמשיך הקלד: מחק הכל`}
-        confirmLabel="מחק את כל ה-Workspace"
-        danger
-        requireTypedWord="מחק הכל"
-        onConfirm={handleConfirmDeleteAllWorkspace}
       />
 
       <VideoDetailPanel
