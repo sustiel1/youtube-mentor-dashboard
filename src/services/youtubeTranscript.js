@@ -66,7 +66,7 @@ function normalizeSegment(segment) {
   const startSeconds = Number(segment?.startSeconds ?? segment?.start ?? 0);
   const durationSeconds = Number(segment?.durationSeconds ?? segment?.duration ?? segment?.dur ?? 0);
   const text = String(segment?.text || '').trim();
-  if (!Number.isFinite(startSeconds) || !text) return null;
+  if (!Number.isFinite(startSeconds) || startSeconds < 0 || !text) return null;
   return {
     text,
     startSeconds,
@@ -99,6 +99,7 @@ export function parseTranscript(rawTranscript) {
     const segments = Array.isArray(rawTranscript.segments)
       ? rawTranscript.segments.map(normalizeSegment).filter(Boolean)
       : [];
+    segments.sort((a, b) => a.startSeconds - b.startSeconds);
     if (segments.length > 0) {
       return {
         lines: segments,

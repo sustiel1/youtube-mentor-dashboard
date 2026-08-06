@@ -2010,7 +2010,8 @@ export function generateChaptersFromTranscript(transcript, video) {
  * Strategy:
  *   - Divide transcript lines into N equal windows (one per chapter).
  *   - Within each window, find the line whose text best matches the chapter keywords.
- *   - If no keyword match, fall back to the first line in the window (still a real timestamp).
+ *   - Require at least two matching semantic tokens and 20% query coverage.
+ *   - Weak matches remain untimed; a real timestamp alone is not sufficient evidence.
  *   - Monotonicity is enforced: each chapter starts after the previous.
  *   - Chapters that already have a valid startSeconds are preserved unchanged.
  *
@@ -2050,25 +2051,47 @@ export function matchChaptersToTranscript(chapters, transcript) {
     const window = lines.slice(minLineIdx, windowEnd);
     if (!window.length) return chapter; // No lines left — leave unchanged
 
-    const query = kwTokens((chapter.title || '') + ' ' + (chapter.description || ''));
+    const query = [...new Set(kwTokens([
+      chapter.title,
+      chapter.summary,
+      chapter.description,
+      ...(Array.isArray(chapter.keyPoints) ? chapter.keyPoints : []),
+    ].filter(Boolean).join(' ')))];
 
     let bestScore = -1;
     let bestIdx = 0;
 
     for (let j = 0; j < window.length; j++) {
-      const lineTokens = kwTokens(window[j].text);
+      // Captions are short; score a bounded six-segment context while keeping
+      // the first segment's real absolute timestamp as the navigation target.
+      const lineTokens = kwTokens(window.slice(j, j + 6).map((line) => line.text).join(' '));
       let score = 0;
       for (const q of query) {
         if (lineTokens.some((t) => t.includes(q) || q.includes(t))) score++;
       }
       if (score > bestScore) {
         bestScore = score;
-        bestIdx = j;
+        const context = window.slice(j, j + 6);
+        let anchorOffset = 0;
+        let anchorScore = -1;
+        context.forEach((line, offset) => {
+          const tokens = kwTokens(line.text);
+          const current = query.filter((q) => tokens.some((t) => t.includes(q) || q.includes(t))).length;
+          if (current > anchorScore) {
+            anchorScore = current;
+            anchorOffset = offset;
+          }
+        });
+        bestIdx = j + anchorOffset;
       }
     }
 
-    const chosen = window[bestScore > 0 ? bestIdx : 0];
-    const startSeconds = Math.floor(chosen.start);
+    const confidence = query.length > 0 ? bestScore / query.length : 0;
+    if (bestScore < 2 || confidence < 0.2) return chapter;
+
+    const chosen = window[bestIdx];
+    const startSeconds = Number(chosen.start ?? chosen.startSeconds);
+    if (!Number.isFinite(startSeconds) || startSeconds < 0) return chapter;
     const next = lines.findIndex((l) => l.start > chosen.start);
     minLineIdx = next >= 0 ? next : lines.length;
     anyMatched = true;
@@ -2078,6 +2101,8 @@ export function matchChaptersToTranscript(chapters, transcript) {
       startSeconds,
       timestamp: formatMmSsFromSeconds(startSeconds),
       timeSource: 'transcript',
+      timestampSource: 'youtube-timedtext',
+      timestampConfidence: Number(confidence.toFixed(3)),
     };
   });
 

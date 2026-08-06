@@ -14,6 +14,9 @@ import {
   mergeItemsIntoObsidianNote,
   noteContainsItemMarker,
 } from './src/lib/obsidianNoteMerge.js'
+import marketExtractionContract from './shared/marketExtractionContract.cjs'
+
+const { MARKET_BRIEF_RESPONSE_SCHEMA, runMarketExtraction } = marketExtractionContract
 
 // ─── RSS Proxy Plugin ─────────────────────────────────────────────────────────
 // Route: GET /api/rss?channelId=UCxxxxxxxx
@@ -234,8 +237,10 @@ function makeGeminiVideoContentPlugin(env) {
   function buildTxText(transcriptText, transcriptSegments) {
     if (Array.isArray(transcriptSegments) && transcriptSegments.length > 0) {
       const seg = transcriptSegments
-        .map(s => `[${Math.floor(Number(s.start ?? s.startSeconds ?? 0))}] ${String(s.text || '').trim()}`)
-        .filter(s => s.length > 5)
+        .map(s => ({ startSeconds: Number(s.startSeconds ?? s.start), text: String(s.text || '').trim() }))
+        .filter(s => Number.isFinite(s.startSeconds) && s.startSeconds >= 0 && s.text)
+        .sort((a, b) => a.startSeconds - b.startSeconds)
+        .map(s => `[${s.startSeconds}] ${s.text}`)
         .join('\n');
       if (seg.length > 200) return seg;
     }
@@ -343,6 +348,7 @@ function makeGeminiVideoContentPlugin(env) {
         }
 
         const {
+          contentType = 'general',
           videoId,
           title = '',
           channelName = '',
@@ -364,6 +370,55 @@ function makeGeminiVideoContentPlugin(env) {
         try {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(apiKey);
+
+          if (contentType === 'market' || contentType === 'marketBrief') {
+            const marketTranscript = buildTxText(transcriptText, transcriptSegments);
+            if (!marketTranscript || marketTranscript.length < 300) {
+              res.writeHead(422, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'NO_TRANSCRIPT', message: 'אין תמלול זמין לניתוח Market Brief' }));
+              return;
+            }
+            const marketModel = genAI.getGenerativeModel({
+              model: 'gemini-2.0-flash',
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: MARKET_BRIEF_RESPONSE_SCHEMA,
+                temperature: 0.1,
+                maxOutputTokens: 8192,
+              },
+            });
+            const callMarketProvider = async (marketPrompt) => {
+              const result = await marketModel.generateContent(marketPrompt);
+              return result.response.text();
+            };
+            const repairMarketProvider = async (invalidJson) => callMarketProvider([
+              'Repair syntax only. Preserve every supported fact and field.',
+              'Do not summarize, translate, add facts, change numbers, change timestamps, or resolve contradictions.',
+              'Return one valid JSON object only, without Markdown or explanations.',
+              invalidJson,
+            ].join('\n'));
+            const extracted = await runMarketExtraction({
+              title,
+              transcript: marketTranscript,
+              transcriptSegments,
+              callProvider: callMarketProvider,
+              repairProvider: repairMarketProvider,
+            });
+            if (extracted.marketBriefData?.extractionMeta?.partial) {
+              const partialError = new Error('Gemini Market Brief output was partial; previous valid data must be preserved');
+              partialError.code = 'PARTIAL_MARKET_OUTPUT';
+              throw partialError;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              ...extracted.marketBriefData,
+              marketBriefData: extracted.marketBriefData,
+              marketExtractionQuality: extracted.quality,
+              analysisSource: 'transcript',
+              analysisMode: 'structured-market',
+            }));
+            return;
+          }
           const prompt = buildGeminiAnalysisPrompt({ title, channelName, mentor, category, chaptersTarget, durationSeconds, userNotes, attachedDocumentsMetadata });
 
           let urlAnalysisResult = null;
@@ -439,7 +494,7 @@ function makeGeminiVideoContentPlugin(env) {
         } catch (err) {
           const status = err?.status ?? err?.statusCode ?? 500;
           const isQuotaZero = status === 429 && String(err?.message || '').includes('limit: 0');
-          const code = isQuotaZero ? 'QUOTA_ZERO' : status === 429 ? 'RATE_LIMIT' : status === 401 ? 'INVALID_KEY' : 'GEMINI_ERROR';
+          const code = err?.code || (isQuotaZero ? 'QUOTA_ZERO' : status === 429 ? 'RATE_LIMIT' : status === 401 ? 'INVALID_KEY' : 'GEMINI_ERROR');
           res.writeHead(status, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: code, message: err?.message }));
         }
@@ -631,7 +686,26 @@ Rules:
 
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+          const model = genAI.getGenerativeModel({
+            model: 'gemini-2.0-flash-lite',
+            generationConfig: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: 'OBJECT',
+                properties: {
+                  repairedJson: { type: 'STRING' },
+                  changes: { type: 'ARRAY', items: { type: 'STRING' } },
+                  why: { type: 'STRING' },
+                  prevention: { type: 'ARRAY', items: { type: 'STRING' } },
+                  promptCorrection: { type: 'STRING' },
+                  report: { type: 'STRING' },
+                },
+                required: ['repairedJson'],
+              },
+              temperature: 0,
+              maxOutputTokens: 8192,
+            },
+          });
           const result = await model.generateContent(prompt);
           const rawText = result.response.text().trim();
           const cleaned = rawText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
@@ -1729,6 +1803,102 @@ ${reportStr}`;
   };
 }
 
+function makeClaudeMarketExtractionPlugin(env) {
+  const apiKey = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
+  const model = env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+  async function callClaude(prompt) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 3000,
+        temperature: 0.1,
+        system: 'Return ONLY one valid JSON object. Do not use Markdown.',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(data?.error?.message || 'Claude request failed');
+      error.code = 'CLAUDE_ERROR';
+      error.status = response.status;
+      throw error;
+    }
+    return Array.isArray(data?.content)
+      ? data.content.filter((item) => item?.type === 'text').map((item) => item.text || '').join('\n')
+      : '';
+  }
+
+  return {
+    name: 'claude-market-extraction',
+    configureServer(server) {
+      server.middlewares.use('/api/claude-video-analyze/status', (req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ configured: Boolean(apiKey), model }));
+      });
+      server.middlewares.use('/api/claude-video-analyze', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+        if (!apiKey) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'CLAUDE_API_KEY_MISSING', message: 'Missing ANTHROPIC_API_KEY' }));
+          return;
+        }
+        try {
+          const body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', (chunk) => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data)); } catch (error) { reject(error); } });
+            req.on('error', reject);
+          });
+          if (body.analysisRoute !== 'market') {
+            res.writeHead(422, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              error: 'GENERAL_ANALYSIS_NOT_SUPPORTED_LOCALLY',
+              message: 'The local market extraction adapter only accepts an explicit market route',
+            }));
+            return;
+          }
+          const result = await runMarketExtraction({
+            title: body.title || '',
+            transcript: body.transcript || '',
+            callProvider: callClaude,
+            repairProvider: (invalidJson) => callClaude([
+              'Repair the JSON below without adding facts.',
+              'Return one valid JSON object only.',
+              invalidJson,
+            ].join('\n')),
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ...result.marketBriefData,
+            marketBriefData: result.marketBriefData,
+            marketExtractionQuality: result.quality,
+            provider: 'claude',
+            model,
+          }));
+        } catch (error) {
+          res.writeHead(error?.status || 502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: error?.code || 'CLAUDE_ERROR',
+            message: error?.message || 'Claude analysis failed',
+            failedChunks: error?.failedChunks || [],
+          }));
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix loads ALL vars from .env (not just VITE_ ones)
   const env = loadEnv(mode, process.cwd(), '');
@@ -1765,6 +1935,7 @@ export default defineConfig(({ mode }) => {
       makeVaultListPlugin(env),
       makeHebrewChapterTitlesPlugin(env),
       makeAiMappingDiagnosisPlugin(env),
+      makeClaudeMarketExtractionPlugin(env),
       base44({
         legacySDKImports: false,
         hmrNotifier: true,

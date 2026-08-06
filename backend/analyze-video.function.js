@@ -8,6 +8,13 @@
 
 const TRANSCRIPT_CHAR_LIMIT = 8_000;
 const CLAUDE_MAX_TOKENS = 3_000;
+const {
+  runMarketExtraction,
+} = require('../shared/marketExtractionContract.cjs');
+
+function isMarketVideo({ title = '', category = '' }) {
+  return /market|stock|trading|nasdaq|s&p|מבזק|שוק|מניות|מסחר|בורסה/i.test(`${title} ${category}`);
+}
 
 function buildPrompt({ title, transcript, durationSeconds, mentor, category, chaptersTarget }) {
   return [
@@ -138,7 +145,8 @@ async function handler(
   const video = videos[0];
   if (!video) throw new Error(`Video not found: ${videoId}`);
 
-  const transcriptText = String(transcript || video.transcript || '').trim().slice(0, TRANSCRIPT_CHAR_LIMIT);
+  const fullTranscriptText = String(transcript || video.transcript || '').trim();
+  const transcriptText = fullTranscriptText.slice(0, TRANSCRIPT_CHAR_LIMIT);
   if (!transcriptText) {
     console.error('[Claude] transcript missing', {
       videoId,
@@ -152,6 +160,50 @@ async function handler(
     throw error;
   }
 
+  const selectedModel = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+  if (isMarketVideo({ title: title || video.title || '', category })) {
+    const callProvider = async (marketPrompt) => {
+      const result = await callClaude({
+        model: selectedModel,
+        max_tokens: CLAUDE_MAX_TOKENS,
+        temperature: 0.1,
+        system: 'Return ONLY one valid JSON object. Do not use Markdown.',
+        messages: [{ role: 'user', content: marketPrompt }],
+      });
+      return Array.isArray(result?.content)
+        ? result.content.filter((item) => item?.type === 'text').map((item) => item.text || '').join('\n')
+        : '';
+    };
+    const repairProvider = async (invalidJson) => callProvider([
+      'Repair the JSON below without adding facts.',
+      'Return one valid JSON object only.',
+      invalidJson,
+    ].join('\n'));
+    const extracted = await runMarketExtraction({
+      title: title || video.title || '',
+      transcript: fullTranscriptText,
+      callProvider,
+      repairProvider,
+    });
+    const marketBriefData = extracted.marketBriefData;
+    await entities.Video.update(videoId, {
+      shortSummary: marketBriefData.shortSummary || null,
+      fullSummary: marketBriefData.fullSummary || null,
+      tags: Array.isArray(marketBriefData.tags) ? marketBriefData.tags : [],
+      marketBriefData,
+      status: 'done',
+    });
+    return {
+      ...marketBriefData,
+      marketBriefData,
+      marketExtractionQuality: extracted.quality,
+      provider: 'claude',
+      model: selectedModel,
+      isFallback: false,
+    };
+  }
+
   const prompt = buildPrompt({
     title: title || video.title || '',
     transcript: transcriptText,
@@ -161,7 +213,6 @@ async function handler(
     chaptersTarget: durationSeconds > 0 ? (durationSeconds <= 14 * 60 ? 5 : durationSeconds <= 22 * 60 ? 7 : 8) : 6,
   });
 
-  const selectedModel = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
   console.log('[Claude] request started', {
     videoId,
     model: selectedModel,
