@@ -118,3 +118,26 @@ export function translateSentimentLabel(label) {
 
   return raw;
 }
+
+const MARKET_ENUM_TRANSLATIONS = {
+  sentiment: {
+    mixed: 'מעורב', bullish: 'חיובי', bearish: 'שלילי', neutral: 'ניטרלי',
+    positive: 'חיובי', negative: 'שלילי',
+  },
+  direction: { into: 'כניסת כספים', out: 'יציאת כספים', up: 'עולה', down: 'יורד', flat: 'ללא שינוי' },
+  importance: { high: 'גבוהה', medium: 'בינונית', low: 'נמוכה' },
+  action: { watch: 'מעקב', buy: 'קנייה', avoid: 'הימנעות' },
+  timeframe: { swing: 'טווח בינוני', intraday: 'תוך־יומי', longterm: 'ארוך טווח' },
+  category: { technical: 'טכני', fundamental: 'פונדמנטלי', macro: 'מאקרו', sector: 'סקטור' },
+};
+
+/** Context-aware presentation translation. Unknown English enums are omitted, never guessed. */
+export function translateMarketEnum(value, context = 'sentiment') {
+  if (value === 0 || value === false) return String(value);
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  if (/[\u0590-\u05FF]/.test(raw)) return raw;
+  const key = raw.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+  const map = MARKET_ENUM_TRANSLATIONS[context] || {};
+  return map[key] || '';
+}
