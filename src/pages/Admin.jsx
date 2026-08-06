@@ -38,6 +38,8 @@ import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { buildBrainStructureZip, countBrainStructure } from "@/lib/buildBrainStructureZip";
 import { getFrozenMentorIds, toggleMentorFreeze } from "@/services/mentorScanStorage";
 import StorageManager from "@/components/admin/StorageManager";
+import MentorChannelResourcesEditor, { editableResources } from "@/components/admin/MentorChannelResourcesEditor";
+import { validateMentorChannelResources } from "@/lib/mentorChannelResources";
 import { getMentorTopicOverride } from "@/lib/mentorTopicOverrides";
 import { updateChannelCollectionByChannelId, updateChannelCollectionByChannelName } from "@/lib/localChannelCollectionsStore";
 import { GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
@@ -159,13 +161,16 @@ function EditMentorDialog({ mentor, topics, onClose }) {
     category: mentor.category || "",
     defaultSubTopic: mentor.defaultSubTopic || mentor.subTopic || "",
     defaultGem: mentor.defaultGem || "",
+    channelResources: editableResources(mentor),
   });
   const updateMentor = useUpdateMentor();
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleTopic = (id) => set("topicIds", form.topicIds.includes(id) ? form.topicIds.filter((t) => t !== id) : [...form.topicIds, id]);
 
   const handleSave = async () => {
-    await updateMentor.mutateAsync({
+    const validation = validateMentorChannelResources(form.channelResources);
+    if (!validation.valid) { toast.error(validation.error); return; }
+    try { await updateMentor.mutateAsync({
       id: mentor.id,
       name: form.name,
       active: form.active,
@@ -175,15 +180,17 @@ function EditMentorDialog({ mentor, topics, onClose }) {
       subTopic: form.defaultSubTopic || undefined,
       defaultSubTopic: form.defaultSubTopic || undefined,
       defaultGem: form.defaultGem || undefined,
+      channelResources: validation.resources,
     });
-    onClose();
+    toast.success("קישורי הערוץ נשמרו");
+    onClose(); } catch (error) { toast.error(error?.message || "שמירת המנטור נכשלה"); }
   };
 
   const isMarket = form.category === "Markets";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-96 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-[min(92vw,64rem)] space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} dir="rtl">
         <h3 className="text-base font-semibold text-gray-900">עריכת מנטור</h3>
 
         <div className="space-y-1.5">
@@ -246,6 +253,7 @@ function EditMentorDialog({ mentor, topics, onClose }) {
             </div>
           </div>
         )}
+        <MentorChannelResourcesEditor mentor={mentor} value={form.channelResources} onChange={(resources) => set("channelResources", resources)} />
         <div className="flex gap-2 pt-1">
           <button onClick={handleSave} disabled={updateMentor.isPending}
             className="flex-1 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">

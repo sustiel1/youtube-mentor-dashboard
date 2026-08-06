@@ -14,6 +14,7 @@ import { loadTopics } from '@/services/topicStorage';
 import { getMainTopicForTopic } from '@/lib/topicFilters';
 import { appendChannelCollection } from '@/lib/localChannelCollectionsStore';
 import { applyTopicOverridesToMentors, setMentorTopicOverride } from '@/lib/mentorTopicOverrides';
+import { applyMentorChannelResourceOverrides, setMentorChannelResourceOverride } from '@/lib/mentorChannelResourceOverrides';
 import {
   hideMentor,
   restoreMentor,
@@ -22,7 +23,7 @@ import {
 } from '@/services/mentorStorage';
 
 function mergeAllMentors() {
-  return applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]);
+  return applyMentorChannelResourceOverrides(applyTopicOverridesToMentors([...MENTORS, ...getLocalCustomMentors()]));
 }
 
 function normalizeChannelId(value) {
@@ -245,6 +246,7 @@ export function useUpdateMentor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }) => {
+      if (data.channelResources !== undefined) setMentorChannelResourceOverride(id, data.channelResources);
       // Always persist topic-related fields to the override store (works for mock + custom mentors).
       const topicFields = {};
       if (data.topicIds !== undefined) topicFields.topicIds = data.topicIds;
