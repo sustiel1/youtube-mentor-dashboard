@@ -15,6 +15,13 @@ import {
   noteContainsItemMarker,
 } from './src/lib/obsidianNoteMerge.js'
 import marketExtractionContract from './shared/marketExtractionContract.cjs'
+import {
+  createOAuthState,
+  consumeOAuthState,
+  buildAuthUrl,
+  exchangeCodeForTokens,
+  getValidAccessToken,
+} from './src/lib/gdriveOAuthServer.js'
 
 const { MARKET_BRIEF_RESPONSE_SCHEMA, runMarketExtraction } = marketExtractionContract
 
@@ -1782,6 +1789,102 @@ ${reportStr}`;
   };
 }
 
+// ─── Google Drive OAuth — Stage 1 (connection only, no upload/delete yet) ─────
+// Routes: GET /api/gdrive/status, GET /api/gdrive/auth-url, GET /api/gdrive/callback
+// Token exchange/refresh/encrypted storage lives in src/lib/gdriveOAuthServer.js
+// (server-only — never imported from client code).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeGdriveStatusPlugin(env) {
+  return {
+    name: 'gdrive-status',
+    configureServer(server) {
+      server.middlewares.use('/api/gdrive/status', async (req, res) => {
+        if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ connected: false, email: null }));
+          return;
+        }
+        try {
+          const accessToken = await getValidAccessToken(env);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ connected: !!accessToken, email: null }));
+        } catch (err) {
+          console.error('[gdrive-status] error:', err.message);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ connected: false, email: null }));
+        }
+      });
+    },
+  };
+}
+
+function makeGdriveAuthUrlPlugin(env) {
+  return {
+    name: 'gdrive-auth-url',
+    configureServer(server) {
+      server.middlewares.use('/api/gdrive/auth-url', async (req, res) => {
+        if (!env.GOOGLE_CLIENT_ID) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'NOT_CONFIGURED', message: 'GOOGLE_CLIENT_ID חסר ב-.env.local' }));
+          return;
+        }
+        const host = req.headers.host || 'localhost:5184';
+        const redirectUri = `http://${host}/api/gdrive/callback`;
+        const state = createOAuthState();
+        const url = buildAuthUrl(env, redirectUri, state);
+        console.log('[gdrive-auth-url] issuing auth URL, redirect_uri =', redirectUri);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ url }));
+      });
+    },
+  };
+}
+
+function makeGdriveCallbackPlugin(env) {
+  return {
+    name: 'gdrive-callback',
+    configureServer(server) {
+      server.middlewares.use('/api/gdrive/callback', async (req, res) => {
+        const urlObj = new URL(req.url, 'http://localhost');
+        const code = urlObj.searchParams.get('code');
+        const state = urlObj.searchParams.get('state');
+        const oauthError = urlObj.searchParams.get('error');
+        const host = req.headers.host || 'localhost:5184';
+
+        const backToApp = (status) => {
+          res.writeHead(302, { Location: `http://${host}/?gdrive=${status}` });
+          res.end();
+        };
+
+        if (oauthError) {
+          console.warn('[gdrive-callback] Google returned an error:', oauthError);
+          backToApp('error');
+          return;
+        }
+        if (!code || !consumeOAuthState(state)) {
+          console.warn('[gdrive-callback] missing code or invalid/expired state');
+          backToApp('error');
+          return;
+        }
+
+        try {
+          const redirectUri = `http://${host}/api/gdrive/callback`;
+          const tokens = await exchangeCodeForTokens(env, code, redirectUri);
+          if (!tokens.refreshToken) {
+            console.warn('[gdrive-callback] connected, but Google did not return a refresh_token');
+          }
+          console.log('[gdrive-callback] connected successfully');
+          backToApp('connected');
+        } catch (err) {
+          console.error('[gdrive-callback] token exchange failed:', err.message);
+          backToApp('error');
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix loads ALL vars from .env (not just VITE_ ones)
   const env = loadEnv(mode, process.cwd(), '');
@@ -1818,6 +1921,9 @@ export default defineConfig(({ mode }) => {
       makeVaultListPlugin(env),
       makeHebrewChapterTitlesPlugin(env),
       makeAiMappingDiagnosisPlugin(env),
+      makeGdriveStatusPlugin(env),
+      makeGdriveAuthUrlPlugin(env),
+      makeGdriveCallbackPlugin(env),
       base44({
         legacySDKImports: false,
         hmrNotifier: true,
