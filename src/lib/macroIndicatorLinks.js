@@ -1,9 +1,8 @@
 /**
  * Macro indicator link resolver — il.investing.com primary.
  *
- * Priority chain:
- *   1. INVESTING_IL_MAP  — specific il.investing.com pages for market instruments
- *   2. buildInvestingSearchUrl — search fallback (always returns something)
+ * Approved destinations come from INVESTING_IL_MAP or the structured
+ * rate-concept resolver. Unknown concepts remain unlinked.
  *
  * Legacy FRED/MACRO_INDICATOR_LINKS retained below for reference only.
  */
@@ -36,6 +35,9 @@ function _stripParens(norm) {
 // ── il.investing.com URL map ─────────────────────────────────────────────────
 
 const IL = 'https://il.investing.com';
+const FED_RATE_MONITOR_URL = `${IL}/central-banks/fed-rate-monitor`;
+const US_RATE_DECISION_URL = `${IL}/economic-calendar/interest-rate-decision-168`;
+const US_10Y_YIELD_URL = `${IL}/rates-bonds/u.s.-10-year-bond-yield`;
 
 const INVESTING_IL_MAP = [
   // ── Volatility / Fear ──────────────────────────────────────────────────
@@ -151,9 +153,9 @@ const INVESTING_IL_MAP = [
   },
   // ── Bonds / Yields ─────────────────────────────────────────────────────
   {
-    url: `${IL}/rates-bonds/u.s.-10-year-bond-yield`,
+    url: US_10Y_YIELD_URL,
     aliases: [
-      'us yields', 'us10y', '10y', '10 year yield', '10yr yield',
+      'bonds10y', 'tnx', 'us yields', 'us10y', '10y', '10 year yield', '10yr yield',
       '10yr', 'ten year yield', 'us 10 year', '10 year treasury',
       'treasury yield', 'treasury yields', 'yields', 'bond yields',
       'bonds yield', 'us treasury', 'us treasury yields', 'tlt',
@@ -246,7 +248,9 @@ function _resolveKnown(input) {
     for (const alias of entry._aliases) {
       for (const candidate of candidates) {
         if (candidate === alias) return entry.url;
-        if (candidate.includes(alias) || alias.includes(candidate)) return entry.url;
+        // Short exchange aliases such as "ES" must never fuzzy-match ordinary
+        // words (for example, "interest rates").
+        if (alias.length >= 3 && candidate.includes(alias)) return entry.url;
       }
     }
   }
@@ -254,23 +258,132 @@ function _resolveKnown(input) {
 }
 
 /**
- * Resolves an indicator name to an il.investing.com URL.
- * Returns a specific page URL if known, otherwise an il.investing.com search URL.
- * Never returns null — every indicator becomes a link.
+ * Resolves an indicator name only when it has a known Investing Israel page.
+ * Unknown indicators return null.
  */
 export function resolveMacroIndicatorInvestingUrl(input) {
-  const known = _resolveKnown(input);
-  if (known) return known;
-  return buildInvestingSearchUrl(input);
+  return _resolveKnown(input);
 }
 
+function _resolveKnownExact(input) {
+  if (!input) return null;
+  const raw = _norm(input);
+  if (!raw) return null;
+  const candidates = [raw, _stripParens(raw), _parenContent(raw)].filter(Boolean);
+  for (const entry of _IL_NORMALIZED) {
+    if (entry._aliases.some((alias) => candidates.includes(alias))) return entry.url;
+  }
+  return null;
+}
+
+import { resolveCanonicalMacroIndicator } from '@/lib/macroIndicatorRegistry';
+
 /**
- * Primary entry point used by MacroSection rendering.
- * Always returns a URL (specific page or search fallback).
+ * Deterministic destination resolver for structured macro rows.
+ * Unsupported or ambiguous concepts intentionally return null.
  */
-export function getMacroIndicatorUrl(indicator) {
+export function getMacroIndicatorDestination(input) {
+  const row = input && typeof input === 'object' ? input : { indicator: input };
+  const canonicalDestination = resolveCanonicalMacroIndicator(row);
+  if (canonicalDestination) return canonicalDestination;
+  const indicator = _norm(row.indicator);
   if (!indicator) return null;
-  return resolveMacroIndicatorInvestingUrl(indicator);
+  const context = _norm([
+    row.value,
+    row.change,
+    row.frequency,
+    row.description,
+    row.impact,
+    row.sourceContext,
+  ].filter(Boolean).join(' '));
+
+  const isRateDecision = [
+    'interest rate decision',
+    'fed decision',
+    'fomc decision',
+    'החלטת הריבית',
+    'החלטת הפד',
+    'החלטת הריבית של הפד',
+  ].some((phrase) => indicator.includes(phrase));
+  if (isRateDecision) {
+    return {
+      url: US_RATE_DECISION_URL,
+      provider: 'investing-israel',
+      destinationType: 'investing-economic-event',
+      labelHe: 'החלטת הריבית בארצות הברית',
+      tooltipHe: 'פתח את אירוע החלטת הריבית בארצות הברית ב־Investing ישראל',
+    };
+  }
+
+  const isTenYearYield = [
+    'bonds10y',
+    'us10y',
+    'tnx',
+    '10-year treasury yield',
+    '10 year treasury yield',
+    'תשואת אג"ח ל-10 שנים',
+    'תשואת אג״ח ל־10 שנים',
+  ].some((phrase) => indicator.includes(phrase));
+  if (isTenYearYield) {
+    return {
+      url: US_10Y_YIELD_URL,
+      provider: 'investing-israel',
+      destinationType: 'investing-yield',
+      labelHe: 'תשואת אג״ח ארצות הברית ל־10 שנים',
+      tooltipHe: 'פתח את תשואת אג״ח ארצות הברית ל־10 שנים ב־Investing ישראל',
+    };
+  }
+
+  const explicitFedRate = [
+    'fed rate',
+    'federal funds rate',
+    'interest-rate expectations',
+    'ציפיות ריבית',
+    'ריבית הפד',
+    'ריבית בארה"ב',
+    'ריבית בארה״ב',
+  ].some((phrase) => indicator.includes(phrase));
+  const generalInterestRates = indicator === 'interest rates'
+    || indicator === 'ריבית (interest rates)';
+  const confirmsUsFedContext = [
+    'fed',
+    'fomc',
+    'federal reserve',
+    'united states',
+    'u.s.',
+    'us monetary',
+    'הפד',
+    'ארה"ב',
+    'ארה״ב',
+  ].some((phrase) => context.includes(phrase));
+  if (explicitFedRate || (generalInterestRates && confirmsUsFedContext)) {
+    return {
+      url: FED_RATE_MONITOR_URL,
+      provider: 'investing-israel',
+      destinationType: 'macro-monitor',
+      canonicalKey: 'FED_RATE_MONITOR',
+      labelHe: 'כלי ניטור ריבית הפד',
+      tooltipHe: 'פתח את כלי ניטור ריבית הפד ב־Investing ישראל',
+      ariaLabelHe: 'פתח מידע וניתוח על ציפיות ריבית הפד באתר Investing ישראל',
+    };
+  }
+
+  if (generalInterestRates || indicator === 'rates' || indicator === 'interest' || indicator === 'ריבית') {
+    return null;
+  }
+
+  const knownUrl = _resolveKnownExact(row.indicator);
+  return knownUrl ? {
+    url: knownUrl,
+    provider: 'investing-israel',
+    destinationType: 'investing-market-page',
+    labelHe: 'מקור נתוני מאקרו',
+    tooltipHe: 'פתח מקור נתוני מאקרו ב־Investing ישראל',
+  } : null;
+}
+
+export function getMacroIndicatorUrl(input) {
+  return getMacroIndicatorDestination(input)?.url || null;
 }
 
 // ── Legacy FRED reference map (not used for links, kept for documentation) ───

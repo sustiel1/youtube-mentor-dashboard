@@ -8,6 +8,34 @@ import {
   parseNumericChangeDisplay,
 } from '@/lib/morningBriefVisuals';
 
+export const AMBIGUOUS_UNLABELLED_PERCENTAGE_REASON = 'ambiguous-unlabelled-percentage';
+
+const RAW_LEVEL_ENUMS = new Set(['critical', 'high', 'medium', 'low']);
+
+/**
+ * A bare number in a descriptive field has no percentage contract.  Keep it in
+ * the source payload, but never let the generic market formatter invent "%".
+ */
+export function isAmbiguousUnlabelledMacroPercentage(value) {
+  return /^[+-]?\d+(?:\.\d+)?$/.test(String(value ?? '').trim());
+}
+
+/** Raw severity/importance enums must not leak into a prose column. */
+export function isRawMacroLevelEnum(value) {
+  return RAW_LEVEL_ENUMS.has(String(value ?? '').trim().toLowerCase());
+}
+
+export function getMacroImportanceDisplay(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  const labels = {
+    critical: 'קריטית',
+    high: 'גבוהה',
+    medium: 'בינונית',
+    low: 'נמוכה',
+  };
+  return labels[normalized] ? `חשיבות: ${labels[normalized]}` : '';
+}
+
 /** Canonical entity keys for index ↔ ETF deduplication. */
 const ETF_TO_ENTITY = {
   spy: 'sp500',
@@ -102,7 +130,15 @@ export function sanitizeMacroDisplayRow(row) {
   if (!row) return row;
   const change = sanitizeMacroChangeValue(row.change);
   const impact = sanitizeMacroImpact(row.impact, row.change, row);
-  return { ...row, change, impact };
+  const description = isAmbiguousUnlabelledMacroPercentage(row.description)
+    || isRawMacroLevelEnum(row.description)
+    ? ''
+    : row.description;
+  const safeImpact = isAmbiguousUnlabelledMacroPercentage(impact)
+    || isRawMacroLevelEnum(impact)
+    ? ''
+    : impact;
+  return { ...row, change, description, impact: safeImpact };
 }
 
 function rowDisplayScore(row, nameKey = 'indicator') {
