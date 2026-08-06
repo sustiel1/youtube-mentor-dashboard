@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, Copy, FileDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
 import { DangerZoneMenu } from "@/components/workspace/DangerZoneMenu";
+import { WorkspaceBackupControls } from "@/components/workspace/WorkspaceBackupControls";
 import { VIRTUAL_TAXONOMY } from "@/utils/workspaceVirtualTaxonomy";
 import {
   getWorkspaceTabPreferences,
@@ -56,7 +57,7 @@ const MARKET_STATUS_COLORS = {
 
 export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const { items, reload: reloadItems, deleteItem, updateItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems } = useWorkspaceItems();
-  const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
+  const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic, reload: reloadTopics } = useWorkspaceTopics();
   const { data: videos = [] } = useVideos();
   const { data: mentors = [] } = useMentors();
   const { data: systemTopics = [] } = useTopics();
@@ -118,6 +119,12 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     const def = { hiddenTabIds: [], labelOverrides: {}, customMainTabs: [] };
     setTabPrefs(def);
     resetWorkspaceTabPreferences();
+  }
+
+  function handleBackupImported() {
+    reloadItems();
+    reloadTopics();
+    setTabPrefs(getWorkspaceTabPreferences());
   }
 
   function handleAddCustomTab(name, emoji) {
@@ -434,6 +441,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               onAfterDelete={clearCardSelection}
               triggerClassName="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 dark:text-zinc-600 dark:hover:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
             />
+
+            <WorkspaceBackupControls items={items} onImported={handleBackupImported} />
           </div>
         </div>
       </header>

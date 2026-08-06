@@ -169,6 +169,12 @@ export function deleteAllWorkspaceItems() {
   _saveItems([]);
 }
 
+/** Full overwrite — replaces every item wholesale (used by backup restore). */
+export function replaceAllWorkspaceItems(items) {
+  if (!Array.isArray(items)) return;
+  _saveItems(items);
+}
+
 /** Bulk field update — applies the same `updates` to every item in `ids`. */
 export function updateWorkspaceItemsBulk(ids = [], updates = {}) {
   const idSet = new Set(ids);
