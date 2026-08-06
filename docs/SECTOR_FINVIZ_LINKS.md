@@ -12,6 +12,17 @@ Main use cases:
 - Specialized tab sector rows
 - Any card or row that shows sector / industry status
 
+### External sector research shortcuts
+
+The Specialized Sectors header uses the canonical registry in `src/lib/specializedSectionResources.js`. These links open public Finviz Group Screener research views and do not scrape, import, or change application values:
+
+- Overview: `groups?g=sector&v=140&o=-change` — Performance table ordered by daily change.
+- Daily: `groups?g=sector&v=152&o=-change` — Custom sector view ordered by daily change.
+- Weekly: `groups?g=sector&v=152&o=-perf1w` — ordered by one-week performance.
+- Monthly: `groups?g=sector&v=152&o=-perf4w` — ordered by four-week performance.
+
+`v=210` is a Performance Chart, not a stable sector heatmap, and therefore is not used as the overview. Future URL parameters must be verified against the public Finviz page before changing the registry.
+
 ## 2. Product Rule
 
 - Only the sector title is clickable (not the entire row).

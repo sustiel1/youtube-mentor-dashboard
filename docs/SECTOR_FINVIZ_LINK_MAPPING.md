@@ -1,5 +1,29 @@
 # Sector / Theme → Finviz Link Mapping
 
+## Canonical sector technicals
+
+The Specialized Content sector table uses a narrow canonical registry for external RSI and technical-analysis research. It does not infer an ETF from arbitrary industry or theme text.
+
+| Canonical sector | Representative ETF |
+|---|---|
+| Technology | XLK |
+| Communication Services | XLC |
+| Consumer Discretionary / Cyclical | XLY |
+| Consumer Staples / Defensive | XLP |
+| Energy | XLE |
+| Financials | XLF |
+| Health Care | XLV |
+| Industrials | XLI |
+| Materials / Basic Materials | XLB |
+| Real Estate | XLRE |
+| Utilities | XLU |
+
+English and approved Hebrew aliases resolve to the same canonical identity. Industries and themes such as semiconductors do not inherit a sector ETF automatically. A thematic row receives a technicals link only when its payload contains an explicit ETF that is already verified by the canonical TradingView destination registry.
+
+The row action opens the public TradingView Technicals page for research (for example, `AMEX-XLK/technicals/`). No RSI, price, signal, or other external value is fetched, persisted, or presented as application data.
+
+The permanent header resources are the Finviz sector map and groups table, TradingView stock heatmap, State Street sector ETF tracker, and Finviz daily/weekly/four-week performance views. The “ניתוח טכני” control is an internal explanation, not a link to an arbitrary sector.
+
 **Source of truth:** `src/utils/finvizLinks.js` — `_SECTOR_ENTRIES` array.
 
 ## כלל קבוע

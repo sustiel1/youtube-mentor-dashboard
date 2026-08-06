@@ -26,6 +26,18 @@ Empty placeholders must:
 - look intentionally empty
 - not appear as broken UI
 - not be white
+- show an explicit quiet label
+- remain non-selectable and excluded from counts and exports
+
+## Evidence and ordering rule
+
+- Opportunities always appear above risks.
+- Each group reserves exactly three visible slots.
+- Show at most the top three evidence-based items; never fabricate missing content.
+- Rank opportunities by priority, confidence, setup completeness, then source order.
+- Rank risks by severity, priority, affected-asset count, then source order.
+- Preserve every meaningful real item in bulk/export even when only three are visible.
+- Extraction requests up to three distinct evidence-based opportunities and risks when supported by the transcript; it never requires the provider to invent three.
 
 ## UX Reason
 - Stable review and QA

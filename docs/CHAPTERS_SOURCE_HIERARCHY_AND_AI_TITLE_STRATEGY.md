@@ -207,12 +207,38 @@ Regex must handle all variants above. A timestamp-only row without a title (e.g.
 ### Button: `בדוק פרקים אוטומטית`
 
 - **Action:** Check all reliable non-AI sources in priority order.
+- **Persistence contract:** The check is strictly additive. The currently displayed
+  chapters are authoritative and are merged with detected candidates before any write.
+- **No-write outcomes:** A failed scan, an empty result, an invalid candidate set, or a
+  failed invariant leaves every chapter store unchanged.
+- **Duplicate identity:** stable ID; verified official source identity; equivalent
+  normalized title with the same verified time boundary; or an exact normalized title
+  when both candidates are untimed. Ambiguous matches require verification and are not
+  written automatically.
+- **Existing ownership:** Existing objects, manual fields, unknown legacy fields,
+  provenance, relative order, and verified timestamps remain unchanged. Automatic data
+  may append unique objects only; it never enriches or replaces an existing object.
+- **Timestamp safety:** Numeric `0` and decimal timestamps are preserved. Negative or
+  invalid ranges abort the merge, and missing timing is never fabricated.
+- **Atomic boundary:** The complete merge is validated before the canonical video patch
+  is written. Concurrent or stale scan results are rejected.
 - **Rules:**
   - Must check YouTube description timestamps **first** (priority 1).
   - Must **not** prefer GEM over creator-provided timestamps.
   - If YouTube description chapters exist and are valid → use them and stop.
   - Otherwise cascade through the decision tree above.
 - **Badge:** Reflects the winning source.
+
+### Normal Chapters view
+
+- Every source uses the same compact `ChapterItem` row contract.
+- The visible row contains only the selection checkbox, chapter title, and a verified
+  timestamp or `אין זמן זמין`.
+- Descriptions, transcript excerpts, key points, provenance, and confidence remain in
+  the chapter object for diagnostics and detailed views, but are not rendered in the
+  normal Chapters list.
+- A verified timestamp is the only state that enables seek navigation; an untimed row
+  remains non-interactive apart from its independent selection checkbox.
 
 ### Button: `צור כותרות דרך AI`
 

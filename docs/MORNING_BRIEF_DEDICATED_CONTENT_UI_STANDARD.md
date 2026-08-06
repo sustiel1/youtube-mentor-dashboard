@@ -193,6 +193,10 @@ The `impact` column contains free-form qualitative text (e.g. "Rate-sensitive se
 
 The left (RTL: right) border of each news card always matches sentiment:
 
+News sentiment uses the canonical enum `positive | negative | neutral | mixed | unknown`. English and Hebrew aliases are normalized centrally; `importance` and `category` are never treated as sentiment. Legacy items without a compatible structured sentiment/direction remain `unknown` and are not silently converted to neutral.
+
+The full card surface is semantic: positive uses pale green, negative pale red, neutral light gray, mixed pale amber, and unknown very-light slate with a dashed border. The Hebrew label remains visible so color is never the only signal; selection uses a ring without replacing the semantic fill.
+
 ```
 positive → border-r-emerald-500
 neutral  → border-r-amber-500
@@ -304,11 +308,13 @@ Reorder rule (IIFE in JSX):
 | State | Display order |
 |---|---|
 | Both have content | Opportunities first (top), Risks second |
-| Only risks have content | **Risks first (top)**, empty opportunities below |
-| Only opportunities have content | Opportunities first (top), empty risks below |
-| Both empty | Single empty state |
+| Only risks have content | Three opportunity placeholders first, risks second |
+| Only opportunities have content | Opportunities first, three risk placeholders second |
+| Both empty | Three opportunity placeholders, then three risk placeholders |
 
-The group with real content **always** appears first visually, so the user sees meaningful data immediately.
+The order is fixed: Opportunities are always above Risks. Each group reserves three
+visible slots. Placeholders are presentation-only, non-selectable, and excluded from
+section totals, coverage, bulk selection, and export.
 
 ---
 
