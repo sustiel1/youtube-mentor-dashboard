@@ -39,8 +39,8 @@ export function WorkspaceTabRow({
     teal:   'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-400 dark:bg-teal-400 dark:text-zinc-900',
   }[accentColor] ?? 'border-indigo-600 bg-indigo-600 text-white shadow-sm';
 
-  const inactiveClass = 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800';
-  const emptyClass    = 'border-slate-100 text-slate-400 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-900';
+  const inactiveClass = 'border-slate-200 text-slate-900 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800';
+  const emptyClass    = 'border-slate-100 text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900';
 
   // The "+" trigger button should match the surrounding tab size — otherwise
   // it looks clipped/undersized next to lg tabs (e.g. the main topic row).

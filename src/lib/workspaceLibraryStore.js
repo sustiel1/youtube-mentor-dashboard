@@ -45,21 +45,34 @@ export function updateWorkspaceTopic(id, updates) {
 }
 
 /**
+ * Collects `id` plus every descendant reachable through parentId chains, at any
+ * depth (not just direct children) — a topic tree has no fixed depth limit, so
+ * deletion must walk it fully or deeper levels (e.g. sub-subtopics) are orphaned.
+ */
+function collectDescendantIds(allTopics, id) {
+  const ids = new Set([id]);
+  let frontier = [id];
+  while (frontier.length > 0) {
+    const children = allTopics.filter(t => frontier.includes(t.parentId)).map(t => t.id);
+    frontier = children.filter(cid => !ids.has(cid));
+    frontier.forEach(cid => ids.add(cid));
+  }
+  return ids;
+}
+
+/**
  * Returns { ok: true } on success.
- * Returns { ok: false, count: N } if saved items reference this topic (or its sub-topics),
- * in which case nothing is deleted.
+ * Returns { ok: false, count: N } if saved items reference this topic (or any
+ * descendant at any depth), in which case nothing is deleted.
  */
 export function deleteWorkspaceTopic(id) {
   const allTopics = getWorkspaceTopics();
   const items = getWorkspaceItems();
 
-  const idsToDelete = new Set([
-    id,
-    ...allTopics.filter(t => t.parentId === id).map(t => t.id),
-  ]);
+  const idsToDelete = collectDescendantIds(allTopics, id);
 
   const affectedCount = items.filter(
-    i => idsToDelete.has(i.topicId) || idsToDelete.has(i.subTopicId)
+    i => idsToDelete.has(i.topicId) || idsToDelete.has(i.subTopicId) || idsToDelete.has(i.subSubTopicId)
   ).length;
 
   if (affectedCount > 0) {

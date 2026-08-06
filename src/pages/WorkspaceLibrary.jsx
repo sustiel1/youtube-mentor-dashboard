@@ -520,6 +520,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                 type="button"
                 onClick={() => setShowManageTabs(p => !p)}
                 title="ערוך טאבים"
+                aria-label="ערוך טאבים"
                 className={cn(
                   'shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
                   showManageTabs
@@ -527,7 +528,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                     : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800'
                 )}
               >
-                ⚙ ערוך טאבים
+                ⚙
               </button>
             </div>
           </div>

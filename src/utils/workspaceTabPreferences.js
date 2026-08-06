@@ -18,6 +18,13 @@ function defaultPrefs() {
     customSubtopics: {},
     // Row 3: custom workflow/status tabs — [{value, label}]
     customWorkflowTabs: [],
+    // Real topic ids that were promoted out of a curated VIRTUAL_TAXONOMY
+    // grouping (see promoteTopicToMain in WorkspaceSaveReviewOverlay.jsx).
+    // VIRTUAL_TAXONOMY is a static import and can't be edited at runtime, so a
+    // promoted id may still be statically listed in its old vt's realTopicIds
+    // — this array lets the matching helpers in workspaceVirtualTaxonomy.js
+    // exclude it from matching there, since it now has its own custom tab.
+    promotedTopicIds: [],
   };
 }
 
@@ -129,4 +136,16 @@ export function removeCustomWorkflowTab(prefs, value) {
     ...prefs,
     customWorkflowTabs: (prefs.customWorkflowTabs || []).filter(t => t.value !== value),
   };
+}
+
+// ─── Promoted topic ids (subtopic/sub-subtopic → main topic) ─────────────────
+
+export function getPromotedTopicIds(prefs) {
+  return prefs.promotedTopicIds || [];
+}
+
+export function addPromotedTopicId(prefs, id) {
+  const prev = prefs.promotedTopicIds || [];
+  if (prev.includes(id)) return prefs;
+  return { ...prefs, promotedTopicIds: [...prev, id] };
 }

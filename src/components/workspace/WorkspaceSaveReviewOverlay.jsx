@@ -23,6 +23,8 @@ import {
   groupItemsByVirtTopic,
   groupItemsByVirtSubtopic,
   getCanonicalSaveTargetForVirtualPath,
+  getRealChildCounts,
+  filterByRealSubSubtopic,
 } from "@/utils/workspaceVirtualTaxonomy";
 import {
   getWorkspaceTabPreferences,
@@ -32,12 +34,23 @@ import {
   getAllMergedTabs,
   addCustomMainTab,
   removeCustomMainTab,
+  getPromotedTopicIds,
+  addPromotedTopicId,
 } from "@/utils/workspaceTabPreferences";
 import { parseStockFromText, looksLikeStockSection, normalizeStockWorkspaceItem } from "@/utils/workspaceStockItems";
 import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy } from "@/components/workspace/WorkspaceBulkActionBar";
 import { StockWatchlistView } from "./StockWatchlistView";
 import { WorkspaceContentCard } from "./WorkspaceContentCard";
 import { WorkspaceTabRow } from "./WorkspaceTabRow";
+
+// Virtual subtopic tabs hidden entirely from Row 2 (top filter row) — display
+// only, underlying real topics/items are untouched and still reachable via
+// "כולם" or the save-target dropdown. Unlike other locked (non-renameable)
+// subtopics such as "מניות" (which gates the Stock view and must stay
+// visible as a tab), "n8n / Automation" has no functional role beyond
+// filtering, so it's hidden to avoid an inconsistent-feeling tab that can't
+// be renamed/deleted like its siblings. Reverting = removing an id here.
+const HIDDEN_VIRTUAL_SUBTOPIC_IDS = new Set(['vts-ai-n8n']);
 
 // ─── Market status workflow constants ─────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -74,18 +87,42 @@ export function WorkspaceSaveReviewOverlay({
   videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
   onSaved,
 }) {
-  const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
+  const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
   const { items: libraryItems, reload, deleteItem, updateItem, deleteItems, deleteAllItems, archiveItems, updateItemsBulk } = useWorkspaceItems();
 
   // ── Draft / save controls ────────────────────────────────────────────────────
-  const [topicId,      setTopicId]      = useState('');
-  const [subTopicId,   setSubTopicId]   = useState('');
+  const [topicId,       setTopicId]       = useState('');
+  const [subTopicId,    setSubTopicId]    = useState('');
+  const [subSubTopicId, setSubSubTopicId] = useState('');
   const [tags,         setTags]         = useState([]);
   const [tagInput,     setTagInput]     = useState('');
   const [flags,        setFlags]        = useState({ isFavorite: false, isImportant: false, mustWatchAgain: false });
   const [notes,        setNotes]        = useState('');
   const [newTopicName, setNewTopicName] = useState('');
   const [showNewTopic, setShowNewTopic] = useState(false);
+  const [newSubTopicName, setNewSubTopicName] = useState('');
+  const [showNewSubTopic, setShowNewSubTopic] = useState(false);
+  const [newSubSubTopicName, setNewSubSubTopicName] = useState('');
+  const [showNewSubSubTopic, setShowNewSubSubTopic] = useState(false);
+
+  // ── Row-2 (subtopic) edit-tabs panel ─────────────────────────────────────────
+  const [showManageSubtopics, setShowManageSubtopics] = useState(false);
+  const [editingSubtopicId,    setEditingSubtopicId]    = useState(null);
+  const [editingSubtopicLabel, setEditingSubtopicLabel] = useState('');
+  const [confirmDeleteSubtopic, setConfirmDeleteSubtopic] = useState(null); // { id, name, affectedCount } | null
+
+  // ── Row-3 (sub-subtopic) edit-tabs panel ─────────────────────────────────────
+  const [showManageSubSubtopics, setShowManageSubSubtopics] = useState(false);
+  const [editingSubSubtopicId,    setEditingSubSubtopicId]    = useState(null);
+  const [editingSubSubtopicLabel, setEditingSubSubtopicLabel] = useState('');
+  const [confirmDeleteSubSubtopic, setConfirmDeleteSubSubtopic] = useState(null); // { id, name, affectedCount } | null
+
+  // ── Promote subtopic/sub-subtopic → independent main topic ───────────────────
+  const [confirmPromote, setConfirmPromote] = useState(null); // { id, name, affectedCount } | null
+
+  // ── 3rd-level (sub-subtopic) navigation accordion — collapsed by default ────
+  const [subSubAccordionOpen, setSubSubAccordionOpen] = useState(false);
+  const [filterVirtSubSubtopic, setFilterVirtSubSubtopic] = useState('');
 
   // ── View / layout state ──────────────────────────────────────────────────────
   const [activeView,       setActiveView]       = useState(defaultView);
@@ -110,6 +147,17 @@ export function WorkspaceSaveReviewOverlay({
   // ── Compact filter bar (Phase 4) ─────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [filterSourceTab, setFilterSourceTab] = useState('');
+
+  // ── Global search (searches the whole library — libraryItems — regardless of
+  // the active topic/subtopic/sub-subtopic tab; independent of `search` above,
+  // which stays scoped to the current tab's filtered items). Debounced so large
+  // libraries don't re-filter on every keystroke.
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [debouncedGlobalSearch, setDebouncedGlobalSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedGlobalSearch(globalSearch.trim()), 250);
+    return () => clearTimeout(t);
+  }, [globalSearch]);
   const [confirmDeleteSingleItem,   setConfirmDeleteSingleItem]   = useState(null);
   const [selectedOverlayIds,        setSelectedOverlayIds]        = useState(() => new Set());
   const [confirmBulkDeleteOverlay,  setConfirmBulkDeleteOverlay]  = useState(false);
@@ -138,10 +186,30 @@ export function WorkspaceSaveReviewOverlay({
   // When the user navigates the top virtual tabs (e.g. שוק ההון > מניות), default
   // the draft's own "נושא ראשי / תת-נושא" selects to the matching real topic —
   // but only while the user hasn't manually picked something else themselves.
-  const canonicalSaveTarget = useMemo(
-    () => getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, filterVirtSubtopic, topics),
-    [filterVirtTopicId, filterVirtSubtopic, topics],
-  );
+  const canonicalSaveTarget = useMemo(() => {
+    const raw = getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, filterVirtSubtopic, topics);
+    if (!raw || !filterVirtSubtopic) return raw;
+    // getCanonicalSaveTargetForVirtualPath's rule #2 "promotes" a curated
+    // subtopic to a standalone topicId when its real topic has no parentId in
+    // storage (e.g. "סקטורים" → wt-sectors, parentId: null) — by design, for
+    // resolving a save target. But for pre-filling the draft form's own
+    // "נושא ראשי / תת-נושא" selects, that promotion is wrong: it overwrites
+    // נושא ראשי with the subtopic's name instead of the active top tab's name.
+    // Detect the promotion (subtopic click resolved to a DIFFERENT topicId
+    // than the main tab alone would, with no subTopicId) and re-nest it under
+    // the actual active main topic instead.
+    const mainOnly = getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, null, topics);
+    if (mainOnly && !raw.subTopicId && raw.topicId !== mainOnly.topicId) {
+      const promoted = topics.find(t => t.id === raw.topicId);
+      return {
+        topicId: mainOnly.topicId,
+        subTopicId: raw.topicId,
+        topicName: mainOnly.topicName,
+        subTopicName: promoted?.name || raw.topicName,
+      };
+    }
+    return raw;
+  }, [filterVirtTopicId, filterVirtSubtopic, topics]);
   const lastAutoTopicRef = useRef({ topicId: '', subTopicId: '' });
 
   useEffect(() => {
@@ -155,20 +223,45 @@ export function WorkspaceSaveReviewOverlay({
       if (topicId !== canonicalSaveTarget.topicId || subTopicId !== nextSubTopicId) {
         setTopicId(canonicalSaveTarget.topicId);
         setSubTopicId(nextSubTopicId);
+        setSubSubTopicId('');
       }
       lastAutoTopicRef.current = { topicId: canonicalSaveTarget.topicId, subTopicId: nextSubTopicId };
     } else if (last.topicId) {
       // Previously auto-filled but the new nav path has no safe target — clear it.
       setTopicId('');
       setSubTopicId('');
+      setSubSubTopicId('');
       lastAutoTopicRef.current = { topicId: '', subTopicId: '' };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canonicalSaveTarget]);
 
-  const subTopics         = useMemo(() => getSubTopics(topicId), [getSubTopics, topicId]);
-  const selectedMainTopic = useMemo(() => mainTopics.find(t => t.id === topicId),   [mainTopics, topicId]);
-  const selectedSubTopic  = useMemo(() => subTopics.find(t => t.id === subTopicId), [subTopics,  subTopicId]);
+  // Real children of topicId, PLUS any curated subtopic that resolves to its
+  // own standalone real topic (see the canonicalSaveTarget promotion-fix above)
+  // — without this, a promoted subtopic like "סקטורים" would have no matching
+  // <option>, so the select couldn't actually display it even though
+  // canonicalSaveTarget now points subTopicId at it.
+  const subTopics = useMemo(() => {
+    const real = getSubTopics(topicId);
+    if (!topicId) return real;
+    const vt = VIRTUAL_TAXONOMY.find(v => getCanonicalSaveTargetForVirtualPath(v.id, null, topics)?.topicId === topicId);
+    if (!vt) return real;
+    // Same promotion test as canonicalSaveTarget above: a curated subtopic
+    // whose resolution lands on a DIFFERENT standalone topicId (not nested)
+    // needs to appear here as a selectable option, or the sync fix above sets
+    // subTopicId to a value with no matching <option>.
+    const extraIds = [...new Set(
+      vt.subtopics
+        .map(vs => getCanonicalSaveTargetForVirtualPath(vt.id, vs.id, topics))
+        .filter(r => r && !r.subTopicId && r.topicId !== topicId)
+        .map(r => r.topicId)
+    )].filter(id => !real.some(t => t.id === id));
+    return [...real, ...extraIds.map(id => topics.find(t => t.id === id)).filter(Boolean)];
+  }, [getSubTopics, topicId, topics]);
+  const subSubTopics       = useMemo(() => getSubTopics(subTopicId), [getSubTopics, subTopicId]);
+  const selectedMainTopic  = useMemo(() => mainTopics.find(t => t.id === topicId),      [mainTopics, topicId]);
+  const selectedSubTopic   = useMemo(() => subTopics.find(t => t.id === subTopicId),    [subTopics,  subTopicId]);
+  const selectedSubSubTopic = useMemo(() => subSubTopics.find(t => t.id === subSubTopicId), [subSubTopics, subSubTopicId]);
 
   const allTopics = useMemo(
     () => [...mainTopics, ...mainTopics.flatMap(t => getSubTopics(t.id))],
@@ -177,9 +270,11 @@ export function WorkspaceSaveReviewOverlay({
 
   // ── Virtual taxonomy computed ────────────────────────────────────────────────
 
+  const promotedTopicIds = useMemo(() => getPromotedTopicIds(tabPrefs), [tabPrefs]);
+
   const virtTopicCountBase = useMemo(
-    () => getVirtTopicCounts(libraryItems),
-    [libraryItems],
+    () => getVirtTopicCounts(libraryItems, topics, promotedTopicIds),
+    [libraryItems, topics, promotedTopicIds],
   );
 
   const customTabCounts = useMemo(() => {
@@ -233,19 +328,282 @@ export function WorkspaceSaveReviewOverlay({
         ? libraryItems.filter(i => i.topicId === customTab.realTopicId)
         : [];
     }
-    return filterByVirtTopic(libraryItems, filterVirtTopicId);
-  }, [libraryItems, filterVirtTopicId, tabPrefs.customMainTabs]);
+    return filterByVirtTopic(libraryItems, filterVirtTopicId, topics, promotedTopicIds);
+  }, [libraryItems, filterVirtTopicId, tabPrefs.customMainTabs, topics, promotedTopicIds]);
 
   const virtSubtopicCount = useMemo(
-    () => getVirtSubtopicCounts(mainFilteredItems, filterVirtTopicId),
-    [mainFilteredItems, filterVirtTopicId],
+    () => getVirtSubtopicCounts(mainFilteredItems, filterVirtTopicId, topics),
+    [mainFilteredItems, filterVirtTopicId, topics],
   );
 
   // Final filtered list: main topic + optional subtopic
   const filteredLibraryItems = useMemo(
-    () => filterByVirtSubtopic(mainFilteredItems, filterVirtTopicId, filterVirtSubtopic),
-    [mainFilteredItems, filterVirtTopicId, filterVirtSubtopic],
+    () => filterByVirtSubtopic(mainFilteredItems, filterVirtTopicId, filterVirtSubtopic, topics),
+    [mainFilteredItems, filterVirtTopicId, filterVirtSubtopic, topics],
   );
+
+  // ── 3rd-level (sub-subtopic) navigation — real-topic-tree based, not curated ─
+  // Real topic id the active main tab resolves to (used as parentId when adding
+  // a subtopic from Row 2's "+").
+  const activeRealTopicId = useMemo(
+    () => getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, null, topics)?.topicId || null,
+    [filterVirtTopicId, topics],
+  );
+
+  // Real topic id the active Row-2 selection resolves to. filterVirtSubtopic is
+  // either a curated 'vts-*' id (resolve via the canonical mapping) or already
+  // a raw real id (dynamically-created subtopics are rendered with their real
+  // id as the tab value — see extraSubtopicTabs below).
+  const activeRealSubTopicId = useMemo(() => {
+    if (!filterVirtSubtopic) return null;
+    if (topics.some(t => t.id === filterVirtSubtopic)) return filterVirtSubtopic;
+    return getCanonicalSaveTargetForVirtualPath(filterVirtTopicId, filterVirtSubtopic, topics)?.subTopicId || null;
+  }, [filterVirtSubtopic, filterVirtTopicId, topics]);
+
+  // Extra Row-2 tabs for real subtopics that exist under the active topic but
+  // aren't referenced by any curated vs.realTopicIds (e.g. just created via +).
+  const extraSubtopicTabs = useMemo(() => {
+    if (!activeVirtTopic || !activeRealTopicId) return [];
+    const covered = new Set(activeVirtTopic.subtopics.flatMap(vs => vs.realTopicIds));
+    return getSubTopics(activeRealTopicId).filter(t => !covered.has(t.id));
+  }, [activeVirtTopic, activeRealTopicId, getSubTopics]);
+
+  // Real sub-subtopics under the active Row-2 selection, for the accordion.
+  const realSubSubtopics = useMemo(
+    () => activeRealSubTopicId ? getSubTopics(activeRealSubTopicId) : [],
+    [activeRealSubTopicId, getSubTopics],
+  );
+
+  const subSubtopicCounts = useMemo(() => getRealChildCounts(filteredLibraryItems), [filteredLibraryItems]);
+
+  // Collapse the accordion and clear its filter whenever the active subtopic changes.
+  useEffect(() => {
+    setSubSubAccordionOpen(false);
+    setFilterVirtSubSubtopic('');
+  }, [filterVirtSubtopic]);
+
+  function handleAddCustomSubTopic(name) {
+    if (!activeRealTopicId) { toast.error('בחר קודם נושא ראשי'); return; }
+    const t = addTopic({ name: name.trim(), parentId: activeRealTopicId });
+    setFilterVirtSubtopic(t.id);
+    toast.success(`תת-הנושא "${name.trim()}" נוסף`);
+  }
+
+  function handleAddSubSubtopicNav(name) {
+    if (!activeRealSubTopicId) { toast.error('בחר קודם תת-נושא'); return; }
+    const t = addTopic({ name: name.trim(), parentId: activeRealSubTopicId });
+    setFilterVirtSubSubtopic(t.id);
+    setSubSubAccordionOpen(true);
+    toast.success(`תת-תת-הנושא "${name.trim()}" נוסף`);
+  }
+
+  // ── Row-2 edit (rename/delete) ────────────────────────────────────────────────
+  // A curated vs entry is editable when:
+  //  - it resolves to exactly one existing real topic (always unambiguous,
+  //    regardless of whether that one topic itself is nested — e.g. "ETF /
+  //    מדדים" → wt-markets-etf, which has its own parentId), OR
+  //  - it resolves to several real topics that form ONE tree with exactly one
+  //    root (parentId:null) and every other candidate is an actual descendant
+  //    of that root — e.g. "כלים" → wt-tools + its 6 real children: one root,
+  //    safe to rename/delete via that root.
+  // A group with two+ INDEPENDENT top-level candidates (e.g. "n8n / Automation"
+  // → wt-ai-n8n and wt-ai-automation, siblings under wt-ai, neither a
+  // descendant of the other) or with an outlier that isn't under the root
+  // (e.g. "מניות" → wt-stocks plus wt-markets-stocks, which is actually a
+  // child of the UNRELATED wt-markets) has no single entity to act on and
+  // stays locked. Dynamically-created subtopics (extraSubtopicTabs) are always
+  // 1:1 real topics and are always editable.
+  function isDescendantOf(topic, ancestorId, allTopics) {
+    let cur = topic;
+    let depth = 0;
+    while (cur?.parentId && depth < 12) {
+      if (cur.parentId === ancestorId) return true;
+      cur = allTopics.find(t => t.id === cur.parentId);
+      depth++;
+    }
+    return false;
+  }
+
+  function resolveEditableRealId(vs) {
+    const candidates = vs.realTopicIds.map(id => topics.find(t => t.id === id)).filter(Boolean);
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0].id;
+    const roots = candidates.filter(t => !t.parentId);
+    if (roots.length !== 1) return null;
+    const root = roots[0];
+    const allUnderRoot = candidates.every(t => t.id === root.id || isDescendantOf(t, root.id, topics));
+    return allUnderRoot ? root.id : null;
+  }
+
+  // Row-2 tabs annotated with { editableRealId, displayName } — curated single-id
+  // subtopics show the REAL topic's current name (so a rename is reflected here),
+  // falling back to the curated label if the real topic is somehow missing.
+  const editableSubtopicRows = useMemo(() => {
+    if (!activeVirtTopic) return [];
+    const curated = activeVirtTopic.subtopics.map(vs => {
+      const realId = resolveEditableRealId(vs);
+      const realTopic = realId ? topics.find(t => t.id === realId) : null;
+      return { id: vs.id, name: realTopic?.name || vs.name, editableRealId: realId };
+    });
+    const extra = extraSubtopicTabs.map(t => ({ id: t.id, name: t.name, editableRealId: t.id }));
+    return [...curated, ...extra];
+  }, [activeVirtTopic, extraSubtopicTabs, topics]);
+
+  function collectDescendantIdsClient(id) {
+    const ids = new Set([id]);
+    let frontier = [id];
+    while (frontier.length > 0) {
+      const children = topics.filter(t => frontier.includes(t.parentId)).map(t => t.id);
+      frontier = children.filter(cid => !ids.has(cid));
+      frontier.forEach(cid => ids.add(cid));
+    }
+    return ids;
+  }
+
+  function countItemsUnderTopic(id) {
+    const idSet = collectDescendantIdsClient(id);
+    return libraryItems.filter(i => idSet.has(i.topicId) || idSet.has(i.subTopicId) || idSet.has(i.subSubTopicId)).length;
+  }
+
+  function handleRenameSubtopic(realId, newName) {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    updateTopic(realId, { name: trimmed });
+    const affectedIds = libraryItems.filter(i => i.subTopicId === realId).map(i => i.id);
+    if (affectedIds.length > 0) {
+      updateItemsBulk(affectedIds, { subTopicName: trimmed, subCategory: trimmed });
+    }
+    setEditingSubtopicId(null);
+    setEditingSubtopicLabel('');
+    toast.success(`תת-הנושא עודכן ל-"${trimmed}"`);
+  }
+
+  function handleRequestDeleteSubtopic(row) {
+    setConfirmDeleteSubtopic({ ...row, affectedCount: countItemsUnderTopic(row.editableRealId) });
+  }
+
+  function handleConfirmDeleteSubtopic() {
+    if (!confirmDeleteSubtopic) return;
+    if (confirmDeleteSubtopic.affectedCount > 0) {
+      // Purely informational at this point — deletion is blocked, nothing to do.
+      setConfirmDeleteSubtopic(null);
+      return;
+    }
+    const result = deleteTopic(confirmDeleteSubtopic.editableRealId);
+    if (result.ok) {
+      toast.success(`תת-הנושא "${confirmDeleteSubtopic.name}" נמחק`);
+      if (filterVirtSubtopic === confirmDeleteSubtopic.id || filterVirtSubtopic === confirmDeleteSubtopic.editableRealId) {
+        setFilterVirtSubtopic('');
+      }
+    } else {
+      // Race with a concurrent save — re-report the up-to-date block reason.
+      toast.error(`לא ניתן למחוק — ${result.count} פריטים עדיין משויכים`);
+    }
+    setConfirmDeleteSubtopic(null);
+  }
+
+  // ── Row-3 edit (rename/delete) — sub-subtopics are always real, single ids;
+  // no curated/ambiguous case exists at this level, unlike Row 2.
+  function handleRenameSubSubtopic(id, newName) {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    updateTopic(id, { name: trimmed });
+    const affectedIds = libraryItems.filter(i => i.subSubTopicId === id).map(i => i.id);
+    if (affectedIds.length > 0) {
+      updateItemsBulk(affectedIds, { subSubTopicName: trimmed });
+    }
+    setEditingSubSubtopicId(null);
+    setEditingSubSubtopicLabel('');
+    toast.success(`תת-תת-הנושא עודכן ל-"${trimmed}"`);
+  }
+
+  function handleRequestDeleteSubSubtopic(subSubtopic) {
+    setConfirmDeleteSubSubtopic({ ...subSubtopic, affectedCount: countItemsUnderTopic(subSubtopic.id) });
+  }
+
+  function handleConfirmDeleteSubSubtopic() {
+    if (!confirmDeleteSubSubtopic) return;
+    if (confirmDeleteSubSubtopic.affectedCount > 0) {
+      setConfirmDeleteSubSubtopic(null);
+      return;
+    }
+    const result = deleteTopic(confirmDeleteSubSubtopic.id);
+    if (result.ok) {
+      toast.success(`תת-תת-הנושא "${confirmDeleteSubSubtopic.name}" נמחק`);
+      if (filterVirtSubSubtopic === confirmDeleteSubSubtopic.id) setFilterVirtSubSubtopic('');
+    } else {
+      toast.error(`לא ניתן למחוק — ${result.count} פריטים עדיין משויכים`);
+    }
+    setConfirmDeleteSubSubtopic(null);
+  }
+
+  // ── Promote a subtopic OR sub-subtopic to an independent top-level topic ─────
+  function handleRequestPromote(row) {
+    setConfirmPromote({ id: row.editableRealId || row.id, name: row.name, affectedCount: countItemsUnderTopic(row.editableRealId || row.id) });
+  }
+
+  function handleConfirmPromote() {
+    if (!confirmPromote) return;
+    const { id, name } = confirmPromote;
+
+    // 1. Re-parent to root — its own children (if any) keep pointing at `id`,
+    //    so they automatically become its subtopics one level up; nothing to
+    //    do there.
+    updateTopic(id, { parentId: null });
+
+    // 2. Items tagged directly at this level shift up one level: whatever was
+    //    the deeper tag (if any) becomes the new subtopic; there is no level
+    //    below subSubTopicId, so that field is always cleared.
+    const affected = libraryItems.filter(i => i.subTopicId === id || i.subSubTopicId === id);
+    for (const item of affected) {
+      if (item.subTopicId === id) {
+        updateItem(item.id, {
+          topicId: id,
+          subTopicId: item.subSubTopicId || null,
+          subSubTopicId: null,
+          topicName: name,
+          subTopicName: item.subSubTopicName || null,
+          subSubTopicName: null,
+          category: name,
+          subCategory: item.subSubTopicName || null,
+        });
+      } else if (item.subSubTopicId === id) {
+        updateItem(item.id, {
+          topicId: id,
+          subTopicId: null,
+          subSubTopicId: null,
+          topicName: name,
+          subTopicName: null,
+          subSubTopicName: null,
+          category: name,
+          subCategory: null,
+        });
+      }
+    }
+
+    // 3. Give it its own Row-1 tab, and mark it excluded from matching its old
+    //    curated grouping (VIRTUAL_TAXONOMY is static — can't remove the
+    //    dangling reference there, so the exclusion list is the only way to
+    //    stop it from also still showing under the old parent's tab).
+    let newPrefs = addCustomMainTab(tabPrefs, { name, emoji: '📌', topicId: id });
+    newPrefs = addPromotedTopicId(newPrefs, id);
+    setTabPrefs(newPrefs);
+    saveWorkspaceTabPreferences(newPrefs);
+
+    // 4. Clear any nav filter that pointed at the now-promoted id — it no
+    //    longer exists as a subtopic/sub-subtopic to filter by.
+    if (filterVirtSubtopic === id) setFilterVirtSubtopic('');
+    if (filterVirtSubSubtopic === id) setFilterVirtSubSubtopic('');
+    if (topicId === id) { setTopicId(''); setSubTopicId(''); setSubSubTopicId(''); }
+    if (subTopicId === id) { setSubTopicId(''); setSubSubTopicId(''); }
+    if (subSubTopicId === id) setSubSubTopicId('');
+
+    reload();
+    toast.success(`"${name}" הפך לנושא ראשי עצמאי — ${affected.length} פריטים עברו יחד איתו`);
+    setConfirmPromote(null);
+    setShowManageSubtopics(false);
+    setShowManageSubSubtopics(false);
+  }
 
   // Applies the optional workflow status layer, then the compact filter bar
   // (search + source) on top of the topic/subtopic filter. Items without
@@ -271,14 +629,38 @@ export function WorkspaceSaveReviewOverlay({
       );
     }
     if (filterSourceTab) result = result.filter(i => (i.sourceTab || null) === filterSourceTab);
+    if (filterVirtSubSubtopic) result = filterByRealSubSubtopic(result, filterVirtSubSubtopic);
     return result;
-  }, [filteredLibraryItems, isStocksView, filterMarketStatus, search, filterSourceTab]);
+  }, [filteredLibraryItems, isStocksView, filterMarketStatus, search, filterSourceTab, filterVirtSubSubtopic]);
 
   const allSourceTabs = useMemo(() => {
     const set = new Set();
     libraryItems.forEach(i => { if (i.sourceTab) set.add(i.sourceTab); });
     return [...set].sort();
   }, [libraryItems]);
+
+  // Global search results — matches against the ENTIRE library (libraryItems),
+  // ignoring the active topic/subtopic/sub-subtopic filter. Overrides the topic
+  // view entirely while active (results can span multiple topics — see the
+  // per-result topic/subtopic badge already built into LibraryItemCard).
+  const globalSearchResults = useMemo(() => {
+    if (!debouncedGlobalSearch) return null;
+    const q = debouncedGlobalSearch.toLowerCase();
+    return libraryItems.filter(i =>
+      (i.videoTitle || '').toLowerCase().includes(q) ||
+      (i.channelName || '').toLowerCase().includes(q) ||
+      (i.notes || '').toLowerCase().includes(q) ||
+      (i.fullNotes || '').toLowerCase().includes(q) ||
+      (i.rawSourceText || '').toLowerCase().includes(q) ||
+      (i.topicName || '').toLowerCase().includes(q) ||
+      (i.subTopicName || '').toLowerCase().includes(q) ||
+      (i.subSubTopicName || '').toLowerCase().includes(q) ||
+      (i.sourceTab || '').toLowerCase().includes(q) ||
+      (i.symbol || '').toLowerCase().includes(q) ||
+      (i.companyName || '').toLowerCase().includes(q) ||
+      (i.tags || []).some(tag => tag.toLowerCase().includes(q))
+    );
+  }, [libraryItems, debouncedGlobalSearch]);
 
   const hasActiveOverlayFilters = !!(search || filterSourceTab || (isStocksView && filterMarketStatus));
 
@@ -301,13 +683,13 @@ export function WorkspaceSaveReviewOverlay({
 
   // Topics view grouping — use displayItems so workflow status filter propagates
   const itemsByVirtTopic = useMemo(
-    () => groupItemsByVirtTopic(displayItems),
-    [displayItems],
+    () => groupItemsByVirtTopic(displayItems, topics, promotedTopicIds),
+    [displayItems, topics, promotedTopicIds],
   );
 
   const itemsByVirtSubtopic = useMemo(
-    () => filterVirtTopicId ? groupItemsByVirtSubtopic(displayItems, filterVirtTopicId) : {},
-    [displayItems, filterVirtTopicId],
+    () => filterVirtTopicId ? groupItemsByVirtSubtopic(displayItems, filterVirtTopicId, topics) : {},
+    [displayItems, filterVirtTopicId, topics],
   );
 
   const itemsByDate = useMemo(() => {
@@ -372,8 +754,28 @@ export function WorkspaceSaveReviewOverlay({
     const t = addTopic({ name: newTopicName.trim() });
     setTopicId(t.id);
     setSubTopicId('');
+    setSubSubTopicId('');
     setNewTopicName('');
     setShowNewTopic(false);
+  }
+
+  // Save-form "+" flows for the 2nd/3rd levels — same addTopic({name, parentId})
+  // pattern as handleAddTopic above and as SaveToWorkspaceDialog.jsx's handleAddSub.
+  function handleAddSubTopicForm() {
+    if (!newSubTopicName.trim() || !topicId) return;
+    const t = addTopic({ name: newSubTopicName.trim(), parentId: topicId });
+    setSubTopicId(t.id);
+    setSubSubTopicId('');
+    setNewSubTopicName('');
+    setShowNewSubTopic(false);
+  }
+
+  function handleAddSubSubTopicForm() {
+    if (!newSubSubTopicName.trim() || !subTopicId) return;
+    const t = addTopic({ name: newSubSubTopicName.trim(), parentId: subTopicId });
+    setSubSubTopicId(t.id);
+    setNewSubSubTopicName('');
+    setShowNewSubSubTopic(false);
   }
 
   function handleLoadCurrentAnalysis() {
@@ -596,10 +998,12 @@ export function WorkspaceSaveReviewOverlay({
         videoTitle:   titlePart.slice(0, 80),
         channelName:  videoContext.channelName || '',
         thumbnail:    videoContext.thumbnail   || null,
-        topicId:      topicId    || null,
-        subTopicId:   subTopicId || null,
+        topicId:       topicId       || null,
+        subTopicId:    subTopicId    || null,
+        subSubTopicId: subSubTopicId || null,
         topicName,
         subTopicName,
+        subSubTopicName: selectedSubSubTopic?.name || null,
         notes:        combinedNotes,
         flags,
         tags,
@@ -623,7 +1027,7 @@ export function WorkspaceSaveReviewOverlay({
       toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
     }
     onSaved?.({ count: savedIds.length, skipped: skippedCount });
-  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
+  }, [effectiveDraftItems, topicId, subTopicId, subSubTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, selectedSubSubTopic, reload, onSaved]);
 
   // ── View tabs ─────────────────────────────────────────────────────────────────
 
@@ -670,7 +1074,11 @@ export function WorkspaceSaveReviewOverlay({
         )}
       >
         {/* ── Header ───────────────────────────────────────────────────── */}
-        <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-3">
+        {/* pl-10 reserves room for the Dialog primitive's own close "✕", which
+            is always absolutely positioned at the physical left-4/top-4
+            regardless of dir="rtl" — without this, the RTL header's trailing
+            (visually left) button group (⋮ / מסך מלא) collides with it. */}
+        <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-3 pl-10">
           <div className="flex items-center justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
               ⭐ Workspace Library
@@ -730,6 +1138,33 @@ export function WorkspaceSaveReviewOverlay({
           </div>
         </DialogHeader>
 
+        {/* ── Global search — searches ALL libraryItems, independent of the
+              active topic/subtopic/sub-subtopic tab below. Distinct from the
+              per-tab "search" field further down (which stays scoped to the
+              currently filtered view). ─────────────────────────────────────── */}
+        <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/60" dir="rtl">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              value={globalSearch}
+              onChange={e => setGlobalSearch(e.target.value)}
+              placeholder={`חיפוש גלובלי בכל ${libraryItems.length} הפריטים — בכל הנושאים...`}
+              className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 pr-9 pl-9 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:text-zinc-200"
+            />
+            {globalSearch && (
+              <button
+                type="button"
+                onClick={() => setGlobalSearch('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                aria-label="נקה חיפוש"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* ── Row 1: Main domain tabs ───────────────────────────────────── */}
         <div className="shrink-0 bg-white dark:bg-zinc-950 px-4 pt-3 pb-3 border-b border-slate-100 dark:border-zinc-800/60 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
@@ -757,6 +1192,7 @@ export function WorkspaceSaveReviewOverlay({
               type="button"
               onClick={() => setShowManageTabs(p => !p)}
               title="ערוך טאבים"
+              aria-label="ערוך טאבים"
               className={cn(
                 'mr-auto shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all',
                 showManageTabs
@@ -764,7 +1200,7 @@ export function WorkspaceSaveReviewOverlay({
                   : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
               )}
             >
-              ⚙ ערוך טאבים
+              ⚙
             </button>
           </div>
         </div>
@@ -867,24 +1303,242 @@ export function WorkspaceSaveReviewOverlay({
         )}
 
         {/* ── Row 2: Subtopic tabs ──────────────────────────────────────── */}
-        {activeVirtTopic && activeVirtTopic.subtopics.length > 0 && (
+        {activeVirtTopic && (
           <div className="shrink-0 bg-slate-50/80 dark:bg-zinc-900/60 px-4 py-2.5 overflow-x-auto border-b border-slate-100 dark:border-zinc-800">
-            <WorkspaceTabRow
-              tabs={[
-                ...activeVirtTopic.subtopics.map(vs => ({
-                  value: vs.id,
-                  label: vs.name,
-                  count: virtSubtopicCount[vs.id] || 0,
-                  empty: !virtSubtopicCount[vs.id],
-                })),
-                { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
-              ]}
-              activeValue={filterVirtSubtopic}
-              onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}
-              size="md"
-              accentColor="violet"
-              className="min-w-max"
-            />
+            <div className="flex items-center gap-2 min-w-max">
+              <div className="min-w-0">
+                <WorkspaceTabRow
+                  tabs={[
+                    ...editableSubtopicRows.filter(row => !HIDDEN_VIRTUAL_SUBTOPIC_IDS.has(row.id)).map(row => ({
+                      value: row.id,
+                      label: row.name,
+                      count: virtSubtopicCount[row.id] || virtSubtopicCount[row.editableRealId] || 0,
+                      empty: !(virtSubtopicCount[row.id] || virtSubtopicCount[row.editableRealId]),
+                    })),
+                    { value: '', label: `כולם${mainFilteredItems.length > 0 ? ` (${mainFilteredItems.length})` : ''}` },
+                  ]}
+                  activeValue={filterVirtSubtopic}
+                  onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}
+                  onAddTab={handleAddCustomSubTopic}
+                  addLabel="+ תת-נושא"
+                  size="md"
+                  accentColor="violet"
+                  className="min-w-max"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowManageSubtopics(p => !p)}
+                title="ערוך תתי-נושאים"
+                aria-label="ערוך טאבים"
+                className={cn(
+                  'mr-auto shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
+                  showManageSubtopics
+                    ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-600 dark:bg-violet-950/30 dark:text-violet-400'
+                    : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
+                )}
+              >
+                ⚙
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Manage subtopics panel ────────────────────────────────────── */}
+        {showManageSubtopics && activeVirtTopic && (
+          <div className="shrink-0 bg-violet-50/70 dark:bg-zinc-900/80 border-b border-violet-200 dark:border-zinc-700 px-4 py-3" dir="rtl">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">ניהול תתי-נושאים</span>
+              <button
+                type="button"
+                onClick={() => { setShowManageSubtopics(false); setEditingSubtopicId(null); setEditingSubtopicLabel(''); }}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+              >
+                ✕ סגור
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {editableSubtopicRows.filter(row => !!row.editableRealId).map(row => {
+                const isEditing = editingSubtopicId === row.id;
+                return (
+                  <div
+                    key={row.id}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 px-3 py-2 transition-colors"
+                  >
+                    {isEditing ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editingSubtopicLabel}
+                          onChange={e => setEditingSubtopicLabel(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter')  handleRenameSubtopic(row.editableRealId, editingSubtopicLabel);
+                            if (e.key === 'Escape') { setEditingSubtopicId(null); setEditingSubtopicLabel(''); }
+                          }}
+                          className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-600 bg-white dark:bg-zinc-950 px-2 py-0.5 text-sm text-right dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        />
+                        <button type="button" onClick={() => handleRenameSubtopic(row.editableRealId, editingSubtopicLabel)} className="shrink-0 text-xs font-semibold text-green-600 hover:underline">שמור</button>
+                        <button type="button" onClick={() => { setEditingSubtopicId(null); setEditingSubtopicLabel(''); }} className="shrink-0 text-xs text-slate-400 hover:underline">ביטול</button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm flex-1 text-right">{row.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestPromote(row)}
+                          title="הפוך לנושא ראשי"
+                          className="shrink-0 text-xs text-slate-400 hover:text-indigo-600 dark:text-zinc-600 dark:hover:text-indigo-400"
+                        >
+                          ⬆
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setEditingSubtopicId(row.id); setEditingSubtopicLabel(row.name); }}
+                          title="שנה שם"
+                          className="shrink-0 text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-600 dark:hover:text-zinc-400"
+                        >
+                          ✏
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDeleteSubtopic(row)}
+                          title="מחק תת-נושא"
+                          className="shrink-0 text-base leading-none select-none text-slate-400 hover:text-red-500"
+                        >
+                          🗑
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 3: Sub-subtopic accordion — collapsed by default ────────── */}
+        {activeRealSubTopicId && (
+          <div className="shrink-0 bg-slate-50/50 dark:bg-zinc-900/40 border-b border-slate-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSubSubAccordionOpen(o => !o)}
+                className="flex-1 flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400"
+              >
+                <span className={cn('inline-block transition-transform', subSubAccordionOpen && 'rotate-90')}>›</span>
+                תתי-נושא ({realSubSubtopics.length})
+              </button>
+              {subSubAccordionOpen && realSubSubtopics.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowManageSubSubtopics(p => !p)}
+                  title="ערוך טאבים"
+                  aria-label="ערוך טאבים"
+                  className={cn(
+                    'shrink-0 rounded-lg border px-2 py-1 mx-2 text-[11px] font-semibold whitespace-nowrap transition-all',
+                    showManageSubSubtopics
+                      ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-600 dark:bg-violet-950/30 dark:text-violet-400'
+                      : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800',
+                  )}
+                >
+                  ⚙
+                </button>
+              )}
+            </div>
+            {subSubAccordionOpen && (
+              <div className="px-4 pb-2.5 overflow-x-auto">
+                <WorkspaceTabRow
+                  tabs={[
+                    ...realSubSubtopics.map(t => ({
+                      value: t.id,
+                      label: t.name,
+                      count: subSubtopicCounts[t.id] || 0,
+                      empty: !subSubtopicCounts[t.id],
+                    })),
+                    { value: '', label: `הכל${filteredLibraryItems.length > 0 ? ` (${filteredLibraryItems.length})` : ''}` },
+                  ]}
+                  activeValue={filterVirtSubSubtopic}
+                  onSelect={v => setFilterVirtSubSubtopic(prev => prev === v ? '' : v)}
+                  onAddTab={handleAddSubSubtopicNav}
+                  addLabel="+ תת-תת-נושא"
+                  size="sm"
+                  accentColor="violet"
+                  className="min-w-max"
+                />
+              </div>
+            )}
+
+            {/* ── Manage sub-subtopics panel ─────────────────────────────── */}
+            {subSubAccordionOpen && showManageSubSubtopics && (
+              <div className="bg-violet-50/70 dark:bg-zinc-900/80 border-t border-violet-200 dark:border-zinc-700 px-4 py-3" dir="rtl">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">ניהול תתי-תת-נושאים</span>
+                  <button
+                    type="button"
+                    onClick={() => { setShowManageSubSubtopics(false); setEditingSubSubtopicId(null); setEditingSubSubtopicLabel(''); }}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                  >
+                    ✕ סגור
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  {realSubSubtopics.map(t => {
+                    const isEditing = editingSubSubtopicId === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 px-3 py-2"
+                      >
+                        {isEditing ? (
+                          <>
+                            <input
+                              autoFocus
+                              value={editingSubSubtopicLabel}
+                              onChange={e => setEditingSubSubtopicLabel(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter')  handleRenameSubSubtopic(t.id, editingSubSubtopicLabel);
+                                if (e.key === 'Escape') { setEditingSubSubtopicId(null); setEditingSubSubtopicLabel(''); }
+                              }}
+                              className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-600 bg-white dark:bg-zinc-950 px-2 py-0.5 text-sm text-right dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                            />
+                            <button type="button" onClick={() => handleRenameSubSubtopic(t.id, editingSubSubtopicLabel)} className="shrink-0 text-xs font-semibold text-green-600 hover:underline">שמור</button>
+                            <button type="button" onClick={() => { setEditingSubSubtopicId(null); setEditingSubSubtopicLabel(''); }} className="shrink-0 text-xs text-slate-400 hover:underline">ביטול</button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm flex-1 text-right">{t.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRequestPromote(t)}
+                              title="הפוך לנושא ראשי"
+                              className="shrink-0 text-xs text-slate-400 hover:text-indigo-600 dark:text-zinc-600 dark:hover:text-indigo-400"
+                            >
+                              ⬆
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setEditingSubSubtopicId(t.id); setEditingSubSubtopicLabel(t.name); }}
+                              title="שנה שם"
+                              className="shrink-0 text-xs text-slate-400 hover:text-slate-600 dark:text-zinc-600 dark:hover:text-zinc-400"
+                            >
+                              ✏
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRequestDeleteSubSubtopic(t)}
+                              title="מחק תת-תת-נושא"
+                              className="shrink-0 text-base leading-none select-none text-slate-400 hover:text-red-500"
+                            >
+                              🗑
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -999,6 +1653,26 @@ export function WorkspaceSaveReviewOverlay({
         {/* ── Scrollable body ───────────────────────────────────────────── */}
         <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
 
+          {globalSearchResults !== null ? (
+            // Global search overrides the topic/subtopic/sub-subtopic view entirely
+            // while active — results can span multiple topics, hence the per-item
+            // topic/subtopic badge already built into LibraryItemCard.
+            <div className={cn('p-5 space-y-3', isFullscreen && 'max-w-3xl mx-auto')}>
+              <h3 className="text-sm font-semibold text-slate-600 dark:text-zinc-400">
+                {globalSearchResults.length > 0
+                  ? `${globalSearchResults.length} תוצאות עבור "${debouncedGlobalSearch}" — בכל הנושאים`
+                  : `אין תוצאות עבור "${debouncedGlobalSearch}"`}
+              </h3>
+              {globalSearchResults.length === 0 ? (
+                <EmptyState label="נסה מונח חיפוש אחר, או נקה את החיפוש כדי לחזור לתצוגה הרגילה" />
+              ) : (
+                globalSearchResults.map(item => (
+                  <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
+                ))
+              )}
+            </div>
+          ) : (
+          <>
           {/* Draft view */}
           {activeView === 'draft' && (
             <div className={cn('p-5 space-y-4', isFullscreen && 'max-w-3xl mx-auto')}>
@@ -1056,12 +1730,12 @@ export function WorkspaceSaveReviewOverlay({
                   </div>
 
                   {/* Bulk controls */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">נושא ראשי</label>
                       <select
                         value={topicId}
-                        onChange={e => { setTopicId(e.target.value); setSubTopicId(''); }}
+                        onChange={e => { setTopicId(e.target.value); setSubTopicId(''); setSubSubTopicId(''); }}
                         className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
                       >
                         <option value="">בחר נושא...</option>
@@ -1093,7 +1767,7 @@ export function WorkspaceSaveReviewOverlay({
                       <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">תת-נושא</label>
                       <select
                         value={subTopicId}
-                        onChange={e => setSubTopicId(e.target.value === '__none__' ? '' : e.target.value)}
+                        onChange={e => { setSubTopicId(e.target.value === '__none__' ? '' : e.target.value); setSubSubTopicId(''); }}
                         disabled={!topicId || subTopics.length === 0}
                         className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
                       >
@@ -1104,6 +1778,69 @@ export function WorkspaceSaveReviewOverlay({
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                       </select>
+                      {showNewSubTopic ? (
+                        <div className="flex gap-1">
+                          <input
+                            autoFocus
+                            value={newSubTopicName}
+                            onChange={e => setNewSubTopicName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddSubTopicForm()}
+                            placeholder="שם תת-נושא..."
+                            className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-sm text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
+                          />
+                          <button type="button" onClick={handleAddSubTopicForm} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
+                          <button type="button" onClick={() => setShowNewSubTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs text-slate-500">✕</button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowNewSubTopic(true)}
+                          disabled={!topicId}
+                          className="text-xs text-amber-500 hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          + תת-נושא חדש
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">תת-תת-נושא</label>
+                      <select
+                        value={subSubTopicId}
+                        onChange={e => setSubSubTopicId(e.target.value === '__none__' ? '' : e.target.value)}
+                        disabled={!subTopicId || subSubTopics.length === 0}
+                        className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
+                      >
+                        <option value="__none__">
+                          {!subTopicId ? 'בחר תת-נושא תחילה' : subSubTopics.length === 0 ? 'אין תת-תת-נושאים' : 'ללא'}
+                        </option>
+                        {subSubTopics.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      {showNewSubSubTopic ? (
+                        <div className="flex gap-1">
+                          <input
+                            autoFocus
+                            value={newSubSubTopicName}
+                            onChange={e => setNewSubSubTopicName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddSubSubTopicForm()}
+                            placeholder="שם תת-תת-נושא..."
+                            className="flex-1 rounded-lg border border-slate-200 dark:border-zinc-700 px-2 py-1.5 text-sm text-right focus:outline-none dark:bg-zinc-900 dark:text-zinc-200"
+                          />
+                          <button type="button" onClick={handleAddSubSubTopicForm} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">הוסף</button>
+                          <button type="button" onClick={() => setShowNewSubSubTopic(false)} className="rounded-lg border border-slate-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs text-slate-500">✕</button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowNewSubSubTopic(true)}
+                          disabled={!subTopicId}
+                          className="text-xs text-amber-500 hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          + תת-תת-נושא חדש
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1400,6 +2137,8 @@ export function WorkspaceSaveReviewOverlay({
               )}
             </div>
           )}
+          </>
+          )}
 
         </div>
 
@@ -1453,6 +2192,58 @@ export function WorkspaceSaveReviewOverlay({
       confirmLabel="מחק מסומנים"
       danger
       onConfirm={handleConfirmBulkDeleteOverlay}
+    />
+
+    <ConfirmDialog
+      open={!!confirmDeleteSubtopic}
+      onOpenChange={open => !open && setConfirmDeleteSubtopic(null)}
+      title={
+        confirmDeleteSubtopic?.affectedCount > 0
+          ? `לא ניתן למחוק את "${confirmDeleteSubtopic?.name}"`
+          : `למחוק את תת-הנושא "${confirmDeleteSubtopic?.name}"?`
+      }
+      description={
+        confirmDeleteSubtopic?.affectedCount > 0
+          ? `${confirmDeleteSubtopic.affectedCount} פריטים מתויגים תחת תת-נושא זה (או תתי-הנושאים שלו). הזז או מחק אותם קודם.`
+          : 'תת-הנושא ריק ואין תתי-נושאים תחתיו. הפעולה בלתי הפיכה.'
+      }
+      confirmLabel={confirmDeleteSubtopic?.affectedCount > 0 ? 'הבנתי' : 'מחק'}
+      cancelLabel={confirmDeleteSubtopic?.affectedCount > 0 ? 'סגור' : 'ביטול'}
+      danger
+      onConfirm={handleConfirmDeleteSubtopic}
+    />
+
+    <ConfirmDialog
+      open={!!confirmDeleteSubSubtopic}
+      onOpenChange={open => !open && setConfirmDeleteSubSubtopic(null)}
+      title={
+        confirmDeleteSubSubtopic?.affectedCount > 0
+          ? `לא ניתן למחוק את "${confirmDeleteSubSubtopic?.name}"`
+          : `למחוק את תת-תת-הנושא "${confirmDeleteSubSubtopic?.name}"?`
+      }
+      description={
+        confirmDeleteSubSubtopic?.affectedCount > 0
+          ? `${confirmDeleteSubSubtopic.affectedCount} פריטים מתויגים תחת תת-תת-נושא זה. הזז או מחק אותם קודם.`
+          : 'הפעולה בלתי הפיכה.'
+      }
+      confirmLabel={confirmDeleteSubSubtopic?.affectedCount > 0 ? 'הבנתי' : 'מחק'}
+      cancelLabel={confirmDeleteSubSubtopic?.affectedCount > 0 ? 'סגור' : 'ביטול'}
+      danger
+      onConfirm={handleConfirmDeleteSubSubtopic}
+    />
+
+    <ConfirmDialog
+      open={!!confirmPromote}
+      onOpenChange={open => !open && setConfirmPromote(null)}
+      title={`להפוך את "${confirmPromote?.name}" לנושא ראשי עצמאי?`}
+      description={
+        confirmPromote?.affectedCount > 0
+          ? `${confirmPromote.affectedCount} פריטים (ותתי-נושאים, אם יש) יעברו יחד איתו. הוא יקבל טאב נושא ראשי משלו בשורה העליונה, ולא יופיע יותר תחת הנושא הקודם.`
+          : 'הוא יקבל טאב נושא ראשי משלו בשורה העליונה, ולא יופיע יותר תחת הנושא הקודם.'
+      }
+      confirmLabel="הפוך לנושא ראשי"
+      danger={false}
+      onConfirm={handleConfirmPromote}
     />
     </>
   );
