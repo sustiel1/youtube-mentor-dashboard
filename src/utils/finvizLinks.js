@@ -1,4 +1,8 @@
+import { getTradingViewPublicDestination } from '@/lib/tradingViewDestinations';
+
 const FINVIZ_BASE = 'https://finviz.com/quote.ashx?t=';
+
+export const FINVIZ_SECTOR_OVERVIEW_URL = 'https://finviz.com/groups?g=sector&v=140&o=-change';
 
 /** Daily chart URL with &p=d for sector/ETF Finviz links. */
 export function buildFinvizQuoteUrl(ticker) {
@@ -122,6 +126,8 @@ const _SECTOR_ENTRIES = [
   ['בנקים אזוריים',        { etf: 'KRE'  }],
   ['טכנולוגיה / שבבים',   { etf: 'SOXX' }],
   ['טכנולוגיה',            { etf: 'XLK'  }],
+  ['טכנולוגיה וענן',       { etf: 'XLK'  }],
+  ['שבבים ותשתיות AI',     { etf: 'XLK'  }],
   ['שבבים',                { etf: 'SOXX' }],
   ['סמיקונדקטורים',        { etf: 'SOXX' }],
   ['מוליכים למחצה',        { etf: 'SOXX' }],
@@ -140,6 +146,8 @@ const _SECTOR_ENTRIES = [
   ['נדלן',                 { etf: 'XLRE' }],
   ['נדל"ן',                { etf: 'XLRE' }],
   ['נדל״ן',                { etf: 'XLRE' }],
+  ['נדל״ן ונכסי סיכון',    { etf: 'XLRE' }],
+  ['נדל"ן ונכסי סיכון',    { etf: 'XLRE' }],
   ['תקשורת',               { etf: 'XLC'  }],
   ['קמעונאות',             { etf: 'XRT'  }],
   ['ריטים',                { etf: 'VNQ'  }],
@@ -266,19 +274,19 @@ export function getFinvizUrl(input) {
 
 // Fallback URLs for symbols not supported by Finviz (DXY, crypto, etc.)
 const _FALLBACK_URL_MAP = new Map([
-  ['dxy',               'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['usdx',              'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['us dollar index',   'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['dollar index',      'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['מדד הדולר',         'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['btc',               'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['btcusd',            'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['ביטקוין',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['eth',               'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['ethereum',          'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['אתריום',            'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['vix',               'https://www.tradingview.com/chart/?symbol=TVC:VIX'],
+  ['dxy',               'https://il.tradingview.com/symbols/TVC-DXY/'],
+  ['usdx',              'https://il.tradingview.com/symbols/TVC-DXY/'],
+  ['us dollar index',   'https://il.tradingview.com/symbols/TVC-DXY/'],
+  ['dollar index',      'https://il.tradingview.com/symbols/TVC-DXY/'],
+  ['מדד הדולר',         'https://il.tradingview.com/symbols/TVC-DXY/'],
+  ['btc',               'https://il.tradingview.com/symbols/COINBASE-BTCUSD/'],
+  ['bitcoin',           'https://il.tradingview.com/symbols/COINBASE-BTCUSD/'],
+  ['btcusd',            'https://il.tradingview.com/symbols/COINBASE-BTCUSD/'],
+  ['ביטקוין',           'https://il.tradingview.com/symbols/COINBASE-BTCUSD/'],
+  ['eth',               'https://il.tradingview.com/symbols/COINBASE-ETHUSD/'],
+  ['ethereum',          'https://il.tradingview.com/symbols/COINBASE-ETHUSD/'],
+  ['אתריום',            'https://il.tradingview.com/symbols/COINBASE-ETHUSD/'],
+  ['vix',               'https://il.tradingview.com/symbols/CBOE-VIX/'],
   ['fear & greed',      'https://edition.cnn.com/markets/fear-and-greed'],
   ['fear and greed',    'https://edition.cnn.com/markets/fear-and-greed'],
 ]);
@@ -309,15 +317,29 @@ export function normalizeMarketSymbol(input) {
   return resolveFinvizTicker(input);
 }
 
-/** Returns a generic TradingView chart URL for any symbol string. Never returns null. */
+/** Returns a verified public TradingView symbol page, or null when unresolved. */
 export function buildTradingViewUrl(symbol) {
-  const s = String(symbol || '').trim();
-  if (!s) return 'https://www.tradingview.com/chart/';
-  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s)}`;
+  return getTradingViewPublicDestination(symbol)?.url || null;
 }
 
-// Personal TradingView chart base URL (user's saved chart layout)
-const _TV_CHART_BASE = 'https://il.tradingview.com/chart/54fxnDLz/';
+const _VERIFIED_SECTOR_ETFS = new Set([
+  ..._SECTOR_ENTRIES.map(([, value]) => value.etf),
+  'SMH',
+  'CLOU',
+]);
+const _CANONICAL_SECTOR_BY_ETF = new Map([
+  ['XLK', 'Technology'],
+  ['XLC', 'Communication Services'],
+  ['XLF', 'Financial'],
+  ['XLV', 'Healthcare'],
+  ['XLE', 'Energy'],
+  ['XLI', 'Industrials'],
+  ['XLY', 'Consumer Discretionary'],
+  ['XLP', 'Consumer Staples'],
+  ['XLU', 'Utilities'],
+  ['XLB', 'Materials'],
+  ['XLRE', 'Real Estate'],
+]);
 
 // Exchange map: ticker → exchange prefix used by TradingView
 // TradingView uses AMEX for NYSE Arca-listed ETFs.
@@ -360,6 +382,13 @@ const _TV_EXCHANGE_MAP = new Map([
   ['KRE', 'AMEX'], ['KBE', 'AMEX'], ['IGV', 'AMEX'],
   ['GDX', 'AMEX'], ['UUP', 'AMEX'],
 ]);
+
+/** Finviz stock URL only when the existing exchange registry verifies the symbol. */
+export function getVerifiedFinvizStockUrl(input) {
+  const symbol = String(input || '').trim().toUpperCase();
+  if (!_TV_EXCHANGE_MAP.has(symbol)) return null;
+  return getFinvizUrl(symbol);
+}
 
 // Normalize a raw symbol/name for TradingView alias lookup.
 // Trims, uppercases (English only — Hebrew is unchanged by toUpperCase),
@@ -583,25 +612,7 @@ export function buildTradingViewSearchUrl(query) {
  * Returns the base chart URL if no symbol provided.
  */
 export function buildTradingViewChartUrl(symbol) {
-  if (!symbol) return _TV_CHART_BASE;
-  const s = _normTv(symbol);
-  if (!s) return _TV_CHART_BASE;
-
-  // 1. Named aliases: indices, crypto, commodities, macro proxies, sectors, Hebrew
-  const alias = _TV_ALIAS_MAP.get(s);
-  if (alias) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(alias)}`;
-
-  // 2. Stock/ETF ticker with known exchange
-  const exchange = _TV_EXCHANGE_MAP.get(s);
-  if (exchange) return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`${exchange}:${s}`)}`;
-
-  // 3. Pure A-Z ticker (1-6 chars) — NASDAQ fallback
-  if (/^[A-Z]{1,6}$/.test(s)) {
-    return `${_TV_CHART_BASE}?symbol=${encodeURIComponent(`NASDAQ:${s}`)}`;
-  }
-
-  // 4. Unknown multi-word / company name — open TradingView search
-  return buildTradingViewSearchUrl(s);
+  return getTradingViewPublicDestination(symbol)?.url || null;
 }
 
 /**
@@ -687,6 +698,39 @@ export function resolveSectorFinvizLink(sectorStr) {
   }
 
   return null;
+}
+
+function normalizeVerifiedSectorEtf(value) {
+  const ticker = String(value || '').trim().toUpperCase();
+  return _VERIFIED_SECTOR_ETFS.has(ticker) ? ticker : null;
+}
+
+/**
+ * Resolves sector identity and representative ETF without mutating source data.
+ * Explicit normalized data wins, then legacy metadata, then the controlled registry.
+ */
+export function resolveSectorDestination({ sector, sourceEtf, legacyEtf } = {}) {
+  const label = String(sector || '').trim();
+  const explicitSourceEtf = normalizeVerifiedSectorEtf(sourceEtf);
+  const explicitLegacyEtf = normalizeVerifiedSectorEtf(legacyEtf);
+  const registryEtf = label ? normalizeVerifiedSectorEtf(resolveFinvizTicker(label)) : null;
+  const representativeEtf = explicitSourceEtf || explicitLegacyEtf || registryEtf;
+  const resolutionSource = explicitSourceEtf
+    ? 'source-etf'
+    : explicitLegacyEtf
+      ? 'legacy-etf'
+      : registryEtf
+        ? 'registry'
+        : 'unresolved';
+
+  return {
+    sourceSectorLabel: label,
+    canonicalSector: representativeEtf ? (_CANONICAL_SECTOR_BY_ETF.get(representativeEtf) || null) : null,
+    representativeEtf: representativeEtf || null,
+    resolutionSource,
+    overviewUrl: FINVIZ_SECTOR_OVERVIEW_URL,
+    etfUrl: representativeEtf ? `${FINVIZ_BASE}${encodeURIComponent(representativeEtf)}` : null,
+  };
 }
 
 /** Finviz search fallback for unrecognized sector labels. */
