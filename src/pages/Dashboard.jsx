@@ -7,6 +7,8 @@ import { ExternalVideoModal } from "@/components/dashboard/ExternalVideoModal";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { VideoCard } from "@/components/dashboard/VideoCard";
+import { MentorContentHubDialog } from "@/components/mentors/MentorContentHubDialog";
+import { MentorChannelQuickNav } from "@/components/mentors/MentorChannelQuickNav";
 import { ErrorsBar } from "@/components/dashboard/ErrorsBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVideos, useSaveVideo, useUpdateLearningStatus, useAssignTopics, useDeleteVideo, useUpdateVideo } from "@/hooks/useVideos";
@@ -271,6 +273,7 @@ export default function Dashboard({
   pageParams,
 }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [contentHubTarget, setContentHubTarget] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [isExternalVideoModalOpen, setIsExternalVideoModalOpen] = useState(false);
   const [activeDashboardFilter, setActiveDashboardFilter] = useState(null);
@@ -492,6 +495,11 @@ export default function Dashboard({
     const channelId = video?.youtubeChannelId || video?.channelId;
     if (channelId && channelId.startsWith("UC")) return `https://www.youtube.com/channel/${channelId}`;
     return null;
+  };
+
+  const openMentorContentHub = (video) => {
+    const mentor = mentors.find((item) => item.id === video?.mentorId) || null;
+    setContentHubTarget({ mentor, fallback: video || null });
   };
 
   const handleVideoClick = (video) => {
@@ -920,6 +928,10 @@ export default function Dashboard({
                 topics={topics}
               />
 
+              {filters.mentor !== "all" ? (
+                <MentorChannelQuickNav mentor={mentors.find((mentor) => mentor.id === filters.mentor) || null} />
+              ) : null}
+
               {/* YouTube channel link — shown only when a specific mentor is selected */}
               {filters.mentor !== "all" && (() => {
                 const selectedMentor = mentors.find((m) => m.id === filters.mentor);
@@ -1071,6 +1083,7 @@ export default function Dashboard({
                     video={video}
                     mentorName={getMentorName(video.mentorId, video)}
                     mentorChannelUrl={getMentorChannelUrl(video.mentorId, video)}
+                    onMentorOpen={selectionMode ? undefined : openMentorContentHub}
                     topics={topics}
                     onClick={selectionMode ? () => toggleSelectVideo(video.id) : handleVideoClick}
                     onSaveToggle={selectionMode ? undefined : handleSaveToggle}
@@ -1102,6 +1115,15 @@ export default function Dashboard({
         isDark={isDark}
         toggleTheme={toggleTheme}
         navigateTo={navigateTo}
+        onMentorContentHubOpen={() => openMentorContentHub(selectedVideo)}
+      />
+
+      <MentorContentHubDialog
+        mentor={contentHubTarget?.mentor || null}
+        fallback={contentHubTarget?.fallback || null}
+        videos={videos}
+        open={Boolean(contentHubTarget)}
+        onOpenChange={(nextOpen) => { if (!nextOpen) setContentHubTarget(null); }}
       />
 
       <ExternalVideoModal

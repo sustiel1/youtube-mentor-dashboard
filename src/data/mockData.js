@@ -42,6 +42,16 @@ export const MENTORS = [
     topicIds: ["t2", "t7", "t3"],
     avatarUrl: "",
     youtubeChannelId: "UCSxjNbPriyBh9RNl_QNSAtw",
+    contentHub: {
+      status: "ready",
+      tabs: [
+        { key: "videos", availability: "verified", source: "youtube" },
+        { key: "live", availability: "verified", source: "youtube" },
+        { key: "courses", availability: "verified", source: "manual" },
+        { key: "playlists", availability: "verified", source: "youtube" },
+        { key: "shorts", availability: "verified", source: "youtube" },
+      ],
+    },
     active: true,
   },
   {

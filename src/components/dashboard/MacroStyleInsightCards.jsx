@@ -4,6 +4,7 @@ import {
 } from './MorningBriefVisualPrimitives';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { TradingViewSymbolAction } from '@/components/shared/TradingViewSymbolAction';
 
 export const INSIGHT_GRID_SLOT_COUNT = 3;
 
@@ -50,14 +51,19 @@ const EMPTY_CARD_VARIANT_CLS = {
 
 export function MacroStyleEmptyInsightCard({ variant = 'opportunity', slotIndex = 0 }) {
   const variantCls = EMPTY_CARD_VARIANT_CLS[variant] ?? EMPTY_CARD_VARIANT_CLS.opportunity;
+  const label = variant === 'risk'
+    ? 'לא נמצא סיכון נוסף'
+    : 'לא נמצאה הזדמנות נוספת';
   return (
     <div
-      className={`${EMPTY_CARD_BASE} ${variantCls}`}
+      className={`${EMPTY_CARD_BASE} ${variantCls} items-center justify-center text-center`}
       data-empty-insight-slot
       data-insight-variant={variant}
       data-slot-index={slotIndex}
-      aria-hidden
-    />
+      aria-label={label}
+    >
+      <p className="text-sm font-medium text-slate-400 dark:text-zinc-500">{label}</p>
+    </div>
   );
 }
 
@@ -67,6 +73,7 @@ function MacroStyleInsightCardShell({
   pillLabel,
   details,
   assets,
+  tradingViewAsset,
   catalyst,
   pxUrl,
   researchTone = 'emerald',
@@ -116,8 +123,9 @@ function MacroStyleInsightCardShell({
           {renderLinkedMarketText(assets)}
         </p>
       ) : null}
-      {(pxUrl || saveActions) ? (
+      {(pxUrl || saveActions || tradingViewAsset) ? (
         <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
+          {tradingViewAsset ? <TradingViewSymbolAction asset={tradingViewAsset} /> : null}
           {pxUrl ? <ResearchDropdownCompact pxUrl={pxUrl} /> : null}
           {saveActions ? <div className="mr-auto">{saveActions}</div> : null}
         </div>

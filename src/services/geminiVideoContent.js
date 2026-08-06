@@ -21,6 +21,7 @@ export async function fetchGeminiBasicSummary({ title, transcriptText, signal })
 }
 
 export async function fetchGeminiVideoContent({
+  contentType = "general",
   videoId,
   title,
   channelName = "",
@@ -43,6 +44,7 @@ export async function fetchGeminiVideoContent({
     headers: { "Content-Type": "application/json" },
     signal,
     body: JSON.stringify({
+      contentType,
       videoId,
       title,
       channelName,

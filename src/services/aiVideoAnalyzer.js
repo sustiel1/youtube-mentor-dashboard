@@ -36,6 +36,7 @@ export async function analyzeVideoWithProvider({
   durationSeconds,
   mentor = null,
   category = null,
+  analysisRoute = "general",
   chaptersTarget: chaptersTargetOverride = null,
   signal,
 }) {
@@ -48,6 +49,7 @@ export async function analyzeVideoWithProvider({
     durationSeconds,
     mentor,
     category,
+    analysisRoute,
     chaptersTarget,
     signal,
   });

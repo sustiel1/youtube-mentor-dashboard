@@ -22,7 +22,35 @@ export const MORNING_BRIEF_SPECIALIZED_PRESENTATION = {
   showSectionCounts: true,
   /** Colored summary pills under title (חיוביים | ניטרליים | …) — separate from title count */
   showSummaryCounters: false,
+  briefSession: 'morning',
+  hideEmptyOptionalSections: false,
 };
+
+export const MORNING_BRIEF_SECTION_ORDER = [
+  'news', 'market-regime', 'sectors', 'opportunities-risks', 'stocks-mentioned',
+  'economic-calendar', 'macro', 'sentiment', 'markets',
+  'company-events', 'levels', 'top-insights', 'learning-insights', 'all-points',
+];
+
+export const EVENING_BRIEF_SECTION_ORDER = [
+  'news', 'market-regime', 'markets', 'sectors', 'company-events',
+  'stocks-mentioned', 'opportunities-risks', 'levels', 'top-insights',
+  'learning-insights', 'economic-calendar', 'macro', 'sentiment', 'all-points',
+];
+
+export function getMarketBriefSpecializedPresentation(briefSession = 'unknown') {
+  const evening = briefSession === 'evening';
+  return {
+    ...MORNING_BRIEF_SPECIALIZED_PRESENTATION,
+    briefSession,
+    hideEmptyOptionalSections: evening,
+    sectionOrder: evening ? EVENING_BRIEF_SECTION_ORDER : MORNING_BRIEF_SECTION_ORDER,
+  };
+}
+
+export function resolveMarketBriefSectionOrder(presentation) {
+  return resolveMorningBriefPresentation(presentation).sectionOrder || MORNING_BRIEF_SECTION_ORDER;
+}
 
 /** Default when no presentation profile is passed (dev / legacy surfaces). */
 export const MORNING_BRIEF_DEFAULT_PRESENTATION = {
@@ -63,6 +91,64 @@ export function countOpportunitiesAndRisks(opportunities, risks) {
   const opp = Array.isArray(opportunities) ? opportunities : [];
   const rsk = Array.isArray(risks) ? risks : [];
   return opp.length + rsk.length;
+}
+
+const PRESENTATION_RANK = {
+  critical: 4,
+  קריטי: 4,
+  קריטית: 4,
+  high: 3,
+  גבוהה: 3,
+  גבוה: 3,
+  medium: 2,
+  בינונית: 2,
+  בינוני: 2,
+  low: 1,
+  נמוכה: 1,
+  נמוך: 1,
+};
+
+function normalizedRank(value) {
+  return PRESENTATION_RANK[String(value ?? '').trim().toLowerCase()] || 0;
+}
+
+function meaningfulFieldCount(item, fields) {
+  return fields.reduce((count, field) => {
+    const value = item?.[field];
+    return count + (value !== undefined && value !== null && value !== '' ? 1 : 0);
+  }, 0);
+}
+
+function stableRank(items, score) {
+  const safe = Array.isArray(items) ? items : [];
+  return safe
+    .map((item, sourceIndex) => ({ item, sourceIndex, score: score(item) }))
+    .sort((a, b) => {
+      for (let index = 0; index < a.score.length; index += 1) {
+        const difference = b.score[index] - a.score[index];
+        if (difference) return difference;
+      }
+      return a.sourceIndex - b.sourceIndex;
+    })
+    .map(({ item }) => item);
+}
+
+export function rankOpportunityItems(items) {
+  return stableRank(items, (item) => [
+    normalizedRank(item?.priority),
+    normalizedRank(item?.confidence),
+    meaningfulFieldCount(item, [
+      'entry', 'stop', 'target', 'rrRatio', 'timeframe', 'catalyst', 'invalidation',
+    ]),
+  ]);
+}
+
+export function rankRiskItems(items) {
+  return stableRank(items, (item) => [
+    normalizedRank(item?.severity || item?.category),
+    normalizedRank(item?.priority),
+    Array.isArray(item?.affectedAssets) ? item.affectedAssets.length : 0,
+  ]);
 }
 
 /** Optional subsection title suffix, e.g. "הזדמנויות (3)". */

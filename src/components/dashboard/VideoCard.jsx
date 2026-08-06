@@ -71,6 +71,7 @@ export function VideoCard({
   video,
   mentorName,
   mentorChannelUrl,
+  onMentorOpen,
   topics = [],
   onSaveToggle,
   onPermanentToggle,
@@ -290,6 +291,20 @@ export function VideoCard({
               : "truncate text-right text-xs text-slate-500 dark:text-zinc-300";
             const channelHref = mentorChannelUrl
               || (video.channelId ? `https://www.youtube.com/channel/${video.channelId}` : null);
+            if (onMentorOpen) {
+              return (
+                <button
+                  type="button"
+                  onClick={(event) => { event.stopPropagation(); onMentorOpen(video); }}
+                  title={`פתח את מרכז התוכן של ${displayName}`}
+                  aria-label={`פתח את מרכז התוכן של ${displayName}`}
+                  className="flex min-w-0 flex-1 items-center gap-2 transition-opacity hover:opacity-80"
+                >
+                  <div className={avatarCls}>{displayName.charAt(0)}</div>
+                  <span className={cn(nameCls, "hover:underline")}>{displayName}</span>
+                </button>
+              );
+            }
             if (channelHref) {
               return (
                 <a

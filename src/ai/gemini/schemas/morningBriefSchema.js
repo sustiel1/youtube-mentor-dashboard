@@ -7,22 +7,33 @@
  */
 export function getMorningBriefSchemaExample() {
   return JSON.stringify({
+    briefType: "morning",
+    marketSession: "before-market",
     universalTabs: {
       summary: [
         "Today's session opened with cautious optimism as Fed held rates steady.",
         "Key watch: CPI data due Thursday could shift momentum."
       ],
       chapters: [
-        { title: "Pre-market Overview", startSeconds: 0, endSeconds: 120, summary: "SPY gap-down reversed at open" }
+        {
+          title: "Pre-market Overview",
+          startSeconds: 0,
+          endSeconds: 120,
+          timestampSource: "youtube-timedtext",
+          timestampConfidence: 1,
+          summary: "SPY gap-down reversed at open"
+        }
       ],
-      insights: [
-        "Market is pricing in 2 rate cuts before year-end — watch FOMC minutes.",
-        "Tech sector showing relative strength despite broad-market weakness."
-      ],
-      usefulKnowledge: [
-        "When VIX > 25, reduce position size by 50%.",
-        "Pre-market volume spike on SPY signals institutional activity."
-      ],
+      insights: {
+        top5Insights: [{ insight: "Market is pricing in 2 rate cuts before year-end.", startSeconds: 522.4, endSeconds: 548.1, timestampSource: "timed-transcript-alignment", timestampConfidence: 0.94 }],
+        learningInsights: [{ lesson: "Wait for confirmation before increasing risk.", startSeconds: null, endSeconds: null, timestampSource: "unavailable", timestampConfidence: null }],
+        marketLessons: [], tradingInsights: [], conclusions: []
+      },
+      usefulKnowledge: {
+        reusableKnowledge: [{ text: "When VIX > 25, reduce position size by 50%.", startSeconds: 0, endSeconds: null, timestampSource: "youtube-timedtext", timestampConfidence: 1 }],
+        keyTakeaways: ["Legacy string items remain supported."],
+        actionChecklist: []
+      },
       appBuilder: {
         kpiList: ["VIX level", "SPY pre-market gap"],
         dashboards: ["Pre-market scanner", "Sector rotation heatmap"],
@@ -41,11 +52,11 @@ export function getMorningBriefSchemaExample() {
           { name: "Nasdaq 100", level: "18,540", change: "+0.5%" }
         ],
         marketNews: [
-          "Fed holds rates steady at 5.25-5.50%",
-          "NVDA reports Q2 beat, guides higher"
+          { title: "Fed holds rates steady", summary: "Rates remain at 5.25-5.50%", impact: "No new directional evidence", sentiment: "neutral", sentimentReason: "Factual decision without a supported directional market reaction", sentimentConfidence: 0.8, sourceEvidence: ["Rates held steady"] },
+          { title: "NVDA reports Q2 beat", summary: "Revenue exceeded expectations and guidance increased", impact: "Favorable for NVDA", sentiment: "positive", sentimentReason: "Beat and raised guidance", sentimentConfidence: 0.95, sourceEvidence: ["Revenue beat", "Guidance raised"] }
         ],
         stocksMentioned: [
-          { symbol: "NVDA", reason: "Q2 earnings beat", importance: "high" },
+          { symbol: "NVDA", exchange: "NASDAQ", reason: "Q2 earnings beat", importance: "high" },
           { symbol: "SPY", reason: "Key support at 5,200", importance: "medium" }
         ],
         macro: [
@@ -59,10 +70,21 @@ export function getMorningBriefSchemaExample() {
           { event: "US CPI Release", date: "Thursday 8:30 AM", importance: "high", impact: "Rate-sensitive sectors could reprice" },
           { event: "University of Michigan Sentiment", date: "Friday 10:00 AM", importance: "medium", impact: "Consumer confidence signal" }
         ],
-        opportunities: [
-          "NVDA breakout above $130 — momentum entry",
-          "XLF at key support — swing trade setup"
+        tradingOpportunities: [
+          {
+            ticker: "NVDA",
+            setup: "Breakout above $130",
+            reason: "Momentum entry supported by the transcript",
+            priority: "high"
+          },
+          {
+            ticker: "XLF",
+            setup: "Swing setup at key support",
+            reason: "Support level explicitly discussed",
+            priority: "medium"
+          }
         ],
+        // Up to 3 distinct evidence-backed items; [] is valid. Never add filler.
         risks: [
           "Hot CPI could push yields higher and compress tech valuations",
           "Middle East tension escalating — watch oil prices"
@@ -77,13 +99,13 @@ export function getMorningBriefSchemaExample() {
     reusableKnowledge: ["..."],
     keyTakeaways: ["..."],
     actionChecklist: ["..."],
-    marketNews: ["..."],
+    marketNews: [{ title: "...", summary: "...", impact: "...", sentiment: "positive|negative|neutral|mixed|unknown", sentimentReason: "...", sentimentConfidence: 0, sourceEvidence: ["..."] }],
     indices: [],
     stocksMentioned: [],
     macro: [],
     sentiment: ["..."],
     calendar: [{ event: "...", date: "...", importance: "high|medium|low", impact: "..." }],
-    opportunities: ["..."],
+    tradingOpportunities: ["..."],
     risks: ["..."],
     tags: ["..."],
     obsidianTopics: ["..."]

@@ -51,6 +51,7 @@ export async function analyzeVideoWithClaude({
   durationSeconds,
   mentor = null,
   category = null,
+  analysisRoute = "general",
   chaptersTarget = 6,
   signal,
 }) {
@@ -81,6 +82,7 @@ export async function analyzeVideoWithClaude({
         durationSeconds,
         mentor,
         category,
+        analysisRoute,
         chaptersTarget,
       }),
     });

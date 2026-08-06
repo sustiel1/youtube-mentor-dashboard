@@ -501,6 +501,7 @@ export function formatMacroDirection(text, structuredTone = null) {
 export function getMacroChangeDisplay(change, contextText = '') {
   const original = String(change ?? '').trim();
   if (!original) return null;
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(original)) return null;
 
   const ctx = [contextText, original].filter(Boolean).join(' ');
   const numeric = formatMarketChange(original, ctx);
@@ -520,6 +521,7 @@ export function getMacroChangeDisplay(change, contextText = '') {
 export function getMacroFieldDisplay(text, row = null) {
   const original = String(text ?? '').trim();
   if (!original) return null;
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(original)) return null;
 
   const ctx = row
     ? [row.impact, row.change, row.description, row.indicator].filter(Boolean).join(' ')

@@ -5,6 +5,8 @@
 import { valueToDisplayItems } from '@/lib/universalTabSections';
 import { mergeMorningBriefSpecializedSource } from '@/lib/morningBriefDisplay';
 import { formatStockStatusText } from '@/lib/stockStatusDisplay';
+import { normalizeConclusionText, resolveSummaryConclusion } from '@/lib/summaryConclusionResolver';
+import { formatMarketStateItems } from '@/lib/summaryItemDisplay';
 
 const MAX_THIRTY_SECOND = 5;
 const MAX_INSIGHTS = 5;
@@ -169,6 +171,13 @@ export function buildDailyBriefingView({
   const summaryObj = readSummaryObject(mbd);
   const usefulObj = readUsefulObject(mbd);
   const insightsObj = readInsightsObject(mbd);
+  const resolvedConclusion = resolveSummaryConclusion({ video, marketBriefData: mbd });
+  const resolvedConclusionKey = normalizeConclusionText(resolvedConclusion.text);
+  const excludeResolvedConclusion = (items) => (
+    resolvedConclusionKey
+      ? items.filter((item) => normalizeConclusionText(item) !== resolvedConclusionKey)
+      : items
+  );
   const merged = mergeMorningBriefSpecializedSource(mbd) || {};
 
   const topTakeaways = valueToDisplayItems(summaryObj.topTakeaways);
@@ -179,23 +188,24 @@ export function buildDailyBriefingView({
   const flatSummaryItems = summaryShaped?.mode === 'flat'
     ? summaryShaped.items
     : (summaryShaped?.mode === 'sections'
-      ? summaryShaped.sections.flatMap((s) => s.items)
+      ? summaryShaped.sections
+          .filter((section) => section.key !== 'mainConclusion')
+          .flatMap((section) => section.items)
       : []);
 
-  const thirtySecond = uniqueStrings([
+  const thirtySecond = excludeResolvedConclusion(uniqueStrings([
     ...topTakeaways,
     ...indexBullets,
     ...shortSummaryBullets,
     ...flatSummaryItems,
     ...valueToDisplayItems(pickArray(mbd.top5Insights, insightsObj.top5Insights)),
-  ], MAX_THIRTY_SECOND);
+  ], MAX_THIRTY_SECOND));
 
   const moodRaw = String(
     summaryObj.marketMood || summaryObj.mainConclusion || ''
   ).trim();
-  const sentimentLines = valueToDisplayItems(
-    pickArray(merged.sentiment, mbd.sentiment, video.sentiment)
-  );
+  const rawSentimentItems = pickArray(merged.sentiment, mbd.sentiment, video.sentiment);
+  const sentimentLines = uniqueStrings(formatMarketStateItems(rawSentimentItems));
   const overview = merged.marketOverview && typeof merged.marketOverview === 'object'
     ? merged.marketOverview
     : {};
@@ -227,33 +237,33 @@ export function buildDailyBriefingView({
     }
     : null;
 
-  const watchToday = uniqueStrings([
+  const watchToday = excludeResolvedConclusion(uniqueStrings([
     ...pickArray(merged.opportunities, mbd.opportunities, video.opportunities).map(formatObjectLine),
     ...pickArray(merged.stocksMentioned, mbd.stocksMentioned, video.stocksMentioned).map(formatStockWatch),
     ...pickArray(merged.calendar, merged.economicCalendar, mbd.calendar, mbd.macro, video.macro).map(formatCalendarWatch),
     ...valueToDisplayItems(summaryObj.keyOpportunities),
     ...pickArray(merged.watchlistLevels, merged.keyLevels, mbd.watchlistLevels).map(formatObjectLine),
-  ], MAX_WATCH);
+  ], MAX_WATCH));
 
-  const keyInsights = uniqueStrings([
+  const keyInsights = excludeResolvedConclusion(uniqueStrings([
     ...valueToDisplayItems(pickArray(insightsObj.top5Insights, mbd.top5Insights, video.top5Insights)),
     ...valueToDisplayItems(pickArray(usefulObj.reusableKnowledge, mbd.reusableKnowledge, video.reusableKnowledge)),
     ...valueToDisplayItems(pickArray(insightsObj.marketLessons, insightsObj.learningInsights, mbd.learningInsights)),
     ...valueToDisplayItems(pickArray(mbd.conclusions, video.conclusions)),
     ...valueToDisplayItems(pickArray(insightsObj.tradingInsights)),
-  ], MAX_INSIGHTS);
+  ], MAX_INSIGHTS));
 
-  const keyRisks = uniqueStrings([
+  const keyRisks = excludeResolvedConclusion(uniqueStrings([
     ...pickArray(merged.risks, mbd.risks, video.risks).map(formatObjectLine),
     ...valueToDisplayItems(summaryObj.importantWarnings),
     ...valueToDisplayItems(pickArray(usefulObj.riskManagement, mbd.riskManagement)),
     ...pickArray(merged.warnings, mbd.warnings).map(formatObjectLine),
-  ], 6);
+  ], 6));
 
-  const actionChecklist = uniqueStrings([
+  const actionChecklist = excludeResolvedConclusion(uniqueStrings([
     ...valueToDisplayItems(pickArray(usefulObj.actionChecklist, mbd.actionChecklist, video.actionChecklist)),
     ...valueToDisplayItems(pickArray(video.actionItems, mbd.actionItems)),
-  ], 8);
+  ], 8));
 
   // Cross-section deduplication: thirtySecond items take priority; each later section
   // drops exact duplicates that already appeared in an earlier section.
@@ -285,7 +295,7 @@ export function buildDailyBriefingView({
 
   // Executive conclusion: up to 5 bullets from conclusion/full-summary not already shown above.
   const conclusionBullets = uniqueStrings([
-    ...splitSummaryBullets(summaryObj.mainConclusion || ''),
+    resolvedConclusion.text,
     ...splitSummaryBullets(fullSummaryText),
   ], 20);
   const executiveConclusion = conclusionBullets

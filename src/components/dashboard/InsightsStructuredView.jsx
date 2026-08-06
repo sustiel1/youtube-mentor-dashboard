@@ -15,6 +15,8 @@ import {
   SUMMARY_CARD_CLASS,
   SUMMARY_CARD_TITLE_CLASS,
 } from '@/lib/summaryCardStyles';
+import { EvidenceTimestampButton } from '@/components/shared/EvidenceTimestampButton';
+import { resolveItemEvidenceTime } from '@/lib/evidenceTimestamp';
 
 const COLUMNS = [
   {
@@ -22,6 +24,7 @@ const COLUMNS = [
     label: 'סוג',
     pick: (row) => {
       if (typeof row !== 'object' || !row) return '';
+      if (row.lesson) return '';
       return String(row.type || row.category || row.kind || row.insightType || row._type || '').trim();
     },
   },
@@ -32,7 +35,7 @@ const COLUMNS = [
       if (typeof row === 'string') return row.trim();
       if (!row || typeof row !== 'object') return String(row ?? '').trim();
       return String(
-        row.insight || row.text || row.title || row.content || row.point || row.summary || ''
+        row.lesson || row.insight || row.text || row.title || row.content || row.point || row.summary || ''
       ).trim();
     },
   },
@@ -98,27 +101,23 @@ function rowSummary(row) {
   return COLUMNS.map((c) => c.pick(row)).filter(Boolean).join(' · ');
 }
 
-function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, bulkSelection }) {
+function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, bulkSelection, transcriptSegments, onSeek }) {
   const cols = activeColumns([row]);
   const summary = rowSummary(row);
   const saved = isSaved ? isSaved(summary) : false;
   const pxUrl = buildPxUrl(summary);
+  const timing = resolveItemEvidenceTime(row, summary, transcriptSegments);
 
   const actions = bulkSelection?.onQuickSaveBrain ? (
-    <UniversalTabQuickSaveFromBulk
-      bulkSelection={bulkSelection}
-      text={summary}
-      brainSaved={saved}
-      pxUrl={pxUrl}
-    />
+    <div className="flex items-center gap-1">
+      <EvidenceTimestampButton timing={timing} onSeek={onSeek} itemType="התובנה" />
+      <UniversalTabQuickSaveFromBulk bulkSelection={bulkSelection} text={summary} brainSaved={saved} pxUrl={pxUrl} />
+    </div>
   ) : (summary || pxUrl) ? (
-    <UniversalTabQuickSaveActions
-      meta={{ text: summary, sectionLabel: 'תובנות', type: 'insights' }}
-      onBrain={onSaveToBrain ? () => onSaveToBrain(summary) : undefined}
-      brainSaved={saved}
-      pxUrl={pxUrl}
-      compact
-    />
+    <div className="flex items-center gap-1">
+      <EvidenceTimestampButton timing={timing} onSeek={onSeek} itemType="התובנה" />
+      <UniversalTabQuickSaveActions meta={{ text: summary, sectionLabel: 'תובנות', type: 'insights' }} onBrain={onSaveToBrain ? () => onSaveToBrain(summary) : undefined} brainSaved={saved} pxUrl={pxUrl} compact />
+    </div>
   ) : null;
 
   const insightOnly = cols.length === 1 && cols[0].key === 'insight';
@@ -159,7 +158,7 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
   );
 }
 
-function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
+function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection, transcriptSegments, onSeek }) {
   if (rows.length === 0) return null;
 
   return (
@@ -181,6 +180,8 @@ function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
               tabScope: bulkSelection.tabScope || 'insights',
             }) : null}
             bulkSelection={bulkSelection}
+            transcriptSegments={transcriptSegments}
+            onSeek={onSeek}
           />
         );
       })}
@@ -202,6 +203,8 @@ export function InsightsStructuredView({
   isSaved,
   bulkSelection = null,
   tabScope = 'insights',
+  transcriptSegments = [],
+  onSeek = null,
 }) {
   const populatedSections = sections
     .map((s) => ({ ...s, rows: normalizeRows(s.items) }))
@@ -248,6 +251,8 @@ export function InsightsStructuredView({
                 type: tabScope,
                 tabScope,
               }) : null}
+              transcriptSegments={transcriptSegments}
+              onSeek={onSeek}
             />
           </div>
           );
@@ -268,6 +273,8 @@ export function InsightsStructuredView({
           type: tabScope,
           tabScope,
         }) : null}
+        transcriptSegments={transcriptSegments}
+        onSeek={onSeek}
       />
     </div>
   );

@@ -102,6 +102,58 @@ try {
   const ids = rows.map((row, index) => `${row.section}:${index}:${row.text}`);
   assert.equal(new Set(ids).size, ids.length, 'export rows must remain one-to-one with displayed rows');
 
+  const p0Payload = {
+    contentType: 'marketBrief',
+    marketOverview: {
+      bonds10y: {},
+      bonds30y: { note: 'long yields rising' },
+      bitcoin: { currentValue: 62185, direction: 'down', note: 'later market value' },
+      vix: { level: 0, direction: 'flat', note: 'zero preserved' },
+      emptyAsset: { direction: 'out' },
+    },
+    indices: [
+      { asset: 'ASSET_ONLY' },
+      { asset: 'DIRECTION_OK', direction: 'down' },
+      { asset: 'MALFORMED', unrelated: 'ignored' },
+    ],
+    watchlistLevels: [{
+      ticker: 'BTC',
+      dailyLow: 61800,
+      condition: 'above',
+      importance: 'important',
+      action: 'watch',
+      note: 'daily low',
+    }],
+    keyLevels: [{
+      asset: 'BITCOIN',
+      support: 61800,
+      type: 'support',
+      note: 'support',
+    }],
+    catalysts: [{
+      description: 'CPI',
+      timeframe: 'today',
+    }],
+    macroFactors: [{
+      factor: 'CPI',
+      note: 'tomorrow before the open',
+    }],
+  };
+  const p0Sections = buildMorningBriefBulkSections({}, p0Payload);
+  const p0Rows = p0Sections.flatMap((section) =>
+    section.items.map((text) => ({ section: section.key, text }))
+  );
+  assert.equal(p0Rows.some(({ text }) => text === 'BONDS10Y'), false, 'empty BONDS10Y must be rejected');
+  assert.equal(p0Rows.some(({ text }) => text === 'ASSET_ONLY'), false, 'asset-only placeholders must be rejected');
+  assert.equal(p0Rows.some(({ text }) => text.startsWith('MALFORMED')), false, 'malformed partial objects must be rejected');
+  assert.ok(p0Rows.some(({ section, text }) => section === 'markets' && text.startsWith('BONDS30Y') && text.includes('long yields rising')));
+  assert.ok(p0Rows.some(({ section, text }) => section === 'markets' && text.startsWith('VIX') && text.includes('0')));
+  assert.equal(p0Rows.filter(({ section, text }) => section === 'markets' && text.startsWith('BITCOIN')).length, 1);
+  assert.ok(p0Rows.some(({ section, text }) => section === 'markets' && text.startsWith('BITCOIN') && text.includes('62185')));
+  assert.equal(p0Rows.filter(({ section, text }) => section === 'levels' && text.startsWith('BITCOIN') && text.includes('61800')).length, 1);
+  assert.ok(p0Rows.some(({ section, text }) => section === 'economic-calendar' && text.includes('מועד לא מאומת')));
+  assert.ok(p0Rows.some(({ section, text }) => section === 'macro' && text.includes('מועד לא מאומת')));
+
   console.log(`specialized coverage: ${rows.length} rows, all assertions passed`);
 
   if (process.argv[2]) {
@@ -123,6 +175,18 @@ try {
         assert.ok(matches[0].text.includes(fragment), `${prefix} row must include ${fragment}`);
       }
     };
+    if (realPayload.briefDate === '13.7.26') {
+      assert.equal(realRows.some(({ text }) => text === 'BONDS10Y'), false);
+      expectSingleRealRow('markets', 'BONDS30Y', []);
+      expectSingleRealRow('markets', 'BITCOIN', ['62,185']);
+      expectSingleRealRow('levels', 'BITCOIN', ['61,800', 'support']);
+      assert.ok(realRows.some(({ section, text }) =>
+        section === 'economic-calendar' && text.includes('מועד לא מאומת')
+      ));
+      assert.ok(realRows.some(({ section, text }) =>
+        section === 'macro' && text.includes('מועד לא מאומת')
+      ));
+    } else {
     expectSingleRealRow('markets', 'VIX ·', ['18.6']);
     expectSingleRealRow('markets', 'OIL ·', ['80']);
     expectSingleRealRow('markets', 'BITCOIN ·', ['63400']);
@@ -130,6 +194,7 @@ try {
     expectSingleRealRow('stocks-mentioned', 'SNDK ·', ['1100']);
     expectSingleRealRow('levels', 'SOXX · PE 17', ['תנאי: below', 'חשיבות: critical', 'פעולה: buy']);
     expectSingleRealRow('levels', 'QQQ · MA 150', ['תנאי: at', 'חשיבות: critical', 'פעולה: watch']);
+    }
     console.log(JSON.stringify({
       realPayloadCount: realRows.length,
       sectionCounts: Object.fromEntries(realSections.map((section) => [section.key, section.items.length])),

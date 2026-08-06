@@ -7,6 +7,7 @@ import {
   UniversalTabSelectRow,
 } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabSectionHeaderActions } from '@/components/shared/UniversalTabSectionHeaderActions';
+import { SectionBulkSelectControl } from '@/components/shared/SectionBulkSelectControl';
 import { mergeBulkSelection, formatSectionCopyFromCardText } from '@/lib/universalTabBulkItems';
 
 /**
@@ -106,7 +107,9 @@ export function SelectableSummaryCardHeader({
       data-section-header
       data-summary-card={cardId || undefined}
     >
-      {showCheckbox ? (
+      {canSectionSelect ? (
+        <div className="min-w-0 flex-1">{titleEl}</div>
+      ) : showCheckbox ? (
         <UniversalTabSelectRow
           className="min-w-0 flex-1 items-center"
           checkbox={(
@@ -138,8 +141,17 @@ export function SelectableSummaryCardHeader({
       ) : (
         <div className="min-w-0 flex-1">{titleEl}</div>
       )}
-      {headerActions ? (
-        <div className="shrink-0 flex items-center gap-1">{headerActions}</div>
+      {(canSectionSelect || headerActions) ? (
+        <div className="shrink-0 flex flex-wrap items-center gap-2">
+          {canSectionSelect ? (
+            <SectionBulkSelectControl
+              items={sectionChildItems}
+              bulkSelection={bulkSelection}
+              sectionLabel={sectionLabel || title}
+            />
+          ) : null}
+          {headerActions}
+        </div>
       ) : null}
     </div>
   );

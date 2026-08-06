@@ -1,4 +1,6 @@
 import { formatStockStatusText } from './stockStatusDisplay';
+import { resolveInsightDisplay } from './insightDisplay';
+import { formatEvidenceTimestamp, normalizeEvidenceTime } from './evidenceTimestamp';
 
 /** Merge shared bulk handlers (quick save, toggle) with row-specific overrides. */
 export function mergeBulkSelection(base, overrides = {}) {
@@ -12,6 +14,12 @@ export function formatBulkItemText(item) {
   if (stockLine) return stockLine;
   if (typeof item === 'string') return item.trim();
   if (!item || typeof item !== 'object') return String(item ?? '').trim();
+  const insightDisplay = resolveInsightDisplay(item);
+  if (insightDisplay.recognized) {
+    const timing = normalizeEvidenceTime(item);
+    const timestamp = timing ? formatEvidenceTimestamp(timing.startSeconds) : '';
+    return timestamp ? `[${timestamp}] ${insightDisplay.text}` : insightDisplay.text;
+  }
   const nested = item.items || item.bullets || item.points;
   if (Array.isArray(nested) && nested.length > 0) {
     const title = (item.title || item.label || item.name || '').trim();
@@ -28,7 +36,11 @@ export function formatBulkItemText(item) {
     item.name || item.rule || item.description || item.insight || item.fact ||
     item.definition || item.setup || item.pattern || ''
   ).trim();
-  if (text) return text;
+  if (text) {
+    const timing = normalizeEvidenceTime(item);
+    const timestamp = timing ? formatEvidenceTimestamp(timing.startSeconds) : '';
+    return timestamp ? `[${timestamp}] ${text}` : text;
+  }
   const val = Object.values(item).find((v) => typeof v === 'string' && v.trim());
   return val ? val.trim() : '';
 }
@@ -41,12 +53,17 @@ export function formatBulkItemText(item) {
  */
 export function buildBulkItemsFromSections(sections = [], tabScope, idPrefix = tabScope) {
   const out = [];
-  sections.forEach(({ key, label, items, tabKey }) => {
+  sections.forEach(({ key, label, items, itemIds, tabKey }) => {
     const sourceTab = tabKey || tabScope;
     const list = Array.isArray(items) ? items : [];
-    list.map(formatBulkItemText).filter(Boolean).forEach((text, i) => {
+    list.forEach((item, i) => {
+      const text = formatBulkItemText(item);
+      if (!text) return;
+      const hasExplicitIds = Array.isArray(itemIds);
+      const explicitId = hasExplicitIds ? itemIds[i] : null;
+      if (hasExplicitIds && !explicitId) return;
       out.push({
-        id: `${idPrefix}:${key || sourceTab}:${i}`,
+        id: explicitId || `${idPrefix}:${key || sourceTab}:${i}`,
         text,
         sectionLabel: label || '',
         type: sourceTab,

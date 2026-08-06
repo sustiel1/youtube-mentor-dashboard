@@ -60,7 +60,7 @@ export function ManualSectionHeaderActions({
   );
 }
 
-export function ManualEditGrid({ columns, rows, onChange, rowKeyPrefix = 'row' }) {
+export function ManualEditGrid({ columns, rows, onChange, rowKeyPrefix = 'row', getRowKey }) {
   const safeRows = Array.isArray(rows) ? rows : [];
 
   const updateCell = (rowIndex, key, value) => {
@@ -99,7 +99,7 @@ export function ManualEditGrid({ columns, rows, onChange, rowKeyPrefix = 'row' }
               </tr>
             ) : (
               safeRows.map((row, rowIndex) => (
-                <tr key={`${rowKeyPrefix}-${rowIndex}`} className="border-b border-slate-100 dark:border-zinc-800/80">
+                <tr key={`${rowKeyPrefix}-${getRowKey?.(row, rowIndex) || rowIndex}`} className="border-b border-slate-100 dark:border-zinc-800/80">
                   {columns.map((col) => (
                     <td key={col.key} className="px-1.5 py-1">
                       <input

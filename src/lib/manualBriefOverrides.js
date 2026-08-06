@@ -36,7 +36,7 @@ export const SECTION_EDIT_COLUMNS = {
   ],
   macro: [
     { key: 'indicator', label: 'אינדיקטור' },
-    { key: 'value', label: 'ערך' },
+    { key: 'actualValue', label: 'נתון בפועל' },
     { key: 'change', label: 'שינוי' },
     { key: 'frequency', label: 'תדירות' },
     { key: 'description', label: 'תיאור' },
@@ -89,6 +89,7 @@ export function getManualSectionSource(marketBriefData, sectionId) {
 }
 
 export function buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload) {
+  const rows = Array.isArray(payload) ? payload : (payload?.rows ?? []);
   const sectionData = sectionId === BRIEF_MANUAL_SECTION_IDS.opportunitiesRisks
     ? {
         source: 'manual',
@@ -101,7 +102,9 @@ export function buildMarketBriefWithSectionOverride(marketBriefData, sectionId, 
     : {
         source: 'manual',
         updatedAt: new Date().toISOString(),
-        rows: Array.isArray(payload) ? payload : (payload?.rows ?? []),
+        rows: sectionId === BRIEF_MANUAL_SECTION_IDS.macro
+          ? normalizeMacroManualRows(rows)
+          : rows,
       };
 
   return {
@@ -113,16 +116,109 @@ export function buildMarketBriefWithSectionOverride(marketBriefData, sectionId, 
   };
 }
 
+function parseManualNumericValue(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(trimmed)) return Number(trimmed);
+  return trimmed;
+}
+
+export function normalizeMacroManualRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map((row) => ({
+    ...row,
+    actualValue: parseManualNumericValue(row?.actualValue),
+    manualOverrideFields: Array.from(new Set([...(row?.manualOverrideFields || []), 'actualValue'])),
+  }));
+}
+
+export function readPersistedMarketBriefData(videoId) {
+  if (!videoId) return null;
+  try {
+    const raw = localStorage.getItem(`market_brief_${videoId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function buildMarketBriefWithFieldOverride(
+  marketBriefData,
+  sectionId,
+  rowId,
+  field,
+  value,
+) {
+  const current = marketBriefData?.manualOverrides?.[sectionId] || {};
+  const fieldOverrides = { ...(current.fieldOverrides || {}) };
+  const rowOverrides = { ...(fieldOverrides[rowId] || {}) };
+
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) {
+    delete rowOverrides[field];
+  } else {
+    rowOverrides[field] = value;
+  }
+
+  if (Object.keys(rowOverrides).length) fieldOverrides[rowId] = rowOverrides;
+  else delete fieldOverrides[rowId];
+
+  const manualOverrides = { ...(marketBriefData?.manualOverrides || {}) };
+  if (!Object.keys(fieldOverrides).length && !Array.isArray(current.rows)) {
+    delete manualOverrides[sectionId];
+  } else {
+    manualOverrides[sectionId] = {
+      ...current,
+      source: 'manual',
+      updatedAt: new Date().toISOString(),
+      fieldOverrides,
+    };
+  }
+
+  return {
+    ...marketBriefData,
+    manualOverrides,
+  };
+}
+
+export function normalizeStockManualFieldValue(field, input) {
+  const value = typeof input === 'string' ? input.trim() : input;
+  if (value === '' || value === null || value === undefined) {
+    return { ok: true, value: null };
+  }
+  if (field === 'changePercent') {
+    const text = String(value);
+    if (!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)%?$/.test(text)) {
+      return { ok: false, error: 'יש להזין שינוי מספרי תקין, לדוגמה ‎-5.9%' };
+    }
+    return { ok: true, value: text };
+  }
+  const limits = { sector: 80, notes: 500 };
+  const limit = limits[field] || 200;
+  const text = String(value);
+  if (text.length > limit) {
+    return { ok: false, error: `הערך ארוך מדי (עד ${limit} תווים)` };
+  }
+  return { ok: true, value: text };
+}
+
 export function persistMarketBriefData(videoId, data, patchVideo) {
+  let directStorageSaved = !videoId;
+  let directStorageError = null;
   if (videoId) {
     try {
       localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(data));
+      directStorageSaved = true;
     } catch (e) {
+      directStorageError = e;
       console.warn('[manualBriefOverrides] localStorage save failed:', e?.message);
     }
   }
+  let patchResult = null;
   if (typeof patchVideo === 'function') {
-    patchVideo({ marketBriefData: data });
+    patchResult = patchVideo({ marketBriefData: data });
+  }
+  if (!directStorageSaved && !patchResult) {
+    throw directStorageError || new Error('Manual override persistence failed');
   }
   return data;
 }
@@ -154,7 +250,7 @@ export function getEditableRowsForSection(marketBriefData, effectiveVideo, secti
         risks: manual.rows?.risks ?? [],
       };
     }
-    return manual.rows ?? [];
+    if (Array.isArray(manual.rows)) return manual.rows;
   }
 
   const src = getSpecializedSrc(marketBriefData);

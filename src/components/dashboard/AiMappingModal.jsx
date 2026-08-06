@@ -4,6 +4,16 @@ import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import { X, ClipboardList, Download, Copy, ArrowRight } from "lucide-react";
 import { extractVideoTabItems, detectGEMSchemaType } from "@/config/videoTabsConfig";
 import { getKnowledgeItems } from "@/lib/localKnowledgeItemStore";
+import { getCanonicalMarketAnalysisState } from "@/lib/canonicalAnalysisRouting";
+import { extractUnifiedStocks } from "@/lib/morningBriefDisplay";
+import { resolveStockTradingViewIdentity } from "@/lib/tradingViewDestinations";
+import {
+  DIAGNOSTIC_TAB_SOURCE_PATHS,
+  buildStructuredCoverageInventory,
+  getAnalysisCoverageSummary,
+  getAnalysisDiagnosticStatus,
+  resolveDiagnosticTab,
+} from "@/lib/aiMappingDiagnosticContract";
 import { toast } from "sonner";
 
 // ── Learning fields → target tab ──────────────────────────────────────────────
@@ -86,6 +96,7 @@ const BRIEF_FIELD_TO_TAB = {
   keyTakeaways:         "brief-conclusions",
   top5Insights:         "brief-conclusions",
   learningInsights:     "brief-conclusions",
+  mainLesson:           "summary",
   // chapters (shown in chapters tab if exists)
   chapters:             "chapters",
   // obsidian / meta — useful-knowledge is the best tab
@@ -146,7 +157,7 @@ const SPECIALIZED_RENDERER_TAB_REGISTRY = {
   ],
   "morning-brief": [
     "market-news", "indices", "brief-macro", "brief-sentiment",
-    "brief-calendar", "stocks-mentioned", "brief-opportunities", "brief-risks",
+    "brief-calendar", "brief-sectors", "stocks-mentioned", "brief-opportunities", "brief-risks",
   ],
   "evening-brief": [
     "market-news", "indices", "brief-macro", "brief-sentiment",
@@ -253,17 +264,76 @@ const SAFE_TAB_DATA_MAPPINGS = [
     targetPath: "video.stocksMentioned" },
   { tabKey: "specialized", expectedField: "opportunities",
     sourcePath: "marketBriefData.opportunities",
-    sourcePaths: ["marketBriefData.opportunities","marketBriefData.tradingOpportunities","marketBriefData.trades"],
+    sourcePaths: ["marketBriefData.opportunities","marketBriefData.tradingOpportunities","marketBriefData.trades","marketBriefData.universalTabs.summary.keyOpportunities","marketBriefData.summary.keyOpportunities"],
     targetPath: "video.opportunities" },
   { tabKey: "specialized", expectedField: "risks",
     sourcePath: "marketBriefData.risks",
-    sourcePaths: ["marketBriefData.risks","marketBriefData.riskFactors","marketBriefData.warnings"],
+    sourcePaths: ["marketBriefData.risks","marketBriefData.riskFactors","marketBriefData.warnings","marketBriefData.universalTabs.summary.importantWarnings","marketBriefData.summary.importantWarnings"],
     targetPath: "video.risks" },
   // ── Topics & Subtopics ────────────────────────────────────────────────
   { tabKey: "topics-subtopics", expectedField: "tags",           sourcePath: "marketBriefData.tags",          targetPath: "video.tags"          },
   { tabKey: "topics-subtopics", expectedField: "obsidianTopics", sourcePath: "marketBriefData.obsidianTopics",targetPath: "video.obsidianTopics"},
   // ── App Builder ───────────────────────────────────────────────────────
   { tabKey: "app-builder", expectedField: "appBuilding", sourcePath: "marketBriefData.appBuilding", targetPath: "video.analysis.appBuilding" },
+];
+
+const DIAGNOSTIC_TAB_DATA_MAPPINGS = [
+  {
+    tabKey: 'summary',
+    expectedField: 'resolved summary',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS.summary[0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS.summary,
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'chapters',
+    expectedField: 'resolved chapters',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS.chapters[0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS.chapters,
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'insights',
+    expectedField: 'resolved insights',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS.insights[0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS.insights,
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'useful-knowledge',
+    expectedField: 'resolved usefulKnowledge',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS['useful-knowledge'][0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS['useful-knowledge'],
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'app-builder',
+    expectedField: 'resolved appBuilder',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS['app-builder'][0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS['app-builder'],
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'topics-subtopics',
+    expectedField: 'resolved topicsSubtopics',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS['topics-subtopics'][0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS['topics-subtopics'],
+    targetPath: '',
+    diagnosticOnly: true,
+  },
+  {
+    tabKey: 'specialized',
+    expectedField: 'resolved Specialized sections',
+    sourcePath: DIAGNOSTIC_TAB_SOURCE_PATHS.specialized[0],
+    sourcePaths: DIAGNOSTIC_TAB_SOURCE_PATHS.specialized,
+    targetPath: '',
+    diagnosticOnly: true,
+  },
 ];
 
 const UNIVERSAL_TAB_KEYS = ['summary', 'chapters', 'insights', 'useful-knowledge', 'app-builder', 'topics-subtopics', 'specialized'];
@@ -289,48 +359,53 @@ function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTa
     : 0;
   const aiChaps      = Array.isArray(v.aiChapters) ? v.aiChapters.length : 0;
   const analysisChaps= Array.isArray(a.chapters) ? a.chapters.length : 0;
-  const finalChaps   = youtubeChaps || aiChaps || analysisChaps;
+  const resolvedTabs = Object.fromEntries(UNIVERSAL_TAB_KEYS.map((tabKey) => [
+    tabKey,
+    resolveDiagnosticTab({ video: v, marketBriefData, tabKey }),
+  ]));
+  const finalChaps   = resolvedTabs.chapters.items.length;
 
-  const hasSummary   = !!(v.shortSummary || v.fullSummary || a.contentType);
+  const canonicalAnalysis = getCanonicalMarketAnalysisState({
+    provider: v.analysisProvider,
+    marketBriefData,
+  });
+  const analysisStatus = getAnalysisDiagnosticStatus({
+    provider: v.analysisProvider,
+    marketBriefData,
+    canonical: canonicalAnalysis.canonical,
+  });
 
   const tabs = {};
   for (const tabValue of UNIVERSAL_TAB_KEYS) {
     const displayKey = UNIVERSAL_TAB_DISPLAY_KEY[tabValue];
-    const items = tabValue === 'chapters'
-      ? finalChaps
-      : extractVideoTabItems(v, tabValue, marketBriefData).length;
-
-    const sources = [];
-    if (tabValue === 'summary') {
-      if (v.shortSummary) sources.push('video.shortSummary');
-      if (v.fullSummary)  sources.push('video.fullSummary');
-      if (v.gemSummary)   sources.push('video.gemSummary');
-    } else if (tabValue === 'chapters') {
-      if (youtubeChaps) sources.push('video.chapters (youtube)');
-      if (aiChaps)      sources.push('video.aiChapters');
-      if (analysisChaps)sources.push('analysis.chapters');
-    } else if (tabValue === 'insights') {
-      if (Array.isArray(v.keyInsights)         && v.keyInsights.length)          sources.push('video.keyInsights');
-      if (Array.isArray(v.brainHighlights)     && v.brainHighlights.length)      sources.push('video.brainHighlights');
-      if (Array.isArray(v.tradingPrinciples)   && v.tradingPrinciples.length)    sources.push('video.tradingPrinciples');
-      if (Array.isArray(v.top5Insights)        && v.top5Insights.length)         sources.push('video.top5Insights');
-      if (v.mainLesson)                                                           sources.push('video.mainLesson');
-    } else if (tabValue === 'useful-knowledge') {
-      if (Array.isArray(v.actionItems)         && v.actionItems.length)          sources.push('video.actionItems');
-      if (Array.isArray(v.usefulKnowledge)     && v.usefulKnowledge.length)      sources.push('video.usefulKnowledge');
-      if (Array.isArray(v.definitions)         && v.definitions.length)          sources.push('video.definitions');
-      if (Array.isArray(v.checklists)          && v.checklists.length)           sources.push('video.checklists');
-    }
+    const items = resolvedTabs[tabValue].items;
+    const sources = resolvedTabs[tabValue].matchedSourcePaths;
     tabs[displayKey] = { items, sources };
   }
 
   const warnings = [];
   if (transcriptLen < 100 && transcriptSegs.length === 0) warnings.push('Missing transcript');
-  if (!hasSummary)                                          warnings.push('Missing AI analysis');
+  if (!analysisStatus.anyAnalysisData)                       warnings.push('No analysis data');
+  else if (!analysisStatus.canonicalClaude)                  warnings.push('No canonical Claude analysis');
   if (finalChaps === 0)                                     warnings.push('No chapters');
   if ((tabs.specialized?.items ?? 0) === 0)                 warnings.push('No specialized content');
   if (!normalizedSubCategory)                               warnings.push('No subCategory — falling back to keyword detection');
   if (!v.category)                                          warnings.push('Missing category');
+
+  const stockTradingView = extractUnifiedStocks(marketBriefData, v).map((stock) => {
+    const identity = resolveStockTradingViewIdentity(stock);
+    return {
+      ticker: stock.ticker,
+      sourceExchange: stock.exchange || '',
+      exchange: identity.exchange,
+      tradingViewSymbol: identity.tradingViewSymbol,
+      tradingViewUrl: identity.tradingViewUrl,
+      identitySource: identity.identitySource,
+      confidence: identity.confidence,
+      status: identity.status,
+      reasonHe: identity.reasonHe,
+    };
+  });
 
   return {
     video: {
@@ -346,7 +421,10 @@ function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTa
       userConfirmed: !!userConfirmedSubCategory,
       confirmedSubCategory: v.confirmedSubCategory || null,
       confirmedAt: confirmedAt || null,
-      analysisFlow: ANALYSIS_FLOW_MAP[normalizedSubCategory] || 'General',
+      analysisFlow:
+        videoType === 'morningBrief'
+          ? 'Market Brief'
+          : (ANALYSIS_FLOW_MAP[normalizedSubCategory] || 'General'),
     },
     transcript: {
       exists:   transcriptLen >= 100 || transcriptSegs.length > 0,
@@ -358,15 +436,25 @@ function buildDiagnosticReport({ v, videoType, normalizedSubCategory, selectedTa
       youtubeChapters: youtubeChaps,
       aiChapters:      aiChaps,
       finalChapters:   finalChaps,
-      source: youtubeChaps > 0 ? 'youtube' : aiChaps > 0 ? 'ai' : finalChaps > 0 ? 'analysis' : 'none',
+      source: resolvedTabs.chapters.matchedSourcePaths[0]
+        || (youtubeChaps > 0 ? 'video.chapters' : aiChaps > 0 ? 'video.aiChapters' : 'none'),
     },
     analysis: {
-      exists:      hasSummary,
+      exists:      analysisStatus.anyAnalysisData,
+      canonical:   canonicalAnalysis.canonical,
+      source:      canonicalAnalysis.source,
+      status:      analysisStatus.status,
+      contentStatus: analysisStatus.contentStatus,
+      gemsImport:  analysisStatus.gemsImport,
+      fallbackOnly: analysisStatus.fallbackOnly,
       gemType:     gemRec?.gemKey  || v.analysisProvider || '',
       confidence:  Math.round(gemRec?.confidencePct || 0),
       generatedAt: a.savedAt || v.analysisSavedAt || '',
     },
     tabs,
+    externalLinks: {
+      stocksTradingView: stockTradingView,
+    },
     routing: {
       obsidianCategory:    v.category    || '',
       obsidianSubCategory: v.subCategory || '',
@@ -565,8 +653,8 @@ function buildFixPreview(mapping, { video, marketBriefData }) {
     targetExists,
     oldCount,
     newCount,
-    canApply: sourceExists && !targetExists,
-    reason,
+    canApply: !mapping.diagnosticOnly && sourceExists && !targetExists,
+    reason: mapping.diagnosticOnly ? "diagnostic-only" : reason,
   };
 }
 
@@ -601,7 +689,7 @@ function getRendererTrace(tabKey, normalizedSubCategory) {
 function getTabSourcePaths(tabKey, mappingRows = []) {
   const mappingPaths = mappingRows
     .filter((row) => row.tabKey === tabKey)
-    .map((row) => row.sourcePath)
+    .flatMap((row) => row.sourcePaths || [row.sourcePath])
     .filter(Boolean);
   if (mappingPaths.length > 0) return mappingPaths;
   return TRACE_FIELDS_BY_TAB[tabKey] || [];
@@ -658,8 +746,19 @@ function derivePipelineBadge({ deadConfig, dataFound, extractorReturnedItems, re
 function buildPipelineTrace({ tabKey, label, video, marketBriefData, normalizedSubCategory, sourcePaths = [], mappingRows = [] }) {
   const context = { video, marketBriefData };
   const resolvedSourcePaths = sourcePaths.length > 0 ? sourcePaths : getTabSourcePaths(tabKey, mappingRows);
-  const sourceTrace = getSourceTrace(context, resolvedSourcePaths);
-  const extractorReturnedItems = extractVideoTabItems(video, tabKey, marketBriefData).length;
+  const resolvedUniversal = UNIVERSAL_TAB_KEYS.includes(tabKey)
+    ? resolveDiagnosticTab({ video, marketBriefData, tabKey })
+    : null;
+  const sourceTrace = resolvedUniversal
+    ? {
+        dataFound: resolvedUniversal.dataFound,
+        matchedPaths: resolvedUniversal.matchedSourcePaths,
+        totalItems: resolvedUniversal.items,
+      }
+    : getSourceTrace(context, resolvedSourcePaths);
+  const extractorReturnedItems = resolvedUniversal
+    ? resolvedUniversal.items
+    : extractVideoTabItems(video, tabKey, marketBriefData).length;
   const rendererTrace = getRendererTrace(tabKey, normalizedSubCategory);
   const extractorExists = rendererTrace.reachableAnywhere || UNIVERSAL_TAB_KEYS.includes(tabKey);
   const uiRendered = rendererTrace.rendererExists
@@ -849,8 +948,8 @@ export function AiMappingModal({
   const tabMapping = useMemo(() => {
     if (!Array.isArray(visibleTabDefinitions)) return [];
     return visibleTabDefinitions.map(tab => {
-      const items = extractVideoTabItems(v, tab.value, marketBriefData);
-      return { value: tab.value, label: tab.label || TAB_LABEL[tab.value] || tab.value, count: items.length };
+      const resolved = resolveDiagnosticTab({ video: v, marketBriefData, tabKey: tab.value });
+      return { value: tab.value, label: tab.label || TAB_LABEL[tab.value] || tab.value, count: resolved.items };
     });
   }, [v, visibleTabDefinitions, marketBriefData]);
 
@@ -930,11 +1029,59 @@ export function AiMappingModal({
   }, [v]);
 
   const gemSchemaType = useMemo(() => detectGEMSchemaType(marketBriefData), [marketBriefData]);
+  const canonicalMarketState = useMemo(
+    () => getCanonicalMarketAnalysisState({
+      provider: v.analysisProvider,
+      marketBriefData,
+    }),
+    [v.analysisProvider, marketBriefData],
+  );
+  const transcriptLength =
+    typeof v.transcript === 'string'
+      ? v.transcript.length
+      : (Array.isArray(v.transcriptSegments)
+          ? v.transcriptSegments.reduce((sum, segment) => sum + String(segment?.text || '').length, 0)
+          : 0);
+  const expectedMarketChunks =
+    transcriptLength > 0
+      ? (transcriptLength <= 7000 ? 1 : 1 + Math.ceil((transcriptLength - 7000) / 6600))
+      : 0;
+  const diagnosticAnalysisStatus = useMemo(
+    () => getAnalysisDiagnosticStatus({
+      provider: v.analysisProvider,
+      marketBriefData,
+      canonical: canonicalMarketState.canonical,
+    }),
+    [v.analysisProvider, marketBriefData, canonicalMarketState.canonical],
+  );
+  const diagnosticRouteKey =
+    normalizedSubCategory || (videoType === 'morningBrief' ? 'morning-brief' : 'default');
 
-  const totalTabItems  = tabMapping.reduce((s, r) => s + r.count, 0);
+  const coverageSummary = useMemo(
+    () => getAnalysisCoverageSummary({
+      video: v,
+      marketBriefData,
+      canonical: canonicalMarketState.canonical,
+    }),
+    [v, marketBriefData, canonicalMarketState.canonical],
+  );
+  const totalTabItems  = coverageSummary.totalItems;
   const activeLearning = learningFieldMapping.filter(r => r.count > 0).length;
-  const activeBrief    = briefFieldMapping.length;
-  const totalActive    = activeLearning + activeBrief;
+  const totalActive    = coverageSummary.activeFields;
+  const structuredCoverageInventory = useMemo(
+    () => buildStructuredCoverageInventory({ video: v, marketBriefData }),
+    [v, marketBriefData],
+  );
+  const unmappedMeaningfulItems = structuredCoverageInventory.unmappedMeaningful
+    .reduce((sum, entry) => sum + entry.itemCount, 0);
+  const unsupportedFieldCount = structuredCoverageInventory.unsupported.length;
+  const excludedItemCount = structuredCoverageInventory.excludedByDesign
+    .length;
+  const excludedEntries = structuredCoverageInventory.excludedByDesign;
+  const reportableUnmappedEntries = [
+    ...structuredCoverageInventory.unmappedMeaningful,
+    ...structuredCoverageInventory.unsupported,
+  ];
 
   // ── §7 Debug Report ─────────────────────────────────────────────────────────
   const [showReport, setShowReport] = useState(false);
@@ -961,10 +1108,10 @@ export function AiMappingModal({
       label: tab.label,
       video: v,
       marketBriefData,
-      normalizedSubCategory,
-      mappingRows: SAFE_TAB_DATA_MAPPINGS,
+      normalizedSubCategory: diagnosticRouteKey,
+      mappingRows: DIAGNOSTIC_TAB_DATA_MAPPINGS,
     }))
-  ), [tabMapping, v, marketBriefData, normalizedSubCategory]);
+  ), [tabMapping, v, marketBriefData, diagnosticRouteKey]);
 
   const handleCopyReport = useCallback(() => {
     navigator.clipboard.writeText(reportJson)
@@ -990,7 +1137,7 @@ export function AiMappingModal({
   }, [reportJson, v]);
 
   const safeTabDataMappings = useMemo(() =>
-    SAFE_TAB_DATA_MAPPINGS.map((mapping) => {
+    DIAGNOSTIC_TAB_DATA_MAPPINGS.map((mapping) => {
       const preview = buildFixPreview(mapping, { video: v, marketBriefData });
       return {
         ...preview,
@@ -999,13 +1146,13 @@ export function AiMappingModal({
           label: TAB_LABEL[mapping.tabKey] || mapping.tabKey,
           video: v,
           marketBriefData,
-          normalizedSubCategory,
-          sourcePaths: preview.sourcePath ? [preview.sourcePath] : getTabSourcePaths(mapping.tabKey, SAFE_TAB_DATA_MAPPINGS),
-          mappingRows: SAFE_TAB_DATA_MAPPINGS,
+          normalizedSubCategory: diagnosticRouteKey,
+          sourcePaths: mapping.sourcePaths || (preview.sourcePath ? [preview.sourcePath] : getTabSourcePaths(mapping.tabKey, DIAGNOSTIC_TAB_DATA_MAPPINGS)),
+          mappingRows: DIAGNOSTIC_TAB_DATA_MAPPINGS,
         }),
       };
     }),
-  [v, marketBriefData, normalizedSubCategory]);
+  [v, marketBriefData, diagnosticRouteKey]);
 
   const orphanLostFields = useMemo(() => (
     TRACE_REQUIRED_FIELDS.map((fieldTrace) => buildPipelineTrace({
@@ -1013,11 +1160,11 @@ export function AiMappingModal({
       label: TAB_LABEL[fieldTrace.tabKey] || fieldTrace.tabKey,
       video: v,
       marketBriefData,
-      normalizedSubCategory,
+      normalizedSubCategory: diagnosticRouteKey,
       sourcePaths: fieldTrace.sourcePaths,
-      mappingRows: SAFE_TAB_DATA_MAPPINGS,
-    }))
-  ), [v, marketBriefData, normalizedSubCategory]);
+      mappingRows: DIAGNOSTIC_TAB_DATA_MAPPINGS,
+    })).filter((trace) => trace.badge.tone === 'lost' || trace.badge.tone === 'dead')
+  ), [v, marketBriefData, diagnosticRouteKey]);
 
   const selectedTrace = useMemo(() => (
     selectedTraceTab
@@ -1248,7 +1395,7 @@ export function AiMappingModal({
             </div>
           </div>
 
-          <div className="overflow-y-auto px-6 py-5 space-y-7">
+          <div className="flex flex-col gap-7 overflow-y-auto px-6 py-5">
 
             {/* ── Report View ── */}
             {showReport && (
@@ -1444,7 +1591,7 @@ export function AiMappingModal({
             {!showReport && !showAiDiag && (<>
 
             {/* §0 Classification */}
-            <section>
+            <section data-testid="technical-video-classification" className="order-0">
               <SectionHeader>🏷️ סיווג הסרטון</SectionHeader>
               <div className="rounded-xl border border-slate-100 px-4 py-2 dark:border-zinc-800">
                 <MetaRow label="קטגוריה" value={category} />
@@ -1456,12 +1603,20 @@ export function AiMappingModal({
                 } />
                 <MetaRow label="confirmedSubCategory" value={confirmedSubCategory || '—'} />
                 <MetaRow label="תת-קטגוריה מנורמלת" value={normalizedSubCategory} />
-                <MetaRow label="selectedAnalysisFlow" value={
-                  ANALYSIS_FLOW_MAP[normalizedSubCategory] || (videoType === 'political' ? 'Political Analysis' : 'General — Claude + Gemini')
+                <MetaRow label="selectedAnalysisFlow" value={report.video.analysisFlow} />
+                <MetaRow label="canonicalClaudeAnalysis" value={
+                  canonicalMarketState.canonical ? '✅ ניתוח Claude קנוני הושלם' : '❌ לא בוצע ניתוח Claude'
                 } />
-                <MetaRow label="analysisExists" value={analysisExists ? '✅ כן' : '❌ לא'} />
+                <MetaRow label="analysisDataStatus" value={diagnosticAnalysisStatus.status} />
+                <MetaRow label="structuredContentStatus" value={diagnosticAnalysisStatus.contentStatus} />
+                <MetaRow label="gemsImport" value={
+                  diagnosticAnalysisStatus.gemsImport ? '✅ GEMS JSON נטען בהצלחה' : '—'
+                } />
+                <MetaRow label="analysisSource" value={canonicalMarketState.source} />
+                <MetaRow label="plainTranscriptAccepted" value={transcriptLength > 40 ? '✅ כן' : '❌ לא'} />
+                <MetaRow label="expectedMarketChunks" value={expectedMarketChunks || '—'} />
                 <MetaRow label="missingAnalysisReason" value={
-                  analysisExists ? '—' :
+                  diagnosticAnalysisStatus.anyAnalysisData ? '—' :
                   !hasTranscript ? 'אין תמלול — נדרש ייבוא תמלול' :
                   !userConfirmedSubCategory ? 'subCategory לא אושר — בחר ואשר תת-נושא' :
                   marketBriefData ? 'marketBriefData קיים אך אין summary' :
@@ -1477,7 +1632,7 @@ export function AiMappingModal({
             </section>
 
             {/* §1 Tab Mapping */}
-            <section>
+            <section data-testid="user-facing-tab-mapping" className="-order-2">
               <SectionHeader>📑 מיפוי טאבים — מה כל טאב מציג</SectionHeader>
               <DataTable
                 headers={["שם טאב", "key", "פריטים"]}
@@ -1488,6 +1643,104 @@ export function AiMappingModal({
                 ])}
               />
             </section>
+
+            <section data-testid="unmapped-content-summary" className="-order-1">
+              <SectionHeader>תוכן שלא מופה לאפליקציה</SectionHeader>
+              <div className="mb-3 flex flex-wrap gap-2 text-xs" dir="rtl">
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                  {unmappedMeaningfulItems} פריטים לא ממופים
+                </span>
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+                  {unsupportedFieldCount} שדות לא נתמכים
+                </span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                  {excludedItemCount} פריטים שהוחרגו בכוונה
+                </span>
+              </div>
+
+              <div data-testid="excluded-by-design-details" className="mb-3" dir="rtl">
+                {excludedEntries.length === 0 ? (
+                  <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    אין פריטים שהוחרגו
+                  </p>
+                ) : (
+                  <>
+                    <div className="hidden overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700 md:block">
+                      <table className="w-full table-fixed text-right text-xs">
+                        <thead className="bg-slate-50 text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">
+                          <tr>
+                            <th className="w-[20%] px-3 py-2">מקור</th>
+                            <th className="w-[20%] px-3 py-2">תוכן מקוצר</th>
+                            <th className="w-[22%] px-3 py-2">למה הוחרג</th>
+                            <th className="w-[13%] px-3 py-2">שייך ל</th>
+                            <th className="w-[12%] px-3 py-2">מוצג במקום אחר</th>
+                            <th className="w-[13%] px-3 py-2">פעולה</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                          {excludedEntries.map((entry) => (
+                            <tr key={entry.path} data-testid="excluded-by-design-row" className="align-top">
+                              <td className="px-3 py-2">
+                                <span className="block font-medium text-slate-700 dark:text-zinc-200">{entry.field}</span>
+                                <span className="block break-all font-mono text-[10px] text-slate-400 dark:text-zinc-500">{entry.sourcePath}</span>
+                              </td>
+                              <td className="break-words px-3 py-2 text-slate-700 dark:text-zinc-300">{entry.preview || '—'}</td>
+                              <td className="break-words px-3 py-2 text-slate-700 dark:text-zinc-300">{entry.reasonHe}</td>
+                              <td className="break-words px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.destinationLabelHe}</td>
+                              <td className="px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.renderedElsewhere ? 'כן' : 'לא'}</td>
+                              <td className="break-words px-3 py-2 text-slate-600 dark:text-zinc-400">{entry.recommendedActionHe}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="grid gap-2 md:hidden">
+                      {excludedEntries.map((entry) => (
+                        <article key={entry.path} data-testid="excluded-by-design-card" className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-zinc-700 dark:bg-zinc-900">
+                          <p className="font-semibold text-slate-800 dark:text-zinc-100">{entry.field}</p>
+                          <p className="mt-0.5 break-all font-mono text-[10px] text-slate-400 dark:text-zinc-500">{entry.sourcePath}</p>
+                          <dl className="mt-2 grid gap-2">
+                            <div><dt className="font-semibold text-slate-500">תוכן מקוצר</dt><dd className="break-words text-slate-700 dark:text-zinc-300">{entry.preview || '—'}</dd></div>
+                            <div><dt className="font-semibold text-slate-500">למה הוחרג</dt><dd className="break-words text-slate-700 dark:text-zinc-300">{entry.reasonHe}</dd></div>
+                            <div><dt className="font-semibold text-slate-500">שייך ל</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.destinationLabelHe}</dd></div>
+                            <div><dt className="font-semibold text-slate-500">מוצג במקום אחר</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.renderedElsewhere ? 'כן' : 'לא'}</dd></div>
+                            <div><dt className="font-semibold text-slate-500">פעולה</dt><dd className="text-slate-700 dark:text-zinc-300">{entry.recommendedActionHe}</dd></div>
+                          </dl>
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {reportableUnmappedEntries.length === 0 ? (
+                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  כל התוכן המובנה מופה ללשוניות האפליקציה
+                </p>
+              ) : (
+                <DataTable
+                  headers={["מקור", "תוכן מקוצר", "סטטוס", "סיבה", "יעד מומלץ"]}
+                  rows={reportableUnmappedEntries.map((entry) => [
+                    <span className="font-mono text-[11px] text-slate-600 dark:text-zinc-400">{entry.path}</span>,
+                    <span className="block max-w-[240px] break-words text-xs text-slate-700 dark:text-zinc-300">{entry.preview || '—'}</span>,
+                    <span className={entry.status === 'unsupported' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}>
+                      {entry.status === 'unsupported' ? 'לא נתמך' : `${entry.itemCount} לא ממופים`}
+                    </span>,
+                    <span className="text-xs text-slate-600 dark:text-zinc-400">{entry.reason}</span>,
+                    <span className="text-xs text-slate-600 dark:text-zinc-400">{entry.destination || 'לא נקבע'}</span>,
+                  ])}
+                />
+              )}
+
+              <p className="mt-3 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-300">
+                נבדק המידע המובנה ב־JSON. לא בוצעה השוואה סמנטית מלאה מול התמלול.
+              </p>
+            </section>
+
+            <div data-testid="technical-diagnostics-heading" className="order-0 border-t border-slate-100 pt-5 dark:border-zinc-800">
+              <SectionHeader>פרטי אבחון טכניים</SectionHeader>
+            </div>
 
             {/* §2a Learning field mapping — only when data present */}
             <section>
@@ -1522,7 +1775,7 @@ export function AiMappingModal({
                     <span className={mapping.targetExists ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-zinc-500"}>
                       {mapping.targetExists ? "Yes" : "No"}
                     </span>,
-                    <span className="font-mono text-sm text-slate-700 dark:text-zinc-300">{mapping.newCount}</span>,
+                    <span className="font-mono text-sm text-slate-700 dark:text-zinc-300">{mapping.pipelineTrace.extractorReturnedItems}</span>,
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"

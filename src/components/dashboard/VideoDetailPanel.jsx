@@ -7,7 +7,15 @@ import { toast } from "sonner";
 import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { analyzeVideoWithProvider } from "@/services/aiVideoAnalyzer";
+import { buildAnalysisTranscript, getCanonicalMarketAnalysisState, resolveAnalysisRoute } from "@/lib/canonicalAnalysisRouting";
+import { getAnalysisCoverageSummary } from "@/lib/aiMappingDiagnosticContract";
+import { assertPersistableMarketBrief } from "@/lib/marketBriefPersistenceGuard";
 import { computeTargetChapters } from "@/lib/chapterCountUtils";
+import {
+  formatAdditiveChapterResult,
+  prepareAdditiveChapterMerge,
+} from "@/lib/additiveChapterMerge";
+
 import {
   buildTranscriptChunkTitle,
   isAiAnalysisChapterSource,
@@ -56,6 +64,7 @@ import {
 } from "@/services/youtubeChapterCache";
 import { loadVideos } from "@/services/videoStorage";
 import { usePersistedVideo } from "@/hooks/usePersistedVideo";
+import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { formatVideoDuration } from "@/lib/videoDuration";
@@ -132,13 +141,18 @@ import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, G
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
+import { resolveMarketBriefSession } from "@/lib/marketBriefGemLauncher";
 import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
+import { resolveMentorChannelResourceSet } from "@/lib/mentorChannelResources";
+import { MentorChannelQuickNav } from "@/components/mentors/MentorChannelQuickNav";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatusFromPath, logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
 import { getTopicRule } from "@/lib/topicRules";
 import { isBase44Enabled } from "@/config/base44Flags";
 import {
   buildMarketBriefWithSectionOverride,
+  buildMarketBriefWithFieldOverride,
   persistMarketBriefData,
+  readPersistedMarketBriefData,
   preserveManualOverridesOnReanalysis,
 } from "@/lib/manualBriefOverrides";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
@@ -163,14 +177,15 @@ import {
 import { GemRawModal } from "@/components/dashboard/GemRawModal";
 import { UniversalTabSelectionBar } from "@/components/shared/UniversalTabSelectionBar";
 import { detectMarketEntityType, extractTickerFromItem, extractIndexNameFromItem } from '@/lib/detectMarketEntityType';
-import { buildTradingViewChartUrl, lookupTradingViewSymbol, getFinvizUrl } from '@/utils/finvizLinks';
+import { getFinvizUrl } from '@/utils/finvizLinks';
+import { getTradingViewPublicDestination } from '@/lib/tradingViewDestinations';
 import { PERPLEXITY_SPACE_URL } from '@/lib/buildStockAiPrompt';
 import { buildContextualAiAnalysisPrompt } from '@/lib/aiAnalysisQuestionBank';
 import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
 import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
 import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
-import { createGeminiJsonDebugReport } from '@/lib/geminiJsonDebugReport';
+import { buildCodexRepairPrompt, buildPayloadProcessingTrace, classifyAnalysisFailure, detectManualGemsInputKind } from '@/lib/analysisFailureDiagnostic';
 import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
@@ -568,7 +583,7 @@ function normalizeGemChapters(raw) {
   const normalized = raw.map((ch, i) => {
     if (typeof ch === 'string') {
       const title = ch.trim();
-      return title ? { title, timestamp: '', chapterSource: 'gem', isEstimated: true, timestampSource: 'missing' } : null;
+      return title ? { title, timestamp: '', chapterSource: 'gem', isEstimated: false, timestampSource: 'missing' } : null;
     }
     if (!ch || typeof ch !== 'object') return null;
     const title = String(ch.title || ch.name || ch.label || `פרק ${i + 1}`).trim();
@@ -589,8 +604,11 @@ function normalizeGemChapters(raw) {
       timestamp,
       summary,
       chapterSource: 'gem',
-      isEstimated: !hasTimestamp,
-      timestampSource: hasTimestamp ? 'gem' : 'missing',
+      isEstimated: false,
+      timestampSource: hasTimestamp ? (ch.timestampSource || 'gem') : 'missing',
+      ...(Number.isFinite(Number(ch.timestampConfidence))
+        ? { timestampConfidence: Number(ch.timestampConfidence) }
+        : {}),
       ...(startSeconds != null ? { startSeconds } : {}),
       ...(endSeconds != null && (startSeconds == null || endSeconds >= startSeconds) ? { endSeconds } : {}),
     };
@@ -2108,6 +2126,7 @@ export function VideoDetailPanel({
   toggleTheme,
   initialChapterIndex = null,
   navigateTo,
+  onMentorContentHubOpen,
 }) {
   const isDev = import.meta?.env?.DEV === true;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -2186,10 +2205,19 @@ export function VideoDetailPanel({
   const restoredAnalysisRef = useRef(null);
   const freshImportAutoRunRef = useRef(null);
   const ollamaStatusRequestRef = useRef(false);
+  const activeChapterScanRef = useRef(0);
   const updateSummary = useUpdateSummary();
   const { video: persistedVideo, patch: patchVideo, setVideo: setVideoState } = usePersistedVideo(videoProp?.id, videoProp);
   // Use videoProp as fallback while the persisted-state hook initializes on first select
   const video = persistedVideo ?? videoProp;
+  const activeYouTubeId = video?.videoId || video?.youtubeId || getVideoIdFromUrl(getWatchUrl(video));
+  const {
+    containerRef: videoPlayerContainerRef,
+    playerRef: videoPlayerRef,
+    isReady: isVideoPlayerReady,
+    error: videoPlayerError,
+    seekTo: seekVideoTo,
+  } = useYouTubePlayer(activeYouTubeId);
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
   const [isTranscriptViewerOpen, setIsTranscriptViewerOpen] = useState(false);
@@ -2204,6 +2232,7 @@ export function VideoDetailPanel({
   const [isAiRepairingGemsJson, setIsAiRepairingGemsJson] = useState(false);
   const [gemsAiRepairResult, setGemsAiRepairResult] = useState(null);
   const [gemsAiRepairFailed, setGemsAiRepairFailed] = useState(false);
+  const [codexReportFallback, setCodexReportFallback] = useState('');
   const [gemsJsonApplied, setGemsJsonApplied] = useState(false);
   const [marketBriefData, setMarketBriefData] = useState(null);
   const [politicalSummary, setPoliticalSummary] = useState(null);
@@ -2516,23 +2545,42 @@ export function VideoDetailPanel({
     ]
   );
 
-  /** Brief render slug: confirmed subcategory → GEM contentType → title-detected videoType. */
+  /** Brief render slug: confirmed subtype → canonical session evidence → compatible fallback. */
   const effectiveBriefSlug = useMemo(() => {
+    const isSessionSlug = ['morning-brief', 'evening-brief'].includes(normalizedSubCategory);
+    if (normalizedSubCategory && !isSessionSlug) return normalizedSubCategory;
+    if (isSessionSlug && effectiveVideo?.userConfirmedSubCategory) return normalizedSubCategory;
+    const session = resolveMarketBriefSession({ video: effectiveVideo, videoType, structuredData: marketBriefData });
+    if (session.briefType === 'morning') return 'morning-brief';
+    if (session.briefType === 'evening') return 'evening-brief';
     if (normalizedSubCategory) return normalizedSubCategory;
-    if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
-    // Title-based fallback: "מבזק לייב פתיחה לתאריך" detected via MORNING_BRIEF_KEYWORDS
-    if (videoType === 'morningBrief') return 'morning-brief';
-    if (videoType === 'eveningBrief') return 'evening-brief';
     return null;
-  }, [normalizedSubCategory, marketBriefData?.contentType, videoType]);
+  }, [effectiveVideo, normalizedSubCategory, marketBriefData, videoType]);
 
   const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
     if (!marketBriefData) return;
     const videoId = video?.id || video?.youtubeId;
-    const next = buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
-    persistMarketBriefData(videoId, next, patchVideo);
-    setMarketBriefData(next);
-    toast.success('השינויים נשמרו');
+    try {
+      const next = payload?.fieldOverride
+        ? buildMarketBriefWithFieldOverride(
+            marketBriefData,
+            sectionId,
+            payload.fieldOverride.rowId,
+            payload.fieldOverride.field,
+            payload.fieldOverride.value,
+          )
+        : buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
+      persistMarketBriefData(videoId, next, patchVideo);
+      const persisted = videoId ? readPersistedMarketBriefData(videoId) : next;
+      if (!persisted || JSON.stringify(persisted.manualOverrides?.[sectionId]) !== JSON.stringify(next.manualOverrides?.[sectionId])) {
+        throw new Error('Manual override read-back mismatch');
+      }
+      setMarketBriefData(next);
+      toast.success('השינויים נשמרו בהצלחה');
+    } catch (error) {
+      toast.error('השינויים לא נשמרו. הנתונים הקודמים נשארו ללא שינוי.');
+      throw error;
+    }
   }, [marketBriefData, video?.id, video?.youtubeId, patchVideo]);
 
   const obsidianRoute = useMemo(
@@ -2737,6 +2785,17 @@ export function VideoDetailPanel({
   const hasAppBuilderTabSet = APP_BUILDER_TOPICS.has(resolvedVideoMode.category) || hasAppBuilderDraft(effectiveVideo?.videoId || effectiveVideo?.id);
 
   const visibleTabDefinitions = UNIVERSAL_TABS;
+  const analysisCoverage = useMemo(() => {
+    const canonicalState = getCanonicalMarketAnalysisState({
+      provider: effectiveVideo?.analysisProvider,
+      marketBriefData,
+    });
+    return getAnalysisCoverageSummary({
+      video: effectiveVideo,
+      marketBriefData,
+      canonical: canonicalState.canonical,
+    });
+  }, [effectiveVideo, marketBriefData]);
 
   const selectedTabsConfigKey = normalizedSubCategory || videoType;
   const isLegacyLearningLayout = !normalizedSubCategory && videoType === "learning";
@@ -3504,14 +3563,8 @@ export function VideoDetailPanel({
     const hasMissingTimestamps = normalized.some((ch) => ch.timestampSource === 'missing');
     if (!hasMissingTimestamps) return normalized;
 
-    const rawSegs = Array.isArray(effectiveVideo?.transcriptSegments) && effectiveVideo.transcriptSegments.length > 0
-      ? effectiveVideo.transcriptSegments
-      : null;
-    if (!rawSegs) return normalized;
-
-    const lines = rawSegs
-      .map((s) => ({ text: String(s?.text || '').trim(), start: Number(s?.startSeconds ?? s?.start ?? 0) }))
-      .filter((l) => l.text);
+    const timedTranscript = resolveTranscriptForChapters(effectiveVideo);
+    const lines = timedTranscript.lines;
     if (!lines.length) return normalized;
 
     const refined = matchChaptersToTranscript(normalized, { lines });
@@ -3572,6 +3625,10 @@ export function VideoDetailPanel({
             : transcriptChunkChapters.length > 0
               ? transcriptChunkChapters
               : baseChapters;
+  const latestDisplayedChaptersRef = useRef(displayChapters);
+  const latestChapterVideoRef = useRef(video);
+  latestDisplayedChaptersRef.current = displayChapters;
+  latestChapterVideoRef.current = video;
   const chaptersFromGem =
     descriptionChapters.length === 0 &&
     aiAnalysisChapters.length === 0 &&
@@ -3598,10 +3655,68 @@ export function VideoDetailPanel({
 
   const handleDismissChaptersHint = () => setYoutubeChaptersHint(null);
 
+  const persistAutomaticChapterCandidates = async (candidateChapters, scanId, candidateSource) => {
+    if (scanId !== activeChapterScanRef.current || latestChapterVideoRef.current?.id !== video?.id) {
+      return { saved: false, stale: true };
+    }
+    if (!Array.isArray(candidateChapters) || candidateChapters.length === 0) {
+      toast.info(`לא נמצאו פרקים חדשים. ${latestDisplayedChaptersRef.current.length} הפרקים הקיימים נשמרו ללא שינוי.`);
+      return { saved: false, empty: true };
+    }
+
+    const merge = prepareAdditiveChapterMerge(
+      latestDisplayedChaptersRef.current,
+      candidateChapters,
+    );
+    if (!merge.ok) {
+      toast.error(formatAdditiveChapterResult(merge));
+      return { saved: false, invalid: true, merge };
+    }
+    if (merge.addedCount === 0) {
+      toast.info(formatAdditiveChapterResult(merge));
+      return { saved: false, unchanged: true, merge };
+    }
+
+    const currentVideo = latestChapterVideoRef.current;
+    const updates = {
+      aiChapters: merge.chapters,
+      chapters: merge.chapters,
+      chapterSource: currentVideo?.chapterSource || candidateSource || 'saved',
+      analysisQuality: currentVideo?.analysisQuality || 'medium',
+    };
+
+    let savedVideo = patchVideo(updates);
+    if (!savedVideo) {
+      try {
+        await Video.update(video.id, updates);
+        if (scanId !== activeChapterScanRef.current || latestChapterVideoRef.current?.id !== video?.id) {
+          return { saved: false, stale: true };
+        }
+        savedVideo = patchVideo(updates);
+        queryClient.invalidateQueries({ queryKey: ['videos'] });
+      } catch {
+        toast.error('בדיקת הפרקים נכשלה. הפרקים הקיימים נשמרו ללא שינוי.');
+        return { saved: false, persistenceFailed: true, merge };
+      }
+    }
+    if (!savedVideo) {
+      toast.error('בדיקת הפרקים נכשלה. הפרקים הקיימים נשמרו ללא שינוי.');
+      return { saved: false, persistenceFailed: true, merge };
+    }
+
+    latestDisplayedChaptersRef.current = merge.chapters;
+    latestChapterVideoRef.current = savedVideo;
+    onVideoPatch?.(savedVideo);
+    toast.success(formatAdditiveChapterResult(merge));
+    return { saved: true, merge, video: savedVideo };
+  };
+
   useEffect(() => {
+    activeChapterScanRef.current += 1;
     setYoutubeChaptersHint(null);
     setTranscriptDiagnostics(null);
     setChapterTranscriptSource(null);
+    setIsYoutubeChaptersFetch(false);
   }, [video?.id]);
 
   // Auto-extract description timestamps on video load — runs once per video,
@@ -3827,6 +3942,10 @@ export function VideoDetailPanel({
   };
 
   const handleAutoDetectChapters = async () => {
+    if (isYoutubeChaptersFetch) return;
+    const scanId = activeChapterScanRef.current + 1;
+    activeChapterScanRef.current = scanId;
+    setIsYoutubeChaptersFetch(true);
     setYoutubeChaptersHint(null);
 
     // Debug: log current state before detection
@@ -3845,27 +3964,8 @@ export function VideoDetailPanel({
           chapterSource: 'description_timestamp',
           source: 'description_timestamp',
         }));
-        const updates = {
-          aiChapters,
-          chapters: aiChapters,
-          descriptionChapters: aiChapters,
-          chapterSource: 'description_timestamp',
-          analysisQuality: 'medium',
-        };
-        const localSaved = patchVideo(updates);
-        if (localSaved) {
-          onVideoPatch?.(localSaved);
-        } else {
-          try {
-            await Video.update(video.id, updates);
-            patchVideo(updates);
-            queryClient.invalidateQueries({ queryKey: ['videos'] });
-            onVideoPatch?.({ ...video, ...updates });
-          } catch {
-            toast.error('לא ניתן לשמור את הפרקים');
-          }
-        }
-        toast.success(`נמצאו ${aiChapters.length} פרקים מתיאור הסרטון`);
+        await persistAutomaticChapterCandidates(aiChapters, scanId, 'description_timestamp');
+        setIsYoutubeChaptersFetch(false);
         return;
       }
     }
@@ -3873,7 +3973,8 @@ export function VideoDetailPanel({
     // Step 2: if transcript is already loaded locally, generate chapters directly — no YouTube API needed
     if (_segs?.length) {
       console.log(`[Chapters] transcript available (${_segs.length} segments) — generating without YouTube API`);
-      handleGenerateTranscriptChapters();
+      await handleGenerateTranscriptChapters({ additive: true, scanId });
+      setIsYoutubeChaptersFetch(false);
       return;
     }
 
@@ -3882,9 +3983,9 @@ export function VideoDetailPanel({
     const videoId = getVideoIdFromUrl(watchUrl);
     if (!watchUrl || !videoId) {
       setYoutubeChaptersHint("no_api_key");
+      setIsYoutubeChaptersFetch(false);
       return;
     }
-    setIsYoutubeChaptersFetch(true);
     try {
       const rawDurationSec = getVideoDurationSeconds(video);
       const labelDurationSec = parseDurationToSeconds(video?.durationLabel);
@@ -3909,6 +4010,7 @@ export function VideoDetailPanel({
       const normalized = normalizeGemChapters(rawChapters);
       if (!normalized.length) {
         setYoutubeChaptersHint("no_timestamps");
+        toast.info(`לא נמצאו פרקים חדשים. ${latestDisplayedChaptersRef.current.length} הפרקים הקיימים נשמרו ללא שינוי.`);
         return;
       }
       const aiChapters = normalized.map(c => ({ ...c, source: 'gem' }));
@@ -3919,26 +4021,12 @@ export function VideoDetailPanel({
         toast.warning(coverage.reason || 'הפרקים לא מכסים את כל הסרטון — לא נשמרו');
         return;
       }
-      const updates = { aiChapters, chapters: aiChapters, chapterSource: 'gem' };
-      const localSaved = patchVideo(updates);
-      if (localSaved) {
-        onVideoPatch?.(localSaved);
-      } else {
-        try {
-          await Video.update(video.id, updates);
-          patchVideo(updates);
-          queryClient.invalidateQueries({ queryKey: ['videos'] });
-          onVideoPatch?.({ ...video, ...updates });
-        } catch {
-          toast.error('לא ניתן לשמור את הפרקים');
-          return;
-        }
-      }
-      toast.success(`נוצרו ${aiChapters.length} פרקים בעזרת Gemini`);
+      await persistAutomaticChapterCandidates(aiChapters, scanId, 'gem');
       setYoutubeChaptersHint(null);
     } catch (err) {
       console.error('[Gemini chapters fallback]', err);
       setYoutubeChaptersHint("fetch_failed");
+      toast.error('בדיקת הפרקים נכשלה. הפרקים הקיימים נשמרו ללא שינוי.');
     } finally {
       setIsYoutubeChaptersFetch(false);
     }
@@ -3995,7 +4083,7 @@ export function VideoDetailPanel({
     }
   };
 
-  const handleGenerateTranscriptChapters = () => {
+  const handleGenerateTranscriptChapters = async ({ additive = false, scanId = null } = {}) => {
     const resolution = transcriptForChapters;
     if (!resolution.hasUsableText || !resolution.lines.length) {
       setYoutubeChaptersHint("no_transcript");
@@ -4049,6 +4137,10 @@ export function VideoDetailPanel({
       console.warn(`[Chapters] Title quality gate failed: ${titleQuality.reason}`, aiChapters.map(c => c.title));
       toast.error('לא עודכנו פרקים — איכות הכותרות נמוכה');
       return;
+    }
+
+    if (additive) {
+      return persistAutomaticChapterCandidates(aiChapters, scanId, chapterSource);
     }
 
     const updates = {
@@ -5403,8 +5495,12 @@ export function VideoDetailPanel({
         toast.info('לא זוהה סימבול מניה בפריט הנבחר');
         return;
       }
-      const tvUrl = buildTradingViewChartUrl(ticker);
-      window.open(tvUrl, '_blank', 'noopener,noreferrer');
+      const destination = getTradingViewPublicDestination(ticker);
+      if (!destination) {
+        toast.info('לא נמצאה בורסה מאומתת עבור הסימבול');
+        return;
+      }
+      window.open(destination.url, '_blank', 'noopener,noreferrer');
       toast.success(`📈 ${ticker} — נפתח ב-TradingView`);
       return;
     }
@@ -5413,18 +5509,9 @@ export function VideoDetailPanel({
     console.debug('[TradingView] non-stock item:', entityType, JSON.stringify(firstItem, null, 2));
     const name = extractIndexNameFromItem(firstItem);
     if (name) {
-      // Check alias map first (indices, crypto, commodities, macro, sectors)
-      const resolved = lookupTradingViewSymbol(name);
-      if (resolved) {
-        const tvUrl = buildTradingViewChartUrl(name);
-        window.open(tvUrl, '_blank', 'noopener,noreferrer');
-        toast.success(`📈 ${name} — נפתח ב-TradingView`);
-        return;
-      }
-      // Fallback: if it looks like a pure stock ticker (1-6 uppercase letters), open it anyway
-      if (/^[A-Z]{1,6}$/.test(name)) {
-        const tvUrl = buildTradingViewChartUrl(name);
-        window.open(tvUrl, '_blank', 'noopener,noreferrer');
+      const destination = getTradingViewPublicDestination(name);
+      if (destination) {
+        window.open(destination.url, '_blank', 'noopener,noreferrer');
         toast.success(`📈 ${name} — נפתח ב-TradingView`);
         return;
       }
@@ -5980,6 +6067,8 @@ export function VideoDetailPanel({
       viewCount: v.viewCount ?? null,
       customSubtitle: v.customSubtitle ?? null,
       attachedDocumentsInsights: v.attachedDocumentsInsights ?? null,
+      marketBriefData: v.marketBriefData ?? null,
+      marketExtractionQuality: v.marketExtractionQuality ?? null,
       analysisSavedAt: new Date().toISOString(),
       notes: Array.isArray(videoNotes)
         ? videoNotes.map((note) => ({
@@ -6017,6 +6106,7 @@ export function VideoDetailPanel({
 
     // ── Market Brief — handle separately before generic pipeline ──────────
     if (parsed?.contentType === 'marketBrief') {
+      assertPersistableMarketBrief(parsed);
       const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
       const videoId = video?.id || video?.youtubeId;
       if (videoId) {
@@ -6064,6 +6154,7 @@ export function VideoDetailPanel({
     // ── Macro / Universal Market GEM — contentType: 'market' with universalTabs ──────────
     // Routes through marketBriefData so all universalTabs.* tabs render correctly.
     if (parsed?.contentType === 'market' && parsed?.universalTabs && typeof parsed.universalTabs === 'object') {
+      assertPersistableMarketBrief(parsed);
       const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
       const videoId = video?.id || video?.youtubeId;
       if (videoId) {
@@ -6163,14 +6254,42 @@ export function VideoDetailPanel({
     setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) { setGemsPasteError("הדבק JSON לפני לחיצה על החל"); return; }
+    if (detectManualGemsInputKind(raw) === 'transcript-context') {
+      const diagnostic = classifyAnalysisFailure({
+        code: 'MANUAL_GEMS_INPUT_NOT_JSON',
+        message: `Unexpected token '${raw[0] || ''}' — pasted transcript context is not JSON`,
+        raw,
+        position: 0,
+        stage: 'זיהוי קלט GEMS ידני',
+      });
+      setGemsParsedErrorInfo({
+        line: diagnostic.line,
+        col: diagnostic.column,
+        pos: diagnostic.offset,
+        msg: diagnostic.technicalMessage,
+        translation: 'הודבק קלט ל־GEM במקום פלט JSON',
+      });
+      setGemsErrorContext(getJsonErrorContext(raw, 0));
+      setGemsPasteError('הודבק בלוק התמלול שנשלח ל־Gemini, ולא פלט JSON. חזור ל־Gemini והעתק את תשובת ה־JSON בלבד.');
+      return;
+    }
     let parsed;
     let parseErr = null;
+    const isMarketBriefCandidate = /"contentType"\s*:\s*"(?:marketBrief|market)"/.test(raw);
     try {
       parsed = JSON.parse(raw);
+      if (isMarketBriefCandidate) assertPersistableMarketBrief(parsed);
     } catch (err) {
       parseErr = err;
     }
     if (parseErr) {
+      if (isMarketBriefCandidate) {
+        const loc = getJsonErrorLocation(raw, parseErr?.cause?.message || parseErr.message);
+        setGemsParsedErrorInfo(loc ? { ...loc, msg: parseErr.message, translation: translateJsonError(parseErr.message) } : null);
+        setGemsErrorContext(loc ? getJsonErrorContext(raw, loc.pos) : null);
+        setGemsPasteError('Gemini החזיר פלט Market Brief שאינו JSON תקין. הנתונים הקודמים נשמרו ולא נדרסו. ניתן לנסות תיקון AI יחיד.');
+        return;
+      }
       const { repairedJson: repaired, fixes } = repairGemsJsonDetailed(raw);
       try {
         JSON.parse(repaired);
@@ -6230,6 +6349,10 @@ export function VideoDetailPanel({
     setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) return;
+    if (detectManualGemsInputKind(raw) === 'transcript-context') {
+      setGemsPasteError('זהו קלט ל־GEM ולא פלט JSON. יש להעתיק מ־Gemini את תשובת ה־JSON בלבד.');
+      return;
+    }
     console.log(`[JSON Repair] before input length: ${raw.length}`);
     const { repairedJson: repaired, fixes } = repairGemsJsonDetailed(raw);
     console.log(`[JSON Repair] repaired output length: ${repaired.length}`);
@@ -6294,6 +6417,10 @@ export function VideoDetailPanel({
     setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) return;
+    if (detectManualGemsInputKind(raw) === 'transcript-context') {
+      setGemsPasteError('זהו קלט ל־GEM ולא פלט JSON. אין צורך בתיקון AI; יש להעתיק את תשובת ה־JSON מ־Gemini.');
+      return;
+    }
 
     const deterministic = repairGemsJsonDetailed(raw);
     const parseMessage = gemsParsedErrorInfo?.msg || gemsPasteError || "Invalid JSON";
@@ -6326,7 +6453,11 @@ export function VideoDetailPanel({
       if (!repairedJson) {
         throw new Error('AI repair returned empty JSON');
       }
-      JSON.parse(repairedJson);
+      if (/"contentType"\s*:\s*"(?:marketBrief|market)"/.test(raw)) {
+        assertPersistableMarketBrief(JSON.parse(repairedJson));
+      } else {
+        JSON.parse(repairedJson);
+      }
 
       setGemsAiRepairResult({
         source: 'ai',
@@ -6424,49 +6555,63 @@ export function VideoDetailPanel({
     }
   }, [gemsPasteInput]);
 
-  // Shows the "copy debug report to Claude Code" action whenever the pasted
-  // GEM JSON is currently invalid, an automatic repair failed, an AI repair
-  // failed, or a repair candidate exists but still doesn't parse.
-  const showClaudeCodeDebugReport = Boolean(
+  const currentAnalysisFailure = useMemo(() => {
+    if (!currentGemsJsonValidation.hasValue || currentGemsJsonValidation.isValid) return null;
+    const error = currentGemsJsonValidation.error;
+    const inputKind = detectManualGemsInputKind(gemsPasteInput);
+    const diagnostic = classifyAnalysisFailure({
+      code: inputKind === 'transcript-context' ? 'MANUAL_GEMS_INPUT_NOT_JSON' : 'MALFORMED_MARKET_JSON',
+      message: gemsParsedErrorInfo?.msg || error?.message || gemsPasteError || 'Invalid JSON',
+      raw: gemsPasteInput,
+      position: gemsParsedErrorInfo?.pos ?? (inputKind === 'transcript-context' ? Math.max(0, gemsPasteInput.search(/\S/)) : null),
+      stage: inputKind === 'transcript-context' ? 'זיהוי קלט GEMS ידני' : 'פענוח תשובת Gemini',
+    });
+    return {
+      ...diagnostic,
+      line: gemsParsedErrorInfo?.line ?? diagnostic.line,
+      column: gemsParsedErrorInfo?.col ?? diagnostic.column,
+    };
+  }, [currentGemsJsonValidation, gemsParsedErrorInfo, gemsPasteError, gemsPasteInput]);
+  // The report action is local and appears only for a concrete failure.
+  const showCodexRepairReport = Boolean(
     gemsPasteError ||
     (currentGemsJsonValidation.hasValue && !currentGemsJsonValidation.isValid) ||
     (gemsAiRepairResult && !gemsAiRepairResult.repairedJson) ||
     gemsAiRepairFailed
   );
 
-  const handleCopyClaudeCodeDebugReport = async () => {
-    const videoId = video?.id || video?.youtubeId || null;
-    const videoUrl = getWatchUrl(video) || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
-    const channelName = video?.channelTitle || video?.channelName || video?.channel || '';
-    let attemptedContentType = null;
-    try { attemptedContentType = JSON.parse(gemsPasteInput)?.contentType || null; } catch { /* invalid JSON — expected here */ }
-    const parseErrorText = gemsParsedErrorInfo?.msg || currentGemsJsonValidation.error?.message || gemsPasteError || '';
-
-    const report = createGeminiJsonDebugReport({
-      videoTitle: video?.title || '',
-      videoId,
-      videoUrl,
-      channelName,
-      contentType: attemptedContentType || marketBriefData?.contentType || video?.contentType || '',
-      parseError: parseErrorText,
-      parseValid: currentGemsJsonValidation.isValid,
-      rawGeminiOutput: gemsPasteInput,
-      transcript,
-      repairCandidate: gemsAiRepairResult?.repairedJson || null,
-      aiRepairResult: gemsAiRepairResult?.source === 'ai' ? gemsAiRepairResult.report : null,
-      diagnostics: {
-        repairSource: gemsAiRepairResult?.source || null,
-        repairChanges: gemsAiRepairResult?.changes || [],
-        aiRepairFailed: gemsAiRepairFailed,
-        errorLocation: gemsParsedErrorInfo ? { line: gemsParsedErrorInfo.line, col: gemsParsedErrorInfo.col } : null,
-      },
+  const handleCopyCodexRepairReport = async () => {
+    if (!currentAnalysisFailure) return;
+    const parserInput = gemsPasteInput.trim();
+    const payloadTrace = buildPayloadProcessingTrace({
+      rawProviderOutput: parserInput,
+      parserInput,
+      position: currentAnalysisFailure.offset,
+    });
+    const report = buildCodexRepairPrompt(currentAnalysisFailure, {
+      route: 'VideoDetailPanel/GEMS JSON (manual paste)',
+      provider: 'user-supplied GEMS output',
+      model: 'unknown for pasted payload',
+      responseMimeType: 'not observable for pasted payload',
+      schemaMode: 'strict JSON parse + validate before persist',
+      directParseResult: 'failed',
+      repairAttemptCount: gemsAiRepairResult ? 1 : 0,
+      repairEligible: false,
+      repairEligibilityReason: 'Automatic provider repair is intentionally disabled for manual GEMS paste; the paid AI repair requires an explicit user click.',
+      outputTruncated: currentAnalysisFailure.category === 'provider-truncated-response',
+      payloadTrace,
     });
 
     try {
-      await navigator.clipboard.writeText(report);
-      toast.success('דוח התיקון הועתק לקלוד קוד');
+      await Promise.race([
+        navigator.clipboard.writeText(report),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('CLIPBOARD_TIMEOUT')), 1500)),
+      ]);
+      setCodexReportFallback('');
+      toast.success('דוח התיקון הועתק. אפשר להדביק אותו ב־Codex.');
     } catch {
-      toast.error('לא ניתן היה להעתיק את דוח התיקון');
+      setCodexReportFallback(report);
+      toast.error('ההעתקה נכשלה. הדוח הבטוח מוצג להעתקה ידנית.');
     }
   };
 
@@ -6951,11 +7096,7 @@ export function VideoDetailPanel({
           ? (manualHasTimestamps ? "high" : "low")
           : transcriptPayload?.transcriptQuality;
       console.log("[transcript] status", effectiveTranscriptStatus);
-      const transcriptText = isManualTranscript && !manualHasTimestamps
-        ? transcriptRaw
-        : transcriptSegments
-            .map((line) => `[${Math.floor(line.startSeconds ?? line.start ?? 0)}] ${line.text}`)
-            .join("\n");
+      const transcriptText = buildAnalysisTranscript(transcriptRaw, transcriptSegments);
       console.log("[transcript] full text length", transcriptText?.length ?? 0);
 
       console.log("[analysis] transcript segments", transcriptSegments.length);
@@ -6968,13 +7109,16 @@ export function VideoDetailPanel({
       if (!claudeStatus.configured) {
         const message = "Claude לא מוגדר — חסר VITE_ANTHROPIC_API_KEY";
         console.log("[Claude] missing API key");
-        persistAnalysisState(clearAiAnalysisFields(message));
+        persistAnalysisState({
+          analysisStatus: "failed",
+          analysisError: message,
+        });
         setAnalyzeError(message);
         toast.error(message);
         return;
       }
 
-      if (!transcriptPayload?.ok || transcriptSegments.length === 0) {
+      if (!transcriptPayload?.ok || !transcriptText || transcriptText.trim().length <= 40) {
         const failureMessage = transcriptPayload?.reason || "לא נמצא תמלול תקין לניתוח AI";
 
         // Fallback 1: description timestamps → chapters (no AI, no fake summaries)
@@ -7116,6 +7260,10 @@ export function VideoDetailPanel({
         durationSeconds: getVideoDurationSeconds(workingVideo),
         mentor: mentorName || null,
         category: null,
+        analysisRoute: resolveAnalysisRoute({
+          videoType,
+          tabsKey: selectedTabsConfigKey,
+        }),
         chaptersTarget: computeTargetChapters(getVideoDurationSeconds(workingVideo), chapterDensityMode),
         transcriptStatus: effectiveTranscriptStatus,
         transcriptQuality: effectiveTranscriptQuality,
@@ -7234,11 +7382,26 @@ export function VideoDetailPanel({
         analysisVersion,
         ...(transcriptToStore ? { transcript: transcriptToStore } : {}),
         brainSummary: normalized.brainSummary || null,
+        ...(result?.marketBriefData && typeof result.marketBriefData === "object"
+          ? {
+              marketBriefData: result.marketBriefData,
+              marketExtractionQuality: result.marketExtractionQuality || null,
+              marketExtractionMeta: result.marketBriefData.extractionMeta || null,
+            }
+          : {}),
         _fullVideo: workingVideo,
       };
 
       const saved = await updateSummary.mutateAsync(patch);
       const nextVideo = saved || { ...workingVideo, ...patch };
+
+      if (result?.marketBriefData && typeof result.marketBriefData === "object") {
+        const marketVideoId = workingVideo.id || workingVideo.youtubeId;
+        if (marketVideoId) {
+          localStorage.setItem(`market_brief_${marketVideoId}`, JSON.stringify(result.marketBriefData));
+        }
+        setMarketBriefData(result.marketBriefData);
+      }
 
       setVideoState(nextVideo);
 
@@ -7272,7 +7435,8 @@ export function VideoDetailPanel({
               : null;
       if (claudeMessage) {
         persistAnalysisState({
-          ...clearAiAnalysisFields(claudeMessage),
+          analysisStatus: "failed",
+          analysisError: claudeMessage,
           analysisQuality: "weak",
         });
         setAnalyzeError(claudeMessage);
@@ -7795,6 +7959,9 @@ export function VideoDetailPanel({
       }
 
       const result = await fetchGeminiVideoContent({
+        contentType: resolveAnalysisRoute({ videoType, tabsKey: selectedTabsConfigKey }) === 'market'
+          ? 'marketBrief'
+          : 'general',
         videoId: video.id,
         title: video.title,
         channelName: mentorName || video.channelTitle || video.channelName || '',
@@ -7814,6 +7981,38 @@ export function VideoDetailPanel({
       const analysisSource = result?.analysisSource || 'unknown';
       setGeminiAnalysisSource(analysisSource);
       console.log("[Gemini] analysis done", { analysisSource, analysisMode: result?.analysisMode });
+
+      if (result?.marketBriefData) {
+        const validatedMarketBrief = assertPersistableMarketBrief(result.marketBriefData);
+        const nextMarketBrief = preserveManualOverridesOnReanalysis(marketBriefData, validatedMarketBrief);
+        const analysisSavedAt = Date.now();
+        const marketPatch = {
+          marketBriefData: nextMarketBrief,
+          shortSummary: nextMarketBrief.shortSummary || null,
+          fullSummary: nextMarketBrief.fullSummary || null,
+          tags: Array.isArray(nextMarketBrief.tags) ? nextMarketBrief.tags : [],
+          analysisProvider: 'gemini',
+          analysisSource,
+          analysisMode: result?.analysisMode || 'structured-market',
+          analysisStatus: 'saved',
+          analysisSavedAt,
+          analysisError: null,
+          analyzedAt: new Date().toISOString(),
+        };
+        const savedMarketVideo = persistAnalysisState(marketPatch);
+        const marketVideoId = video.id || video.youtubeId;
+        if (marketVideoId) localStorage.setItem(`market_brief_${marketVideoId}`, JSON.stringify(nextMarketBrief));
+        setMarketBriefData(nextMarketBrief);
+        const nextVideo = { ...(savedMarketVideo || video), ...marketPatch };
+        setVideoState(nextVideo);
+        onVideoPatch?.(nextVideo);
+        onAnalyzeDone?.(nextVideo);
+        setAnalyzeError(null);
+        setGeminiStatus('success');
+        setGeminiMessage('ניתוח Market Brief מובנה נשמר בהצלחה');
+        toast.success('ניתוח Gemini Market Brief הושלם ונשמר');
+        return;
+      }
 
       const normalized = validateAiAnalysisQuality(result);
       const rawChapters = Array.isArray(normalized.chapters) ? normalized.chapters : [];
@@ -7900,6 +8099,8 @@ export function VideoDetailPanel({
           ? "Gemini לא מוגדר — חסר או לא תקין API key"
           : code === "NO_TRANSCRIPT"
           ? "Gemini לא הצליח לנתח מה-URL ואין תמלול זמין לגיבוי"
+          : ["MALFORMED_MARKET_JSON", "TRUNCATED_MARKET_JSON", "INVALID_MARKET_SCHEMA", "EMPTY_PROVIDER_RESPONSE", "MARKET_EXTRACTION_FAILED", "PARTIAL_MARKET_OUTPUT"].includes(code)
+          ? "Gemini החזיר פלט Market Brief לא תקין. הנתונים הקודמים נשמרו ולא נדרסו. ניתן לנסות את הניתוח מחדש."
           : error?.message || "Gemini לא הצליח לנתח את הסרטון";
       setGeminiStatus("failed");
       setGeminiMessage(message);
@@ -8553,9 +8754,27 @@ export function VideoDetailPanel({
               )}
               {/* Channel name */}
               {(() => {
-                const channelMentorId = resolveChannelToMentor(video)?.mentor?.id ?? null;
+                const resolvedMentor = resolveChannelToMentor(video)?.mentor ?? mentorResolution?.mentor ?? null;
+                const channelMentorId = resolvedMentor?.id ?? null;
                 const label = mentorName || video.channelTitle || video.channelName || "";
                 if (!label) return null;
+                const channelCenterMentor = {
+                  ...(resolvedMentor || {}),
+                  id: resolvedMentor?.id || video.mentorId || '',
+                  name: resolvedMentor?.name || label,
+                  youtubeChannelId: resolvedMentor?.youtubeChannelId || resolvedMentor?.channelId || video.youtubeChannelId || video.channelId || '',
+                  channelUrl: resolvedMentor?.channelUrl || video.channelUrl || '',
+                  handle: resolvedMentor?.handle || video.handle || video.channelHandle || '',
+                };
+                if (resolveMentorChannelResourceSet(channelCenterMentor)) {
+                  return (
+                    <MentorChannelQuickNav
+                      mentor={channelCenterMentor}
+                      variant="text-link"
+                      label={label}
+                    />
+                  );
+                }
                 if (channelMentorId && navigateTo) {
                   return (
                     <button
@@ -8827,7 +9046,17 @@ export function VideoDetailPanel({
                       </a>
                     )}
                     {/* Mentor channel link */}
-                    {mentorChannelUrl && (
+                    {mentorChannelUrl && onMentorContentHubOpen ? (
+                      <button
+                        type="button"
+                        onClick={onMentorContentHubOpen}
+                        className={`${BASE} border-indigo-200/60 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700/50`}
+                        title="פתח את מרכז התוכן של המנטור"
+                      >
+                        <span className="text-xs leading-none">📺</span>
+                        <span>ערוץ המנטור</span>
+                      </button>
+                    ) : mentorChannelUrl ? (
                       <a
                         href={mentorChannelUrl}
                         target="_blank"
@@ -8838,7 +9067,7 @@ export function VideoDetailPanel({
                         <span className="text-xs leading-none">📺</span>
                         <span>ערוץ המנטור</span>
                       </a>
-                    )}
+                    ) : null}
                     {/* Transcript status */}
                     {transcriptChip && (
                       <span className={`${BASE} ${
@@ -9190,6 +9419,34 @@ export function VideoDetailPanel({
                       <span>AI Mapping</span>
                     </button>
                   )}
+                  {(analysisCoverage.hasStructuredContent || analysisCoverage.hasTranscript) && (
+                    <div
+                      dir="rtl"
+                      role="status"
+                      aria-live="polite"
+                      aria-label={analysisCoverage.hasStructuredContent
+                        ? `${analysisCoverage.analysisType}, ${analysisCoverage.sourceLabel}, ${analysisCoverage.activeFields} שדות פעילים, ${analysisCoverage.totalItems} פריטים בסך הכול`
+                        : 'טרם נוצר תוכן מובנה'}
+                      title={analysisCoverage.hasStructuredContent
+                        ? `${analysisCoverage.analysisType} · ${analysisCoverage.sourceLabel} · ${analysisCoverage.activeFields} שדות פעילים · ${analysisCoverage.totalItems} פריטים בסך הכול`
+                        : 'טרם נוצר תוכן מובנה'}
+                      data-testid="analysis-coverage-summary"
+                      className="inline-flex min-h-[28px] max-w-full cursor-default flex-wrap items-center gap-x-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium leading-5 text-slate-900 dark:border-slate-300 dark:bg-white dark:text-slate-900"
+                    >
+                      {analysisCoverage.hasStructuredContent ? (
+                        <>
+                          <span>{analysisCoverage.analysisType}</span>
+                          {analysisCoverage.sourceLabel && <><span aria-hidden="true">·</span><span>{analysisCoverage.sourceLabel}</span></>}
+                          <span aria-hidden="true">·</span>
+                          <span>{analysisCoverage.activeFields} שדות פעילים</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{analysisCoverage.totalItems} פריטים בסך הכול</span>
+                        </>
+                      ) : (
+                        <span>טרם נוצר תוכן מובנה</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -9206,18 +9463,25 @@ export function VideoDetailPanel({
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
                   <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
-                    <PanelThumbnail video={video} />
-                    <a
-                      href={getWatchUrl(video) || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
-                      onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
-                    >
-                      <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                        <ExternalLink className="h-5 w-5 text-slate-800" />
-                      </div>
-                    </a>
+                    {activeYouTubeId && !videoPlayerError ? (
+                      <>
+                        <div
+                          className={cn(
+                            "absolute inset-0 z-10 pointer-events-none transition-opacity",
+                            isVideoPlayerReady ? "opacity-0" : "opacity-100",
+                          )}
+                        >
+                          <PanelThumbnail video={video} />
+                        </div>
+                        <div
+                          ref={videoPlayerContainerRef}
+                          className="absolute inset-0 h-full w-full"
+                          aria-label="נגן YouTube של הסרטון"
+                        />
+                      </>
+                    ) : (
+                      <PanelThumbnail video={video} />
+                    )}
                   </div>
                 </div>
               )}
@@ -10273,7 +10537,7 @@ export function VideoDetailPanel({
                           disabled={isYoutubeChaptersFetch}
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                         >
-                          {isYoutubeChaptersFetch ? "⏳ מייצר..." : "🔍 בדוק פרקים אוטומטית"}
+                          {isYoutubeChaptersFetch ? "⏳ בודק..." : "🔍 בדוק פרקים אוטומטית"}
                         </button>
                       </div>
                     </div>
@@ -10484,7 +10748,12 @@ export function VideoDetailPanel({
                           <div>displayWinner: {descriptionChapters.length > 0 ? 'description' : transcriptChunkChapters.length > 0 ? 'transcriptChunk' : chaptersFromGem ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base'}</div>
                           <div>fallbackSource: {transcriptChunkChapters.length === 0 && (transcriptChaptersRaw?.length ?? 0) > 0 ? (gemChapters.length > 0 ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base') : '—'}</div>
                           <div>finalChapters: {displayChapters?.length ?? 0}</div>
-                          <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
+                          <div>timedSegments: {transcriptForChapters.segments?.length ?? 0}</div>
+                          <div>timingSource: {transcriptForChapters.source ?? '—'}</div>
+                          <div>timedChapters: {displayChapters.filter((chapter) => Number.isFinite(chapter?.startSeconds)).length}</div>
+                          <div>semanticUntimedChapters: {displayChapters.filter((chapter) => !Number.isFinite(chapter?.startSeconds)).length}</div>
+                          <div>alignmentPerformed: {String(gemChapters.some((chapter) => chapter?.timestampSource === 'youtube-timedtext'))}</div>
+                          <div>playerAvailable: {String(isVideoPlayerReady)}</div>
                           <div>video.desc: {typeof video?.description === 'string' ? video.description.length : '—'}</div>
                           <div>prop.desc: {typeof videoProp?.description === 'string' ? videoProp.description.length : '—'}</div>
                           <div>ytId: {getVideoIdFromUrl(getWatchUrl(video)) ?? '—'}</div>
@@ -10525,7 +10794,7 @@ export function VideoDetailPanel({
                                     section={hebrewTitlesMap[index]
                                       ? { ...chapter, hebrewTitle: hebrewTitlesMap[index].hebrewTitle, originalTitle: hebrewTitlesMap[index].originalTitle || chapter.title }
                                       : chapter}
-                                    playerRef={undefined}
+                                    playerRef={videoPlayerRef}
                                     videoUrl={getWatchUrl(video)}
                                     isHighlighted={index === highlightedChapterIndex}
                                   />
@@ -11339,6 +11608,8 @@ export function VideoDetailPanel({
                           isSaved={isInsightSaved}
                           bulkSelection={bulkSelectionShare}
                           tabScope="insights"
+                          transcriptSegments={storedTranscriptSegments}
+                          onSeek={seekVideoTo}
                         />
                       )}
                       {sections.map(({ key, label, items, highlight, tabKey }) => {
@@ -11352,6 +11623,8 @@ export function VideoDetailPanel({
                               isSaved={(text) => isBrainItemSaved(text, tabKey)}
                               bulkSelection={bulkSelectionShare}
                               tabScope="insights"
+                              transcriptSegments={storedTranscriptSegments}
+                              onSeek={seekVideoTo}
                             />
                           );
                         }
@@ -11377,6 +11650,8 @@ export function VideoDetailPanel({
                                 type: tabKey,
                                 tabScope: 'insights',
                               })}
+                              transcriptSegments={storedTranscriptSegments}
+                              onSeek={seekVideoTo}
                             />
                           </div>
                         );
@@ -11525,6 +11800,8 @@ export function VideoDetailPanel({
                               type: tabKey,
                               tabScope: 'useful-knowledge',
                             })}
+                            transcriptSegments={storedTranscriptSegments}
+                            onSeek={seekVideoTo}
                           />
                         </div>
                       ))}
@@ -12040,6 +12317,10 @@ export function VideoDetailPanel({
       recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
       tjsRecommendation={tjsRec}
+      videoType={videoType}
+      tabsKey={selectedTabsConfigKey}
+      contentType={marketBriefData?.contentType || effectiveVideo?.contentType || null}
+      marketBriefMetadata={marketBriefData}
       fullTranscriptText={fullTranscriptText}
       onSave={async (key) => {
         setGemOverride(key);
@@ -12434,7 +12715,7 @@ export function VideoDetailPanel({
           onChange={(e) => {
             const val = e.target.value;
             setGemsPasteInput(val);
-            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false);
+            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setCodexReportFallback('');
             if (video?.id) {
               if (val.trim()) {
                 localStorage.removeItem(`gems-paste-cleared-${video.id}`);
@@ -12520,6 +12801,40 @@ export function VideoDetailPanel({
             )}
           </div>
         )}
+        {currentAnalysisFailure && (
+          <section
+            aria-labelledby="gems-failure-title"
+            className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-right dark:border-amber-800 dark:bg-amber-950/25"
+          >
+            <div>
+              <h3 id="gems-failure-title" className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                {currentAnalysisFailure.titleHe}
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-amber-900 dark:text-amber-200">
+                {currentAnalysisFailure.messageHe}
+              </p>
+            </div>
+            <dl className="grid grid-cols-1 gap-1 text-xs text-slate-700 sm:grid-cols-2 dark:text-zinc-200">
+              <div><dt className="inline font-semibold">סוג התקלה: </dt><dd className="inline">{currentAnalysisFailure.category}</dd></div>
+              <div><dt className="inline font-semibold">שלב: </dt><dd className="inline">{currentAnalysisFailure.stage}</dd></div>
+              <div><dt className="inline font-semibold">התוכן התקבל: </dt><dd className="inline">כן</dd></div>
+              <div><dt className="inline font-semibold">ניתן להתחיל ניתוח: </dt><dd className="inline">לא</dd></div>
+              <div><dt className="inline font-semibold">ניתן לתקן payload נוכחי: </dt><dd className="inline">{currentAnalysisFailure.currentPayloadRepairable ? 'כן' : 'לא'}</dd></div>
+              <div><dt className="inline font-semibold">הנתונים הקודמים נשמרו: </dt><dd className="inline">כן</dd></div>
+            </dl>
+            <p className="text-xs leading-5 text-slate-700 dark:text-zinc-300">
+              {currentAnalysisFailure.recommendedUserActionHe}
+            </p>
+            <details className="text-xs text-slate-600 dark:text-zinc-300">
+              <summary className="cursor-pointer font-medium">פרטים טכניים</summary>
+              <p dir="ltr" className="mt-2 break-words rounded bg-white/70 p-2 font-mono dark:bg-zinc-950/60">
+                {currentAnalysisFailure.technicalMessage}
+                {currentAnalysisFailure.line != null ? ` · line ${currentAnalysisFailure.line}` : ''}
+                {currentAnalysisFailure.column != null ? ` · column ${currentAnalysisFailure.column}` : ''}
+              </p>
+            </details>
+          </section>
+        )}
         {gemsAiRepairResult && (
           <div className="space-y-2 rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 text-right dark:border-sky-800/40 dark:bg-sky-950/20">
             <div className="flex items-center justify-between gap-3">
@@ -12579,15 +12894,31 @@ export function VideoDetailPanel({
             </div>
           </div>
         )}
-        {showClaudeCodeDebugReport && (
-          <div className="flex justify-start">
+        {showCodexRepairReport && currentAnalysisFailure && (
+          <div className="space-y-2">
+            <div className="flex justify-start">
             <button
               type="button"
-              onClick={handleCopyClaudeCodeDebugReport}
+              onClick={handleCopyCodexRepairReport}
+              title="צור והעתק הודעה מוכנה ל־Codex עם פרטי התקלה הבטוחים"
+              aria-label="העתק דוח אבחון ותיקון ל־Codex"
               className="px-3 py-1.5 text-xs border border-violet-300 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
             >
-              📋 העתק דוח לקלוד קוד
+              📋 העתק דוח תיקון ל־Codex
             </button>
+            </div>
+            {codexReportFallback && (
+              <div className="space-y-1 text-right">
+                <p className="text-xs text-rose-600 dark:text-rose-300">ההעתקה האוטומטית נכשלה. אפשר לבחור ולהעתיק את הדוח ידנית:</p>
+                <textarea
+                  readOnly
+                  aria-label="דוח תיקון בטוח להעתקה ידנית"
+                  value={codexReportFallback}
+                  className="h-32 w-full resize-y rounded-lg border border-rose-200 bg-white p-2 text-[11px] font-mono text-slate-800 dark:border-rose-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  dir="ltr"
+                />
+              </div>
+            )}
           </div>
         )}
         {import.meta.env.DEV && (
@@ -12615,14 +12946,14 @@ export function VideoDetailPanel({
           </button>
           <button
             onClick={handleRepairGemsJson}
-            disabled={!gemsPasteInput.trim()}
+            disabled={!gemsPasteInput.trim() || currentAnalysisFailure?.category === 'manual-input-not-json'}
             className="px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 disabled:opacity-50 font-medium dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
           >
             🔧 תקן JSON
           </button>
           <button
             onClick={handleAiRepairGemsJson}
-            disabled={!gemsPasteInput.trim() || (!gemsPasteError && !gemsParsedErrorInfo) || isAiRepairingGemsJson}
+            disabled={!gemsPasteInput.trim() || (!gemsPasteError && !gemsParsedErrorInfo) || isAiRepairingGemsJson || currentAnalysisFailure?.category === 'manual-input-not-json'}
             className="px-4 py-2 text-sm border border-sky-300 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 disabled:opacity-50 font-medium dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300"
           >
             {isAiRepairingGemsJson ? '🤖 מתקן ומפיק דוח...' : '🤖 תקן JSON עם AI + הפק דוח'}

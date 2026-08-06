@@ -12,7 +12,6 @@ import {
   DASHBOARD_TABLE_CELL_MUTED_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
-  COMPARISON_ROW_HOVER,
 } from './MorningBriefVisualPrimitives';
 import {
   formatMarketChange,
@@ -21,6 +20,8 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
+import { TradingViewSymbolAction } from '@/components/shared/TradingViewSymbolAction';
+import { formatMarketRowText } from '@/lib/morningBriefBulkSections';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
@@ -32,6 +33,8 @@ import {
   BRIEF_SENTIMENT_INLINE_CLS,
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
+  BriefRowActions,
+  SemanticTableRow,
   BriefTableWrapper,
 } from './briefTableLayout';
 
@@ -101,8 +104,6 @@ export function MorningBriefMarketsTable({
     [row.trend, row.strength, row.comment].filter(Boolean).join(' '),
   );
   const rowBorder = (row) => toneStyles(rowDirection(row).tone).border;
-  const formatRowText = (row) => [row.asset, row.trend, row.strength, row.comment].filter(Boolean).join(' · ');
-
   const hasQuickSave = (sel) =>
     sel?.onQuickSaveBrain || sel?.onQuickSaveObsidian || sel?.onQuickSaveWorkspace;
 
@@ -110,26 +111,24 @@ export function MorningBriefMarketsTable({
     <BriefTableWrapper>
       <table className={BRIEF_TABLE_CLS} dir="rtl">
         <colgroup>
-          <col style={{ width: BRIEF_COL.checkbox }} />
           <col style={{ width: BRIEF_MARKETS_COL.asset }} />
           <col style={{ width: BRIEF_MARKETS_COL.sentiment }} />
           <col style={{ width: BRIEF_MARKETS_COL.change }} />
           <col />
-          <col style={{ width: BRIEF_COL.save }} />
+          <col style={{ width: BRIEF_COL.actions }} />
         </colgroup>
         <thead>
           <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
-            <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" />
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
-            <th className="py-1.5 pl-1 pr-0" aria-label="שמירה" />
+            <th className={`px-2 py-1.5 text-center whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>פעולות</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => {
-            const summary = formatRowText(row);
+            const summary = formatMarketRowText(row);
             const pct = getMarketChangePct(row);
             const direction = rowDirection(row);
             const sentKey = marketsToneToSentKey(direction.tone);
@@ -142,24 +141,21 @@ export function MorningBriefMarketsTable({
               : null;
 
             return (
-              <tr
+              <SemanticTableRow
                 key={i}
-                className={`border-b border-slate-200/70 dark:border-zinc-700/50 ${COMPARISON_ROW_HOVER} group border-r-2 ${rowBorder(row)}`}
+                evidence={{
+                  tone: rowDirection(row).tone,
+                  direction: row.direction || row.trend,
+                  change: row.change ?? row.changePercent,
+                  sentiment: row.sentiment,
+                }}
+                className={`group border-r-2 ${rowBorder(row)}`}
               >
-                <td className={BRIEF_CELL.checkbox}>
-                  <MorningBriefBulkCheckbox
-                    bulkSections={bulkSections}
-                    sectionKey="markets"
-                    text={summary}
-                    sectionLabel="📈 שווקים"
-                    tabKey="indices"
-                    bulkSelection={bulkSelection}
-                  />
-                </td>
                 <td className={BRIEF_CELL.short}>
                   <div className="flex items-center gap-1 min-w-0">
                     <ExternalSymbolLink
                       symbol={row.asset}
+                      verifiedMarketAssetOnly
                       className={`truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}
                     >
                       {row.asset || '—'}
@@ -186,21 +182,39 @@ export function MorningBriefMarketsTable({
                     {renderLinkedMarketText(row.comment) || '—'}
                   </p>
                 </td>
-                <td className={BRIEF_CELL.save}>
-                  {hasQuickSave(bulkSelection) ? (
-                    <UniversalTabQuickSaveFromBulk bulkSelection={mergedBulk} text={summary} />
-                  ) : onSaveToBrain ? (
-                    <button
-                      type="button"
-                      onClick={() => onSaveToBrain(summary)}
-                      title="שמור למוח"
-                      className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors"
-                    >
-                      🧠
-                    </button>
-                  ) : null}
+                <td className={BRIEF_CELL.actions} data-market-actions-cell>
+                  <BriefRowActions
+                    checkbox={(
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="markets"
+                        text={summary}
+                        sectionLabel="📈 שווקים"
+                        tabKey="indices"
+                        bulkSelection={bulkSelection}
+                      />
+                    )}
+                    tradingViewAction={(
+                      <TradingViewSymbolAction
+                        asset={row.asset}
+                        sourceContext={[row.source, row.instrumentType, row.comment].filter(Boolean).join(' ')}
+                      />
+                    )}
+                    saveAction={hasQuickSave(bulkSelection) ? (
+                      <UniversalTabQuickSaveFromBulk bulkSelection={mergedBulk} text={summary} />
+                    ) : onSaveToBrain ? (
+                      <button
+                        type="button"
+                        onClick={() => onSaveToBrain(summary)}
+                        title="שמור למוח"
+                        className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors"
+                      >
+                        🧠
+                      </button>
+                    ) : null}
+                  />
                 </td>
-              </tr>
+              </SemanticTableRow>
             );
           })}
         </tbody>

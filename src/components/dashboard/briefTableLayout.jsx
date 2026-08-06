@@ -1,3 +1,5 @@
+import { resolveSemanticVisualState, semanticRowClass } from '@/lib/specializedSemanticVisualState';
+
 /**
  * Shared Morning Brief table layout — fixed columns, RTL-safe, horizontal scroll on narrow viewports.
  * Macro Gem dashboard tables are the visual reference (MCOL percentages).
@@ -22,6 +24,7 @@ export const BRIEF_TABLE_HEAD_ROW_CLS = 'border-b-2 border-slate-200/80 dark:bor
  */
 export const BRIEF_COL = {
   checkbox: '2.5%',
+  actions: '9%',
   save: '5%',
   sentiment: '15.5%',
   asset: '27%',
@@ -50,6 +53,7 @@ export const BRIEF_CELL = {
   change: 'px-2 py-2 align-middle whitespace-nowrap overflow-hidden text-right',
   notes: 'px-2 py-2 align-middle min-w-0 overflow-hidden',
   links: 'px-2 py-2 align-middle whitespace-nowrap overflow-hidden',
+  actions: 'px-2 py-2 align-middle whitespace-nowrap',
 };
 
 export const BRIEF_NOTES_TEXT_CLS =
@@ -62,6 +66,37 @@ export function BriefTableWrapper({ children, className = '' }) {
   return (
     <div className={`${BRIEF_TABLE_WRAPPER_CLS} ${className}`.trim()} dir="rtl">
       {children}
+    </div>
+  );
+}
+
+/** Shared full-width semantic table row for every Specialized data table. */
+export function SemanticTableRow({ evidence, className = '', children, ...props }) {
+  const state = resolveSemanticVisualState(evidence);
+  return (
+    <tr
+      {...props}
+      data-semantic-visual-state={state}
+      className={`border-b border-slate-200/70 dark:border-zinc-700/50 transition-colors focus-within:ring-2 focus-within:ring-blue-500/60 ${className} ${semanticRowClass(evidence)}`.trim()}
+    >
+      {children}
+    </tr>
+  );
+}
+
+export function BriefRowActions({
+  checkbox,
+  tradingViewAction = null,
+  saveAction = null,
+  className = '',
+}) {
+  return (
+    <div className={`flex min-h-8 items-center justify-center gap-2 ${className}`.trim()}>
+      {checkbox}
+      <span className="inline-flex min-w-[44px] justify-center">
+        {tradingViewAction}
+      </span>
+      {saveAction}
     </div>
   );
 }

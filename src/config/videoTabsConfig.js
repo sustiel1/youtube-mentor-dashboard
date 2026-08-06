@@ -1,3 +1,6 @@
+import { normalizeConclusionText, resolveSummaryConclusion } from '@/lib/summaryConclusionResolver';
+import { getSpecializedSrc } from '@/lib/morningBriefDisplay';
+
 /**
  * Dynamic tab configuration per video type.
  *
@@ -22,11 +25,15 @@ const MORNING_BRIEF_KEYWORDS = [
   'סקירת בוקר', 'פתיחת שוק',
   // Live opening briefs: "מבזק לייב פתיחה לתאריך DD.MM.YY"
   'מבזק לייב פתיחה',
+  'מבזק פתיחה', 'פתיחת מסחר', 'market open', 'opening bell',
 ];
 
 const EVENING_BRIEF_KEYWORDS = [
   'מבזק ערב', 'סיכום יום', 'market close', 'סקירת ערב',
   'evening brief', 'סגירת שוק',
+  'לייט נייט', 'לייטנייט', 'סיכום מסחר', 'נעילת מסחר',
+  'אחרי המסחר', 'לאחר יום המסחר', 'after market', 'after hours',
+  'closing brief', 'late night',
 ];
 
 // ── SubCategory normalizer ───────────────────────────────────────────
@@ -332,11 +339,7 @@ export function getTabsForVideo(video, {
  * Priority: universalTabs.specialized > rawData > top-level mbd fields.
  */
 function resolveSpecialized(mbd) {
-  if (!mbd || typeof mbd !== 'object') return mbd;
-  const spec = mbd.universalTabs?.specialized;
-  const raw = (mbd.rawData && typeof mbd.rawData === 'object') ? mbd.rawData : null;
-  if (!spec && !raw) return mbd;
-  return { ...mbd, ...(raw || {}), ...(spec || {}) };
+  return getSpecializedSrc(mbd) || mbd;
 }
 
 /**
@@ -635,17 +638,29 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
   switch (tabValue) {
     case 'summary': {
       const utSummary = marketBriefData?.universalTabs?.summary;
+      const resolvedConclusion = resolveSummaryConclusion({ video, marketBriefData });
+      const appendConclusion = (items) => {
+        if (!resolvedConclusion.text) return items;
+        const conclusionKey = normalizeConclusionText(resolvedConclusion.text);
+        const exists = items.some((item) => normalizeConclusionText(
+          typeof item === 'string'
+            ? item
+            : item?.text || item?.content || item?.summary || item?.title || '',
+        ) === conclusionKey);
+        return exists ? items : [...items, resolvedConclusion.text];
+      };
       if (Array.isArray(utSummary) && utSummary.length > 0) {
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: universalTabs.summary (array) | exists: true | itemsCount:', utSummary.length);
-        return utSummary;
+        return appendConclusion(utSummary);
       }
       if (utSummary && typeof utSummary === 'object') {
         const items = [
-          ...pickStringAsArray(utSummary, 'shortSummary', 'fullSummary', 'marketMood', 'mainConclusion'),
+          ...pickStringAsArray(utSummary, 'shortSummary', 'fullSummary', 'marketMood'),
           ...pickArray(utSummary, 'topTakeaways', 'importantWarnings', 'keyOpportunities'),
         ];
         if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: universalTabs.summary (object) | exists: true | itemsCount:', items.length);
-        if (items.length > 0) return items;
+        const resolvedItems = appendConclusion(items);
+        if (resolvedItems.length > 0) return resolvedItems;
       }
       // rawData fallback — when universalTabs.summary is absent/empty
       const rdSum = marketBriefData?.rawData;
@@ -657,16 +672,16 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ];
         if (rdItems.length > 0) {
           if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: rawData | itemsCount:', rdItems.length);
-          return rdItems;
+          return appendConclusion(rdItems);
         }
       }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: legacy | exists:', !!(marketBriefData || video.shortSummary));
-      return [
+      return appendConclusion([
         ...pickStringAsArray(video, 'shortSummary', 'fullSummary', 'gemSummary', 'summary', 'mainLesson'),
         ...(marketBriefData && !(video.shortSummary || video.fullSummary)
           ? pickArray(marketBriefData, 'top5Insights', 'reusableKnowledge').slice(0, 3)
           : []),
-      ];
+      ]);
     }
 
     case 'chapters': {

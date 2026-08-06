@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import {
@@ -421,10 +422,6 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
   const [analyzeError, setAnalyzeError] = useState(null);
   const [aiOverride, setAiOverride] = useState(null); // cached AI analysis for current video
   const [copiedLink, setCopiedLink] = useState(false);
-  // YouTube IFrame API refs
-  const playerRef        = useRef(null); // YT.Player instance
-  const pendingSeekRef   = useRef(null); // seconds to seek once player is ready
-  const playerDivRef     = useRef(null); // div mount-point for the player
   // file input ref for screenshots upload
   const screenshotInputRef = useRef(null);
 
@@ -506,6 +503,12 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
 
   const isLearned = selectedVideo ? isLearnedStatus(selectedVideo.learningStatus) : false;
   const youtubeId = selectedVideo ? extractYouTubeId(selectedVideo.url) : null;
+  const {
+    playerRef,
+    containerRef: playerDivRef,
+    seekTo,
+    queueSeek,
+  } = useYouTubePlayer(youtubeId);
   const isComplete = progress === 100 && topicVideos.length > 0;
   const mentorName = selectedVideo ? getMentorName(selectedVideo.mentorId) : "";
 
@@ -691,25 +694,19 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
   // ─── YouTube IFrame API ───────────────────────────────────
 
   // Central seek: uses the player instance if ready, otherwise queues the seek
-  const seekTo = useCallback((seconds) => {
-    if (playerRef.current && typeof playerRef.current.seekTo === "function") {
-      playerRef.current.seekTo(seconds, true);
-      playerRef.current.playVideo?.();
-    } else {
-      pendingSeekRef.current = seconds;
-    }
-  }, []);
-
   // קפיצה לזמן — אם הסרטון כבר פעיל: seek ישיר. אחרת: בוחר סרטון + pending seek
   const handleJumpToTimestamp = useCallback((seconds, targetVideoId) => {
     if (!targetVideoId || targetVideoId === selectedVideoId) {
       seekTo(seconds);
     } else {
-      pendingSeekRef.current = seconds;
+      queueSeek(seconds);
       setSelectedVideoId(targetVideoId);
     }
-  }, [selectedVideoId, seekTo]);
+  }, [selectedVideoId, seekTo, queueSeek]);
 
+  /*
+  // Legacy inline YouTube player implementation retained temporarily for diff
+  // readability; the shared useYouTubePlayer hook above is now authoritative.
   // Load the YouTube IFrame API script once (idempotent)
   useEffect(() => {
     if (window.YT?.Player || document.querySelector('script[src*="youtube.com/iframe_api"]')) return;
@@ -789,6 +786,7 @@ export default function TopicLearningPage({ topicId, navigateTo, pageParams }) {
     try { playerRef.current?.destroy(); } catch {}
     playerRef.current = null;
   }, []);
+  */
 
   // ─── Loading / Not Found ─────────────────────────────────
 

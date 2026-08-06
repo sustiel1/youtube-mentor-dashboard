@@ -7,6 +7,14 @@ import { getGemUrl, isGeminiGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } fr
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { cn } from "@/lib/utils";
 import { loadTopics } from "@/services/topicStorage";
+import {
+  MARKET_BRIEF_GEM_URL,
+  MARKET_BRIEF_GEM_NAME,
+  buildMarketBriefGemPayload,
+  isCanonicalMarketBrief,
+  openCanonicalMarketBriefGem,
+  resolveMarketBriefSession,
+} from "@/lib/marketBriefGemLauncher";
 
 // ── Fixed GEM definitions ─────────────────────────────────────────────────────
 
@@ -102,6 +110,10 @@ export function GemSelectionModal({
   onGemOpened = null,
   onGemSummaryPaste = null,
   tjsRecommendation = null,
+  videoType = null,
+  tabsKey = null,
+  contentType = null,
+  marketBriefMetadata = null,
 }) {
   const [selected, setSelected]                 = useState(savedGemKey || recommendedGemKey || "general");
   const [gemUrls, setGemUrls]                   = useState(() => {
@@ -123,6 +135,7 @@ export function GemSelectionModal({
   const [expandedCategory, setExpandedCategory] = useState(() =>
     getCategoryForKey(savedGemKey || recommendedGemKey || "general", [])
   );
+  const [manualBriefSession, setManualBriefSession] = useState(null);
 
   // Load dynamic topic-based GEMs
   useEffect(() => {
@@ -174,6 +187,7 @@ export function GemSelectionModal({
       setIsSummaryPasteOpen(false);
       setSummaryDraft('');
       setSummaryError('');
+      setManualBriefSession(null);
     }
   }, [open, savedGemKey, recommendedGemKey, refreshUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -193,6 +207,8 @@ export function GemSelectionModal({
   const category       = topics[0]?.name || video?.category || "";
   const subCategory    = topics[1]?.name || video?.subCategory || "";
   const recommendedGem = allGems.find((g) => g.key === recommendedGemKey);
+  const isMarketBrief = isCanonicalMarketBrief({ video, videoType, tabsKey, contentType });
+  const briefSession = resolveMarketBriefSession({ video, videoType, structuredData: marketBriefMetadata, manualSession: manualBriefSession });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -203,14 +219,18 @@ export function GemSelectionModal({
   };
 
   const handleOpenGem = async () => {
-    const resolvedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
+    const resolvedGemUrl = isMarketBrief ? MARKET_BRIEF_GEM_URL : (getGemUrl(selected) || gemUrls[selected] || "");
     if (!fullTranscriptText) { toast.error("אין תמלול להעתקה — ייבא תמלול קודם"); return; }
     if (!resolvedGemUrl || !isGeminiGemUrl(resolvedGemUrl)) {
       setIsConfiguringUrl(true);
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
-    const payload = [
+    const payload = isMarketBrief ? buildMarketBriefGemPayload({
+      video,
+      fullTranscriptText,
+      session: briefSession,
+    }) : [
       `Title: ${video?.title || ""}`,
       `Channel: ${video?.channelTitle || video?.channelName || ""}`,
       `Category: ${category}`,
@@ -227,7 +247,8 @@ export function GemSelectionModal({
       return;
     }
     console.log("[MorningBriefing] GEM opened:", selected);
-    if (!openGeminiGemUrl(resolvedGemUrl)) {
+    const opened = isMarketBrief ? openCanonicalMarketBriefGem() : openGeminiGemUrl(resolvedGemUrl);
+    if (!opened) {
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
       return;
     }
@@ -423,7 +444,36 @@ export function GemSelectionModal({
               </div>
 
               {/* ── 2. Recommended GEM card ───────────────── */}
-              {recommendedGem && (
+              {isMarketBrief ? (
+                <div className="space-y-3">
+                  <div className="w-full rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-4 text-right shadow-sm dark:border-amber-700 dark:bg-amber-950/20">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl leading-none" aria-hidden="true">{briefSession.icon}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-bold text-slate-900 dark:text-zinc-100">{briefSession.labelHe}</span>
+                          <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-white">GEM מומלץ</span>
+                        </div>
+                        <div className="mt-1 text-sm font-semibold text-amber-800 dark:text-amber-200">{briefSession.phaseLabelHe}</div>
+                        <div className="mt-1 text-xs text-slate-600 dark:text-zinc-400">ניתוח שוק מובנה לפני או אחרי יום המסחר</div>
+                        <div className="mt-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">{MARKET_BRIEF_GEM_NAME}</div>
+                        <div className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-zinc-400">Gemini</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {briefSession.briefType === "unknown" && (
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="בחירת הקשר למבזק שוק">
+                      <button type="button" onClick={() => setManualBriefSession("morning")} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        🌅 לפני המסחר
+                      </button>
+                      <button type="button" onClick={() => setManualBriefSession("evening")} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        🌙 אחרי המסחר
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : recommendedGem && (
                 <button
                   type="button"
                   onClick={() => handleSelect(recommendedGem.key)}
@@ -451,7 +501,7 @@ export function GemSelectionModal({
               )}
 
               {/* ── 3. Accordion category list ────────────── */}
-              <div>
+              {!isMarketBrief && <div>
                 <div className="mb-2.5 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500">בחר GEM</span>
                   <button type="button" onClick={handleManageAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline">
@@ -468,10 +518,10 @@ export function GemSelectionModal({
                   {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
                   {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
                 </div>
-              </div>
+              </div>}
 
               {/* ── 4. Selected GEM details + URL ─────────── */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
+              {!isMarketBrief && <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
                 <div className="flex items-center gap-2">
                   <span className="text-lg leading-none">{selectedGem.icon}</span>
                   <span className="font-bold text-slate-800 dark:text-zinc-100">{selectedGem.label}</span>
@@ -544,7 +594,7 @@ export function GemSelectionModal({
                     )}
                   </div>
                 )}
-              </div>
+              </div>}
 
             </div>
 
@@ -622,7 +672,9 @@ export function GemSelectionModal({
               <button
                 type="button"
                 onClick={handleOpenGem}
-                disabled={!fullTranscriptText}
+                disabled={!fullTranscriptText || (isMarketBrief && briefSession.briefType === "unknown")}
+                title={isMarketBrief ? `פתח את ${MARKET_BRIEF_GEM_NAME} ב־Gemini והעתק את התמלול המובנה` : undefined}
+                aria-label={isMarketBrief ? `העתק את התמלול ופתח את ${MARKET_BRIEF_GEM_NAME} ב־Gemini` : undefined}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >
                 <ExternalLink className="h-4 w-4 shrink-0" />

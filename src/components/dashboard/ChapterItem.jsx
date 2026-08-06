@@ -76,7 +76,7 @@ function cleanChapterSubtitle(title, subtitle) {
   return subtitle;
 }
 
-function ChapterShell({ children, clickable = false, title, onClick, isHighlighted = false }) {
+function ChapterShell({ children, clickable = false, title, onClick, isHighlighted = false, ...semanticProps }) {
   const Tag = clickable ? "button" : "div";
   return (
     <Tag
@@ -92,6 +92,7 @@ function ChapterShell({ children, clickable = false, title, onClick, isHighlight
           : "border-slate-200 dark:border-zinc-800",
       ].join(" ")}
       title={title}
+      {...semanticProps}
       dir="rtl"
     >
       {children}
@@ -100,7 +101,7 @@ function ChapterShell({ children, clickable = false, title, onClick, isHighlight
 }
 
 /** Flat row shell — matches Insights / Useful Knowledge density inside UniversalTabSelectRow. */
-function ChapterRowShell({ children, clickable = false, title, onClick, isHighlighted = false, muted = false }) {
+function ChapterRowShell({ children, clickable = false, title, onClick, isHighlighted = false, muted = false, ...semanticProps }) {
   const Tag = clickable ? "button" : "div";
   return (
     <Tag
@@ -115,6 +116,7 @@ function ChapterRowShell({ children, clickable = false, title, onClick, isHighli
         muted && !clickable ? "text-slate-600 dark:text-zinc-400" : "",
       ].join(" ")}
       title={title}
+      {...semanticProps}
       dir="rtl"
     >
       {children}
@@ -185,6 +187,27 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
   const hasHebrew = Boolean(section.hebrewTitle);
   const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
   const originalTitle = hasHebrew ? (section.originalTitle || section.title) : null;
+  if (compact) {
+    return (
+      <div className="flex min-w-0 flex-row-reverse items-center justify-between gap-2" dir="rtl">
+        <div className={`min-w-0 flex-1 whitespace-normal text-right text-[15px] font-semibold leading-snug ${
+          muted ? "text-slate-600 dark:text-zinc-400" : "text-slate-800 dark:text-zinc-100"
+        }`}>
+          {displayTitle}
+        </div>
+        <div
+          className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
+            muted
+              ? "border-slate-200 bg-slate-100 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200"
+          }`}
+          dir={timestampLabel === "אין זמן זמין" ? "rtl" : "ltr"}
+        >
+          {timestampLabel || "אין זמן זמין"}
+        </div>
+      </div>
+    );
+  }
   const cleanedDescription = cleanChapterSubtitle(displayTitle, section.description || "");
   const sourceBadge = resolveChapterSourceBadge(section?.chapterSource || section?.source);
   const titleCls = compact
@@ -295,17 +318,9 @@ const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false, vari
   const contentProps = { compact: isRow };
 
   if (!isValid) {
-    if (urlStr) {
-      return (
-        <Shell clickable title="הפרק יפתח את הסרטון מתחילתו" onClick={() => window.open(urlStr, "_blank", "noopener,noreferrer")} isHighlighted={isHighlighted} muted={isRow}>
-          <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
-        </Shell>
-      );
-    }
-
     return (
       <Shell title="אין זמן זמין לפרק הזה" isHighlighted={isHighlighted} muted={isRow}>
-        <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
+        <ChapterContent section={section} timestampLabel="אין זמן זמין" muted {...contentProps} />
       </Shell>
     );
   }
@@ -319,7 +334,13 @@ const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false, vari
   }
 
   return (
-    <Shell clickable onClick={handleNavigation} title="ניווט לפי זמן" isHighlighted={isHighlighted}>
+    <Shell
+      clickable
+      onClick={handleNavigation}
+      title="ניווט לפי זמן"
+      aria-label={`נגן את הפרק ${section?.title || ""} החל מ-${formattedTimestamp}`}
+      isHighlighted={isHighlighted}
+    >
       <ChapterContent section={section} timestampLabel={formattedTimestamp} {...contentProps} />
     </Shell>
   );

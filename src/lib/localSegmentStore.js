@@ -44,9 +44,15 @@ export function saveSegments(videoId, segments) {
   all[videoId] = {
     segments: segments.map((s) => ({
       text: String(s.text || '').trim(),
-      startSeconds: Number(s.startSeconds ?? s.start ?? 0),
+      startSeconds: Number(s.startSeconds ?? s.start),
       durationSeconds: Number(s.durationSeconds ?? s.duration ?? s.dur ?? 0),
-    })).filter((s) => s.text && Number.isFinite(s.startSeconds)),
+    }))
+      .filter((s) => s.text && Number.isFinite(s.startSeconds) && s.startSeconds >= 0)
+      .map((s) => ({
+        ...s,
+        durationSeconds: Number.isFinite(s.durationSeconds) && s.durationSeconds >= 0 ? s.durationSeconds : 0,
+      }))
+      .sort((a, b) => a.startSeconds - b.startSeconds),
     savedAt: new Date().toISOString(),
   };
   return saveAll(all);

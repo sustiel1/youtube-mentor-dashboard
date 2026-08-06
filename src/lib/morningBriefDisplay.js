@@ -9,9 +9,17 @@
 
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { translateMarketTextInline } from '@/lib/marketLabelTranslations';
+import assetAliases from '../../shared/marketAssetAliases.json';
+import { resolveDisplayEventTiming } from '@/lib/eventTiming';
+import { normalizeSentimentEvidenceItem } from '@/lib/sentimentEvidence';
+
+function canonicalizeMarketAsset(value) {
+  const normalized = String(value ?? '').trim().toUpperCase();
+  return assetAliases[normalized] || normalized;
+}
 
 const INDEX_OVERVIEW_KEYS = new Set([
-  'spx', 'nasdaq', 'dow', 'russell', 'vix', 'dollar', 'bitcoin', 'oil', 'bonds10y',
+  'spx', 'nasdaq', 'dow', 'russell', 'vix', 'dollar', 'bitcoin', 'oil', 'bonds10y', 'bonds30y',
   'bonds', 'gold', 'treasury', 'es', 'nq', 'spy', 'qqq', 'iwm',
 ]);
 
@@ -59,6 +67,7 @@ export const SPECIALIZED_MERGE_ARRAY_KEYS = [
   'tradingOpportunities', 'opportunities', 'trades', 'breakoutCandidates',
   'economicCalendar', 'calendar', 'events', 'upcomingEvents', 'schedule',
   'earnings', 'risks', 'warnings', 'riskFactors',
+  'top5Insights', 'learningInsights', 'allPoints',
   // ── Step 1 (weekly/earnings brief support) — same field names the legacy
   // extraction in videoTabsConfig.js already reads from `video`; listing them
   // here just lets the merge also pull them from rawData / universalTabs.specialized.
@@ -95,10 +104,10 @@ function itemMergeSignature(item) {
   return m ? m[1].toUpperCase() : s;
 }
 
-function mergeArrayLayers(specArr, legacyArr, rawArr) {
+function mergeArrayLayers(...layers) {
   const out = [];
   const seen = new Set();
-  for (const arr of [specArr, legacyArr, rawArr]) {
+  for (const arr of layers) {
     if (!Array.isArray(arr)) continue;
     for (const item of arr) {
       const sig = itemMergeSignature(item);
@@ -141,6 +150,9 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
     : {};
   const spec = marketBriefData.universalTabs?.specialized;
   const specObj = spec && typeof spec === 'object' ? spec : {};
+  const nestedUniversal = marketBriefData.universalTabs && typeof marketBriefData.universalTabs === 'object'
+    ? marketBriefData.universalTabs
+    : {};
 
   const legacy = {};
   for (const [k, v] of Object.entries(marketBriefData)) {
@@ -153,7 +165,7 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
 
   for (const key of SPECIALIZED_MERGE_ARRAY_KEYS) {
     // rawData → top-level → specialized; empty specialized arrays cannot block rawData items
-    const combined = mergeArrayLayers(raw[key], legacy[key], specObj[key]);
+    const combined = mergeArrayLayers(specObj[key], nestedUniversal[key], legacy[key], raw[key]);
     if (combined.length > 0) merged[key] = combined;
   }
 
@@ -162,12 +174,14 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
       const objCombined = mergeObjectLayers(
         Array.isArray(raw[key]) ? null : raw[key],
         Array.isArray(legacy[key]) ? null : legacy[key],
+        Array.isArray(nestedUniversal[key]) ? null : nestedUniversal[key],
         Array.isArray(specObj[key]) ? null : specObj[key],
       );
       const arrCombined = mergeArrayLayers(
-        Array.isArray(raw[key]) ? raw[key] : null,
-        Array.isArray(legacy[key]) ? legacy[key] : null,
         Array.isArray(specObj[key]) ? specObj[key] : null,
+        Array.isArray(nestedUniversal[key]) ? nestedUniversal[key] : null,
+        Array.isArray(legacy[key]) ? legacy[key] : null,
+        Array.isArray(raw[key]) ? raw[key] : null,
       );
       if (Object.keys(objCombined).length > 0) {
         merged[key] = objCombined;
@@ -176,19 +190,20 @@ export function mergeMorningBriefSpecializedSource(marketBriefData) {
       }
       continue;
     }
-    const combined = mergeObjectLayers(raw[key], legacy[key], specObj[key]);
+    const combined = mergeObjectLayers(raw[key], legacy[key], nestedUniversal[key], specObj[key]);
     if (Object.keys(combined).length > 0) merged[key] = combined;
   }
 
   const allKeys = new Set([
     ...Object.keys(raw),
     ...Object.keys(legacy),
+    ...Object.keys(nestedUniversal),
     ...Object.keys(specObj),
   ]);
   for (const key of allKeys) {
     if (SPECIALIZED_MERGE_ARRAY_KEYS.includes(key) || SPECIALIZED_MERGE_OBJECT_KEYS.includes(key)) continue;
     if (merged[key] != null) continue;
-    const v = specObj[key] ?? legacy[key] ?? raw[key];
+    const v = specObj[key] ?? nestedUniversal[key] ?? legacy[key] ?? raw[key];
     if (v != null && typeof v !== 'object') merged[key] = v;
   }
 
@@ -404,6 +419,9 @@ function normalizeOpportunity(item) {
     rrRatio: pickString(item, 'rrRatio', 'riskReward'),
     timeframe: pickString(item, 'timeframe'),
     confidence: pickString(item, 'confidence'),
+    catalyst: pickString(item, 'catalyst'),
+    invalidation: pickString(item, 'invalidation'),
+    priority: pickString(item, 'priority', 'importance'),
   };
 }
 
@@ -440,16 +458,20 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
 
   if (typeof raw !== 'object') return null;
 
-  const asset = (
+  const asset = canonicalizeMarketAsset(
     pickString(raw, 'name', 'symbol', 'ticker', 'asset', 'index', 'metric') || defaultAsset
-  ).toUpperCase();
+  );
 
   const directionRaw = pickString(raw, 'trend', 'shortTermTrend', 'direction', 'bias', 'phase');
   const strengthRaw = pickString(
     raw, 'strength', 'momentum', 'relativeStrength', 'mediumTermTrend', 'rs', 'power'
   );
   const changeRaw = pickString(raw, 'change', 'pct', 'changePercent');
-  const level = pickString(raw, 'level', 'price', 'value');
+  const currentValue = pickString(raw, 'currentValue', 'currentPrice', 'price', 'value', 'level');
+  const dailyLow = pickString(raw, 'dailyLow');
+  const support = pickString(raw, 'support');
+  const resistance = pickString(raw, 'resistance');
+  const level = currentValue;
   const condition = pickString(raw, 'condition', 'state', 'status');
   const note = pickString(raw, 'note', 'comment', 'description', 'insight', 'context');
 
@@ -466,8 +488,18 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
   let comment = note;
   if (!comment && condition && condition !== trend) comment = condition;
 
-  if (!asset) return null;
-  return { asset, trend, strength, level, comment };
+  const hasMeaningfulValue = [
+    trend,
+    strength,
+    currentValue,
+    dailyLow,
+    support,
+    resistance,
+    comment,
+    condition,
+  ].some((value) => value !== '');
+  if (!asset || !hasMeaningfulValue) return null;
+  return { asset, trend, strength, level, currentValue, dailyLow, support, resistance, comment };
 }
 
 /** Markets dashboard rows from indices + marketOverview tickers. */
@@ -480,7 +512,7 @@ export function extractMarketDashboardRows(src) {
     if (row) rows.push(row);
   };
 
-  for (const item of pickArray(src, 'indices', 'indexPerformance', 'indexData', 'keyLevels')) {
+  for (const item of pickArray(src, 'indices', 'indexPerformance', 'indexData')) {
     push(item);
   }
 
@@ -555,16 +587,31 @@ function normalizeRisk(item) {
   if (!item) return null;
   if (typeof item === 'string') {
     const t = translateMarketTextInline(item).trim();
-    return t ? { text: t, category: '' } : null;
+    return t ? { text: t, category: '', severity: '', priority: '', affectedAssets: [] } : null;
   }
   if (typeof item !== 'object') return null;
   const text = translateMarketTextInline(pickString(item, 'risk', 'text', 'title', 'description', 'warning', 'note'));
   const category = translateMarketTextInline(pickString(item, 'category', 'type', 'kind', 'severity', 'source', 'level'));
   if (!text) {
     const fallback = Object.values(item).find((v) => typeof v === 'string' && v.trim());
-    return fallback ? { text: translateMarketTextInline(fallback).trim(), category } : null;
+    return fallback ? {
+      text: translateMarketTextInline(fallback).trim(),
+      category,
+      severity: pickString(item, 'severity'),
+      priority: pickString(item, 'priority', 'importance'),
+      affectedAssets: Array.isArray(item.affectedAssets) ? item.affectedAssets : [],
+    } : null;
   }
-  return { text, category };
+  return {
+    text,
+    category,
+    severity: pickString(item, 'severity'),
+    priority: pickString(item, 'priority', 'importance'),
+    affectedAssets: Array.isArray(item.affectedAssets) ? item.affectedAssets : [],
+    trigger: pickString(item, 'trigger'),
+    invalidation: pickString(item, 'invalidation'),
+    timeframe: pickString(item, 'timeframe'),
+  };
 }
 
 const RISK_BUCKETS = [
@@ -677,7 +724,15 @@ function normalizeMacroIndicatorRow(item) {
   const indicator = pickString(item, 'name', 'factor', 'symbol', 'indicator', 'ticker', 'stock') || eventName;
   const value = pickString(item, 'value', 'level', 'currentValue', 'price', 'current', 'when', 'date', 'time');
   const change = formatMacroChange(item);
-  const frequency = pickString(item, 'updateFrequency', 'frequency', 'cadence', 'period', 'importance', 'priority');
+  const frequency = pickString(item, 'updateFrequency', 'frequency', 'cadence', 'period');
+  const importance = pickString(item, 'importance', 'priority');
+  const probabilityRaw = item?.probabilityPercent ?? item?.probability_percent ?? item?.probability;
+  const probabilityNumber = probabilityRaw == null || probabilityRaw === ''
+    ? null
+    : Number(String(probabilityRaw).replace(/%/g, '').trim());
+  const probability = Number.isFinite(probabilityNumber)
+    ? `הסתברות: ${probabilityNumber}%`
+    : '';
   const description = pickString(
     item,
     'description', 'comment', 'condition', 'note', 'notes', 'context', 'thesis', 'status', 'reason', 'sectors',
@@ -688,9 +743,36 @@ function normalizeMacroIndicatorRow(item) {
 
   return {
     indicator: indicator || eventName || value || '—',
+    indicatorKey: pickString(item, 'indicatorKey', 'canonicalKey'),
     value: eventName && indicator !== eventName ? pickString(item, 'date', 'time', 'when', 'value') : value,
+    actualValue: item.actualValue ?? item.currentValue ?? null,
+    actualUnit: pickString(item, 'actualUnit'),
+    actualPeriod: pickString(item, 'actualPeriod'),
+    actualMetricType: pickString(item, 'actualMetricType'),
+    metricType: pickString(item, 'metricType'),
+    unit: pickString(item, 'unit'),
+    period: pickString(item, 'period'),
+    asOf: pickString(item, 'asOf'),
+    targetValue: item.targetValue ?? null,
+    referenceValue: item.referenceValue ?? item.expectedValue ?? item.consensusValue ?? item.previousValue ?? null,
+    referenceType: pickString(item, 'referenceType'),
+    referenceUnit: pickString(item, 'referenceUnit'),
+    referencePeriod: pickString(item, 'referencePeriod'),
+    referenceMetricType: pickString(item, 'referenceMetricType'),
+    gapValue: item.gapValue ?? null,
+    gapUnit: pickString(item, 'gapUnit'),
+    trend: pickString(item, 'trend') || 'unknown',
+    marketMeaning: pickString(item, 'marketMeaning'),
+    sourceRelativeText: pickString(item, 'sourceRelativeText'),
+    sourceName: pickString(item, 'sourceName'),
+    sourceUrl: pickString(item, 'sourceUrl'),
+    sourceType: pickString(item, 'sourceType'),
+    verificationStatus: pickString(item, 'verificationStatus'),
+    isLive: item.isLive === true,
     change,
     frequency,
+    importance,
+    probability,
     description,
     impact,
   };
@@ -766,7 +848,68 @@ export function extractMacroIndicatorRows(src) {
     const prev = groups.get(key);
     groups.set(key, !prev || macroRowRichness(row) > macroRowRichness(prev) ? row : prev);
   }
-  return [...groups.values()];
+  return [...groups.values()].map((row) => {
+    const timing = resolveTimingForEvent(src, row.indicator);
+    if (timing.timingStatus !== 'conflicting') return row;
+    return {
+      ...row,
+      description: timing.displayLabel,
+      timingStatus: timing.timingStatus,
+      sourceRelativeText: timing.sourceRelativeText,
+    };
+  });
+}
+
+function timingCandidateText(item) {
+  if (typeof item === 'string') return item;
+  if (!item || typeof item !== 'object') return '';
+  return [
+    item.event,
+    item.title,
+    item.name,
+    item.subject,
+    item.description,
+    item.factor,
+    item.indicator,
+    item.asset,
+    item.ticker,
+    item.note,
+    item.point,
+  ].filter(Boolean).join(' ');
+}
+
+function resolveTimingForEvent(src, eventText) {
+  const canonical = _getCalendarCanonicalKey(eventText);
+  const candidates = [
+    ...pickArray(src, 'calendar', 'economicCalendar', 'events', 'upcomingEvents', 'schedule', 'earningsCalendar'),
+    ...pickArray(src, 'catalysts'),
+    ...pickArray(src, 'macroFactors'),
+    ...pickArray(src, 'top5Insights'),
+    ...pickArray(src, 'allPoints'),
+  ].filter((item) => _getCalendarCanonicalKey(timingCandidateText(item)) === canonical);
+
+  const evidence = candidates.map((item) => {
+    if (typeof item === 'string') return { sourceRelativeText: item };
+    return {
+      eventDate: pickString(item, 'eventDate', 'date'),
+      eventTime: pickString(item, 'eventTime', 'time'),
+      timezone: pickString(item, 'timezone', 'timeZone'),
+      sourceDate: pickString(item, 'sourceDate', 'briefDate'),
+      sourceRelativeText: pickString(item, 'sourceRelativeText', 'timeframe', 'when', 'note', 'point'),
+    };
+  });
+  return resolveDisplayEventTiming(evidence);
+}
+
+function isCompanyEvent(item) {
+  if (!item || typeof item !== 'object') return false;
+  const type = pickString(item, 'type', 'category').toLowerCase();
+  return ['earnings', 'corporate', 'company'].some((token) => type.includes(token));
+}
+
+export function extractCompanyEventRows(src) {
+  if (!src) return [];
+  return pickArray(src, 'catalysts').filter(isCompanyEvent).map(normalizeCalendarRow).filter(Boolean);
 }
 
 function normalizeCalendarRow(item) {
@@ -797,7 +940,16 @@ function normalizeCalendarRow(item) {
     importance,
     type,
     impact,
+    sentiment: pickString(item, 'sentiment', 'tone', 'bias'),
+    direction: pickString(item, 'direction', 'trend'),
+    change: item.change ?? item.changePercent ?? null,
+    status: pickString(item, 'status', 'eventStatus'),
     timeframe: pickString(item, 'timeframe', 'when'),
+    eventDate: pickString(item, 'eventDate'),
+    eventTime: pickString(item, 'eventTime'),
+    timezone: pickString(item, 'timezone', 'timeZone'),
+    sourceRelativeText: pickString(item, 'sourceRelativeText'),
+    timingStatus: pickString(item, 'timingStatus'),
     affectedStocks: Array.isArray(item.affectedStocks)
       ? item.affectedStocks.map(safeCoerceString).filter(Boolean)
       : [],
@@ -808,10 +960,26 @@ export function extractCalendarRows(src) {
   if (!src) return [];
   const raw = [
     ...pickArray(src, 'calendar', 'economicCalendar', 'events', 'upcomingEvents', 'schedule', 'earningsCalendar'),
-    ...pickArray(src, 'catalysts'),
+    ...pickArray(src, 'catalysts').filter((item) => !isCompanyEvent(item)),
   ];
   const seen = new Set();
-  return raw.map(normalizeCalendarRow).filter((row) => {
+  return raw.map(normalizeCalendarRow).map((row) => {
+    if (!row) return null;
+    const timing = resolveTimingForEvent(src, row.event);
+    if (timing.timingStatus === 'missing') return row;
+    return {
+      ...row,
+      date: timing.timingStatus === 'conflicting'
+        ? timing.displayLabel
+        : (timing.eventDate || row.date),
+      timeframe: timing.timingStatus === 'conflicting' ? '' : row.timeframe,
+      eventDate: timing.eventDate,
+      eventTime: timing.eventTime,
+      timezone: timing.timezone,
+      sourceRelativeText: timing.sourceRelativeText,
+      timingStatus: timing.timingStatus,
+    };
+  }).filter((row) => {
     if (!row) return false;
     const sig = `${row.event}|${row.date}`;
     if (seen.has(sig)) return false;
@@ -903,28 +1071,13 @@ function sentimentItemFromString(raw, index = 0) {
   if (!t) return null;
   const split = t.split(' — ');
   if (split.length >= 2) {
-    return { label: split[0].trim(), value: split.slice(1).join(' — ').trim() };
+    return normalizeSentimentEvidenceItem(split.slice(1).join(' — ').trim(), split[0].trim());
   }
-  return { label: index === 0 ? 'סנטימנט שוק' : `סנטימנט ${index + 1}`, value: t };
+  return normalizeSentimentEvidenceItem(t, index === 0 ? 'סנטימנט שוק' : `סנטימנט ${index + 1}`);
 }
 
 function sentimentItemFromObject(item) {
-  if (!item || typeof item !== 'object') return null;
-  const label = pickString(item, 'label', 'name', 'type', 'category') || 'סנטימנט שוק';
-
-  // Try standard value fields first
-  const stdValue = item.value ?? item.text ?? item.description ?? item.summary ?? item.mood;
-  if (stdValue != null) {
-    const value = formatDisplayValue(stdValue);
-    return value ? { label, value } : null;
-  }
-
-  // Avoid full-object serialization: combine tone field + note field instead
-  const sentPart = pickString(item, 'sentiment', 'direction', 'bias', 'status');
-  const notePart = pickString(item, 'note', 'notes', 'reason', 'comment', 'content');
-  const value = [sentPart, notePart].filter(Boolean).join(' · ');
-
-  return value ? { label, value } : null;
+  return normalizeSentimentEvidenceItem(item);
 }
 
 /** Object or array sentiment → labeled cards for UI. */
@@ -945,12 +1098,12 @@ export function extractSentimentItems(src) {
     });
   } else if (sent && typeof sent === 'object') {
     for (const [key, val] of Object.entries(sent)) {
-      const value = formatDisplayValue(val);
-      if (!value) continue;
-      items.push({
-        label: SENTIMENT_FIELD_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()),
-        value,
-      });
+      const label = SENTIMENT_FIELD_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+      const normalized = normalizeSentimentEvidenceItem(
+        val && typeof val === 'object' ? { ...val, label } : String(val),
+        label,
+      );
+      if (normalized) items.push(normalized);
     }
   }
 
@@ -1007,9 +1160,19 @@ function normalizeLevelRow(item, defaultLabel = '') {
   }
   if (typeof item !== 'object') return null;
 
-  const symbol = pickString(item, 'symbol', 'ticker', 'name', 'asset', 'index');
-  const level = pickString(item, 'level', 'price', 'target', 'value');
-  const type = pickString(item, 'type', 'kind', 'category');
+  const symbol = canonicalizeMarketAsset(pickString(item, 'symbol', 'ticker', 'name', 'asset', 'index'));
+  const explicitType = pickString(item, 'valueRole', 'type', 'kind', 'category');
+  const currentValue = pickString(item, 'currentValue', 'currentPrice');
+  const dailyLow = pickString(item, 'dailyLow');
+  const support = pickString(item, 'support');
+  const resistance = pickString(item, 'resistance');
+  const legacyLevel = pickString(item, 'level', 'price', 'target', 'value');
+  const level = currentValue || dailyLow || support || resistance || legacyLevel;
+  const type = currentValue ? 'currentValue'
+    : dailyLow ? 'dailyLow'
+      : support ? 'support'
+        : resistance ? 'resistance'
+          : explicitType;
   const note = pickString(item, 'description', 'note', 'comment', 'context');
   const condition = pickString(item, 'condition');
   const importance = pickString(item, 'importance', 'significance');
@@ -1128,6 +1291,11 @@ function normalizeTicker(raw) {
   return t;
 }
 
+function normalizeExplicitTicker(raw) {
+  const ticker = String(raw || '').trim().toUpperCase().replace(/^\$/, '');
+  return /^[A-Z][A-Z0-9.]{0,5}$/.test(ticker) ? ticker : '';
+}
+
 function tickersInText(text) {
   if (!text || typeof text !== 'string') return [];
   const found = new Set();
@@ -1174,6 +1342,7 @@ function stockRecordFromObject(item, category = 'general') {
     const isTickerOnly = item.trim().toUpperCase() === ticker;
     return {
       ticker,
+      exchange: '',
       company: '',
       context: isTickerOnly ? '' : item.trim(),
       sentiment: '',
@@ -1184,9 +1353,10 @@ function stockRecordFromObject(item, category = 'general') {
   }
   if (typeof item !== 'object') return null;
 
-  const ticker = normalizeTicker(
-    pickString(item, 'symbol', 'ticker', 'stock', 'title', 'name')
-  ) || tickersInText(pickString(item, 'description', 'setup', 'idea'))[0];
+  const explicitTicker = pickString(item, 'symbol', 'ticker', 'stock');
+  const ticker = normalizeExplicitTicker(explicitTicker)
+    || normalizeTicker(pickString(item, 'title', 'name'))
+    || tickersInText(pickString(item, 'description', 'setup', 'idea'))[0];
   if (!ticker) return null;
 
   const nameField = pickString(item, 'name');
@@ -1195,6 +1365,8 @@ function stockRecordFromObject(item, category = 'general') {
 
   return {
     ticker,
+    exchange: pickString(item, 'exchange', 'listingExchange'),
+    sector: pickString(item, 'sector'),
     company,
     context: pickString(item, 'reason', 'context', 'why', 'note', 'notes', 'thesis', 'description', 'status'),
     sentiment: humanizeSentiment(
@@ -1227,6 +1399,8 @@ function upsertStock(map, record) {
       : prev.category;
   map.set(key, {
     ticker: key,
+    exchange: prev.exchange || record.exchange,
+    sector: prev.sector || record.sector,
     company: prev.company || record.company,
     context: mergeContext(prev.context, record.context),
     sentiment: prev.sentiment || record.sentiment,
@@ -1246,12 +1420,13 @@ function upsertStock(map, record) {
 export function extractUnifiedStocks(marketBriefData, video = null) {
   const manualStocks = marketBriefData?.manualOverrides?.stocksMentioned;
   if (manualStocks?.source === 'manual' && Array.isArray(manualStocks.rows)) {
-    return manualStocks.rows
+    const rows = manualStocks.rows
       .map((s) => ({
         ...s,
         categoryLabel: CATEGORY_LABELS[s.category] || CATEGORY_LABELS.general,
       }))
       .sort((a, b) => a.ticker.localeCompare(b.ticker));
+    return applyStockFieldOverrides(rows, manualStocks.fieldOverrides);
   }
 
   const src = getSpecializedSrc(marketBriefData);
@@ -1305,12 +1480,29 @@ export function extractUnifiedStocks(marketBriefData, video = null) {
     ingestList(pickArray(video, 'tradingSetups'), 'opportunity');
   }
 
-  return [...map.values()]
+  const rows = [...map.values()]
     .map((s) => ({
       ...s,
       categoryLabel: CATEGORY_LABELS[s.category] || CATEGORY_LABELS.general,
     }))
     .sort((a, b) => a.ticker.localeCompare(b.ticker));
+  return applyStockFieldOverrides(rows, manualStocks?.fieldOverrides);
+}
+
+export function getStockOverrideRowId(stock) {
+  const ticker = String(stock?.ticker || '').trim().toUpperCase();
+  return ticker ? `stock:${ticker}` : '';
+}
+
+function applyStockFieldOverrides(rows, fieldOverrides) {
+  if (!fieldOverrides || typeof fieldOverrides !== 'object') return rows;
+  return rows.map((row) => {
+    const rowId = getStockOverrideRowId(row);
+    const override = rowId ? fieldOverrides[rowId] : null;
+    return override && typeof override === 'object'
+      ? { ...row, ...override }
+      : row;
+  });
 }
 
 export function hasUnifiedStocks(marketBriefData, video = null) {

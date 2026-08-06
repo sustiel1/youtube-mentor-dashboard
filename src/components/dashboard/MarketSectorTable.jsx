@@ -3,21 +3,26 @@ import {
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
 } from './MorningBriefVisualPrimitives';
+import { Fragment, useState } from 'react';
 import {
   buildPerplexityEtfHoldingsUrl,
-  getSectorFinvizUrl,
-  resolveSectorFinvizLink,
+  FINVIZ_SECTOR_OVERVIEW_URL,
+  resolveSectorDestination,
 } from '@/utils/finvizLinks';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
+import { TradingViewSymbolAction } from '@/components/shared/TradingViewSymbolAction';
+import { ExternalResourceAction } from '@/components/shared/ExternalResourceAction';
 import {
   BRIEF_CELL,
   BRIEF_COL,
   BRIEF_NOTES_TEXT_CLS,
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
+  SemanticTableRow,
   BriefTableWrapper,
 } from './briefTableLayout';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
+import { resolveSectorTechnicals } from '@/lib/sectorTechnicals';
 import { BRIEF_SENT_KEY_LABEL, BriefSentimentCell } from './BriefSentimentNotesTable';
 
 /** Column widths — matches Macro Gem sectors table. */
@@ -46,6 +51,8 @@ export function normalizeSectorTableRow(item, options = {}) {
       note: '',
       rowText: sector,
       isStringOnly: true,
+      sourceEtf: '',
+      legacyEtf: '',
     };
   }
 
@@ -69,40 +76,131 @@ export function normalizeSectorTableRow(item, options = {}) {
     note: noteText,
     rowText: [sector, sentimentLabel, noteText].filter(Boolean).join(' · '),
     isStringOnly: false,
+    sourceEtf: String(item.etf || '').trim(),
+    legacyEtf: String(item.sectorEtf || item.representativeEtf || item.metadata?.etf || '').trim(),
   };
 }
 
-function SectorNameCell({ sector, showHelperLinks = true }) {
-  const displaySector = getHebrewDisplayLabel(sector);
-  const link = resolveSectorFinvizLink(sector);
-  const finvizUrl = link?.url ?? getSectorFinvizUrl(sector);
-  const pxUrl = showHelperLinks && link ? buildPerplexityEtfHoldingsUrl(link.ticker) : null;
+function SectorEtfAction({ destination, displaySector }) {
+  if (!destination?.etfUrl || !destination.representativeEtf) return null;
+  const ticker = destination.representativeEtf;
+  const tooltip = `פתח את גרף ${ticker}, תעודת הסל המייצגת את סקטור ${displaySector}, ב־Finviz`;
+  return (
+    <ExternalResourceAction
+      href={destination.etfUrl}
+      label={<>ETF: {ticker} <span aria-hidden="true">↗</span></>}
+      title={tooltip}
+      ariaLabel={tooltip}
+      dataAttributes={{
+        'data-sector-etf-action': ticker,
+        'data-sector-resolution-source': destination.resolutionSource,
+      }}
+    />
+  );
+}
 
-  const nameNode = finvizUrl ? (
+function SectorTechnicalsAction({ normalized, displaySector }) {
+  const destination = resolveSectorTechnicals(normalized);
+  if (!destination) return null;
+  const tooltip = `פתח RSI וניתוח טכני עבור ${displaySector}, באמצעות ETF ${destination.etf}, ב־TradingView`;
+  return (
+    <ExternalResourceAction
+      href={destination.url}
+      label="RSI וניתוח טכני"
+      title={tooltip}
+      ariaLabel={tooltip}
+      dataAttributes={{
+        'data-sector-technicals-action': destination.etf,
+        'data-sector-technicals-source': destination.resolutionSource,
+      }}
+    />
+  );
+}
+
+function SectorNameCell({ normalized }) {
+  const { sector } = normalized;
+  const displaySector = getHebrewDisplayLabel(sector);
+
+  const nameNode = (
     <a
-      href={finvizUrl}
+      href={FINVIZ_SECTOR_OVERVIEW_URL}
       target="_blank"
       rel="noopener noreferrer"
-      title="פתח ב-Finviz ↗"
+      title="פתח את טבלת ביצועי הסקטורים ב־Finviz"
+      aria-label={`פתח את סקירת ביצועי הסקטורים עבור ${displaySector} באתר Finviz`}
       className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
       onClick={(e) => e.stopPropagation()}
-      data-finviz-link={link?.ticker || ''}
+      data-finviz-sector-overview
     >
       {displaySector}
     </a>
-  ) : (
-    <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displaySector || '—'}</span>
   );
 
-  if (!pxUrl) return nameNode;
+  return nameNode;
+}
+
+function SectorToolsTrigger({ open, onToggle, panelId, triggerId, checkbox }) {
+  return (
+    <div className="flex min-h-8 items-center justify-center gap-2" data-sector-tools-trigger-cell>
+      {checkbox}
+      <button
+        type="button"
+        id={triggerId}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={(event) => { event.stopPropagation(); onToggle(); }}
+        onKeyDown={(event) => event.stopPropagation()}
+        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        data-sector-tools-trigger
+      >
+        <span className="hidden sm:inline">כלים וגרפים</span>
+        <span className="sm:hidden">כלים</span>
+        <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+    </div>
+  );
+}
+
+function SectorToolsPanel({
+  normalized,
+  displaySector,
+  destination,
+  panelId,
+  triggerId,
+  saveAction,
+  showHelperLinks,
+}) {
+  const technicals = resolveSectorTechnicals(normalized);
+  const researchUrl = showHelperLinks && destination.representativeEtf
+    ? buildPerplexityEtfHoldingsUrl(destination.representativeEtf)
+    : null;
 
   return (
-    <div className="flex flex-col gap-0.5">
-      {nameNode}
-      <ResearchDropdownLink
-        pxUrl={pxUrl}
-        titleHe={`10 אחזקות מובילות של ${link.ticker}`}
-      />
+    <div
+      id={panelId}
+      role="region"
+      aria-labelledby={triggerId}
+      className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white/80 p-3 sm:flex sm:flex-wrap sm:items-center dark:border-zinc-700 dark:bg-zinc-900/80"
+      data-sector-tools-panel
+    >
+      {destination.representativeEtf ? (
+        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200" data-sector-etf-identity>
+          תעודת הסל של הסקטור: {destination.representativeEtf}
+        </span>
+      ) : null}
+      <TradingViewSymbolAction asset={destination.representativeEtf || normalized.sector} />
+      <SectorEtfAction destination={destination} displaySector={displaySector} />
+      <SectorTechnicalsAction normalized={normalized} displaySector={displaySector} />
+      {researchUrl ? (
+        <ResearchDropdownLink
+          pxUrl={researchUrl}
+          titleHe={`10 אחזקות מובילות של ${destination.representativeEtf}`}
+        />
+      ) : null}
+      {saveAction}
+      {!destination.representativeEtf && !technicals && !researchUrl && !saveAction ? (
+        <span className="text-xs text-slate-500 dark:text-zinc-400">לא נמצאו כלים מאומתים לסקטור זה</span>
+      ) : null}
     </div>
   );
 }
@@ -118,90 +216,139 @@ export function MarketSectorTable({
   getRowOptions = null,
   rowClassName = 'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group',
   showHelperLinks = true,
+  actionsColumn = false,
 }) {
+  const [openRowIndex, setOpenRowIndex] = useState(null);
   const safe = Array.isArray(rows) ? rows.filter(Boolean) : [];
   if (!safe.length) return null;
 
   return (
     <BriefTableWrapper>
-      <table className={BRIEF_TABLE_CLS} dir="rtl">
+      <table className={actionsColumn ? 'w-full text-right border-collapse table-fixed' : BRIEF_TABLE_CLS} dir="rtl" data-sector-table>
         <colgroup>
-          {renderLeadingCell ? <col style={{ width: SECTOR_TABLE_MCOL.checkbox }} /> : null}
+          {renderLeadingCell && !actionsColumn ? <col style={{ width: SECTOR_TABLE_MCOL.checkbox }} /> : null}
           <col style={{ width: SECTOR_TABLE_MCOL.name }} />
           <col style={{ width: SECTOR_TABLE_MCOL.sentiment }} />
           <col style={{ width: SECTOR_TABLE_MCOL.change }} />
           <col />
-          {renderTrailingCell ? <col style={{ width: SECTOR_TABLE_MCOL.save }} /> : null}
+          {(renderTrailingCell || actionsColumn) ? (
+            actionsColumn
+              ? <col className="w-[22%] sm:w-[14%]" />
+              : <col style={{ width: SECTOR_TABLE_MCOL.save }} />
+          ) : null}
         </colgroup>
         <thead>
           <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
-            {renderLeadingCell ? <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" /> : null}
+            {renderLeadingCell && !actionsColumn ? <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" /> : null}
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סקטור</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
             <th className="py-1.5 px-2" aria-label="שינוי" />
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה / סיבה</th>
-            {renderTrailingCell ? <th className="py-1.5 pl-1 pr-0" aria-label="שמירה" /> : null}
+            {(renderTrailingCell || actionsColumn) ? (
+              <th className={`px-2 py-1.5 text-center whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>
+                {actionsColumn ? 'כלים וגרפים' : ''}
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {safe.map((item, i) => {
             const options = typeof getRowOptions === 'function' ? getRowOptions(item, i) : {};
             const normalized = normalizeSectorTableRow(item, options);
+            const destination = resolveSectorDestination(normalized);
+            const displaySector = getHebrewDisplayLabel(normalized.sector);
+            const disclosureOpen = openRowIndex === i;
+            const panelId = `sector-tools-panel-${i}`;
+            const triggerId = `sector-tools-trigger-${i}`;
+            const toolsTrigger = actionsColumn ? (
+              <SectorToolsTrigger
+                open={disclosureOpen}
+                onToggle={() => setOpenRowIndex((current) => current === i ? null : i)}
+                panelId={panelId}
+                triggerId={triggerId}
+                checkbox={renderLeadingCell?.(item, i, normalized)}
+              />
+            ) : null;
+            const toolsPanel = actionsColumn && disclosureOpen ? (
+              <SectorToolsPanel
+                normalized={normalized}
+                displaySector={displaySector}
+                destination={destination}
+                panelId={panelId}
+                triggerId={triggerId}
+                saveAction={renderTrailingCell?.(item, i, normalized)}
+                showHelperLinks={showHelperLinks}
+              />
+            ) : null;
 
             if (normalized.isStringOnly) {
-              const strLink = resolveSectorFinvizLink(normalized.sector);
-              const strFinvizUrl = strLink?.url ?? getSectorFinvizUrl(normalized.sector);
-              const strPxUrl = showHelperLinks && strLink ? buildPerplexityEtfHoldingsUrl(strLink.ticker) : null;
+              const strPxUrl = showHelperLinks && destination.representativeEtf
+                ? buildPerplexityEtfHoldingsUrl(destination.representativeEtf)
+                : null;
               return (
-                <tr key={i} className={rowClassName}>
-                  {renderLeadingCell ? (
+                <Fragment key={i}>
+                <SemanticTableRow evidence={normalized} className={rowClassName}>
+                  {renderLeadingCell && !actionsColumn ? (
                     <td className={BRIEF_CELL.checkbox}>
                       {renderLeadingCell(item, i, normalized)}
                     </td>
                   ) : null}
                   <td colSpan={4} className={BRIEF_CELL.notes}>
                     <div className={showHelperLinks ? 'flex flex-col gap-0.5' : undefined}>
-                      {strFinvizUrl ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                      {normalized.sector ? (
                         <a
-                          href={strFinvizUrl}
+                          href={FINVIZ_SECTOR_OVERVIEW_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="פתח ב-Finviz ↗"
+                          title="פתח את טבלת ביצועי הסקטורים ב־Finviz"
+                          aria-label={`פתח את סקירת ביצועי הסקטורים עבור ${displaySector} באתר Finviz`}
                           className={`${DASHBOARD_TABLE_CELL_BODY_CLS} hover:underline cursor-pointer`}
                           onClick={(e) => e.stopPropagation()}
-                          data-finviz-link={strLink?.ticker || ''}
+                          data-finviz-sector-overview
                         >
-                          {getHebrewDisplayLabel(normalized.sector)}
+                          {displaySector}
                         </a>
                       ) : (
                         <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{getHebrewDisplayLabel(normalized.sector)}</span>
                       )}
-                      {strPxUrl && (
+                        {!actionsColumn ? <TradingViewSymbolAction asset={destination.representativeEtf || normalized.sector} /> : null}
+                        {!actionsColumn ? <SectorEtfAction destination={destination} displaySector={displaySector} /> : null}
+                        {!actionsColumn ? <SectorTechnicalsAction normalized={normalized} displaySector={displaySector} /> : null}
+                      </div>
+                      {!actionsColumn && strPxUrl && (
                         <ResearchDropdownLink
                           pxUrl={strPxUrl}
-                          titleHe={`10 אחזקות מובילות של ${strLink.ticker}`}
+                          titleHe={`10 אחזקות מובילות של ${destination.representativeEtf}`}
                         />
                       )}
                     </div>
                   </td>
-                  {renderTrailingCell ? (
-                    <td className={BRIEF_CELL.save}>
-                      {renderTrailingCell(item, i, normalized)}
+                  {(renderTrailingCell || actionsColumn) ? (
+                    <td className={actionsColumn ? BRIEF_CELL.actions : BRIEF_CELL.save}>
+                      {actionsColumn ? toolsTrigger : renderTrailingCell(item, i, normalized)}
                     </td>
                   ) : null}
-                </tr>
+                </SemanticTableRow>
+                {actionsColumn && disclosureOpen ? (
+                  <tr data-sector-tools-row>
+                    <td colSpan={5} className="px-2 py-2">{toolsPanel}</td>
+                  </tr>
+                ) : null}
+                </Fragment>
               );
             }
 
             return (
-              <tr key={i} className={rowClassName} data-sector-item>
-                {renderLeadingCell ? (
+              <Fragment key={i}>
+              <SemanticTableRow evidence={normalized} className={rowClassName} data-sector-item>
+                {renderLeadingCell && !actionsColumn ? (
                   <td className={BRIEF_CELL.checkbox}>
                     {renderLeadingCell(item, i, normalized)}
                   </td>
                 ) : null}
                 <td className={BRIEF_CELL.short}>
-                  <SectorNameCell sector={normalized.sector} showHelperLinks={showHelperLinks} />
+                  <SectorNameCell normalized={normalized} />
                 </td>
                 <td className={BRIEF_CELL.sentiment}>
                   <BriefSentimentCell value={normalized.sentiment} />
@@ -212,12 +359,18 @@ export function MarketSectorTable({
                     {normalized.note || '—'}
                   </p>
                 </td>
-                {renderTrailingCell ? (
-                  <td className={BRIEF_CELL.save}>
-                    {renderTrailingCell(item, i, normalized)}
+                {(renderTrailingCell || actionsColumn) ? (
+                  <td className={actionsColumn ? BRIEF_CELL.actions : BRIEF_CELL.save}>
+                    {actionsColumn ? toolsTrigger : renderTrailingCell(item, i, normalized)}
                   </td>
                 ) : null}
-              </tr>
+              </SemanticTableRow>
+              {actionsColumn && disclosureOpen ? (
+                <tr data-sector-tools-row>
+                  <td colSpan={5} className="px-2 py-2">{toolsPanel}</td>
+                </tr>
+              ) : null}
+              </Fragment>
             );
           })}
         </tbody>

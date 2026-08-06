@@ -14,10 +14,13 @@ import {
   toneStyles,
   TONE,
 } from '@/lib/morningBriefVisuals';
+import { semanticRowClass } from '@/lib/specializedSemanticVisualState';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
-import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, getSectorFinvizUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, getSectorFinvizUrl, getVerifiedFinvizStockUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { getMarketAssetDestination } from '@/lib/marketAssetDestinations';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
+import { SectionBulkSelectControl } from '@/components/shared/SectionBulkSelectControl';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
 export const COMPARISON_SURFACE_BG = 'bg-white dark:bg-zinc-900';
@@ -94,20 +97,51 @@ export const DASHBOARD_ITEM_ROW_CLS = 'py-2.5';
  * or as plain text when no URL is known. Never produces broken links.
  * Resolves via Finviz (stocks/ETFs/indices) with fallback to TradingView for DXY/crypto.
  */
-export function ExternalSymbolLink({ symbol, className = '', children }) {
-  const url = symbol ? getExternalSymbolUrl(symbol) : null;
+export function resolveVerifiedExternalSymbolDestination(symbol) {
+  const marketDestination = symbol ? getMarketAssetDestination(symbol) : null;
+  if (marketDestination) return marketDestination;
+  const stockUrl = symbol ? getVerifiedFinvizStockUrl(symbol) : null;
+  if (!stockUrl) return null;
+  const canonicalAsset = String(symbol).trim().toUpperCase();
+  return {
+    canonicalAsset,
+    destinationType: 'finviz-stock',
+    url: stockUrl,
+    tooltipHe: `פתח את ${canonicalAsset} באתר Finviz`,
+    ariaLabelHe: `פתח נתוני שוק עבור מניית ${canonicalAsset} באתר Finviz`,
+  };
+}
+
+export function ExternalSymbolLink({ symbol, className = '', children, verifiedMarketAssetOnly = false, verifiedAssetOnly = false }) {
+  const destination = verifiedAssetOnly
+    ? resolveVerifiedExternalSymbolDestination(symbol)
+    : (symbol ? getMarketAssetDestination(symbol) : null);
+  const url = destination?.url || (!verifiedMarketAssetOnly && !verifiedAssetOnly && symbol ? getExternalSymbolUrl(symbol) : null);
   const display = children ?? symbol ?? '—';
   if (!url) return <span className={className}>{display}</span>;
+  const tooltip = destination?.tooltipHe || `פתח ${symbol}`;
+  const ariaLabel = destination?.ariaLabelHe || tooltip;
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      title={`פתח ${symbol} ↗`}
+      title={tooltip}
+      aria-label={ariaLabel}
       onClick={(e) => e.stopPropagation()}
-      className={`hover:underline cursor-pointer ${className}`}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === ' ') {
+          e.preventDefault();
+          e.currentTarget.click();
+        }
+      }}
+      data-market-asset={destination?.canonicalAsset || undefined}
+      data-destination-type={destination?.destinationType || undefined}
+      className={`inline-flex items-center gap-1 hover:underline cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${className}`}
     >
       {display}
+      {destination ? <span aria-hidden="true" className="text-[10px] opacity-55">↗</span> : null}
     </a>
   );
 }
@@ -131,6 +165,7 @@ export function SectionCard({
   children,
   isEmpty = false,
   emptyMessage,
+  headerResources,
   headerPills,
   headerActions,
   plainSurface = false,
@@ -138,11 +173,6 @@ export function SectionCard({
 }) {
   const borderCls = COMPARISON_SECTION_BORDER;
   const surfaceCls = COMPARISON_SURFACE_BG;
-  // NOTE: card-level bulk-select header (checkbox + quick-save actions) is temporarily
-  // unavailable — it depended on the untracked Universal Tab Bulk Selection cluster
-  // (SelectableSummaryCardHeader.jsx + its deps). `cardBulk` is accepted but currently
-  // ignored; the plain header below is used for all callers. No tracked caller relies on
-  // the selectable path today. Restore by re-wiring `cardBulk` once that cluster lands.
 
   return (
     <div
@@ -154,9 +184,19 @@ export function SectionCard({
         dir="rtl"
         data-section-header
       >
-        <div className="flex items-center justify-between gap-x-3">
-          <SectionHeaderTitle title={title} count={count} />
-          <div className="flex items-center gap-x-2 shrink-0">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+            <SectionHeaderTitle title={title} count={count} />
+            {headerResources}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {cardBulk?.sectionChildItems?.length ? (
+              <SectionBulkSelectControl
+                items={cardBulk.sectionChildItems}
+                bulkSelection={cardBulk.bulkSelection}
+                sectionLabel={cardBulk.sectionLabel || title}
+              />
+            ) : null}
             {headerActions}
           </div>
         </div>
@@ -333,7 +373,7 @@ export function RegimeRow({ label, value, isLast = false, columnVariant }) {
   const display = displayValue ? getMacroFieldDisplay(displayValue, rowCtx) : null;
 
   return (
-    <div dir="rtl" className={`${DASHBOARD_ITEM_ROW_CLS} text-right`} data-regime-item>
+    <div dir="rtl" className={`rounded-lg px-2 ${DASHBOARD_ITEM_ROW_CLS} text-right ${semanticRowClass({ sentiment: value })}`} data-regime-item>
       <div className="flex items-start gap-x-3 min-w-0">
         <span className={`shrink-0 w-[38%] max-w-[10.5rem] ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
           {label}
@@ -418,7 +458,7 @@ export function SectorRow({
   if (!sectorName && statusParts.length === 0) return null;
 
   return (
-    <div dir="rtl" className={`${DASHBOARD_ITEM_ROW_CLS} text-right`} data-sector-item>
+    <div dir="rtl" className={`rounded-lg px-2 ${DASHBOARD_ITEM_ROW_CLS} text-right ${semanticRowClass({ direction, change: relativeStrength })}`} data-sector-item>
       <div className="flex items-start gap-x-3 min-w-0">
         <div className="shrink-0 w-[55%] min-w-0 flex flex-col gap-0.5">
           <span className="inline-flex items-baseline gap-x-1 flex-wrap">

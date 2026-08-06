@@ -1,7 +1,7 @@
 import { LearningTabContent } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { MorningBriefDashboard } from "./MorningBriefDashboard";
-import { MORNING_BRIEF_SPECIALIZED_PRESENTATION } from "@/lib/morningBriefPresentation";
+import { getMarketBriefSpecializedPresentation } from "@/lib/morningBriefPresentation";
 import { MacroGemDashboard } from "./MacroGemDashboard";
 import { BriefContextHeader } from "./BriefContextHeader";
 import { DASHBOARD_COLUMN_HEADER_CLS } from "./MorningBriefVisualPrimitives";
@@ -34,13 +34,14 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
   const idPrefix = `specialized:${sectionKey || tabKey}`;
 
   // Child bulk items for section-level select-all checkbox
-  const sectionChildItems = bulkSelection ? safe.map((item, i) => ({
-    id: `${idPrefix}:${i}`,
-    text: formatBulkItemText(item),
-    sectionLabel: label,
-    type: tabKey,
-    tabScope: 'specialized',
-  })) : null;
+  const sectionChildItems = bulkSelection
+    ? buildBulkItemsFromSections([{
+      key: sectionKey || tabKey,
+      label,
+      items: safe,
+      tabKey,
+    }], 'specialized')
+    : null;
 
   return (
     <div className={`rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2${hasCardBulk ? ' group/card' : ''}`}>
@@ -142,7 +143,13 @@ export function SpecializedContentRenderer({
   );
 
   const renderBulkShell = (sections, content) => {
-    const sectionDefs = sections.map((s) => ({ key: s.key, label: s.label, items: s.items, tabKey: s.tabKey }));
+    const sectionDefs = sections.map((s) => ({
+      key: s.key,
+      label: s.label,
+      items: s.items,
+      itemIds: s.itemIds,
+      tabKey: s.tabKey,
+    }));
     // Only leaf row items are registered for Select All — card-level items are excluded
     // to prevent parent+child duplication when all items are exported together.
     // Card header checkboxes still work individually via direct toggleMultiSelect.
@@ -197,8 +204,11 @@ export function SpecializedContentRenderer({
   }
 
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
-  if (slug === 'morning-brief') {
+  if (slug === 'morning-brief' || slug === 'evening-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
+    const presentation = getMarketBriefSpecializedPresentation(
+      slug === 'evening-brief' ? 'evening' : 'morning',
+    );
     return wrapWithBriefHeader(
       renderBulkShell(morningBulkDefs, (
         <MorningBriefDashboard
@@ -208,10 +218,10 @@ export function SpecializedContentRenderer({
           onSaveMarketBriefSection={onSaveMarketBriefSection}
           bulkSelection={bulkSelection}
           bulkSections={morningBulkDefs}
-          presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+          presentation={presentation}
         />
       )),
-      { showSourceCaption: MORNING_BRIEF_SPECIALIZED_PRESENTATION.showSourceCaption },
+      { showSourceCaption: presentation.showSourceCaption },
     );
   }
 
