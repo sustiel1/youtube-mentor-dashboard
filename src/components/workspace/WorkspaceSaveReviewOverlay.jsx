@@ -95,6 +95,27 @@ function groupItemsByDateBucket(items) {
 // sub-groups once it crosses this size — small groups stay exactly as before.
 const DATE_SUBGROUP_THRESHOLD = 8;
 
+// Splits one topic/subtopic group into the card descriptors the grid renders —
+// one card per date bucket once the group crosses the threshold, otherwise a
+// single card for the whole group. virtTopicId/virtSubtopicId are carried
+// through unchanged so "שמור מאוחד" can resolve a canonical real topic later.
+function buildGroupCards(keyPrefix, label, items, virtTopicId = null, virtSubtopicId = null, muted = false) {
+  if (items.length > DATE_SUBGROUP_THRESHOLD) {
+    const dateGroups = groupItemsByDateBucket(items);
+    return DATE_BUCKETS
+      .filter(({ key }) => dateGroups[key]?.length > 0)
+      .map(({ key, label: bucketLabel }) => ({
+        key: `${keyPrefix}__${key}`,
+        label: `${label} · ${bucketLabel}`,
+        items: dateGroups[key],
+        virtTopicId,
+        virtSubtopicId,
+        muted,
+      }));
+  }
+  return [{ key: keyPrefix, label, items, virtTopicId, virtSubtopicId, muted }];
+}
+
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
 export function WorkspaceSaveReviewOverlay({
@@ -515,6 +536,55 @@ export function WorkspaceSaveReviewOverlay({
     updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
     toast.success(`${ids.length} פריטים שויכו ל"${targetTopic.name}"`);
     clearOverlaySelection();
+    reload();
+  }
+
+  // Concatenates the notes of every item in a grid card into ONE new saved
+  // entry — additive only, never touches/deletes the source items. Reuses
+  // saveWorkspaceItem (the same single-item create function used everywhere
+  // else) and the existing content-hash dedup check, not new save logic.
+  async function handleSaveMerged({ label, items, virtTopicId, virtSubtopicId }) {
+    if (!items || items.length === 0) return;
+
+    const mergedNotes = items.map(item => {
+      const dateLabel = (() => {
+        try { return format(new Date(item.savedAt), "d בMMM yyyy", { locale: he }); } catch { return ''; }
+      })();
+      const header = [item.videoTitle || 'ללא כותרת', dateLabel].filter(Boolean).join(' — ');
+      return `── ${header} ──\n${item.notes || ''}`;
+    }).join('\n\n');
+
+    const contentHash = await computeContentHash(mergedNotes);
+    if (contentHash && findWorkspaceItemByContentHash(contentHash)) {
+      toast.info('פריט ממוזג זהה כבר קיים ב-Workspace');
+      return;
+    }
+
+    // "ללא נושא" cards carry no virtTopicId — the merged entry stays
+    // genuinely unclassified rather than guessing a topic for it.
+    const target = virtTopicId ? getCanonicalSaveTargetForVirtualPath(virtTopicId, virtSubtopicId, topics) : null;
+
+    saveWorkspaceItem({
+      id:           `ws-merged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      videoId:      null,
+      videoUrl:     null,
+      videoTitle:   `${label} — ${items.length} פריטים ממוזגים`,
+      channelName:  '',
+      thumbnail:    null,
+      topicId:      target?.topicId    || null,
+      subTopicId:   target?.subTopicId || null,
+      topicName:    target?.topicName    || '',
+      subTopicName: target?.subTopicName || null,
+      notes:        mergedNotes,
+      flags:        {},
+      tags:         [],
+      sourceTab:    'Merged',
+      category:     target?.topicName    || null,
+      subCategory:  target?.subTopicName || null,
+      savedAt:      new Date().toISOString(),
+      contentHash,
+    });
+    toast.success(`נוצר פריט ממוזג מ-${items.length} פריטים`);
     reload();
   }
 
@@ -1348,81 +1418,49 @@ export function WorkspaceSaveReviewOverlay({
                       ))}
                     </div>
                   ) : (
-                    // subtopic groups
-                    <>
-                      {activeVirtTopic.subtopics
-                        .filter(vs => itemsByVirtSubtopic[vs.id]?.length > 0)
-                        .map(vs => (
-                          <FolderGroup
-                            key={vs.id}
-                            label={vs.name}
-                            count={itemsByVirtSubtopic[vs.id].length}
-                            items={itemsByVirtSubtopic[vs.id]}
-                            allTopics={allTopics}
-                            indent
-                            dateGrouped
-                            onDelete={handleDeleteSingleItem}
-                            onArchive={handleArchiveSingleItem}
-                            selectedIds={selectedOverlayIds}
-                            onToggleSelect={toggleOverlaySelect}
-                            onSelectAll={handleSelectAllInGroup}
-                          />
-                        ))}
-                      {itemsByVirtSubtopic['__other__']?.length > 0 && (
-                        <FolderGroup
-                          label={`${activeVirtTopic.name} — כללי`}
-                          count={itemsByVirtSubtopic['__other__'].length}
-                          items={itemsByVirtSubtopic['__other__']}
-                          allTopics={allTopics}
-                          indent
-                          muted
-                          dateGrouped
-                          onDelete={handleDeleteSingleItem}
-                          onArchive={handleArchiveSingleItem}
+                    // subtopic groups — flattened into one card grid
+                    <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-3', isFullscreen && 'lg:grid-cols-3')}>
+                      {[
+                        ...activeVirtTopic.subtopics
+                          .filter(vs => itemsByVirtSubtopic[vs.id]?.length > 0)
+                          .flatMap(vs => buildGroupCards(vs.id, vs.name, itemsByVirtSubtopic[vs.id], filterVirtTopicId, vs.id)),
+                        ...(itemsByVirtSubtopic['__other__']?.length > 0
+                          ? buildGroupCards('__other__', `${activeVirtTopic.name} — כללי`, itemsByVirtSubtopic['__other__'], filterVirtTopicId, null, true)
+                          : []),
+                      ].map(({ key, ...card }) => (
+                        <GroupCard
+                          key={key}
+                          {...card}
                           selectedIds={selectedOverlayIds}
                           onToggleSelect={toggleOverlaySelect}
                           onSelectAll={handleSelectAllInGroup}
+                          onSaveMerged={handleSaveMerged}
                         />
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
                 </>
               ) : (
-                // ── Main topic groups (no filter) ──────────────────────────
-                <>
-                  {VIRTUAL_TAXONOMY
-                    .filter(vt => itemsByVirtTopic[vt.id]?.length > 0)
-                    .map(vt => (
-                      <FolderGroup
-                        key={vt.id}
-                        label={`${vt.emoji} ${vt.name}`}
-                        count={itemsByVirtTopic[vt.id].length}
-                        items={itemsByVirtTopic[vt.id]}
-                        allTopics={allTopics}
-                        dateGrouped
-                        onDelete={handleDeleteSingleItem}
-                        onArchive={handleArchiveSingleItem}
-                        selectedIds={selectedOverlayIds}
-                        onToggleSelect={toggleOverlaySelect}
-                        onSelectAll={handleSelectAllInGroup}
-                      />
-                    ))}
-                  {itemsByVirtTopic['__none__']?.length > 0 && (
-                    <FolderGroup
-                      label="📁 ללא נושא"
-                      count={itemsByVirtTopic['__none__'].length}
-                      items={itemsByVirtTopic['__none__']}
-                      allTopics={allTopics}
-                      muted
-                      dateGrouped
-                      onDelete={handleDeleteSingleItem}
-                      onArchive={handleArchiveSingleItem}
+                // ── Main topic groups (no filter) — flattened into one card grid ──
+                <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-3', isFullscreen && 'lg:grid-cols-3')}>
+                  {[
+                    ...VIRTUAL_TAXONOMY
+                      .filter(vt => itemsByVirtTopic[vt.id]?.length > 0)
+                      .flatMap(vt => buildGroupCards(vt.id, `${vt.emoji} ${vt.name}`, itemsByVirtTopic[vt.id], vt.id, null)),
+                    ...(itemsByVirtTopic['__none__']?.length > 0
+                      ? buildGroupCards('__none__', '📁 ללא נושא', itemsByVirtTopic['__none__'], null, null, true)
+                      : []),
+                  ].map(({ key, ...card }) => (
+                    <GroupCard
+                      key={key}
+                      {...card}
                       selectedIds={selectedOverlayIds}
                       onToggleSelect={toggleOverlaySelect}
                       onSelectAll={handleSelectAllInGroup}
+                      onSaveMerged={handleSaveMerged}
                     />
-                  )}
-                </>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -1532,74 +1570,69 @@ export function WorkspaceSaveReviewOverlay({
 
 // ─── Folder group ─────────────────────────────────────────────────────────────
 
-function FolderGroup({
-  label, count, items, allTopics, indent = false, muted = false,
-  onDelete, onArchive, selectedIds, onToggleSelect, onSelectAll,
-  dateGrouped = false,
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-  const splitByDate = dateGrouped && items.length > DATE_SUBGROUP_THRESHOLD;
-  const dateGroups = useMemo(
-    () => (splitByDate ? groupItemsByDateBucket(items) : null),
-    [splitByDate, items],
-  );
+// One topic (or topic+date-bucket) card in the "לפי נושאים" grid. Deliberately
+// no per-item delete/archive here — those stay available via checkbox +
+// the WorkspaceBulkActionBar below, exactly as before. Preview truncates at
+// 5 items; "שמור מאוחד" merges the card's own items (not just the preview).
+const GROUP_CARD_PREVIEW_LIMIT = 5;
+
+function GroupCard({ label, items, muted = false, virtTopicId = null, virtSubtopicId = null, selectedIds, onToggleSelect, onSelectAll, onSaveMerged }) {
+  const previewItems = items.slice(0, GROUP_CARD_PREVIEW_LIMIT);
+  const remaining = items.length - previewItems.length;
+  // Guards against a double-click firing two overlapping saves before the
+  // first one's content-hash dedup check has anything to find yet.
+  const [saving, setSaving] = useState(false);
+  async function handleSaveMergedClick() {
+    setSaving(true);
+    try { await onSaveMerged({ label, items, virtTopicId, virtSubtopicId }); }
+    finally { setSaving(false); }
+  }
 
   return (
-    <div>
-      <div className="flex items-center gap-1.5 mb-2">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn('min-w-0 truncate text-sm font-bold', muted ? 'text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-300')}>
+          {label}
+          <span className={cn('mr-1 text-xs font-normal', muted ? 'text-slate-300 dark:text-zinc-700' : 'text-slate-400 dark:text-zinc-600')}>
+            ({items.length})
+          </span>
+        </span>
         <button
           type="button"
-          onClick={() => setCollapsed(p => !p)}
-          className={cn(
-            'flex items-center gap-1.5 flex-1 min-w-0 text-right',
-            muted ? 'text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-300',
-          )}
+          onClick={() => onSelectAll(items)}
+          className="shrink-0 text-[11px] font-medium text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
         >
-          <span className="text-[10px] text-slate-300 dark:text-zinc-600 select-none">{collapsed ? '▸' : '▾'}</span>
-          <span className={cn('text-sm font-bold', indent && 'mr-1')}>{label}</span>
-          <span className={cn('text-xs font-normal', muted ? 'text-slate-300 dark:text-zinc-700' : 'text-slate-400 dark:text-zinc-600')}>
-            ({count})
-          </span>
+          בחר הכל
         </button>
-        {onSelectAll && items.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onSelectAll(items)}
-            className="shrink-0 text-[11px] font-medium text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            בחר הכל
-          </button>
+      </div>
+
+      <div className="space-y-1">
+        {previewItems.map(item => (
+          <label key={item.id} className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedIds?.has(item.id)}
+              onChange={() => onToggleSelect(item.id)}
+              className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
+            />
+            <span className="min-w-0 flex-1 truncate text-xs text-slate-700 dark:text-zinc-300">
+              {item.videoTitle || 'ללא כותרת'}
+            </span>
+          </label>
+        ))}
+        {remaining > 0 && (
+          <div className="pr-[22px] text-[11px] text-slate-400 dark:text-zinc-600">+{remaining} עוד</div>
         )}
       </div>
-      {!collapsed && (
-        <div className={cn('space-y-2', indent ? 'pr-3 border-r-2 border-slate-100 dark:border-zinc-800' : 'pr-2 border-r-2 border-slate-100 dark:border-zinc-800')}>
-          {splitByDate
-            ? DATE_BUCKETS
-                .filter(({ key }) => dateGroups[key]?.length > 0)
-                .map(({ key, label: bucketLabel }) => (
-                  <FolderGroup
-                    key={key}
-                    label={bucketLabel}
-                    count={dateGroups[key].length}
-                    items={dateGroups[key]}
-                    allTopics={allTopics}
-                    indent
-                    onDelete={onDelete}
-                    onArchive={onArchive}
-                    selectedIds={selectedIds}
-                    onToggleSelect={onToggleSelect}
-                    onSelectAll={onSelectAll}
-                  />
-                ))
-            : items.map(item => (
-                <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact
-                  onDelete={onDelete} onArchive={onArchive}
-                  selected={selectedIds?.has(item.id)}
-                  onToggleSelect={onToggleSelect}
-                />
-              ))}
-        </div>
-      )}
+
+      <button
+        type="button"
+        onClick={handleSaveMergedClick}
+        disabled={saving}
+        className="mt-auto self-start rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-50"
+      >
+        📎 {saving ? 'שומר...' : 'שמור מאוחד'}
+      </button>
     </div>
   );
 }
