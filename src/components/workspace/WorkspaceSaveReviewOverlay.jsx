@@ -196,6 +196,14 @@ export function WorkspaceSaveReviewOverlay({
     [virtTopicCountBase, customTabCounts],
   );
 
+  // Items that match no VIRTUAL_TAXONOMY entry (e.g. topicId: null,
+  // topicName: '') — surfaced as their own "ללא סיווג" tab so they aren't
+  // silently missing from every topic count.
+  const unclassifiedItems = useMemo(
+    () => groupItemsByVirtTopic(libraryItems).__none__ || [],
+    [libraryItems],
+  );
+
   // All tabs = built-in VIRTUAL_TAXONOMY + user-created custom tabs
   const allMainTabs = useMemo(
     () => getAllMergedTabs(VIRTUAL_TAXONOMY, tabPrefs),
@@ -226,6 +234,7 @@ export function WorkspaceSaveReviewOverlay({
   // Items within the selected main virtual topic (not yet subtopic-filtered)
   const mainFilteredItems = useMemo(() => {
     if (!filterVirtTopicId) return libraryItems;
+    if (filterVirtTopicId === '__none__') return unclassifiedItems;
     // Custom tabs: filter by the single real topic ID they map to
     const customTab = (tabPrefs.customMainTabs || []).find(ct => ct.id === filterVirtTopicId);
     if (customTab) {
@@ -234,7 +243,7 @@ export function WorkspaceSaveReviewOverlay({
         : [];
     }
     return filterByVirtTopic(libraryItems, filterVirtTopicId);
-  }, [libraryItems, filterVirtTopicId, tabPrefs.customMainTabs]);
+  }, [libraryItems, filterVirtTopicId, tabPrefs.customMainTabs, unclassifiedItems]);
 
   const virtSubtopicCount = useMemo(
     () => getVirtSubtopicCounts(mainFilteredItems, filterVirtTopicId),
@@ -384,6 +393,9 @@ export function WorkspaceSaveReviewOverlay({
   function handleSelectVirtTopic(vtId) {
     setFilterVirtTopicId(vtId);
     setFilterVirtSubtopic('');
+    // Selecting an actual topic (not "הכל") should show its items immediately,
+    // without an extra click on the "לפי נושאים" display-mode toggle.
+    if (vtId) setActiveView('topics');
   }
 
   function handleConfirmDeleteAllVisible() {
@@ -671,13 +683,20 @@ export function WorkspaceSaveReviewOverlay({
       >
         {/* ── Header ───────────────────────────────────────────────────── */}
         <DialogHeader className="shrink-0 border-b border-slate-200 dark:border-zinc-800 px-5 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
-              ⭐ Workspace Library
-              <span className="text-xs font-normal text-slate-400 dark:text-zinc-500">
-                — {libraryItems.length} פריטים שמורים
-              </span>
-            </DialogTitle>
+          <div className="flex items-center justify-between gap-3 pl-10">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2 text-right text-base font-bold text-slate-900 dark:text-zinc-100">
+                ⭐ Workspace Library
+                <span className="text-xs font-normal text-slate-400 dark:text-zinc-500">
+                  — {libraryItems.length} פריטים שמורים
+                </span>
+              </DialogTitle>
+              {unclassifiedItems.length > 0 && (
+                <div className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                  מסווגים: {libraryItems.length - unclassifiedItems.length} · ללא סיווג: {unclassifiedItems.length}
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="relative">
                 <button
@@ -743,6 +762,14 @@ export function WorkspaceSaveReviewOverlay({
                     count: virtTopicCount[vt.id] || 0,
                     empty: !virtTopicCount[vt.id],
                   })),
+                  ...(unclassifiedItems.length > 0 || filterVirtTopicId === '__none__'
+                    ? [{
+                        value: '__none__',
+                        label: '📁 ללא סיווג',
+                        count: unclassifiedItems.length,
+                        empty: unclassifiedItems.length === 0,
+                      }]
+                    : []),
                 ]}
                 activeValue={filterVirtTopicId}
                 onSelect={handleSelectVirtTopic}

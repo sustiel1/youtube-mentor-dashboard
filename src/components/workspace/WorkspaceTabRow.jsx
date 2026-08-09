@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { getCountBadgeSuffix } from '@/utils/workspaceTabDisplay';
 
 /**
  * Reusable tab row for Workspace Library.
@@ -78,7 +79,7 @@ export function WorkspaceTabRow({
           )}
         >
           {tab.label}
-          {tab.count != null && tab.count > 0 && ` (${tab.count})`}
+          {getCountBadgeSuffix(tab.count)}
         </button>
       ))}
 
