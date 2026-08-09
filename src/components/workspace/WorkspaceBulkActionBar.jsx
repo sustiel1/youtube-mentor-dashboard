@@ -1,4 +1,5 @@
-import { Archive, Trash2, Copy, X, FileDown } from 'lucide-react';
+import { useState } from 'react';
+import { Archive, Trash2, Copy, X, FileDown, FolderInput } from 'lucide-react';
 import { normalizeStockWorkspaceItem } from '@/utils/workspaceStockItems';
 import { cn } from '@/lib/utils';
 
@@ -78,6 +79,8 @@ export function exportWorkspaceItemsToCsv(items, filename = 'workspace-export.cs
  *   onDelete         {function} — open delete confirmation
  *   onClearSelection {function} — clear selection
  *   onExportCsv      {function} — optional CSV export; button hidden if absent
+ *   reassignTopics   {array}    — real top-level topics [{id, name}]; enables the reassign dropdown when present with onReassign
+ *   onReassign       {function} — (topicId) => void; called when the user picks a target topic and confirms
  *   disabled         {boolean}  — disable all buttons
  *   fixed            {boolean}  — fixed to viewport bottom (full-page); default flows naturally (dialog use)
  */
@@ -88,10 +91,16 @@ export function WorkspaceBulkActionBar({
   onDelete,
   onClearSelection,
   onExportCsv,
+  reassignTopics,
+  onReassign,
   disabled = false,
   fixed = false,
 }) {
+  const [reassignTarget, setReassignTarget] = useState('');
+
   if (count === 0) return null;
+
+  const canReassign = !!(reassignTopics?.length && onReassign);
 
   return (
     <div
@@ -127,6 +136,32 @@ export function WorkspaceBulkActionBar({
             <Copy className="h-3.5 w-3.5" />
             העתק
           </button>
+        )}
+
+        {canReassign && (
+          <div className="flex items-center gap-1">
+            <select
+              value={reassignTarget}
+              onChange={e => setReassignTarget(e.target.value)}
+              disabled={disabled}
+              dir="rtl"
+              className="rounded-xl border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            >
+              <option value="">שייך לנושא...</option>
+              {reassignTopics.map(t => (
+                <option key={t.id} value={t.id}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={disabled || !reassignTarget}
+              onClick={() => { onReassign(reassignTarget); setReassignTarget(''); }}
+              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+            >
+              <FolderInput className="h-3.5 w-3.5" />
+              שייך
+            </button>
+          </div>
         )}
 
         {onArchive && (

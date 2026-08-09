@@ -63,6 +63,38 @@ const MARKET_STATUS_COLORS = {
   archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
 };
 
+// ─── Date bucketing (shared by the "לפי תאריכים" view and date sub-groups) ────
+const DATE_BUCKETS = [
+  { key: 'today',     label: 'היום' },
+  { key: 'yesterday', label: 'אתמול' },
+  { key: 'thisWeek',  label: 'השבוע' },
+  { key: 'thisMonth', label: 'החודש' },
+  { key: 'older',     label: 'ישן יותר' },
+];
+
+function groupItemsByDateBucket(items) {
+  const now       = new Date();
+  const today     = now.toDateString();
+  const yesterday = new Date(now - 86400000).toDateString();
+  const weekAgo   = new Date(now - 7  * 86400000);
+  const monthAgo  = new Date(now - 30 * 86400000);
+  const groups    = { today: [], yesterday: [], thisWeek: [], thisMonth: [], older: [] };
+  items.forEach(item => {
+    const d  = new Date(item.savedAt);
+    const ds = d.toDateString();
+    if      (ds === today)     groups.today.push(item);
+    else if (ds === yesterday) groups.yesterday.push(item);
+    else if (d >= weekAgo)     groups.thisWeek.push(item);
+    else if (d >= monthAgo)    groups.thisMonth.push(item);
+    else                       groups.older.push(item);
+  });
+  return groups;
+}
+
+// FolderGroup switches a group of items from a flat list to nested date
+// sub-groups once it crosses this size — small groups stay exactly as before.
+const DATE_SUBGROUP_THRESHOLD = 8;
+
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
 export function WorkspaceSaveReviewOverlay({
@@ -221,6 +253,11 @@ export function WorkspaceSaveReviewOverlay({
   // Reset workflow status filter whenever the navigation path changes
   useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
 
+  // Selection is scoped to whatever topic/subtopic is currently shown — clear
+  // it on every switch so a bulk action can never silently apply to items the
+  // user selected under a different tab.
+  useEffect(() => { setSelectedOverlayIds(new Set()); }, [filterVirtTopicId, filterVirtSubtopic]);
+
   // Default to the stock table ("topics" view) the moment the user enters
   // שוק ההון → מניות, so they land on the table instead of whichever view
   // (draft/recent/dates) happened to be active before. Only fires on the
@@ -319,24 +356,7 @@ export function WorkspaceSaveReviewOverlay({
     [displayItems, filterVirtTopicId],
   );
 
-  const itemsByDate = useMemo(() => {
-    const now       = new Date();
-    const today     = now.toDateString();
-    const yesterday = new Date(now - 86400000).toDateString();
-    const weekAgo   = new Date(now - 7  * 86400000);
-    const monthAgo  = new Date(now - 30 * 86400000);
-    const groups    = { today: [], yesterday: [], thisWeek: [], thisMonth: [], older: [] };
-    displayItems.forEach(item => {
-      const d  = new Date(item.savedAt);
-      const ds = d.toDateString();
-      if      (ds === today)     groups.today.push(item);
-      else if (ds === yesterday) groups.yesterday.push(item);
-      else if (d >= weekAgo)     groups.thisWeek.push(item);
-      else if (d >= monthAgo)    groups.thisMonth.push(item);
-      else                       groups.older.push(item);
-    });
-    return groups;
-  }, [displayItems]);
+  const itemsByDate = useMemo(() => groupItemsByDateBucket(displayItems), [displayItems]);
 
   const pinnedItems = useMemo(
     () => displayItems.filter(i => i.flags?.isFavorite || i.flags?.isImportant),
@@ -453,6 +473,17 @@ export function WorkspaceSaveReviewOverlay({
 
   const clearOverlaySelection = useCallback(() => setSelectedOverlayIds(new Set()), []);
 
+  // Adds every id in the given group to the existing selection (union, not
+  // replace) — used by each FolderGroup's own "בחר הכל" so selections from
+  // different topic/date sub-groups accumulate instead of overwriting.
+  const handleSelectAllInGroup = useCallback((groupItems) => {
+    setSelectedOverlayIds(prev => {
+      const next = new Set(prev);
+      groupItems.forEach(i => next.add(i.id));
+      return next;
+    });
+  }, []);
+
   function handleCopyOverlaySelected() {
     const selected = libraryItems.filter(i => selectedOverlayIds.has(i.id));
     const text = formatWorkspaceItemsForCopy(selected);
@@ -473,6 +504,16 @@ export function WorkspaceSaveReviewOverlay({
     const ids = [...selectedOverlayIds];
     deleteItems(ids);
     toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
+    clearOverlaySelection();
+    reload();
+  }
+
+  function handleReassignSelected(targetTopicId) {
+    const targetTopic = mainTopics.find(t => t.id === targetTopicId);
+    if (!targetTopic) return;
+    const ids = [...selectedOverlayIds];
+    updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
+    toast.success(`${ids.length} פריטים שויכו ל"${targetTopic.name}"`);
     clearOverlaySelection();
     reload();
   }
@@ -1319,10 +1360,12 @@ export function WorkspaceSaveReviewOverlay({
                             items={itemsByVirtSubtopic[vs.id]}
                             allTopics={allTopics}
                             indent
+                            dateGrouped
                             onDelete={handleDeleteSingleItem}
                             onArchive={handleArchiveSingleItem}
                             selectedIds={selectedOverlayIds}
                             onToggleSelect={toggleOverlaySelect}
+                            onSelectAll={handleSelectAllInGroup}
                           />
                         ))}
                       {itemsByVirtSubtopic['__other__']?.length > 0 && (
@@ -1333,10 +1376,12 @@ export function WorkspaceSaveReviewOverlay({
                           allTopics={allTopics}
                           indent
                           muted
+                          dateGrouped
                           onDelete={handleDeleteSingleItem}
                           onArchive={handleArchiveSingleItem}
                           selectedIds={selectedOverlayIds}
                           onToggleSelect={toggleOverlaySelect}
+                          onSelectAll={handleSelectAllInGroup}
                         />
                       )}
                     </>
@@ -1354,10 +1399,12 @@ export function WorkspaceSaveReviewOverlay({
                         count={itemsByVirtTopic[vt.id].length}
                         items={itemsByVirtTopic[vt.id]}
                         allTopics={allTopics}
+                        dateGrouped
                         onDelete={handleDeleteSingleItem}
                         onArchive={handleArchiveSingleItem}
                         selectedIds={selectedOverlayIds}
                         onToggleSelect={toggleOverlaySelect}
+                        onSelectAll={handleSelectAllInGroup}
                       />
                     ))}
                   {itemsByVirtTopic['__none__']?.length > 0 && (
@@ -1367,10 +1414,12 @@ export function WorkspaceSaveReviewOverlay({
                       items={itemsByVirtTopic['__none__']}
                       allTopics={allTopics}
                       muted
+                      dateGrouped
                       onDelete={handleDeleteSingleItem}
                       onArchive={handleArchiveSingleItem}
                       selectedIds={selectedOverlayIds}
                       onToggleSelect={toggleOverlaySelect}
+                      onSelectAll={handleSelectAllInGroup}
                     />
                   )}
                 </>
@@ -1383,13 +1432,7 @@ export function WorkspaceSaveReviewOverlay({
             <div className={cn('p-5 space-y-5', isFullscreen && 'max-w-3xl mx-auto')}>
               <AnalysisBanner show={showAnalysisBanner} count={currentAnalysisDraftItems.length} onLoad={handleLoadCurrentAnalysis} />
               {displayItems.length === 0 && <EmptyState label={filterMarketStatus ? 'אין עדיין מניות בטאב הזה' : 'אין פריטים בנושא הנוכחי'} />}
-              {[
-                { key: 'today',     label: 'היום' },
-                { key: 'yesterday', label: 'אתמול' },
-                { key: 'thisWeek',  label: 'השבוע' },
-                { key: 'thisMonth', label: 'החודש' },
-                { key: 'older',     label: 'ישן יותר' },
-              ]
+              {DATE_BUCKETS
                 .filter(({ key }) => itemsByDate[key]?.length > 0)
                 .map(({ key, label }) => (
                   <div key={key}>
@@ -1437,6 +1480,8 @@ export function WorkspaceSaveReviewOverlay({
           onArchive={handleArchiveOverlaySelected}
           onDelete={() => setConfirmBulkDeleteOverlay(true)}
           onClearSelection={clearOverlaySelection}
+          reassignTopics={mainTopics}
+          onReassign={handleReassignSelected}
         />
       </DialogContent>
     </Dialog>
@@ -1487,33 +1532,72 @@ export function WorkspaceSaveReviewOverlay({
 
 // ─── Folder group ─────────────────────────────────────────────────────────────
 
-function FolderGroup({ label, count, items, allTopics, indent = false, muted = false, onDelete, onArchive, selectedIds, onToggleSelect }) {
+function FolderGroup({
+  label, count, items, allTopics, indent = false, muted = false,
+  onDelete, onArchive, selectedIds, onToggleSelect, onSelectAll,
+  dateGrouped = false,
+}) {
   const [collapsed, setCollapsed] = useState(false);
+  const splitByDate = dateGrouped && items.length > DATE_SUBGROUP_THRESHOLD;
+  const dateGroups = useMemo(
+    () => (splitByDate ? groupItemsByDateBucket(items) : null),
+    [splitByDate, items],
+  );
+
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setCollapsed(p => !p)}
-        className={cn(
-          'flex items-center gap-1.5 mb-2 w-full text-right',
-          muted ? 'text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-300',
+      <div className="flex items-center gap-1.5 mb-2">
+        <button
+          type="button"
+          onClick={() => setCollapsed(p => !p)}
+          className={cn(
+            'flex items-center gap-1.5 flex-1 min-w-0 text-right',
+            muted ? 'text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-300',
+          )}
+        >
+          <span className="text-[10px] text-slate-300 dark:text-zinc-600 select-none">{collapsed ? '▸' : '▾'}</span>
+          <span className={cn('text-sm font-bold', indent && 'mr-1')}>{label}</span>
+          <span className={cn('text-xs font-normal', muted ? 'text-slate-300 dark:text-zinc-700' : 'text-slate-400 dark:text-zinc-600')}>
+            ({count})
+          </span>
+        </button>
+        {onSelectAll && items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onSelectAll(items)}
+            className="shrink-0 text-[11px] font-medium text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+          >
+            בחר הכל
+          </button>
         )}
-      >
-        <span className="text-[10px] text-slate-300 dark:text-zinc-600 select-none">{collapsed ? '▸' : '▾'}</span>
-        <span className={cn('text-sm font-bold', indent && 'mr-1')}>{label}</span>
-        <span className={cn('text-xs font-normal', muted ? 'text-slate-300 dark:text-zinc-700' : 'text-slate-400 dark:text-zinc-600')}>
-          ({count})
-        </span>
-      </button>
+      </div>
       {!collapsed && (
         <div className={cn('space-y-2', indent ? 'pr-3 border-r-2 border-slate-100 dark:border-zinc-800' : 'pr-2 border-r-2 border-slate-100 dark:border-zinc-800')}>
-          {items.map(item => (
-            <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact
-              onDelete={onDelete} onArchive={onArchive}
-              selected={selectedIds?.has(item.id)}
-              onToggleSelect={onToggleSelect}
-            />
-          ))}
+          {splitByDate
+            ? DATE_BUCKETS
+                .filter(({ key }) => dateGroups[key]?.length > 0)
+                .map(({ key, label: bucketLabel }) => (
+                  <FolderGroup
+                    key={key}
+                    label={bucketLabel}
+                    count={dateGroups[key].length}
+                    items={dateGroups[key]}
+                    allTopics={allTopics}
+                    indent
+                    onDelete={onDelete}
+                    onArchive={onArchive}
+                    selectedIds={selectedIds}
+                    onToggleSelect={onToggleSelect}
+                    onSelectAll={onSelectAll}
+                  />
+                ))
+            : items.map(item => (
+                <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact
+                  onDelete={onDelete} onArchive={onArchive}
+                  selected={selectedIds?.has(item.id)}
+                  onToggleSelect={onToggleSelect}
+                />
+              ))}
         </div>
       )}
     </div>
