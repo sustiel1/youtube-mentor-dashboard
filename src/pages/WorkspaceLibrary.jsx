@@ -975,6 +975,153 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               </div>
             </div>
           )}
+
+          {/* ══════════════════════ FILTER CARD ══════════════════════ */}
+          {!focusedVideoGroup && <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-3 space-y-3">
+            {/* Primary filter row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="חפש לפי כותרת, ערוץ, נושא, הערות..."
+                  dir="rtl"
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-2 pr-9 pl-3 text-sm text-right placeholder:text-slate-300 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
+                />
+              </div>
+
+              {[
+                { key: 'favorite',  label: '⭐ מועדפים',   active: filterFavorite,  set: () => setFilterFavorite(p => !p)  },
+                { key: 'important', label: '🔴 חשוב',       active: filterImportant, set: () => setFilterImportant(p => !p) },
+                { key: 'mustwatch', label: '🔁 לצפות שוב',  active: filterMustWatch, set: () => setFilterMustWatch(p => !p) },
+              ].map(({ key, label, active, set }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={set}
+                  className={cn(
+                    'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
+                    active
+                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+
+              {!isStocksView && items.some(i => i.archivedAt) && (
+                <button
+                  type="button"
+                  onClick={() => { setShowArchivedCards(p => !p); clearCardSelection(); }}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
+                    showArchivedCards
+                      ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
+                  )}
+                >
+                  {showArchivedCards ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+                  {showArchivedCards ? 'כל הפריטים' : 'ארכיון'}
+                </button>
+              )}
+
+              {allSourceTabs.length > 0 && (
+                <select
+                  value={filterSourceTab}
+                  onChange={e => setFilterSourceTab(e.target.value)}
+                  className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
+                >
+                  <option value="">כל המקורות</option>
+                  {allSourceTabs.map(tab => (
+                    <option key={tab} value={tab}>{tab}</option>
+                  ))}
+                </select>
+              )}
+
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="mr-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
+              >
+                <option value="newest">חדשים ראשון</option>
+                <option value="oldest">ישנים ראשון</option>
+                <option value="title">לפי כותרת</option>
+                <option value="priority">לפי עדיפות</option>
+              </select>
+
+              {hasActiveWorkspaceFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllWorkspaceFilters}
+                  className="rounded-xl border border-slate-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-red-500 hover:border-red-300 dark:text-zinc-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
+                >
+                  ✕ נקה הכל
+                </button>
+              )}
+            </div>
+
+            {/* Active filter chips — only the filters currently applied */}
+            {hasActiveWorkspaceFilters && (
+              <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-100 dark:border-zinc-800">
+                {search && (
+                  <FilterChip label={`חיפוש: "${search}"`} onRemove={() => setSearch('')} />
+                )}
+                {filterFavorite && <FilterChip label="⭐ מועדפים" onRemove={() => setFilterFavorite(false)} />}
+                {filterImportant && <FilterChip label="🔴 חשוב" onRemove={() => setFilterImportant(false)} />}
+                {filterMustWatch && <FilterChip label="🔁 לצפות שוב" onRemove={() => setFilterMustWatch(false)} />}
+                {isStocksView && filterMarketStatus && (
+                  <FilterChip
+                    label={`סטטוס: ${allWorkflowTabs.find(t => t.value === filterMarketStatus)?.label || filterMarketStatus}`}
+                    onRemove={() => setFilterMarketStatus('')}
+                  />
+                )}
+                {filterSourceTab && <FilterChip label={`מקור: ${filterSourceTab}`} onRemove={() => setFilterSourceTab('')} />}
+                {filterTags.map(tag => (
+                  <FilterChip key={tag} label={`#${tag}`} onRemove={() => setFilterTags(prev => prev.filter(t => t !== tag))} />
+                ))}
+                <button
+                  type="button"
+                  onClick={clearAllWorkspaceFilters}
+                  className="text-[11px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
+                >
+                  נקה הכל
+                </button>
+              </div>
+            )}
+
+            {/* Tags row */}
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-100 dark:border-zinc-800">
+                <span className="text-[11px] text-slate-400 dark:text-zinc-600 ml-1">תגיות:</span>
+                {allTags.map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setFilterTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                    className={cn(
+                      'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                      filterTags.includes(tag)
+                        ? 'border-indigo-500 bg-indigo-500 text-white'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                    )}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+                {filterTags.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterTags([])}
+                    className="text-[11px] text-slate-400 hover:text-red-400 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
+                  >
+                    נקה תגיות
+                  </button>
+                )}
+              </div>
+            )}
+          </div>}
         </div>
 
         {/* ══════════════════════ MANAGE TOPICS PANEL ══════════════════════ */}
@@ -1016,154 +1163,6 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
           </section>
           <WorkspaceCollectionTiles counts={collectionCounts} activeCollection={activeCollection} scopeLabel="כל הסרטונים" onSelect={value => { handleCollectionSelect(value); clearCardSelection(); }} />
         </>}
-
-        {/* ══════════════════════ FILTER CARD ══════════════════════ */}
-        {!focusedVideoGroup && <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-3 space-y-3">
-          {/* Primary filter row */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="חפש לפי כותרת, ערוץ, נושא, הערות..."
-                dir="rtl"
-                className="w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-2 pr-9 pl-3 text-sm text-right placeholder:text-slate-300 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
-              />
-            </div>
-
-            {[
-              { key: 'favorite',  label: '⭐ מועדפים',   active: filterFavorite,  set: () => setFilterFavorite(p => !p)  },
-              { key: 'important', label: '🔴 חשוב',       active: filterImportant, set: () => setFilterImportant(p => !p) },
-              { key: 'mustwatch', label: '🔁 לצפות שוב',  active: filterMustWatch, set: () => setFilterMustWatch(p => !p) },
-            ].map(({ key, label, active, set }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={set}
-                className={cn(
-                  'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                  active
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
-                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
-                )}
-              >
-                {label}
-              </button>
-            ))}
-
-            {!isStocksView && items.some(i => i.archivedAt) && (
-              <button
-                type="button"
-                onClick={() => { setShowArchivedCards(p => !p); clearCardSelection(); }}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                  showArchivedCards
-                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
-                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
-                )}
-              >
-                {showArchivedCards ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-                {showArchivedCards ? 'כל הפריטים' : 'ארכיון'}
-              </button>
-            )}
-
-            {allSourceTabs.length > 0 && (
-              <select
-                value={filterSourceTab}
-                onChange={e => setFilterSourceTab(e.target.value)}
-                className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
-              >
-                <option value="">כל המקורות</option>
-                {allSourceTabs.map(tab => (
-                  <option key={tab} value={tab}>{tab}</option>
-                ))}
-              </select>
-            )}
-
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="mr-auto rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:text-zinc-200"
-            >
-              <option value="newest">חדשים ראשון</option>
-              <option value="oldest">ישנים ראשון</option>
-              <option value="title">לפי כותרת</option>
-              <option value="priority">לפי עדיפות</option>
-            </select>
-
-            {hasActiveWorkspaceFilters && (
-              <button
-                type="button"
-                onClick={clearAllWorkspaceFilters}
-                className="rounded-xl border border-slate-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-red-500 hover:border-red-300 dark:text-zinc-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
-              >
-                ✕ נקה הכל
-              </button>
-            )}
-          </div>
-
-          {/* Active filter chips — only the filters currently applied */}
-          {hasActiveWorkspaceFilters && (
-            <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-100 dark:border-zinc-800">
-              {search && (
-                <FilterChip label={`חיפוש: "${search}"`} onRemove={() => setSearch('')} />
-              )}
-              {filterFavorite && <FilterChip label="⭐ מועדפים" onRemove={() => setFilterFavorite(false)} />}
-              {filterImportant && <FilterChip label="🔴 חשוב" onRemove={() => setFilterImportant(false)} />}
-              {filterMustWatch && <FilterChip label="🔁 לצפות שוב" onRemove={() => setFilterMustWatch(false)} />}
-              {isStocksView && filterMarketStatus && (
-                <FilterChip
-                  label={`סטטוס: ${allWorkflowTabs.find(t => t.value === filterMarketStatus)?.label || filterMarketStatus}`}
-                  onRemove={() => setFilterMarketStatus('')}
-                />
-              )}
-              {filterSourceTab && <FilterChip label={`מקור: ${filterSourceTab}`} onRemove={() => setFilterSourceTab('')} />}
-              {filterTags.map(tag => (
-                <FilterChip key={tag} label={`#${tag}`} onRemove={() => setFilterTags(prev => prev.filter(t => t !== tag))} />
-              ))}
-              <button
-                type="button"
-                onClick={clearAllWorkspaceFilters}
-                className="text-[11px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
-              >
-                נקה הכל
-              </button>
-            </div>
-          )}
-
-          {/* Tags row */}
-          {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-100 dark:border-zinc-800">
-              <span className="text-[11px] text-slate-400 dark:text-zinc-600 ml-1">תגיות:</span>
-              {allTags.map(tag => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setFilterTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                  className={cn(
-                    'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
-                    filterTags.includes(tag)
-                      ? 'border-indigo-500 bg-indigo-500 text-white'
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                  )}
-                >
-                  #{tag}
-                </button>
-              ))}
-              {filterTags.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setFilterTags([])}
-                  className="text-[11px] text-slate-400 hover:text-red-400 dark:text-zinc-600 dark:hover:text-red-400 underline mr-1"
-                >
-                  נקה תגיות
-                </button>
-              )}
-            </div>
-          )}
-
-        </div>}
 
         {/* ══════════════════════ CONTENT ══════════════════════ */}
         {!focusedVideoGroup && (filteredItems.length === 0 ? (
