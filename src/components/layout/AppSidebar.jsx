@@ -286,8 +286,8 @@ export function AppSidebar({
           <NavButton
             icon={BookMarked}
             label="Workspace"
-            isActive={currentPage === "Workspace" || currentPage === "TopicKnowledgePage"}
-            onClick={() => navigateTo("Workspace")}
+            isActive={currentPage === "WorkspaceLibrary"}
+            onClick={() => navigateTo("WorkspaceLibrary")}
           />
         </div>
 

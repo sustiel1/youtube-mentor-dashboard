@@ -1,4 +1,6 @@
-import { buildFinvizQuoteUrl, HE_CARD_COMPANY_ALIASES } from '@/utils/finvizLinks';
+import { HE_CARD_COMPANY_ALIASES } from '@/utils/finvizLinks';
+import { AnalysisTickerLink } from '@/components/shared/AnalysisTickerLink';
+import { isSafeAnalysisTicker } from '@/utils/analysisTickerLinks';
 
 // Macro/economic abbreviations + currency codes that must not be mistaken for stock tickers.
 const _DENYLIST = new Set([
@@ -34,24 +36,16 @@ export function renderLinkedMarketText(text) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     if (m[1]) {
       const ticker = _HE_LOOKUP.get(m[1]);
-      nodes.push(ticker
-        ? <a key={`he-${m.index}`} href={buildFinvizQuoteUrl(ticker)} target="_blank"
-             rel="noopener noreferrer" dir="ltr"
-             title={`Open ${ticker} on Finviz`}
-             className="font-semibold underline decoration-dotted hover:decoration-solid"
-             onClick={(e) => e.stopPropagation()}>{ticker}</a>
+      nodes.push(ticker && isSafeAnalysisTicker(ticker)
+        ? <AnalysisTickerLink key={`he-${m.index}`} ticker={ticker}>{ticker}</AnalysisTickerLink>
         : m[1]
       );
     } else if (m[2]) {
-      if (_DENYLIST.has(m[2])) {
+      if (_DENYLIST.has(m[2]) || !isSafeAnalysisTicker(m[2])) {
         nodes.push(m[2]);
       } else {
         nodes.push(
-          <a key={`en-${m.index}`} href={buildFinvizQuoteUrl(m[2])} target="_blank"
-             rel="noopener noreferrer" dir="ltr"
-             title={`Open ${m[2]} on Finviz`}
-             className="font-semibold underline decoration-dotted hover:decoration-solid"
-             onClick={(e) => e.stopPropagation()}>{m[2]}</a>
+          <AnalysisTickerLink key={`en-${m.index}`} ticker={m[2]}>{m[2]}</AnalysisTickerLink>
         );
       }
     }

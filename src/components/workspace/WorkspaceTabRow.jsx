@@ -68,6 +68,7 @@ export function WorkspaceTabRow({
           key={tab.value}
           type="button"
           onClick={() => onSelect(tab.value)}
+          aria-pressed={activeValue === tab.value}
           className={cn(
             'border transition-all whitespace-nowrap',
             sizeClass,

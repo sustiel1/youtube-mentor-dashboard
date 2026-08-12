@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { PAGES } from './pages.config';
 import { normalizeDashboardFilters } from '@/lib/topicFilters';
 import { shouldAutoChannelScan, runChannelScan } from '@/services/channelScanService';
+import { getWorkspaceLibraryUrl, resolveWorkspaceLibraryLocation } from '@/lib/workspaceLibraryRoute';
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -22,8 +23,9 @@ const DEFAULT_FILTERS = {
 };
 
 function AppLayout({ theme, toggleTheme, isDark }) {
-  const [currentPage, setCurrentPage] = useState("Dashboard");
-  const [pageParams, setPageParams] = useState({});
+  const initialRoute = useMemo(() => resolveWorkspaceLibraryLocation(window.location.pathname, window.location.search), []);
+  const [currentPage, setCurrentPage] = useState(initialRoute.isWorkspaceLibrary ? "WorkspaceLibrary" : "Dashboard");
+  const [pageParams, setPageParams] = useState(initialRoute.params || {});
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveToBrainOpen, setSaveToBrainOpen] = useState(false);
   const [saveToBrainBrainId, setSaveToBrainBrainId] = useState("");
@@ -45,6 +47,29 @@ function AppLayout({ theme, toggleTheme, isDark }) {
     });
   }, [mentors]);
 
+  useEffect(() => {
+    const applyLocation = () => {
+      const route = resolveWorkspaceLibraryLocation(window.location.pathname, window.location.search);
+      if (route.isWorkspaceLibrary) {
+        if (route.shouldReplace) window.history.replaceState({ page: 'WorkspaceLibrary', params: route.params }, '', route.canonicalUrl);
+        setCurrentPage('WorkspaceLibrary');
+        setPageParams(route.params || {});
+        return;
+      }
+      const state = window.history.state;
+      setCurrentPage(state?.page && PAGES[state.page] ? state.page : 'Dashboard');
+      setPageParams(state?.params || {});
+    };
+
+    if (initialRoute.isWorkspaceLibrary) {
+      window.history.replaceState({ page: 'WorkspaceLibrary', params: initialRoute.params || {} }, '', initialRoute.canonicalUrl);
+    } else {
+      window.history.replaceState({ page: 'Dashboard', params: {} }, '', '/');
+    }
+    window.addEventListener('popstate', applyLocation);
+    return () => window.removeEventListener('popstate', applyLocation);
+  }, [initialRoute]);
+
   const PageComponent = PAGES[currentPage] || PAGES["Dashboard"];
   const normalizedDefaultFilters = useMemo(
     () => normalizeDashboardFilters(DEFAULT_FILTERS, topics),
@@ -61,6 +86,8 @@ function AppLayout({ theme, toggleTheme, isDark }) {
   };
 
   const navigateTo = (page, params = {}) => {
+    const destination = page === 'WorkspaceLibrary' ? getWorkspaceLibraryUrl(params) : '/';
+    window.history.pushState({ page, params }, '', destination);
     setCurrentPage(page);
     setPageParams(params);
     if (page === "Dashboard") {

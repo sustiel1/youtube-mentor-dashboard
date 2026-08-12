@@ -8,6 +8,7 @@ import {
   resetWorkspaceTabPreferences,
   getVisibleMainTabs,
   getAllMergedTabs,
+  getCanonicalSubtopicsForVirtualTopic,
   addCustomMainTab,
   removeCustomMainTab,
   addCustomSubtopic,
@@ -26,8 +27,31 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
-import { StockWatchlistView } from "@/components/workspace/StockWatchlistView";
 import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy, exportWorkspaceItemsToCsv } from "@/components/workspace/WorkspaceBulkActionBar";
+import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
+import { WorkspaceCollectionTiles } from "@/components/workspace/WorkspaceCollectionTiles";
+import { StructuredSnapshotView } from "@/components/workspace/StructuredSnapshotView";
+import { WorkspaceDuplicatePreview } from "@/components/workspace/WorkspaceDuplicatePreview";
+import { checksumWorkspaceItemIds, selectCollectionForScope, selectVideoGroups, selectWorkspaceVideoGroups } from "@/utils/workspaceVideoGrouping";
+import { WorkspaceVideoGroupCard } from "@/components/workspace/WorkspaceVideoGroupCard";
+import { WorkspaceFocusedVideoCard, WorkspaceGlobalSavedAnalysisGroup } from "@/components/workspace/WorkspaceFocusedVideoCard";
+import { WorkspaceTopicManager } from "@/components/workspace/WorkspaceTopicManager";
+import { WorkspaceBriefRoutingPreview } from "@/components/workspace/WorkspaceBriefRoutingPreview";
+import { WorkspaceSemanticFilters } from "@/components/workspace/WorkspaceSemanticFilters";
+import {
+  WORKSPACE_COLLECTION_IDS,
+  WORKSPACE_FALLBACK_COLLECTION,
+  getWorkspaceHeadingByCollection,
+} from "@/config/workspaceHeadingRegistry";
+import {
+  MARKET_SEMANTIC_FALLBACK,
+  MARKET_SEMANTIC_FILTERS,
+  MARKET_VIRTUAL_TOPIC_ID,
+  countUniqueWorkspaceContents,
+  getMarketOrganizationalSubtopics,
+  selectWorkspaceSemanticFilterCounts,
+} from "@/utils/workspaceMarketDimensions";
+import { checksumWorkspacePayloadsExcludingTopicAssignment } from "@/utils/workspaceBriefRouting";
 
 // ─── Market status workflow ────────────────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -53,9 +77,15 @@ const MARKET_STATUS_COLORS = {
   archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
 };
 
-export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
-  const { items, reload: reloadItems, deleteItem, updateItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems } = useWorkspaceItems();
-  const { topics, mainTopics, getSubTopics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
+function reportWorkspaceWriteFailure(result) {
+  if (result?.ok) return false;
+  toast.error(getWorkspacePersistenceErrorMessage(result));
+  return true;
+}
+
+export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, toggleTheme }) {
+  const { items, reload: reloadItems, deleteItem, updateItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems, reassignVideoGroupTopic } = useWorkspaceItems();
+  const { topics, addTopic, updateTopic, deleteTopic } = useWorkspaceTopics();
   const { data: videos = [] } = useVideos();
   const { data: mentors = [] } = useMentors();
   const { data: systemTopics = [] } = useTopics();
@@ -67,11 +97,18 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [filterImportant, setFilterImportant] = useState(false);
   const [filterMustWatch, setFilterMustWatch] = useState(false);
   const [filterTags, setFilterTags] = useState([]);
+  const [filterSemanticTags, setFilterSemanticTags] = useState([]);
   const [filterSourceTab, setFilterSourceTab] = useState('');
   const [filterMarketStatus, setFilterMarketStatus] = useState('');
   const [showAddWorkflowStatus, setShowAddWorkflowStatus] = useState(false);
   const [newWorkflowStatusName, setNewWorkflowStatusName] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [activeCollection, setActiveCollection] = useState(null);
+  const [openSnapshotItem, setOpenSnapshotItem] = useState(null);
+  const [duplicatePreviewOpen, setDuplicatePreviewOpen] = useState(false);
+  const [briefRoutingPreviewOpen, setBriefRoutingPreviewOpen] = useState(false);
+  const [focusedItemId, setFocusedItemId] = useState(null);
+  const [handledRouteKey, setHandledRouteKey] = useState('');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -82,6 +119,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [selectedCardIds, setSelectedCardIds] = useState(() => new Set());
   const [confirmDeleteItem, setConfirmDeleteItem] = useState(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmDuplicateCleanupIds, setConfirmDuplicateCleanupIds] = useState([]);
   const [confirmDeleteAllVisible, setConfirmDeleteAllVisible] = useState(false);
   const [confirmDeleteAllWorkspace, setConfirmDeleteAllWorkspace] = useState(false);
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
@@ -91,8 +129,59 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const [editingTabId,    setEditingTabId]    = useState(null);
   const [editingTabLabel, setEditingTabLabel] = useState('');
 
-  const allMainTabs = useMemo(() => getAllMergedTabs(VIRTUAL_TAXONOMY, tabPrefs), [tabPrefs]);
+  const allMainTabs = useMemo(() => getAllMergedTabs(VIRTUAL_TAXONOMY, tabPrefs, topics).map(baseTopic => {
+    const canonicalSubtopics = getCanonicalSubtopicsForVirtualTopic(baseTopic, topics);
+    return {
+      ...baseTopic,
+      realTopicIds: [...new Set([...(baseTopic.realTopicIds || []), ...canonicalSubtopics.flatMap(topic => topic.realTopicIds)])],
+      subtopics: [...(baseTopic.subtopics || []), ...canonicalSubtopics],
+    };
+  }), [tabPrefs, topics]);
   const visibleMainTabs = useMemo(() => getVisibleMainTabs(allMainTabs, tabPrefs), [allMainTabs, tabPrefs]);
+  const validSemanticFilterIds = useMemo(() => new Set([
+    ...MARKET_SEMANTIC_FILTERS.map(filter => filter.id),
+    MARKET_SEMANTIC_FALLBACK.id,
+  ]), []);
+
+  useEffect(() => {
+    const routeKey = JSON.stringify(pageParams || {});
+    if (routeKey === handledRouteKey) return;
+    if (pageParams.routeNotice === 'invalid-route') toast.info('הנתיב הישן הוחלף בספריית Workspace התקינה');
+    if (pageParams.routeNotice === 'malformed-params') toast.info('פרמטרים לא תקינים הוסרו מהכתובת');
+
+    const validCollections = new Set(['all', ...WORKSPACE_COLLECTION_IDS, WORKSPACE_FALLBACK_COLLECTION.id]);
+    if (pageParams.collection && !validCollections.has(pageParams.collection)) toast.info('האוסף המבוקש לא נמצא; מוצגים כל הפריטים');
+    setActiveCollection(validCollections.has(pageParams.collection) && pageParams.collection !== 'all' ? pageParams.collection : null);
+    let nextTopicId = '';
+    if (pageParams.topicId) {
+      const topicExists = allMainTabs.some(topic => topic.id === pageParams.topicId);
+      if (topicExists) nextTopicId = pageParams.topicId;
+      else toast.info('הנושא המבוקש לא נמצא; מוצגים כל הנושאים');
+    }
+    setFilterVirtTopicId(nextTopicId);
+    let nextSubtopicId = '';
+    if (pageParams.subtopicId) {
+      const selectedTopic = allMainTabs.find(topic => topic.id === nextTopicId);
+      const organizational = selectedTopic?.id === MARKET_VIRTUAL_TOPIC_ID
+        ? getMarketOrganizationalSubtopics(selectedTopic, topics)
+        : (selectedTopic?.subtopics || []);
+      const subtopicExists = organizational.some(subtopic => subtopic.id === pageParams.subtopicId);
+      if (subtopicExists) nextSubtopicId = pageParams.subtopicId;
+      else toast.info('תת־הנושא המבוקש לא נמצא; מוצגים כל תתי־הנושאים');
+    }
+    setFilterVirtSubtopic(nextSubtopicId);
+    const requestedSemanticFilters = String(pageParams.semantic || '').split(',').map(value => value.trim()).filter(Boolean);
+    const nextSemanticFilters = requestedSemanticFilters.filter(value => validSemanticFilterIds.has(value));
+    if (requestedSemanticFilters.length !== nextSemanticFilters.length) toast.info('מסנני תוכן לא תקינים הוסרו מהתצוגה');
+    setFilterSemanticTags(nextTopicId === MARKET_VIRTUAL_TOPIC_ID ? [...new Set(nextSemanticFilters)] : []);
+    if (pageParams.itemId) {
+      const requestedItem = items.find(item => item.id === pageParams.itemId);
+      if (!requestedItem) toast.info('הפריט המבוקש לא נמצא; הספרייה נפתחה ללא שינוי בנתונים');
+      else if (requestedItem.itemType === 'structured-snapshot' && requestedItem.structuredSnapshot) setOpenSnapshotItem(requestedItem);
+      else setFocusedItemId(requestedItem.id);
+    }
+    setHandledRouteKey(routeKey);
+  }, [allMainTabs, handledRouteKey, items, pageParams, topics, validSemanticFilterIds]);
 
   function toggleTabVisibility(vtId) {
     const newPrefs = {
@@ -126,8 +215,12 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     const trimmedName = name.trim();
     if (!trimmedName) return;
     const finalEmoji = emoji?.trim() || '📌';
-    const newTopic = addTopic({ name: trimmedName, emoji: finalEmoji });
-    const newPrefs = addCustomMainTab(tabPrefs, { name: trimmedName, emoji: finalEmoji, topicId: newTopic.id });
+    const result = addTopic({ name: trimmedName, emoji: finalEmoji });
+    if (!result?.ok) {
+      toast.error((result?.errors || ['לא ניתן היה ליצור את הנושא.']).join(' '));
+      return;
+    }
+    const newPrefs = addCustomMainTab(tabPrefs, { name: trimmedName, emoji: finalEmoji, topicId: result.topic.id });
     setTabPrefs(newPrefs);
     saveWorkspaceTabPreferences(newPrefs);
     toast.success(`הטאב "${trimmedName}" נוסף`);
@@ -140,45 +233,61 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     if (filterVirtTopicId === tabId) { setFilterVirtTopicId(''); setFilterVirtSubtopic(''); }
   }
 
+  const allVideoGrouping = useMemo(() => selectVideoGroups(items), [items]);
+  const scopeSelection = useMemo(() => selectCollectionForScope({
+    videoGroups: allVideoGrouping.videoGroups,
+    withoutVideo: allVideoGrouping.withoutVideo,
+    focusedVideoKey: pageParams.video || null,
+    collectionType: activeCollection,
+  }), [activeCollection, allVideoGrouping.videoGroups, allVideoGrouping.withoutVideo, pageParams.video]);
+  const focusedVideoGroup = scopeSelection.focusedVideoGroup;
+  const scopeItems = focusedVideoGroup ? focusedVideoGroup.items : items;
+
   const virtTopicCount = useMemo(() => {
-    const counts = {};
-    for (const item of items) {
-      for (const vt of allMainTabs) {
-        if (
-          vt.realTopicIds.includes(item.topicId) ||
-          vt.realTopicIds.includes(item.subTopicId) ||
-          (vt.legacyNames || []).includes(item.topicName)
-        ) {
-          counts[vt.id] = (counts[vt.id] || 0) + 1;
-          break;
-        }
-      }
-    }
-    return counts;
-  }, [items, allMainTabs]);
+    return Object.fromEntries(allMainTabs.map(vt => {
+      const idSet = new Set(vt.realTopicIds || []);
+      const nameSet = new Set(vt.legacyNames || []);
+      const matching = scopeItems.filter(item => (
+        idSet.has(item.topicId) || idSet.has(item.subTopicId) || idSet.has(item.subtopicId) || nameSet.has(item.topicName)
+      ));
+      return [vt.id, countUniqueWorkspaceContents(matching)];
+    }));
+  }, [scopeItems, allMainTabs]);
+  const allUniqueContentCount = useMemo(() => countUniqueWorkspaceContents(scopeItems), [scopeItems]);
 
   const activeVirtTopic = useMemo(
     () => allMainTabs.find(v => v.id === filterVirtTopicId) || null,
     [allMainTabs, filterVirtTopicId],
   );
 
-  const isStocksView = filterVirtTopicId === 'vt-markets' && filterVirtSubtopic === 'vts-stocks';
+  const activeVirtTopicVideoCount = useMemo(() => {
+    if (!activeVirtTopic) return 0;
+    const idSet = new Set(activeVirtTopic.realTopicIds || []);
+    const nameSet = new Set(activeVirtTopic.legacyNames || []);
+    const matching = scopeItems.filter(item => (
+      idSet.has(item.topicId) || idSet.has(item.subTopicId) || idSet.has(item.subtopicId) || nameSet.has(item.topicName)
+    ));
+    return selectVideoGroups(matching).videoCount;
+  }, [activeVirtTopic, scopeItems]);
 
-  useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic]);
+  const activeOrganizationalSubtopics = useMemo(() => {
+    if (!activeVirtTopic) return [];
+    if (activeVirtTopic.id === MARKET_VIRTUAL_TOPIC_ID) return getMarketOrganizationalSubtopics(activeVirtTopic, topics);
+    return activeVirtTopic.subtopics || [];
+  }, [activeVirtTopic, topics]);
+
+  const isStocksView = filterVirtTopicId === MARKET_VIRTUAL_TOPIC_ID && filterSemanticTags.includes('stocks');
+
+  useEffect(() => { setFilterMarketStatus(''); }, [filterVirtTopicId, filterVirtSubtopic, isStocksView]);
 
   const virtSubtopicCount = useMemo(() => {
     if (!activeVirtTopic) return {};
-    const counts = {};
-    for (const item of items) {
-      for (const vs of activeVirtTopic.subtopics) {
-        if (vs.realTopicIds.includes(item.topicId) || vs.realTopicIds.includes(item.subTopicId)) {
-          counts[vs.id] = (counts[vs.id] || 0) + 1;
-          break;
-        }
-      }
-    }
-    return counts;
-  }, [items, activeVirtTopic]);
+    return Object.fromEntries(activeOrganizationalSubtopics.map(subtopic => {
+      const ids = new Set(subtopic.realTopicIds || []);
+      const matching = scopeItems.filter(item => ids.has(item.topicId) || ids.has(item.subTopicId) || ids.has(item.subtopicId));
+      return [subtopic.id, selectVideoGroups(matching).videoCount];
+    }));
+  }, [scopeItems, activeVirtTopic, activeOrganizationalSubtopics]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set();
@@ -192,74 +301,73 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     return [...tabSet].sort();
   }, [items]);
 
-  const filteredItems = useMemo(() => {
-    let result = [...items];
+  const routeNoticeText = useMemo(() => {
+    if (pageParams.itemId && !items.some(item => item.id === pageParams.itemId)) return 'הפריט המבוקש לא נמצא; הספרייה נפתחה ללא שינוי בנתונים';
+    if (pageParams.video && !focusedVideoGroup) return 'הסרטון המבוקש לא נמצא; מוצג תוכן מכל הסרטונים';
+    if (pageParams.routeNotice === 'invalid-route') return 'הנתיב הישן הוחלף בספריית Workspace התקינה';
+    if (pageParams.routeNotice === 'malformed-params') return 'פרמטרים לא תקינים הוסרו מהכתובת';
+    return '';
+  }, [focusedVideoGroup, items, pageParams]);
 
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(i =>
-        (i.videoTitle || '').toLowerCase().includes(q) ||
-        (i.channelName || '').toLowerCase().includes(q) ||
-        (i.notes || '').toLowerCase().includes(q) ||
-        (i.topicName || '').toLowerCase().includes(q) ||
-        (i.tags || []).some(tag => tag.toLowerCase().includes(q)) ||
-        (i.sourceTab || '').toLowerCase().includes(q) ||
-        (i.symbol || '').toLowerCase().includes(q) ||
-        (i.companyName || '').toLowerCase().includes(q) ||
-        (i.fullNotes || '').toLowerCase().includes(q)
-      );
-    }
+  const activeOrganizationalSubtopic = useMemo(
+    () => activeOrganizationalSubtopics.find(subtopic => subtopic.id === filterVirtSubtopic) || null,
+    [activeOrganizationalSubtopics, filterVirtSubtopic],
+  );
 
-    if (filterVirtTopicId) {
-      const vt = allMainTabs.find(v => v.id === filterVirtTopicId);
-      if (vt) {
-        const idSet   = new Set(vt.realTopicIds);
-        const nameSet = new Set(vt.legacyNames || []);
-        result = result.filter(i =>
-          idSet.has(i.topicId) || idSet.has(i.subTopicId) || nameSet.has(i.topicName)
-        );
-      }
-    }
-    if (filterVirtSubtopic && activeVirtTopic) {
-      const vs = activeVirtTopic.subtopics.find(s => s.id === filterVirtSubtopic);
-      if (vs) {
-        const subIdSet = new Set(vs.realTopicIds);
-        result = result.filter(i => subIdSet.has(i.topicId) || subIdSet.has(i.subTopicId));
-      }
-      // Custom subtopics have no realTopicIds — they act as labels and show 0 results
-    }
-    if (isStocksView && filterMarketStatus) {
-      result = result.filter(i => (i.marketStatus || '') === filterMarketStatus);
-    }
+  const statusFilters = useMemo(() => ({
+    archived: showArchivedCards ? 'archived' : 'all',
+    favorite: filterFavorite,
+    important: filterImportant,
+    mustWatch: filterMustWatch,
+    marketStatus: isStocksView ? filterMarketStatus : '',
+    sourceTab: filterSourceTab,
+    tags: filterTags,
+  }), [filterFavorite, filterImportant, filterMarketStatus, filterMustWatch, filterSourceTab, filterTags, isStocksView, showArchivedCards]);
 
-    if (filterFavorite)  result = result.filter(i => i.flags?.isFavorite);
-    if (filterImportant) result = result.filter(i => i.flags?.isImportant);
-    if (filterMustWatch) result = result.filter(i => i.flags?.mustWatchAgain);
-    if (filterTags.length > 0) {
-      result = result.filter(i => filterTags.some(tag => (i.tags || []).includes(tag)));
-    }
-    if (filterSourceTab) result = result.filter(i => (i.sourceTab || null) === filterSourceTab);
+  const allCollectionsSelection = useMemo(() => selectWorkspaceVideoGroups({
+    items: scopeItems,
+    mainTopic: activeVirtTopic,
+    subtopic: activeOrganizationalSubtopic,
+    collectionId: 'all',
+    semanticTags: filterSemanticTags,
+    searchQuery: search,
+    statusFilters,
+    sortBy,
+  }), [activeOrganizationalSubtopic, activeVirtTopic, filterSemanticTags, scopeItems, search, sortBy, statusFilters]);
 
-    if (sortBy === 'newest')   result.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
-    else if (sortBy === 'oldest') result.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
-    else if (sortBy === 'title')  result.sort((a, b) => (a.videoTitle || '').localeCompare(b.videoTitle || '', 'he'));
-    else if (sortBy === 'priority') {
-      const score = item =>
-        (item.flags?.isImportant ? 4 : 0) +
-        (item.flags?.isFavorite  ? 2 : 0) +
-        (item.flags?.mustWatchAgain ? 1 : 0);
-      result.sort((a, b) => score(b) - score(a) || new Date(b.savedAt) - new Date(a.savedAt));
-    }
+  const visibleVideoSelection = useMemo(() => selectWorkspaceVideoGroups({
+    items: scopeItems,
+    mainTopic: activeVirtTopic,
+    subtopic: activeOrganizationalSubtopic,
+    collectionId: activeCollection || 'all',
+    semanticTags: filterSemanticTags,
+    searchQuery: search,
+    statusFilters,
+    sortBy,
+  }), [activeCollection, activeOrganizationalSubtopic, activeVirtTopic, filterSemanticTags, scopeItems, search, sortBy, statusFilters]);
 
-    return result;
-  }, [items, search, filterVirtTopicId, filterVirtSubtopic, activeVirtTopic, isStocksView,
-      filterMarketStatus, filterFavorite, filterImportant, filterMustWatch, filterTags, filterSourceTab, sortBy]);
+  const semanticCountSelection = useMemo(() => selectWorkspaceVideoGroups({
+    items: scopeItems,
+    mainTopic: activeVirtTopic,
+    subtopic: activeOrganizationalSubtopic,
+    collectionId: activeCollection || 'all',
+    searchQuery: search,
+    statusFilters,
+  }), [activeCollection, activeOrganizationalSubtopic, activeVirtTopic, scopeItems, search, statusFilters]);
+
+  const semanticFilterCounts = useMemo(
+    () => selectWorkspaceSemanticFilterCounts(semanticCountSelection.items),
+    [semanticCountSelection.items],
+  );
+
+  const collectionCounts = allCollectionsSelection.collectionCounts;
+  const filteredItems = visibleVideoSelection.items;
 
   // Active *filters* only — topic/subtopic navigation (tabs) is intentionally excluded,
   // this only covers the filter-bar controls (search/flags/status/source/tags).
   const hasActiveWorkspaceFilters = !!(
     search || filterFavorite || filterImportant || filterMustWatch ||
-    (isStocksView && filterMarketStatus) || filterSourceTab || filterTags.length > 0
+    (isStocksView && filterMarketStatus) || filterSourceTab || filterTags.length > 0 || filterSemanticTags.length > 0
   );
 
   function clearAllWorkspaceFilters() {
@@ -270,6 +378,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
     setFilterMarketStatus('');
     setFilterSourceTab('');
     setFilterTags([]);
+    if (filterSemanticTags.length > 0) handleSemanticFilterClear();
   }
 
   const handleDeleteTopic = (id) => {
@@ -278,13 +387,19 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   };
 
   const handleVideoClick = (item) => {
+    if (item.itemType === 'structured-snapshot' && item.structuredSnapshot) {
+      setOpenSnapshotItem(item);
+      return;
+    }
     const fullVideo = videos.find(v => v.id === item.videoId || v.videoId === item.videoId);
     if (fullVideo) { setSelectedVideo(fullVideo); setPanelOpen(true); }
-    else window.open(item.videoUrl, '_blank', 'noopener');
+    else if (item.videoUrl) window.open(item.videoUrl, '_blank', 'noopener');
+    else toast.info('לפריט הזה אין קישור תקין לסרטון מקור');
   };
 
   const handleDelete = (item) => {
-    deleteItem(item.id);
+    const result = deleteItem(item.id);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
   };
 
@@ -292,12 +407,16 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
 
   const handleConfirmDeleteCard = () => {
     if (!confirmDeleteItem) return;
-    deleteItem(confirmDeleteItem.id);
+    const result = deleteItem(confirmDeleteItem.id);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
     setSelectedCardIds(prev => { const next = new Set(prev); next.delete(confirmDeleteItem.id); return next; });
   };
 
-  const handleStatusChange = (id, newStatus) => updateItem(id, { marketStatus: newStatus || null });
+  const handleStatusChange = (id, newStatus) => {
+    const result = updateItem(id, { marketStatus: newStatus || null });
+    reportWorkspaceWriteFailure(result);
+  };
 
   const toggleCardSelect = (id) => {
     setSelectedCardIds(prev => {
@@ -324,30 +443,149 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   };
 
   const handleArchiveCards = (ids, archived = true) => {
-    archiveItems(ids, archived);
+    const result = archiveItems(ids, archived);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(archived ? `${ids.length > 1 ? `${ids.length} פריטים הועברו` : 'הפריט הועבר'} לארכיון` : 'הפריט שוחזר מהארכיון');
     setSelectedCardIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+  };
+
+  const handleTargetedBriefRouting = ({ sourceVideoId, expectedItemIds }) => {
+    const result = reassignVideoGroupTopic({ sourceVideoId, expectedItemIds });
+    if (reportWorkspaceWriteFailure(result)) return result;
+    toast.success(`השיוך למבזק בוקר/ערב הוחל ואומת עבור ${result.affectedCount} רשומות.`);
+    return result;
   };
 
   const handleConfirmBulkDeleteCards = () => {
     const ids = [...selectedCardIds];
     if (!ids.length) return;
-    deleteItems(ids);
+    const result = deleteItems(ids);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
+    clearCardSelection();
+  };
+
+  const handleConfirmDuplicateCleanup = () => {
+    const existingIds = confirmDuplicateCleanupIds.filter(id => items.some(item => item.id === id));
+    if (!existingIds.length) return;
+    const result = deleteItems(existingIds);
+    if (reportWorkspaceWriteFailure(result)) return;
+    toast.success(`${existingIds.length} עותקים זהים הוסרו; כל הגרסאות השונות נשמרו`);
+    setConfirmDuplicateCleanupIds([]);
     clearCardSelection();
   };
 
   // Mirrors the exact filter used to render the grid below, so the count/delete
   // target always matches what's actually on screen (never the hidden archived/active set).
-  const deletableVisibleItems = useMemo(
-    () => filteredItems.filter(i => (showArchivedCards ? !!i.archivedAt : !i.archivedAt)),
-    [filteredItems, showArchivedCards],
+  const deletableVisibleItems = filteredItems;
+  const groupedPresentation = visibleVideoSelection;
+  const workspaceIdChecksum = useMemo(() => checksumWorkspaceItemIds(items), [items]);
+  const workspacePayloadChecksum = useMemo(
+    () => checksumWorkspacePayloadsExcludingTopicAssignment(items),
+    [items],
   );
+  const focusedVisibleGroup = useMemo(() => {
+    if (!focusedVideoGroup) return null;
+    const visible = selectVideoGroups(filteredItems).videoGroups.find(group => group.videoKey === focusedVideoGroup.videoKey);
+    return visible || {
+      ...focusedVideoGroup,
+      items: [],
+      versions: [],
+      exactDuplicateGroups: [],
+      uniqueContentCount: 0,
+      latestSaveDate: focusedVideoGroup.latestSaveDate,
+    };
+  }, [filteredItems, focusedVideoGroup]);
+
+  const toggleGroupSelection = (ids, selected) => {
+    setSelectedCardIds(previous => {
+      const next = new Set(previous);
+      ids.forEach(id => selected ? next.add(id) : next.delete(id));
+      return next;
+    });
+  };
+
+  const handleSourceVideoClick = (group) => {
+    const fullVideo = videos.find(video => video.id === group.videoId || video.videoId === group.videoId || video.youtubeId === group.videoId);
+    if (fullVideo) { setSelectedVideo(fullVideo); setPanelOpen(true); return; }
+    if (group.videoUrl) window.open(group.videoUrl, '_blank', 'noopener');
+  };
+
+  const handleFocusVideo = (group) => {
+    navigateTo?.('WorkspaceLibrary', {
+      video: group.videoId || group.videoKey,
+      ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
+      ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
+      ...(activeCollection ? { collection: activeCollection } : {}),
+      ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
+    });
+  };
+
+  const handleClearVideoFocus = () => {
+    navigateTo?.('WorkspaceLibrary', {
+      ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
+      ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
+      ...(activeCollection ? { collection: activeCollection } : {}),
+      ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
+    });
+  };
+
+  const handleCollectionSelect = (collection) => {
+    navigateTo?.('WorkspaceLibrary', {
+      ...(focusedVideoGroup ? { video: focusedVideoGroup.videoId || focusedVideoGroup.videoKey } : {}),
+      ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
+      ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
+      ...(collection ? { collection } : {}),
+      ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
+    });
+  };
+
+  function handleMainTopicSelect(topicId) {
+    navigateTo?.('WorkspaceLibrary', {
+      ...(focusedVideoGroup ? { video: focusedVideoGroup.videoId || focusedVideoGroup.videoKey } : {}),
+      ...(topicId ? { topicId } : {}),
+      ...(activeCollection ? { collection: activeCollection } : {}),
+    });
+  }
+
+  function handleSubtopicSelect(subtopicId) {
+    const nextSubtopic = filterVirtSubtopic === subtopicId ? '' : subtopicId;
+    navigateTo?.('WorkspaceLibrary', {
+      ...(focusedVideoGroup ? { video: focusedVideoGroup.videoId || focusedVideoGroup.videoKey } : {}),
+      ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
+      ...(nextSubtopic ? { subtopicId: nextSubtopic } : {}),
+      ...(nextSubtopic && activeCollection ? { collection: activeCollection } : {}),
+      ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
+    });
+  }
+
+  function handleSemanticFilterToggle(filterId) {
+    const next = filterSemanticTags.includes(filterId)
+      ? filterSemanticTags.filter(value => value !== filterId)
+      : [...filterSemanticTags, filterId];
+    navigateTo?.('WorkspaceLibrary', {
+      ...(focusedVideoGroup ? { video: focusedVideoGroup.videoId || focusedVideoGroup.videoKey } : {}),
+      topicId: MARKET_VIRTUAL_TOPIC_ID,
+      ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
+      ...(activeCollection ? { collection: activeCollection } : {}),
+      ...(next.length > 0 ? { semantic: next.join(',') } : {}),
+    });
+  }
+
+  function handleSemanticFilterClear() {
+    navigateTo?.('WorkspaceLibrary', {
+      ...(focusedVideoGroup ? { video: focusedVideoGroup.videoId || focusedVideoGroup.videoKey } : {}),
+      ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
+      ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
+      ...(activeCollection ? { collection: activeCollection } : {}),
+    });
+  }
 
   const handleConfirmDeleteAllVisible = () => {
     const ids = deletableVisibleItems.map(i => i.id);
     if (!ids.length) return;
-    deleteItems(ids);
+    const result = deleteItems(ids);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
     clearCardSelection();
     setMoreActionsOpen(false);
@@ -356,7 +594,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
   const handleConfirmDeleteAllWorkspace = () => {
     const count = items.length;
     if (!count) return;
-    deleteAllItems();
+    const result = deleteAllItems();
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${count} פריטים מה-Workspace`);
     clearCardSelection();
     setMoreActionsOpen(false);
@@ -369,7 +608,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
 
   // ── Custom subtopics (Row 2) ──────────────────────────────────────────────────
   const customSubtopicsForActive = useMemo(
-    () => filterVirtTopicId ? getCustomSubtopics(tabPrefs, filterVirtTopicId) : [],
+    () => filterVirtTopicId && filterVirtTopicId !== MARKET_VIRTUAL_TOPIC_ID ? getCustomSubtopics(tabPrefs, filterVirtTopicId) : [],
     [tabPrefs, filterVirtTopicId],
   );
 
@@ -397,7 +636,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
 
   // ─── Active subtopics rows (built-in + custom) ────────────────────────────────
   const hasSubtopicRow = activeVirtTopic && (
-    activeVirtTopic.subtopics.length > 0 || customSubtopicsForActive.length > 0
+    activeOrganizationalSubtopics.length > 0 || customSubtopicsForActive.length > 0
   );
 
   // ── render ────────────────────────────────────────────────────────────────────
@@ -409,7 +648,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         <div className="px-5 py-3 max-w-7xl mx-auto flex items-center gap-3 flex-wrap">
           <button
             type="button"
-            onClick={() => navigateTo?.('Workspace')}
+            onClick={() => navigateTo?.('Dashboard')}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
             title="חזור ל-Workspace"
           >
@@ -427,6 +666,8 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
           </div>
 
           <div className="mr-auto flex items-center gap-2">
+            <button type="button" onClick={() => setBriefRoutingPreviewOpen(true)} className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">תצוגה מקדימה לניתוב מבזקים</button>
+            <button type="button" onClick={() => setDuplicatePreviewOpen(true)} className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">איתור כפילויות</button>
             <button
               type="button"
               onClick={() => setManageTopicsOpen(p => !p)}
@@ -497,7 +738,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               <div className="flex-1 min-w-0">
                 <WorkspaceTabRow
                   tabs={[
-                    { value: '', label: `הכל${items.length > 0 ? ` (${items.length})` : ''}` },
+                    { value: '', label: 'כל הנושאים', count: allUniqueContentCount },
                     ...visibleMainTabs.map(vt => ({
                       value: vt.id,
                       label: `${vt.emoji} ${vt.displayName}`,
@@ -506,13 +747,14 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                     })),
                   ]}
                   activeValue={filterVirtTopicId}
-                  onSelect={v => { setFilterVirtTopicId(v); setFilterVirtSubtopic(''); }}
+                  onSelect={handleMainTopicSelect}
                   onAddTab={handleAddCustomTab}
                   size="lg"
                   accentColor="indigo"
                   addLabel="+ נושא"
                   withEmoji
                 />
+                <p className="mt-2 text-[11px] text-slate-400 dark:text-zinc-600">הספירה מציגה תכנים שמורים ייחודיים</p>
               </div>
 
               {/* Manage tabs toggle — pushed to left */}
@@ -634,7 +876,12 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             <div className="border-t border-slate-100 dark:border-zinc-800 px-5 py-3 bg-slate-50/40 dark:bg-zinc-800/20">
               <WorkspaceTabRow
                 tabs={[
-                  ...(activeVirtTopic?.subtopics || []).map(vs => ({
+                  {
+                    value: '',
+                    label: 'הכל',
+                    count: activeVirtTopicVideoCount,
+                  },
+                  ...activeOrganizationalSubtopics.map(vs => ({
                     value: vs.id,
                     label: vs.name,
                     count: virtSubtopicCount[vs.id] || 0,
@@ -645,14 +892,10 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                     label: cs.name,
                     empty: true,
                   })),
-                  {
-                    value: '',
-                    label: `כולם${virtTopicCount[filterVirtTopicId] ? ` (${virtTopicCount[filterVirtTopicId]})` : ''}`,
-                  },
                 ]}
                 activeValue={filterVirtSubtopic}
-                onSelect={v => setFilterVirtSubtopic(prev => prev === v ? '' : v)}
-                onAddTab={handleAddCustomSubtopic}
+                onSelect={handleSubtopicSelect}
+                onAddTab={filterVirtTopicId === MARKET_VIRTUAL_TOPIC_ID ? null : handleAddCustomSubtopic}
                 size="md"
                 accentColor="violet"
                 addLabel="+ תת-נושא"
@@ -660,7 +903,16 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             </div>
           )}
 
-          {/* ── Row 3: Workflow/Status — compact control, not a tab row — only under שוק ההון > מניות ── */}
+          {filterVirtTopicId === MARKET_VIRTUAL_TOPIC_ID && (
+            <WorkspaceSemanticFilters
+              counts={semanticFilterCounts}
+              selected={filterSemanticTags}
+              onToggle={handleSemanticFilterToggle}
+              onClear={handleSemanticFilterClear}
+            />
+          )}
+
+          {/* ── Optional workflow/status filter for stock contents ───── */}
           {isStocksView && (
             <div className="border-t border-teal-100/60 dark:border-zinc-800 px-5 py-2 bg-teal-50/20 dark:bg-zinc-800/30">
               <div className="flex items-center gap-2 flex-wrap">
@@ -727,10 +979,9 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
 
         {/* ══════════════════════ MANAGE TOPICS PANEL ══════════════════════ */}
         {manageTopicsOpen && (
-          <ManageTopicsPanel
+          <WorkspaceTopicManager
             topics={topics}
-            mainTopics={mainTopics}
-            getSubTopics={getSubTopics}
+            items={items}
             addTopic={addTopic}
             updateTopic={updateTopic}
             deleteTopic={handleDeleteTopic}
@@ -738,8 +989,36 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
           />
         )}
 
+        {routeNoticeText && (
+          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            {routeNoticeText}
+          </div>
+        )}
+
+        {focusedVideoGroup ? (
+          <WorkspaceFocusedVideoCard
+            group={focusedVideoGroup}
+            visibleGroup={focusedVisibleGroup}
+            activeCollection={activeCollection}
+            selectedIds={selectedCardIds}
+            onCollectionSelect={value => { handleCollectionSelect(value); clearCardSelection(); }}
+            onClearFocus={handleClearVideoFocus}
+            onOpenVideo={() => handleSourceVideoClick(focusedVideoGroup)}
+            onToggleGroup={toggleGroupSelection}
+            onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
+            collectionCounts={collectionCounts}
+            topics={topics}
+          />
+        ) : <>
+          <section data-workspace-scope="global">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">כל הסרטונים</h2>
+            <p className="text-sm text-slate-500 dark:text-zinc-400">תוכן שנשמר מכל הסרטונים בספרייה</p>
+          </section>
+          <WorkspaceCollectionTiles counts={collectionCounts} activeCollection={activeCollection} scopeLabel="כל הסרטונים" onSelect={value => { handleCollectionSelect(value); clearCardSelection(); }} />
+        </>}
+
         {/* ══════════════════════ FILTER CARD ══════════════════════ */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-3 space-y-3">
+        {!focusedVideoGroup && <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-3 space-y-3">
           {/* Primary filter row */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
@@ -785,7 +1064,7 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
                 )}
               >
                 {showArchivedCards ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-                {showArchivedCards ? 'חזרה לפעילים' : 'ארכיון'}
+                {showArchivedCards ? 'כל הפריטים' : 'ארכיון'}
               </button>
             )}
 
@@ -884,36 +1163,36 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
             </div>
           )}
 
-        </div>
+        </div>}
 
         {/* ══════════════════════ CONTENT ══════════════════════ */}
-        {filteredItems.length === 0 ? (
+        {!focusedVideoGroup && (filteredItems.length === 0 ? (
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center justify-center py-24 gap-4 text-slate-400 dark:text-zinc-600">
             <Star className="h-12 w-12 opacity-20" />
-            <p className="text-sm font-medium text-center">
+            <p role="status" className="text-sm font-medium text-center">
               {items.length === 0
                 ? 'לא נשמרו עדיין פריטים ל-Workspace Library'
+                : activeCollection
+                  ? `לא נשמרו עדיין ${getWorkspaceHeadingByCollection(activeCollection)?.label || 'תכנים'} מהסרטונים בטווח שנבחר`
                 : isStocksView && filterMarketStatus
                   ? 'אין עדיין מניות בטאב הזה'
                   : 'לא נמצאו תוצאות לפי הסינון הנוכחי'}
             </p>
+            {activeCollection && items.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { handleCollectionSelect(null); clearCardSelection(); }}
+                className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300"
+              >
+                חזרה לכל הסרטונים
+              </button>
+            )}
             {items.length === 0 && (
               <p className="text-xs text-center text-slate-400 dark:text-zinc-600">
                 פתח סרטון ולחץ על ⭐ Workspace כדי לשמור
               </p>
             )}
           </div>
-        ) : isStocksView ? (
-          <StockWatchlistView
-            items={filteredItems}
-            filterMarketStatus={filterMarketStatus}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDelete}
-            onUpdateItem={updateItem}
-            onDeleteItems={deleteItems}
-            onArchiveItems={archiveItems}
-            onUpdateItemsBulk={updateItemsBulk}
-          />
         ) : (
           <div className="space-y-3">
             {/* WorkspaceBulkActionBar renders as a fixed-bottom bar when selection is active */}
@@ -927,28 +1206,72 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
               fixed
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredItems
-                .filter(i => (showArchivedCards ? !!i.archivedAt : !i.archivedAt))
-                .map(item => (
-                  <WorkspaceVideoCard
-                    key={item.id}
-                    item={item}
-                    topics={topics}
-                    onOpen={() => handleVideoClick(item)}
-                    onDelete={() => requestDeleteCard(item)}
-                    onEdit={() => setEditItem(item)}
-                    onArchive={() => handleArchiveCards([item.id], !item.archivedAt)}
-                    showMarketStatus={isStocksView}
-                    onStatusChange={handleStatusChange}
-                    selected={selectedCardIds.has(item.id)}
-                    onToggleSelect={() => toggleCardSelect(item.id)}
-                  />
-                ))}
+            <section aria-labelledby="workspace-matching-videos-heading" data-workspace-record-count={items.length} data-workspace-id-checksum={workspaceIdChecksum} data-workspace-payload-checksum={workspacePayloadChecksum} className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 id="workspace-matching-videos-heading" className="text-lg font-bold text-slate-900 dark:text-zinc-100">כל הסרטונים</h2>
+                  <p className="text-sm text-slate-500 dark:text-zinc-400">{groupedPresentation.videoCount} סרטונים תואמים</p>
+                </div>
+                <span className="text-sm text-slate-500 dark:text-zinc-400">{groupedPresentation.persistedCount} שמירות · {countUniqueWorkspaceContents(groupedPresentation.items)} תכנים ייחודיים</span>
+              </div>
+            </section>
+            <div className="space-y-4">
+              {groupedPresentation.videoGroups.map(group => activeCollection ? (
+                <WorkspaceGlobalSavedAnalysisGroup
+                  key={group.videoKey}
+                  group={group}
+                  activeCollection={activeCollection}
+                  selectedIds={selectedCardIds}
+                  onToggleGroup={toggleGroupSelection}
+                  onFocusVideo={() => handleFocusVideo(group)}
+                />
+              ) : (
+                <WorkspaceVideoGroupCard
+                  key={group.videoKey}
+                  group={group}
+                  topics={topics}
+                  selectedIds={selectedCardIds}
+                  onToggleItem={toggleCardSelect}
+                  onToggleGroup={toggleGroupSelection}
+                  onOpenVideo={() => handleSourceVideoClick(group)}
+                  onOpenItem={handleVideoClick}
+                  onEditItem={setEditItem}
+                  onArchiveItem={item => handleArchiveCards([item.id], !item.archivedAt)}
+                  onDeleteItem={requestDeleteCard}
+                  focusItemId={focusedItemId}
+                  onFocusVideo={() => handleFocusVideo(group)}
+                  isFocused={focusedVideoGroup?.videoKey === group.videoKey}
+                />
+              ))}
             </div>
+            {groupedPresentation.withoutVideo.length > 0 && (
+              <section className="space-y-3">
+                <h2 className="text-lg font-bold">פריטים ללא סרטון ({groupedPresentation.withoutVideo.length})</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {groupedPresentation.withoutVideo.map(item => (
+                    <WorkspaceVideoCard key={item.id} item={item} topics={topics} onOpen={() => handleVideoClick(item)} onDelete={() => requestDeleteCard(item)} onEdit={() => setEditItem(item)} onArchive={() => handleArchiveCards([item.id], !item.archivedAt)} selected={selectedCardIds.has(item.id)} onToggleSelect={() => toggleCardSelect(item.id)} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
-        )}
+        ))}
       </main>
+
+      <StructuredSnapshotView
+        open={!!openSnapshotItem}
+        onOpenChange={open => !open && setOpenSnapshotItem(null)}
+        snapshot={openSnapshotItem?.structuredSnapshot}
+        itemTitle={openSnapshotItem?.videoTitle || openSnapshotItem?.title}
+      />
+      <WorkspaceDuplicatePreview open={duplicatePreviewOpen} onOpenChange={setDuplicatePreviewOpen} items={items} />
+      <WorkspaceBriefRoutingPreview
+        open={briefRoutingPreviewOpen}
+        onOpenChange={setBriefRoutingPreviewOpen}
+        items={items}
+        topics={topics}
+        onApply={handleTargetedBriefRouting}
+      />
 
       {/* ══════════════════════ DIALOGS ══════════════════════ */}
 
@@ -970,6 +1293,16 @@ export default function WorkspaceLibrary({ navigateTo, isDark, toggleTheme }) {
         confirmLabel="מחק מסומנים"
         danger
         onConfirm={handleConfirmBulkDeleteCards}
+      />
+
+      <ConfirmDialog
+        open={confirmDuplicateCleanupIds.length > 0}
+        onOpenChange={open => !open && setConfirmDuplicateCleanupIds([])}
+        title="לנקות שמירות כפולות זהות?"
+        description={`יימחקו רק ${confirmDuplicateCleanupIds.length} עותקים בעלי hash זהה בסרטון הנבחר. עותק אחד מכל תוכן וכל הגרסאות ההיסטוריות השונות יישמרו.`}
+        confirmLabel="נקה כפילויות זהות"
+        danger
+        onConfirm={handleConfirmDuplicateCleanup}
       />
 
       <ConfirmDialog
@@ -1166,7 +1499,7 @@ function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit, onArchive,
           <span className="text-[10px] text-slate-400 dark:text-zinc-600">{savedDate}</span>
           {item.sourceTab && (
             <span className="text-[9px] rounded-md border border-slate-100 dark:border-zinc-800 px-1.5 py-0.5 text-slate-400 dark:text-zinc-600">
-              {item.sourceTab}
+              {getWorkspaceHeadingLabel(item.sourceTabId || item.sourceTab, item.sourceTab)}
             </span>
           )}
         </div>

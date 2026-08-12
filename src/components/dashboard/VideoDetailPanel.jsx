@@ -127,6 +127,13 @@ import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabCont
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
+import {
+  createWorkspaceProvenance,
+  getWorkspaceHeadingBySourceTab,
+  getWorkspaceHeadingLabel,
+  VIDEO_ANALYSIS_HEADINGS,
+} from "@/config/workspaceHeadingRegistry";
+import { getWorkspaceItemSemanticTags } from "@/utils/workspaceMarketDimensions";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
@@ -147,7 +154,11 @@ import { updateLocalVideo } from "@/lib/localVideoStore";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 import { WorkspaceSaveReviewOverlay } from "@/components/workspace/WorkspaceSaveReviewOverlay";
-import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
+import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId, saveWorkspaceItem, getWorkspaceItems, getWorkspaceTopics, getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
+import { getWorkspaceItemIdentity } from "@/utils/workspaceItemIdentity";
+import { extractUnifiedStocks, extractMarketDashboardRows, extractSentimentItems, getSpecializedSrc } from "@/lib/morningBriefDisplay";
+import { buildStructuredSnapshot, buildSnapshotNotes, resolveStructuredSnapshotTopic } from "@/utils/structuredSnapshot";
+import { classifyCanonicalWorkspaceBrief, resolveCanonicalBriefDestination } from "@/utils/workspaceBriefRouting";
 import { SubTopicPillDropdown } from "@/components/dashboard/SubTopicPillDropdown";
 import { SummaryTextSaveMenu } from "@/components/dashboard/SummaryTextSaveMenu";
 import { AppBuilderTab } from "@/components/dashboard/AppBuilderTab";
@@ -2042,13 +2053,8 @@ function getJsonErrorContext(raw, pos, linesBefore = 3, linesAfter = 3) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ANALYSIS_SECTIONS = [
-  { tab: 'summary',          label: 'סיכום' },
-  { tab: 'useful-knowledge', label: 'ידע שימושי' },
-  { tab: 'insights',         label: 'תובנות' },
-  { tab: 'chapters',         label: 'פרקים' },
-  { tab: 'market-news',      label: 'חדשות שוק' },
-];
+const ANALYSIS_SECTIONS = ['summary', 'useful-knowledge', 'insights', 'chapters']
+  .map(tab => ({ tab, label: getWorkspaceHeadingLabel(tab, tab) }));
 
 function buildCurrentAnalysisItems(video, marketBriefData) {
   const seen = new Set();
@@ -2072,25 +2078,7 @@ function buildCurrentAnalysisItems(video, marketBriefData) {
 }
 
 function getWorkspaceSourceTab(tabValue) {
-  const MAP = {
-    'summary':             'Summary',
-    'chapters':            'Chapters',
-    'insights':            'Insights',
-    'useful-knowledge':    'Insights',
-    'app-builder':         'App Builder',
-    'topics-subtopics':    'Topics',
-    'specialized':         'Specialized',
-    'market-news':         'Market Brief',
-    'indices':             'Market Brief',
-    'stocks-mentioned':    'Market Brief',
-    'brief-risks':         'Market Brief',
-    'brief-opportunities': 'Market Brief',
-    'brief-conclusions':   'Market Brief',
-    'ai-analysis':         'Market Brief',
-    'political':           'Political',
-    'transcript':          'Transcript',
-  };
-  return MAP[tabValue] || 'Manual';
+  return getWorkspaceHeadingBySourceTab(tabValue)?.sourceTabId || null;
 }
 
 export function VideoDetailPanel({
@@ -2220,6 +2208,8 @@ export function VideoDetailPanel({
   const [workspaceDraftContext, setWorkspaceDraftContext] = useState({});
   const [workspaceDraftDefaultView, setWorkspaceDraftDefaultView] = useState('draft');
   const [workspaceCurrentAnalysisItems, setWorkspaceCurrentAnalysisItems] = useState([]);
+  const [isSavingStructuredSnapshot, setIsSavingStructuredSnapshot] = useState(false);
+  const structuredSnapshotSaveInFlightRef = useRef(false);
   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
@@ -2508,6 +2498,7 @@ export function VideoDetailPanel({
       effectiveVideo?.category,
       effectiveVideo?.channelName,
       effectiveVideo?.channelTitle,
+      effectiveVideo?.confirmedSubCategory,
       effectiveVideo?.contentType,
       effectiveVideo?.mentorName,
       effectiveVideo?.subCategory,
@@ -5324,16 +5315,9 @@ export function VideoDetailPanel({
     ].filter(Boolean).join('\n');
   };
 
-  const TAB_LABEL_MAP = {
-    insights: 'תובנות', chapters: 'פרקים', notes: 'הערות', summary: 'סיכום',
-    'useful-knowledge': 'ידע שימושי', topics: 'נושאים', political: 'פוליטי',
-    'app-builder': 'בונה אפליקציות', 'morning-brief': 'מבזק בוקר',
-    'market-brief': 'מבזק שוק', 'tech-brief': 'ניתוח טכני', 'brain-select': 'מוח',
-  };
-
   const formatSelectedItemsForClipboard = (entries, context = {}) => {
     const { videoTitle = '', tabKey = '' } = context;
-    const tabLabel = TAB_LABEL_MAP[tabKey] || tabKey || '';
+    const tabLabel = getWorkspaceHeadingLabel(tabKey, tabKey || '');
     const lines = ['# פריטים נבחרים', ''];
     if (videoTitle) lines.push(`מקור: ${videoTitle}`);
     if (tabLabel) lines.push(`לשונית: ${tabLabel}`);
@@ -5489,6 +5473,9 @@ export function VideoDetailPanel({
       text: item.text || '',
       sectionLabel: item.sectionLabel || '',
       type: item.type || item.tabScope || '',
+      tabScope: item.tabScope || activeTab,
+      sectionKey: item.sectionKey || item.sourceSectionId || item.type || 'unsectioned',
+      timestamp: item.timestamp ?? null,
     }));
     setWorkspaceDraftItems(snapshot);
     setWorkspaceDraftContext({
@@ -5497,6 +5484,10 @@ export function VideoDetailPanel({
       thumbnail: effectiveVideo?.thumbnail || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null),
       videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
       sourceTab: getWorkspaceSourceTab(activeTab),
+      sourceTabId: getWorkspaceSourceTab(activeTab),
+      sourceVideoId: youtubeId || null,
+      sourceVideoType: videoType,
+      sourceBriefSlug: effectiveBriefSlug,
     });
     setWorkspaceCurrentAnalysisItems([]);
     setWorkspaceDraftDefaultView('draft');
@@ -5504,19 +5495,99 @@ export function VideoDetailPanel({
   };
 
   const handleOpenWorkspaceLibrary = () => {
-    const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
-    const analysisItems = buildCurrentAnalysisItems(effectiveVideo, marketBriefData);
-    setWorkspaceDraftItems([]);
-    setWorkspaceDraftContext({
-      videoTitle: effectiveVideo?.title || '',
-      channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
-      thumbnail: effectiveVideo?.thumbnail || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null),
-      videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
-      sourceTab: getWorkspaceSourceTab(activeTab),
-    });
-    setWorkspaceCurrentAnalysisItems(analysisItems);
-    setWorkspaceDraftDefaultView('recent');
-    setWorkspaceDraftOpen(true);
+    navigateFromPanel('WorkspaceLibrary');
+  };
+
+  // Saves an immutable read-only snapshot of exactly the three Morning Brief
+  // tables (stocks mentioned / markets / sentiment) as one Workspace Library
+  // item. Extraction happens once, here, at save time — the viewer never
+  // re-derives these rows from live marketBriefData later.
+  const handleSaveStructuredSnapshot = async () => {
+    if (structuredSnapshotSaveInFlightRef.current) return;
+    structuredSnapshotSaveInFlightRef.current = true;
+    setIsSavingStructuredSnapshot(true);
+
+    try {
+      const src = getSpecializedSrc(marketBriefData);
+
+      // Extraction happens exactly once, here, synchronously, before anything
+      // async — the viewer never re-derives these rows later.
+      const rawStocks = extractUnifiedStocks(marketBriefData, effectiveVideo);
+      const rawMarkets = extractMarketDashboardRows(src);
+      const rawSentiment = extractSentimentItems(src);
+
+      if (rawStocks.length === 0 && rawMarkets.length === 0 && rawSentiment.length === 0) {
+        toast.warning('אין נתוני שוק לשמירה בסרטון הזה');
+        return;
+      }
+
+      const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+      const videoTitle = effectiveVideo?.title || '';
+      const savedAtIso = new Date().toISOString();
+
+      const structuredSnapshot = buildStructuredSnapshot({
+        videoId: youtubeId,
+        videoTitle,
+        savedAt: savedAtIso,
+        rawStocks,
+        rawMarkets,
+        rawSentiment,
+      });
+      const notes = buildSnapshotNotes(structuredSnapshot);
+      const snapshotTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
+
+      const snapshotItem = {
+        id: `ws-snapshot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        videoId: null,
+        videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
+        videoTitle: `📊 תמונת מצב — ${videoTitle}`.slice(0, 80),
+        channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+        thumbnail: effectiveVideo?.thumbnail || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null),
+        topicId: snapshotTopic.topicId,
+        subTopicId: null,
+        topicName: snapshotTopic.topicName,
+        subTopicName: null,
+        notes,
+        flags: {},
+        tags: [],
+        sourceTab: 'structured-snapshot',
+        category: snapshotTopic.category,
+        subCategory: null,
+        savedAt: savedAtIso,
+        itemType: 'structured-snapshot',
+        sourceVideoType: videoType,
+        sourceBriefSlug: effectiveBriefSlug,
+        structuredSnapshot,
+        ...createWorkspaceProvenance({
+          sourceVideoId: youtubeId,
+          sourceTabId: 'structured-snapshot',
+          sourceSectionId: 'structured-snapshot',
+          sourceHeading: getWorkspaceHeadingLabel('structured-snapshot', 'תמונת מצב'),
+          semanticTags: [
+            ...(structuredSnapshot.stocksTable.length > 0 ? ['stocks'] : []),
+            ...(structuredSnapshot.marketsTable.length > 0 ? ['indices-etf'] : []),
+            ...(structuredSnapshot.sentimentTable.length > 0 ? ['market-sentiment'] : []),
+          ],
+        }),
+      };
+      snapshotItem.contentHash = getWorkspaceItemIdentity(snapshotItem)?.contentHash || null;
+      const saveResult = saveWorkspaceItem(snapshotItem);
+
+      if (!saveResult.ok) {
+        toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+        return;
+      }
+
+      if (saveResult.status === 'already_exists') {
+        toast.info('תמונת המצב הזאת כבר שמורה בספרייה');
+        return;
+      }
+
+      toast.success('תמונת מצב נשמרה ל-Workspace Library');
+    } finally {
+      structuredSnapshotSaveInFlightRef.current = false;
+      setIsSavingStructuredSnapshot(false);
+    }
   };
 
   const handleBulkObsidianForTab = async () => {
@@ -5619,42 +5690,71 @@ export function VideoDetailPanel({
     setBrainPickerOpen(true);
   }, []);
 
-  const saveSingleItemToWorkspace = useCallback(({ text, sectionLabel, type, tabScope, timestamp }) => {
-    const videoId = video?.youtubeId || video?.id || 'unknown';
+  const saveSingleItemToWorkspace = useCallback(({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId }) => {
+    const sourceVideoId = effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || 'unknown';
     const body = String(text || '').trim();
     if (!body) return;
-    const sourceTab = type || tabScope || 'multi';
-    const wsId = itemDedupeKey(videoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
-    if (hasKnowledgeItem(wsId)) {
+    const sourceTab = getWorkspaceSourceTab(tabScope) || getWorkspaceSourceTab(type);
+    const provenance = createWorkspaceProvenance({
+      sourceVideoId,
+      sourceTabId: sourceTab,
+      sourceSectionId: sourceSectionId || sectionKey || type || 'unsectioned',
+      sourceHeading: sectionLabel,
+      semanticTags: getWorkspaceItemSemanticTags({
+        sourceSectionId: sourceSectionId || sectionKey || type || 'unsectioned',
+        sourceTabId: sourceTab,
+        originalItemType: type,
+        itemType: type,
+      }),
+    });
+    const wsId = itemDedupeKey(sourceVideoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
+    const now = new Date().toISOString();
+    const sourceTitle = effectiveVideo?.title || '';
+    const title = sourceTitle.slice(0, 40);
+    const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
+    const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
+    const saveResult = saveWorkspaceItem({
+      id: wsId,
+      videoId: null,
+      sourceVideoTitle: sourceTitle,
+      videoTitle: `${sectionLabel || 'פריט'} — ${title || sourceVideoId}`.slice(0, 80),
+      videoUrl: effectiveVideo?.url || (sourceVideoId !== 'unknown' ? `https://www.youtube.com/watch?v=${sourceVideoId}` : null),
+      channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+      thumbnail: effectiveVideo?.thumbnail || (sourceVideoId !== 'unknown' ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
+      topicId: sourceTopic.topicId,
+      subTopicId: null,
+      topicName: sourceTopic.topicName,
+      subTopicName: null,
+      category: sourceTopic.category,
+      subCategory: null,
+      notes: `${body}${tsLine}`,
+      flags: {},
+      tags: [],
+      sourceTab: sourceTab || null,
+      itemType: 'snippet',
+      originalItemType: type || 'snippet',
+      identityPayload: { text: body },
+      sourceTimestamp: timestamp ?? null,
+      savedAt: now,
+      sourceVideoType: videoType,
+      sourceBriefSlug: effectiveBriefSlug,
+      ...(provenance || {}),
+    });
+    if (!saveResult.ok) {
+      toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+      return;
+    }
+    setSavedItemKeys(previous => {
+      const next = new Set(previous);
+      next.add(wsId);
+      return next;
+    });
+    if (saveResult.status === 'already_exists') {
       toast.info('כבר נשמר ל-Workspace');
       return;
     }
-    const now = new Date().toISOString();
-    const title = (video?.title || '').slice(0, 40);
-    const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
-    upsertKnowledgeItem({
-      id: wsId,
-      title: `${sectionLabel || 'פריט'} — ${title || videoId}`.slice(0, 80),
-      content: `${body}${tsLine}\n\n---\nמקור: ${video?.title || ''}\nקטע: ${sectionLabel || ''}`,
-      topicId: video?.topicIds?.[0] || null,
-      videoId,
-      videoTitle: video?.title || '',
-      sourceType: 'youtube',
-      sectionName: sectionLabel || '',
-      workspacePath: `Workspace/קטעים/${title || videoId}/${sectionLabel || 'פריט'}.md`,
-      createdAt: now,
-      updatedAt: now,
-      metadata: {
-        perspective: 'self',
-        contentRole: 'saved_item',
-        selectedText: true,
-        videoId,
-        videoTitle: video?.title || '',
-        sourceTab,
-      },
-    });
     toast.success('⭐ נשמר ל-Workspace');
-  }, [video]);
+  }, [effectiveBriefSlug, effectiveVideo, videoType]);
 
   const navigateFromPanel = useCallback((page, params = {}) => {
     if (!navigateTo) {
@@ -5686,7 +5786,7 @@ export function VideoDetailPanel({
     if (status.topicId) {
       return navigateFromPanel('TopicKnowledgePage', { topicId: status.topicId });
     }
-    return navigateFromPanel('Workspace', {});
+    return navigateFromPanel('WorkspaceLibrary', {});
   }, [navigateFromPanel, video?.id, video?.youtubeId]);
 
   const videoIdForQuickSave = video?.youtubeId || video?.id;
@@ -11629,6 +11729,18 @@ export function VideoDetailPanel({
 
               {/* ── Specialized Content tab — Phase 4: SpecializedContentRenderer ── */}
               <TabsContent value="specialized" className="mt-0 min-h-[320px]" dir="rtl">
+                <div className="flex justify-end mb-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveStructuredSnapshot}
+                    disabled={isSavingStructuredSnapshot}
+                    aria-busy={isSavingStructuredSnapshot}
+                    title="שומר עותק קבוע של טבלאות המניות, השווקים והסנטימנט כפי שהן כרגע"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:cursor-wait disabled:opacity-60 transition-colors"
+                  >
+                    {isSavingStructuredSnapshot ? 'שומר תמונת מצב…' : '📊 שמור תמונת מצב'}
+                  </button>
+                </div>
                 <SpecializedContentRenderer
                   effectiveVideo={effectiveVideo}
                   normalizedSubCategory={effectiveBriefSlug ?? normalizedSubCategory}
@@ -12400,6 +12512,7 @@ export function VideoDetailPanel({
       defaultView={workspaceDraftDefaultView}
       videoContext={workspaceDraftContext}
       onSaved={() => multiSelectClearWithBrain()}
+      onOpenLibrary={() => navigateFromPanel('WorkspaceLibrary')}
     />
 
     {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}

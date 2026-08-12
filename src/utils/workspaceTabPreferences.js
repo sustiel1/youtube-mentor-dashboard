@@ -54,8 +54,12 @@ export function getVisibleMainTabs(allTabs, prefs) {
 }
 
 // Converts customMainTabs from stored format to VIRTUAL_TAXONOMY-compatible shape
-export function getCustomTabsAsVirtual(prefs) {
-  return (prefs.customMainTabs || []).map(ct => ({
+export function getCustomTabsAsVirtual(prefs, topics = []) {
+  const topicsById = new Map(topics.map(topic => [topic.id, topic]));
+  return (prefs.customMainTabs || []).filter(ct => {
+    const canonicalTopic = topicsById.get(ct.realTopicId);
+    return !canonicalTopic || !canonicalTopic.parentId;
+  }).map(ct => ({
     id:           ct.id,
     name:         ct.name,
     emoji:        ct.emoji || '📌',
@@ -67,8 +71,35 @@ export function getCustomTabsAsVirtual(prefs) {
 }
 
 // Returns baseTabs (VIRTUAL_TAXONOMY) merged with user's custom tabs
-export function getAllMergedTabs(baseTabs, prefs) {
-  return [...baseTabs, ...getCustomTabsAsVirtual(prefs)];
+export function getAllMergedTabs(baseTabs, prefs, topics = []) {
+  return [...baseTabs, ...getCustomTabsAsVirtual(prefs, topics)];
+}
+
+// Canonical parentId is authoritative: once a real topic is re-parented, its
+// former custom-main shortcut becomes a child filter of the matching main tab.
+export function getCanonicalSubtopicsForVirtualTopic(virtualTopic, topics = []) {
+  if (!virtualTopic) return [];
+  const topicsById = new Map(topics.map(topic => [topic.id, topic]));
+  const representedIds = new Set((virtualTopic.subtopics || []).flatMap(subtopic => subtopic.realTopicIds || []));
+  const parentIds = new Set(topics.filter(topic => (
+    !topic.parentId && (
+      (virtualTopic.realTopicIds || []).includes(topic.id) ||
+      (virtualTopic.legacyNames || []).includes(topic.name)
+    )
+  )).map(topic => topic.id));
+
+  return topics
+    .filter(topic => topic.parentId && parentIds.has(topic.parentId) && !representedIds.has(topic.id))
+    .map(topic => ({
+      id: `cts-${topic.id}`,
+      name: topic.name,
+      realTopicIds: [topic.id],
+      canonicalTopicId: topic.id,
+      isCanonical: true,
+      displayOrder: Number.isFinite(Number(topic.displayOrder)) ? Number(topic.displayOrder) : 0,
+      parent: topicsById.get(topic.parentId) || null,
+    }))
+    .sort((left, right) => left.displayOrder - right.displayOrder);
 }
 
 // Adds a new custom tab to preferences (call saveWorkspaceTabPreferences after)

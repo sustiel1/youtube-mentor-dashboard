@@ -13,10 +13,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useWorkspaceTopics } from "@/hooks/useWorkspaceLibrary";
-import { saveWorkspaceItem, getWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
+import { getWorkspacePersistenceErrorMessage, saveWorkspaceItem, getWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
+import {
+  createWorkspaceProvenance,
+  getWorkspaceHeadingLabel,
+} from "@/config/workspaceHeadingRegistry";
+import {
+  classifyCanonicalWorkspaceBrief,
+  resolveCanonicalBriefDestination,
+} from "@/utils/workspaceBriefRouting";
+import { normalizeWorkspaceSemanticTags } from "@/utils/workspaceMarketDimensions";
 
 function detectMainTopic(video, topics) {
   if (!video) return null;
@@ -54,9 +64,13 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
     if (!open || !video) return;
 
     const existing = getWorkspaceItemByVideoId(video.id || video.videoId);
+    const briefClassification = classifyCanonicalWorkspaceBrief({ video });
+    const briefDestination = briefClassification.confirmed
+      ? resolveCanonicalBriefDestination(topics)
+      : null;
     if (existing) {
-      setTopicId(existing.topicId || '');
-      setSubTopicId(existing.subTopicId || '');
+      setTopicId(briefDestination?.valid ? briefDestination.topicId : (existing.topicId || ''));
+      setSubTopicId(briefDestination?.valid ? briefDestination.subTopicId : (existing.subTopicId || ''));
       setNotes(existing.notes || '');
       setFlags(existing.flags || { isFavorite: false, isImportant: false, mustWatchAgain: false });
       setTags(existing.tags || []);
@@ -67,6 +81,18 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
 
     // Auto-detect from video metadata
     const currentTopics = topics;
+    if (briefDestination?.valid) {
+      setTopicId(briefDestination.topicId);
+      setSubTopicId(briefDestination.subTopicId);
+      setAutoDetected(true);
+      setNotes('');
+      setFlags({ isFavorite: false, isImportant: false, mustWatchAgain: false });
+      setTags([]);
+      setTagInput('');
+      setShowNewTopic(false);
+      setShowNewSub(false);
+      return;
+    }
     const detected = detectMainTopic(video, currentTopics);
     const detectedSub = detected ? detectSubTopic(video, currentTopics, detected) : null;
 
@@ -103,8 +129,17 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
     const youtubeId = video?.youtubeId || video?.videoId;
     const videoUrl = video?.url || video?.youtubeUrl
       || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : '');
+    const savedAt = new Date().toISOString();
+    const briefClassification = classifyCanonicalWorkspaceBrief({ video });
+    const provenance = createWorkspaceProvenance({
+      sourceVideoId: youtubeId || videoId,
+      sourceTabId: sourceTab,
+      sourceSectionId: 'whole-video',
+      sourceHeading: getWorkspaceHeadingLabel(sourceTab, ''),
+      semanticTags: normalizeWorkspaceSemanticTags(tags),
+    });
 
-    saveWorkspaceItem({
+    const saveResult = saveWorkspaceItem({
       videoId,
       videoUrl,
       videoTitle: video?.title || '',
@@ -118,11 +153,22 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
       flags,
       tags,
       sourceTab: sourceTab || null,
+      ...(provenance || {}),
+      savedAt,
+      sourceVideoType: briefClassification.type,
+      sourceBriefSlug: briefClassification.type === 'morningBrief'
+        ? 'morning-brief'
+        : briefClassification.type === 'eveningBrief' ? 'evening-brief' : null,
       autoDetected,
       category: topicName || video?.category || null,
       subCategory: subTopicName || video?.subCategory || null,
       gemId: video?.selectedGemId || null,
     });
+
+    if (!saveResult.ok) {
+      toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+      return;
+    }
 
     // Sync topic to video record and knowledge items so all views stay consistent
     if (topicName) {
@@ -410,7 +456,7 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-zinc-600" dir="rtl">
             <span>מקור:</span>
             <span className="rounded-md border border-slate-200 dark:border-zinc-700 px-1.5 py-0.5 font-medium text-slate-500 dark:text-zinc-500">
-              {sourceTab || 'Manual'}
+              {getWorkspaceHeadingLabel(sourceTab, sourceTab || 'Manual')}
             </span>
           </div>
 

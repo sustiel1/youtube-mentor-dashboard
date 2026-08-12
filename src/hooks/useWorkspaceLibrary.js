@@ -12,7 +12,9 @@ import {
   deleteAllWorkspaceItems,
   updateWorkspaceItemsBulk,
   archiveWorkspaceItems,
+  reassignWorkspaceVideoGroupTopic,
 } from "@/lib/workspaceLibraryStore";
+import { getWorkspaceMainTopics, getWorkspaceSubtopics } from "@/utils/workspaceTopicHierarchy";
 
 export function useWorkspaceTopics() {
   const [topics, setTopics] = useState(() => getWorkspaceTopics());
@@ -20,14 +22,15 @@ export function useWorkspaceTopics() {
   const reload = useCallback(() => setTopics(getWorkspaceTopics()), []);
 
   const addTopic = useCallback((params) => {
-    const t = addWorkspaceTopic(params);
-    setTopics(getWorkspaceTopics());
-    return t;
+    const result = addWorkspaceTopic(params);
+    if (result?.ok) setTopics(getWorkspaceTopics());
+    return result;
   }, []);
 
   const updateTopic = useCallback((id, updates) => {
-    updateWorkspaceTopic(id, updates);
-    setTopics(getWorkspaceTopics());
+    const result = updateWorkspaceTopic(id, updates);
+    if (result?.ok) setTopics(getWorkspaceTopics());
+    return result;
   }, []);
 
   const deleteTopic = useCallback((id) => {
@@ -36,10 +39,10 @@ export function useWorkspaceTopics() {
     return result;
   }, []);
 
-  const mainTopics = topics.filter(t => !t.parentId);
+  const mainTopics = getWorkspaceMainTopics(topics);
 
   const getSubTopics = useCallback(
-    (parentId) => topics.filter(t => t.parentId === parentId),
+    (parentId) => getWorkspaceSubtopics(topics, parentId),
     [topics]
   );
 
@@ -52,39 +55,52 @@ export function useWorkspaceItems() {
   const reload = useCallback(() => setItems(getWorkspaceItems()), []);
 
   const saveItem = useCallback((item) => {
-    saveWorkspaceItem(item);
-    setItems(getWorkspaceItems());
+    const result = saveWorkspaceItem(item);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const updateItem = useCallback((id, updates) => {
-    updateWorkspaceItem(id, updates);
-    setItems(getWorkspaceItems());
+    const result = updateWorkspaceItem(id, updates);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const deleteItem = useCallback((id) => {
-    deleteWorkspaceItem(id);
-    setItems(getWorkspaceItems());
+    const result = deleteWorkspaceItem(id);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const deleteItems = useCallback((ids) => {
-    deleteWorkspaceItems(ids);
-    setItems(getWorkspaceItems());
+    const result = deleteWorkspaceItems(ids);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const deleteAllItems = useCallback(() => {
-    deleteAllWorkspaceItems();
-    setItems(getWorkspaceItems());
+    const result = deleteAllWorkspaceItems();
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const updateItemsBulk = useCallback((ids, updates) => {
-    updateWorkspaceItemsBulk(ids, updates);
-    setItems(getWorkspaceItems());
+    const result = updateWorkspaceItemsBulk(ids, updates);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
   const archiveItems = useCallback((ids, archived = true) => {
-    archiveWorkspaceItems(ids, archived);
-    setItems(getWorkspaceItems());
+    const result = archiveWorkspaceItems(ids, archived);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
   }, []);
 
-  return { items, reload, saveItem, updateItem, deleteItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems };
+  const reassignVideoGroupTopic = useCallback((params) => {
+    const result = reassignWorkspaceVideoGroupTopic(params);
+    if (result.ok) setItems(result.persistedItems);
+    return result;
+  }, []);
+
+  return { items, reload, saveItem, updateItem, deleteItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems, reassignVideoGroupTopic };
 }

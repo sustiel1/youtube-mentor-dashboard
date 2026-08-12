@@ -1,3 +1,5 @@
+import { VIDEO_ANALYSIS_HEADINGS } from './workspaceHeadingRegistry.js';
+
 /**
  * Dynamic tab configuration per video type.
  *
@@ -26,7 +28,8 @@ const MORNING_BRIEF_KEYWORDS = [
 
 const EVENING_BRIEF_KEYWORDS = [
   'מבזק ערב', 'סיכום יום', 'market close', 'סקירת ערב',
-  'evening brief', 'סגירת שוק',
+  'evening brief', 'סגירת שוק', 'לייט נייט', 'late night',
+  'late-night', 'closing bell', 'market closing',
 ];
 
 // ── SubCategory normalizer ───────────────────────────────────────────
@@ -83,8 +86,13 @@ export function detectVideoType(video) {
 
   if (ct === 'political' || category.includes('פוליטיק')) return 'political';
 
-  if (matchesAny(title, MORNING_BRIEF_KEYWORDS) || ct === 'marketbrief') return 'morningBrief';
+  const canonicalSubCategory = normalizeSubCategory(video.confirmedSubCategory || video.subCategory || video.subTopic);
+  if (canonicalSubCategory === 'morning-brief') return 'morningBrief';
+  if (canonicalSubCategory === 'evening-brief') return 'eveningBrief';
+
+  if (matchesAny(title, MORNING_BRIEF_KEYWORDS)) return 'morningBrief';
   if (matchesAny(title, EVENING_BRIEF_KEYWORDS)) return 'eveningBrief';
+  if (ct === 'marketbrief') return 'morningBrief';
 
   const isMarketCat     = category.includes('שוק') || category === 'markets' || category.includes('מסחר');
   const isTechnicalType = ct === 'technical' || ct === 'market' || subCat.includes('טכני') || subCat.includes('technical');
@@ -136,16 +144,12 @@ export const LEARNING_SUB_TAB_VALUES = new Set([
   'setups', 'patterns', 'checklists', 'mistakes',
 ]);
 
-/** 7 universal tabs — shown for every video regardless of type or category */
-export const UNIVERSAL_TABS = [
-  { value: 'summary',          label: 'סיכום',              emoji: '📝' },
-  { value: 'chapters',         label: 'פרקים',               emoji: '📚' },
-  { value: 'insights',         label: 'תובנות',              emoji: '💡' },
-  { value: 'useful-knowledge', label: 'ידע שימושי',         emoji: '🧠' },
-  { value: 'app-builder',      label: 'APP',                 emoji: '🚀' },
-  { value: 'topics-subtopics', label: 'נושאים ותתי־נושאים', emoji: '🏷️' },
-  { value: 'specialized',      label: 'תוכן ייעודי',        emoji: '🎯' },
-];
+/** 7 universal tabs — labels and IDs come from the canonical heading registry. */
+export const UNIVERSAL_TABS = VIDEO_ANALYSIS_HEADINGS.map(definition => ({
+  value: definition.sourceTabId,
+  label: definition.label,
+  emoji: definition.icon,
+}));
 
 export const BRIEF_TABS = [
   { value: 'summary',              label: 'סיכום',          emoji: '📋' },
