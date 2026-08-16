@@ -11,7 +11,12 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
-import { saveWorkspaceItem, findWorkspaceItemByContentHash } from "@/lib/workspaceLibraryStore";
+import {
+  saveWorkspaceItem,
+  saveWorkspaceItemsBulk,
+  findWorkspaceItemByContentHash,
+  getWorkspacePersistenceErrorMessage,
+} from "@/lib/workspaceLibraryStore";
 import { computeContentHash } from "@/lib/contentHash";
 import { ConfirmDialog } from "./ConfirmDialog";
 import {
@@ -38,6 +43,12 @@ import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy } from "@/component
 import { StockWatchlistView } from "./StockWatchlistView";
 import { WorkspaceContentCard } from "./WorkspaceContentCard";
 import { WorkspaceTabRow } from "./WorkspaceTabRow";
+import { StructuredSnapshotView } from "./StructuredSnapshotView";
+import {
+  createWorkspaceProvenance,
+  getWorkspaceHeadingLabel,
+} from "@/config/workspaceHeadingRegistry";
+import { getWorkspaceItemSemanticTags } from "@/utils/workspaceMarketDimensions";
 
 // ─── Market status workflow constants ─────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -62,6 +73,12 @@ const MARKET_STATUS_COLORS = {
   risk:            'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/50',
   archive:         'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700',
 };
+
+function reportWorkspaceWriteFailure(result) {
+  if (result?.ok) return false;
+  toast.error(getWorkspacePersistenceErrorMessage(result));
+  return true;
+}
 
 // ─── Date bucketing (shared by the "לפי תאריכים" view and date sub-groups) ────
 const DATE_BUCKETS = [
@@ -166,6 +183,7 @@ export function WorkspaceSaveReviewOverlay({
   const [confirmDeleteSingleItem,   setConfirmDeleteSingleItem]   = useState(null);
   const [selectedOverlayIds,        setSelectedOverlayIds]        = useState(() => new Set());
   const [confirmBulkDeleteOverlay,  setConfirmBulkDeleteOverlay]  = useState(false);
+  const [openSnapshotItem,          setOpenSnapshotItem]          = useState(null);
 
   // loadedDraftItems: null = use prop draftItems; set by "load current analysis" action
   const [loadedDraftItems, setLoadedDraftItems] = useState(null);
@@ -442,7 +460,8 @@ export function WorkspaceSaveReviewOverlay({
   function handleConfirmDeleteAllVisible() {
     const ids = displayItems.map(i => i.id);
     if (!ids.length) return;
-    deleteItems(ids);
+    const result = deleteItems(ids);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
     setMoreActionsOpen(false);
   }
@@ -450,7 +469,8 @@ export function WorkspaceSaveReviewOverlay({
   function handleConfirmDeleteAllWorkspace() {
     const count = libraryItems.length;
     if (!count) return;
-    deleteAllItems();
+    const result = deleteAllItems();
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${count} פריטים מה-Workspace`);
     setMoreActionsOpen(false);
   }
@@ -461,14 +481,16 @@ export function WorkspaceSaveReviewOverlay({
 
   function handleConfirmDeleteSingleItem() {
     if (!confirmDeleteSingleItem) return;
-    deleteItem(confirmDeleteSingleItem.id);
+    const result = deleteItem(confirmDeleteSingleItem.id);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט נמחק מ-Workspace');
     reload();
     setConfirmDeleteSingleItem(null);
   }
 
   function handleArchiveSingleItem(item) {
-    archiveItems([item.id], true);
+    const result = archiveItems([item.id], true);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הועבר לארכיון');
     reload();
   }
@@ -476,10 +498,14 @@ export function WorkspaceSaveReviewOverlay({
   // ── Stock table adapter (שוק ההון > מניות) ───────────────────────────────────
   // StockWatchlistView owns its own selection state, bulk bar, delete/bulk-delete
   // confirmations, and edit modal — mirrors exactly how WorkspaceLibrary.jsx wires it.
-  const handleStatusChange = (id, newStatus) => updateItem(id, { marketStatus: newStatus || null });
+  const handleStatusChange = (id, newStatus) => {
+    const result = updateItem(id, { marketStatus: newStatus || null });
+    reportWorkspaceWriteFailure(result);
+  };
 
   const handleDeleteStockItem = (item) => {
-    deleteItem(item.id);
+    const result = deleteItem(item.id);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
   };
 
@@ -505,6 +531,12 @@ export function WorkspaceSaveReviewOverlay({
     });
   }, []);
 
+  // Opens the read-only structured-snapshot viewer — separate from
+  // toggleOverlaySelect so checkbox clicks and title clicks never conflict.
+  const handleOpenSnapshot = useCallback((item) => {
+    setOpenSnapshotItem(item);
+  }, []);
+
   function handleCopyOverlaySelected() {
     const selected = libraryItems.filter(i => selectedOverlayIds.has(i.id));
     const text = formatWorkspaceItemsForCopy(selected);
@@ -515,7 +547,8 @@ export function WorkspaceSaveReviewOverlay({
 
   function handleArchiveOverlaySelected() {
     const ids = [...selectedOverlayIds];
-    archiveItems(ids, true);
+    const result = archiveItems(ids, true);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים הועברו לארכיון`);
     clearOverlaySelection();
     reload();
@@ -523,7 +556,8 @@ export function WorkspaceSaveReviewOverlay({
 
   function handleConfirmBulkDeleteOverlay() {
     const ids = [...selectedOverlayIds];
-    deleteItems(ids);
+    const result = deleteItems(ids);
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
     clearOverlaySelection();
     reload();
@@ -533,7 +567,8 @@ export function WorkspaceSaveReviewOverlay({
     const targetTopic = mainTopics.find(t => t.id === targetTopicId);
     if (!targetTopic) return;
     const ids = [...selectedOverlayIds];
-    updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
+    const result = updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
+    if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים שויכו ל"${targetTopic.name}"`);
     clearOverlaySelection();
     reload();
@@ -564,7 +599,7 @@ export function WorkspaceSaveReviewOverlay({
     // genuinely unclassified rather than guessing a topic for it.
     const target = virtTopicId ? getCanonicalSaveTargetForVirtualPath(virtTopicId, virtSubtopicId, topics) : null;
 
-    saveWorkspaceItem({
+    const saveResult = saveWorkspaceItem({
       id:           `ws-merged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       videoId:      null,
       videoUrl:     null,
@@ -584,6 +619,7 @@ export function WorkspaceSaveReviewOverlay({
       savedAt:      new Date().toISOString(),
       contentHash,
     });
+    if (reportWorkspaceWriteFailure(saveResult)) return;
     toast.success(`נוצר פריט ממוזג מ-${items.length} פריטים`);
     reload();
   }
@@ -644,6 +680,7 @@ export function WorkspaceSaveReviewOverlay({
     if (effectiveDraftItems.length === 0) return;
     setIsSaving(true);
     const savedIds    = [];
+    const pendingItems = [];
     let   skippedCount = 0;
     const now         = new Date().toISOString();
     const topicName    = selectedMainTopic?.name || '';
@@ -711,12 +748,26 @@ export function WorkspaceSaveReviewOverlay({
 
       // For stock items: item.text already IS the complete note; user notes appended
       const combinedNotes = [item.text, notes].filter(Boolean).join('\n\n');
+      const provenance = createWorkspaceProvenance({
+        sourceVideoId: videoContext.sourceVideoId,
+        sourceTabId: item.tabScope || videoContext.sourceTabId || videoContext.sourceTab,
+        sourceSectionId: item.sourceSectionId || item.sectionKey || item.type || 'unsectioned',
+        sourceHeading: item.sectionLabel,
+        semanticTags: getWorkspaceItemSemanticTags({
+          sourceSectionId: item.sourceSectionId || item.sectionKey || item.type || 'unsectioned',
+          sourceTabId: item.tabScope || videoContext.sourceTabId || videoContext.sourceTab,
+          originalItemType: item.type,
+          itemType: item.type,
+          tags,
+        }),
+      });
 
-      saveWorkspaceItem({
+      pendingItems.push({
         id,
         videoId:      null,
         videoUrl:     videoContext.videoUrl    || null,
         videoTitle:   titlePart.slice(0, 80),
+        sourceVideoTitle: videoContext.videoTitle || '',
         channelName:  videoContext.channelName || '',
         thumbnail:    videoContext.thumbnail   || null,
         topicId:      topicId    || null,
@@ -726,14 +777,29 @@ export function WorkspaceSaveReviewOverlay({
         notes:        combinedNotes,
         flags,
         tags,
-        sourceTab:    videoContext.sourceTab || 'Manual',
+        sourceTab:    provenance?.sourceTabId || videoContext.sourceTab || 'Manual',
         category:     topicName    || null,
         subCategory:  subTopicName || null,
         savedAt:      now,
         contentHash,
+        itemType:      item.type || 'snippet',
+        originalItemType: item.type || 'snippet',
+        identityPayload: { text: item.text },
+        sourceTimestamp: item.timestamp ?? null,
+        sourceVideoType: videoContext.sourceVideoType || null,
+        sourceBriefSlug: videoContext.sourceBriefSlug || null,
+        ...(provenance || {}),
         ...stockExtraFields, // additive: only present on stock items
       });
       savedIds.push(id);
+    }
+
+    if (pendingItems.length > 0) {
+      const saveResult = saveWorkspaceItemsBulk(pendingItems);
+      if (reportWorkspaceWriteFailure(saveResult)) {
+        setIsSaving(false);
+        return;
+      }
     }
 
     reload();
@@ -1079,7 +1145,7 @@ export function WorkspaceSaveReviewOverlay({
                   >
                     <option value="">כל המקורות</option>
                     {allSourceTabs.map(tab => (
-                      <option key={tab} value={tab}>{tab}</option>
+                      <option key={tab} value={tab}>{getWorkspaceHeadingLabel(tab, tab)}</option>
                     ))}
                   </select>
                 )}
@@ -1121,7 +1187,7 @@ export function WorkspaceSaveReviewOverlay({
                 />
               )}
               {filterSourceTab && (
-                <OverlayFilterChip label={`מקור: ${filterSourceTab}`} onRemove={() => setFilterSourceTab('')} />
+                <OverlayFilterChip label={`מקור: ${getWorkspaceHeadingLabel(filterSourceTab, filterSourceTab)}`} onRemove={() => setFilterSourceTab('')} />
               )}
               <button
                 type="button"
@@ -1370,7 +1436,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {recentItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} onOpenSnapshot={handleOpenSnapshot} />
                     ))}
                   </div>
                 </>
@@ -1414,7 +1480,7 @@ export function WorkspaceSaveReviewOverlay({
                     // flat list when subtopic filter is active
                     <div className="space-y-2">
                       {displayItems.map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} onOpenSnapshot={handleOpenSnapshot} />
                       ))}
                     </div>
                   ) : (
@@ -1435,6 +1501,7 @@ export function WorkspaceSaveReviewOverlay({
                           onToggleSelect={toggleOverlaySelect}
                           onSelectAll={handleSelectAllInGroup}
                           onSaveMerged={handleSaveMerged}
+                          onOpenSnapshot={handleOpenSnapshot}
                         />
                       ))}
                     </div>
@@ -1458,6 +1525,7 @@ export function WorkspaceSaveReviewOverlay({
                       onToggleSelect={toggleOverlaySelect}
                       onSelectAll={handleSelectAllInGroup}
                       onSaveMerged={handleSaveMerged}
+                      onOpenSnapshot={handleOpenSnapshot}
                     />
                   ))}
                 </div>
@@ -1480,7 +1548,7 @@ export function WorkspaceSaveReviewOverlay({
                     </h3>
                     <div className="space-y-2 pr-2 border-r-2 border-slate-100 dark:border-zinc-800">
                       {itemsByDate[key].map(item => (
-                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
+                        <LibraryItemCard key={item.id} item={item} allTopics={allTopics} compact showDate onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} onOpenSnapshot={handleOpenSnapshot} />
                       ))}
                     </div>
                   </div>
@@ -1501,7 +1569,7 @@ export function WorkspaceSaveReviewOverlay({
                   </h3>
                   <div className="space-y-3">
                     {pinnedItems.map(item => (
-                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} />
+                      <LibraryItemCard key={item.id} item={item} allTopics={allTopics} onDelete={handleDeleteSingleItem} onArchive={handleArchiveSingleItem} selected={selectedOverlayIds.has(item.id)} onToggleSelect={toggleOverlaySelect} onOpenSnapshot={handleOpenSnapshot} />
                     ))}
                   </div>
                 </>
@@ -1564,6 +1632,13 @@ export function WorkspaceSaveReviewOverlay({
       danger
       onConfirm={handleConfirmBulkDeleteOverlay}
     />
+
+    <StructuredSnapshotView
+      open={!!openSnapshotItem}
+      onOpenChange={open => !open && setOpenSnapshotItem(null)}
+      snapshot={openSnapshotItem?.structuredSnapshot}
+      itemTitle={openSnapshotItem?.videoTitle}
+    />
     </>
   );
 }
@@ -1576,7 +1651,7 @@ export function WorkspaceSaveReviewOverlay({
 // 5 items; "שמור מאוחד" merges the card's own items (not just the preview).
 const GROUP_CARD_PREVIEW_LIMIT = 5;
 
-function GroupCard({ label, items, muted = false, virtTopicId = null, virtSubtopicId = null, selectedIds, onToggleSelect, onSelectAll, onSaveMerged }) {
+function GroupCard({ label, items, muted = false, virtTopicId = null, virtSubtopicId = null, selectedIds, onToggleSelect, onSelectAll, onSaveMerged, onOpenSnapshot }) {
   const previewItems = items.slice(0, GROUP_CARD_PREVIEW_LIMIT);
   const remaining = items.length - previewItems.length;
   // Guards against a double-click firing two overlapping saves before the
@@ -1607,19 +1682,34 @@ function GroupCard({ label, items, muted = false, virtTopicId = null, virtSubtop
       </div>
 
       <div className="space-y-1">
-        {previewItems.map(item => (
-          <label key={item.id} className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedIds?.has(item.id)}
-              onChange={() => onToggleSelect(item.id)}
-              className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
-            />
-            <span className="min-w-0 flex-1 truncate text-xs text-slate-700 dark:text-zinc-300">
-              {item.videoTitle || 'ללא כותרת'}
-            </span>
-          </label>
-        ))}
+        {previewItems.map(item => {
+          const isSnapshot = item.itemType === 'structured-snapshot' && !!onOpenSnapshot;
+          return (
+            <div key={item.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                aria-label={`בחר ${item.videoTitle || 'פריט'}`}
+                checked={selectedIds?.has(item.id)}
+                onChange={() => onToggleSelect(item.id)}
+                className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
+              />
+              {isSnapshot ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenSnapshot(item)}
+                  title="פתח תמונת מצב"
+                  className="min-w-0 flex-1 truncate text-right text-xs text-indigo-700 dark:text-indigo-400 hover:underline"
+                >
+                  {item.videoTitle || 'ללא כותרת'}
+                </button>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-xs text-slate-700 dark:text-zinc-300">
+                  {item.videoTitle || 'ללא כותרת'}
+                </span>
+              )}
+            </div>
+          );
+        })}
         {remaining > 0 && (
           <div className="pr-[22px] text-[11px] text-slate-400 dark:text-zinc-600">+{remaining} עוד</div>
         )}
@@ -1661,7 +1751,8 @@ function AnalysisBanner({ show, count, onLoad }) {
 
 // ─── Library item card ────────────────────────────────────────────────────────
 
-function LibraryItemCard({ item, allTopics, compact = false, showDate = false, onDelete, onArchive, selected = false, onToggleSelect }) {
+function LibraryItemCard({ item, allTopics, compact = false, showDate = false, onDelete, onArchive, selected = false, onToggleSelect, onOpenSnapshot }) {
+  const isSnapshot = item.itemType === 'structured-snapshot' && !!onOpenSnapshot;
   const mainTopic = allTopics.find(t => t.id === item.topicId && !t.parentId);
   const subTopic  = allTopics.find(t => t.id === item.subTopicId);
   const itemTags  = item.tags || [];
@@ -1675,15 +1766,27 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
         {onToggleSelect && (
           <input
             type="checkbox"
+            aria-label={`בחר ${item.videoTitle || 'פריט'}`}
             checked={selected}
             onChange={e => { e.stopPropagation(); onToggleSelect(item.id); }}
             onClick={e => e.stopPropagation()}
             className="shrink-0 h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
           />
         )}
-        <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
-          {item.videoTitle || 'ללא כותרת'}
-        </p>
+        {isSnapshot ? (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onOpenSnapshot(item); }}
+            title="פתח תמונת מצב"
+            className="flex-1 min-w-0 text-right text-sm font-medium text-indigo-700 dark:text-indigo-400 hover:underline truncate leading-snug"
+          >
+            {item.videoTitle || 'ללא כותרת'}
+          </button>
+        ) : (
+          <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
+            {item.videoTitle || 'ללא כותרת'}
+          </p>
+        )}
         <div className="flex items-center gap-1.5 shrink-0 text-sm">
           {item.marketStatus && MARKET_STATUS_LABELS[item.marketStatus] && (
             <span className={cn('rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none', MARKET_STATUS_COLORS[item.marketStatus])}>
@@ -1727,15 +1830,27 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
         {onToggleSelect && (
           <input
             type="checkbox"
+            aria-label={`בחר ${item.videoTitle || 'פריט'}`}
             checked={selected}
             onChange={e => { e.stopPropagation(); onToggleSelect(item.id); }}
             onClick={e => e.stopPropagation()}
             className="mt-1 shrink-0 h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-600 text-indigo-600 cursor-pointer"
           />
         )}
-        <p className="flex-1 min-w-0 text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug">
-          {item.videoTitle || 'ללא כותרת'}
-        </p>
+        {isSnapshot ? (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onOpenSnapshot(item); }}
+            title="פתח תמונת מצב"
+            className="flex-1 min-w-0 text-right text-base font-bold text-indigo-700 dark:text-indigo-400 hover:underline leading-snug"
+          >
+            {item.videoTitle || 'ללא כותרת'}
+          </button>
+        ) : (
+          <p className="flex-1 min-w-0 text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug">
+            {item.videoTitle || 'ללא כותרת'}
+          </p>
+        )}
         <div className="flex items-center gap-1 shrink-0 text-base pt-0.5">
           {item.flags?.isImportant    && <span title="חשוב">🔴</span>}
           {item.flags?.isFavorite     && <span title="מועדף">⭐</span>}
@@ -1769,7 +1884,7 @@ function LibraryItemCard({ item, allTopics, compact = false, showDate = false, o
           ))}
           {item.sourceTab && (
             <span className="rounded-full border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 px-2 py-0.5 text-xs text-slate-500 dark:text-zinc-400">
-              {item.sourceTab}
+              {getWorkspaceHeadingLabel(item.sourceTabId || item.sourceTab, item.sourceTab)}
             </span>
           )}
           {savedDate && (
