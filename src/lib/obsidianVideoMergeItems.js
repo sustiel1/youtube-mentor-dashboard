@@ -38,6 +38,8 @@ export function bulkEntryToMergeItem(entry, videoId) {
   return {
     text,
     sectionLabel: sectionKey || 'כללי',
+    tabKey,
+    sectionKey,
     identityKey: buildObsidianItemIdentityKey({
       videoId,
       tabKey,
@@ -75,6 +77,8 @@ export function buildAppBuilderMergeItems({
         return {
           text,
           sectionLabel: label || key,
+          tabKey: 'app-builder',
+          sectionKey: key,
           identityKey: buildAppBuilderSectionIdentityKey(vid, key),
         };
       })

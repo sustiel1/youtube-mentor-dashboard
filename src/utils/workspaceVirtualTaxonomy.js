@@ -181,6 +181,32 @@ export function groupItemsByVirtTopic(items) {
 //      exact, unambiguous existing topic.
 // Returns null when even the main topic can't be resolved unambiguously —
 // callers must show a manual-selection prompt in that case, never guess.
+/** Read-only adapter from canonical persisted ids to display-only navigation ids. */
+export function getVirtualNavigationPathForCanonicalDestination(topicId, subTopicId, realTopics = []) {
+  const canonicalTopicId = String(topicId || '').trim();
+  const canonicalSubtopicId = String(subTopicId || '').trim();
+  const virtualTopic = VIRTUAL_TAXONOMY.find(topic => (
+    topic.realTopicIds.includes(canonicalTopicId)
+    || (canonicalSubtopicId && topic.realTopicIds.includes(canonicalSubtopicId))
+  ));
+  if (!virtualTopic) return { topicId: canonicalTopicId || null, subtopicId: canonicalSubtopicId || null };
+
+  let virtualSubtopic = virtualTopic.subtopics.find(subtopic => (
+    canonicalSubtopicId && subtopic.realTopicIds.includes(canonicalSubtopicId)
+  ));
+  if (!virtualSubtopic && canonicalSubtopicId) {
+    const canonical = realTopics.find(topic => String(topic?.id || '').trim() === canonicalSubtopicId);
+    if (canonical && String(canonical.parentId || canonical.parentTopicId || '').trim() === canonicalTopicId) {
+      virtualSubtopic = { id: `cts-${canonical.id}` };
+    }
+  }
+
+  return {
+    topicId: virtualTopic.id,
+    subtopicId: virtualSubtopic?.id || null,
+  };
+}
+
 export function getCanonicalSaveTargetForVirtualPath(virtTopicId, virtSubtopicId, realTopics = []) {
   if (!virtTopicId) return null;
   const vt = VIRTUAL_TAXONOMY.find(v => v.id === virtTopicId);

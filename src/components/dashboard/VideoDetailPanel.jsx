@@ -114,6 +114,7 @@ import {
 } from '@/lib/saveStatusResolver';
 import {
   buildObsidianItemIdentityKey,
+  getObsidianItemSavesForVideo,
   isObsidianItemSaved,
   recordObsidianItemSave,
 } from '@/lib/obsidianItemSaveStore';
@@ -159,11 +160,14 @@ import { getWorkspaceItemIdentity } from "@/utils/workspaceItemIdentity";
 import { extractUnifiedStocks, extractMarketDashboardRows, extractSentimentItems, getSpecializedSrc } from "@/lib/morningBriefDisplay";
 import { buildStructuredSnapshot, buildSnapshotNotes, resolveStructuredSnapshotTopic } from "@/utils/structuredSnapshot";
 import { classifyCanonicalWorkspaceBrief, resolveCanonicalBriefDestination } from "@/utils/workspaceBriefRouting";
+import { selectContentRoutingState, selectObsidianCollectionStatuses } from "@/utils/contentRouting";
+import { getVirtualNavigationPathForCanonicalDestination } from "@/utils/workspaceVirtualTaxonomy";
 import { SubTopicPillDropdown } from "@/components/dashboard/SubTopicPillDropdown";
 import { SummaryTextSaveMenu } from "@/components/dashboard/SummaryTextSaveMenu";
 import { AppBuilderTab } from "@/components/dashboard/AppBuilderTab";
 import { UniversalTabSectionBlocks } from "@/components/dashboard/UniversalTabSectionBlocks";
 import { ObsidianMappingTab } from "@/components/dashboard/ObsidianMappingTab";
+import { ContentRoutingBridge } from "@/components/shared/ContentRoutingBridge";
 import { InsightsStructuredView } from "@/components/dashboard/InsightsStructuredView";
 import { hasAppBuilderDraft } from "@/lib/appBuilderStore";
 import {
@@ -5277,8 +5281,8 @@ export function VideoDetailPanel({
     mergeItems.forEach((item) => {
       markObsidianRowSaved({
         videoId: video?.youtubeId || video?.id,
-        tabKey: 'package',
-        sectionKey: item.sectionLabel || '',
+        tabKey: item.tabKey || 'package',
+        sectionKey: item.sectionKey || item.sectionLabel || '',
         text: item.text,
         destinationPath: result.savedPath || finalPath,
       });
@@ -11650,10 +11654,87 @@ export function VideoDetailPanel({
                     ...(gemTopicsFlat.length > 0 ? [{ key: 'flat', label: 'נושאים קשורים', items: gemTopicsFlat, tabKey: 'topics-subtopics' }] : []),
                   ];
                   const topicsBulkItems = buildBulkItemsFromSections(topicsBulkSections, 'topics-subtopics');
+                  const sourceVideoId = effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || null;
+                  const workspaceTaxonomy = getWorkspaceTopics();
+                  const briefClassification = classifyCanonicalWorkspaceBrief({ video: effectiveVideo });
+                  const briefDestination = briefClassification.confirmed
+                    ? resolveCanonicalBriefDestination(workspaceTaxonomy)
+                    : null;
+                  const inheritedTopic = resolveStructuredSnapshotTopic(effectiveVideo, workspaceTaxonomy);
+                  const primaryTopicId = briefDestination?.valid ? briefDestination.topicId : inheritedTopic.topicId;
+                  const organizationalSubtopicId = briefDestination?.valid
+                    ? briefDestination.subTopicId
+                    : (effectiveVideo?.subTopicId || effectiveVideo?.subtopicId || null);
+                  const availabilityByCollection = Object.fromEntries(VIDEO_ANALYSIS_HEADINGS.map(definition => {
+                    const extracted = definition.sourceTabId === 'topics-subtopics'
+                      ? topicsBulkItems
+                      : extractVideoTabItems(effectiveVideo, definition.sourceTabId, marketBriefData);
+                    const values = Array.isArray(extracted) ? extracted : [];
+                    const logicalItemCount = new Set(values.map(value => (
+                      typeof value === 'string' ? value.trim() : JSON.stringify(value)
+                    )).filter(Boolean)).size;
+                    return [definition.workspaceCollection, {
+                      available: logicalItemCount > 0,
+                      logicalItemCount,
+                    }];
+                  }));
+                  const obsidianEntries = getObsidianItemSavesForVideo(sourceVideoId);
+                  const routing = selectContentRoutingState({
+                    source: {
+                      sourceVideoId,
+                      title: effectiveVideo?.title,
+                      channel: effectiveVideo?.channelTitle || effectiveVideo?.channelName,
+                      thumbnail: effectiveVideo?.thumbnail || (sourceVideoId ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
+                      analysisStatus: marketBriefData ? 'ניתוח מלא זמין' : 'ניתוח שמור זמין',
+                    },
+                    items: getWorkspaceItems(),
+                    topics: workspaceTaxonomy,
+                    availabilityByCollection,
+                    obsidianByCollection: selectObsidianCollectionStatuses(obsidianEntries),
+                    classification: {
+                      primaryTopicId,
+                      organizationalSubtopicId,
+                      primaryTopicName: briefDestination?.topicName || inheritedTopic.topicName,
+                      organizationalSubtopicName: briefDestination?.subTopicName || effectiveSubCategory || null,
+                      recommended: briefDestination?.valid ? `${briefDestination.topicName} ← ${briefDestination.subTopicName}` : null,
+                      confidence: gemRec?.confidencePct ?? (subTopicRec?.confidence != null ? Math.round(subTopicRec.confidence * 100) : null),
+                    },
+                    obsidian: {
+                      vaultName: obsidianRoute.vaultName,
+                      folderPath: obsidianRoute.resolvedFolder,
+                      filePath: obsidianRoute.finalFilePath,
+                      exportedPath: isObsidianMappingCurrent ? resolvedObsidianSavedPath : null,
+                      exportedAt: isObsidianMappingCurrent ? video?.obsidianSavedStatus?.savedAt : null,
+                      openUrl: isObsidianMappingCurrent ? video?.obsidianSavedStatus?.obsidianUrl : null,
+                    },
+                  });
+                  const workspaceNavigation = getVirtualNavigationPathForCanonicalDestination(
+                    routing.classification.primaryTopicId,
+                    routing.classification.organizationalSubtopicId,
+                    workspaceTaxonomy,
+                  );
 
                   return (
                     <div className="space-y-3" dir="rtl">
                       <TabBulkItemsRegistrar tab="topics-subtopics" items={topicsBulkItems} />
+                      <ContentRoutingBridge
+                        routing={routing}
+                        onPreviewCollection={collection => setActiveTab(collection.sourceTabId)}
+                        onEditClassification={() => document.getElementById('routing-classification-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                        onOpenWorkspace={() => navigateFromPanel('WorkspaceLibrary', {
+                          video: sourceVideoId,
+                          topicId: workspaceNavigation.topicId,
+                          subtopicId: workspaceNavigation.subtopicId,
+                          collection: 'topics',
+                        })}
+                        onObsidianAction={() => {
+                          if (isObsidianMappingCurrent && resolvedObsidianSavedPath) {
+                            openResolvedObsidianPath(resolvedObsidianSavedPath);
+                            return;
+                          }
+                          handleRequestObsidianMappingSave(routing.classification.organizationalSubtopicName || effectiveSubCategory);
+                        }}
+                      />
                       {gemTopicsFlat.length > 0 && (
                         <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2">
                           <UniversalTabSectionLabelRow
@@ -11679,8 +11760,9 @@ export function VideoDetailPanel({
                           />
                         </div>
                       )}
+                    <div id="routing-classification-editor">
                     <ObsidianMappingTab
-                      videoId={effectiveVideo?.id || effectiveVideo?.youtubeId || ''}
+                      videoId={effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || ''}
                       videoTitle={effectiveVideo?.title || ''}
                       category={effectiveVideo?.category || ''}
                       subCategory={effectiveSubCategory || effectiveVideo?.subCategory || ''}
@@ -11722,6 +11804,7 @@ export function VideoDetailPanel({
                       savedObsidianPath={resolvedObsidianSavedPath}
                       onOpenSavedObsidian={() => openResolvedObsidianPath(resolvedObsidianSavedPath)}
                     />
+                    </div>
                     </div>
                   );
                 })()}

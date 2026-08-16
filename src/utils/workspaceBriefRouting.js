@@ -4,6 +4,7 @@ import {
   getWorkspaceNavigationCollectionForItem,
 } from '../config/workspaceHeadingRegistry.js';
 import { getWorkspaceItemIdentity, getWorkspaceSourceVideoId } from './workspaceItemIdentity.js';
+import { attachContentRoutingMetadata } from './contentRouting.js';
 
 export const CANONICAL_MARKET_TOPIC_ID = 'wt-markets';
 export const CANONICAL_MORNING_EVENING_BRIEF_SUBTOPIC_NAME = 'מבזק בוקר/ערב';
@@ -264,7 +265,7 @@ export function prepareWorkspaceItemForSave(item = {}, topics = []) {
   if (!classification.confirmed) {
     return {
       ok: true,
-      item: { ...item },
+      item: attachContentRoutingMetadata(item),
       routed: false,
       classification,
     };
@@ -284,7 +285,7 @@ export function prepareWorkspaceItemForSave(item = {}, topics = []) {
     routed: true,
     classification,
     destination,
-    item: routedItem,
+    item: attachContentRoutingMetadata(routedItem),
   };
 }
 

@@ -93,6 +93,15 @@ function findEntriesForIdentity(identityKey) {
     .map(([, entry]) => entry);
 }
 
+/** Read-only persisted export entries for one source video. */
+export function getObsidianItemSavesForVideo(videoId) {
+  const normalizedVideoId = String(videoId || '').trim();
+  if (!normalizedVideoId) return [];
+  return Object.values(readStore())
+    .filter(entry => String(entry?.videoId || '').trim() === normalizedVideoId)
+    .sort((a, b) => String(b?.savedAt || '').localeCompare(String(a?.savedAt || '')));
+}
+
 export function isObsidianItemSaved(
   { videoId, tabKey, sectionKey, text },
   { destinationPath } = {},
