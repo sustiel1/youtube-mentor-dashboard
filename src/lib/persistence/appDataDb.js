@@ -74,6 +74,15 @@ function createSchema(database) {
     });
     ensureIndex(store, 'generationId', 'generationId');
   }
+
+  if (!database.objectStoreNames.contains(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL)) {
+    const store = database.createObjectStore(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL, {
+      keyPath: 'operationId',
+    });
+    ensureIndex(store, 'previousGenerationId', 'previousGenerationId');
+    ensureIndex(store, 'nextGenerationId', 'nextGenerationId', { unique: true });
+    ensureIndex(store, 'anchorGenerationId', 'anchorGenerationId');
+  }
 }
 
 export function openAppDataDb({ indexedDBFactory = globalThis.indexedDB } = {}) {
@@ -175,6 +184,27 @@ export function createAppDataRepository(database) {
     return records[0] || null;
   }
 
+  async function readWorkspaceChangeJournal(operationId) {
+    const transaction = database.transaction(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL, 'readonly');
+    const done = transactionDone(transaction);
+    const result = await requestResult(
+      transaction.objectStore(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL).get(operationId),
+    );
+    await done;
+    return result || null;
+  }
+
+  async function listWorkspaceChangeJournal(anchorGenerationId) {
+    const transaction = database.transaction(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL, 'readonly');
+    const done = transactionDone(transaction);
+    const store = transaction.objectStore(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL);
+    const records = anchorGenerationId
+      ? await requestResult(store.index('anchorGenerationId').getAll(anchorGenerationId))
+      : await requestResult(store.getAll());
+    await done;
+    return records || [];
+  }
+
   async function writeWorkspaceGeneration({ sourceEntry, workspaceItems, snapshots }) {
     const transaction = database.transaction([
       APP_DATA_STORES.SOURCE_ENTRIES,
@@ -193,6 +223,64 @@ export function createAppDataRepository(database) {
     await done;
   }
 
+  async function commitWorkspaceMutation({
+    sourceEntry,
+    workspaceItems,
+    snapshots,
+    journalEntry,
+    activation,
+  }) {
+    const transaction = database.transaction([
+      APP_DATA_STORES.META,
+      APP_DATA_STORES.SOURCE_ENTRIES,
+      APP_DATA_STORES.WORKSPACE_ITEMS,
+      APP_DATA_STORES.SNAPSHOTS,
+      APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL,
+    ], 'readwrite');
+    const done = transactionDone(transaction);
+    const metaStore = transaction.objectStore(APP_DATA_STORES.META);
+    const [workspaceActive, migrationActive, recoveryAnchor] = await Promise.all([
+      requestResult(metaStore.get('activeWorkspaceGeneration')),
+      requestResult(metaStore.get('activeGeneration')),
+      requestResult(metaStore.get('workspaceRecoveryAnchor')),
+    ]);
+    const currentActive = workspaceActive?.state === 'active' ? workspaceActive : migrationActive;
+    if (
+      currentActive?.state !== 'active'
+      || currentActive.generationId !== activation.expectedPreviousGenerationId
+      || recoveryAnchor?.state !== 'anchored'
+      || recoveryAnchor.generationId !== journalEntry.anchorGenerationId
+      || recoveryAnchor.workspaceSourceHash !== journalEntry.anchorSourceHash
+    ) {
+      transaction.abort();
+      try { await done; } catch {}
+      const error = new Error('Workspace generation changed or recovery anchor is unavailable');
+      error.name = 'WorkspaceConcurrencyError';
+      throw error;
+    }
+
+    const sourceStore = transaction.objectStore(APP_DATA_STORES.SOURCE_ENTRIES);
+    const workspaceStore = transaction.objectStore(APP_DATA_STORES.WORKSPACE_ITEMS);
+    const snapshotStore = transaction.objectStore(APP_DATA_STORES.SNAPSHOTS);
+    const journalStore = transaction.objectStore(APP_DATA_STORES.WORKSPACE_CHANGE_JOURNAL);
+    await Promise.all([
+      requestResult(sourceStore.put(sourceEntry)),
+      ...workspaceItems.map((record) => requestResult(workspaceStore.put(record))),
+      ...snapshots.map((record) => requestResult(snapshotStore.put(record))),
+      requestResult(journalStore.add(journalEntry)),
+      requestResult(metaStore.put({
+        key: 'activeWorkspaceGeneration',
+        generationId: activation.generationId,
+        sourceHash: activation.sourceHash,
+        integrity: activation.integrity,
+        counts: activation.counts,
+        journalOperationId: journalEntry.operationId,
+        state: 'active',
+      })),
+    ]);
+    await done;
+  }
+
   async function activateWorkspaceGeneration({ generationId, sourceHash, integrity, counts }) {
     return writeMeta({
       key: 'activeWorkspaceGeneration',
@@ -204,7 +292,17 @@ export function createAppDataRepository(database) {
     });
   }
 
-  async function activateGeneration({ generationId, sourceHash, integrity, counts }) {
+  async function activateGeneration({
+    generationId,
+    sourceHash,
+    workspaceSourceHash,
+    integrity,
+    counts,
+    activationEvidence,
+  }) {
+    if (activationEvidence?.verified !== true || !workspaceSourceHash) {
+      throw new Error('Verified backup, preflight and integrity evidence are required for activation');
+    }
     const transaction = database.transaction(APP_DATA_STORES.META, 'readwrite');
     const done = transactionDone(transaction);
     const store = transaction.objectStore(APP_DATA_STORES.META);
@@ -215,6 +313,14 @@ export function createAppDataRepository(database) {
       integrity,
       counts,
       state: 'active',
+    }));
+    await requestResult(store.put({
+      key: 'workspaceRecoveryAnchor',
+      generationId,
+      workspaceSourceHash,
+      integrity,
+      evidenceHash: activationEvidence.evidenceHash,
+      state: 'anchored',
     }));
     await requestResult(store.put({
       key: 'migration',
@@ -236,7 +342,10 @@ export function createAppDataRepository(database) {
     listJournal,
     listByGeneration,
     readSourceEntry,
+    readWorkspaceChangeJournal,
+    listWorkspaceChangeJournal,
     writeWorkspaceGeneration,
+    commitWorkspaceMutation,
     activateWorkspaceGeneration,
     activateGeneration,
     close: () => database.close(),

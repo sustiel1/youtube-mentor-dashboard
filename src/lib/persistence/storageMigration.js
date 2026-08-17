@@ -81,6 +81,7 @@ function buildProjections(snapshot, generationId, expectedWorkspaceIntegrity) {
     [APP_DATA_STORES.MEDIA_BLOBS]: [],
   };
   let workspaceIntegrity = null;
+  let workspaceSourceHash = null;
 
   for (const entry of snapshot.entries) {
     const parsed = parseJson(entry.rawValue);
@@ -88,6 +89,7 @@ function buildProjections(snapshot, generationId, expectedWorkspaceIntegrity) {
     if (entry.storageKey === 'workspace_library_v1') {
       const verified = verifyWorkspaceRaw(entry.rawValue, expectedWorkspaceIntegrity);
       workspaceIntegrity = verified.integrity;
+      workspaceSourceHash = entry.valueSha256;
       const workspaceProjection = buildWorkspaceProjectionRecords(verified.items, generationId);
       records[APP_DATA_STORES.WORKSPACE_ITEMS].push(...workspaceProjection[APP_DATA_STORES.WORKSPACE_ITEMS]);
       records[APP_DATA_STORES.SNAPSHOTS].push(...workspaceProjection[APP_DATA_STORES.SNAPSHOTS]);
@@ -152,7 +154,7 @@ function buildProjections(snapshot, generationId, expectedWorkspaceIntegrity) {
     throw new Error('The required Workspace source key is missing');
   }
 
-  return { records, workspaceIntegrity };
+  return { records, workspaceIntegrity, workspaceSourceHash };
 }
 
 function createBatchPlan(recordsByStore, batchSize) {
@@ -203,6 +205,7 @@ export async function migrateLocalStorageToIndexedDb({
   cryptoProvider = globalThis.crypto,
   batchSize = 25,
   activate = false,
+  activationEvidence = null,
   generationIdFactory = () => `generation-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
 } = {}) {
   if (!storage || !repository) throw new Error('Storage and repository are required');
@@ -219,7 +222,7 @@ export async function migrateLocalStorageToIndexedDb({
   const generationId = prior?.sourceHash === snapshot.sourceHash && prior?.generationId
     ? prior.generationId
     : generationIdFactory();
-  const { records, workspaceIntegrity } = buildProjections(
+  const { records, workspaceIntegrity, workspaceSourceHash } = buildProjections(
     snapshot,
     generationId,
     expectedWorkspaceIntegrity,
@@ -233,6 +236,7 @@ export async function migrateLocalStorageToIndexedDb({
     state: MIGRATION_STATES.COPYING,
     counts,
     integrity: workspaceIntegrity,
+    workspaceSourceHash,
   });
 
   try {
@@ -265,6 +269,7 @@ export async function migrateLocalStorageToIndexedDb({
       state: MIGRATION_STATES.VERIFYING,
       counts,
       integrity: workspaceIntegrity,
+      workspaceSourceHash,
     });
 
     for (const [storeName, expectedRecords] of Object.entries(records)) {
@@ -288,18 +293,17 @@ export async function migrateLocalStorageToIndexedDb({
       state: MIGRATION_STATES.READY,
       counts,
       integrity: workspaceIntegrity,
+      workspaceSourceHash,
     };
     await repository.writeMeta(ready);
 
     if (!activate) return { ...ready, idempotent: false };
 
-    await repository.activateGeneration({
-      generationId,
-      sourceHash: snapshot.sourceHash,
-      integrity: workspaceIntegrity,
-      counts,
+    const active = await activateReadyGeneration(repository, {
+      activationEvidence,
+      cryptoProvider,
     });
-    return { ...ready, state: MIGRATION_STATES.ACTIVE, idempotent: false };
+    return { ...active, idempotent: false };
   } catch (error) {
     try {
       await repository.writeMeta({
@@ -309,6 +313,7 @@ export async function migrateLocalStorageToIndexedDb({
         state: MIGRATION_STATES.FAILED,
         counts,
         integrity: workspaceIntegrity,
+        workspaceSourceHash,
         errorCode: classifyStorageError(error),
       });
     } catch {
@@ -318,11 +323,78 @@ export async function migrateLocalStorageToIndexedDb({
   }
 }
 
-export async function activateReadyGeneration(repository) {
+async function verifyActivationEvidence(migration, evidence, cryptoProvider) {
+  const backup = evidence?.backup;
+  const preflight = evidence?.preflight;
+  const integrity = evidence?.integrity;
+  if (
+    backup?.verified !== true
+    || preflight?.verified !== true
+    || integrity?.verified !== true
+    || preflight?.stableReadCount < 2
+    || preflight?.storageMode !== 'localStorage'
+    || preflight?.activeGenerationAbsent !== true
+    || !/^[a-f0-9]{64}$/i.test(String(backup?.encryptedFileSha256 || ''))
+  ) {
+    throw new Error('Verified backup, preflight and generation integrity evidence are required');
+  }
+  const expectedIntegrityHash = await canonicalSha256(migration.integrity, cryptoProvider);
+  for (const candidate of [backup, preflight, integrity]) {
+    if (
+      candidate.workspaceSourceHash !== migration.workspaceSourceHash
+      || await canonicalSha256(candidate.workspaceIntegrity, cryptoProvider) !== expectedIntegrityHash
+    ) {
+      throw new Error('Activation evidence does not match the ready Workspace generation');
+    }
+  }
+  if (
+    integrity.generationId !== migration.generationId
+    || integrity.sourceHash !== migration.sourceHash
+  ) {
+    throw new Error('Activation integrity evidence identifies a different generation');
+  }
+  const safeEvidence = {
+    backup: {
+      encryptedFileSha256: backup.encryptedFileSha256.toLowerCase(),
+      workspaceSourceHash: backup.workspaceSourceHash,
+      workspaceIntegrity: backup.workspaceIntegrity,
+    },
+    preflight: {
+      workspaceSourceHash: preflight.workspaceSourceHash,
+      workspaceIntegrity: preflight.workspaceIntegrity,
+      stableReadCount: preflight.stableReadCount,
+      storageMode: preflight.storageMode,
+      activeGenerationAbsent: preflight.activeGenerationAbsent,
+    },
+    integrity: {
+      generationId: integrity.generationId,
+      sourceHash: integrity.sourceHash,
+      workspaceSourceHash: integrity.workspaceSourceHash,
+      workspaceIntegrity: integrity.workspaceIntegrity,
+    },
+  };
+  return {
+    verified: true,
+    evidenceHash: await canonicalSha256(safeEvidence, cryptoProvider),
+  };
+}
+
+export async function activateReadyGeneration(repository, {
+  activationEvidence,
+  cryptoProvider = globalThis.crypto,
+} = {}) {
   const migration = await repository.readMeta('migration');
   if (!migration || migration.state !== MIGRATION_STATES.READY) {
     throw new Error('No verified generation is ready for activation');
   }
-  await repository.activateGeneration(migration);
+  const verifiedEvidence = await verifyActivationEvidence(
+    migration,
+    activationEvidence,
+    cryptoProvider,
+  );
+  await repository.activateGeneration({
+    ...migration,
+    activationEvidence: verifiedEvidence,
+  });
   return { ...migration, state: MIGRATION_STATES.ACTIVE };
 }

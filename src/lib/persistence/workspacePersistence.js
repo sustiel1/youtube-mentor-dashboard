@@ -25,6 +25,10 @@ import {
 import { APP_DATA_STORES, classifyStorageKey } from './storageManifest.js';
 import { APPLICATION_STORAGE_MODES, getApplicationStorageMode } from './storageMode.js';
 import { buildWorkspaceProjectionRecords } from './workspaceProjection.js';
+import {
+  createWorkspaceChangeJournalEntry,
+  verifyWorkspaceChangeJournalEntry,
+} from './workspaceChangeJournal.js';
 
 const WORKSPACE_SOURCE_KEY = 'workspace_library_v1';
 
@@ -81,6 +85,15 @@ function workspaceFailure(error, operation, attemptedSize = null) {
     operation,
     cause: error,
     attemptedSize,
+    rollbackVerified: true,
+  });
+}
+
+function activationRequiredFailure(operation) {
+  return createWorkspacePersistenceFailure({
+    code: 'indexeddb-activation-required',
+    operation,
+    cause: new Error('A verified IndexedDB generation must be activated before Workspace writes'),
     rollbackVerified: true,
   });
 }
@@ -144,6 +157,7 @@ export function createWorkspacePersistence({
       if (indexedDbSource) return indexedDbSource;
     } catch {
       persistenceEvents?.publish('fallback-active', { storageKey: WORKSPACE_SOURCE_KEY });
+      return { ...readLocalSource(), fallbackReason: 'indexeddb-unavailable' };
     }
     return readLocalSource();
   }
@@ -194,8 +208,43 @@ export function createWorkspacePersistence({
     }
   }
 
+  async function verifyCommittedMutation(repository, sourceEntry, projection, journalEntry) {
+    await verifyGeneration(repository, sourceEntry, projection);
+    const [active, storedJournal] = await Promise.all([
+      repository.readMeta('activeWorkspaceGeneration'),
+      repository.readWorkspaceChangeJournal(journalEntry.operationId),
+    ]);
+    if (
+      active?.state !== 'active'
+      || active.generationId !== sourceEntry.generationId
+      || active.journalOperationId !== journalEntry.operationId
+      || !storedJournal
+      || await canonicalSha256(storedJournal, cryptoProvider)
+        !== await canonicalSha256(journalEntry, cryptoProvider)
+    ) {
+      throw verificationError();
+    }
+    const previousSource = await repository.readSourceEntry(
+      journalEntry.previousGenerationId,
+      WORKSPACE_SOURCE_KEY,
+    );
+    if (!previousSource || typeof previousSource.rawValue !== 'string') throw verificationError();
+    await verifyWorkspaceChangeJournalEntry(storedJournal, {
+      previousRaw: previousSource.rawValue,
+      nextRaw: sourceEntry.rawValue,
+      cryptoProvider,
+    });
+  }
+
   async function executeIndexedDbWrite(operation, legacyOperation) {
     const current = await readSource();
+    if (current.source !== 'indexedDB' || !current.generationId) {
+      if (current.fallbackReason === 'indexeddb-unavailable') {
+        const unavailable = Object.assign(new Error('IndexedDB is unavailable'), { name: 'InvalidStateError' });
+        return workspaceFailure(unavailable, operation);
+      }
+      return activationRequiredFailure(operation);
+    }
     const memoryStorage = new WorkspaceMemoryStorage(current.rawValue);
     const result = legacyOperation(memoryStorage);
     if (!result?.ok) return result;
@@ -209,6 +258,15 @@ export function createWorkspacePersistence({
     const attemptedSize = new TextEncoder().encode(rawValue).byteLength;
     try {
       const repository = await getRepository();
+      const recoveryAnchor = await repository.readMeta('workspaceRecoveryAnchor');
+      const fallbackRaw = localStorageArea?.getItem?.(WORKSPACE_SOURCE_KEY) ?? null;
+      if (
+        recoveryAnchor?.state !== 'anchored'
+        || typeof fallbackRaw !== 'string'
+        || await sha256Text(fallbackRaw, cryptoProvider) !== recoveryAnchor.workspaceSourceHash
+      ) {
+        return activationRequiredFailure(operation);
+      }
       const verified = verifyWorkspaceRaw(rawValue);
       const generationId = createGenerationId(cryptoProvider);
       const projection = buildWorkspaceProjectionRecords(verified.items, generationId);
@@ -222,26 +280,45 @@ export function createWorkspacePersistence({
         logicalBytes: logicalUtf16Bytes(WORKSPACE_SOURCE_KEY, rawValue),
         valueSha256,
       };
+      const journalEntry = await createWorkspaceChangeJournalEntry({
+        operation,
+        previousGenerationId: current.generationId,
+        nextGenerationId: generationId,
+        anchorGenerationId: recoveryAnchor.generationId,
+        anchorSourceHash: recoveryAnchor.workspaceSourceHash,
+        previousRaw: current.rawValue,
+        nextRaw: rawValue,
+        cryptoProvider,
+      });
 
-      await repository.writeWorkspaceGeneration({
+      await repository.commitWorkspaceMutation({
         sourceEntry,
         workspaceItems: projection[APP_DATA_STORES.WORKSPACE_ITEMS],
         snapshots: projection[APP_DATA_STORES.SNAPSHOTS],
-      });
-      await verifyGeneration(repository, sourceEntry, projection);
-      await repository.activateWorkspaceGeneration({
-        generationId,
-        sourceHash: valueSha256,
-        integrity: verified.integrity,
-        counts: {
-          workspaceItems: projection[APP_DATA_STORES.WORKSPACE_ITEMS].length,
-          snapshots: projection[APP_DATA_STORES.SNAPSHOTS].length,
+        journalEntry,
+        activation: {
+          expectedPreviousGenerationId: current.generationId,
+          generationId,
+          sourceHash: valueSha256,
+          integrity: verified.integrity,
+          counts: {
+            workspaceItems: projection[APP_DATA_STORES.WORKSPACE_ITEMS].length,
+            snapshots: projection[APP_DATA_STORES.SNAPSHOTS].length,
+          },
         },
       });
+      await verifyCommittedMutation(repository, sourceEntry, projection, journalEntry);
 
       cachedItems = result.persistedItems;
       persistenceEvents?.publish('record-updated', { generationId, storageKey: WORKSPACE_SOURCE_KEY });
-      return { ...result, storage: 'indexedDB', generationId, idempotent: false };
+      return {
+        ...result,
+        storage: 'indexedDB',
+        generationId,
+        journalOperationId: journalEntry.operationId,
+        recoverable: true,
+        idempotent: false,
+      };
     } catch (error) {
       return workspaceFailure(error, operation, attemptedSize);
     }
@@ -274,7 +351,7 @@ export function createWorkspacePersistence({
       (storage) => updateWorkspaceItemsBulk(ids, updates, { storage }),
     ),
     archiveItems: (ids, archived = true) => execute(
-      'archive-items',
+      archived ? 'archive-items' : 'restore-items',
       (storage) => archiveWorkspaceItems(ids, archived, { storage }),
     ),
     reassignVideoGroupTopic: (params) => execute(

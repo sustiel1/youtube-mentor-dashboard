@@ -1,5 +1,5 @@
 export const APP_DATA_DB_NAME = 'yt_mentor_app_data_v1';
-export const APP_DATA_DB_VERSION = 1;
+export const APP_DATA_DB_VERSION = 2;
 
 export const APP_DATA_STORES = Object.freeze({
   META: 'meta',
@@ -11,6 +11,7 @@ export const APP_DATA_STORES = Object.freeze({
   SNAPSHOTS: 'snapshots',
   MEDIA_BLOBS: 'mediaBlobs',
   MIGRATION_JOURNAL: 'migrationJournal',
+  WORKSPACE_CHANGE_JOURNAL: 'workspaceChangeJournal',
 });
 
 export const LOCAL_STORAGE_FIXED_KEYS = Object.freeze([

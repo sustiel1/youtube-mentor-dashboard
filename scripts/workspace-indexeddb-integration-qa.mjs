@@ -10,6 +10,7 @@ import { createWorkspacePersistence } from '../src/lib/persistence/workspacePers
 import {
   checksumWorkspaceItemIds,
   checksumWorkspacePayloadsExcludingTopicAssignment,
+  sha256Text,
 } from '../src/lib/persistence/storageIntegrity.js';
 
 const WORKSPACE_KEY = 'workspace_library_v1';
@@ -56,6 +57,7 @@ class MemoryRepository {
     this.sources = new Map();
     this.workspaceItems = new Map();
     this.snapshots = new Map();
+    this.changeJournal = new Map();
     this.writeCount = 0;
     this.activationCount = 0;
     this.failWrite = null;
@@ -95,6 +97,53 @@ class MemoryRepository {
     this.sources = nextSources;
     this.workspaceItems = nextWorkspaceItems;
     this.snapshots = nextSnapshots;
+  }
+
+  async commitWorkspaceMutation({ sourceEntry, workspaceItems, snapshots, journalEntry, activation }) {
+    this.writeCount += 1;
+    if (this.failWrite) throw this.failWrite;
+    const current = this.meta.get('activeWorkspaceGeneration') || this.meta.get('activeGeneration');
+    const anchor = this.meta.get('workspaceRecoveryAnchor');
+    if (
+      current?.generationId !== activation.expectedPreviousGenerationId
+      || anchor?.generationId !== journalEntry.anchorGenerationId
+      || anchor?.workspaceSourceHash !== journalEntry.anchorSourceHash
+    ) {
+      throw Object.assign(new Error('synthetic concurrency failure'), { name: 'WorkspaceConcurrencyError' });
+    }
+    const nextSources = new Map(this.sources);
+    const nextWorkspaceItems = new Map(this.workspaceItems);
+    const nextSnapshots = new Map(this.snapshots);
+    const nextJournal = new Map(this.changeJournal);
+    if (nextJournal.has(journalEntry.operationId)) throw new Error('duplicate journal operation');
+    nextSources.set(this.sourceKey(sourceEntry.generationId, sourceEntry.storageKey), structuredClone(sourceEntry));
+    workspaceItems.forEach(record => nextWorkspaceItems.set(this.recordKey(record), structuredClone(record)));
+    snapshots.forEach(record => nextSnapshots.set(this.recordKey(record), structuredClone(record)));
+    nextJournal.set(journalEntry.operationId, structuredClone(journalEntry));
+    this.sources = nextSources;
+    this.workspaceItems = nextWorkspaceItems;
+    this.snapshots = nextSnapshots;
+    this.changeJournal = nextJournal;
+    this.meta.set('activeWorkspaceGeneration', {
+      key: 'activeWorkspaceGeneration',
+      state: 'active',
+      generationId: activation.generationId,
+      sourceHash: activation.sourceHash,
+      integrity: structuredClone(activation.integrity),
+      counts: structuredClone(activation.counts),
+      journalOperationId: journalEntry.operationId,
+    });
+    this.activationCount += 1;
+  }
+
+  async readWorkspaceChangeJournal(operationId) {
+    return structuredClone(this.changeJournal.get(operationId) || null);
+  }
+
+  async listWorkspaceChangeJournal(anchorGenerationId) {
+    return [...this.changeJournal.values()]
+      .filter(record => record.anchorGenerationId === anchorGenerationId)
+      .map(record => structuredClone(record));
   }
 
   async listByGeneration(storeName, generationId) {
@@ -140,6 +189,35 @@ function fixture(count = 3) {
   });
   globalThis.localStorage = storage;
   return { items, storage };
+}
+
+async function activateFixture(repository, storage) {
+  const rawValue = storage.getItem(WORKSPACE_KEY);
+  const sourceHash = await sha256Text(rawValue);
+  const generationId = 'synthetic-activated-base';
+  repository.sources.set(repository.sourceKey(generationId, WORKSPACE_KEY), {
+    generationId,
+    storageKey: WORKSPACE_KEY,
+    rawValue,
+    valueSha256: sourceHash,
+  });
+  repository.meta.set('activeGeneration', {
+    key: 'activeGeneration',
+    state: 'active',
+    generationId,
+    sourceHash,
+  });
+  repository.meta.set('workspaceRecoveryAnchor', {
+    key: 'workspaceRecoveryAnchor',
+    state: 'anchored',
+    generationId,
+    workspaceSourceHash: sourceHash,
+    integrity: {
+      recordCount: JSON.parse(rawValue).length,
+      idChecksum: checksumWorkspaceItemIds(JSON.parse(rawValue)),
+      payloadChecksum: checksumWorkspacePayloadsExcludingTopicAssignment(JSON.parse(rawValue)),
+    },
+  });
 }
 
 let passed = 0;
@@ -195,10 +273,26 @@ await check('enabled reads fall back to localStorage without mutating it', async
   assert.equal(storage.writeCount, 0);
 });
 
+await check('enabled writes require a separately verified activation', async () => {
+  const { storage } = fixture();
+  const repository = new MemoryRepository();
+  const persistence = createWorkspacePersistence({
+    mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
+    localStorageArea: storage,
+    repositoryFactory: async () => repository,
+    events: NOOP_EVENTS,
+  });
+  const result = await persistence.saveItem({ id: 'must-not-cut-over' });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'indexeddb-activation-required');
+  assert.equal(repository.changeJournal.size, 0);
+});
+
 await check('enabled write verifies and activates one immutable Workspace generation', async () => {
   const { items, storage } = fixture();
   const before = storage.getItem(WORKSPACE_KEY);
   const repository = new MemoryRepository();
+  await activateFixture(repository, storage);
   const events = [];
   const persistence = createWorkspacePersistence({
     mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
@@ -235,6 +329,7 @@ await check('subsequent writes read IndexedDB first and leave the fallback untou
   const { storage } = fixture();
   const fallback = storage.getItem(WORKSPACE_KEY);
   const repository = new MemoryRepository();
+  await activateFixture(repository, storage);
   const persistence = createWorkspacePersistence({
     mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
     localStorageArea: storage,
@@ -253,6 +348,7 @@ await check('transaction and quota failures preserve the previous pointer and fa
   const { storage } = fixture();
   const fallback = storage.getItem(WORKSPACE_KEY);
   const repository = new MemoryRepository();
+  await activateFixture(repository, storage);
   const persistence = createWorkspacePersistence({
     mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
     localStorageArea: storage,
@@ -272,9 +368,10 @@ await check('transaction and quota failures preserve the previous pointer and fa
   assert.equal((await persistence.readItems()).some(item => item.id === 'must-not-activate'), false);
 });
 
-await check('corrupt read-back is rejected before pointer activation', async () => {
+await check('corrupt read-back is reported while the atomic journal remains recoverable', async () => {
   const { storage } = fixture();
   const repository = new MemoryRepository();
+  await activateFixture(repository, storage);
   repository.corruptReadBack = true;
   const persistence = createWorkspacePersistence({
     mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
@@ -285,7 +382,9 @@ await check('corrupt read-back is rejected before pointer activation', async () 
   const failed = await persistence.saveItem({ id: 'corrupt', notes: 'corrupt' });
   assert.equal(failed.ok, false);
   assert.equal(failed.error.code, 'indexeddb-verification-failed');
-  assert.equal(await repository.readMeta('activeWorkspaceGeneration'), null);
+  const active = await repository.readMeta('activeWorkspaceGeneration');
+  assert.equal(active.state, 'active');
+  assert.equal(repository.changeJournal.has(active.journalOperationId), true);
 });
 
 await check('blocked or unavailable IndexedDB reads use the valid local fallback', async () => {
@@ -309,6 +408,7 @@ await check('blocked or unavailable IndexedDB reads use the valid local fallback
 await check('the integration reads no authentication or unknown keys', async () => {
   const { storage } = fixture();
   const repository = new MemoryRepository();
+  await activateFixture(repository, storage);
   const persistence = createWorkspacePersistence({
     mode: APPLICATION_STORAGE_MODES.INDEXED_DB,
     localStorageArea: storage,

@@ -115,8 +115,16 @@ class MemoryRepository {
 
   async activateGeneration(payload) {
     this.activationCount += 1;
-    this.meta.set('activeGeneration', { key: 'activeGeneration', state: 'active', ...structuredClone(payload) });
-    this.meta.set('migration', { key: 'migration', state: 'active', ...structuredClone(payload) });
+    this.meta.set('activeGeneration', { key: 'activeGeneration', ...structuredClone(payload), state: 'active' });
+    this.meta.set('migration', { key: 'migration', ...structuredClone(payload), state: 'active' });
+    this.meta.set('workspaceRecoveryAnchor', {
+      key: 'workspaceRecoveryAnchor',
+      state: 'anchored',
+      generationId: payload.generationId,
+      workspaceSourceHash: payload.workspaceSourceHash,
+      integrity: structuredClone(payload.integrity),
+      evidenceHash: payload.activationEvidence.evidenceHash,
+    });
   }
 }
 
@@ -157,6 +165,33 @@ function createFixture() {
     unrelated_origin_key: 'must-never-be-copied',
   });
   return { storage, workspaceItems, expected: expectedWorkspace(workspaceItems) };
+}
+
+function activationEvidence(ready) {
+  const common = {
+    workspaceSourceHash: ready.workspaceSourceHash,
+    workspaceIntegrity: ready.integrity,
+  };
+  return {
+    backup: {
+      verified: true,
+      encryptedFileSha256: 'a'.repeat(64),
+      ...common,
+    },
+    preflight: {
+      verified: true,
+      stableReadCount: 2,
+      storageMode: 'localStorage',
+      activeGenerationAbsent: true,
+      ...common,
+    },
+    integrity: {
+      verified: true,
+      generationId: ready.generationId,
+      sourceHash: ready.sourceHash,
+      ...common,
+    },
+  };
 }
 
 let passed = 0;
@@ -209,7 +244,6 @@ await check('resumes after a failed batch and activates only after verification'
     repository,
     expectedWorkspaceIntegrity: expected,
     batchSize: 10,
-    activate: true,
     generationIdFactory: () => 'generation-resume',
   }), /synthetic transaction failure/);
   assert.equal(repository.meta.has('activeGeneration'), false);
@@ -221,10 +255,12 @@ await check('resumes after a failed batch and activates only after verification'
     repository,
     expectedWorkspaceIntegrity: expected,
     batchSize: 10,
-    activate: true,
     generationIdFactory: () => 'must-not-replace-generation',
   });
-  assert.equal(result.state, MIGRATION_STATES.ACTIVE);
+  const active = await activateReadyGeneration(repository, {
+    activationEvidence: activationEvidence(result),
+  });
+  assert.equal(active.state, MIGRATION_STATES.ACTIVE);
   assert.equal(result.generationId, 'generation-resume');
   assert.equal(repository.activationCount, 1);
 });
@@ -232,12 +268,14 @@ await check('resumes after a failed batch and activates only after verification'
 await check('is idempotent after activation', async () => {
   const { storage, expected } = createFixture();
   const repository = new MemoryRepository();
-  await migrateLocalStorageToIndexedDb({
+  const ready = await migrateLocalStorageToIndexedDb({
     storage,
     repository,
     expectedWorkspaceIntegrity: expected,
-    activate: true,
     generationIdFactory: () => 'generation-idempotent',
+  });
+  await activateReadyGeneration(repository, {
+    activationEvidence: activationEvidence(ready),
   });
   const writeCalls = repository.writeCalls;
   const result = await migrateLocalStorageToIndexedDb({
@@ -298,7 +336,6 @@ await check('classifies quota failure without changing localStorage or activatin
     storage,
     repository,
     expectedWorkspaceIntegrity: expected,
-    activate: true,
     generationIdFactory: () => 'generation-quota',
   }), /synthetic quota failure/);
   assert.equal((await repository.readMeta('migration')).errorCode, 'quota-exceeded');
@@ -306,7 +343,7 @@ await check('classifies quota failure without changing localStorage or activatin
   assert.equal(storage.snapshot(), before);
 });
 
-await check('requires an explicitly ready generation before atomic activation', async () => {
+await check('requires ready state plus verified backup, preflight and integrity evidence', async () => {
   const { storage, expected } = createFixture();
   const repository = new MemoryRepository();
   await assert.rejects(() => activateReadyGeneration(repository), /No verified generation/);
@@ -317,7 +354,13 @@ await check('requires an explicitly ready generation before atomic activation', 
     generationIdFactory: () => 'generation-manual-cutover',
   });
   assert.equal(ready.state, MIGRATION_STATES.READY);
-  const active = await activateReadyGeneration(repository);
+  await assert.rejects(
+    () => activateReadyGeneration(repository),
+    /Verified backup, preflight and generation integrity evidence/,
+  );
+  const active = await activateReadyGeneration(repository, {
+    activationEvidence: activationEvidence(ready),
+  });
   assert.equal(active.state, MIGRATION_STATES.ACTIVE);
   assert.equal(repository.activationCount, 1);
 });
