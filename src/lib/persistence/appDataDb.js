@@ -175,6 +175,35 @@ export function createAppDataRepository(database) {
     return records[0] || null;
   }
 
+  async function writeWorkspaceGeneration({ sourceEntry, workspaceItems, snapshots }) {
+    const transaction = database.transaction([
+      APP_DATA_STORES.SOURCE_ENTRIES,
+      APP_DATA_STORES.WORKSPACE_ITEMS,
+      APP_DATA_STORES.SNAPSHOTS,
+    ], 'readwrite');
+    const done = transactionDone(transaction);
+    const sourceStore = transaction.objectStore(APP_DATA_STORES.SOURCE_ENTRIES);
+    const workspaceStore = transaction.objectStore(APP_DATA_STORES.WORKSPACE_ITEMS);
+    const snapshotStore = transaction.objectStore(APP_DATA_STORES.SNAPSHOTS);
+    await Promise.all([
+      requestResult(sourceStore.put(sourceEntry)),
+      ...workspaceItems.map((record) => requestResult(workspaceStore.put(record))),
+      ...snapshots.map((record) => requestResult(snapshotStore.put(record))),
+    ]);
+    await done;
+  }
+
+  async function activateWorkspaceGeneration({ generationId, sourceHash, integrity, counts }) {
+    return writeMeta({
+      key: 'activeWorkspaceGeneration',
+      generationId,
+      sourceHash,
+      integrity,
+      counts,
+      state: 'active',
+    });
+  }
+
   async function activateGeneration({ generationId, sourceHash, integrity, counts }) {
     const transaction = database.transaction(APP_DATA_STORES.META, 'readwrite');
     const done = transactionDone(transaction);
@@ -207,6 +236,8 @@ export function createAppDataRepository(database) {
     listJournal,
     listByGeneration,
     readSourceEntry,
+    writeWorkspaceGeneration,
+    activateWorkspaceGeneration,
     activateGeneration,
     close: () => database.close(),
   };

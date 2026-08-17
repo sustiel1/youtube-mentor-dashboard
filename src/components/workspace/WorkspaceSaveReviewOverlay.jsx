@@ -11,12 +11,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useWorkspaceTopics, useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
-import {
-  saveWorkspaceItem,
-  saveWorkspaceItemsBulk,
-  findWorkspaceItemByContentHash,
-  getWorkspacePersistenceErrorMessage,
-} from "@/lib/workspaceLibraryStore";
+import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
 import { computeContentHash } from "@/lib/contentHash";
 import { ConfirmDialog } from "./ConfirmDialog";
 import {
@@ -145,7 +140,19 @@ export function WorkspaceSaveReviewOverlay({
   onSaved,
 }) {
   const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
-  const { items: libraryItems, reload, deleteItem, updateItem, deleteItems, deleteAllItems, archiveItems, updateItemsBulk } = useWorkspaceItems();
+  const {
+    items: libraryItems,
+    reload,
+    saveItem,
+    saveItemsBulk,
+    findByContentHash,
+    deleteItem,
+    updateItem,
+    deleteItems,
+    deleteAllItems,
+    archiveItems,
+    updateItemsBulk,
+  } = useWorkspaceItems();
 
   // ── Draft / save controls ────────────────────────────────────────────────────
   const [topicId,      setTopicId]      = useState('');
@@ -457,19 +464,19 @@ export function WorkspaceSaveReviewOverlay({
     if (vtId) setActiveView('topics');
   }
 
-  function handleConfirmDeleteAllVisible() {
+  async function handleConfirmDeleteAllVisible() {
     const ids = displayItems.map(i => i.id);
     if (!ids.length) return;
-    const result = deleteItems(ids);
+    const result = await deleteItems(ids);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
     setMoreActionsOpen(false);
   }
 
-  function handleConfirmDeleteAllWorkspace() {
+  async function handleConfirmDeleteAllWorkspace() {
     const count = libraryItems.length;
     if (!count) return;
-    const result = deleteAllItems();
+    const result = await deleteAllItems();
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${count} פריטים מה-Workspace`);
     setMoreActionsOpen(false);
@@ -479,32 +486,32 @@ export function WorkspaceSaveReviewOverlay({
     setConfirmDeleteSingleItem(item);
   }
 
-  function handleConfirmDeleteSingleItem() {
+  async function handleConfirmDeleteSingleItem() {
     if (!confirmDeleteSingleItem) return;
-    const result = deleteItem(confirmDeleteSingleItem.id);
+    const result = await deleteItem(confirmDeleteSingleItem.id);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט נמחק מ-Workspace');
-    reload();
+    await reload();
     setConfirmDeleteSingleItem(null);
   }
 
-  function handleArchiveSingleItem(item) {
-    const result = archiveItems([item.id], true);
+  async function handleArchiveSingleItem(item) {
+    const result = await archiveItems([item.id], true);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הועבר לארכיון');
-    reload();
+    await reload();
   }
 
   // ── Stock table adapter (שוק ההון > מניות) ───────────────────────────────────
   // StockWatchlistView owns its own selection state, bulk bar, delete/bulk-delete
   // confirmations, and edit modal — mirrors exactly how WorkspaceLibrary.jsx wires it.
-  const handleStatusChange = (id, newStatus) => {
-    const result = updateItem(id, { marketStatus: newStatus || null });
+  const handleStatusChange = async (id, newStatus) => {
+    const result = await updateItem(id, { marketStatus: newStatus || null });
     reportWorkspaceWriteFailure(result);
   };
 
-  const handleDeleteStockItem = (item) => {
-    const result = deleteItem(item.id);
+  const handleDeleteStockItem = async (item) => {
+    const result = await deleteItem(item.id);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
   };
@@ -545,38 +552,38 @@ export function WorkspaceSaveReviewOverlay({
       .catch(() => toast.error('לא ניתן להעתיק'));
   }
 
-  function handleArchiveOverlaySelected() {
+  async function handleArchiveOverlaySelected() {
     const ids = [...selectedOverlayIds];
-    const result = archiveItems(ids, true);
+    const result = await archiveItems(ids, true);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים הועברו לארכיון`);
     clearOverlaySelection();
-    reload();
+    await reload();
   }
 
-  function handleConfirmBulkDeleteOverlay() {
+  async function handleConfirmBulkDeleteOverlay() {
     const ids = [...selectedOverlayIds];
-    const result = deleteItems(ids);
+    const result = await deleteItems(ids);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
     clearOverlaySelection();
-    reload();
+    await reload();
   }
 
-  function handleReassignSelected(targetTopicId) {
+  async function handleReassignSelected(targetTopicId) {
     const targetTopic = mainTopics.find(t => t.id === targetTopicId);
     if (!targetTopic) return;
     const ids = [...selectedOverlayIds];
-    const result = updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
+    const result = await updateItemsBulk(ids, { topicId: targetTopic.id, topicName: targetTopic.name, subTopicId: null, subTopicName: null });
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים שויכו ל"${targetTopic.name}"`);
     clearOverlaySelection();
-    reload();
+    await reload();
   }
 
   // Concatenates the notes of every item in a grid card into ONE new saved
   // entry — additive only, never touches/deletes the source items. Reuses
-  // saveWorkspaceItem (the same single-item create function used everywhere
+  // saveItem (the same single-item create path used everywhere
   // else) and the existing content-hash dedup check, not new save logic.
   async function handleSaveMerged({ label, items, virtTopicId, virtSubtopicId }) {
     if (!items || items.length === 0) return;
@@ -590,7 +597,7 @@ export function WorkspaceSaveReviewOverlay({
     }).join('\n\n');
 
     const contentHash = await computeContentHash(mergedNotes);
-    if (contentHash && findWorkspaceItemByContentHash(contentHash)) {
+    if (contentHash && findByContentHash(contentHash)) {
       toast.info('פריט ממוזג זהה כבר קיים ב-Workspace');
       return;
     }
@@ -599,7 +606,7 @@ export function WorkspaceSaveReviewOverlay({
     // genuinely unclassified rather than guessing a topic for it.
     const target = virtTopicId ? getCanonicalSaveTargetForVirtualPath(virtTopicId, virtSubtopicId, topics) : null;
 
-    const saveResult = saveWorkspaceItem({
+    const saveResult = await saveItem({
       id:           `ws-merged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       videoId:      null,
       videoUrl:     null,
@@ -621,7 +628,7 @@ export function WorkspaceSaveReviewOverlay({
     });
     if (reportWorkspaceWriteFailure(saveResult)) return;
     toast.success(`נוצר פריט ממוזג מ-${items.length} פריטים`);
-    reload();
+    await reload();
   }
 
   // ── Tab preference handlers ────────────────────────────────────────────────
@@ -695,7 +702,7 @@ export function WorkspaceSaveReviewOverlay({
 
       if (contentHash && (
         seenHashesThisRun.has(contentHash) ||
-        findWorkspaceItemByContentHash(contentHash)
+        findByContentHash(contentHash)
       )) {
         skippedCount++;
         continue;
@@ -795,14 +802,14 @@ export function WorkspaceSaveReviewOverlay({
     }
 
     if (pendingItems.length > 0) {
-      const saveResult = saveWorkspaceItemsBulk(pendingItems);
+      const saveResult = await saveItemsBulk(pendingItems);
       if (reportWorkspaceWriteFailure(saveResult)) {
         setIsSaving(false);
         return;
       }
     }
 
-    reload();
+    await reload();
     setRecentlySavedIds(savedIds);
     setActiveView('recent');
     setIsSaving(false);
@@ -812,7 +819,7 @@ export function WorkspaceSaveReviewOverlay({
       toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
     }
     onSaved?.({ count: savedIds.length, skipped: skippedCount });
-  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, reload, onSaved]);
+  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, findByContentHash, saveItemsBulk, reload, onSaved]);
 
   // ── View tabs ─────────────────────────────────────────────────────────────────
 

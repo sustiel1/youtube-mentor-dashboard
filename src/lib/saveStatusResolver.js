@@ -5,7 +5,7 @@
 import { getKnowledgeItems } from '@/lib/localKnowledgeItemStore';
 import { getLibraryContents } from '@/lib/knowledgeLibrary';
 import { resolveObsidianItemSaveEntry } from '@/lib/obsidianItemSaveStore';
-import { getWorkspaceItems } from '@/lib/workspaceLibraryStore';
+import { getWorkspaceItemsSnapshot } from '@/lib/persistence/workspacePersistence';
 
 function normalizeText(text) {
   return String(text || '').trim().replace(/\s+/g, ' ');
@@ -68,7 +68,7 @@ export function resolveBrainSaveStatus(videoId, tabKey, text) {
 
 export function resolveWorkspaceSaveStatus(videoId, tabKey, text) {
   const { wsId } = buildItemSaveIds(videoId, tabKey, text);
-  const item = getWorkspaceItems().find(candidate => candidate.id === wsId)
+  const item = getWorkspaceItemsSnapshot().find(candidate => candidate.id === wsId)
     || findKnowledgeItem(wsId);
   if (!item) {
     return {

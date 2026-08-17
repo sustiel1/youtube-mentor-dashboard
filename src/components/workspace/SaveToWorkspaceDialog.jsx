@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useWorkspaceTopics } from "@/hooks/useWorkspaceLibrary";
-import { getWorkspacePersistenceErrorMessage, saveWorkspaceItem, getWorkspaceItemByVideoId } from "@/lib/workspaceLibraryStore";
+import { useWorkspaceItems, useWorkspaceTopics } from "@/hooks/useWorkspaceLibrary";
+import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
 import {
@@ -47,6 +47,7 @@ function detectSubTopic(video, topics, mainTopicId) {
 
 export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sourceTab = null }) {
   const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
+  const { items: workspaceItems, saveItem } = useWorkspaceItems();
 
   const [topicId, setTopicId] = useState('');
   const [subTopicId, setSubTopicId] = useState('');
@@ -63,7 +64,7 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
   useEffect(() => {
     if (!open || !video) return;
 
-    const existing = getWorkspaceItemByVideoId(video.id || video.videoId);
+    const existing = workspaceItems.find(item => item.videoId === (video.id || video.videoId));
     const briefClassification = classifyCanonicalWorkspaceBrief({ video });
     const briefDestination = briefClassification.confirmed
       ? resolveCanonicalBriefDestination(topics)
@@ -113,13 +114,13 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
     setShowNewTopic(false);
     setShowNewSub(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, video?.id, video?.videoId]);
+  }, [open, video?.id, video?.videoId, workspaceItems]);
 
   const subTopics = getSubTopics(topicId);
   const selectedMainTopic = mainTopics.find(t => t.id === topicId);
   const selectedSubTopic = subTopics.find(t => t.id === subTopicId);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const videoId = video?.id || video?.videoId;
     if (!videoId) return;
 
@@ -139,7 +140,7 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
       semanticTags: normalizeWorkspaceSemanticTags(tags),
     });
 
-    const saveResult = saveWorkspaceItem({
+    const saveResult = await saveItem({
       videoId,
       videoUrl,
       videoTitle: video?.title || '',

@@ -25,6 +25,9 @@ export const WORKSPACE_PERSISTENCE_ERROR_CODES = {
   INVALID_TARGETED_ROUTING: 'invalid-targeted-routing',
   TARGETED_ROUTING_ITEMS_MISMATCH: 'targeted-routing-items-mismatch',
   TARGETED_ROUTING_VERIFICATION_FAILED: 'targeted-routing-verification-failed',
+  INDEXEDDB_UNAVAILABLE: 'indexeddb-unavailable',
+  INDEXEDDB_WRITE_FAILED: 'indexeddb-write-failed',
+  INDEXEDDB_VERIFICATION_FAILED: 'indexeddb-verification-failed',
 };
 
 const GENERIC_STORAGE_ERROR_MESSAGE = 'השמירה ל-Workspace נכשלה. הנתונים הקיימים נשמרו ללא שינוי.';
@@ -75,6 +78,10 @@ function persistenceFailure({ code, operation, cause = null, attemptedSize = nul
   };
   logPersistenceFailure(failure.error);
   return failure;
+}
+
+export function createWorkspacePersistenceFailure(options) {
+  return persistenceFailure(options);
 }
 
 export function getWorkspacePersistenceErrorMessage(result) {
@@ -305,9 +312,8 @@ export function updateWorkspaceTopic(id, updates) {
  * Returns { ok: false, count: N } if saved items reference this topic (or its sub-topics),
  * in which case nothing is deleted.
  */
-export function deleteWorkspaceTopic(id) {
+export function deleteWorkspaceTopic(id, { items = getWorkspaceItems() } = {}) {
   const allTopics = getWorkspaceTopics();
-  const items = getWorkspaceItems();
 
   const idsToDelete = new Set([
     id,
@@ -328,9 +334,9 @@ export function deleteWorkspaceTopic(id) {
 
 // ─── Items ────────────────────────────────────────────────────────────────────
 
-export function getWorkspaceItems() {
+export function getWorkspaceItems(storage = localStorage) {
   try {
-    const raw = localStorage.getItem(ITEMS_KEY);
+    const raw = storage.getItem(ITEMS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -339,7 +345,7 @@ export function getWorkspaceItems() {
   }
 }
 
-export function saveWorkspaceItem(item) {
+export function saveWorkspaceItem(item, { storage = localStorage } = {}) {
   const prepared = prepareWorkspaceItemForSave(item, getWorkspaceTopics());
   if (!prepared.ok) {
     return persistenceFailure({
@@ -348,7 +354,7 @@ export function saveWorkspaceItem(item) {
     });
   }
   const preparedItem = prepared.item;
-  const loaded = loadWorkspaceItemsForWrite('save-item');
+  const loaded = loadWorkspaceItemsForWrite('save-item', storage);
   if (!loaded.ok) return loaded;
   const items = loaded.items;
   const identity = getWorkspaceItemIdentity(preparedItem);
@@ -391,6 +397,7 @@ export function saveWorkspaceItem(item) {
     operation: 'save-item',
     intendedItemIds: [intendedId],
     previousRaw: loaded.raw,
+    storage,
   });
   return result.ok
     ? { ...result, status: idx !== -1 ? 'updated' : 'created', identity, item: result.persistedItems.find(saved => saved.id === intendedId) }
@@ -398,7 +405,7 @@ export function saveWorkspaceItem(item) {
 }
 
 /** §22 Bulk save — writes all items in one pass. */
-export function saveWorkspaceItemsBulk(items = []) {
+export function saveWorkspaceItemsBulk(items = [], { storage = localStorage } = {}) {
   if (!items.length) return { ok: true, saved: 0, failed: 0 };
   const topics = getWorkspaceTopics();
   const preparedItems = [];
@@ -420,7 +427,7 @@ export function saveWorkspaceItemsBulk(items = []) {
     }
     preparedItems.push(prepared.item);
   }
-  const loaded = loadWorkspaceItemsForWrite('save-items-bulk');
+  const loaded = loadWorkspaceItemsForWrite('save-items-bulk', storage);
   if (!loaded.ok) return { ...loaded, saved: 0, failed: items.length };
   const existing = loaded.items;
   let saved = 0;
@@ -466,58 +473,62 @@ export function saveWorkspaceItemsBulk(items = []) {
     operation: 'save-items-bulk',
     intendedItemIds,
     previousRaw: loaded.raw,
+    storage,
   });
   return result.ok
     ? { ...result, status: saved > 0 ? 'created' : 'already_exists', saved, failed, alreadyExisting }
     : { ...result, status: 'failed', saved: 0, failed: items.length };
 }
 
-export function updateWorkspaceItem(id, updates) {
-  const loaded = loadWorkspaceItemsForWrite('update-item');
+export function updateWorkspaceItem(id, updates, { storage = localStorage } = {}) {
+  const loaded = loadWorkspaceItemsForWrite('update-item', storage);
   if (!loaded.ok) return loaded;
   const items = loaded.items;
   const idx = items.findIndex(i => i.id === id);
   if (idx === -1) return persistenceFailure({ code: WORKSPACE_PERSISTENCE_ERROR_CODES.ITEM_NOT_FOUND, operation: 'update-item' });
   items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
-  return persistWorkspaceItems(items, { operation: 'update-item', intendedItemIds: [items[idx].id], previousRaw: loaded.raw });
+  return persistWorkspaceItems(items, { operation: 'update-item', intendedItemIds: [items[idx].id], previousRaw: loaded.raw, storage });
 }
 
-export function deleteWorkspaceItem(id) {
-  const loaded = loadWorkspaceItemsForWrite('delete-item');
+export function deleteWorkspaceItem(id, { storage = localStorage } = {}) {
+  const loaded = loadWorkspaceItemsForWrite('delete-item', storage);
   if (!loaded.ok) return loaded;
   return persistWorkspaceItems(loaded.items.filter(i => i.id !== id), {
     operation: 'delete-item',
     absentItemIds: [id],
     previousRaw: loaded.raw,
+    storage,
   });
 }
 
 /** Bulk delete — removes all items whose id is in `ids`. */
-export function deleteWorkspaceItems(ids = []) {
-  const loaded = loadWorkspaceItemsForWrite('delete-items-bulk');
+export function deleteWorkspaceItems(ids = [], { storage = localStorage } = {}) {
+  const loaded = loadWorkspaceItemsForWrite('delete-items-bulk', storage);
   if (!loaded.ok) return loaded;
   const idSet = new Set(ids);
   return persistWorkspaceItems(loaded.items.filter(i => !idSet.has(i.id)), {
     operation: 'delete-items-bulk',
     absentItemIds: ids,
     previousRaw: loaded.raw,
+    storage,
   });
 }
 
 /** Deletes every Workspace item. Does not touch topics, Brain, or KnowledgeItems. */
-export function deleteAllWorkspaceItems() {
-  const loaded = loadWorkspaceItemsForWrite('delete-all-items');
+export function deleteAllWorkspaceItems({ storage = localStorage } = {}) {
+  const loaded = loadWorkspaceItemsForWrite('delete-all-items', storage);
   if (!loaded.ok) return loaded;
   return persistWorkspaceItems([], {
     operation: 'delete-all-items',
     absentItemIds: loaded.items.map(item => item.id).filter(Boolean),
     previousRaw: loaded.raw,
+    storage,
   });
 }
 
 /** Bulk field update — applies the same `updates` to every item in `ids`. */
-export function updateWorkspaceItemsBulk(ids = [], updates = {}) {
-  const loaded = loadWorkspaceItemsForWrite('update-items-bulk');
+export function updateWorkspaceItemsBulk(ids = [], updates = {}, { storage = localStorage } = {}) {
+  const loaded = loadWorkspaceItemsForWrite('update-items-bulk', storage);
   if (!loaded.ok) return loaded;
   const idSet = new Set(ids);
   const now = new Date().toISOString();
@@ -528,6 +539,7 @@ export function updateWorkspaceItemsBulk(ids = [], updates = {}) {
     operation: 'update-items-bulk',
     intendedItemIds,
     previousRaw: loaded.raw,
+    storage,
   });
 }
 
@@ -623,23 +635,27 @@ export function reassignWorkspaceVideoGroupTopic({
  * Sets/clears `archivedAt` for the given items. Additive field — items
  * without it are treated as active, no migration needed.
  */
-export function archiveWorkspaceItems(ids = [], archived = true) {
-  return updateWorkspaceItemsBulk(ids, { archivedAt: archived ? new Date().toISOString() : null });
+export function archiveWorkspaceItems(ids = [], archived = true, { storage = localStorage } = {}) {
+  return updateWorkspaceItemsBulk(
+    ids,
+    { archivedAt: archived ? new Date().toISOString() : null },
+    { storage },
+  );
 }
 
-export function isVideoInWorkspaceLibrary(videoId) {
+export function isVideoInWorkspaceLibrary(videoId, storage = localStorage) {
   if (!videoId) return false;
   try {
-    return getWorkspaceItems().some(i => i.videoId === videoId);
+    return getWorkspaceItems(storage).some(i => i.videoId === videoId);
   } catch {
     return false;
   }
 }
 
-export function getWorkspaceItemByVideoId(videoId) {
+export function getWorkspaceItemByVideoId(videoId, storage = localStorage) {
   if (!videoId) return null;
   try {
-    return getWorkspaceItems().find(i => i.videoId === videoId) || null;
+    return getWorkspaceItems(storage).find(i => i.videoId === videoId) || null;
   } catch {
     return null;
   }
@@ -658,18 +674,18 @@ export function getWorkspaceItemByVideoId(videoId) {
  * topic dropdown to blank) — every re-save then looked "new" and duplicated the
  * whole batch instead of being skipped.
  */
-export function findWorkspaceItemByContentHash(contentHash) {
+export function findWorkspaceItemByContentHash(contentHash, storage = localStorage) {
   if (!contentHash) return null;
   try {
-    return getWorkspaceItems().find((i) => i.contentHash === contentHash) || null;
+    return getWorkspaceItems(storage).find((i) => i.contentHash === contentHash) || null;
   } catch {
     return null;
   }
 }
 
-export function updateWorkspaceItemByVideoId(videoId, updates) {
+export function updateWorkspaceItemByVideoId(videoId, updates, { storage = localStorage } = {}) {
   if (!videoId) return persistenceFailure({ code: WORKSPACE_PERSISTENCE_ERROR_CODES.ITEM_NOT_FOUND, operation: 'update-item-by-video-id' });
-  const loaded = loadWorkspaceItemsForWrite('update-item-by-video-id');
+  const loaded = loadWorkspaceItemsForWrite('update-item-by-video-id', storage);
   if (!loaded.ok) return loaded;
   const items = loaded.items;
   const idx = items.findIndex(i => i.videoId === videoId);
@@ -679,5 +695,6 @@ export function updateWorkspaceItemByVideoId(videoId, updates) {
     operation: 'update-item-by-video-id',
     intendedItemIds: [items[idx].id],
     previousRaw: loaded.raw,
+    storage,
   });
 }

@@ -12,12 +12,13 @@ import {
 import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { Archive, Download, BookMarked, Play, FileText, FolderOpen, X, Star } from "lucide-react";
 import { toast } from "sonner";
-import { getWorkspaceItems } from "@/lib/workspaceLibraryStore";
+import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 
 export default function Workspace({ navigateTo, pageParams }) {
   const { data: topics = [], isLoading } = useTopics();
   const { data: videos = [] } = useVideos();
   const { data: mentors = [] } = useMentors();
+  const { items: workspaceItems } = useWorkspaceItems();
   const [exportingAll, setExportingAll] = useState(false);
   const [exportingTopicId, setExportingTopicId] = useState(null);
 
@@ -58,9 +59,7 @@ export default function Workspace({ navigateTo, pageParams }) {
     [topicStats]
   );
 
-  const workspaceLibCount = useMemo(() => {
-    try { return getWorkspaceItems().length; } catch { return 0; }
-  }, []);
+  const workspaceLibCount = workspaceItems.length;
 
   const handleExportAll = async () => {
     setExportingAll(true);

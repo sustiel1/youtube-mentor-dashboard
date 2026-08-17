@@ -152,10 +152,11 @@ import {
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
 import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
 import { updateLocalVideo } from "@/lib/localVideoStore";
+import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 import { WorkspaceSaveReviewOverlay } from "@/components/workspace/WorkspaceSaveReviewOverlay";
-import { getWorkspaceItemByVideoId, updateWorkspaceItemByVideoId, saveWorkspaceItem, getWorkspaceItems, getWorkspaceTopics, getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
+import { getWorkspaceTopics, getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
 import { getWorkspaceItemIdentity } from "@/utils/workspaceItemIdentity";
 import { extractUnifiedStocks, extractMarketDashboardRows, extractSentimentItems, getSpecializedSrc } from "@/lib/morningBriefDisplay";
 import { buildStructuredSnapshot, buildSnapshotNotes, resolveStructuredSnapshotTopic } from "@/utils/structuredSnapshot";
@@ -2102,6 +2103,11 @@ export function VideoDetailPanel({
   navigateTo,
 }) {
   const isDev = import.meta?.env?.DEV === true;
+  const {
+    items: persistedWorkspaceItems,
+    saveItem: persistWorkspaceItem,
+    updateItemByVideoId: persistWorkspaceItemByVideoId,
+  } = useWorkspaceItems();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [analysisStage, setAnalysisStage] = useState(null);
@@ -4511,9 +4517,8 @@ export function VideoDetailPanel({
   const workspaceLibraryItem = useMemo(() => {
     const vid = video?.id || video?.videoId;
     if (!vid) return null;
-    try { return getWorkspaceItemByVideoId(vid); } catch { return null; }
-  // workspaceSaveOpen: recompute when dialog closes so card updates immediately after save
-  }, [video?.id, video?.videoId, workspaceSaveOpen]);
+    return persistedWorkspaceItems.find(item => item.videoId === vid) || null;
+  }, [persistedWorkspaceItems, video?.id, video?.videoId]);
 
   const isInWorkspaceLib = Boolean(workspaceLibraryItem);
   const isWorkspaceMappingCurrent = useMemo(() => {
@@ -4940,11 +4945,11 @@ export function VideoDetailPanel({
       : { contentRole: 'my_position', perspective: 'self', userPosition: 'endorsed' };
     try { updateLocalVideo(videoId, { opponentView: next }); } catch {}
     try { updateKnowledgeItemsForVideo(videoId, positionMeta); } catch {}
-    try { updateWorkspaceItemByVideoId(videoId, { opponentView: next }); } catch {}
+    try { await persistWorkspaceItemByVideoId(videoId, { opponentView: next }); } catch {}
     await saveVideoFields({ opponentView: next });
     toast(next ? '⚔️ הסרטון סומן כדעת האויב' : '✅ הסימון הוסר');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpponentView, video, saveVideoFields]);
+  }, [isOpponentView, video, saveVideoFields, persistWorkspaceItemByVideoId]);
 
   const handleApproveSubTopicRec = useCallback(async () => {
     if (!subTopicRec?.recommended || !video?.id) return;
@@ -5575,7 +5580,7 @@ export function VideoDetailPanel({
         }),
       };
       snapshotItem.contentHash = getWorkspaceItemIdentity(snapshotItem)?.contentHash || null;
-      const saveResult = saveWorkspaceItem(snapshotItem);
+      const saveResult = await persistWorkspaceItem(snapshotItem);
 
       if (!saveResult.ok) {
         toast.error(getWorkspacePersistenceErrorMessage(saveResult));
@@ -5694,7 +5699,7 @@ export function VideoDetailPanel({
     setBrainPickerOpen(true);
   }, []);
 
-  const saveSingleItemToWorkspace = useCallback(({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId }) => {
+  const saveSingleItemToWorkspace = useCallback(async ({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId }) => {
     const sourceVideoId = effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || 'unknown';
     const body = String(text || '').trim();
     if (!body) return;
@@ -5717,7 +5722,7 @@ export function VideoDetailPanel({
     const title = sourceTitle.slice(0, 40);
     const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
     const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
-    const saveResult = saveWorkspaceItem({
+    const saveResult = await persistWorkspaceItem({
       id: wsId,
       videoId: null,
       sourceVideoTitle: sourceTitle,
@@ -5758,7 +5763,7 @@ export function VideoDetailPanel({
       return;
     }
     toast.success('⭐ נשמר ל-Workspace');
-  }, [effectiveBriefSlug, effectiveVideo, videoType]);
+  }, [effectiveBriefSlug, effectiveVideo, persistWorkspaceItem, videoType]);
 
   const navigateFromPanel = useCallback((page, params = {}) => {
     if (!navigateTo) {
@@ -11687,7 +11692,7 @@ export function VideoDetailPanel({
                       thumbnail: effectiveVideo?.thumbnail || (sourceVideoId ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
                       analysisStatus: marketBriefData ? 'ניתוח מלא זמין' : 'ניתוח שמור זמין',
                     },
-                    items: getWorkspaceItems(),
+                    items: persistedWorkspaceItems,
                     topics: workspaceTaxonomy,
                     availabilityByCollection,
                     obsidianByCollection: selectObsidianCollectionStatuses(obsidianEntries),

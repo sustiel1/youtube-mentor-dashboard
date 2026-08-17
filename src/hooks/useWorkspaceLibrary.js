@@ -1,20 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   getWorkspaceTopics,
   addWorkspaceTopic,
   updateWorkspaceTopic,
   deleteWorkspaceTopic,
-  getWorkspaceItems,
-  saveWorkspaceItem,
-  updateWorkspaceItem,
-  deleteWorkspaceItem,
-  deleteWorkspaceItems,
-  deleteAllWorkspaceItems,
-  updateWorkspaceItemsBulk,
-  archiveWorkspaceItems,
-  reassignWorkspaceVideoGroupTopic,
 } from "@/lib/workspaceLibraryStore";
 import { getWorkspaceMainTopics, getWorkspaceSubtopics } from "@/utils/workspaceTopicHierarchy";
+import {
+  getWorkspaceItemsSnapshot,
+  getWorkspacePersistence,
+} from "@/lib/persistence/workspacePersistence";
 
 export function useWorkspaceTopics() {
   const [topics, setTopics] = useState(() => getWorkspaceTopics());
@@ -34,7 +29,7 @@ export function useWorkspaceTopics() {
   }, []);
 
   const deleteTopic = useCallback((id) => {
-    const result = deleteWorkspaceTopic(id);
+    const result = deleteWorkspaceTopic(id, { items: getWorkspaceItemsSnapshot() });
     setTopics(getWorkspaceTopics());
     return result;
   }, []);
@@ -50,57 +45,105 @@ export function useWorkspaceTopics() {
 }
 
 export function useWorkspaceItems() {
-  const [items, setItems] = useState(() => getWorkspaceItems());
+  const persistence = getWorkspacePersistence();
+  const [items, setItems] = useState(() => persistence.readItemsSnapshot());
 
-  const reload = useCallback(() => setItems(getWorkspaceItems()), []);
+  const reload = useCallback(() => {
+    const result = persistence.readItems();
+    if (result && typeof result.then === 'function') {
+      return result.then((persistedItems) => {
+        setItems(persistedItems);
+        return persistedItems;
+      });
+    }
+    setItems(result);
+    return result;
+  }, [persistence]);
 
-  const saveItem = useCallback((item) => {
-    const result = saveWorkspaceItem(item);
-    if (result.ok) setItems(result.persistedItems);
+  const applyResult = useCallback((result) => {
+    if (result && typeof result.then === 'function') {
+      return result.then((resolved) => {
+        if (resolved?.ok && Array.isArray(resolved.persistedItems)) {
+          setItems(resolved.persistedItems);
+        }
+        return resolved;
+      });
+    }
+    if (result?.ok && Array.isArray(result.persistedItems)) {
+      setItems(result.persistedItems);
+    }
     return result;
   }, []);
 
-  const updateItem = useCallback((id, updates) => {
-    const result = updateWorkspaceItem(id, updates);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
+  useEffect(() => {
+    const unsubscribe = persistence.subscribe((event) => {
+      if (event?.type === 'record-updated' || event?.type === 'generation-active') {
+        void reload();
+      }
+    });
+    const initial = persistence.readItems();
+    if (initial && typeof initial.then === 'function') void initial.then(setItems);
+    return unsubscribe;
+  }, [persistence, reload]);
 
-  const deleteItem = useCallback((id) => {
-    const result = deleteWorkspaceItem(id);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
+  const saveItem = useCallback(
+    (item) => applyResult(persistence.saveItem(item)),
+    [applyResult, persistence],
+  );
+  const saveItemsBulk = useCallback(
+    (nextItems) => applyResult(persistence.saveItemsBulk(nextItems)),
+    [applyResult, persistence],
+  );
+  const updateItem = useCallback(
+    (id, updates) => applyResult(persistence.updateItem(id, updates)),
+    [applyResult, persistence],
+  );
+  const deleteItem = useCallback(
+    (id) => applyResult(persistence.deleteItem(id)),
+    [applyResult, persistence],
+  );
+  const deleteItems = useCallback(
+    (ids) => applyResult(persistence.deleteItems(ids)),
+    [applyResult, persistence],
+  );
+  const deleteAllItems = useCallback(
+    () => applyResult(persistence.deleteAllItems()),
+    [applyResult, persistence],
+  );
+  const updateItemsBulk = useCallback(
+    (ids, updates) => applyResult(persistence.updateItemsBulk(ids, updates)),
+    [applyResult, persistence],
+  );
+  const archiveItems = useCallback(
+    (ids, archived = true) => applyResult(persistence.archiveItems(ids, archived)),
+    [applyResult, persistence],
+  );
+  const reassignVideoGroupTopic = useCallback(
+    (params) => applyResult(persistence.reassignVideoGroupTopic(params)),
+    [applyResult, persistence],
+  );
+  const updateItemByVideoId = useCallback(
+    (videoId, updates) => applyResult(persistence.updateItemByVideoId(videoId, updates)),
+    [applyResult, persistence],
+  );
+  const findByContentHash = useCallback(
+    (contentHash) => items.find((item) => item?.contentHash === contentHash) || null,
+    [items],
+  );
 
-  const deleteItems = useCallback((ids) => {
-    const result = deleteWorkspaceItems(ids);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
-
-  const deleteAllItems = useCallback(() => {
-    const result = deleteAllWorkspaceItems();
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
-
-  const updateItemsBulk = useCallback((ids, updates) => {
-    const result = updateWorkspaceItemsBulk(ids, updates);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
-
-  const archiveItems = useCallback((ids, archived = true) => {
-    const result = archiveWorkspaceItems(ids, archived);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
-
-  const reassignVideoGroupTopic = useCallback((params) => {
-    const result = reassignWorkspaceVideoGroupTopic(params);
-    if (result.ok) setItems(result.persistedItems);
-    return result;
-  }, []);
-
-  return { items, reload, saveItem, updateItem, deleteItem, deleteItems, deleteAllItems, updateItemsBulk, archiveItems, reassignVideoGroupTopic };
+  return {
+    items,
+    reload,
+    saveItem,
+    saveItemsBulk,
+    updateItem,
+    updateItemByVideoId,
+    deleteItem,
+    deleteItems,
+    deleteAllItems,
+    updateItemsBulk,
+    archiveItems,
+    reassignVideoGroupTopic,
+    findByContentHash,
+  };
 }

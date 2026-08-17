@@ -187,13 +187,13 @@ check('bulk saves are one verified write and remain atomic on failure', () => {
 
 check('hook state updates only after a verified write result', () => {
   const hook = readFileSync(new URL('../src/hooks/useWorkspaceLibrary.js', import.meta.url), 'utf8');
-  assert.match(hook, /if \(result\.ok\) setItems\(result\.persistedItems\)/);
+  assert.match(hook, /resolved\?\.ok && Array\.isArray\(resolved\.persistedItems\)/);
   assert.equal(hook.includes('setItems(getWorkspaceItems());'), false);
 });
 
 check('save UI gates success and secondary metadata on verified persistence', () => {
   const dialog = readFileSync(new URL('../src/components/workspace/SaveToWorkspaceDialog.jsx', import.meta.url), 'utf8');
-  const save = dialog.indexOf('const saveResult = saveWorkspaceItem');
+  const save = dialog.indexOf('const saveResult = await saveItem');
   const failureGate = dialog.indexOf('if (!saveResult.ok)', save);
   const videoMetadata = dialog.indexOf('updateLocalVideo(videoId', save);
   const knowledgeMetadata = dialog.indexOf('updateKnowledgeItemsForVideo(videoId', save);
@@ -206,7 +206,7 @@ check('Snapshot UI gates success toast and retains duplicate-click protection', 
   const panel = readFileSync(new URL('../src/components/dashboard/VideoDetailPanel.jsx', import.meta.url), 'utf8');
   const handler = panel.indexOf('const handleSaveStructuredSnapshot');
   const inFlightGuard = panel.indexOf('if (structuredSnapshotSaveInFlightRef.current) return', handler);
-  const save = panel.indexOf('const saveResult = saveWorkspaceItem', handler);
+  const save = panel.indexOf('const saveResult = await persistWorkspaceItem', handler);
   const failureGate = panel.indexOf('if (!saveResult.ok)', save);
   const successToast = panel.indexOf("toast.success('תמונת מצב נשמרה ל-Workspace Library')", save);
   const reset = panel.indexOf('structuredSnapshotSaveInFlightRef.current = false', save);

@@ -10,6 +10,7 @@ import {
   sha256Text,
   verifyWorkspaceRaw,
 } from './storageIntegrity.js';
+import { buildWorkspaceProjectionRecords } from './workspaceProjection.js';
 
 export const MIGRATION_STATES = Object.freeze({
   COPYING: 'copying',
@@ -87,32 +88,9 @@ function buildProjections(snapshot, generationId, expectedWorkspaceIntegrity) {
     if (entry.storageKey === 'workspace_library_v1') {
       const verified = verifyWorkspaceRaw(entry.rawValue, expectedWorkspaceIntegrity);
       workspaceIntegrity = verified.integrity;
-      verified.items.forEach((item, index) => {
-        const recordId = String(item?.id || '');
-        const id = stableRecordId(entry.storageKey, index, recordId);
-        const videoId = String(item?.videoId || item?.sourceVideoId || item?.structuredSnapshot?.videoId || '') || null;
-        records[APP_DATA_STORES.WORKSPACE_ITEMS].push({
-          generationId,
-          id,
-          recordId,
-          sourceIndex: index,
-          videoId,
-          itemType: item?.itemType || null,
-          topicId: item?.topicId || null,
-          subTopicId: item?.subTopicId || item?.subtopicId || null,
-          value: item,
-        });
-        if (item?.itemType === 'structured-snapshot' && item?.structuredSnapshot) {
-          records[APP_DATA_STORES.SNAPSHOTS].push({
-            generationId,
-            id,
-            workspaceItemId: recordId || null,
-            videoId,
-            schemaVersion: String(item.structuredSnapshot.schemaVersion || item.structuredSnapshot.version || 'legacy'),
-            value: item.structuredSnapshot,
-          });
-        }
-      });
+      const workspaceProjection = buildWorkspaceProjectionRecords(verified.items, generationId);
+      records[APP_DATA_STORES.WORKSPACE_ITEMS].push(...workspaceProjection[APP_DATA_STORES.WORKSPACE_ITEMS]);
+      records[APP_DATA_STORES.SNAPSHOTS].push(...workspaceProjection[APP_DATA_STORES.SNAPSHOTS]);
       continue;
     }
 

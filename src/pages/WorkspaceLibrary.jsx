@@ -397,24 +397,24 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     else toast.info('לפריט הזה אין קישור תקין לסרטון מקור');
   };
 
-  const handleDelete = (item) => {
-    const result = deleteItem(item.id);
+  const handleDelete = async (item) => {
+    const result = await deleteItem(item.id);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
   };
 
   const requestDeleteCard  = (item) => setConfirmDeleteItem(item);
 
-  const handleConfirmDeleteCard = () => {
+  const handleConfirmDeleteCard = async () => {
     if (!confirmDeleteItem) return;
-    const result = deleteItem(confirmDeleteItem.id);
+    const result = await deleteItem(confirmDeleteItem.id);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success('הפריט הוסר מ-Workspace Library');
     setSelectedCardIds(prev => { const next = new Set(prev); next.delete(confirmDeleteItem.id); return next; });
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    const result = updateItem(id, { marketStatus: newStatus || null });
+  const handleStatusChange = async (id, newStatus) => {
+    const result = await updateItem(id, { marketStatus: newStatus || null });
     reportWorkspaceWriteFailure(result);
   };
 
@@ -442,33 +442,33 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     toast.success(`ייוצאו ${selected.length} פריטים ל-CSV`);
   };
 
-  const handleArchiveCards = (ids, archived = true) => {
-    const result = archiveItems(ids, archived);
+  const handleArchiveCards = async (ids, archived = true) => {
+    const result = await archiveItems(ids, archived);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(archived ? `${ids.length > 1 ? `${ids.length} פריטים הועברו` : 'הפריט הועבר'} לארכיון` : 'הפריט שוחזר מהארכיון');
     setSelectedCardIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
   };
 
-  const handleTargetedBriefRouting = ({ sourceVideoId, expectedItemIds }) => {
-    const result = reassignVideoGroupTopic({ sourceVideoId, expectedItemIds });
+  const handleTargetedBriefRouting = async ({ sourceVideoId, expectedItemIds }) => {
+    const result = await reassignVideoGroupTopic({ sourceVideoId, expectedItemIds });
     if (reportWorkspaceWriteFailure(result)) return result;
     toast.success(`השיוך למבזק בוקר/ערב הוחל ואומת עבור ${result.affectedCount} רשומות.`);
     return result;
   };
 
-  const handleConfirmBulkDeleteCards = () => {
+  const handleConfirmBulkDeleteCards = async () => {
     const ids = [...selectedCardIds];
     if (!ids.length) return;
-    const result = deleteItems(ids);
+    const result = await deleteItems(ids);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${ids.length} פריטים נמחקו מ-Workspace`);
     clearCardSelection();
   };
 
-  const handleConfirmDuplicateCleanup = () => {
+  const handleConfirmDuplicateCleanup = async () => {
     const existingIds = confirmDuplicateCleanupIds.filter(id => items.some(item => item.id === id));
     if (!existingIds.length) return;
-    const result = deleteItems(existingIds);
+    const result = await deleteItems(existingIds);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`${existingIds.length} עותקים זהים הוסרו; כל הגרסאות השונות נשמרו`);
     setConfirmDuplicateCleanupIds([]);
@@ -581,20 +581,20 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     });
   }
 
-  const handleConfirmDeleteAllVisible = () => {
+  const handleConfirmDeleteAllVisible = async () => {
     const ids = deletableVisibleItems.map(i => i.id);
     if (!ids.length) return;
-    const result = deleteItems(ids);
+    const result = await deleteItems(ids);
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${ids.length} פריטים מה-Workspace`);
     clearCardSelection();
     setMoreActionsOpen(false);
   };
 
-  const handleConfirmDeleteAllWorkspace = () => {
+  const handleConfirmDeleteAllWorkspace = async () => {
     const count = items.length;
     if (!count) return;
-    const result = deleteAllItems();
+    const result = await deleteAllItems();
     if (reportWorkspaceWriteFailure(result)) return;
     toast.success(`נמחקו ${count} פריטים מה-Workspace`);
     clearCardSelection();
