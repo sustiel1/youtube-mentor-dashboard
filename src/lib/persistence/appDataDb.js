@@ -3,6 +3,7 @@ import {
   APP_DATA_DB_VERSION,
   APP_DATA_STORES,
 } from './storageManifest.js';
+import { canonicalize } from './storageIntegrity.js';
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
@@ -17,6 +18,10 @@ function transactionDone(transaction) {
     transaction.onabort = () => reject(transaction.error || new Error('IndexedDB transaction aborted'));
     transaction.onerror = () => reject(transaction.error || new Error('IndexedDB transaction failed'));
   });
+}
+
+function canonicalValuesEqual(left, right) {
+  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
 }
 
 function ensureIndex(store, name, keyPath, options = {}) {
@@ -299,37 +304,76 @@ export function createAppDataRepository(database) {
     integrity,
     counts,
     activationEvidence,
+    expectedMigration,
   }) {
-    if (activationEvidence?.verified !== true || !workspaceSourceHash) {
+    if (
+      activationEvidence?.verified !== true
+      || !workspaceSourceHash
+      || expectedMigration?.state !== 'ready'
+      || expectedMigration.generationId !== generationId
+    ) {
       throw new Error('Verified backup, preflight and integrity evidence are required for activation');
     }
     const transaction = database.transaction(APP_DATA_STORES.META, 'readwrite');
     const done = transactionDone(transaction);
     const store = transaction.objectStore(APP_DATA_STORES.META);
-    await requestResult(store.put({
-      key: 'activeGeneration',
-      generationId,
-      sourceHash,
-      integrity,
-      counts,
-      state: 'active',
-    }));
-    await requestResult(store.put({
-      key: 'workspaceRecoveryAnchor',
-      generationId,
-      workspaceSourceHash,
-      integrity,
-      evidenceHash: activationEvidence.evidenceHash,
-      state: 'anchored',
-    }));
-    await requestResult(store.put({
-      key: 'migration',
-      generationId,
-      sourceHash,
-      integrity,
-      counts,
-      state: 'active',
-    }));
+    const [currentMigration, currentActiveGeneration, currentActiveWorkspaceGeneration] = await Promise.all([
+      requestResult(store.get('migration')),
+      requestResult(store.get('activeGeneration')),
+      requestResult(store.get('activeWorkspaceGeneration')),
+    ]);
+    if (
+      !currentMigration
+      || currentMigration.state !== 'ready'
+      || currentMigration.generationId !== generationId
+      || currentMigration.sourceHash !== sourceHash
+      || currentMigration.workspaceSourceHash !== workspaceSourceHash
+      || !canonicalValuesEqual(currentMigration.integrity, integrity)
+      || !canonicalValuesEqual(currentMigration.counts, counts)
+      || !canonicalValuesEqual(currentMigration, expectedMigration)
+      || currentActiveGeneration
+      || currentActiveWorkspaceGeneration
+    ) {
+      transaction.abort();
+      try { await done; } catch {}
+      const error = new Error('Ready generation changed or an active generation already exists');
+      error.name = 'GenerationActivationConflictError';
+      throw error;
+    }
+    try {
+      await requestResult(store.put({
+        key: 'activeGeneration',
+        generationId,
+        sourceHash,
+        integrity,
+        counts,
+        state: 'active',
+      }));
+      await requestResult(store.put({
+        key: 'activeWorkspaceGeneration',
+        generationId,
+        sourceHash: workspaceSourceHash,
+        integrity,
+        counts,
+        state: 'active',
+      }));
+      await requestResult(store.put({
+        key: 'workspaceRecoveryAnchor',
+        generationId,
+        workspaceSourceHash,
+        integrity,
+        evidenceHash: activationEvidence.evidenceHash,
+        state: 'anchored',
+      }));
+      await requestResult(store.put({
+        ...currentMigration,
+        state: 'active',
+      }));
+    } catch (error) {
+      try { transaction.abort(); } catch {}
+      try { await done; } catch {}
+      throw error;
+    }
     await done;
   }
 

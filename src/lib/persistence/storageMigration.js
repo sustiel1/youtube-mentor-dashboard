@@ -379,6 +379,23 @@ async function verifyActivationEvidence(migration, evidence, cryptoProvider) {
   };
 }
 
+export function assertMatchingActiveGenerationPointers({
+  activeGeneration,
+  activeWorkspaceGeneration,
+  expectedGenerationId,
+}) {
+  if (
+    activeGeneration?.state !== MIGRATION_STATES.ACTIVE
+    || activeWorkspaceGeneration?.state !== MIGRATION_STATES.ACTIVE
+    || activeGeneration.generationId !== expectedGenerationId
+    || activeWorkspaceGeneration.generationId !== expectedGenerationId
+    || activeGeneration.generationId !== activeWorkspaceGeneration.generationId
+  ) {
+    throw new Error('Active generation pointers are missing or inconsistent');
+  }
+  return expectedGenerationId;
+}
+
 export async function activateReadyGeneration(repository, {
   activationEvidence,
   cryptoProvider = globalThis.crypto,
@@ -395,6 +412,7 @@ export async function activateReadyGeneration(repository, {
   await repository.activateGeneration({
     ...migration,
     activationEvidence: verifiedEvidence,
+    expectedMigration: migration,
   });
   return { ...migration, state: MIGRATION_STATES.ACTIVE };
 }

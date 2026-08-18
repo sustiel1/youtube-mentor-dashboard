@@ -15,6 +15,7 @@ import {
   buildWorkspaceRecoveryBundle,
   replayWorkspaceChangeJournal,
 } from '../src/lib/persistence/workspaceChangeJournal.js';
+import { assertMatchingActiveGenerationPointers } from '../src/lib/persistence/storageMigration.js';
 
 const WORKSPACE_KEY = 'workspace_library_v1';
 const NOOP_EVENTS = Object.freeze({
@@ -291,6 +292,26 @@ await check('Workspace checksums remain exact across recovery', async () => {
   assert.equal(
     replay.integrity.payloadChecksum,
     checksumWorkspacePayloadsExcludingTopicAssignment(replay.items),
+  );
+});
+
+await check('activation verification requires two matching active pointers', async () => {
+  const matching = {
+    activeGeneration: { state: 'active', generationId: 'generation-atomic' },
+    activeWorkspaceGeneration: { state: 'active', generationId: 'generation-atomic' },
+    expectedGenerationId: 'generation-atomic',
+  };
+  assert.equal(assertMatchingActiveGenerationPointers(matching), 'generation-atomic');
+  assert.throws(
+    () => assertMatchingActiveGenerationPointers({ ...matching, activeWorkspaceGeneration: null }),
+    /missing or inconsistent/,
+  );
+  assert.throws(
+    () => assertMatchingActiveGenerationPointers({
+      ...matching,
+      activeWorkspaceGeneration: { state: 'active', generationId: 'generation-other' },
+    }),
+    /missing or inconsistent/,
   );
 });
 
