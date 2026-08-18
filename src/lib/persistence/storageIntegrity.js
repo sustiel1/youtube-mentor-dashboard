@@ -58,6 +58,61 @@ export async function canonicalSha256(value, cryptoProvider = globalThis.crypto)
   return sha256Text(JSON.stringify(canonicalize(value)), cryptoProvider);
 }
 
+function compareUtf16CodeUnits(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+export function buildActivationCriticalSourceProjection(
+  entries = [],
+  isVolatileCacheStorageKey = () => false,
+) {
+  const sorted = [...entries].sort((left, right) => (
+    compareUtf16CodeUnits(String(left?.storageKey || ''), String(right?.storageKey || ''))
+  ));
+  const seenKeys = new Set();
+  return sorted.map((entry) => {
+    const storageKey = String(entry?.storageKey || '');
+    if (!storageKey || seenKeys.has(storageKey)) {
+      throw new Error('Source integrity requires unique non-empty storage keys');
+    }
+    seenKeys.add(storageKey);
+    if (!isVolatileCacheStorageKey(storageKey)) return entry;
+    return {
+      storageKey,
+      domain: String(entry?.domain || ''),
+      integrityPolicy: 'volatile-cache-identity-only',
+    };
+  });
+}
+
+export async function calculateSourceIntegrity(entries = [], {
+  cryptoProvider = globalThis.crypto,
+  isVolatileCacheStorageKey = () => false,
+} = {}) {
+  const sorted = [...entries].sort((left, right) => (
+    compareUtf16CodeUnits(String(left?.storageKey || ''), String(right?.storageKey || ''))
+  ));
+  const activationCriticalProjection = buildActivationCriticalSourceProjection(
+    sorted,
+    isVolatileCacheStorageKey,
+  );
+  return {
+    fullSourceHash: await canonicalSha256(sorted, cryptoProvider),
+    activationCriticalSourceHash: await canonicalSha256(
+      activationCriticalProjection,
+      cryptoProvider,
+    ),
+    activationCritical: {
+      keyCount: sorted.length,
+      volatileCacheKeys: sorted
+        .map((entry) => String(entry?.storageKey || ''))
+        .filter((storageKey) => isVolatileCacheStorageKey(storageKey)),
+    },
+  };
+}
+
 export function logicalUtf16Bytes(key, value) {
   return (String(key).length + String(value).length) * 2;
 }

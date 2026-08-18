@@ -1,9 +1,11 @@
 import {
   APP_DATA_STORES,
   classifyStorageKey,
+  isVolatileCacheStorageKey,
   listOwnedStorageKeys,
 } from './storageManifest.js';
 import {
+  calculateSourceIntegrity,
   canonicalSha256,
   classifyStorageError,
   logicalUtf16Bytes,
@@ -53,10 +55,15 @@ async function captureSnapshot(storage, cryptoProvider) {
       valueSha256: await sha256Text(rawValue, cryptoProvider),
     });
   }
-  const sourceHash = await canonicalSha256(entries, cryptoProvider);
+  const sourceIntegrity = await calculateSourceIntegrity(entries, {
+    cryptoProvider,
+    isVolatileCacheStorageKey,
+  });
   return {
     entries,
-    sourceHash,
+    sourceHash: sourceIntegrity.fullSourceHash,
+    activationCriticalSourceHash: sourceIntegrity.activationCriticalSourceHash,
+    activationCriticalIntegrity: sourceIntegrity.activationCritical,
     logicalBytes: entries.reduce((sum, entry) => sum + entry.logicalBytes, 0),
   };
 }
@@ -64,13 +71,20 @@ async function captureSnapshot(storage, cryptoProvider) {
 export async function captureStableLocalStorage(storage, cryptoProvider = globalThis.crypto) {
   const first = await captureSnapshot(storage, cryptoProvider);
   const second = await captureSnapshot(storage, cryptoProvider);
-  if (first.sourceHash !== second.sourceHash) {
+  if (
+    first.sourceHash !== second.sourceHash
+    || first.activationCriticalSourceHash !== second.activationCriticalSourceHash
+  ) {
     throw new Error('localStorage changed between the two migration reads');
   }
   return second;
 }
 
-function buildProjections(snapshot, generationId, expectedWorkspaceIntegrity) {
+export function buildMigrationProjectionRecords(
+  snapshot,
+  generationId,
+  expectedWorkspaceIntegrity,
+) {
   const records = {
     [APP_DATA_STORES.SOURCE_ENTRIES]: snapshot.entries.map((entry) => ({ generationId, ...entry })),
     [APP_DATA_STORES.VIDEOS]: [],
@@ -222,7 +236,7 @@ export async function migrateLocalStorageToIndexedDb({
   const generationId = prior?.sourceHash === snapshot.sourceHash && prior?.generationId
     ? prior.generationId
     : generationIdFactory();
-  const { records, workspaceIntegrity, workspaceSourceHash } = buildProjections(
+  const { records, workspaceIntegrity, workspaceSourceHash } = buildMigrationProjectionRecords(
     snapshot,
     generationId,
     expectedWorkspaceIntegrity,
@@ -233,6 +247,8 @@ export async function migrateLocalStorageToIndexedDb({
     key: 'migration',
     generationId,
     sourceHash: snapshot.sourceHash,
+    activationCriticalSourceHash: snapshot.activationCriticalSourceHash,
+    activationCriticalIntegrity: snapshot.activationCriticalIntegrity,
     state: MIGRATION_STATES.COPYING,
     counts,
     integrity: workspaceIntegrity,
@@ -266,6 +282,8 @@ export async function migrateLocalStorageToIndexedDb({
       key: 'migration',
       generationId,
       sourceHash: snapshot.sourceHash,
+      activationCriticalSourceHash: snapshot.activationCriticalSourceHash,
+      activationCriticalIntegrity: snapshot.activationCriticalIntegrity,
       state: MIGRATION_STATES.VERIFYING,
       counts,
       integrity: workspaceIntegrity,
@@ -289,6 +307,8 @@ export async function migrateLocalStorageToIndexedDb({
       key: 'migration',
       generationId,
       sourceHash: snapshot.sourceHash,
+      activationCriticalSourceHash: snapshot.activationCriticalSourceHash,
+      activationCriticalIntegrity: snapshot.activationCriticalIntegrity,
       sourceLogicalBytes: snapshot.logicalBytes,
       state: MIGRATION_STATES.READY,
       counts,
@@ -310,6 +330,8 @@ export async function migrateLocalStorageToIndexedDb({
         key: 'migration',
         generationId,
         sourceHash: snapshot.sourceHash,
+        activationCriticalSourceHash: snapshot.activationCriticalSourceHash,
+        activationCriticalIntegrity: snapshot.activationCriticalIntegrity,
         state: MIGRATION_STATES.FAILED,
         counts,
         integrity: workspaceIntegrity,
@@ -323,7 +345,33 @@ export async function migrateLocalStorageToIndexedDb({
   }
 }
 
-async function verifyActivationEvidence(migration, evidence, cryptoProvider) {
+export async function calculateGenerationSourceIntegrityReadOnly(
+  repository,
+  generationId,
+  cryptoProvider = globalThis.crypto,
+) {
+  const records = await repository.listByGeneration(
+    APP_DATA_STORES.SOURCE_ENTRIES,
+    generationId,
+  );
+  const entries = records.map(({ generationId: recordGenerationId, ...entry }) => {
+    if (recordGenerationId !== generationId) {
+      throw new Error('Source entry identifies a different generation');
+    }
+    return entry;
+  });
+  return calculateSourceIntegrity(entries, {
+    cryptoProvider,
+    isVolatileCacheStorageKey,
+  });
+}
+
+async function verifyActivationEvidence(
+  migration,
+  evidence,
+  resolvedSourceIntegrity,
+  cryptoProvider,
+) {
   const backup = evidence?.backup;
   const preflight = evidence?.preflight;
   const integrity = evidence?.integrity;
@@ -350,8 +398,24 @@ async function verifyActivationEvidence(migration, evidence, cryptoProvider) {
   if (
     integrity.generationId !== migration.generationId
     || integrity.sourceHash !== migration.sourceHash
+    || integrity.activationCriticalSourceHash
+      !== resolvedSourceIntegrity.activationCriticalSourceHash
+    || preflight.activationCriticalSourceHash
+      !== resolvedSourceIntegrity.activationCriticalSourceHash
   ) {
     throw new Error('Activation integrity evidence identifies a different generation');
+  }
+  if (
+    preflight.activationCriticalIntegrity?.keyCount
+      !== resolvedSourceIntegrity.activationCritical.keyCount
+    || JSON.stringify(preflight.activationCriticalIntegrity?.volatileCacheKeys)
+      !== JSON.stringify(resolvedSourceIntegrity.activationCritical.volatileCacheKeys)
+    || integrity.activationCriticalIntegrity?.keyCount
+      !== resolvedSourceIntegrity.activationCritical.keyCount
+    || JSON.stringify(integrity.activationCriticalIntegrity?.volatileCacheKeys)
+      !== JSON.stringify(resolvedSourceIntegrity.activationCritical.volatileCacheKeys)
+  ) {
+    throw new Error('Activation-critical source identity does not match the ready generation');
   }
   const safeEvidence = {
     backup: {
@@ -365,17 +429,24 @@ async function verifyActivationEvidence(migration, evidence, cryptoProvider) {
       stableReadCount: preflight.stableReadCount,
       storageMode: preflight.storageMode,
       activeGenerationAbsent: preflight.activeGenerationAbsent,
+      sourceHash: preflight.sourceHash,
+      activationCriticalSourceHash: preflight.activationCriticalSourceHash,
+      activationCriticalIntegrity: preflight.activationCriticalIntegrity,
     },
     integrity: {
       generationId: integrity.generationId,
       sourceHash: integrity.sourceHash,
+      activationCriticalSourceHash: integrity.activationCriticalSourceHash,
+      activationCriticalIntegrity: integrity.activationCriticalIntegrity,
       workspaceSourceHash: integrity.workspaceSourceHash,
       workspaceIntegrity: integrity.workspaceIntegrity,
     },
+    fullSourceMismatchWarning: preflight.sourceHash !== integrity.sourceHash,
   };
   return {
     verified: true,
     evidenceHash: await canonicalSha256(safeEvidence, cryptoProvider),
+    fullSourceMismatchWarning: safeEvidence.fullSourceMismatchWarning,
   };
 }
 
@@ -404,13 +475,36 @@ export async function activateReadyGeneration(repository, {
   if (!migration || migration.state !== MIGRATION_STATES.READY) {
     throw new Error('No verified generation is ready for activation');
   }
+  const resolvedSourceIntegrity = await calculateGenerationSourceIntegrityReadOnly(
+    repository,
+    migration.generationId,
+    cryptoProvider,
+  );
+  if (
+    resolvedSourceIntegrity.fullSourceHash !== migration.sourceHash
+    || (
+      migration.activationCriticalSourceHash
+      && migration.activationCriticalSourceHash
+        !== resolvedSourceIntegrity.activationCriticalSourceHash
+    )
+    || (
+      migration.activationCriticalIntegrity
+      && JSON.stringify(migration.activationCriticalIntegrity)
+        !== JSON.stringify(resolvedSourceIntegrity.activationCritical)
+    )
+  ) {
+    throw new Error('Ready generation source integrity is inconsistent');
+  }
   const verifiedEvidence = await verifyActivationEvidence(
     migration,
     activationEvidence,
+    resolvedSourceIntegrity,
     cryptoProvider,
   );
   await repository.activateGeneration({
     ...migration,
+    activationCriticalSourceHash: resolvedSourceIntegrity.activationCriticalSourceHash,
+    activationCriticalIntegrity: resolvedSourceIntegrity.activationCritical,
     activationEvidence: verifiedEvidence,
     expectedMigration: migration,
   });

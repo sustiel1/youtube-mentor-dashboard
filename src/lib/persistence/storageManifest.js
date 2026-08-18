@@ -121,6 +121,10 @@ const WORKSPACE_KEYS = new Set([
 
 const MEDIA_KEYS = new Set(['yt_thumb_cache_v1']);
 
+export const VOLATILE_CACHE_STORAGE_KEYS = Object.freeze([
+  'yt_thumb_cache_v1',
+]);
+
 const ANALYSIS_PREFIXES = Object.freeze([
   'analysis:',
   'ai_analysis_',
@@ -159,6 +163,10 @@ export function classifyStorageKey(key) {
   if (MEDIA_KEYS.has(key)) return 'media';
   if (ANALYSIS_PREFIXES.some((prefix) => key.startsWith(prefix))) return 'analyses';
   return 'documents';
+}
+
+export function isVolatileCacheStorageKey(key) {
+  return key === VOLATILE_CACHE_STORAGE_KEYS[0];
 }
 
 export function listOwnedStorageKeys(storage) {

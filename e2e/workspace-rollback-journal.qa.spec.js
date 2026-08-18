@@ -28,6 +28,7 @@ test('Workspace change journal survives reload and replays from the untouched fa
     ];
     const originalRaw = JSON.stringify(originalItems);
     localStorage.setItem('workspace_library_v1', originalRaw);
+    localStorage.setItem('yt_thumb_cache_v1', JSON.stringify({ synthetic: { quality: 'hqdefault' } }));
     localStorage.setItem('base44_access_token', 'synthetic-secret-must-not-migrate');
     const database = await dbModule.openAppDataDb();
     const repository = dbModule.createAppDataRepository(database);
@@ -37,6 +38,8 @@ test('Workspace change journal survives reload and replays from the untouched fa
       expectedWorkspaceIntegrity: integrity.verifyWorkspaceRaw(originalRaw).integrity,
       generationIdFactory: () => 'browser-cutover-generation',
     });
+    localStorage.setItem('yt_thumb_cache_v1', JSON.stringify({ synthetic: { quality: 'sddefault' } }));
+    const currentSource = await migration.captureStableLocalStorage(localStorage);
     const common = {
       workspaceSourceHash: ready.workspaceSourceHash,
       workspaceIntegrity: ready.integrity,
@@ -53,12 +56,17 @@ test('Workspace change journal survives reload and replays from the untouched fa
           stableReadCount: 2,
           storageMode: 'localStorage',
           activeGenerationAbsent: true,
+          sourceHash: currentSource.sourceHash,
+          activationCriticalSourceHash: currentSource.activationCriticalSourceHash,
+          activationCriticalIntegrity: currentSource.activationCriticalIntegrity,
           ...common,
         },
         integrity: {
           verified: true,
           generationId: ready.generationId,
           sourceHash: ready.sourceHash,
+          activationCriticalSourceHash: ready.activationCriticalSourceHash,
+          activationCriticalIntegrity: ready.activationCriticalIntegrity,
           ...common,
         },
       },
@@ -90,6 +98,9 @@ test('Workspace change journal survives reload and replays from the untouched fa
       deletedAbsent: !replay.items.some((item) => item.id === 'test-item'),
       partialSnapshotPreserved: replay.items.find((item) => item.id === 'partial-snapshot')
         ?.structuredSnapshot?.sentiment?.[0]?.legacy === true,
+      fullSourceMismatch: currentSource.sourceHash !== ready.sourceHash,
+      activationCriticalMatch: currentSource.activationCriticalSourceHash
+        === ready.activationCriticalSourceHash,
       secretExcluded: secret === null,
       databaseVersion: database.version,
       stores: [...database.objectStoreNames],
@@ -105,6 +116,8 @@ test('Workspace change journal survives reload and replays from the untouched fa
   expect(firstPass.survivorPresent).toBe(true);
   expect(firstPass.deletedAbsent).toBe(true);
   expect(firstPass.partialSnapshotPreserved).toBe(true);
+  expect(firstPass.fullSourceMismatch).toBe(true);
+  expect(firstPass.activationCriticalMatch).toBe(true);
   expect(firstPass.secretExcluded).toBe(true);
   expect(firstPass.databaseVersion).toBe(2);
   expect(firstPass.stores).toContain('workspaceChangeJournal');
@@ -199,12 +212,17 @@ test('generation activation commits both pointers atomically and fails closed', 
           stableReadCount: 2,
           storageMode: 'localStorage',
           activeGenerationAbsent: true,
+          sourceHash: ready.sourceHash,
+          activationCriticalSourceHash: ready.activationCriticalSourceHash,
+          activationCriticalIntegrity: ready.activationCriticalIntegrity,
           ...common,
         },
         integrity: {
           verified: true,
           generationId: ready.generationId,
           sourceHash: ready.sourceHash,
+          activationCriticalSourceHash: ready.activationCriticalSourceHash,
+          activationCriticalIntegrity: ready.activationCriticalIntegrity,
           ...common,
         },
       };
@@ -375,6 +393,7 @@ test('generation activation commits both pointers atomically and fails closed', 
       const baseRepository = dbModule.createAppDataRepository(database);
       const staleRepository = {
         readMeta: (key) => baseRepository.readMeta(key),
+        listByGeneration: (...args) => baseRepository.listByGeneration(...args),
         activateGeneration: async (payload) => {
           const current = await baseRepository.readMeta('migration');
           await baseRepository.writeMeta({ ...current, sourceLogicalBytes: current.sourceLogicalBytes + 2 });

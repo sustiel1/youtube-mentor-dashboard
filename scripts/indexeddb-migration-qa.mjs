@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 
-import { APP_DATA_STORES } from '../src/lib/persistence/storageManifest.js';
 import {
+  APP_DATA_STORES,
+  isVolatileCacheStorageKey,
+} from '../src/lib/persistence/storageManifest.js';
+import {
+  calculateSourceIntegrity,
   checksumWorkspaceItemIds,
   checksumWorkspacePayloadsExcludingTopicAssignment,
 } from '../src/lib/persistence/storageIntegrity.js';
@@ -10,6 +14,8 @@ import { createStorageFacade } from '../src/lib/persistence/storageFacade.js';
 import {
   MIGRATION_STATES,
   activateReadyGeneration,
+  calculateGenerationSourceIntegrityReadOnly,
+  captureStableLocalStorage,
   migrateLocalStorageToIndexedDb,
 } from '../src/lib/persistence/storageMigration.js';
 
@@ -167,7 +173,7 @@ function createFixture() {
   return { storage, workspaceItems, expected: expectedWorkspace(workspaceItems) };
 }
 
-function activationEvidence(ready) {
+function activationEvidence(ready, current = ready) {
   const common = {
     workspaceSourceHash: ready.workspaceSourceHash,
     workspaceIntegrity: ready.integrity,
@@ -183,12 +189,17 @@ function activationEvidence(ready) {
       stableReadCount: 2,
       storageMode: 'localStorage',
       activeGenerationAbsent: true,
+      sourceHash: current.sourceHash,
+      activationCriticalSourceHash: current.activationCriticalSourceHash,
+      activationCriticalIntegrity: current.activationCriticalIntegrity,
       ...common,
     },
     integrity: {
       verified: true,
       generationId: ready.generationId,
       sourceHash: ready.sourceHash,
+      activationCriticalSourceHash: ready.activationCriticalSourceHash,
+      activationCriticalIntegrity: ready.activationCriticalIntegrity,
       ...common,
     },
   };
@@ -200,6 +211,190 @@ async function check(name, fn) {
   passed += 1;
   console.log(`  ok  ${name}`);
 }
+
+async function captureFixtureValues(overrides = {}) {
+  const baseWorkspace = makeWorkspaceItems();
+  return captureStableLocalStorage(new MemoryStorage({
+    workspace_library_v1: JSON.stringify(baseWorkspace),
+    yt_mentor_videos_v2: JSON.stringify([{ id: 'video-a', title: 'A' }]),
+    'analysis:video-a': JSON.stringify({ summary: 'analysis-a' }),
+    yt_mentor_transcript_cache_v1: JSON.stringify({ 'video-a': 'transcript-a' }),
+    yt_thumb_cache_v1: JSON.stringify({
+      'video-a': { quality: 'hqdefault', url: 'https://img.youtube.com/a.jpg', at: 1 },
+    }),
+    ...overrides,
+  }));
+}
+
+await check('defines exactly one volatile cache key without wildcard matching', async () => {
+  assert.equal(isVolatileCacheStorageKey('yt_thumb_cache_v1'), true);
+  assert.equal(isVolatileCacheStorageKey('yt_thumb_cache_v1_copy'), false);
+  assert.equal(isVolatileCacheStorageKey('yt_other_cache_v1'), false);
+  assert.equal(isVolatileCacheStorageKey('prefix_yt_thumb_cache_v1'), false);
+});
+
+await check('identical full source passes both full and activation-critical integrity', async () => {
+  const first = await captureFixtureValues();
+  const second = await captureFixtureValues();
+  assert.equal(first.sourceHash, second.sourceHash);
+  assert.equal(first.activationCriticalSourceHash, second.activationCriticalSourceHash);
+  assert.deepEqual(first.activationCriticalIntegrity, {
+    keyCount: 5,
+    volatileCacheKeys: ['yt_thumb_cache_v1'],
+  });
+});
+
+await check('thumbnail cache value drift changes full hash but preserves critical integrity', async () => {
+  const first = await captureFixtureValues();
+  const second = await captureFixtureValues({
+    yt_thumb_cache_v1: JSON.stringify({
+      'video-a': { quality: 'sddefault', url: 'https://img.youtube.com/b.jpg', at: 2 },
+    }),
+  });
+  assert.notEqual(first.sourceHash, second.sourceHash);
+  assert.equal(first.activationCriticalSourceHash, second.activationCriticalSourceHash);
+});
+
+await check('cache-only drift activates with an explicit full-source warning', async () => {
+  const { storage, expected } = createFixture();
+  const repository = new MemoryRepository();
+  const ready = await migrateLocalStorageToIndexedDb({
+    storage,
+    repository,
+    expectedWorkspaceIntegrity: expected,
+    generationIdFactory: () => 'generation-cache-warning',
+  });
+  storage.setItem('yt_thumb_cache_v1', JSON.stringify({ 'video-a': 'changed-cache-only' }));
+  const current = await captureStableLocalStorage(storage);
+  assert.notEqual(current.sourceHash, ready.sourceHash);
+  assert.equal(current.activationCriticalSourceHash, ready.activationCriticalSourceHash);
+  await activateReadyGeneration(repository, {
+    activationEvidence: activationEvidence(ready, current),
+  });
+  const active = await repository.readMeta('activeGeneration');
+  assert.equal(active.activationEvidence.fullSourceMismatchWarning, true);
+});
+
+await check('business-source drift fails activation closed', async () => {
+  const { storage, expected } = createFixture();
+  const repository = new MemoryRepository();
+  const ready = await migrateLocalStorageToIndexedDb({
+    storage,
+    repository,
+    expectedWorkspaceIntegrity: expected,
+    generationIdFactory: () => 'generation-business-drift',
+  });
+  storage.setItem('analysis:video-a', JSON.stringify({ summary: 'changed-business-data' }));
+  const current = await captureStableLocalStorage(storage);
+  await assert.rejects(
+    () => activateReadyGeneration(repository, {
+      activationEvidence: activationEvidence(ready, current),
+    }),
+    /different generation/,
+  );
+  assert.equal(repository.activationCount, 0);
+});
+
+await check('adding or removing the exact cache key fails activation-critical identity parity', async () => {
+  const withCache = await captureFixtureValues();
+  const withoutCacheStorage = new MemoryStorage({
+    workspace_library_v1: JSON.stringify(makeWorkspaceItems()),
+    yt_mentor_videos_v2: JSON.stringify([{ id: 'video-a', title: 'A' }]),
+    'analysis:video-a': JSON.stringify({ summary: 'analysis-a' }),
+    yt_mentor_transcript_cache_v1: JSON.stringify({ 'video-a': 'transcript-a' }),
+  });
+  const withoutCache = await captureStableLocalStorage(withoutCacheStorage);
+  assert.notEqual(withCache.activationCriticalSourceHash, withoutCache.activationCriticalSourceHash);
+  assert.equal(withCache.activationCriticalIntegrity.keyCount, 5);
+  assert.equal(withoutCache.activationCriticalIntegrity.keyCount, 4);
+});
+
+await check('one-byte business-source changes fail activation-critical parity', async () => {
+  const baseline = await captureFixtureValues();
+  for (const [key, value] of Object.entries({
+    yt_mentor_videos_v2: JSON.stringify([{ id: 'video-a', title: 'B' }]),
+    'analysis:video-a': JSON.stringify({ summary: 'analysis-b' }),
+    yt_mentor_transcript_cache_v1: JSON.stringify({ 'video-a': 'transcript-b' }),
+  })) {
+    const changed = await captureFixtureValues({ [key]: value });
+    assert.notEqual(baseline.activationCriticalSourceHash, changed.activationCriticalSourceHash, key);
+  }
+});
+
+await check('Workspace count, content, archive and Snapshot drift fail critical parity', async () => {
+  const baselineItems = makeWorkspaceItems();
+  const baseline = await captureFixtureValues();
+  const variants = [
+    [...baselineItems, { id: 'workspace-added', itemType: 'knowledge-item' }],
+    baselineItems.map((item, index) => index === 0 ? { ...item, payload: { changed: true } } : item),
+    baselineItems.map((item, index) => index === 1 ? { ...item, archivedAt: '2026-08-18T00:00:00.000Z' } : item),
+    baselineItems.map((item, index) => index === 2
+      ? { ...item, structuredSnapshot: { ...item.structuredSnapshot, sentiment: [{ changed: true }] } }
+      : item),
+  ];
+  for (const items of variants) {
+    const changed = await captureFixtureValues({ workspace_library_v1: JSON.stringify(items) });
+    assert.notEqual(baseline.activationCriticalSourceHash, changed.activationCriticalSourceHash);
+  }
+});
+
+await check('sensitive keys stay excluded from both integrity results', async () => {
+  const first = await captureStableLocalStorage(new MemoryStorage({
+    workspace_library_v1: JSON.stringify(makeWorkspaceItems()),
+    base44_access_token: 'synthetic-secret-a',
+    token: 'synthetic-secret-b',
+  }));
+  const second = await captureStableLocalStorage(new MemoryStorage({
+    workspace_library_v1: JSON.stringify(makeWorkspaceItems()),
+    base44_access_token: 'different-secret-a',
+    token: 'different-secret-b',
+  }));
+  assert.deepEqual(first.entries.map((entry) => entry.storageKey), ['workspace_library_v1']);
+  assert.equal(first.sourceHash, second.sourceHash);
+  assert.equal(first.activationCriticalSourceHash, second.activationCriticalSourceHash);
+});
+
+await check('similar cache names remain fully activation-critical', async () => {
+  const common = [{ storageKey: 'workspace_library_v1', domain: 'workspace', rawValue: '[]' }];
+  const first = await calculateSourceIntegrity([
+    ...common,
+    { storageKey: 'yt_thumb_cache_v1_copy', domain: 'media', rawValue: 'a' },
+  ], { isVolatileCacheStorageKey });
+  const second = await calculateSourceIntegrity([
+    ...common,
+    { storageKey: 'yt_thumb_cache_v1_copy', domain: 'media', rawValue: 'b' },
+  ], { isVolatileCacheStorageKey });
+  assert.notEqual(first.activationCriticalSourceHash, second.activationCriticalSourceHash);
+});
+
+await check('legacy READY critical integrity is deterministic and verification is read-only', async () => {
+  const { storage, expected } = createFixture();
+  const repository = new MemoryRepository();
+  const ready = await migrateLocalStorageToIndexedDb({
+    storage,
+    repository,
+    expectedWorkspaceIntegrity: expected,
+    generationIdFactory: () => 'generation-legacy-critical',
+  });
+  const legacyMeta = await repository.readMeta('migration');
+  delete legacyMeta.activationCriticalSourceHash;
+  delete legacyMeta.activationCriticalIntegrity;
+  repository.meta.set('migration', structuredClone(legacyMeta));
+  const before = JSON.stringify({
+    meta: [...repository.meta],
+    stores: [...repository.stores].map(([name, records]) => [name, [...records]]),
+  });
+  const first = await calculateGenerationSourceIntegrityReadOnly(repository, ready.generationId);
+  const second = await calculateGenerationSourceIntegrityReadOnly(repository, ready.generationId);
+  const after = JSON.stringify({
+    meta: [...repository.meta],
+    stores: [...repository.stores].map(([name, records]) => [name, [...records]]),
+  });
+  assert.deepEqual(first, second);
+  assert.equal(first.fullSourceHash, ready.sourceHash);
+  assert.equal(first.activationCriticalSourceHash, ready.activationCriticalSourceHash);
+  assert.equal(after, before);
+});
 
 await check('copies a stable generation without changing localStorage', async () => {
   const { storage, expected } = createFixture();

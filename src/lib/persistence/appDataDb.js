@@ -300,6 +300,8 @@ export function createAppDataRepository(database) {
   async function activateGeneration({
     generationId,
     sourceHash,
+    activationCriticalSourceHash,
+    activationCriticalIntegrity,
     workspaceSourceHash,
     integrity,
     counts,
@@ -327,6 +329,17 @@ export function createAppDataRepository(database) {
       || currentMigration.state !== 'ready'
       || currentMigration.generationId !== generationId
       || currentMigration.sourceHash !== sourceHash
+      || (
+        currentMigration.activationCriticalSourceHash
+        && currentMigration.activationCriticalSourceHash !== activationCriticalSourceHash
+      )
+      || (
+        currentMigration.activationCriticalIntegrity
+        && !canonicalValuesEqual(
+          currentMigration.activationCriticalIntegrity,
+          activationCriticalIntegrity,
+        )
+      )
       || currentMigration.workspaceSourceHash !== workspaceSourceHash
       || !canonicalValuesEqual(currentMigration.integrity, integrity)
       || !canonicalValuesEqual(currentMigration.counts, counts)
@@ -345,6 +358,8 @@ export function createAppDataRepository(database) {
         key: 'activeGeneration',
         generationId,
         sourceHash,
+        activationCriticalSourceHash,
+        activationCriticalIntegrity,
         integrity,
         counts,
         state: 'active',
@@ -367,6 +382,8 @@ export function createAppDataRepository(database) {
       }));
       await requestResult(store.put({
         ...currentMigration,
+        activationCriticalSourceHash,
+        activationCriticalIntegrity,
         state: 'active',
       }));
     } catch (error) {
