@@ -27,6 +27,8 @@ import {
 import { getLocalStorageUsageMB, getStorageBreakdown, estimateEmbeddedTranscriptMB, stripEmbeddedTranscripts, cleanStorageCaches, clearLocalVideoData } from "@/services/videoStorage";
 import { clearAllAttachments } from "@/lib/attachmentStore";
 import { DriveStatusBadge } from "@/components/ui/DriveStatusBadge";
+import { IndexedDbStorageWarning, StorageStatusWidget } from "@/components/ui/StorageStatusWidget";
+import { useStorageMeter } from "@/hooks/useStorageMeter";
 import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
 import { saveLocalVideo } from "@/lib/localVideoStore";
 
@@ -280,12 +282,16 @@ export default function Dashboard({
   const [channelScanProgress, setChannelScanProgress] = useState(null);
   const [storageMB, setStorageMB] = useState(() => getLocalStorageUsageMB());
   const [storageBreakdown, setStorageBreakdown] = useState(null);
+  const storageMeter = useStorageMeter();
   // Keep storageWarningMB for backward compat with the banner
-  const storageWarningMB = storageMB > 4 ? storageMB.toFixed(1) : null;
+  const storageWarningMB = storageMeter.mode === "localStorage" && storageMB > 4
+    ? storageMB.toFixed(1)
+    : null;
 
   const refreshStorageMeter = () => {
     setStorageMB(getLocalStorageUsageMB());
     if (storageBreakdown !== null) setStorageBreakdown(getStorageBreakdown());
+    void storageMeter.refresh();
   };
 
   // Called by PdfUploader after successful text extraction.
@@ -301,6 +307,7 @@ export default function Dashboard({
     const { removedKeys, freedMB } = cleanStorageCaches();
     setStorageMB(getLocalStorageUsageMB());
     setStorageBreakdown(getStorageBreakdown());
+    void storageMeter.refresh();
     toast.success(`נוקה ${freedMB} MB (${removedKeys} מפתחות הוסרו)`);
   };
 
@@ -317,6 +324,7 @@ export default function Dashboard({
     const bd = getStorageBreakdown();
     bd.embeddedTranscriptMB = estimateEmbeddedTranscriptMB();
     setStorageBreakdown(bd);
+    void storageMeter.refresh();
     toast.success(`שוחרר ${freedMB} MB — תמלולים הוסרו מ-${stripped} סרטונים`);
   };
 
@@ -784,7 +792,10 @@ export default function Dashboard({
                 מחק הכל
               </button>
               <DriveStatusBadge />
-              {/* ── Memory meter ── */}
+              {/* ── Storage meter ── */}
+              {storageMeter.mode === "indexedDB" ? (
+                <StorageStatusWidget snapshot={storageMeter.snapshot} />
+              ) : (
               <div className="relative flex flex-col items-end gap-0.5">
                 <div className="flex items-center gap-1.5" dir="ltr">
                   <div className="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-700 overflow-hidden" title={`${storageMB} MB בשימוש מתוך ~5 MB`}>
@@ -855,6 +866,7 @@ export default function Dashboard({
                   </div>
                 )}
               </div>
+              )}
               <button
                 onClick={() => { handleRefresh(); refreshStorageMeter(); }}
                 disabled={isLoading}
@@ -868,7 +880,8 @@ export default function Dashboard({
         </div>
       </header>
 
-      {storageWarningMB && (
+      <IndexedDbStorageWarning snapshot={storageMeter.snapshot} />
+      {storageMeter.mode === "localStorage" && storageWarningMB && (
         <div className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-6 py-2 dark:border-amber-500/30 dark:bg-amber-500/10" dir="rtl">
           <span className="text-xs text-amber-700 dark:text-amber-300">
             ⚠️ אחסון מקומי כמעט מלא ({storageWarningMB} MB מתוך ~5 MB) — שקול למחוק סרטונים ישנים
