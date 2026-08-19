@@ -17,6 +17,7 @@
     "test:workspace-brief-routing": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-brief-routing-qa.mjs",
     "test:workspace-market-dimensions": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-market-dimensions-qa.mjs",
     "test:workspace-analysis-parity": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-analysis-parity-qa.mjs",
+    "test:content-routing-bridge": "node --import ./scripts/register-src-aliases.mjs scripts/content-routing-bridge-qa.mjs",
     "test:workspace-aggregate-navigation": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-aggregate-navigation-qa.mjs",
     "test:merge-vault:e2e": "playwright test e2e/obsidian-merge-vault.qa.spec.js"
   },

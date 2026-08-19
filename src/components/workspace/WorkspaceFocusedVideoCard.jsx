@@ -3,6 +3,14 @@ import { StructuredSnapshotContent } from '@/components/workspace/StructuredSnap
 import { selectSavedAnalysisSections, selectSavedAnalysisViewer } from '@/utils/workspaceSavedAnalysis';
 import { getWorkspaceHeadingByCollection } from '@/config/workspaceHeadingRegistry';
 import { WorkspaceCollectionTiles } from '@/components/workspace/WorkspaceCollectionTiles';
+import { ContentRoutingBridge } from '@/components/shared/ContentRoutingBridge';
+import {
+  selectContentRoutingState,
+  selectObsidianCollectionStatuses,
+} from '@/utils/contentRouting';
+import { getWorkspaceSourceVideoId } from '@/utils/workspaceItemIdentity';
+import { getObsidianItemSavesForVideo } from '@/lib/obsidianItemSaveStore';
+import { buildObsidianOpenUrl, getActiveObsidianVaultConfig } from '@/lib/obsidianVaultConfig';
 import {
   AnalysisFieldGrid,
   AnalysisList,
@@ -116,10 +124,36 @@ export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, sel
 export function WorkspaceFocusedVideoCard({
   group, activeCollection, selectedIds, onCollectionSelect, onClearFocus,
   onOpenVideo, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
-  collectionCounts,
+  collectionCounts, topics = [],
 }) {
   const viewer = selectSavedAnalysisViewer(visibleGroup);
   const duplicateIds = group.exactDuplicateGroups.flatMap(version => version.records.slice(1).map(item => item.id));
+  const sourceVideoId = group.items.map(getWorkspaceSourceVideoId).find(Boolean) || group.videoId || null;
+  const obsidianEntries = getObsidianItemSavesForVideo(sourceVideoId);
+  const obsidianByCollection = selectObsidianCollectionStatuses(obsidianEntries);
+  const latestObsidianEntry = obsidianEntries[0] || null;
+  const activeVault = getActiveObsidianVaultConfig();
+  const exportedPath = latestObsidianEntry?.destinationPath || null;
+  const folderPath = exportedPath?.includes('/') ? exportedPath.slice(0, exportedPath.lastIndexOf('/')) : null;
+  const routing = selectContentRoutingState({
+    items: group.items,
+    topics,
+    persistedSource: {
+      title: group.videoTitle,
+      channel: group.channel,
+      thumbnail: group.thumbnail,
+    },
+    obsidianByCollection,
+    obsidian: {
+      vaultName: activeVault.vaultName,
+      folderPath,
+      filePath: exportedPath,
+      exportedPath,
+      exportedAt: latestObsidianEntry?.savedAt || null,
+      openUrl: exportedPath ? buildObsidianOpenUrl(exportedPath, activeVault.vaultName) : null,
+    },
+    persistedOnly: true,
+  });
 
   return (
     <article data-video-key={group.videoKey} data-workspace-scope="video" className="overflow-hidden rounded-3xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-zinc-900">
@@ -141,7 +175,18 @@ export function WorkspaceFocusedVideoCard({
         />
       </div>
 
-      <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
+      {activeCollection === 'topics' ? (
+        <div className="bg-slate-50/60 p-5 dark:bg-zinc-950/30">
+          <ContentRoutingBridge
+            routing={routing}
+            readOnly
+            onPreviewCollection={collection => onCollectionSelect(collection.collectionKey)}
+            onOpenAnalysis={onOpenVideo}
+          />
+        </div>
+      ) : (
+        <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
+      )}
     </article>
   );
 }
