@@ -4,6 +4,8 @@
  * Matching is alias-based (case-insensitive, trimmed).
  */
 
+export const CNN_FEAR_GREED_URL = 'https://www.cnn.com/markets/fear-and-greed';
+
 export const SENTIMENT_SOURCE_LINKS = [
   {
     id: 'general_market_sentiment',

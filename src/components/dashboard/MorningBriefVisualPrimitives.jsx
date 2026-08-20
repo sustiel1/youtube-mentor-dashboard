@@ -157,6 +157,7 @@ export function SectionCard({
   emptyMessage,
   headerPills,
   headerActions,
+  headerLinks,
   plainSurface = false,
   cardBulk = null,
   sectionSelectAllItems = null,
@@ -180,14 +181,21 @@ export function SectionCard({
         dir="rtl"
         data-section-header
       >
-        <div className="flex items-center justify-between gap-x-3">
+        <div className={headerLinks
+          ? 'flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-x-3'
+          : 'flex items-center justify-between gap-x-3'}
+        >
           <div className="flex items-center gap-x-2 min-w-0">
             <SectionHeaderTitle title={title} count={count} />
             {sectionSelectAllItems?.length > 0 && (
               <SectionSelectAllButton sectionItems={sectionSelectAllItems} bulkSelection={bulkSelection} />
             )}
           </div>
-          <div className="flex items-center gap-x-2 shrink-0">
+          <div className={headerLinks
+            ? 'flex min-w-0 flex-wrap items-center justify-between gap-2 md:shrink-0 md:justify-start'
+            : 'flex items-center gap-x-2 shrink-0'}
+          >
+            {headerLinks}
             {headerActions}
           </div>
         </div>

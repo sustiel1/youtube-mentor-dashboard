@@ -57,6 +57,7 @@ export const LOCAL_STORAGE_FIXED_KEYS = Object.freeze([
   'workspace_topics_v1',
   'workspace_tab_preferences_v1',
   'market_manual_finviz_mappings_v1',
+  'market_aaii_weekly_sentiment_v1',
   'app_builder_v1',
   'youtubeMentor.theme',
   'yt_claude_safety_v1',
@@ -186,6 +187,6 @@ export function listOwnedStorageKeys(storage) {
   return [...keys].sort();
 }
 
-if (LOCAL_STORAGE_FIXED_KEYS.length !== 64) {
-  throw new Error('Expected exactly 64 verified fixed localStorage keys');
+if (LOCAL_STORAGE_FIXED_KEYS.length !== 65) {
+  throw new Error('Expected exactly 65 verified fixed localStorage keys');
 }

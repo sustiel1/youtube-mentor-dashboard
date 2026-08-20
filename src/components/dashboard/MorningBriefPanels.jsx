@@ -42,6 +42,8 @@ import {
 } from '@/lib/morningBriefVisuals';
 import { MorningBriefMarketsTable, marketRowSentimentKey } from './MorningBriefMarketsTable';
 import { MarketSectorTable } from './MarketSectorTable';
+import { FearGreedScoreCard } from './FearGreedScoreCard';
+import { AAIIWeeklySentimentCardContainer } from './AAIIWeeklySentimentCardContainer';
 import {
   BRIEF_NOTES_TEXT_CLS,
 } from './BriefSentimentNotesTable';
@@ -118,7 +120,10 @@ import {
   resolveMorningBriefSectionChildItems,
   resolveMorningBriefCombinedSectionChildItems,
 } from '@/lib/morningBriefBulkSections';
-import { getSentimentSourceLink } from '@/lib/sentimentSourceLinks';
+import {
+  CNN_FEAR_GREED_URL,
+  getSentimentSourceLink,
+} from '@/lib/sentimentSourceLinks';
 import { getMacroIndicatorUrl } from '@/lib/macroIndicatorLinks';
 import { translateMarketLabel, translateImportanceLevel } from '@/lib/marketLabelTranslations';
 
@@ -1775,6 +1780,12 @@ export function SentimentSection({
       tone={tone}
       isEmpty={items.length === 0}
       emptyMessage="סנטימנט קמעונאי, מוסדי ופחד וחמדנות יוצגו כאן"
+      headerLinks={(
+        <>
+          <FearGreedScoreCard sourceUrl={CNN_FEAR_GREED_URL} />
+          <AAIIWeeklySentimentCardContainer />
+        </>
+      )}
       cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, 'sentiment', DISPLAY_SECTION_TITLES.sentiment)}
       sectionSelectAllItems={resolveMorningBriefSectionChildItems(bulkSections, 'sentiment')}
       bulkSelection={bulkSelection}
