@@ -23,6 +23,7 @@ import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { getMarketAssetDescription } from '@/lib/marketAssetDescriptions';
 import { buildTradingViewChartUrl } from '@/utils/finvizLinks';
 import {
   BRIEF_CELL,
@@ -95,7 +96,7 @@ function MarketRowSaveActions({ bulkSelection, mergedBulk, text, onSaveToBrain }
 
 /**
  * Morning Brief markets table — RTL reading order (right → left):
- *   נכס | סנטימנט | שינוי % | הערה | פעולות (☐ + TV/Inv + save on screen-left)
+ *   נכס | מה הוא מייצג | סנטימנט | שינוי % | הערה | פעולות (☐ + TV/Inv + save on screen-left)
  * Asset cell is text-only; all row actions live in the far-left פעולות column.
  */
 export function MorningBriefMarketsTable({
@@ -139,9 +140,10 @@ export function MorningBriefMarketsTable({
 
   return (
     <BriefTableWrapper>
-      <table className={BRIEF_TABLE_CLS} dir="rtl" data-markets-table>
+      <table className={`${BRIEF_TABLE_CLS} md:min-w-[1280px]`} dir="rtl" data-markets-table>
         <colgroup>
-          <col style={{ width: BRIEF_MARKETS_COL.asset }} />
+          <col className="w-[180px] md:w-[160px]" />
+          <col className="hidden md:table-column md:w-[300px]" />
           <col style={{ width: BRIEF_MARKETS_COL.sentiment }} />
           <col style={{ width: BRIEF_MARKETS_COL.change }} />
           <col />
@@ -149,7 +151,8 @@ export function MorningBriefMarketsTable({
         </colgroup>
         <thead>
           <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
-            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
+            <th className={`px-3 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
+            <th className={`hidden w-[300px] px-3 py-1.5 text-right align-middle md:table-cell ${DASHBOARD_TABLE_HEAD_CLS}`}>מה הוא מייצג</th>
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
             <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
             <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
@@ -162,6 +165,7 @@ export function MorningBriefMarketsTable({
             const pct = getMarketChangePct(row);
             const sentKey = marketRowSentimentKey(row);
             const assetName = String(row.asset || '').trim();
+            const assetDescription = getMarketAssetDescription(assetName);
             const tvUrl = assetName ? buildTradingViewChartUrl(assetName) : null;
             const mergedBulk = bulkSelection
               ? mergeBulkSelection(bulkSelection, {
@@ -177,12 +181,19 @@ export function MorningBriefMarketsTable({
                 className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group"
                 data-market-item
               >
-                <td className={BRIEF_CELL.short}>
-                  <span className={`block truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                <td className="w-[180px] px-3 py-2 align-middle text-right whitespace-nowrap md:w-[160px]">
+                  <span className={`block shrink-0 whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
                     <ExternalSymbolLink symbol={row.asset}>
                       {row.asset || '—'}
                     </ExternalSymbolLink>
                   </span>
+                  <div className="mt-1.5 whitespace-normal text-right text-xs leading-snug text-slate-500 dark:text-zinc-400 md:hidden" data-market-asset-description-mobile>
+                    <span className="font-semibold text-slate-600 dark:text-zinc-300">מה הוא מייצג: </span>
+                    <span>{assetDescription}</span>
+                  </div>
+                </td>
+                <td className="hidden w-[300px] px-3 py-2 text-right align-middle text-sm leading-snug text-slate-500 dark:text-zinc-400 md:table-cell" data-market-asset-description>
+                  <span className="line-clamp-2">{assetDescription}</span>
                 </td>
                 <td className={BRIEF_CELL.sentiment}>
                   <MarketsTableSentimentBadge sentKey={sentKey} />

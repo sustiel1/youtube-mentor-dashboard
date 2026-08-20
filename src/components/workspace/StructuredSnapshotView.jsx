@@ -7,6 +7,7 @@ import {
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
 } from '@/components/dashboard/MorningBriefVisualPrimitives';
+import { getMarketAssetDescription } from '@/lib/marketAssetDescriptions';
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 
@@ -112,10 +113,11 @@ function MarketsTable({ rows = [] }) {
   if (rows.length === 0) return <EmptyTableNote label="לא נשמרו נתוני שווקים בתמונת המצב הזו" />;
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700">
-      <table className="w-full min-w-[480px] text-right" dir="rtl">
+      <table className="w-full min-w-[640px] text-right sm:min-w-[940px]" dir="rtl">
         <thead>
           <tr className="border-b border-slate-200 dark:border-zinc-700">
-            <th className={TH_CLS}>נכס</th>
+            <th className={`${TH_CLS} w-[160px] whitespace-nowrap`}>נכס</th>
+            <th className={`${TH_CLS} hidden w-[300px] text-right sm:table-cell`}>מה הוא מייצג</th>
             <th className={TH_CLS}>מגמה</th>
             <th className={TH_CLS}>עוצמה</th>
             <th className={TH_CLS}>הערה</th>
@@ -124,7 +126,16 @@ function MarketsTable({ rows = [] }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={`${r.asset || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
-              <td className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{r.asset || '—'}</td>
+              <td className={`${TD_CLS} w-[160px] whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                <span>{r.asset || '—'}</span>
+                <div className="mt-1.5 whitespace-normal text-xs font-normal leading-snug text-slate-500 dark:text-zinc-400 sm:hidden" data-market-asset-description-mobile>
+                  <span className="font-semibold text-slate-600 dark:text-zinc-300">מה הוא מייצג: </span>
+                  <span>{getMarketAssetDescription(r.asset)}</span>
+                </div>
+              </td>
+              <td className={`${TD_CLS} hidden w-[300px] text-right text-slate-500 dark:text-zinc-400 sm:table-cell`} data-market-asset-description>
+                <span className="line-clamp-2">{getMarketAssetDescription(r.asset)}</span>
+              </td>
               <td className={TD_CLS}>{r.trend || '—'}</td>
               <td className={TD_CLS}>{r.strength || '—'}</td>
               <td className={TD_CLS}>{r.comment || '—'}</td>
