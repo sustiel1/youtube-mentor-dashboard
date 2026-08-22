@@ -127,6 +127,7 @@ import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
+import { BriefContextHeader } from "./BriefContextHeader";
 import { detectVideoType, extractVideoTabItems, getBriefDisplayClassification, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import {
   createWorkspaceProvenance,
@@ -9561,6 +9562,13 @@ export function VideoDetailPanel({
               </TabsList>
               </div>
 
+              <BriefContextHeader
+                slug={effectiveBriefSlug ?? normalizedSubCategory}
+                subCategory={briefPresentationVideo?.subCategory}
+                subject={briefPresentationVideo?.title || effectiveSubCategory || effectiveCategory}
+                publishedAt={briefPresentationVideo?.publishedAt}
+                showSourceCaption={false}
+              />
               <UniversalTabBulkToolbar />
 
               {/* ── Summary tab ── */}

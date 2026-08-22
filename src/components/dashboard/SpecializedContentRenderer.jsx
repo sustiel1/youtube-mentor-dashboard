@@ -4,11 +4,9 @@ import { MarketIndicesTable } from "./MarketIndicesTable";
 import { MorningBriefDashboard } from "./MorningBriefDashboard";
 import { MORNING_BRIEF_SPECIALIZED_PRESENTATION } from "@/lib/morningBriefPresentation";
 import { MacroGemDashboard } from "./MacroGemDashboard";
-import { BriefContextHeader } from "./BriefContextHeader";
 import { DASHBOARD_COLUMN_HEADER_CLS } from "./MorningBriefVisualPrimitives";
 import { buildBulkItemsFromSections } from "@/lib/universalTabBulkItems";
 import { extractVideoTabItems } from "@/config/videoTabsConfig";
-import { getBriefContextDisplay } from "@/lib/briefContextDisplay";
 import { TabBulkItemsRegistrar } from "./TabBulkItemsRegistrar";
 import {
   buildMorningBriefBulkSections,
@@ -64,22 +62,6 @@ export function SpecializedContentRenderer({
   bulkSelection = null,
 }) {
   const slug = normalizedSubCategory;
-  const briefContext = getBriefContextDisplay(slug, effectiveVideo?.subCategory);
-
-  const wrapWithBriefHeader = (content, { showSourceCaption = true } = {}) => {
-    if (!briefContext) return content;
-    return (
-      <div className="space-y-3" dir="rtl" data-specialized-brief-shell>
-        <BriefContextHeader
-          slug={slug}
-          subCategory={effectiveVideo?.subCategory}
-          publishedAt={effectiveVideo?.publishedAt}
-          showSourceCaption={showSourceCaption}
-        />
-        {content}
-      </div>
-    );
-  };
 
   const sect = (label, items, tabKey, sectionKey = tabKey) => (
     <Section
@@ -152,20 +134,17 @@ export function SpecializedContentRenderer({
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
   if (slug === 'morning-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
-    return wrapWithBriefHeader(
-      renderBulkShell(morningBulkDefs, (
-        <MorningBriefDashboard
-          effectiveVideo={effectiveVideo}
-          marketBriefData={marketBriefData}
-          onSaveToBrain={onSaveToBrain}
-          onSaveMarketBriefSection={onSaveMarketBriefSection}
-          bulkSelection={bulkSelection}
-          bulkSections={morningBulkDefs}
-          presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
-        />
-      )),
-      { showSourceCaption: MORNING_BRIEF_SPECIALIZED_PRESENTATION.showSourceCaption },
-    );
+    return renderBulkShell(morningBulkDefs, (
+      <MorningBriefDashboard
+        effectiveVideo={effectiveVideo}
+        marketBriefData={marketBriefData}
+        onSaveToBrain={onSaveToBrain}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
+        bulkSelection={bulkSelection}
+        bulkSections={morningBulkDefs}
+        presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+      />
+    ));
   }
 
   // ── Evening Brief ────────────────────────────────────────────────
@@ -228,7 +207,7 @@ export function SpecializedContentRenderer({
       { key: 'brief-opportunities', label: '💡 הזדמנויות', items: extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), tabKey: 'brief-opportunities' },
       { key: 'brief-risks', label: '⚠️ סיכונים', items: extractVideoTabItems(effectiveVideo, 'brief-risks', marketBriefData), tabKey: 'brief-risks' },
     ].filter((d) => d.items.length > 0);
-    return wrapWithBriefHeader(renderBulkShell(eveningBulkDefs, sects));
+    return renderBulkShell(eveningBulkDefs, sects);
   }
 
   // ── Weekly Brief ─────────────────────────────────────────────────
@@ -293,7 +272,7 @@ export function SpecializedContentRenderer({
       { key: 'brief-opportunities', label: '💡 הזדמנויות', items: extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), tabKey: 'brief-opportunities' },
       { key: 'brief-risks', label: '⚠️ סיכונים', items: extractVideoTabItems(effectiveVideo, 'brief-risks', marketBriefData), tabKey: 'brief-risks' },
     ].filter((d) => d.items.length > 0);
-    return wrapWithBriefHeader(renderBulkShell(weeklyBulkDefs, sects));
+    return renderBulkShell(weeklyBulkDefs, sects);
   }
 
   // ── Earnings Brief ───────────────────────────────────────────────
@@ -356,7 +335,7 @@ export function SpecializedContentRenderer({
       { key: 'brief-opportunities', label: '💡 הזדמנויות', items: extractVideoTabItems(effectiveVideo, 'brief-opportunities', marketBriefData), tabKey: 'brief-opportunities' },
       { key: 'brief-risks', label: '⚠️ סיכונים', items: extractVideoTabItems(effectiveVideo, 'brief-risks', marketBriefData), tabKey: 'brief-risks' },
     ].filter((d) => d.items.length > 0);
-    return wrapWithBriefHeader(renderBulkShell(earningsBulkDefs, sects));
+    return renderBulkShell(earningsBulkDefs, sects);
   }
 
   // ── Macro ────────────────────────────────────────────────────────
@@ -364,13 +343,13 @@ export function SpecializedContentRenderer({
   const isMacroContent = slug === 'macro' || (!!marketBriefData?.universalTabs && marketBriefData?.contentType === 'market');
 
   if (isMacroContent) {
-    return wrapWithBriefHeader(
+    return (
       <MacroGemDashboard
         marketBriefData={marketBriefData}
         effectiveVideo={effectiveVideo}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
-      />,
+      />
     );
   }
 

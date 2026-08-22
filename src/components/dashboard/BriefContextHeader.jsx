@@ -1,5 +1,4 @@
 import {
-  formatBriefPublishDate,
   formatBriefPublishDatePlain,
   getBriefContextDisplay,
 } from '@/lib/briefContextDisplay';
@@ -11,26 +10,24 @@ const BRIEF_TITLE_CLS =
 const BRIEF_CONTEXT_CLS =
   'text-sm sm:text-base font-semibold text-slate-600 dark:text-zinc-400 leading-snug';
 
-const BRIEF_DATE_CLS =
-  'text-xs font-medium text-slate-500 dark:text-zinc-500 tabular-nums';
-
 /**
- * Brief type + timing context above Specialized Content (presentation only).
+ * Shared subject + publish-date heading for the universal content tabs.
  */
-export function BriefContextHeader({ slug, subCategory, publishedAt, layout = 'stacked', showSourceCaption = true }) {
+export function BriefContextHeader({ slug, subCategory, subject, publishedAt, layout = 'stacked', showSourceCaption = true }) {
   const meta = getBriefContextDisplay(slug, subCategory);
-  if (!meta) return null;
-
+  const subjectTitle = meta?.title || String(subject || '').trim();
+  if (!subjectTitle) return null;
   const datePlain = formatBriefPublishDatePlain(publishedAt);
+  const title = datePlain ? `${subjectTitle} — ${datePlain}` : subjectTitle;
 
   if (layout === 'inline') {
-    const dateWithEmoji = showSourceCaption ? formatBriefPublishDate(publishedAt) : null;
-    const parts = [meta.title, showSourceCaption ? meta.context : null, dateWithEmoji].filter(Boolean);
+    const parts = [title, showSourceCaption ? meta?.context : null].filter(Boolean);
     return (
       <div
         dir="rtl"
         className={`mb-3 rounded-xl border ${COMPARISON_SECTION_BORDER} ${COMPARISON_SURFACE_BG} px-3 py-3 text-right`}
         data-brief-context-header
+        data-shared-content-heading
       >
         <p className={`${BRIEF_TITLE_CLS} leading-snug`}>
           {parts.join(' | ')}
@@ -44,15 +41,11 @@ export function BriefContextHeader({ slug, subCategory, publishedAt, layout = 's
       dir="rtl"
       className={`mb-3 rounded-xl border ${COMPARISON_SECTION_BORDER} ${COMPARISON_SURFACE_BG} px-3 py-3 text-right`}
       data-brief-context-header
+      data-shared-content-heading
     >
-      <h1 className={BRIEF_TITLE_CLS}>{meta.title}</h1>
-      {showSourceCaption && (
-        <>
-          <p className={`${BRIEF_CONTEXT_CLS} mt-1`}>{meta.context}</p>
-          {datePlain && (
-            <p className={`${BRIEF_DATE_CLS} mt-0.5`}>{datePlain}</p>
-          )}
-        </>
+      <h1 className={BRIEF_TITLE_CLS}>{title}</h1>
+      {showSourceCaption && meta?.context && (
+        <p className={`${BRIEF_CONTEXT_CLS} mt-1`}>{meta.context}</p>
       )}
     </div>
   );
