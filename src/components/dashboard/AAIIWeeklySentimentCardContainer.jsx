@@ -34,7 +34,7 @@ export function AAIIWeeklySentimentCardContainer() {
 
   const handleSave = useCallback(async (draft) => {
     const built = buildAaiiWeeklyRecord(
-      { bullish: draft.bullish, neutral: draft.neutral, bearish: draft.bearish },
+      draft,
       draft.publicationDate,
     );
     if (!built.valid) return; // editor already blocked save on invalid input
@@ -54,6 +54,10 @@ export function AAIIWeeklySentimentCardContainer() {
         bullish={latest?.bullish ?? null}
         neutral={latest?.neutral ?? null}
         bearish={latest?.bearish ?? null}
+        bullishAverage={latest?.bullishAverage ?? null}
+        neutralAverage={latest?.neutralAverage ?? null}
+        bearishAverage={latest?.bearishAverage ?? null}
+        bullBearSpread={latest?.bullBearSpread ?? null}
         weekStart={latest?.weekStart ?? null}
         weekEnd={latest?.weekEnd ?? null}
         updatedAt={latest?.updatedAt ?? null}

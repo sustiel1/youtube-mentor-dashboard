@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import {
   formatLocalDateOnly,
   formatWeeklyPeriodLabel,
+  getAaiiSpreadInterpretation,
   getWeeklyPeriod,
   normalizeAaiiPercentInput,
+  parseAaiiResultsLine,
   validateAaiiWeeklyDraft,
 } from '@/lib/aaiiWeeklySentiment';
 
@@ -34,12 +36,16 @@ export function AAIIWeeklySentimentEditor({
   const [draft, setDraft] = useState(() => buildDraft(currentRecord));
   const [error, setError] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [parsedPreview, setParsedPreview] = useState(null);
 
   useEffect(() => {
     if (open) {
       setDraft(buildDraft(currentRecord));
       setError(null);
       setHistoryOpen(false);
+      setPasteText('');
+      setParsedPreview(null);
     }
   }, [open, currentRecord]);
 
@@ -52,13 +58,30 @@ export function AAIIWeeklySentimentEditor({
   }, [draft.bullish, draft.neutral, draft.bearish]);
 
   const period = useMemo(() => getWeeklyPeriod(draft.publicationDate), [draft.publicationDate]);
+  const previewInterpretation = useMemo(
+    () => getAaiiSpreadInterpretation(parsedPreview?.bullBearSpread),
+    [parsedPreview?.bullBearSpread],
+  );
 
   const handleField = (field) => (event) => {
     setDraft((prev) => ({ ...prev, [field]: event.target.value }));
+    if (field !== 'publicationDate') setParsedPreview(null);
   };
 
-  const handleSave = () => {
-    const validation = validateAaiiWeeklyDraft(draft);
+  const handleParse = () => {
+    const parsed = parseAaiiResultsLine(pasteText);
+    if (!parsed.valid) {
+      setParsedPreview(null);
+      setError(parsed.error);
+      return;
+    }
+    setParsedPreview(parsed);
+    setError(null);
+  };
+
+  const handleSave = async () => {
+    const saveDraft = parsedPreview ? { ...draft, ...parsedPreview } : draft;
+    const validation = validateAaiiWeeklyDraft(saveDraft);
     if (!validation.valid) {
       setError(validation.error);
       return;
@@ -67,8 +90,12 @@ export function AAIIWeeklySentimentEditor({
       setError('תאריך פרסום לא תקין');
       return;
     }
-    onSave?.(draft);
-    onOpenChange(false);
+    try {
+      await onSave?.(saveDraft);
+      onOpenChange(false);
+    } catch {
+      setError('שמירת נתוני AAII נכשלה. הנתונים הקיימים לא שונו.');
+    }
   };
 
   return (
@@ -80,6 +107,48 @@ export function AAIIWeeklySentimentEditor({
         </DialogHeader>
 
         <div className="px-6 py-4 space-y-3">
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/60 dark:bg-indigo-950/20">
+            <label className={LABEL_CLS} htmlFor="aaii-editor-paste">הדבקת שורת תוצאות AAII</label>
+            <textarea
+              id="aaii-editor-paste"
+              rows={2}
+              dir="ltr"
+              value={pasteText}
+              onChange={(event) => {
+                setPasteText(event.target.value);
+                setParsedPreview(null);
+                setError(null);
+              }}
+              placeholder="Bullish … Avg … Neutral … Bearish … Bull–Bear Spread …"
+              className={`${FIELD_CLS} min-h-14 resize-y text-left`}
+              data-aaii-editor-paste
+            />
+            <button
+              type="button"
+              onClick={handleParse}
+              className="mt-2 h-8 rounded-lg border border-indigo-200 bg-white px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-zinc-900 dark:text-indigo-300 dark:hover:bg-zinc-800"
+              data-aaii-editor-parse
+            >
+              פענוח ותצוגה מקדימה
+            </button>
+
+            {parsedPreview && (
+              <div className="mt-3 rounded-md border border-emerald-200 bg-white p-2 text-xs text-slate-700 dark:border-emerald-800 dark:bg-zinc-900 dark:text-zinc-200" data-aaii-editor-preview>
+                <p className="mb-1 font-bold text-emerald-700 dark:text-emerald-400">תצוגה מקדימה לפני שמירה</p>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+                  <div><dt className="inline text-slate-500">שוריים: </dt><dd className="inline font-semibold">{parsedPreview.bullish.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">ממוצע שוריים: </dt><dd className="inline font-semibold">{parsedPreview.bullishAverage.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">ניטרליים: </dt><dd className="inline font-semibold">{parsedPreview.neutral.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">ממוצע ניטרליים: </dt><dd className="inline font-semibold">{parsedPreview.neutralAverage.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">דוביים: </dt><dd className="inline font-semibold">{parsedPreview.bearish.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">ממוצע דוביים: </dt><dd className="inline font-semibold">{parsedPreview.bearishAverage.toFixed(1)}%</dd></div>
+                  <div><dt className="inline text-slate-500">מרווח: </dt><dd className="inline font-semibold">{parsedPreview.bullBearSpread.toFixed(1)} נק׳ אחוז</dd></div>
+                  <div><dt className="inline text-slate-500">סנטימנט: </dt><dd className="inline font-semibold">{previewInterpretation?.label}</dd></div>
+                </dl>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className={LABEL_CLS} htmlFor="aaii-editor-bullish">שוריים (%)</label>
             <input
@@ -189,7 +258,7 @@ export function AAIIWeeklySentimentEditor({
             className="flex-1 h-9 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
             data-aaii-editor-save
           >
-            שמירה
+            {parsedPreview ? 'אישור ושמירה' : 'שמירה'}
           </button>
         </DialogFooter>
       </DialogContent>
