@@ -1,9 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useId, useMemo, useRef } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, ExternalLink, Settings, Copy, Save, Check, AlertCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
-import { getGemUrl, isGeminiGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
+import {
+  getGemUrl,
+  isGeminiGemUrl,
+  MARKET_BRIEF_GEM_KEY,
+  MARKET_BRIEF_GEM_LABEL,
+  openGeminiGemUrl,
+  saveGemConfigSnapshot,
+} from "@/lib/gemsConfig";
+import {
+  isMarketBriefWorkflowVideo,
+  resolveWorkflowGemRecommendation,
+  resolveWorkflowGemSelection,
+} from "@/lib/gemRecommender";
 import { GemsSettingsModal } from "./GemsSettingsModal";
 import { cn } from "@/lib/utils";
 import { loadTopics } from "@/services/topicStorage";
@@ -23,6 +35,13 @@ const TJS_GEMS = [
   { key: "appBuilder", label: "AP Builder", icon: "🏗️", description: "פיתוח אפליקציות, קוד, React ובינה מלאכותית" },
 ];
 
+const MARKET_BRIEF_GEM = {
+  key: MARKET_BRIEF_GEM_KEY,
+  label: MARKET_BRIEF_GEM_LABEL,
+  icon: "📰",
+  description: "Gem משותף למבזקי לייב, בוקר ולייט נייט",
+};
+
 // Learning / knowledge GEMS — rendered as individual rows outside GEMS TJS
 const KNOWLEDGE_MARKET_GEMS = [
   { key: "technical",   label: "ניתוח טכני", icon: "📉", description: "ניתוח טכני של גרפים, מגמות ונקודות כניסה ויציאה" },
@@ -30,10 +49,14 @@ const KNOWLEDGE_MARKET_GEMS = [
 ];
 
 const TJS_GEM_KEYS = new Set(TJS_GEMS.map((g) => g.key));
-const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, ...TJS_GEMS, ...KNOWLEDGE_MARKET_GEMS];
+const BRIEF_WORKFLOW_HIDDEN_LABELS = new Set(["מבזק בוקר", "מאקרו", "מסחר יומי", "AP Builder"]);
+const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, MARKET_BRIEF_GEM, ...TJS_GEMS, ...KNOWLEDGE_MARKET_GEMS];
 
 // Keys that use saveGemConfigSnapshot (vs. direct localStorage for dynamic topics)
 const FIXED_GEM_KEYS = new Set(ALL_FIXED_GEMS.map((g) => g.key));
+
+const shouldExpandAdditionalOptions = ({ isMarketBriefWorkflow, savedGemKey }) =>
+  isMarketBriefWorkflow && Boolean(savedGemKey) && savedGemKey !== MARKET_BRIEF_GEM_KEY;
 
 // Topic IDs already covered by fixed GEMs — excluded from dynamic list
 const EXCLUDED_TOPIC_IDS = new Set(["t2", "t_pol"]);
@@ -103,7 +126,11 @@ export function GemSelectionModal({
   onGemSummaryPaste = null,
   tjsRecommendation = null,
 }) {
-  const [selected, setSelected]                 = useState(savedGemKey || recommendedGemKey || "general");
+  const isMarketBriefWorkflow = isMarketBriefWorkflowVideo(video);
+  const workflowRecommendedGemKey = resolveWorkflowGemRecommendation(video, recommendedGemKey);
+  const initialSelection = resolveWorkflowGemSelection({ video, savedGemKey, recommendedGemKey });
+  const additionalOptionsId = useId();
+  const [selected, setSelected]                 = useState(initialSelection);
   const [gemUrls, setGemUrls]                   = useState(() => {
     const urls = {};
     ALL_FIXED_GEMS.forEach((g) => { urls[g.key] = readAnyGemUrl(g.key); });
@@ -120,8 +147,12 @@ export function GemSelectionModal({
   const [isSummaryPasteOpen, setIsSummaryPasteOpen] = useState(false);
   const [summaryDraft, setSummaryDraft]         = useState('');
   const [summaryError, setSummaryError]         = useState('');
+  const [showAdditionalOptions, setShowAdditionalOptions] = useState(() =>
+    shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
+  );
+  const wasOpenRef = useRef(false);
   const [expandedCategory, setExpandedCategory] = useState(() =>
-    getCategoryForKey(savedGemKey || recommendedGemKey || "general", [])
+    getCategoryForKey(initialSelection, [])
   );
 
   // Load dynamic topic-based GEMs
@@ -158,8 +189,10 @@ export function GemSelectionModal({
 
   // Reset state when modal opens
   useEffect(() => {
-    if (open) {
-      const initialKey = savedGemKey || recommendedGemKey || "general";
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (justOpened) {
+      const initialKey = resolveWorkflowGemSelection({ video, savedGemKey, recommendedGemKey });
       setSelected(initialKey);
       setIsConfiguringUrl(false);
       setUrlDraft("");
@@ -167,6 +200,9 @@ export function GemSelectionModal({
       setJustSaved(false);
       refreshUrls();
       setExpandedCategory(getCategoryForKey(initialKey, dynamicTopicGems));
+      setShowAdditionalOptions(
+        shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
+      );
       const vid = video?.id;
       const alreadyHasSummary = Boolean(video?.gemSummary);
       setSummaryReceived(alreadyHasSummary);
@@ -175,7 +211,7 @@ export function GemSelectionModal({
       setSummaryDraft('');
       setSummaryError('');
     }
-  }, [open, savedGemKey, recommendedGemKey, refreshUrls]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, savedGemKey, recommendedGemKey, refreshUrls, video]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isConfiguringUrl) {
@@ -185,14 +221,17 @@ export function GemSelectionModal({
   }, [selected, isConfiguringUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allGems        = useMemo(() => [...ALL_FIXED_GEMS, ...dynamicTopicGems], [dynamicTopicGems]);
+  const visibleDynamicTopicGems = isMarketBriefWorkflow
+    ? dynamicTopicGems.filter((gem) => !BRIEF_WORKFLOW_HIDDEN_LABELS.has(gem.label))
+    : dynamicTopicGems;
   const selectedGem    = allGems.find((g) => g.key === selected) || FIXED_GEMS_TOP[0];
   const selectedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
-  const isAiRec        = selected === recommendedGemKey;
+  const isAiRec        = selected === workflowRecommendedGemKey;
   const isSavedSel     = selected === savedGemKey;
-  const hasUnsaved     = selected !== (savedGemKey || recommendedGemKey || "general");
+  const hasUnsaved     = selected !== initialSelection;
   const category       = topics[0]?.name || video?.category || "";
   const subCategory    = topics[1]?.name || video?.subCategory || "";
-  const recommendedGem = allGems.find((g) => g.key === recommendedGemKey);
+  const recommendedGem = allGems.find((g) => g.key === workflowRecommendedGemKey);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -204,10 +243,17 @@ export function GemSelectionModal({
 
   const handleOpenGem = async () => {
     const resolvedGemUrl = getGemUrl(selected) || gemUrls[selected] || "";
-    if (!fullTranscriptText) { toast.error("אין תמלול להעתקה — ייבא תמלול קודם"); return; }
     if (!resolvedGemUrl || !isGeminiGemUrl(resolvedGemUrl)) {
       setIsConfiguringUrl(true);
       toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
+      return;
+    }
+    if (!fullTranscriptText) {
+      if (!openGeminiGemUrl(resolvedGemUrl)) {
+        toast.error(`לא ניתן לפתוח את ה-GEM ${selectedGem.label}.`);
+        return;
+      }
+      toast.error("אין תמלול להעתקה — ה-GEM נפתח ללא תוכן");
       return;
     }
     const payload = [
@@ -272,7 +318,7 @@ export function GemSelectionModal({
 
   const renderChildRow = (gem) => {
     const isSel    = gem.key === selected;
-    const isRec    = gem.key === recommendedGemKey;
+    const isRec    = gem.key === workflowRecommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
     const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
     const tjsScore = tjsRecommendation?.scores?.[gem.key];
@@ -316,7 +362,7 @@ export function GemSelectionModal({
 
   const renderSingleRow = (gem, icon) => {
     const isSel    = gem.key === selected;
-    const isRec    = gem.key === recommendedGemKey;
+    const isRec    = gem.key === workflowRecommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
     const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
     return (
@@ -346,8 +392,8 @@ export function GemSelectionModal({
   const renderTJSAccordion = () => {
     const isExpanded  = expandedCategory === "tjs";
     const anySelected = TJS_GEMS.some((g) => g.key === selected);
-    const anyRec      = TJS_GEMS.some((g) => g.key === recommendedGemKey);
-    const recScore    = anyRec && tjsRecommendation?.scores?.[recommendedGemKey];
+    const anyRec      = TJS_GEMS.some((g) => g.key === workflowRecommendedGemKey);
+    const recScore    = anyRec && tjsRecommendation?.scores?.[workflowRecommendedGemKey];
     return (
       <div key="tjs">
         <button
@@ -423,7 +469,7 @@ export function GemSelectionModal({
               </div>
 
               {/* ── 2. Recommended GEM card ───────────────── */}
-              {recommendedGem && (
+              {recommendedGem && !isMarketBriefWorkflow && (
                 <button
                   type="button"
                   onClick={() => handleSelect(recommendedGem.key)}
@@ -461,12 +507,47 @@ export function GemSelectionModal({
                 </div>
 
                 <div className="space-y-1.5">
-                  {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
-                  {renderTJSAccordion()}
-                  {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
-                  {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
-                  {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
-                  {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
+                  {isMarketBriefWorkflow ? (
+                    <>
+                      {renderSingleRow(MARKET_BRIEF_GEM)}
+                      <button
+                        type="button"
+                        aria-expanded={showAdditionalOptions}
+                        aria-controls={additionalOptionsId}
+                        onClick={() => setShowAdditionalOptions((isExpanded) => !isExpanded)}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 dark:focus-visible:ring-offset-zinc-950"
+                      >
+                        <span>אפשרויות נוספות</span>
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform duration-200",
+                            showAdditionalOptions && "rotate-180"
+                          )}
+                        />
+                      </button>
+                      <div
+                        id={additionalOptionsId}
+                        hidden={!showAdditionalOptions}
+                        className="space-y-1.5 border-r-2 border-indigo-100 pr-2 dark:border-indigo-900/60"
+                      >
+                        {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
+                        {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+                        {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
+                        {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
+                        {visibleDynamicTopicGems.map((gem) => renderSingleRow(gem))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
+                      {renderTJSAccordion()}
+                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
+                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
+                      {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -622,7 +703,6 @@ export function GemSelectionModal({
               <button
                 type="button"
                 onClick={handleOpenGem}
-                disabled={!fullTranscriptText}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >
                 <ExternalLink className="h-4 w-4 shrink-0" />

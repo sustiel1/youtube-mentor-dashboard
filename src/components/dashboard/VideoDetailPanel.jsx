@@ -127,7 +127,7 @@ import { MarketBriefView } from "./MarketBriefView";
 import { LearningTabContent, UsefulKnowledgeSourceLine } from "./LearningTabContent";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
-import { detectVideoType, extractVideoTabItems, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
+import { detectVideoType, extractVideoTabItems, getBriefDisplayClassification, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
 import {
   createWorkspaceProvenance,
   getWorkspaceHeadingBySourceTab,
@@ -138,7 +138,7 @@ import { getWorkspaceItemSemanticTags } from "@/utils/workspaceMarketDimensions"
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
 import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
-import { getGemConfigSnapshot, getGemUrl, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
+import { getGemConfigSnapshot, getGemUrl, MARKET_BRIEF_GEM_LABEL, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
 import { resolveMentorChannelUrl } from "@/lib/mentorSourceUrl";
 import { hasObsidianSavedStatus, getBrainSaveButtonLabel, buildObsidianSavedStatusFromPath, logObsidianVaultP0Diagnostics } from "@/lib/obsidianSavedStatus";
@@ -2517,15 +2517,25 @@ export function VideoDetailPanel({
     ]
   );
 
-  /** Brief render slug: confirmed subcategory → GEM contentType → title-detected videoType. */
+  const briefDisplayClassification = useMemo(
+    () => getBriefDisplayClassification(videoType),
+    [videoType]
+  );
+  const effectiveBriefDisplayLabel = briefDisplayClassification?.label || effectiveSubCategory || "";
+  const briefPresentationVideo = useMemo(() => {
+    if (!briefDisplayClassification || effectiveVideo?.subCategory === effectiveBriefDisplayLabel) {
+      return effectiveVideo;
+    }
+    return { ...effectiveVideo, subCategory: effectiveBriefDisplayLabel };
+  }, [briefDisplayClassification, effectiveBriefDisplayLabel, effectiveVideo]);
+
+  /** Brief render slug: canonical title subtype → stored subtype → legacy marketBrief fallback. */
   const effectiveBriefSlug = useMemo(() => {
+    if (briefDisplayClassification?.slug) return briefDisplayClassification.slug;
     if (normalizedSubCategory) return normalizedSubCategory;
     if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
-    // Title-based fallback: "מבזק לייב פתיחה לתאריך" detected via MORNING_BRIEF_KEYWORDS
-    if (videoType === 'morningBrief') return 'morning-brief';
-    if (videoType === 'eveningBrief') return 'evening-brief';
     return null;
-  }, [normalizedSubCategory, marketBriefData?.contentType, videoType]);
+  }, [briefDisplayClassification, normalizedSubCategory, marketBriefData?.contentType]);
 
   const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
     if (!marketBriefData) return;
@@ -2537,25 +2547,25 @@ export function VideoDetailPanel({
   }, [marketBriefData, video?.id, video?.youtubeId, patchVideo]);
 
   const obsidianRoute = useMemo(
-    () => resolveVideoObsidianRoute(effectiveVideo || {}, {
+    () => resolveVideoObsidianRoute(briefPresentationVideo || {}, {
       vaultName: obsidianSettings.vaultName,
       vaultPath: obsidianSettings.vaultPath,
     }),
-    [effectiveVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
+    [briefPresentationVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
   );
 
   const obsidianRoutingDebug = useMemo(
-    () => buildObsidianRoutingDebugInfo(effectiveVideo || {}, {
+    () => buildObsidianRoutingDebugInfo(briefPresentationVideo || {}, {
       vaultName: obsidianSettings.vaultName,
       vaultPath: obsidianSettings.vaultPath,
     }),
-    [effectiveVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
+    [briefPresentationVideo, obsidianSettings.vaultName, obsidianSettings.vaultPath]
   );
 
   const selectedSubTopicName = effectiveSubCategory;
   // Visible header labels should follow the effective video mapping first, then optional AI suggestion.
-  const effectiveSubTopicDisplay = effectiveSubCategory || subTopicRec?.recommended || "";
-  const isSubTopicAiRec = !effectiveSubCategory && Boolean(subTopicRec?.recommended) && effectiveSubTopicDisplay === subTopicRec?.recommended;
+  const effectiveSubTopicDisplay = effectiveBriefDisplayLabel || subTopicRec?.recommended || "";
+  const isSubTopicAiRec = !effectiveSubCategory && Boolean(subTopicRec?.recommended);
   const marketRootTopic = useMemo(
     () => topics.find((topic) => (!topic.parentId || topic.isMainCategory) && normalizeCategoryName(topic?.name) === MARKET_CATEGORY) || null,
     [topics]
@@ -10076,11 +10086,11 @@ export function VideoDetailPanel({
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xl">📰</span>
                             <p className="text-sm font-bold text-sky-800 dark:text-sky-200">
-                              הסרטון מסווג כ{effectiveSubCategory || 'מבזק'} אך עדיין לא בוצע ניתוח מבזק
+                              הסרטון מסווג כ{effectiveBriefDisplayLabel || 'מבזק'} אך עדיין לא בוצע ניתוח מבזק
                             </p>
                           </div>
                           <p className="text-xs text-sky-700 dark:text-sky-300 mb-4">
-                            הרץ ניתוח מבזק בוקר כדי לאכלס את הטאבים בנתוני שוק, פרקים, ותובנות.
+                            הרץ ניתוח {effectiveBriefDisplayLabel || 'מבזק'} כדי לאכלס את הטאבים בנתוני שוק, פרקים, ותובנות.
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {briefHasTranscript && (
@@ -10089,7 +10099,7 @@ export function VideoDetailPanel({
                                 onClick={() => { setActiveTab("ai-analysis"); handleGeminiContent(); }}
                                 className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-all"
                               >
-                                🚀 הרץ ניתוח מבזק בוקר
+                                🚀 הרץ ניתוח {effectiveBriefDisplayLabel || 'מבזק'}
                               </button>
                             )}
                             <button
@@ -11232,13 +11242,13 @@ export function VideoDetailPanel({
                       </div>
                     )}
                     {/* ── Brief video: no GEM data yet — guidance banner ── */}
-                    {['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(normalizedSubCategory) && !marketBriefData && (
+                    {['morning-brief','evening-brief','weekly-brief','earnings-brief'].includes(effectiveBriefSlug) && !marketBriefData && (
                       <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-right dark:border-sky-800/40 dark:bg-sky-950/20" dir="rtl">
                         <p className="text-sm font-semibold text-sky-800 dark:text-sky-200 mb-1">
-                          📰 {effectiveSubCategory || 'מבזק'} — נדרש ניתוח GEM
+                          📰 {effectiveBriefDisplayLabel || 'מבזק'} — נדרש ניתוח GEM
                         </p>
                         <p className="text-xs text-sky-700 dark:text-sky-300 mb-2.5">
-                          פתח את GEM <strong>מבזק בוקר</strong> ב-Gemini, הדבק את ה-JSON שהוא מחזיר כאן
+                          פתח את GEM <strong>{MARKET_BRIEF_GEM_LABEL}</strong> ב-Gemini, הדבק את ה-JSON שהוא מחזיר כאן
                         </p>
                         <button
                           type="button"
@@ -11830,7 +11840,7 @@ export function VideoDetailPanel({
                   </button>
                 </div>
                 <SpecializedContentRenderer
-                  effectiveVideo={effectiveVideo}
+                  effectiveVideo={briefPresentationVideo}
                   normalizedSubCategory={effectiveBriefSlug ?? normalizedSubCategory}
                   marketBriefData={marketBriefData}
                   politicalSummary={politicalSummary}

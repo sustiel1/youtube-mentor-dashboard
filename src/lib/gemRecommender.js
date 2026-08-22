@@ -2,6 +2,21 @@
 // Classifies a video to the most suitable Gemini Gem based on metadata + transcript.
 
 import { getTopicRule } from "@/lib/topicRules";
+import { detectVideoType } from "@/config/videoTabsConfig";
+import { MARKET_BRIEF_GEM_KEY, MARKET_BRIEF_GEM_LABEL } from "@/lib/gemsConfig";
+
+export function isMarketBriefWorkflowVideo(video) {
+  const videoType = detectVideoType(video);
+  return videoType === "morningBrief" || videoType === "eveningBrief";
+}
+
+export function resolveWorkflowGemRecommendation(video, recommendedGemKey = null) {
+  return isMarketBriefWorkflowVideo(video) ? MARKET_BRIEF_GEM_KEY : recommendedGemKey;
+}
+
+export function resolveWorkflowGemSelection({ video, savedGemKey = null, recommendedGemKey = null } = {}) {
+  return savedGemKey || resolveWorkflowGemRecommendation(video, recommendedGemKey) || "general";
+}
 
 // Deterministic title overrides — checked before any keyword scoring.
 // Highest priority: if pattern matches, recommendation cannot be changed by subCategory or TranscriptGuard.
@@ -9,8 +24,8 @@ const TITLE_OVERRIDE_RULES = [
   {
     // "מבזק לייב פתיחה לתאריך DD.MM.YY" — live opening market brief
     pattern: 'מבזק לייב פתיחה',
-    gemKey: 'news',
-    gemLabel: 'מבזק בוקר',
+    gemKey: MARKET_BRIEF_GEM_KEY,
+    gemLabel: MARKET_BRIEF_GEM_LABEL,
     gemIcon: '📰',
     contentType: 'morningBrief',
     source: 'titleOverride',
@@ -20,8 +35,8 @@ const TITLE_OVERRIDE_RULES = [
   {
     // "מבזק בוקר" — standard morning brief
     pattern: 'מבזק בוקר',
-    gemKey: 'news',
-    gemLabel: 'מבזק בוקר',
+    gemKey: MARKET_BRIEF_GEM_KEY,
+    gemLabel: MARKET_BRIEF_GEM_LABEL,
     gemIcon: '📰',
     contentType: 'morningBrief',
     source: 'titleOverride',
@@ -169,6 +184,16 @@ export const GEM_CATEGORY_MAP = {
       { label: 'מבזקי בוקר',   keywords: ['morning brief', 'premarket', 'market open', 'morning update', 'morning briefing'] },
       { label: 'עדכוני שוק',   keywords: ['market update', 'headline', 'today in markets', 'this week', 'market news'] },
       { label: 'סיכומי שוק',   keywords: ['market wrap', 'weekly recap', 'daily recap', 'end of day', 'afternoon wrap'] },
+    ],
+  },
+  marketBrief: {
+    categoryCode: 'Markets',
+    categoryLabel: 'שוק ההון',
+    defaultSubCategory: 'מבזקי שוק',
+    subCategoryRules: [
+      { label: 'מבזקי בוקר', keywords: ['morning brief', 'premarket', 'market open', 'morning update', 'morning briefing', 'מבזק לייב'] },
+      { label: 'מבזקי ערב', keywords: ['late night', 'evening brief', 'market close', 'after hours', 'לייט נייט'] },
+      { label: 'עדכוני שוק', keywords: ['market update', 'headline', 'today in markets', 'market news'] },
     ],
   },
   macro: {
@@ -540,6 +565,29 @@ const MORNING_BRIEF_TITLE_SIGNALS = [
 
 export function preGemClassifier(video, transcriptText = '', options = {}) {
   const title = String(video?.title || '').toLowerCase();
+  const briefVideoType = detectVideoType(video);
+
+  if (briefVideoType === 'morningBrief' || briefVideoType === 'eveningBrief') {
+    const isEveningBrief = briefVideoType === 'eveningBrief';
+    return {
+      gemKey: MARKET_BRIEF_GEM_KEY,
+      gemLabel: MARKET_BRIEF_GEM_LABEL,
+      gemIcon: '📰',
+      confidence: 'high',
+      confidenceLabel: 'ביטחון גבוה',
+      confidencePct: 97,
+      contentType: briefVideoType,
+      source: 'titleOverride',
+      reason: isEveningBrief
+        ? 'הסרטון מזוהה כלייט נייט — מומלץ ה-Gem המשותף למבזקי בוקר וערב.'
+        : 'הסרטון מזוהה כמבזק לייב/בוקר — מומלץ ה-Gem המשותף למבזקי בוקר וערב.',
+      phase: 'override',
+      recommendedCategoryCode: 'Markets',
+      recommendedCategoryLabel: 'שוק ההון',
+      recommendedSubCategory: isEveningBrief ? 'מבזקי ערב' : 'מבזקי בוקר',
+      recommendedSubCategoryConfidencePct: 97,
+    };
+  }
 
   // Phase 1: Deterministic title overrides (highest priority)
   for (const rule of TITLE_OVERRIDE_RULES) {
@@ -598,7 +646,7 @@ export function getRelatedGemTemplates(gemKey) {
   const fromRules = Array.isArray(cfg?.subCategoryRules)
     ? cfg.subCategoryRules.map((r) => r.label).filter(Boolean)
     : [];
-  const briefAliases = key === "news"
+  const briefAliases = key === "news" || key === MARKET_BRIEF_GEM_KEY
     ? ["מבזק בוקר", "מבזק ערב", "עדכון שוק", "Opening Bell"]
     : [];
   const merged = [...briefAliases, ...fromRules];

@@ -22,15 +22,20 @@ const LEARNING_KEYWORDS = [
 const MORNING_BRIEF_KEYWORDS = [
   'מבזק בוקר', 'morning brief', 'premarket', 'pre-market',
   'סקירת בוקר', 'פתיחת שוק',
-  // Live opening briefs: "מבזק לייב פתיחה לתאריך DD.MM.YY"
-  'מבזק לייב פתיחה',
+  // Live opening briefs, including titles without the "מבזק" prefix.
+  'מבזק לייב', 'לייב פתיחה', 'market opening live brief',
 ];
 
 const EVENING_BRIEF_KEYWORDS = [
   'מבזק ערב', 'סיכום יום', 'market close', 'סקירת ערב',
   'evening brief', 'סגירת שוק', 'לייט נייט', 'late night',
-  'late-night', 'closing bell', 'market closing',
+  'late-night', 'closing bell', 'market closing', 'market close brief',
 ];
+
+const BRIEF_DISPLAY_BY_VIDEO_TYPE = Object.freeze({
+  morningBrief: Object.freeze({ subtype: 'morning', slug: 'morning-brief', label: 'מבזק בוקר' }),
+  eveningBrief: Object.freeze({ subtype: 'evening', slug: 'evening-brief', label: 'מבזק ערב' }),
+});
 
 // ── SubCategory normalizer ───────────────────────────────────────────
 
@@ -86,12 +91,12 @@ export function detectVideoType(video) {
 
   if (ct === 'political' || category.includes('פוליטיק')) return 'political';
 
+  if (matchesAny(title, EVENING_BRIEF_KEYWORDS)) return 'eveningBrief';
+  if (matchesAny(title, MORNING_BRIEF_KEYWORDS)) return 'morningBrief';
+
   const canonicalSubCategory = normalizeSubCategory(video.confirmedSubCategory || video.subCategory || video.subTopic);
   if (canonicalSubCategory === 'morning-brief') return 'morningBrief';
   if (canonicalSubCategory === 'evening-brief') return 'eveningBrief';
-
-  if (matchesAny(title, MORNING_BRIEF_KEYWORDS)) return 'morningBrief';
-  if (matchesAny(title, EVENING_BRIEF_KEYWORDS)) return 'eveningBrief';
   if (ct === 'marketbrief') return 'morningBrief';
 
   const isMarketCat     = category.includes('שוק') || category === 'markets' || category.includes('מסחר');
@@ -101,6 +106,13 @@ export function detectVideoType(video) {
   if (isMarketCat || isTechnicalType || hasLearningKw) return 'learning';
 
   return 'general';
+}
+
+/** Presentation metadata derived from the canonical video type without mutating stored records. */
+export function getBriefDisplayClassification(videoOrType) {
+  const videoType = typeof videoOrType === 'string' ? videoOrType : detectVideoType(videoOrType);
+  const display = BRIEF_DISPLAY_BY_VIDEO_TYPE[videoType];
+  return display ? { videoType, ...display } : null;
 }
 
 // ── Tab definitions ──────────────────────────────────────────────────

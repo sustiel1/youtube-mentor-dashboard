@@ -1,4 +1,7 @@
 export const GEMS_CONFIG_KEY = "gems_config";
+export const MARKET_BRIEF_GEM_KEY = "marketBrief";
+export const MARKET_BRIEF_GEM_LABEL = "מבזק בוקר/ערב";
+export const MARKET_BRIEF_GEM_URL = "https://gemini.google.com/gem/efb7637a12d6";
 
 export const GEM_STORAGE_KEYS = {
   general: "gemUrl.general",
@@ -10,6 +13,7 @@ export const GEM_STORAGE_KEYS = {
   macro: "gemUrl.macro",
   news: "gemUrl.news",
   dayTrading: "gemUrl.dayTrading",
+  marketBrief: "gemUrl.marketBrief",
 };
 
 export const defaultGems = {
@@ -22,6 +26,7 @@ export const defaultGems = {
   macro: "https://gemini.google.com/gem/a2df68e4d52b",
   news: "https://gemini.google.com/gem/0e687d497bd3",
   dayTrading: "", // TODO: add Gemini GEM URL (TJS מסחר יומי) when ready
+  marketBrief: MARKET_BRIEF_GEM_URL,
 };
 
 function normalizeGemUrl(url) {
@@ -118,6 +123,13 @@ export function getGemUrl(key) {
 export function openGeminiGemUrl(url) {
   const normalized = normalizeGemUrl(url);
   if (!normalized || !isGeminiGemUrl(normalized)) return false;
-  const tab = window.open(normalized, "_blank", "noopener,noreferrer");
-  return Boolean(tab);
+  try {
+    // With noopener, browsers may intentionally return null even when the tab
+    // opened successfully. Treat a completed safe open call as success instead
+    // of reporting a false failure from the missing WindowProxy handle.
+    window.open(normalized, "_blank", "noopener,noreferrer");
+    return true;
+  } catch {
+    return false;
+  }
 }
