@@ -313,6 +313,27 @@ Market indices and performance review. Appears within Evening Brief (and other b
 
 Fields: `specialized.indices`, `indexPerformance`, `keyLevels`, `sectorRotation`.
 
+#### Normative market-symbol link policy
+
+Markets-table symbol navigation must resolve through the verified market-asset
+registry in `src/lib/marketAssetProviderLinks.js`, in this order: approved
+Finviz exact or documented Overview representative → Investing.com Israel →
+TradingView → plain text when no verified destination exists.
+
+An Overview representative must never be presented as the exact underlying
+index, commodity, currency index or yield. Its semantic qualifier belongs in
+the symbol link's concise tooltip and accessible name, while the live Markets
+asset cell displays only the original symbol. Verified futures charts belong in
+the separate compact `גרף חוזים` column and must expose the contract code plus
+an accessible contract description. Missing futures mappings render no link.
+The approved mappings and verification procedure are maintained in
+`docs/FINVIZ_LINK_BEHAVIOR_RULE.md`.
+
+On the Morning Brief Markets table, Finviz remains hidden from the `קישורים`
+provider chips; Investing.com Israel and TradingView remain visible in that
+order. This presentation rule does not alter stocks, ETFs, sectors, source URLs
+or live-data provenance.
+
 #### Universal Tabs Mapping
 
 Indices data may appear in:

@@ -37,9 +37,22 @@ export const BRIEF_COL = {
 };
 
 export const BRIEF_MARKETS_COL = {
-  asset: '38%',        // was 11% — aligns with primaryLabel so sentiment starts at 40.5%
-  sentiment: '15.5%',
-  change: '11%',
+  asset: '165px',
+  futures: '100px',
+  links: '230px',
+  sentiment: '130px',
+  change: '110px',
+  actions: '70px',
+};
+
+export const BRIEF_MARKETS_CELL = {
+  asset: 'px-3 py-2 align-middle text-right',
+  futures: 'px-2 py-2 align-middle text-center',
+  links: 'px-3 py-2 align-middle text-center',
+  sentiment: 'px-3 py-2 align-middle text-center',
+  change: 'px-3 py-2 align-middle text-center',
+  notes: 'px-3 py-2 align-middle text-right min-w-0 overflow-hidden',
+  actions: 'px-3 py-2 align-middle text-center',
 };
 
 export const BRIEF_CELL = {

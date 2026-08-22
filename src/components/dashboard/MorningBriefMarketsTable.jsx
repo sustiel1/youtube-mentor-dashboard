@@ -4,10 +4,8 @@ import {
   normalizeMarketDashboardRow,
 } from '@/lib/morningBriefDisplay';
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
-import { resolveMorningBriefPresentation } from '@/lib/morningBriefPresentation';
 import {
   EmptyState,
-  ExternalSymbolLink,
   NumericChangeSpan,
   DASHBOARD_TABLE_CELL_MUTED_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
@@ -23,17 +21,22 @@ import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
-import { buildTradingViewChartUrl } from '@/utils/finvizLinks';
+import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
 import {
-  BRIEF_CELL,
+  MarketAssetFuturesLink,
+  MarketAssetProviderLinks,
+} from '@/components/shared/MarketAssetProviderLinks';
+import {
+  BRIEF_MARKETS_CELL,
   BRIEF_MARKETS_COL,
   BRIEF_NOTES_TEXT_CLS,
   BRIEF_SENTIMENT_INLINE_CLS,
   BRIEF_TABLE_CLS,
   BRIEF_TABLE_HEAD_ROW_CLS,
-  BRIEF_TABLE_LINK_CLS,
   BriefTableWrapper,
 } from './briefTableLayout';
+
+const MARKETS_TABLE_HIDDEN_PROVIDERS = Object.freeze(['finviz']);
 
 const MARKETS_SENTIMENT_STYLE = {
   positive: { dot: 'bg-emerald-500', label: 'חיובי' },
@@ -70,8 +73,6 @@ function MarketsTableSentimentBadge({ sentKey }) {
   );
 }
 
-const _SEP = <span className="text-slate-300 dark:text-zinc-600 select-none mx-0.5" aria-hidden>·</span>;
-
 function MarketRowSaveActions({ bulkSelection, mergedBulk, text, onSaveToBrain }) {
   const hasQuick =
     bulkSelection?.onQuickSaveBrain
@@ -95,8 +96,7 @@ function MarketRowSaveActions({ bulkSelection, mergedBulk, text, onSaveToBrain }
 
 /**
  * Morning Brief markets table — RTL reading order (right → left):
- *   נכס | סנטימנט | שינוי % | הערה | פעולות (☐ + TV/Inv + save on screen-left)
- * Asset cell is text-only; all row actions live in the far-left פעולות column.
+ *   נכס | גרף חוזים | קישורים | סנטימנט | שינוי % | הערה | פעולות
  */
 export function MorningBriefMarketsTable({
   marketBriefData,
@@ -107,9 +107,6 @@ export function MorningBriefMarketsTable({
   bulkSections = [],
   presentation,
 }) {
-  const ui = resolveMorningBriefPresentation(presentation);
-  const showExternalLinks = ui.showStockExternalLinks;
-
   const fromSrc = extractMarketDashboardRows(getSpecializedSrc(marketBriefData));
   const fromItems = items.map((i) => normalizeMarketDashboardRow(i)).filter(Boolean);
 
@@ -135,25 +132,27 @@ export function MorningBriefMarketsTable({
 
   const formatRowText = (row) => [row.asset, row.trend, row.strength, row.comment].filter(Boolean).join(' · ');
 
-  const actionsColWidth = showExternalLinks ? '20%' : '8%';
-
   return (
     <BriefTableWrapper>
       <table className={BRIEF_TABLE_CLS} dir="rtl" data-markets-table>
         <colgroup>
           <col style={{ width: BRIEF_MARKETS_COL.asset }} />
+          <col style={{ width: BRIEF_MARKETS_COL.futures }} />
+          <col style={{ width: BRIEF_MARKETS_COL.links }} />
           <col style={{ width: BRIEF_MARKETS_COL.sentiment }} />
           <col style={{ width: BRIEF_MARKETS_COL.change }} />
           <col />
-          <col style={{ width: actionsColWidth }} />
+          <col style={{ width: BRIEF_MARKETS_COL.actions }} />
         </colgroup>
         <thead>
           <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
-            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
-            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
-            <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
-            <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
-            <th className={`py-1.5 pl-1 pr-0 text-left whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>פעולות</th>
+            <th className={`${BRIEF_MARKETS_CELL.asset} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>נכס</th>
+            <th className={`${BRIEF_MARKETS_CELL.futures} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>גרף חוזים</th>
+            <th className={`${BRIEF_MARKETS_CELL.links} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>קישורים</th>
+            <th className={`${BRIEF_MARKETS_CELL.sentiment} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>סנטימנט</th>
+            <th className={`${BRIEF_MARKETS_CELL.change} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>שינוי %</th>
+            <th className={`${BRIEF_MARKETS_CELL.notes} ${DASHBOARD_TABLE_HEAD_CLS}`}>הערה</th>
+            <th className={`${BRIEF_MARKETS_CELL.actions} whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>פעולות</th>
           </tr>
         </thead>
         <tbody>
@@ -161,8 +160,6 @@ export function MorningBriefMarketsTable({
             const summary = formatRowText(row);
             const pct = getMarketChangePct(row);
             const sentKey = marketRowSentimentKey(row);
-            const assetName = String(row.asset || '').trim();
-            const tvUrl = assetName ? buildTradingViewChartUrl(assetName) : null;
             const mergedBulk = bulkSelection
               ? mergeBulkSelection(bulkSelection, {
                   sectionLabel: '📈 שווקים',
@@ -177,30 +174,8 @@ export function MorningBriefMarketsTable({
                 className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group"
                 data-market-item
               >
-                <td className={BRIEF_CELL.short}>
-                  <span className={`block truncate ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
-                    <ExternalSymbolLink symbol={row.asset}>
-                      {row.asset || '—'}
-                    </ExternalSymbolLink>
-                  </span>
-                </td>
-                <td className={BRIEF_CELL.sentiment}>
-                  <MarketsTableSentimentBadge sentKey={sentKey} />
-                </td>
-                <td className={BRIEF_CELL.change}>
-                  {pct ? (
-                    <NumericChangeSpan display={{ ...pct, arrow: null }} />
-                  ) : (
-                    <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
-                  )}
-                </td>
-                <td className={BRIEF_CELL.notes}>
-                  <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
-                    {renderLinkedMarketText(row.comment) || '—'}
-                  </p>
-                </td>
-                <td className="py-2 pl-1 pr-2 align-middle whitespace-nowrap text-left" data-markets-actions-cell>
-                  <div className="inline-flex items-center justify-start gap-x-1.5" dir="ltr">
+                <td className={BRIEF_MARKETS_CELL.asset}>
+                  <div className="flex min-w-0 items-start gap-2">
                     <MorningBriefBulkCheckbox
                       bulkSections={bulkSections}
                       sectionKey="markets"
@@ -209,39 +184,43 @@ export function MorningBriefMarketsTable({
                       tabKey="indices"
                       bulkSelection={bulkSelection}
                     />
-                    {showExternalLinks && tvUrl ? (
-                      <span className="inline-flex items-center gap-x-0.5 text-xs font-medium">
-                        <a
-                          href={tvUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={BRIEF_TABLE_LINK_CLS}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          TV
-                        </a>
-                        {_SEP}
-                        <a
-                          href={`https://www.investing.com/search/?q=${encodeURIComponent(assetName)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={BRIEF_TABLE_LINK_CLS}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Inv
-                        </a>
-                        {_SEP}
-                        <a
-                          href={`https://il.investing.com/search/?q=${encodeURIComponent(assetName)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={BRIEF_TABLE_LINK_CLS}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          InvIL
-                        </a>
-                      </span>
-                    ) : null}
+                    <span className={`block shrink-0 whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                      <MarketAssetDescriptionTooltip
+                        asset={row.asset}
+                        showInfoButton={false}
+                        showQualifier={false}
+                      >
+                        {row.asset || '—'}
+                      </MarketAssetDescriptionTooltip>
+                    </span>
+                  </div>
+                </td>
+                <td className={BRIEF_MARKETS_CELL.futures} data-markets-futures-cell>
+                  <MarketAssetFuturesLink asset={row.asset} />
+                </td>
+                <td className={`${BRIEF_MARKETS_CELL.links} min-w-0`} data-markets-provider-links-cell>
+                  <MarketAssetProviderLinks
+                    asset={row.asset}
+                    hiddenProviders={MARKETS_TABLE_HIDDEN_PROVIDERS}
+                  />
+                </td>
+                <td className={`${BRIEF_MARKETS_CELL.sentiment} whitespace-nowrap overflow-hidden`}>
+                  <MarketsTableSentimentBadge sentKey={sentKey} />
+                </td>
+                <td className={`${BRIEF_MARKETS_CELL.change} whitespace-nowrap overflow-hidden`}>
+                  {pct ? (
+                    <NumericChangeSpan display={{ ...pct, arrow: null }} />
+                  ) : (
+                    <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+                  )}
+                </td>
+                <td className={BRIEF_MARKETS_CELL.notes}>
+                  <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`}>
+                    {renderLinkedMarketText(row.comment) || '—'}
+                  </p>
+                </td>
+                <td className={`${BRIEF_MARKETS_CELL.actions} whitespace-nowrap`} data-markets-actions-cell>
+                  <div className="inline-flex items-center justify-center" dir="ltr">
                     <MarketRowSaveActions
                       bulkSelection={bulkSelection}
                       mergedBulk={mergedBulk}
