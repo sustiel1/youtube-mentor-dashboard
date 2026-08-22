@@ -586,6 +586,7 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
     <div
       role="button"
       tabIndex={0}
+      aria-pressed={isSelected}
       onClick={() => onSelect(idea)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -674,7 +675,7 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
   );
 }
 
-export function ProductIdeaGrid({ ideas = [], selectedId, onSelect }) {
+export function ProductIdeaGrid({ ideas = [], selectedId, selectedIds = null, onSelect }) {
   const list = Array.isArray(ideas) ? ideas : [];
 
   return (
@@ -708,7 +709,9 @@ export function ProductIdeaGrid({ ideas = [], selectedId, onSelect }) {
               key={idea.id || i}
               idea={idea}
               rank={i + 1}
-              isSelected={selectedId === idea.id}
+              isSelected={selectedIds instanceof Set
+                ? selectedIds.has(String(idea.id ?? i))
+                : selectedId === idea.id}
               onSelect={onSelect}
             />
           ))}
