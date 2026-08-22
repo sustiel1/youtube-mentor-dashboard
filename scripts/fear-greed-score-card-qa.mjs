@@ -81,10 +81,15 @@ assert.match(placeholder, /תאווה קיצונית/);
 assert.doesNotMatch(componentSource, /\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource/);
 assert.doesNotMatch(componentSource, /\bset(?:Interval|Timeout)\s*\(|requestAnimationFrame/);
 assert.doesNotMatch(componentSource, /\buseEffect\s*\(|\buseQuery\s*\(/);
-assert.match(componentSource, /w-full min-w-0[\s\S]*md:w-\[23rem\]/);
+assert.match(componentSource, /flex h-full w-full min-w-0[\s\S]*flex-col[\s\S]*rounded-xl/);
+assert.doesNotMatch(componentSource, /(?:md|lg):w-\[/);
+assert.match(componentSource, /flex min-w-0 items-start gap-3/);
+assert.match(componentSource, /mt-auto grid grid-cols-5 gap-1 pt-2/);
 assert.match(componentSource, /dark:border-zinc-700[\s\S]*dark:bg-zinc-900/);
 assert.match(panelsSource, /<FearGreedScoreCard sourceUrl=\{CNN_FEAR_GREED_URL\} \/>/);
+assert.match(panelsSource, /equalHeaderLinkColumns[\s\S]*headerLinks=/);
 assert.match(primitivesSource, /flex flex-col gap-2 md:flex-row md:items-center md:justify-between/);
 assert.match(primitivesSource, /flex min-w-0 flex-wrap items-center justify-between gap-2/);
+assert.match(primitivesSource, /grid w-full min-w-0 auto-rows-fr grid-cols-1 items-stretch gap-2 lg:flex-1 lg:grid-cols-2/);
 
 console.log('Fear & Greed score card QA: PASS');

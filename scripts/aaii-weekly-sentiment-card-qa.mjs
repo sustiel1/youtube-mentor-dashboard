@@ -140,11 +140,9 @@ const inputProps = Object.freeze({ bullish: 49.5, neutral: 22.3, bearish: 28.2, 
 renderCard(inputProps); // Object.freeze would throw synchronously if the component tried to mutate it
 assert.deepEqual(inputProps, { bullish: 49.5, neutral: 22.3, bearish: 28.2, status: 'ready' });
 
-// --- responsive composition contract (matches sibling FearGreedScoreCard sizing convention) ---
-assert.match(componentSource, /w-full min-w-0[\s\S]*lg:w-\[23rem\]/);
-// Regression guard: at md (768-1023px) this card must stay full-width so it wraps
-// under FearGreedScoreCard instead of crushing the section heading (see QA notes).
-assert.doesNotMatch(componentSource, /\bmd:w-\[23rem\]/);
+// --- responsive composition contract: shared equal-column layout owns width and height ---
+assert.match(componentSource, /h-full w-full min-w-0[\s\S]*rounded-xl/);
+assert.doesNotMatch(componentSource, /(?:md|lg):w-\[/);
 assert.match(componentSource, /dark:border-zinc-700[\s\S]*dark:bg-zinc-900/);
 
 // --- container: owns persistence I/O, keeps no network/timer/localStorage code of its own ---
@@ -155,6 +153,7 @@ assert.doesNotMatch(containerSource, /\bfetch\s*\(|XMLHttpRequest|WebSocket|Even
 assert.doesNotMatch(containerSource, /localStorage\.|sessionStorage\.|indexedDB\./);
 
 // --- wiring: sentiment section renders the stateful container beside FearGreedScoreCard ---
+assert.match(panelsSource, /equalHeaderLinkColumns[\s\S]*headerLinks=/);
 assert.match(
   panelsSource,
   /headerLinks=\{\(\s*<>\s*<FearGreedScoreCard sourceUrl=\{CNN_FEAR_GREED_URL\} \/>\s*<AAIIWeeklySentimentCardContainer \/>\s*<\/>\s*\)\}/,

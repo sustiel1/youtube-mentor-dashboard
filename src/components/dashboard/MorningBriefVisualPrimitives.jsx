@@ -158,6 +158,7 @@ export function SectionCard({
   headerPills,
   headerActions,
   headerLinks,
+  equalHeaderLinkColumns = false,
   plainSurface = false,
   cardBulk = null,
   sectionSelectAllItems = null,
@@ -182,7 +183,9 @@ export function SectionCard({
         data-section-header
       >
         <div className={headerLinks
-          ? 'flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-x-3'
+          ? equalHeaderLinkColumns
+            ? 'flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between lg:gap-x-3'
+            : 'flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-x-3'
           : 'flex items-center justify-between gap-x-3'}
         >
           <div className="flex items-center gap-x-2 min-w-0">
@@ -192,7 +195,9 @@ export function SectionCard({
             )}
           </div>
           <div className={headerLinks
-            ? 'flex min-w-0 flex-wrap items-center justify-between gap-2 md:shrink-0 md:justify-start'
+            ? equalHeaderLinkColumns
+              ? 'grid w-full min-w-0 auto-rows-fr grid-cols-1 items-stretch gap-2 lg:flex-1 lg:grid-cols-2'
+              : 'flex min-w-0 flex-wrap items-center justify-between gap-2 md:shrink-0 md:justify-start'
             : 'flex items-center gap-x-2 shrink-0'}
           >
             {headerLinks}

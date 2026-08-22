@@ -1780,6 +1780,7 @@ export function SentimentSection({
       tone={tone}
       isEmpty={items.length === 0}
       emptyMessage="סנטימנט קמעונאי, מוסדי ופחד וחמדנות יוצגו כאן"
+      equalHeaderLinkColumns
       headerLinks={(
         <>
           <FearGreedScoreCard sourceUrl={CNN_FEAR_GREED_URL} />

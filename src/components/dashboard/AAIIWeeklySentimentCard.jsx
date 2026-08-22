@@ -71,7 +71,7 @@ export function AAIIWeeklySentimentCard({
 
   return (
     <div
-      className="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors lg:w-[23rem] dark:border-zinc-700 dark:bg-zinc-900"
+      className="h-full w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors dark:border-zinc-700 dark:bg-zinc-900"
       dir="rtl"
       data-aaii-weekly-sentiment-card
       data-status={effectiveStatus}
