@@ -2,6 +2,7 @@
  * Structured display for insights tab — display only, no extraction changes.
  */
 
+import { Lightbulb } from 'lucide-react';
 import {
   UniversalTabCheckbox,
   UniversalTabSelectRow,
@@ -9,56 +10,14 @@ import {
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSectionLabelRow';
 import { mergeBulkSelection, formatBulkItemText } from '@/lib/universalTabBulkItems';
-import { DASHBOARD_TABLE_CELL_BODY_CLS } from './MorningBriefVisualPrimitives';
+import { formatInsightDisplayText, getInsightDisplayFields } from '@/lib/insightDisplay';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import {
   SUMMARY_CARD_CLASS,
   SUMMARY_CARD_TITLE_CLASS,
 } from '@/lib/summaryCardStyles';
 
-const COLUMNS = [
-  {
-    key: 'type',
-    label: 'סוג',
-    pick: (row) => {
-      if (typeof row !== 'object' || !row) return '';
-      return String(row.type || row.category || row.kind || row.insightType || row._type || '').trim();
-    },
-  },
-  {
-    key: 'insight',
-    label: 'תובנה',
-    pick: (row) => {
-      if (typeof row === 'string') return row.trim();
-      if (!row || typeof row !== 'object') return String(row ?? '').trim();
-      return String(
-        row.insight || row.text || row.title || row.content || row.point || row.summary || ''
-      ).trim();
-    },
-  },
-  {
-    key: 'meaning',
-    label: 'משמעות',
-    pick: (row) => {
-      if (typeof row !== 'object' || !row) return '';
-      return String(
-        row.meaning || row.whyImportant || row.reason || row.significance ||
-        row.explanation || row.implication || ''
-      ).trim();
-    },
-  },
-  {
-    key: 'action',
-    label: 'פעולה אפשרית',
-    pick: (row) => {
-      if (typeof row !== 'object' || !row) return '';
-      return String(
-        row.action || row.possibleAction || row.actionable || row.suggestedAction ||
-        row.nextStep || row.recommendedAction || ''
-      ).trim();
-    },
-  },
-];
+const INSIGHT_TEXT_CLS = 'text-base leading-[1.55] sm:text-[17px]';
 
 function buildPxUrl(text) {
   if (!text?.trim()) return null;
@@ -76,30 +35,17 @@ function displayInsightText(value) {
 function normalizeRows(items = []) {
   return items
     .map((item) => {
-      if (typeof item === 'string') {
-        const t = item.trim();
-        return t ? { insight: t } : null;
-      }
-      if (item && typeof item === 'object') {
-        const insight = COLUMNS.find((c) => c.key === 'insight').pick(item);
-        if (!insight) return null;
-        return item;
-      }
-      return null;
+      const fields = getInsightDisplayFields(item);
+      return fields ? { ...fields, source: item } : null;
     })
     .filter(Boolean);
 }
 
-function activeColumns(rows) {
-  return COLUMNS.filter((col) => rows.some((row) => col.pick(row)));
-}
-
 function rowSummary(row) {
-  return COLUMNS.map((c) => c.pick(row)).filter(Boolean).join(' · ');
+  return formatInsightDisplayText(row);
 }
 
 function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, bulkSelection }) {
-  const cols = activeColumns([row]);
   const summary = rowSummary(row);
   const saved = isSaved ? isSaved(summary) : false;
   const pxUrl = buildPxUrl(summary);
@@ -121,40 +67,35 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
     />
   ) : null;
 
-  const insightOnly = cols.length === 1 && cols[0].key === 'insight';
-
   return (
     <UniversalTabSelectRow
       data-insight-row
-      className="group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors"
+      className="group rounded-lg px-2 py-2.5 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors"
       checkbox={onBulkToggle ? (
         <UniversalTabCheckbox checked={!!bulkSelected} onChange={onBulkToggle} aria-label="בחר תובנה" />
       ) : null}
       actions={actions}
-      contentClassName={insightOnly ? undefined : 'space-y-2'}
+      contentClassName={row.whyImportant ? 'space-y-1.5' : undefined}
     >
-      {insightOnly ? (
-        <span className="block w-full text-right text-sm leading-[1.7] break-words whitespace-normal">
-          <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>
-            {renderLinkedMarketText(displayInsightText(cols[0].pick(row)))}
-          </span>
+      <span className={`block w-full text-right break-words whitespace-normal ${INSIGHT_TEXT_CLS}`}>
+        <span className="font-semibold text-slate-900 dark:text-zinc-100">
+          {renderLinkedMarketText(displayInsightText(row.lesson))}
         </span>
-      ) : (
-        cols.map((col) => {
-          const val = displayInsightText(col.pick(row));
-          if (!val) return null;
-          return (
-            <div key={col.key} className="w-full text-right">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 leading-tight">
-                {col.label}
-              </span>
-              <span className="mt-0.5 block w-full text-right text-sm leading-[1.7] break-words whitespace-normal">
-                <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(val)}</span>
-              </span>
-            </div>
-          );
-        })
-      )}
+      </span>
+      {row.whyImportant ? (
+        <div className="w-full text-right leading-none">
+          <div
+            data-insight-why-callout
+            className="inline-flex max-w-full items-start gap-1.5 rounded-md border border-s-2 border-s-sky-400 border-sky-200/80 bg-sky-50/70 px-2.5 py-1.5 text-right dark:border-s-sky-500/70 dark:border-sky-800/60 dark:bg-sky-950/25"
+          >
+            <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
+            <span className={`min-w-0 break-words whitespace-normal text-slate-700 dark:text-zinc-200 ${INSIGHT_TEXT_CLS}`}>
+              <span className="font-semibold text-sky-800 dark:text-sky-200">למה זה חשוב:</span>{' '}
+              {renderLinkedMarketText(displayInsightText(row.whyImportant))}
+            </span>
+          </div>
+        </div>
+      ) : null}
     </UniversalTabSelectRow>
   );
 }
@@ -163,7 +104,7 @@ function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
       {rows.map((row, i) => {
         const bulkId = bulkSelection ? `${bulkSelection.idPrefix}:${i}` : null;
         const summary = rowSummary(row);

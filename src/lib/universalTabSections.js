@@ -4,6 +4,7 @@
  */
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { formatStockStatusText } from '@/lib/stockStatusDisplay';
+import { getInsightDisplayFields } from '@/lib/insightDisplay';
 
 const TAB_UT_KEYS = {
   summary: 'summary',
@@ -111,6 +112,27 @@ export function valueToDisplayItems(val) {
   return [];
 }
 
+/** Keep structured insight fields intact until the Insights renderer. */
+export function valueToInsightDisplayItems(val) {
+  if (val == null) return [];
+  if (Array.isArray(val)) {
+    return val.flatMap((entry) => valueToInsightDisplayItems(entry));
+  }
+  if (typeof val === 'object') {
+    if (Array.isArray(val.items)) {
+      return val.items.flatMap((child) => valueToInsightDisplayItems(child));
+    }
+    if (Array.isArray(val.bullets)) {
+      return val.bullets.flatMap((child) => valueToInsightDisplayItems(child));
+    }
+    if (Array.isArray(val.points)) {
+      return val.points.flatMap((child) => valueToInsightDisplayItems(child));
+    }
+    if (getInsightDisplayFields(val)) return [val];
+  }
+  return valueToDisplayItems(val);
+}
+
 function getUtRaw(marketBriefData, tabValue) {
   const ut = marketBriefData?.universalTabs;
   if (!ut) return undefined;
@@ -121,10 +143,12 @@ function getUtRaw(marketBriefData, tabValue) {
   return key ? ut[key] : undefined;
 }
 
-function sectionsFromObject(obj, fieldLabels) {
+function sectionsFromObject(obj, fieldLabels, tabValue) {
   const sections = [];
   for (const [fieldKey, label] of Object.entries(fieldLabels)) {
-    const items = valueToDisplayItems(obj[fieldKey]);
+    const items = tabValue === 'insights'
+      ? valueToInsightDisplayItems(obj[fieldKey])
+      : valueToDisplayItems(obj[fieldKey]);
     if (items.length > 0) {
       sections.push({ key: fieldKey, label, items });
     }
@@ -132,18 +156,22 @@ function sectionsFromObject(obj, fieldLabels) {
   return sections;
 }
 
-function sectionsFromArray(raw) {
+function sectionsFromArray(raw, tabValue) {
   const sections = [];
   const flatItems = [];
 
   for (const entry of raw) {
     if (entry && typeof entry === 'object' && Array.isArray(entry.items)) {
       const label = (entry.title || entry.label || entry.name || entry.section || 'סעיף').trim();
-      const items = valueToDisplayItems(entry.items);
+      const items = tabValue === 'insights'
+        ? valueToInsightDisplayItems(entry.items)
+        : valueToDisplayItems(entry.items);
       if (items.length > 0) sections.push({ key: label, label, items });
       continue;
     }
-    flatItems.push(...valueToDisplayItems(entry));
+    flatItems.push(...(tabValue === 'insights'
+      ? valueToInsightDisplayItems(entry)
+      : valueToDisplayItems(entry)));
   }
 
   if (sections.length > 0) {
@@ -164,18 +192,20 @@ export function extractUniversalTabContent(_video, tabValue, marketBriefData) {
 
   if (Array.isArray(raw)) {
     if (raw.length === 0) return null;
-    const nested = sectionsFromArray(raw);
+    const nested = sectionsFromArray(raw, tabValue);
     if (nested?.length) {
       return { mode: 'sections', sections: nested };
     }
-    const items = raw.flatMap((e) => valueToDisplayItems(e));
+    const items = raw.flatMap((e) => tabValue === 'insights'
+      ? valueToInsightDisplayItems(e)
+      : valueToDisplayItems(e));
     return items.length ? { mode: 'flat', items } : null;
   }
 
   if (typeof raw === 'object') {
     const labels = OBJECT_FIELD_LABELS[TAB_UT_KEYS[tabValue]] || OBJECT_FIELD_LABELS[tabValue === 'app-builder' ? 'appBuilder' : ''];
     if (labels) {
-      const sections = sectionsFromObject(raw, labels);
+      const sections = sectionsFromObject(raw, labels, tabValue);
       if (sections.length > 0) {
         return { mode: 'sections', sections };
       }
