@@ -89,11 +89,17 @@ export async function fetchHebrewChapterTitles({ videoTitle, category, subCatego
   if (!res.ok) {
     const error = new Error(data.message || "Hebrew titles generation failed");
     error.code = data.error || "HEBREW_TITLES_FAILED";
+    error.status = res.status;
     throw error;
   }
   if (data.error === "GEMINI_API_KEY_MISSING") {
     const error = new Error("מפתח Gemini חסר");
     error.code = "GEMINI_API_KEY_MISSING";
+    throw error;
+  }
+  if (!Array.isArray(data.hebrewTitles) || data.hebrewTitles.length !== chapters.length) {
+    const error = new Error("Hebrew title count did not match the chapter count");
+    error.code = "INVALID_MODEL_RESPONSE";
     throw error;
   }
   return data;

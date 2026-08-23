@@ -14,6 +14,7 @@ import {
   buildEqualChunkChapters,
   tryTopicDrivenChapters,
 } from '@/lib/chapterTopicBoundaries';
+import { formatChapterTime, parseChapterTimeToSeconds } from '@/lib/chapterTimestamp';
 
 export function hasNonEmptyChapters(chapters) {
   return Array.isArray(chapters) && chapters.length > 0;
@@ -536,28 +537,16 @@ export function chaptersFromAiAnalysisResult(result) {
     const keyPoints = Array.isArray(raw.keyPoints)
       ? raw.keyPoints.filter(Boolean).map((point) => String(point).trim()).filter(Boolean)
       : [];
-    let startSeconds = raw.startSeconds ?? raw.start_sec ?? raw.timestampSeconds ?? raw.t;
-    let endSeconds = raw.endSeconds ?? raw.end_sec ?? raw.endTimestampSeconds ?? raw.end;
-    if (typeof startSeconds === "string" && startSeconds.trim() !== "") {
-      const n = Number(startSeconds);
-      startSeconds = Number.isFinite(n) && n >= 0 ? n : undefined;
-    } else if (typeof startSeconds === "number" && Number.isFinite(startSeconds) && startSeconds >= 0) {
-      /* keep */
-    } else {
-      startSeconds = undefined;
-    }
-    if (typeof endSeconds === "string" && endSeconds.trim() !== "") {
-      const n = Number(endSeconds);
-      endSeconds = Number.isFinite(n) && n >= 0 ? n : null;
-    } else if (typeof endSeconds === "number" && Number.isFinite(endSeconds) && endSeconds >= 0) {
-      /* keep */
-    } else {
-      endSeconds = null;
-    }
+    const startSeconds = parseChapterTimeToSeconds(
+      raw.startSeconds ?? raw.start_sec ?? raw.timestampSeconds ?? raw.startTime ?? raw.start ?? raw.t ?? raw.timestamp ?? raw.timestampLabel,
+    ) ?? undefined;
+    const endSeconds = parseChapterTimeToSeconds(
+      raw.endSeconds ?? raw.end_sec ?? raw.endTimestampSeconds ?? raw.endTime ?? raw.end,
+    );
     const timestamp =
       raw.timestamp ||
       raw.timestampLabel ||
-      (startSeconds != null ? formatMmSsFromSeconds(startSeconds) : undefined);
+      (startSeconds != null ? formatChapterTime(startSeconds) : undefined);
     const base = {
       title,
       description: summary,
@@ -2045,9 +2034,13 @@ export function matchChaptersToTranscript(chapters, transcript) {
     }
 
     // Window: minLineIdx → end of chapter's allocated segment (+10% overlap for last)
+    // Anchor every chapter to its own timeline slice so an early keyword match
+    // cannot collapse all later chapters into the first half of the video.
+    const nominalStart = Math.floor(i * chunkSize);
+    const windowStart = Math.max(minLineIdx, nominalStart);
     const nominalEnd = Math.ceil((i + 1) * chunkSize * 1.1);
     const windowEnd = i === n - 1 ? lines.length : Math.min(lines.length, nominalEnd);
-    const window = lines.slice(minLineIdx, windowEnd);
+    const window = lines.slice(windowStart, windowEnd);
     if (!window.length) return chapter; // No lines left — leave unchanged
 
     const query = kwTokens((chapter.title || '') + ' ' + (chapter.description || ''));

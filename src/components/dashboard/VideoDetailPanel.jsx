@@ -8,6 +8,8 @@ import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
 import { analyzeVideoWithProvider } from "@/services/aiVideoAnalyzer";
 import { computeTargetChapters } from "@/lib/chapterCountUtils";
+import { hasEstimatedChapterTimes, parseChapterTimeToSeconds } from "@/lib/chapterTimestamp";
+import { getHebrewTitlesErrorMessage, mergeChapterSources } from "@/lib/chapterEnrichment";
 import {
   buildTranscriptChunkTitle,
   isAiAnalysisChapterSource,
@@ -525,21 +527,7 @@ function normalizeManualChapters(chapters) {
 
 /** Parses GEM chapter time values: numeric seconds, numeric strings, or "MM:SS" / "HH:MM:SS". */
 function gemTimeToSeconds(value) {
-  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.floor(value);
-  if (typeof value === 'string' && value.trim() !== '') {
-    const str = value.trim();
-    if (str.includes(':')) {
-      const parts = str.split(':').map(Number);
-      if (!parts.some((p) => !Number.isFinite(p) || p < 0)) {
-        if (parts.length === 2) return parts[0] * 60 + parts[1];
-        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-      }
-      return null;
-    }
-    const n = Number(str);
-    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
-  }
-  return null;
+  return parseChapterTimeToSeconds(value);
 }
 
 /** MM:SS, or HH:MM:SS when hours exist. */
@@ -2161,6 +2149,7 @@ export function VideoDetailPanel({
   const [youtubeChaptersHint, setYoutubeChaptersHint] = useState(null);
   const [chapterTranscriptSource, setChapterTranscriptSource] = useState(null);
   const [isYoutubeChaptersFetch, setIsYoutubeChaptersFetch] = useState(false);
+  const chapterEnrichmentInFlightRef = useRef(false);
   const [isImportingDescChapters, setIsImportingDescChapters] = useState(false);
   const [hebrewTitlesMap, setHebrewTitlesMap] = useState(() => {
     try {
@@ -3565,35 +3554,6 @@ export function VideoDetailPanel({
     return sourceVideo ? resolveAiAnalysisDisplayChapters(sourceVideo) : [];
   }, [effectiveVideo, video]);
 
-  // When the user explicitly ran transcript chapter generation, those take priority over GEM
-  // (which may have stale estimated timestamps). Description timestamps always win.
-  const hasExplicitTranscriptChapters =
-    transcriptChunkChapters.length > 0 &&
-    (isTranscriptChunkChapterSource(video?.chapterSource) ||
-      isTranscriptChunkChapterSource(effectiveVideo?.chapterSource));
-
-  const displayChapters =
-    descriptionChapters.length > 0
-      ? descriptionChapters
-      : hasExplicitTranscriptChapters
-        ? transcriptChunkChapters
-        : gemChapters.length > 0
-          ? gemChapters
-          : aiAnalysisChapters.length > 0
-            ? aiAnalysisChapters
-            : transcriptChunkChapters.length > 0
-              ? transcriptChunkChapters
-              : baseChapters;
-  const chaptersFromGem =
-    descriptionChapters.length === 0 &&
-    aiAnalysisChapters.length === 0 &&
-    transcriptChunkChapters.length === 0 &&
-    gemChapters.length > 0;
-
-  const savedAnalysisTranscript = useMemo(
-    () => (video?.id ? loadSavedAnalysis(video.id) : null),
-    [video?.id],
-  );
   const videoDurationForChapters = useMemo(() => {
     const rawDurationSec = getVideoDurationSeconds(video);
     const labelDurationSec = parseDurationToSeconds(video?.durationLabel);
@@ -3603,6 +3563,41 @@ export function VideoDetailPanel({
     }
     return labelDurationSec > 0 ? labelDurationSec : rawDurationSec;
   }, [video]);
+
+  const storedAutomaticSupplements = useMemo(() => {
+    const source = Array.isArray(effectiveVideo?.autoSupplementalChapters)
+      ? effectiveVideo.autoSupplementalChapters
+      : video?.autoSupplementalChapters;
+    return Array.isArray(source) ? source : [];
+  }, [effectiveVideo, video]);
+
+  const automaticDisplayChapters = useMemo(() => [
+    ...storedAutomaticSupplements,
+    ...transcriptChunkChapters,
+    ...aiAnalysisChapters,
+  ], [storedAutomaticSupplements, transcriptChunkChapters, aiAnalysisChapters]);
+
+  const mergedChapterResult = useMemo(() => mergeChapterSources({
+    youtubeChapters: descriptionChapters,
+    gemChapters,
+    savedChapters: baseChapters,
+    automaticChapters: automaticDisplayChapters,
+    durationSeconds: videoDurationForChapters,
+  }), [descriptionChapters, gemChapters, baseChapters, automaticDisplayChapters, videoDurationForChapters]);
+
+  const displayChapters = mergedChapterResult.chapters.length > 0
+    ? mergedChapterResult.chapters
+    : baseChapters;
+  const displayedChapterTimesAreEstimated = hasEstimatedChapterTimes(displayChapters);
+  const chaptersFromGem =
+    descriptionChapters.length === 0 &&
+    automaticDisplayChapters.length === 0 &&
+    gemChapters.length > 0;
+
+  const savedAnalysisTranscript = useMemo(
+    () => (video?.id ? loadSavedAnalysis(video.id) : null),
+    [video?.id],
+  );
   const transcriptForChapters = useMemo(
     () => resolveTranscriptForChapters(video, savedAnalysisTranscript, videoDurationForChapters),
     [video, savedAnalysisTranscript, videoDurationForChapters],
@@ -3838,123 +3833,7 @@ export function VideoDetailPanel({
     }
   };
 
-  const handleAutoDetectChapters = async () => {
-    setYoutubeChaptersHint(null);
-
-    // Debug: log current state before detection
-    const _apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-    const _segs = transcriptForChapters.segments;
-    console.log(`[Chapters] transcriptExists=${Boolean(_segs?.length > 0)} source=${transcriptForChapters.source ?? 'none'} apiKeyExists=${Boolean(_apiKey?.trim())} chapterSource=${chapterSourceInfo?.source ?? 'none'}`);
-
-    // Step 1: check existing description for timestamps (no API call needed)
-    const existingDesc = typeof video?.description === 'string' ? video.description.trim() : '';
-    if (existingDesc) {
-      const descChapters = extractTimestampsFromDescription(existingDesc);
-      if (descChapters.length >= 2) {
-        const aiChapters = descChapters.map((c) => ({
-          ...c,
-          timeSource: c.timeSource || 'real',
-          chapterSource: 'description_timestamp',
-          source: 'description_timestamp',
-        }));
-        const updates = {
-          aiChapters,
-          chapters: aiChapters,
-          descriptionChapters: aiChapters,
-          chapterSource: 'description_timestamp',
-          analysisQuality: 'medium',
-        };
-        const localSaved = patchVideo(updates);
-        if (localSaved) {
-          onVideoPatch?.(localSaved);
-        } else {
-          try {
-            await Video.update(video.id, updates);
-            patchVideo(updates);
-            queryClient.invalidateQueries({ queryKey: ['videos'] });
-            onVideoPatch?.({ ...video, ...updates });
-          } catch {
-            toast.error('לא ניתן לשמור את הפרקים');
-          }
-        }
-        toast.success(`נמצאו ${aiChapters.length} פרקים מתיאור הסרטון`);
-        return;
-      }
-    }
-
-    // Step 2: if transcript is already loaded locally, generate chapters directly — no YouTube API needed
-    if (_segs?.length) {
-      console.log(`[Chapters] transcript available (${_segs.length} segments) — generating without YouTube API`);
-      handleGenerateTranscriptChapters();
-      return;
-    }
-
-    // Step 3: no description timestamps, no local transcript — generate via Gemini (no YouTube API key needed)
-    const watchUrl = getWatchUrl(video);
-    const videoId = getVideoIdFromUrl(watchUrl);
-    if (!watchUrl || !videoId) {
-      setYoutubeChaptersHint("no_api_key");
-      return;
-    }
-    setIsYoutubeChaptersFetch(true);
-    try {
-      const rawDurationSec = getVideoDurationSeconds(video);
-      const labelDurationSec = parseDurationToSeconds(video?.durationLabel);
-      // If both exist and conflict by more than 3×, prefer durationLabel (raw may be stored in wrong unit)
-      const durationSec = (() => {
-        if (labelDurationSec > 0 && rawDurationSec > 0) {
-          const ratio = Math.max(rawDurationSec, labelDurationSec) / Math.min(rawDurationSec, labelDurationSec);
-          return ratio > 3 ? labelDurationSec : rawDurationSec;
-        }
-        return labelDurationSec > 0 ? labelDurationSec : rawDurationSec;
-      })();
-      const chaptersTarget = computeTargetChapters(durationSec, chapterDensityMode);
-      const result = await fetchGeminiVideoContent({
-        videoId,
-        title: video?.title || '',
-        youtubeUrl: watchUrl,
-        durationSeconds: durationSec || null,
-        chaptersTarget,
-        analysisMode: 'url_only',
-      });
-      const rawChapters = Array.isArray(result?.chapters) ? result.chapters : [];
-      const normalized = normalizeGemChapters(rawChapters);
-      if (!normalized.length) {
-        setYoutubeChaptersHint("no_timestamps");
-        return;
-      }
-      const aiChapters = normalized.map(c => ({ ...c, source: 'gem' }));
-      const coverage = validateChapterTimelineCoverage(aiChapters, durationSec);
-      if (!coverage.ok) {
-        console.warn('[Gemini chapters fallback] incomplete timeline coverage', coverage);
-        setYoutubeChaptersHint("partial_coverage");
-        toast.warning(coverage.reason || 'הפרקים לא מכסים את כל הסרטון — לא נשמרו');
-        return;
-      }
-      const updates = { aiChapters, chapters: aiChapters, chapterSource: 'gem' };
-      const localSaved = patchVideo(updates);
-      if (localSaved) {
-        onVideoPatch?.(localSaved);
-      } else {
-        try {
-          await Video.update(video.id, updates);
-          patchVideo(updates);
-          queryClient.invalidateQueries({ queryKey: ['videos'] });
-          onVideoPatch?.({ ...video, ...updates });
-        } catch {
-          toast.error('לא ניתן לשמור את הפרקים');
-          return;
-        }
-      }
-      toast.success(`נוצרו ${aiChapters.length} פרקים בעזרת Gemini`);
-      setYoutubeChaptersHint(null);
-    } catch (err) {
-      console.error('[Gemini chapters fallback]', err);
-      setYoutubeChaptersHint("fetch_failed");
-    } finally {
-      setIsYoutubeChaptersFetch(false);
-    }
-  };
+  const handleAutoDetectChapters = () => handleGenerateTranscriptChapters();
 
   const handleGenerateHebrewTitles = async () => {
     const chapters = displayChapters.length > 0 ? displayChapters : baseChapters;
@@ -3964,6 +3843,8 @@ export function VideoDetailPanel({
     }
     setIsGeneratingHebrewTitles(true);
     setHebrewTitlesError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45_000);
     try {
       const chapterPayload = chapters.map(ch => ({
         title: ch.title || '',
@@ -3976,6 +3857,7 @@ export function VideoDetailPanel({
         category: effectiveCategory || '',
         subCategory: effectiveSubCategory || '',
         chapters: chapterPayload,
+        signal: controller.signal,
       });
       const generatedAt = new Date().toISOString();
       const newMap = {};
@@ -3997,96 +3879,143 @@ export function VideoDetailPanel({
       toast.success('כותרות עבריות נוצרו בהצלחה');
     } catch (err) {
       console.error('[HebrewTitles] generation failed', { code: err.code, message: err.message, status: err.status });
-      const msg = err.code === 'GEMINI_API_KEY_MISSING'
-        ? 'נדרש חיבור AI כדי ליצור כותרות עבריות.'
-        : 'שגיאה ביצירת כותרות עבריות';
+      const msg = getHebrewTitlesErrorMessage(err);
       setHebrewTitlesError(msg);
       toast.error(msg);
     } finally {
+      clearTimeout(timeoutId);
       setIsGeneratingHebrewTitles(false);
     }
   };
 
-  const handleGenerateTranscriptChapters = () => {
-    const resolution = transcriptForChapters;
-    if (!resolution.hasUsableText || !resolution.lines.length) {
-      setYoutubeChaptersHint("no_transcript");
-      toast.error("לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.");
-      return;
-    }
-
-    console.log(`[Chapters] generating from transcript source=${resolution.source ?? "unknown"} lines=${resolution.lines.length}`);
-
-    const generated = generateChaptersFromTranscript({ lines: resolution.lines }, video);
-    let chapters = generated?.chapters ?? null;
-    let chapterSource = generated?.chapterSource || "transcript_heuristic";
-    let analysisQuality = generated?.analysisQuality || "low";
-    const boundaryMethod = generated?.boundaryMethod || "chunk";
-
-    if (!chapters?.length) {
-      const plainText =
-        getVideoTranscriptText(video) ||
-        resolution.lines.map((line) => line.text).join(" ");
-      chapters = splitPlainTranscriptToChapters(plainText, videoDurationForChapters);
-      chapterSource = "transcript_heuristic";
-      analysisQuality = "low";
-    }
-
-    if (!chapters?.length) {
-      setYoutubeChaptersHint("transcript_gen_failed");
-      toast.error("לא ניתן ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.");
-      return;
-    }
-
-    console.log(`[Chapters] boundaryMethod=${boundaryMethod} source=${chapterSource} count=${chapters.length}`);
-
-    const aiChapters = chapters.map((c) => ({
-      ...c,
-      chapterSource: c.chapterSource || chapterSource,
-      source: chapterSource,
-      timeSource: c.timeSource || "transcript",
-      analysisQuality: c.analysisQuality || analysisQuality,
-    }));
-
-    const coverage = validateChapterTimelineCoverage(aiChapters, videoDurationForChapters);
-    if (!coverage.ok && !coverage.skipped) {
-      console.warn("[Chapters] transcript chapters incomplete coverage", coverage);
-      setYoutubeChaptersHint("transcript_gen_failed");
-      toast.warning(coverage.reason || "הפרקים לא מכסים את כל הסרטון — לא נשמרו");
-      return;
-    }
-
-    const titleQuality = validateTranscriptChapterQuality(aiChapters);
-    if (!titleQuality.valid) {
-      console.warn(`[Chapters] Title quality gate failed: ${titleQuality.reason}`, aiChapters.map(c => c.title));
-      toast.error('לא עודכנו פרקים — איכות הכותרות נמוכה');
-      return;
-    }
-
-    const updates = {
-      aiChapters,
-      chapters: aiChapters,
-      chapterSource,
-      analysisQuality,
-    };
-    const localSaved = patchVideo(updates);
-    const savedVideo = localSaved ?? { ...video, ...updates };
-    if (localSaved) {
-      onVideoPatch?.(localSaved);
-    } else {
-      Video.update(video.id, updates)
-        .then(() => {
-          patchVideo(updates);
-          queryClient.invalidateQueries({ queryKey: ["videos"] });
-          onVideoPatch?.({ ...video, ...updates });
-        })
-        .catch(() => toast.error("לא ניתן לשמור את הפרקים"));
-    }
-    setChapterTranscriptSource(resolution.source);
+  const handleGenerateTranscriptChapters = async () => {
+    if (chapterEnrichmentInFlightRef.current) return;
+    chapterEnrichmentInFlightRef.current = true;
+    setIsYoutubeChaptersFetch(true);
     setYoutubeChaptersHint(null);
-    const renderedCount = resolveTranscriptChunkDisplayChapters(savedVideo, aiChapters).length;
-    const methodLabel = boundaryMethod === "topic" ? "לפי נושאים" : "חלוקה שווה (איכות נמוכה)";
-    toast.success(`נוצרו ${renderedCount} פרקים מהתמלול — ${methodLabel}`);
+
+    try {
+      if (mergedChapterResult.complete) {
+        setYoutubeChaptersHint('complete');
+        toast.info('הפרקים הקיימים כבר מלאים');
+        return;
+      }
+
+      let resolution = transcriptForChapters;
+      if (!resolution.hasUsableText || !resolution.lines.length) {
+        const ytId = getVideoIdFromUrl(getWatchUrl(video));
+        if (ytId) {
+          const payload = await fetchTranscriptPayload(ytId);
+          if (payload?.body || payload?.segments?.length) {
+            resolution = resolveTranscriptForChapters({
+              ...video,
+              transcript: payload.body || video?.transcript,
+              transcriptSegments: Array.isArray(payload.segments) ? payload.segments : [],
+              transcriptSource: 'youtube-timedtext',
+            }, savedAnalysisTranscript, videoDurationForChapters);
+          }
+        }
+      }
+      if (!resolution.hasUsableText || !resolution.lines.length) {
+        setYoutubeChaptersHint('no_transcript');
+        toast.error('לא נמצא תמלול שממנו ניתן להשלים פרקים');
+        return;
+      }
+
+      console.log(`[Chapters] supplementing from transcript source=${resolution.source ?? 'unknown'} lines=${resolution.lines.length}`);
+      const gemTimingCandidates = gemChapters.some(
+        (chapter) => parseChapterTimeToSeconds(chapter?.startSeconds ?? chapter?.timestamp) == null,
+      )
+        ? matchChaptersToTranscript(gemChapters, { lines: resolution.lines })
+            ?.filter((chapter) => parseChapterTimeToSeconds(chapter?.startSeconds ?? chapter?.timestamp) != null)
+            .map((chapter) => ({
+              ...chapter,
+              timeSource: 'estimated_transcript',
+              timestampSource: 'estimated_transcript',
+              isEstimated: true,
+              timingSource: 'youtube-timedtext',
+            })) ?? []
+        : [];
+      const generated = gemTimingCandidates.length > 0
+        ? null
+        : generateChaptersFromTranscript({ lines: resolution.lines }, video);
+      let chapters = gemTimingCandidates.length > 0 ? gemTimingCandidates : generated?.chapters ?? null;
+      const chapterSource = gemTimingCandidates.length > 0 ? 'gem' : generated?.chapterSource || 'transcript_heuristic';
+      const analysisQuality = gemTimingCandidates.length > 0 ? 'medium' : generated?.analysisQuality || 'low';
+
+      if (!chapters?.length) {
+        const plainText = getVideoTranscriptText(video) || resolution.lines.map((line) => line.text).join(' ');
+        chapters = splitPlainTranscriptToChapters(plainText, videoDurationForChapters);
+      }
+
+      if (!chapters?.length) {
+        setYoutubeChaptersHint('transcript_gen_failed');
+        toast.error('השלמת הפרקים נכשלה — הפרקים הקיימים נשמרו ללא שינוי');
+        return;
+      }
+
+      const automaticCandidates = chapters.map((chapter) => ({
+        ...chapter,
+        chapterSource: chapter.chapterSource || chapterSource,
+        source: chapter.source || chapterSource,
+        timeSource: chapter.timeSource || 'estimated_transcript',
+        isEstimated: true,
+        analysisQuality: chapter.analysisQuality || analysisQuality,
+      }));
+
+      const coverage = validateChapterTimelineCoverage(automaticCandidates, videoDurationForChapters);
+      const titleQuality = validateTranscriptChapterQuality(automaticCandidates);
+      if ((!coverage.ok && !coverage.skipped) || !titleQuality.valid) {
+        console.warn('[Chapters] automatic supplement rejected', { coverage, titleQuality });
+        setYoutubeChaptersHint('transcript_gen_failed');
+        toast.error('השלמת הפרקים נכשלה — הפרקים הקיימים נשמרו ללא שינוי');
+        return;
+      }
+
+      const additionResult = mergeChapterSources({
+        savedChapters: displayChapters,
+        automaticChapters: automaticCandidates,
+        durationSeconds: videoDurationForChapters,
+      });
+      const additions = additionResult.acceptedAutomatic;
+      const timingEnrichments = additionResult.enrichedAutomatic;
+      if (additions.length === 0 && timingEnrichments.length === 0) {
+        setYoutubeChaptersHint('no_additions');
+        toast.info('לא נמצאו פרקים נוספים להשלמה');
+        return;
+      }
+
+      const persistedSupplements = mergeChapterSources({
+        automaticChapters: [...storedAutomaticSupplements, ...additions, ...timingEnrichments],
+      }).chapters;
+      const updates = { autoSupplementalChapters: persistedSupplements };
+      const localSaved = patchVideo(updates);
+      if (localSaved) {
+        onVideoPatch?.(localSaved);
+      } else {
+        await Video.update(video.id, updates);
+        patchVideo(updates);
+        queryClient.invalidateQueries({ queryKey: ['videos'] });
+        onVideoPatch?.({ ...video, ...updates });
+      }
+
+      setChapterTranscriptSource(resolution.source);
+      setYoutubeChaptersHint(null);
+      if (timingEnrichments.length > 0 && additions.length > 0) {
+        toast.success(`נוספו ${additions.length} פרקים והושלמו זמנים ל-${timingEnrichments.length} פרקים; ${displayChapters.length} פרקים קיימים נשמרו`);
+      } else if (timingEnrichments.length > 0) {
+        toast.success(`הושלמו זמנים ל-${timingEnrichments.length} פרקים; ${displayChapters.length} פרקים קיימים נשמרו`);
+      } else {
+        toast.success(`נוספו ${additions.length} פרקים; ${displayChapters.length} פרקים קיימים נשמרו`);
+      }
+    } catch (error) {
+      console.error('[Chapters] supplement failed', error);
+      setYoutubeChaptersHint('enrichment_failed');
+      toast.error('השלמת הפרקים נכשלה — הפרקים הקיימים נשמרו ללא שינוי');
+    } finally {
+      chapterEnrichmentInFlightRef.current = false;
+      setIsYoutubeChaptersFetch(false);
+    }
   };
 
   const { data: videoNotes = [] } = useNotesByVideo(video?.id);
@@ -8032,7 +7961,7 @@ export function VideoDetailPanel({
     if (!s) return null;
     if (s === 'description_timestamp' || s === 'youtube_description' || s === 'description_timestamps') return '🟢 זמן מדויק';
     if (s === 'gem' || s === 'gem_chapters' || s === 'gemini' || s === 'gemini_url' || s === 'gems_analysis' || s === 'ai_generated' || s === 'transcript' || s === 'saved') return '🔵 AI';
-    if (s === 'transcript_topic_heuristic' || isTranscriptChunkChapterSource(s) || s === 'manual_transcript') return '🟠 משוער מתמלול';
+    if (s === 'transcript_topic_heuristic' || isTranscriptChunkChapterSource(s) || s === 'manual_transcript') return '🟠 תמלול אוטומטי';
     if (s === 'outline' || s === 'duration_fallback' || s === 'estimated' || s === 'native_chapters') return '⚪ תבנית';
     return '⚪ מקור לא ידוע';
   })();
@@ -10360,9 +10289,14 @@ export function VideoDetailPanel({
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
 
                     {/* header: title + badge (right) + auto-detect button (left) */}
-                    <div className="mb-3 flex items-center justify-between gap-3" dir="rtl">
-                      <div className="flex items-center gap-2">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3" dir="rtl">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h4 className={SUMMARY_CARD_TITLE_CLASS}>פרקי הסרטון</h4>
+                        {displayedChapterTimesAreEstimated && (
+                          <span className="whitespace-nowrap text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                            הזמנים משוערים
+                          </span>
+                        )}
                         {chapterSourceBadge && (
                           <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${chapterSourceBadgeClass}`}>
                             {chapterSourceBadge}
@@ -10400,7 +10334,7 @@ export function VideoDetailPanel({
                           disabled={isYoutubeChaptersFetch}
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-white hover:border-slate-300 disabled:opacity-60 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                         >
-                          {isYoutubeChaptersFetch ? "⏳ מייצר..." : "🔍 בדוק פרקים אוטומטית"}
+                          {isYoutubeChaptersFetch ? "⏳ משלים..." : "🔍 השלם פרקים אוטומטית"}
                         </button>
                       </div>
                     </div>
@@ -10547,7 +10481,7 @@ export function VideoDetailPanel({
                           <X className="h-3.5 w-3.5" />
                         </button>
                         <p className="text-xs text-red-700 dark:text-red-300">
-                          Gemini לא הצליח ליצור פרקים מהתמלול. נסה לקצר את התמלול או להדביק תמלול נקי יותר.
+                          השלמת הפרקים נכשלה — הפרקים הקיימים נשמרו ללא שינוי.
                         </p>
                       </div>
                     )}
@@ -10565,8 +10499,26 @@ export function VideoDetailPanel({
                           <X className="h-3.5 w-3.5" />
                         </button>
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          לא נמצא תמלול שמור. הדבק או הורד תמלול ואז נסה שוב.
+                          לא נמצא תמלול שממנו ניתן להשלים פרקים.
                         </p>
+                      </div>
+                    )}
+
+                    {youtubeChaptersHint === "complete" && (
+                      <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-right text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300" dir="rtl">
+                        הפרקים הקיימים כבר מלאים.
+                      </div>
+                    )}
+
+                    {youtubeChaptersHint === "no_additions" && (
+                      <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-xs text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300" dir="rtl">
+                        לא נמצאו פרקים נוספים להשלמה.
+                      </div>
+                    )}
+
+                    {youtubeChaptersHint === "enrichment_failed" && (
+                      <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right text-xs text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300" dir="rtl">
+                        השלמת הפרקים נכשלה — הפרקים הקיימים נשמרו ללא שינוי.
                       </div>
                     )}
 
@@ -10608,8 +10560,8 @@ export function VideoDetailPanel({
                           <div>nativeChapters: {baseChapters?.length ?? 0}</div>
                           <div>gemChapters: {gemChapters?.length ?? 0}</div>
                           <div>chapterSourceBadge: {chapterSourceBadge ?? '—'}</div>
-                          <div>displayWinner: {descriptionChapters.length > 0 ? 'description' : transcriptChunkChapters.length > 0 ? 'transcriptChunk' : chaptersFromGem ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base'}</div>
-                          <div>fallbackSource: {transcriptChunkChapters.length === 0 && (transcriptChaptersRaw?.length ?? 0) > 0 ? (gemChapters.length > 0 ? 'gem' : aiAnalysisChapters.length > 0 ? 'aiAnalysis' : 'base') : '—'}</div>
+                          <div>displayWinner: merged (youtube → gem → automatic)</div>
+                          <div>automaticSupplements: {storedAutomaticSupplements.length}</div>
                           <div>finalChapters: {displayChapters?.length ?? 0}</div>
                           <div>segments: {storedTranscriptSegments?.length ?? 0}</div>
                           <div>video.desc: {typeof video?.description === 'string' ? video.description.length : '—'}</div>

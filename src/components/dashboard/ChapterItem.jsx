@@ -1,37 +1,6 @@
 import React, { useState } from "react";
 import { buildTimestampUrl } from "@/services/youtubeMetadata";
-
-function resolveStartSeconds(section) {
-  const s = section?.startSeconds;
-  if (typeof s === "number" && Number.isFinite(s) && s >= 0) return s;
-  if (typeof s === "string" && s.trim() !== "") {
-    const n = Number(s);
-    if (Number.isFinite(n) && n >= 0) return n;
-  }
-  return null;
-}
-
-function parseTimestampString(str) {
-  if (typeof str !== "string") return null;
-  const parts = str.trim().split(":").map(Number);
-  if (parts.some(isNaN)) return null;
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  return null;
-}
-
-function formatHebrewTimestamp(seconds) {
-  if (!Number.isFinite(seconds) || seconds < 0) return "";
-  const total = Math.floor(seconds);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+import { resolveChapterNavigationData } from "@/lib/chapterTimestamp";
 
 function resolveChapterSourceBadge(source) {
   const s = String(source || '');
@@ -41,7 +10,7 @@ function resolveChapterSourceBadge(source) {
   if (s === 'gem' || s === 'gem_chapters' || s === 'gemini' || s === 'gemini_url' || s === 'gems_analysis' || s === 'ai_generated' || s === 'transcript' || s === 'saved')
     return { label: '🔵 AI', cls: 'text-blue-500 dark:text-blue-400' };
   if (s === 'transcript_topic_heuristic' || s === 'transcript_heuristic' || s === 'manual_transcript' || s === 'ai_transcript')
-    return { label: '🟠 משוער', cls: 'text-amber-600 dark:text-amber-400' };
+    return { label: '🟠 תמלול', cls: 'text-amber-600 dark:text-amber-400' };
   if (s === 'outline' || s === 'duration_fallback' || s === 'estimated' || s === 'native_chapters')
     return { label: '⚪ תבנית', cls: 'text-slate-400 dark:text-zinc-500' };
   return { label: '⚪ לא ידוע', cls: 'text-slate-400 dark:text-zinc-500' };
@@ -180,7 +149,7 @@ function ChapterKeyPoints({ points }) {
   );
 }
 
-function ChapterContent({ section, timestampLabel, muted = false, compact = false }) {
+function ChapterContent({ section, timestampLabel, timestampUnavailable = false, muted = false, compact = false }) {
   const [showOriginal, setShowOriginal] = useState(false);
   const hasHebrew = Boolean(section.hebrewTitle);
   const displayTitle = hasHebrew ? section.hebrewTitle : section.title;
@@ -226,7 +195,7 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
         <ChapterKeyPoints points={section?.keyPoints} />
         <TranscriptPreview section={section} />
       </div>
-      {timestampLabel ? (
+      {timestampLabel || timestampUnavailable ? (
         <div className="shrink-0 flex flex-col items-center gap-0.5">
           <div
             className={`${compact ? "rounded-md px-2 py-0.5 text-[11px]" : "rounded-lg px-2.5 py-1 text-xs"} font-semibold tabular-nums ${
@@ -234,15 +203,10 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
                 ? "border border-slate-200 bg-slate-100 text-slate-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 : "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200"
             }`}
-            dir="ltr"
+            dir={timestampUnavailable ? "rtl" : "ltr"}
           >
-            {timestampLabel}
+            {timestampUnavailable ? "חסר זמן לפרק" : timestampLabel}
           </div>
-          {(section?.timestampSource === "estimated" || section?.isEstimated) && (
-            <span className="text-[9px] leading-tight text-amber-500 dark:text-amber-400 whitespace-nowrap font-semibold">
-              ~משוער
-            </span>
-          )}
           {sourceBadge && !compact && (
             <span className={`text-[9px] leading-tight whitespace-nowrap font-medium ${sourceBadge.cls}`}>
               {sourceBadge.label}
@@ -257,15 +221,10 @@ function ChapterContent({ section, timestampLabel, muted = false, compact = fals
 const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false, variant = "card" }) => {
   const isRow = variant === "row";
   const Shell = isRow ? ChapterRowShell : ChapterShell;
-  const finalSeconds = resolveStartSeconds(section);
-  // Fall back to parsing the "MM:SS" / "HH:MM:SS" timestamp string when no numeric startSeconds exists
-  const resolvedSeconds = finalSeconds !== null
-    ? finalSeconds
-    : parseTimestampString(section?.timestamp);
-  const formattedTimestamp = resolvedSeconds !== null
-    ? formatHebrewTimestamp(resolvedSeconds)
-    : (section?.timestamp || "");
-  const isValid = resolvedSeconds !== null;
+  const navigation = resolveChapterNavigationData(section);
+  const resolvedSeconds = navigation.seconds;
+  const formattedTimestamp = navigation.label;
+  const isValid = navigation.available;
   const hasPlayerSeek = Boolean(playerRef?.current?.seekTo);
   const urlStr = typeof videoUrl === "string" ? videoUrl.trim() : "";
   const hasTarget = hasPlayerSeek || urlStr.length > 0;
@@ -295,17 +254,9 @@ const ChapterItem = ({ section, playerRef, videoUrl, isHighlighted = false, vari
   const contentProps = { compact: isRow };
 
   if (!isValid) {
-    if (urlStr) {
-      return (
-        <Shell clickable title="הפרק יפתח את הסרטון מתחילתו" onClick={() => window.open(urlStr, "_blank", "noopener,noreferrer")} isHighlighted={isHighlighted} muted={isRow}>
-          <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
-        </Shell>
-      );
-    }
-
     return (
-      <Shell title="אין זמן זמין לפרק הזה" isHighlighted={isHighlighted} muted={isRow}>
-        <ChapterContent section={section} timestampLabel={null} muted {...contentProps} />
+      <Shell title="חסר זמן לפרק — הניווט אינו זמין" isHighlighted={isHighlighted} muted={isRow}>
+        <ChapterContent section={section} timestampLabel={null} timestampUnavailable muted {...contentProps} />
       </Shell>
     );
   }

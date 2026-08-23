@@ -1628,12 +1628,22 @@ function makeHebrewChapterTitlesPlugin(env) {
 
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+          const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
           const result = await model.generateContent(prompt);
           let raw = result.response.text().trim();
           raw = raw.replace(/^```jsons*/i, '').replace(/```s*$/, '').trim();
           const parsed = JSON.parse(raw);
-          const titles = Array.isArray(parsed.hebrewTitles) ? parsed.hebrewTitles : [];
+          const titles = Array.isArray(parsed.hebrewTitles)
+            ? parsed.hebrewTitles.map(title => String(title || '').trim())
+            : [];
+          if (titles.length !== chapters.length || titles.some(title => !title)) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              error: 'INVALID_MODEL_RESPONSE',
+              message: 'Hebrew title count did not match the chapter count',
+            }));
+            return;
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ hebrewTitles: titles }));
         } catch (err) {
