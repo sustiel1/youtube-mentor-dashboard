@@ -16,6 +16,7 @@ import { resolveVideoCardTopics } from "@/lib/videoTopicDisplay";
 import { ObsidianSavedOnCard } from "./ObsidianSavedOnCard";
 import { hasObsidianSavedStatus } from "@/lib/obsidianSavedStatus";
 import { loadSavedAnalysis } from "@/lib/localAnalysisStore";
+import { resolveVideoAnalyzedState } from "@/lib/gemsAnalyzedStatus";
 
 function buildVideoUrl(video) {
   if (video.url && video.url.startsWith("http")) return video.url;
@@ -86,15 +87,7 @@ export function VideoCard({
   const savedAnalysis = useMemo(() => loadSavedAnalysis(video?.id), [video?.id]);
   const hasSavedAnalysis = Boolean(savedAnalysis);
   const hasAnyUsefulKnowledge = Array.isArray(video?.keyPoints) && video.keyPoints.length > 0;
-  const hasAnyAiContent =
-    video?.status === "done" ||
-    video?.analysisStatus === "completed" ||
-    video?.analysisStatus === "analyzed" ||
-    Boolean(video?.analyzedAt) ||
-    Boolean(video?.aiSummaryShort) ||
-    Boolean(video?.aiSummaryLong) ||
-    Boolean(video?.shortSummary) ||
-    Boolean(video?.fullSummary);
+  const analyzedState = useMemo(() => resolveVideoAnalyzedState(video), [video]);
 
   const publishDate = video.publishedAt
     ? format(new Date(video.publishedAt), "d MMM yyyy", { locale: he })
@@ -194,18 +187,18 @@ export function VideoCard({
         )}
 
         {/* badges — top right */}
-        {(hasAnyAiContent || hasSavedAnalysis || hasAnyUsefulKnowledge || hasNoteData || isOpponentView || showBrainSavedPill) && (
+        {(analyzedState.analyzed || hasSavedAnalysis || hasAnyUsefulKnowledge || hasNoteData || isOpponentView || showBrainSavedPill) && (
           <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
             {isOpponentView && (
               <span className="flex items-center gap-1 text-[10px] font-bold bg-rose-600 text-white rounded-full px-2 py-0.5 shadow">
                 דעת האויב
               </span>
             )}
-            {hasAnyAiContent && (
+            {analyzedState.analyzed && (
               <span className="flex items-center gap-1 text-[10px] font-bold bg-red-600 text-white rounded-full px-2 py-0.5 shadow">
                 <Sparkles className="h-2.5 w-2.5" />
-                {video.analyzedAt
-                  ? `נותח · ${format(new Date(video.analyzedAt), "dd/MM", { locale: he })}`
+                {analyzedState.analyzedAt
+                  ? `נותח · ${format(new Date(analyzedState.analyzedAt), "dd/MM", { locale: he })}`
                   : "נותח"}
               </span>
             )}

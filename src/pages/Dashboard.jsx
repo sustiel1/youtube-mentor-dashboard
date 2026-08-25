@@ -32,6 +32,7 @@ import { useStorageMeter } from "@/hooks/useStorageMeter";
 import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
 import { saveLocalVideo } from "@/lib/localVideoStore";
 import { matchesVideoTitleSearch } from "@/lib/videoTitleSearch";
+import { countAnalyzedVideos, filterAnalyzedVideos, isVideoAnalyzed } from "@/lib/gemsAnalyzedStatus";
 
 function mergeSelectedVideoState(fresh, prev) {
   if (!fresh) return prev;
@@ -96,8 +97,8 @@ function buildMentorYouTubeUrl(mentor) {
 
 function computeStats(videos) {
   return {
-    totalNew: videos.filter((v) => v.status === "new").length,
-    summarized: videos.filter((v) => v.status === "done").length,
+    totalNew: videos.filter((v) => v.status === "new" && !isVideoAnalyzed(v)).length,
+    summarized: countAnalyzedVideos(videos),
     processing: videos.filter((v) => v.status === "processing").length,
     errors: videos.filter((v) => v.status === "error").length,
     permanentCount: videos.filter((v) => v.isPermanent).length,
@@ -426,6 +427,10 @@ export default function Dashboard({
       result = result.filter((v) => isVideoAddedOnLocalCalendarDay(v));
     } else if (activeDashboardFilter === "permanent") {
       result = result.filter((v) => v.isPermanent);
+    } else if (activeDashboardFilter === "summarized") {
+      result = filterAnalyzedVideos(result);
+    } else if (activeDashboardFilter === "new") {
+      result = result.filter((v) => v.status === "new" && !isVideoAnalyzed(v));
     } else if (activeDashboardFilter) {
       const statusValue = KPI_STATUS_MAP[activeDashboardFilter];
       result = result.filter((v) => v.status === statusValue);
