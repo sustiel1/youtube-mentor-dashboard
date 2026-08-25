@@ -22,6 +22,18 @@ export const FEAR_GREED_ZONES = Object.freeze([
   { min: 76, max: 100, label: 'תאווה קיצונית', color: 'bg-emerald-500' },
 ]);
 
+// Same colors as FEAR_GREED_ZONES above (and src/lib/fearGreed.js's
+// FEAR_GREED_RATING_STYLES for the 7 sub-indicators) — one mapping, applied
+// to the score badge, the indicator dots and this bottom scale.
+const FEAR_GREED_ZONE_BADGE_CLS = Object.freeze([
+  'bg-red-500 text-white',
+  'bg-orange-400 text-white',
+  'bg-amber-300 text-slate-900',
+  'bg-lime-400 text-slate-900',
+  'bg-emerald-500 text-white',
+]);
+const FEAR_GREED_IDLE_BADGE_CLS = 'bg-slate-100 text-slate-800 dark:bg-zinc-800 dark:text-zinc-100';
+
 export function normalizeFearGreedScore(score) {
   return typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 100
     ? score
@@ -49,8 +61,13 @@ export function FearGreedScoreCard({
   score = null,
   rating = null,
   updatedAt = null,
+  checkedAt = null,
   status = 'idle',
   sourceUrl,
+  indicatorsSlot = null,
+  scoreInfoSlot = null,
+  refreshSlot = null,
+  expandSlot = null,
 }) {
   const validScore = normalizeFearGreedScore(score);
   const hasScore = validScore != null;
@@ -63,41 +80,70 @@ export function FearGreedScoreCard({
   const activeZoneIndex = hasScore
     ? FEAR_GREED_ZONES.findIndex((zone) => validScore >= zone.min && validScore <= zone.max)
     : -1;
+  const badgeCls = hasScore && (safeStatus === 'ready' || safeStatus === 'stale') && activeZoneIndex >= 0
+    ? FEAR_GREED_ZONE_BADGE_CLS[activeZoneIndex]
+    : FEAR_GREED_IDLE_BADGE_CLS;
 
   return (
-    <a
-      href={sourceUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="פתיחת מדד הפחד והתאווה של CNN באתר חיצוני"
-      title="פתיחת מדד הפחד והתאווה של CNN"
-      className="group flex h-full w-full min-w-0 cursor-pointer flex-col rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/20 dark:focus-visible:ring-offset-zinc-900"
+    <div
+      className="flex h-full w-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors dark:border-zinc-700 dark:bg-zinc-900"
       dir="rtl"
       data-fear-greed-score-card
       data-score={hasScore ? validScore : undefined}
       data-status={safeStatus}
     >
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl font-bold tabular-nums text-slate-800 dark:bg-zinc-800 dark:text-zinc-100">
-          {hasScore ? validScore : '—'}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex min-w-0 items-center justify-between gap-2">
-            <span className="truncate text-sm font-bold text-slate-900 group-hover:text-indigo-700 dark:text-zinc-100 dark:group-hover:text-indigo-300">
-              מדד פחד ותאווה
+      {/*
+        Only the header link opens CNN — scoreInfoSlot/refreshSlot/
+        indicatorsSlot are siblings, not descendants, of that <a>: it cannot
+        validly contain another <a> or a <button> (refreshSlot is a real
+        <button>, scoreInfoSlot's trigger has role="button", and
+        indicatorsSlot contains per-indicator expand toggles + graph links).
+      */}
+      <div className="flex min-w-0 items-start gap-1">
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="פתיחת מדד הפחד והתאווה של CNN באתר חיצוני"
+          title="פתיחת מדד הפחד והתאווה של CNN"
+          className="group -m-1 flex min-w-0 items-start gap-3 flex-1 rounded-lg p-1 transition-colors hover:bg-indigo-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:hover:bg-indigo-950/20 dark:focus-visible:ring-offset-zinc-900"
+        >
+          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-2xl font-bold tabular-nums transition-colors ${badgeCls}`}>
+            {hasScore ? validScore : '—'}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex min-w-0 items-center justify-between gap-2">
+              <span className="truncate text-sm font-bold text-slate-900 group-hover:text-indigo-700 dark:text-zinc-100 dark:group-hover:text-indigo-300">
+                מדד פחד ותאווה
+              </span>
+              <span className="shrink-0 text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+                CNN ↗
+              </span>
             </span>
-            <span className="shrink-0 text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
-              CNN ↗
+            <span className="mt-0.5 block truncate text-xs font-medium text-slate-600 dark:text-zinc-300" data-fear-greed-status>
+              {displayStatus}
+            </span>
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-400 dark:text-zinc-500">
+              <span className="truncate">{getUpdateLabel(updatedAt)}</span>
+              {checkedAt && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="truncate" data-fear-greed-checked-at>נבדק לאחרונה: {checkedAt}</span>
+                </>
+              )}
             </span>
           </span>
-          <span className="mt-0.5 block truncate text-xs font-medium text-slate-600 dark:text-zinc-300" data-fear-greed-status>
-            {displayStatus}
-          </span>
-          <span className="mt-0.5 block text-[10px] text-slate-400 dark:text-zinc-500">
-            {getUpdateLabel(updatedAt)}
-          </span>
-        </span>
+        </a>
+        {scoreInfoSlot}
+        {refreshSlot}
+        {expandSlot}
       </div>
+
+      {indicatorsSlot && (
+        <div className="mt-2 min-w-0" data-fear-greed-indicators-slot>
+          {indicatorsSlot}
+        </div>
+      )}
 
       <span
         className="mt-auto grid grid-cols-5 gap-1 pt-2"
@@ -117,6 +163,6 @@ export function FearGreedScoreCard({
           );
         })}
       </span>
-    </a>
+    </div>
   );
 }

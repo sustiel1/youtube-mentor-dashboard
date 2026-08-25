@@ -58,6 +58,7 @@ export const LOCAL_STORAGE_FIXED_KEYS = Object.freeze([
   'workspace_tab_preferences_v1',
   'market_manual_finviz_mappings_v1',
   'market_aaii_weekly_sentiment_v1',
+  'market_fear_greed_cache_v1',
   'app_builder_v1',
   'youtubeMentor.theme',
   'yt_claude_safety_v1',
@@ -124,6 +125,7 @@ const MEDIA_KEYS = new Set(['yt_thumb_cache_v1']);
 
 export const VOLATILE_CACHE_STORAGE_KEYS = Object.freeze([
   'yt_thumb_cache_v1',
+  'market_fear_greed_cache_v1',
 ]);
 
 const ANALYSIS_PREFIXES = Object.freeze([
@@ -167,7 +169,7 @@ export function classifyStorageKey(key) {
 }
 
 export function isVolatileCacheStorageKey(key) {
-  return key === VOLATILE_CACHE_STORAGE_KEYS[0];
+  return VOLATILE_CACHE_STORAGE_KEYS.includes(key);
 }
 
 export function listOwnedStorageKeys(storage) {
@@ -187,6 +189,6 @@ export function listOwnedStorageKeys(storage) {
   return [...keys].sort();
 }
 
-if (LOCAL_STORAGE_FIXED_KEYS.length !== 65) {
-  throw new Error('Expected exactly 65 verified fixed localStorage keys');
+if (LOCAL_STORAGE_FIXED_KEYS.length !== 66) {
+  throw new Error('Expected exactly 66 verified fixed localStorage keys');
 }
