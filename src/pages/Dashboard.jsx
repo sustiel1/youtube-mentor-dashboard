@@ -31,6 +31,7 @@ import { IndexedDbStorageWarning, StorageStatusWidget } from "@/components/ui/St
 import { useStorageMeter } from "@/hooks/useStorageMeter";
 import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
 import { saveLocalVideo } from "@/lib/localVideoStore";
+import { matchesVideoTitleSearch } from "@/lib/videoTitleSearch";
 
 function mergeSelectedVideoState(fresh, prev) {
   if (!fresh) return prev;
@@ -140,7 +141,7 @@ function formatChannelScanDate(value) {
 
 function applyFilters(videos, filters, topics, mentors = []) {
   return videos.filter((video) => {
-    if (filters.search && !video.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (!matchesVideoTitleSearch(video.title, filters.search)) return false;
     if (filters.mentor !== "all" && video.mentorId !== filters.mentor) return false;
     if (filters.category !== "all") {
       const rootTopic = topics.find((t) => t.id === filters.category);
