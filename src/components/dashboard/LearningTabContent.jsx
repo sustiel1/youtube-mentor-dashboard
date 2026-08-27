@@ -14,6 +14,7 @@ import {
 import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQuickSaveActions";
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 
 function formatItem(item) {
   const stockLine = formatStockStatusText(item);
@@ -67,6 +68,10 @@ function buildPxUrl(text) {
 
 function ItemRow({
   text,
+  sourceItem = null,
+  videoId = null,
+  productionRowId = null,
+  rowTimestampSection = null,
   stockVisual = null,
   onBrain,
   saved,
@@ -81,6 +86,13 @@ function ItemRow({
 }) {
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
+      <StaticVideoTimestampLink
+        videoId={videoId}
+        item={sourceItem}
+        productionRowId={productionRowId}
+        section={rowTimestampSection}
+        displayText={text}
+      />
       {connectButton}
       <UniversalTabQuickSaveFromBulk
         bulkSelection={bulkSelection}
@@ -120,6 +132,7 @@ function ItemRow({
   return (
     <UniversalTabSelectRow
       className={rowClassName}
+      data-static-time-candidate={videoId ? 'true' : undefined}
       checkbox={onBulkToggle ? (
         <UniversalTabCheckbox checked={bulkSelected} onChange={onBulkToggle} />
       ) : null}
@@ -187,6 +200,7 @@ export function UsefulKnowledgeSourceLine({ video, mentorName = '' }) {
  */
 export function LearningTabContent({
   items = [],
+  videoId = null,
   emptyLabel = 'אין עדיין נתונים בסעיף הזה',
   onSaveToBrain,
   isSaved,
@@ -196,7 +210,9 @@ export function LearningTabContent({
   getConnectButton = null,
   rowClassName,
 }) {
-  const formatted = items.map(formatItem).filter(Boolean);
+  const formatted = items
+    .map((sourceItem) => ({ sourceItem, text: formatItem(sourceItem) }))
+    .filter(({ text }) => Boolean(text));
 
   if (formatted.length === 0) {
     return (
@@ -209,8 +225,8 @@ export function LearningTabContent({
 
   return (
     <div className="space-y-0.5" dir="rtl">
-      {formatted.map((text, i) => {
-        const stockVisual = getStockStatusVisual(items[i]);
+      {formatted.map(({ text, sourceItem }, i) => {
+        const stockVisual = getStockStatusVisual(sourceItem);
         const bulkId = bulkSelection
           ? `${bulkSelection.idPrefix}:${i}`
           : null;
@@ -221,6 +237,10 @@ export function LearningTabContent({
           <ItemRow
             key={i}
             text={text}
+            sourceItem={sourceItem}
+            videoId={videoId}
+            productionRowId={bulkId}
+            rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
             url={url}
             connectButton={connectButton}
             stockVisual={stockVisual}

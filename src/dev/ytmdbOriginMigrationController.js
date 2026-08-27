@@ -4,6 +4,7 @@ const PREPARE_CONFIRMATION = 'PREPARE 142 READ ONLY';
 const ACTIVATE_CONFIRMATION = 'ACTIVATE VERIFIED GENERATION';
 const OPERATION_LOCK = 'ytmdb-origin-migration-controller-v1';
 const EXPECTED_READY_GENERATION_ID = 'generation-1786981030945-zrx0g2ry';
+const EXPECTED_READY_SOURCE_SHA256 = 'fb8af6ca40c17ce3ce4345f3c6f940f601e0cc729f634ee69b23b03356ce52d3';
 const EXPECTED_READY_VERIFICATION_SHA256 = '3e24a91bd787fd22621867bb7aa33de1fdd3b646c1cff7f882beb857bae61d70';
 const PREPARE_ACTION_ENABLED = false;
 const VERIFY_ACTION_ENABLED = true;
@@ -106,6 +107,9 @@ function constantTimeTextEqual(left, right) {
 
 function safeErrorMessage(error) {
   if (String(error?.code || '').startsWith('metadata-')) return error.message;
+  if (String(error?.code || '').startsWith('delta-')) {
+    return `Source delta audit stopped safely at ${error.code}. No payload values were displayed.`;
+  }
   if (error?.name === 'QuotaExceededError') return 'המיגרציה נעצרה: מכסת האחסון אינה מספיקה.';
   if (error?.name === 'AbortError') return 'המיגרציה נעצרה: טרנזקציית IndexedDB בוטלה.';
   if (error?.name === 'InvalidStateError' || error?.name === 'NotFoundError') {
@@ -136,6 +140,7 @@ function updateControls() {
   const preflightButton = element('run-preflight');
   const abortButton = element('abort-controller');
   const inspectButton = element('inspect-unexpected-database');
+  const deltaButton = element('inspect-source-delta');
 
   const canPrepare = Boolean(
     PREPARE_ACTION_ENABLED
@@ -158,6 +163,7 @@ function updateControls() {
   if (preflightButton) preflightButton.disabled = busy;
   if (abortButton) abortButton.disabled = busy;
   if (inspectButton) inspectButton.disabled = busy;
+  if (deltaButton) deltaButton.disabled = busy;
   if (prepareButton) prepareButton.disabled = busy || !canPrepare;
   if (verifyButton) verifyButton.disabled = busy || !canVerify;
   if (activateButton) activateButton.disabled = busy || !canActivate;
@@ -540,10 +546,406 @@ function checksumExportPayload(items, fnv1a) {
   })));
 }
 
+function summarizeWorkspaceItems(items, integrity) {
+  const verified = integrity.verifyWorkspaceRaw(JSON.stringify(items));
+  return {
+    items: verified.items,
+    recordCount: verified.items.length,
+    activeCount: verified.items.filter((item) => !item?.archivedAt).length,
+    archivedCount: verified.items.filter((item) => Boolean(item?.archivedAt)).length,
+    idChecksum: verified.integrity.idChecksum,
+    payloadChecksum: checksumExportPayload(verified.items, integrity.fnv1a),
+    migrationChecksum: verified.integrity.payloadChecksum,
+  };
+}
+
+async function workspaceItemProofs(items, integrity) {
+  const seenIds = new Set();
+  const proofs = [];
+  for (const item of items) {
+    const id = String(item?.id || '');
+    if (seenIds.has(id)) fail('delta-duplicate-workspace-id');
+    seenIds.add(id);
+    proofs.push({
+      idHash: await integrity.sha256Text(id, crypto),
+      contentHash: await integrity.canonicalSha256(item, crypto),
+      archived: Boolean(item?.archivedAt),
+    });
+  }
+  return proofs.sort((left, right) => left.idHash.localeCompare(right.idHash));
+}
+
+function safeWorkspaceSummary(summary) {
+  return {
+    recordCount: summary.recordCount,
+    activeCount: summary.activeCount,
+    archivedCount: summary.archivedCount,
+    idChecksum: summary.idChecksum,
+    payloadChecksum: summary.payloadChecksum,
+    migrationChecksum: summary.migrationChecksum,
+  };
+}
+
+function compareUtf16CodeUnits(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+async function compareWorkspaceSources(currentRawValue, readyRawValue, integrity) {
+  const parse = (rawValue) => {
+    let items;
+    try {
+      items = JSON.parse(rawValue);
+    } catch {
+      fail('delta-workspace-invalid');
+    }
+    if (!Array.isArray(items)) fail('delta-workspace-invalid');
+    return summarizeWorkspaceItems(items, integrity);
+  };
+  const current = parse(currentRawValue);
+  const ready = parse(readyRawValue);
+  const currentProofs = await workspaceItemProofs(current.items, integrity);
+  const readyProofs = await workspaceItemProofs(ready.items, integrity);
+  const currentById = new Map(currentProofs.map((proof) => [proof.idHash, proof]));
+  const readyById = new Map(readyProofs.map((proof) => [proof.idHash, proof]));
+  const added = [];
+  const removed = [];
+  const changed = [];
+  let archivedStateChangeCount = 0;
+
+  for (const [idHash, currentProof] of currentById) {
+    const readyProof = readyById.get(idHash);
+    if (!readyProof) {
+      added.push({
+        idHash,
+        contentHash: currentProof.contentHash,
+        archived: currentProof.archived,
+      });
+      continue;
+    }
+    if (readyProof.contentHash !== currentProof.contentHash) {
+      const archivedStateChanged = readyProof.archived !== currentProof.archived;
+      if (archivedStateChanged) archivedStateChangeCount += 1;
+      changed.push({
+        idHash,
+        oldContentHash: readyProof.contentHash,
+        newContentHash: currentProof.contentHash,
+        archivedStateChanged,
+      });
+    }
+  }
+  for (const [idHash, readyProof] of readyById) {
+    if (!currentById.has(idHash)) {
+      removed.push({
+        idHash,
+        contentHash: readyProof.contentHash,
+        archived: readyProof.archived,
+      });
+    }
+  }
+
+  return {
+    current: safeWorkspaceSummary(current),
+    ready: safeWorkspaceSummary(ready),
+    delta: {
+      added,
+      removed,
+      changed,
+      archivedStateChangeCount,
+    },
+  };
+}
+
+function assertApprovedSourceEntry(entry, storageManifest) {
+  if (
+    !entry
+    || typeof entry.storageKey !== 'string'
+    || typeof entry.rawValue !== 'string'
+    || !storageManifest.isApplicationOwnedStorageKey(entry.storageKey)
+    || storageManifest.isSensitiveStorageKey(entry.storageKey)
+  ) {
+    fail('delta-source-allowlist-violation');
+  }
+}
+
+function classifyDeltaRootCause(report, storageManifest) {
+  const workspaceDelta = report.workspace.delta;
+  const workspaceChanged = workspaceDelta.added.length > 0
+    || workspaceDelta.removed.length > 0
+    || workspaceDelta.changed.length > 0
+    || JSON.stringify(report.workspace.current) !== JSON.stringify(report.workspace.ready);
+  if (workspaceChanged) return 'legitimate user-data changes after Prepare';
+
+  const keyDelta = report.keyDelta;
+  const changedKeys = [
+    ...keyDelta.added.map((entry) => entry.storageKey),
+    ...keyDelta.removed.map((entry) => entry.storageKey),
+    ...keyDelta.changed.map((entry) => entry.storageKey),
+  ];
+  if (
+    changedKeys.length > 0
+    && changedKeys.every((key) => storageManifest.isVolatileCacheStorageKey(key))
+  ) {
+    return 'volatile non-business metadata';
+  }
+  if (changedKeys.length > 0) return 'legitimate user-data changes after Prepare';
+  if (report.current.sourceSha256 !== report.ready.sourceSha256) {
+    return 'deterministic serialization/ordering defect';
+  }
+  return 'identical';
+}
+
+export async function buildSafeSourceDeltaReport({
+  currentSnapshot,
+  readySnapshot,
+  storageManifest,
+  integrity,
+}) {
+  const currentEntries = [...currentSnapshot.entries].sort((left, right) => (
+    compareUtf16CodeUnits(left.storageKey, right.storageKey)
+  ));
+  const readyEntries = [...readySnapshot.entries].sort((left, right) => (
+    compareUtf16CodeUnits(left.storageKey, right.storageKey)
+  ));
+  currentEntries.forEach((entry) => assertApprovedSourceEntry(entry, storageManifest));
+  readyEntries.forEach((entry) => assertApprovedSourceEntry(entry, storageManifest));
+
+  const currentByKey = new Map(currentEntries.map((entry) => [entry.storageKey, entry]));
+  const readyByKey = new Map(readyEntries.map((entry) => [entry.storageKey, entry]));
+  if (currentByKey.size !== currentEntries.length || readyByKey.size !== readyEntries.length) {
+    fail('delta-duplicate-source-key');
+  }
+
+  const added = [];
+  const removed = [];
+  const changed = [];
+  for (const [storageKey, currentEntry] of currentByKey) {
+    const readyEntry = readyByKey.get(storageKey);
+    if (!readyEntry) {
+      added.push({
+        storageKey,
+        category: currentEntry.domain,
+        newValueBytes: currentEntry.valueCodeUnits * 2,
+        newLogicalBytes: currentEntry.logicalBytes,
+        newSha256: currentEntry.valueSha256,
+      });
+      continue;
+    }
+    if (
+      currentEntry.valueSha256 !== readyEntry.valueSha256
+      || currentEntry.valueCodeUnits !== readyEntry.valueCodeUnits
+      || currentEntry.logicalBytes !== readyEntry.logicalBytes
+      || currentEntry.domain !== readyEntry.domain
+    ) {
+      changed.push({
+        storageKey,
+        category: currentEntry.domain,
+        oldValueBytes: readyEntry.valueCodeUnits * 2,
+        newValueBytes: currentEntry.valueCodeUnits * 2,
+        oldLogicalBytes: readyEntry.logicalBytes,
+        newLogicalBytes: currentEntry.logicalBytes,
+        byteDelta: currentEntry.logicalBytes - readyEntry.logicalBytes,
+        oldSha256: readyEntry.valueSha256,
+        newSha256: currentEntry.valueSha256,
+      });
+    }
+  }
+  for (const [storageKey, readyEntry] of readyByKey) {
+    if (!currentByKey.has(storageKey)) {
+      removed.push({
+        storageKey,
+        category: readyEntry.domain,
+        oldValueBytes: readyEntry.valueCodeUnits * 2,
+        oldLogicalBytes: readyEntry.logicalBytes,
+        oldSha256: readyEntry.valueSha256,
+      });
+    }
+  }
+
+  const currentWorkspace = currentByKey.get('workspace_library_v1');
+  const readyWorkspace = readyByKey.get('workspace_library_v1');
+  if (!currentWorkspace || !readyWorkspace) fail('delta-workspace-missing');
+  const workspace = await compareWorkspaceSources(
+    currentWorkspace.rawValue,
+    readyWorkspace.rawValue,
+    integrity,
+  );
+  const readyLogicalBytes = readyEntries.reduce((sum, entry) => sum + entry.logicalBytes, 0);
+  const fullSourceMatches = currentSnapshot.sourceHash === readySnapshot.sourceHash;
+  const activationCriticalMatches = currentSnapshot.activationCriticalSourceHash
+    === readySnapshot.activationCriticalSourceHash;
+  const report = {
+    current: {
+      keyCount: currentEntries.length,
+      logicalBytes: currentSnapshot.logicalBytes,
+      sourceSha256: currentSnapshot.sourceHash,
+      activationCriticalSourceSha256: currentSnapshot.activationCriticalSourceHash,
+      activationCriticalIntegrity: currentSnapshot.activationCriticalIntegrity,
+    },
+    ready: {
+      generationId: readySnapshot.generationId,
+      state: readySnapshot.state,
+      keyCount: readyEntries.length,
+      logicalBytes: readyLogicalBytes,
+      sourceSha256: readySnapshot.sourceHash,
+      recomputedSourceSha256: readySnapshot.recomputedSourceHash,
+      activationCriticalSourceSha256: readySnapshot.activationCriticalSourceHash,
+      activationCriticalIntegrity: readySnapshot.activationCriticalIntegrity,
+      legacyActivationCriticalMetadata: readySnapshot.legacyActivationCriticalMetadata,
+    },
+    pointers: readySnapshot.pointers,
+    workspace,
+    keyDelta: {
+      added,
+      removed,
+      changed,
+      addedCount: added.length,
+      removedCount: removed.length,
+      changedCount: changed.length,
+      currentMinusReadyLogicalBytes: currentSnapshot.logicalBytes - readyLogicalBytes,
+    },
+    transactionModes: [...readySnapshot.transactionModes],
+    allTransactionsReadonly: readySnapshot.transactionModes.every((mode) => mode === 'readonly'),
+    writeOperationCount: 0,
+    sourceIntegrity: {
+      fullSourceMatches,
+      activationCriticalMatches,
+      warning: !fullSourceMatches && activationCriticalMatches
+        ? 'volatile-cache-content-mismatch'
+        : null,
+    },
+  };
+  return {
+    ...report,
+    rootCause: classifyDeltaRootCause(report, storageManifest),
+  };
+}
+
+export async function collectReadySourceSnapshotReadOnly({
+  database,
+  generationId,
+  storageManifest,
+  integrity,
+}) {
+  const transactionModes = [];
+  const metaTransaction = database.transaction(storageManifest.APP_DATA_STORES.META, 'readonly');
+  transactionModes.push(metaTransaction.mode);
+  const metaStore = metaTransaction.objectStore(storageManifest.APP_DATA_STORES.META);
+  const [migrationMeta, activeGeneration, activeWorkspaceGeneration] = await Promise.all([
+    requestResult(metaStore.get('migration')),
+    requestResult(metaStore.get('activeGeneration')),
+    requestResult(metaStore.get('activeWorkspaceGeneration')),
+  ]);
+  await transactionDone(metaTransaction);
+  if (
+    migrationMeta?.generationId !== generationId
+    || migrationMeta?.state !== 'ready'
+    || migrationMeta?.sourceHash !== EXPECTED_READY_SOURCE_SHA256
+    || activeGeneration
+    || activeWorkspaceGeneration
+  ) {
+    fail('delta-ready-state-mismatch');
+  }
+
+  const keysTransaction = database.transaction(storageManifest.APP_DATA_STORES.SOURCE_ENTRIES, 'readonly');
+  transactionModes.push(keysTransaction.mode);
+  const keysStore = keysTransaction.objectStore(storageManifest.APP_DATA_STORES.SOURCE_ENTRIES);
+  const primaryKeys = await requestResult(keysStore.index('generationId').getAllKeys(generationId));
+  await transactionDone(keysTransaction);
+  const approvedStorageKeys = primaryKeys.map((key) => {
+    if (
+      !Array.isArray(key)
+      || key.length !== 2
+      || key[0] !== generationId
+      || typeof key[1] !== 'string'
+      || !storageManifest.isApplicationOwnedStorageKey(key[1])
+      || storageManifest.isSensitiveStorageKey(key[1])
+    ) {
+      fail('delta-source-allowlist-violation');
+    }
+    return key[1];
+  }).sort(compareUtf16CodeUnits);
+  if (new Set(approvedStorageKeys).size !== approvedStorageKeys.length) {
+    fail('delta-duplicate-source-key');
+  }
+
+  const recordsTransaction = database.transaction(storageManifest.APP_DATA_STORES.SOURCE_ENTRIES, 'readonly');
+  transactionModes.push(recordsTransaction.mode);
+  const recordsStore = recordsTransaction.objectStore(storageManifest.APP_DATA_STORES.SOURCE_ENTRIES);
+  const records = await Promise.all(approvedStorageKeys.map((storageKey) => (
+    requestResult(recordsStore.get([generationId, storageKey]))
+  )));
+  await transactionDone(recordsTransaction);
+
+  const entries = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index];
+    const storageKey = approvedStorageKeys[index];
+    assertApprovedSourceEntry(record, storageManifest);
+    if (record.generationId !== generationId || record.storageKey !== storageKey) {
+      fail('delta-source-record-mismatch');
+    }
+    const valueSha256 = await integrity.sha256Text(record.rawValue, crypto);
+    const valueCodeUnits = record.rawValue.length;
+    const logicalBytes = integrity.logicalUtf16Bytes(storageKey, record.rawValue);
+    if (
+      valueSha256 !== record.valueSha256
+      || valueCodeUnits !== record.valueCodeUnits
+      || logicalBytes !== record.logicalBytes
+    ) {
+      fail('delta-ready-corruption');
+    }
+    entries.push({
+      storageKey,
+      domain: record.domain,
+      rawValue: record.rawValue,
+      valueCodeUnits,
+      logicalBytes,
+      valueSha256,
+    });
+  }
+  entries.sort((left, right) => compareUtf16CodeUnits(left.storageKey, right.storageKey));
+  const sourceIntegrity = await integrity.calculateSourceIntegrity(entries, {
+    cryptoProvider: crypto,
+    isVolatileCacheStorageKey: storageManifest.isVolatileCacheStorageKey,
+  });
+  const recomputedSourceHash = sourceIntegrity.fullSourceHash;
+  if (recomputedSourceHash !== migrationMeta.sourceHash) fail('delta-ready-corruption');
+  if (
+    migrationMeta.activationCriticalSourceHash
+    && migrationMeta.activationCriticalSourceHash
+      !== sourceIntegrity.activationCriticalSourceHash
+  ) {
+    fail('delta-ready-corruption');
+  }
+  if (
+    migrationMeta.activationCriticalIntegrity
+    && JSON.stringify(migrationMeta.activationCriticalIntegrity)
+      !== JSON.stringify(sourceIntegrity.activationCritical)
+  ) {
+    fail('delta-ready-corruption');
+  }
+  return {
+    generationId,
+    state: migrationMeta.state,
+    sourceHash: migrationMeta.sourceHash,
+    recomputedSourceHash,
+    activationCriticalSourceHash: sourceIntegrity.activationCriticalSourceHash,
+    activationCriticalIntegrity: sourceIntegrity.activationCritical,
+    legacyActivationCriticalMetadata: !migrationMeta.activationCriticalSourceHash,
+    entries,
+    transactionModes,
+    pointers: {
+      activeGenerationAbsent: !activeGeneration,
+      activeWorkspaceGenerationAbsent: !activeWorkspaceGeneration,
+    },
+  };
+}
+
 function verifyWorkspaceSnapshot(snapshot, integrity) {
   if (
     snapshot.entries.length !== VERIFIED_BASELINE.approvedKeyCount
-    || snapshot.logicalBytes !== VERIFIED_BASELINE.logicalBytes
     || snapshot.entries.some((entry) => integrity.isSensitiveStorageKey?.(entry.storageKey))
   ) {
     fail('baseline-drift');
@@ -720,6 +1122,8 @@ async function collectPreflight({ requireApplicationDatabaseAbsent = false } = {
     migrationState: migrationMeta?.state || 'absent',
     generationId: migrationMeta?.generationId || null,
     sourceHash: snapshot.sourceHash,
+    activationCriticalSourceHash: snapshot.activationCriticalSourceHash,
+    activationCriticalIntegrity: snapshot.activationCriticalIntegrity,
     sourceLogicalBytes: snapshot.logicalBytes,
     sourceEntryCount: snapshot.entries.length,
     snapshotSha256,
@@ -743,6 +1147,8 @@ function preflightComparisonView(proof) {
     storageMode: proof.storageMode,
     workspace: proof.workspace,
     sourceHash: proof.sourceHash,
+    activationCriticalSourceHash: proof.activationCriticalSourceHash,
+    activationCriticalIntegrity: proof.activationCriticalIntegrity,
     sourceLogicalBytes: proof.sourceLogicalBytes,
     sourceEntryCount: proof.sourceEntryCount,
     snapshotSha256: proof.snapshotSha256,
@@ -765,6 +1171,8 @@ function preflightComparisonView(proof) {
         generationId: migration.generationId,
         state: migration.state,
         sourceHash: migration.sourceHash,
+        activationCriticalSourceHash: migration.activationCriticalSourceHash || null,
+        activationCriticalIntegrity: migration.activationCriticalIntegrity || null,
         workspaceSourceHash: migration.workspaceSourceHash,
         sourceLogicalBytes: migration.sourceLogicalBytes,
         counts: migration.counts,
@@ -792,6 +1200,23 @@ function sortByRecordKey(records) {
   return [...records].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
 }
 
+function activationCriticalStoreRecords(storeName, records, modules) {
+  if (storeName !== modules.storageManifest.APP_DATA_STORES.MEDIA_BLOBS) {
+    return sortByRecordKey(records);
+  }
+  return sortByRecordKey(records.map((record) => (
+    modules.storageManifest.isVolatileCacheStorageKey(record?.id)
+      ? {
+        generationId: record.generationId,
+        id: record.id,
+        videoId: record.videoId,
+        kind: record.kind,
+        integrityPolicy: 'volatile-cache-identity-only',
+      }
+      : record
+  )));
+}
+
 async function verifyReadyInternal() {
   const modules = await loadModules();
   const current = await collectPreflight();
@@ -803,9 +1228,8 @@ async function verifyReadyInternal() {
     || migrationMeta.generationId !== EXPECTED_READY_GENERATION_ID
     || !current.activeGenerationAbsent
     || application.meta?.activeWorkspaceGeneration
-    || migrationMeta.sourceHash !== current.sourceHash
     || migrationMeta.workspaceSourceHash !== current.workspaceSourceHash
-    || migrationMeta.sourceLogicalBytes !== current.sourceLogicalBytes
+    || !/^[a-f0-9]{64}$/.test(String(current.activationCriticalSourceHash || ''))
     || migrationMeta.counts?.sourceEntries !== VERIFIED_BASELINE.approvedKeyCount
     || migrationMeta.counts?.workspaceItems !== VERIFIED_BASELINE.recordCount
     || JSON.stringify(migrationMeta.integrity) !== JSON.stringify(current.workspaceIntegrity)
@@ -833,19 +1257,49 @@ async function verifyReadyInternal() {
       sortByRecordKey(actualByStore[modules.storageManifest.APP_DATA_STORES.SOURCE_ENTRIES]),
     );
     const expectedSourceHash = await modules.integrity.canonicalSha256(sortByRecordKey(expectedSources));
-    if (actualSourceHash !== expectedSourceHash) fail('ready-parity-failed');
+    const readySourceIntegrity = await modules.integrity.calculateSourceIntegrity(
+      actualByStore[modules.storageManifest.APP_DATA_STORES.SOURCE_ENTRIES].map((record) => {
+        const { generationId: recordGenerationId, ...entry } = record;
+        if (recordGenerationId !== generationId) fail('ready-parity-failed');
+        return entry;
+      }),
+      {
+        cryptoProvider: crypto,
+        isVolatileCacheStorageKey: modules.storageManifest.isVolatileCacheStorageKey,
+      },
+    );
+    if (
+      readySourceIntegrity.fullSourceHash !== migrationMeta.sourceHash
+      || readySourceIntegrity.activationCriticalSourceHash
+        !== current.activationCriticalSourceHash
+      || (
+        migrationMeta.activationCriticalSourceHash
+        && migrationMeta.activationCriticalSourceHash
+          !== readySourceIntegrity.activationCriticalSourceHash
+      )
+      || (
+        migrationMeta.activationCriticalIntegrity
+        && JSON.stringify(migrationMeta.activationCriticalIntegrity)
+          !== JSON.stringify(readySourceIntegrity.activationCritical)
+      )
+    ) {
+      fail('ready-parity-failed');
+    }
 
-    const expectedWorkspace = modules.workspaceProjection.buildWorkspaceProjectionRecords(
-      current.workspaceItems,
+    const expectedProjection = modules.migration.buildMigrationProjectionRecords(
+      current.snapshot,
       generationId,
+      current.workspaceIntegrity,
     );
     const projectionHashes = {};
-    for (const storeName of [
-      modules.storageManifest.APP_DATA_STORES.WORKSPACE_ITEMS,
-      modules.storageManifest.APP_DATA_STORES.SNAPSHOTS,
-    ]) {
-      const actualHash = await modules.integrity.canonicalSha256(sortByRecordKey(actualByStore[storeName]));
-      const expectedHash = await modules.integrity.canonicalSha256(sortByRecordKey(expectedWorkspace[storeName]));
+    for (const storeName of Object.keys(expectedProjection.records)) {
+      if (storeName === modules.storageManifest.APP_DATA_STORES.SOURCE_ENTRIES) continue;
+      const actualHash = await modules.integrity.canonicalSha256(
+        activationCriticalStoreRecords(storeName, actualByStore[storeName], modules),
+      );
+      const expectedHash = await modules.integrity.canonicalSha256(
+        activationCriticalStoreRecords(storeName, expectedProjection.records[storeName], modules),
+      );
       if (actualHash !== expectedHash) fail('ready-parity-failed');
       projectionHashes[storeName] = actualHash;
     }
@@ -898,14 +1352,28 @@ async function verifyReadyInternal() {
       sourceRecordsHash: actualSourceHash,
       stableReadCount: current.stableReadCount,
     };
+    const activationCriticalVerification = {
+      generationId,
+      activationCriticalSourceHash: readySourceIntegrity.activationCriticalSourceHash,
+      activationCriticalIntegrity: readySourceIntegrity.activationCritical,
+      projectionHashes,
+      fullSourceMismatchWarning: current.sourceHash !== migrationMeta.sourceHash,
+    };
     return {
       verified: true,
       generationId,
       sourceHash: migrationMeta.sourceHash,
+      currentSourceHash: current.sourceHash,
+      activationCriticalSourceHash: readySourceIntegrity.activationCriticalSourceHash,
+      activationCriticalIntegrity: readySourceIntegrity.activationCritical,
+      fullSourceMismatchWarning: current.sourceHash !== migrationMeta.sourceHash,
       workspaceSourceHash: migrationMeta.workspaceSourceHash,
       workspaceIntegrity: migrationMeta.integrity,
       counts: migrationMeta.counts,
       verificationHash: await modules.integrity.canonicalSha256(safeVerification),
+      activationCriticalVerificationHash: await modules.integrity.canonicalSha256(
+        activationCriticalVerification,
+      ),
       database: {
         name: application.name,
         version: application.version,
@@ -931,6 +1399,9 @@ async function verifyReadyInternal() {
       },
       hashes: {
         sourceHash: migrationMeta.sourceHash,
+        currentSourceHash: current.sourceHash,
+        expectedCurrentSourceRecordsHash: expectedSourceHash,
+        activationCriticalSourceHash: readySourceIntegrity.activationCriticalSourceHash,
         workspaceSourceHash: migrationMeta.workspaceSourceHash,
         sourceRecordsHash: actualSourceHash,
         generationStores: generationStoreHashes,
@@ -977,6 +1448,85 @@ async function inspectUnexpectedDatabase() {
   setStatus('success', 'Unexpected IndexedDB metadata inspection completed read-only. Migration actions remain blocked.');
 }
 
+async function collectSourceDeltaOnce() {
+  lastSafeGate = 'delta-location';
+  if (
+    location.origin !== CONTROLLER_ORIGIN
+    || location.pathname !== CONTROLLER_PATH
+    || location.search
+    || location.hash
+  ) {
+    fail('baseline-drift');
+  }
+  const modules = await loadModules();
+  if (modules.storageMode.getApplicationStorageMode({ env: import.meta.env || {} }) !== 'localStorage') {
+    fail('baseline-drift');
+  }
+  const currentSnapshot = await modules.migration.captureStableLocalStorage(localStorage, crypto);
+  const currentWorkspace = verifyWorkspaceSnapshot(currentSnapshot, {
+    ...modules.integrity,
+    isSensitiveStorageKey: modules.storageManifest.isSensitiveStorageKey,
+  });
+  const database = await openExistingDatabase(modules.storageManifest.APP_DATA_DB_NAME);
+  try {
+    if (database.version !== modules.storageManifest.APP_DATA_DB_VERSION) {
+      fail('delta-ready-state-mismatch');
+    }
+    const expectedStores = Object.values(modules.storageManifest.APP_DATA_STORES).sort();
+    if (!sameStrings([...database.objectStoreNames], expectedStores)) {
+      fail('delta-ready-state-mismatch');
+    }
+    const readySnapshot = await collectReadySourceSnapshotReadOnly({
+      database,
+      generationId: EXPECTED_READY_GENERATION_ID,
+      storageManifest: modules.storageManifest,
+      integrity: modules.integrity,
+    });
+    const report = await buildSafeSourceDeltaReport({
+      currentSnapshot,
+      readySnapshot,
+      storageManifest: modules.storageManifest,
+      integrity: modules.integrity,
+    });
+    return {
+      ...report,
+      current: {
+        ...report.current,
+        workspace: currentWorkspace.displayIntegrity,
+      },
+    };
+  } finally {
+    database.close();
+  }
+}
+
+async function inspectSourceDelta() {
+  setStatus('running', 'Comparing the approved localStorage source with READY using readonly transactions only…');
+  preflightProof = null;
+  readyProof = null;
+  const first = await collectSourceDeltaOnce();
+  const second = await collectSourceDeltaOnce();
+  const firstJson = JSON.stringify(first);
+  const secondJson = JSON.stringify(second);
+  if (firstJson !== secondJson) fail('delta-report-unstable');
+  if (
+    !first.allTransactionsReadonly
+    || first.writeOperationCount !== 0
+    || first.sourceIntegrity.activationCriticalMatches !== true
+    || first.rootCause === 'corruption'
+    || first.rootCause === 'unresolved'
+  ) {
+    fail('delta-audit-failed');
+  }
+  setText('source-delta-report', JSON.stringify({
+    stableSnapshotCount: 2,
+    stableDeltaReportCount: 2,
+    reportSha256: await (await loadModules()).integrity.sha256Text(firstJson, crypto),
+    ...first,
+  }, null, 2));
+  setStatus('success', 'Source delta audit completed twice with identical safe metadata. Prepare, Verify and Activate remain blocked.');
+}
+
 async function prepareMigration() {
   if (!constantTimeTextEqual(element('prepare-confirmation')?.value, PREPARE_CONFIRMATION)) {
     fail('baseline-drift');
@@ -1017,6 +1567,7 @@ async function prepareMigration() {
       || result.counts?.sourceEntries !== VERIFIED_BASELINE.approvedKeyCount
       || result.counts?.workspaceItems !== VERIFIED_BASELINE.recordCount
       || result.sourceHash !== current.sourceHash
+      || result.activationCriticalSourceHash !== current.activationCriticalSourceHash
       || result.workspaceSourceHash !== current.workspaceSourceHash
     ) {
       fail('ready-parity-failed');
@@ -1054,10 +1605,15 @@ async function verifyReady() {
     generationId: proof.generationId,
     generationState: proof.generationState,
     sourceHash: proof.sourceHash,
+    currentSourceHash: proof.currentSourceHash,
+    activationCriticalSourceHash: proof.activationCriticalSourceHash,
+    activationCriticalIntegrity: proof.activationCriticalIntegrity,
+    fullSourceMismatchWarning: proof.fullSourceMismatchWarning,
     workspaceSourceHash: proof.workspaceSourceHash,
     workspaceIntegrity: proof.workspaceIntegrity,
     counts: proof.counts,
     verificationHash: proof.verificationHash,
+    activationCriticalVerificationHash: proof.activationCriticalVerificationHash,
     database: proof.database,
     activePointers: proof.activePointers,
     generationCounts: proof.generationCounts,
@@ -1101,6 +1657,8 @@ async function activateGeneration() {
     verifiedAgain.generationId !== readyProof.generationId
     || verifiedAgain.sourceHash !== readyProof.sourceHash
     || verifiedAgain.verificationHash !== readyProof.verificationHash
+    || verifiedAgain.activationCriticalVerificationHash
+      !== readyProof.activationCriticalVerificationHash
   ) {
     fail('ready-parity-failed');
   }
@@ -1123,11 +1681,16 @@ async function activateGeneration() {
         stableReadCount: verifiedAgain.current.stableReadCount,
         storageMode: verifiedAgain.current.storageMode,
         activeGenerationAbsent: verifiedAgain.current.activeGenerationAbsent,
+        sourceHash: verifiedAgain.current.sourceHash,
+        activationCriticalSourceHash: verifiedAgain.activationCriticalSourceHash,
+        activationCriticalIntegrity: verifiedAgain.activationCriticalIntegrity,
       },
       integrity: {
         verified: true,
         generationId: verifiedAgain.generationId,
         sourceHash: verifiedAgain.sourceHash,
+        activationCriticalSourceHash: verifiedAgain.activationCriticalSourceHash,
+        activationCriticalIntegrity: verifiedAgain.activationCriticalIntegrity,
         workspaceSourceHash: verifiedAgain.workspaceSourceHash,
         workspaceIntegrity: verifiedAgain.workspaceIntegrity,
       },
@@ -1142,7 +1705,8 @@ async function activateGeneration() {
     const sourceAfter = await modules.migration.captureStableLocalStorage(localStorage, crypto);
     if (
       activated.state !== modules.migration.MIGRATION_STATES.ACTIVE
-      || sourceAfter.sourceHash !== verifiedAgain.sourceHash
+      || sourceAfter.activationCriticalSourceHash
+        !== verifiedAgain.activationCriticalSourceHash
     ) {
       fail('ready-parity-failed');
     }
@@ -1202,6 +1766,7 @@ function initializeController() {
   setText('meta-origin', location.origin);
   bindAction('run-preflight', 'preflight', runPreflight);
   bindAction('inspect-unexpected-database', 'inspect', inspectUnexpectedDatabase);
+  bindAction('inspect-source-delta', 'delta', inspectSourceDelta);
   bindAction('prepare-migration', 'prepare', prepareMigration);
   bindAction('verify-ready', 'verify', verifyReady);
   bindAction('activate-generation', 'activate', activateGeneration);
@@ -1212,4 +1777,4 @@ function initializeController() {
   updateControls();
 }
 
-initializeController();
+if (typeof document !== 'undefined') initializeController();

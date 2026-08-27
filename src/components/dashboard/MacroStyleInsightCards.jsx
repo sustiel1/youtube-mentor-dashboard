@@ -4,6 +4,7 @@ import {
 } from './MorningBriefVisualPrimitives';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { resolveSectorTableFinvizLink } from '@/lib/sectorTablePresentation';
 
 export const INSIGHT_GRID_SLOT_COUNT = 3;
 
@@ -74,6 +75,14 @@ function MacroStyleInsightCardShell({
   saveActions = null,
   dataAttrs = {},
 }) {
+  const titleSectorLink = resolveSectorTableFinvizLink(title);
+  const titleContextualLink = titleSectorLink
+    ? {
+        ticker: titleSectorLink.ticker,
+        url: titleSectorLink.url,
+        ariaLabel: `פתיחת תעודת הסל ${titleSectorLink.ticker} ב־Finviz`,
+      }
+    : null;
   const researchCls = researchTone === 'red'
     ? 'bg-red-600 hover:bg-red-700'
     : 'bg-emerald-600 hover:bg-emerald-700';
@@ -90,7 +99,21 @@ function MacroStyleInsightCardShell({
         <div className="flex-1 min-w-0 pt-0.5">
           <div className="flex items-baseline gap-2 flex-wrap" dir="rtl">
             <p className={`text-sm font-bold leading-snug flex-1 min-w-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS} break-words [overflow-wrap:anywhere]`}>
-              {renderLinkedMarketText(title) || '—'}
+              {renderLinkedMarketText(title, { contextualLink: titleContextualLink }) || '—'}
+              {titleContextualLink ? (
+                <a
+                  href={titleContextualLink.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={titleContextualLink.ariaLabel}
+                  title={titleContextualLink.ariaLabel}
+                  onClick={(event) => event.stopPropagation()}
+                  className="ms-1 inline-flex rounded-sm text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  data-contextual-sector-icon={titleContextualLink.ticker}
+                >
+                  <span aria-hidden>↗</span>
+                </a>
+              ) : null}
             </p>
             {pillLabel ? (
               <span className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold leading-none ${style.badge}`}>

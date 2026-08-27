@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <title>YTMDB Origin Inventory v2</title>
+    <style>
+      body { margin: 0; background: #0f172a; color: #e2e8f0; font: 16px/1.6 system-ui, sans-serif; }
+      main { width: min(960px, calc(100% - 32px)); margin: 32px auto; }
+      section { border: 1px solid #334155; border-radius: 12px; background: #111827; padding: 20px; }
+      button { border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+      button:disabled { opacity: .55; cursor: wait; }
+      pre { direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 8px; background: #020617; padding: 16px; }
+      [data-state="success"] { color: #86efac; }
+      [data-state="error"] { color: #fca5a5; }
+      dl { border: 1px solid #7f1d1d; border-radius: 8px; background: #450a0a; padding: 12px; }
+      dt { color: #fecaca; font-weight: 700; }
+      dd { direction: ltr; margin: 0 0 8px; overflow-wrap: anywhere; text-align: left; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Origin Inventory v2 — קריאה בלבד</h1>
+      <section>
+        <p>הכלי אינו רץ אוטומטית. הוא אינו יוצר export, אינו מוריד קובץ ואינו מפעיל migration.</p>
+        <button type="button" data-run-inventory>הרץ inventory לקריאה בלבד</button>
+        <p data-inventory-status data-state="idle">ממתין להפעלה מפורשת.</p>
+        <dl data-inventory-error hidden>
+          <dt>שם השגיאה</dt><dd data-inventory-error-name></dd>
+          <dt>הודעה</dt><dd data-inventory-error-message></dd>
+          <dt>קוד</dt><dd data-inventory-error-code></dd>
+          <dt>פעולה</dt><dd data-inventory-error-operation></dd>
+          <dt>נקודת עצירה בטוחה</dt><dd data-inventory-error-safe-stopping-point></dd>
+        </dl>
+        <pre data-inventory-output aria-live="polite"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/dev/ytmdbOriginInventoryV2.js"></script>
+  </body>
+</html>

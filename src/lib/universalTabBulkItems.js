@@ -51,6 +51,7 @@ export function buildBulkItemsFromSections(sections = [], tabScope, idPrefix = t
         sectionLabel: label || '',
         type: sourceTab,
         tabScope,
+        sectionKey: key || sourceTab,
       });
     });
   });
@@ -126,6 +127,7 @@ export function buildCardBulkItem({
   tabScope,
   type,
   sectionLabel,
+  sectionKey,
 }) {
   const text = formatCardBulkText(title, items);
   if (!text || !cardId) return null;
@@ -136,6 +138,7 @@ export function buildCardBulkItem({
     sectionLabel: sectionLabel || title || '',
     type: sourceTab,
     tabScope,
+    sectionKey: sectionKey || cardId,
     isCard: true,
   };
 }
@@ -150,6 +153,7 @@ export function buildCardBulkItemsFromSections(sections = [], tabScope, idPrefix
       tabScope: idPrefix,
       type: tabKey || tabScope,
       sectionLabel: label || '',
+      sectionKey: key,
     }))
     .filter(Boolean);
 }
@@ -167,6 +171,7 @@ export function buildBulkItemsFromTexts(texts = [], { tabScope, sectionLabel = '
       sectionLabel,
       type: sourceTab,
       tabScope,
+      sectionKey: prefix,
     }));
 }
 
@@ -247,6 +252,7 @@ export function buildPoliticalSummaryBulkItems(ps) {
       sectionLabel: l,
       type: 'summary',
       tabScope: 'summary',
+      sectionKey: k,
     }));
   });
 }
@@ -259,6 +265,7 @@ export function buildChaptersBulkItems(chapters = []) {
     sectionLabel: 'פרקים',
     type: 'chapters',
     tabScope: 'chapters',
+    sectionKey: 'chapters',
     timestamp: ch.timestamp || '',
   }));
 }

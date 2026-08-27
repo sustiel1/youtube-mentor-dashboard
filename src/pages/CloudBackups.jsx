@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useVideos, useUpdateVideo } from "@/hooks/useVideos";
 import { loadSavedAnalysis } from "@/lib/localAnalysisStore";
+import { filterAnalyzedVideos } from "@/lib/gemsAnalyzedStatus";
 import { backupAnalysisToDrive, deleteDriveFileById, isDriveConnected } from "@/lib/gdriveAnalysisStore";
 import { readDriveFile } from "@/lib/gdriveClient";
 import { cn } from "@/lib/utils";
@@ -65,15 +66,7 @@ export default function CloudBackups() {
     return s;
   }, [videos]);
 
-  const analyzedVideos = useMemo(() =>
-    videos.filter(v =>
-      v.analysisStatus === 'completed' ||
-      v.analysisStatus === 'analyzed' ||
-      !!v.analyzedAt ||
-      v.cloudBackupFileId ||
-      localAnalysisSet.has(v.id)
-    ),
-  [videos, localAnalysisSet]);
+  const analyzedVideos = useMemo(() => filterAnalyzedVideos(videos), [videos]);
 
   const filteredVideos = useMemo(() => {
     return analyzedVideos.filter(video => {

@@ -516,6 +516,9 @@ export function getMacroChangeDisplay(change, contextText = '') {
   return formatMacroDirection(original, structured);
 }
 
+const MACRO_PERCENT_THRESHOLD_RE =
+  /(?:מתחת|מעל|פחות|יותר|below|above|under|over)\s+(?:ל\s*)?(?:[-־–—]\s*)?\d+(?:\.\d+)?\s*%/i;
+
 /** Format any macro sentiment field (change, impact, description). */
 export function getMacroFieldDisplay(text, row = null) {
   const original = String(text ?? '').trim();
@@ -526,7 +529,9 @@ export function getMacroFieldDisplay(text, row = null) {
     : '';
   const ctxTone = inferMacroDirectionTone(ctx);
 
-  const numeric = formatMarketChange(original, ctx);
+  const numeric = MACRO_PERCENT_THRESHOLD_RE.test(original)
+    ? null
+    : formatMarketChange(original, ctx);
   if (numeric) return numeric;
 
   if (/^[+-]?\d+(?:\.\d+)?\s*%?$/.test(original)) return null;

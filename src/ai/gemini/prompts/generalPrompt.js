@@ -26,6 +26,8 @@ export function buildGeneralAnalysisPrompt({
       : null;
 
   return [
+    'STATIC NARRATIVE TIMES: For keyPoints, keyInsights, actionItems and usefulKnowledge objects, preserve an explicit source time as numeric timestampSeconds. When timestamped transcript segments defensibly locate the source region, store numeric estimatedStartSeconds with timestampKind: estimated and, when available, timestampSource, timestampConfidence and sourceQuote.',
+    'If there is no defensible source region, omit all time fields. Never infer a narrative item time from item order and never divide the video into equal windows.',
     'נתח את התמלול הבא בלבד והחזר JSON בלבד, בלי markdown ובלי טקסט נוסף.',
     '',
     '═══ מטרת הניתוח ═══',

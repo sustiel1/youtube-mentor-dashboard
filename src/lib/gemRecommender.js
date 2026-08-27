@@ -10,6 +10,25 @@ export function isMarketBriefWorkflowVideo(video) {
   return videoType === "morningBrief" || videoType === "eveningBrief";
 }
 
+export function resolveCanonicalBriefWorkflowVideo(video, marketBriefData = null) {
+  if (isMarketBriefWorkflowVideo(video) || marketBriefData?.contentType !== "marketBrief") {
+    return video;
+  }
+
+  const rawSubtype = String(
+    marketBriefData?.subtype || marketBriefData?.briefSubtype || ""
+  ).trim().toLowerCase();
+  const subCategory = rawSubtype === "evening" || rawSubtype === "evening-brief"
+    ? "evening-brief"
+    : "morning-brief";
+
+  return {
+    ...(video || {}),
+    contentType: "marketBrief",
+    subCategory,
+  };
+}
+
 export function resolveWorkflowGemRecommendation(video, recommendedGemKey = null) {
   return isMarketBriefWorkflowVideo(video) ? MARKET_BRIEF_GEM_KEY : recommendedGemKey;
 }

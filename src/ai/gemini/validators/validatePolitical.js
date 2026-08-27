@@ -4,6 +4,11 @@
  * and external GEM JSON format (timestamp strings, nested ideologyAnalysis, etc).
  */
 
+import {
+  dedupeTimedNarratives,
+  normalizeTimedNarrativeArray,
+} from './timedNarrative.js';
+
 function tsToSec(ts) {
   if (typeof ts === 'number' && Number.isFinite(ts)) return ts;
   if (typeof ts !== 'string') return null;
@@ -60,7 +65,7 @@ export function normalizePoliticalResult(parsed) {
 
   // allPoints → merge into keyPoints
   const allPointsExtra = Array.isArray(parsed?.allPoints)
-    ? pickStrings(parsed.allPoints)
+    ? normalizeTimedNarrativeArray(parsed.allPoints)
     : [];
 
   // brainInsights → merge into keyPoints
@@ -70,7 +75,7 @@ export function normalizePoliticalResult(parsed) {
 
   // knowledgePoints (GEM format) → merge into keyPoints; supports strings AND objects ({ fact, insight, rule, warning, point, text, ... })
   const rawKnowledgePoints = parsed?.knowledgePoints;
-  const knowledgePointsExtra = pickStrings(Array.isArray(rawKnowledgePoints) ? rawKnowledgePoints : []);
+  const knowledgePointsExtra = normalizeTimedNarrativeArray(Array.isArray(rawKnowledgePoints) ? rawKnowledgePoints : []);
   if (Array.isArray(rawKnowledgePoints) && rawKnowledgePoints.length > 0) {
     console.log('[knowledge-debug] validatePolitical', {
       rawKnowledgePointsCount: rawKnowledgePoints.length,
@@ -79,10 +84,13 @@ export function normalizePoliticalResult(parsed) {
     });
   }
 
-  const baseKeyPoints = pickStrings(parsed?.keyPoints);
-  let mergedKeyPoints = [
-    ...new Set([...baseKeyPoints, ...allPointsExtra, ...brainInsightsExtra, ...knowledgePointsExtra]),
-  ].slice(0, 60);
+  const baseKeyPoints = normalizeTimedNarrativeArray(parsed?.keyPoints);
+  let mergedKeyPoints = dedupeTimedNarratives([
+    ...baseKeyPoints,
+    ...allPointsExtra,
+    ...brainInsightsExtra,
+    ...knowledgePointsExtra,
+  ], 60);
 
   // Fallback: if keyPoints empty after merge, derive reusable insights from other rich fields
   if (mergedKeyPoints.length === 0) {
@@ -94,7 +102,7 @@ export function normalizePoliticalResult(parsed) {
       ...pickStrings(parsed?.weakPoints).slice(0, 5),
       ...pickStrings(parsed?.counterArguments).slice(0, 5),
     ];
-    mergedKeyPoints = [...new Set(fallback)].slice(0, 30);
+    mergedKeyPoints = dedupeTimedNarratives(fallback, 30);
   }
 
   // chapters — support both startSeconds (Claude) and timestamp "HH:MM:SS" (GEM)
@@ -204,7 +212,7 @@ export function normalizePoliticalResult(parsed) {
       } : null);
 
   // weakPoints: merge from parsed + ideologyAnalysis.logicalWeaknesses
-  const weakPoints = pickStrings([
+  const weakPoints = normalizeTimedNarrativeArray([
     ...(Array.isArray(parsed?.weakPoints) ? parsed.weakPoints : []),
     ...(Array.isArray(ideologyData?.logicalWeaknesses) ? ideologyData.logicalWeaknesses : []),
   ]);
@@ -213,10 +221,10 @@ export function normalizePoliticalResult(parsed) {
     ...parsed,
     contentType: 'political',
     keyPoints: mergedKeyPoints,
-    arguments: pickStrings(parsed?.arguments),
+    arguments: normalizeTimedNarrativeArray(parsed?.arguments),
     weakPoints,
-    counterArguments: pickStrings(parsed?.counterArguments),
-    socialMediaReplies: pickStrings(parsed?.socialMediaReplies),
+    counterArguments: normalizeTimedNarrativeArray(parsed?.counterArguments),
+    socialMediaReplies: normalizeTimedNarrativeArray(parsed?.socialMediaReplies),
     chapters,
     tags: pickStrings(parsed?.tags),
     networkSlogans,

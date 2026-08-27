@@ -3,7 +3,7 @@ import { CATEGORY_TO_NAME } from "@/config/topicConfig";
 const ORDER_KEY = "ym_topic_order";
 
 export function getMainTopics(topics = []) {
-  return topics.filter((topic) => topic.isMainCategory || !topic.parentId);
+  return topics.filter((topic) => !topic.parentId);
 }
 
 function loadTopicOrder() {

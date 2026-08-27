@@ -3,10 +3,20 @@
  * Extracted from vite.config.js geminiFullAnalysisJsonSchemaExample.
  */
 export function getGeneralSchemaExample() {
+  const timedNarrativeItem = {
+    text: '...',
+    timestampSeconds: null,
+    estimatedStartSeconds: null,
+    estimatedEndSeconds: null,
+    timestampKind: null,
+    timestampSource: null,
+    timestampConfidence: null,
+    sourceQuote: null,
+  };
   return JSON.stringify({
     shortSummary: '...',
     fullSummary: '...',
-    keyPoints: ['...'],
+    keyPoints: [timedNarrativeItem],
     chapters: [
       {
         title: '...',
@@ -17,13 +27,13 @@ export function getGeneralSchemaExample() {
       },
     ],
     mainLesson: '...',
-    keyInsights: ['...'],
+    keyInsights: [timedNarrativeItem],
     rules: ['...'],
-    actionItems: ['...'],
+    actionItems: [timedNarrativeItem],
     mistakesToAvoid: ['...'],
     strategyOrMethod: '...',
     tags: ['...'],
-    usefulKnowledge: ['...'],
+    usefulKnowledge: [timedNarrativeItem],
     insights: ['...'],
     keyTakeaways: ['...'],
     sentiment: 'תיאור קצר של סנטימנט הדוברים/תוכן (חיובי, ניטרלי, ביקורתי, מעורר השראה, וכו׳)',

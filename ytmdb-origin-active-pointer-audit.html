@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>YouTube Mentor Dashboard — Active Pointer Audit</title>
+    <style>
+      :root { color-scheme: light; font-family: Arial, sans-serif; }
+      body { max-width: 760px; margin: 3rem auto; padding: 0 1rem; color: #172033; }
+      main { border: 1px solid #dbe2ee; border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 30px #17203312; }
+      button { border: 0; border-radius: 10px; padding: .75rem 1rem; background: #3157d5; color: white; cursor: pointer; }
+      button:disabled { cursor: wait; opacity: .65; }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: .6rem 1rem; margin-top: 1.25rem; }
+      dt { font-weight: 700; }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      [data-state="success"] { color: #087443; }
+      [data-state="error"] { color: #b42318; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ביקורת מצביעי דור פעיל</h1>
+      <p id="audit-status" data-state="idle">הביקורת לא הופעלה. לא בוצעה עסקת IndexedDB.</p>
+      <button id="run-active-pointer-audit" type="button">הפעל ביקורת קריאה בלבד</button>
+      <dl aria-live="polite">
+        <dt>מסד נתונים</dt><dd id="audit-database">—</dd>
+        <dt>Active Generation</dt><dd id="audit-active-generation">—</dd>
+        <dt>Workspace Generation</dt><dd id="audit-workspace-generation">—</dd>
+        <dt>זהות</dt><dd id="audit-equality">—</dd>
+        <dt>מצב דור</dt><dd id="audit-generation-state">—</dd>
+        <dt>קריאות יציבות</dt><dd id="audit-stable-reads">0</dd>
+        <dt>פתיחות מסד נתונים</dt><dd id="audit-open-count">0</dd>
+        <dt>עסקאות readonly</dt><dd id="audit-readonly-transactions">0</dd>
+        <dt>עסקאות readwrite</dt><dd id="audit-readwrite-transactions">0</dd>
+        <dt>קריאות מטא־דאטה</dt><dd id="audit-metadata-reads">0</dd>
+        <dt>קריאות אוסף יומן</dt><dd id="audit-journal-aggregate-reads">0</dd>
+        <dt>פעולות count ביומן</dt><dd id="audit-journal-count-operations">0</dd>
+        <dt>קריאות רשומות מקור</dt><dd id="audit-source-entry-reads">0</dd>
+        <dt>קריאות אוסף הקרנות</dt><dd id="audit-projection-aggregate-reads">0</dd>
+        <dt>כתיבות</dt><dd id="audit-write-count">0</dd>
+        <dt>מודל שושלת</dt><dd id="audit-lineage-model">—</dd>
+        <dt>רשומות יומן</dt><dd id="audit-journal-count">0</dd>
+        <dt>פעולות</dt><dd id="audit-operation-counts">—</dd>
+        <dt>שינויים</dt><dd id="audit-change-counts">—</dd>
+        <dt>Tombstones</dt><dd id="audit-tombstone-count">0</dd>
+        <dt>טווח יומן</dt><dd id="audit-journal-range">—</dd>
+        <dt>SHA-256 יומן</dt><dd id="audit-journal-hash">—</dd>
+        <dt>SHA-256 הקרנה</dt><dd id="audit-projection-hash">—</dd>
+        <dt>ספירות Workspace</dt><dd id="audit-record-counts">—</dd>
+        <dt>Checksums</dt><dd id="audit-checksums">—</dd>
+        <dt>Checksums פיזיים</dt><dd id="audit-raw-checksums">—</dd>
+        <dt>השוואת עוגן</dt><dd id="audit-anchor-comparison">—</dd>
+        <dt>שערי baseline</dt><dd><pre id="audit-baseline-checks">—</pre></dd>
+        <dt>ציפיות היסטוריות</dt><dd><pre id="audit-historical-checks">—</pre></dd>
+        <dt>כלל קנוני מחויב</dt><dd id="audit-canonical-rule">—</dd>
+        <dt>Checksums קנון UI</dt><dd id="audit-ui-canonical-checksums">—</dd>
+        <dt>סיווג שלוש התוספות</dt><dd><pre id="audit-duplicate-classifications">—</pre></dd>
+        <dt>קבוצות כפילות בטוחות</dt><dd><pre id="audit-duplicate-groups">—</pre></dd>
+        <dt>SHA-256 דוח כפילויות</dt><dd id="audit-duplicate-report-hash">—</dd>
+        <dt>שלמות</dt><dd id="audit-integrity-status">—</dd>
+        <dt>SHA-256 דוח בטוח</dt><dd id="audit-report-hash">—</dd>
+      </dl>
+    </main>
+    <script type="module" src="/src/dev/ytmdbOriginActivePointerAudit.js"></script>
+  </body>
+</html>

@@ -3,9 +3,41 @@
 // `video.transcript` or cache from a prior dev fetch — otherwise returns null.
 
 import { saveSegments, hasSegments } from '@/lib/localSegmentStore';
+import {
+  deleteTranscriptLocalCache,
+  getTranscriptPersistenceDecision,
+  isTranscriptLocalStoragePersistenceError,
+  readTranscriptLocalCache,
+  TranscriptLocalStoragePersistenceError,
+  writeTranscriptLocalCache,
+} from '@/lib/persistence/transcriptLocalStorageStore';
+import {
+  APPLICATION_STORAGE_MODES,
+  getApplicationStorageMode,
+} from '@/lib/persistence/storageMode';
 
-const CACHE_LS_KEY = 'yt_mentor_transcript_cache_v1';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export function getTranscriptStorageDiagnostics({
+  env = import.meta.env,
+  location = globalThis.location,
+} = {}) {
+  return getTranscriptPersistenceDecision({
+    requestedBackend: getApplicationStorageMode({ env }),
+    location,
+  });
+}
+
+function assertLocalStorageTranscriptBackend() {
+  const diagnostics = getTranscriptStorageDiagnostics();
+  if (diagnostics.backend !== APPLICATION_STORAGE_MODES.LOCAL_STORAGE) {
+    throw new TranscriptLocalStoragePersistenceError(
+      `Backend התמלול שנבחר עבור ${diagnostics.origin || 'origin לא ידוע'} הוא ${diagnostics.backend}; לא בוצעה כתיבה ל-localStorage או ל-IndexedDB.`,
+      { code: 'transcript-backend-not-localstorage', operation: 'select-backend' },
+    );
+  }
+  return diagnostics;
+}
 
 function buildTranscriptFailure(reason, diagnostics = null, transcriptStatus = "unavailable", meta = null) {
   return {
@@ -46,22 +78,6 @@ export function validateTranscriptUsable(payload) {
   return { ok: true, reason: null, segments, totalChars, timestampedCount, transcriptStatus, transcriptQuality, usablePartial };
 }
 
-function readCache() {
-  try {
-    return JSON.parse(localStorage.getItem(CACHE_LS_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function writeCache(map) {
-  try {
-    localStorage.setItem(CACHE_LS_KEY, JSON.stringify(map));
-  } catch {
-    // ignore
-  }
-}
-
 function normalizeSegment(segment) {
   const startSeconds = Number(segment?.startSeconds ?? segment?.start ?? 0);
   const durationSeconds = Number(segment?.durationSeconds ?? segment?.duration ?? segment?.dur ?? 0);
@@ -81,10 +97,7 @@ function normalizeSegment(segment) {
  */
 export function hasTranscript(videoId) {
   if (!videoId) return false;
-  const e = readCache()[videoId];
-  if (!e?.body || typeof e.body !== 'string' || e.body.length < 30) return false;
-  if (!e.fetchedAt) return false;
-  return Date.now() - new Date(e.fetchedAt).getTime() < CACHE_TTL_MS;
+  return Boolean(readTranscriptLocalCache(videoId, { maxAgeMs: CACHE_TTL_MS }));
 }
 
 /**
@@ -248,24 +261,23 @@ function parseVttTime(s) {
 }
 
 export function clearTranscriptCache(videoId) {
-  if (!videoId) return false;
-  const cache = readCache();
-  if (!(videoId in cache)) return false;
-  delete cache[videoId];
-  writeCache(cache);
-  return true;
+  try {
+    return deleteTranscriptLocalCache(videoId);
+  } catch {
+    return false;
+  }
 }
 
 export async function fetchTranscriptPayload(videoId) {
   if (!videoId) return null;
+  const storageDiagnostics = assertLocalStorageTranscriptBackend();
 
-  const cached = readCache()[videoId];
-  if (
-    cached?.body &&
-    typeof cached.body === 'string' &&
-    cached.fetchedAt &&
-    Date.now() - new Date(cached.fetchedAt).getTime() < CACHE_TTL_MS
-  ) {
+  if (import.meta.env.DEV) {
+    console.info('[transcript-storage] selected', storageDiagnostics);
+  }
+
+  const cached = readTranscriptLocalCache(videoId, { maxAgeMs: CACHE_TTL_MS });
+  if (cached) {
     const parsed = parseTranscript(cached);
     if (import.meta.env.DEV) {
       console.info(`[transcript] found count=${parsed.lines.length} lang=${cached.lang || 'unknown'} source=cache`);
@@ -278,6 +290,11 @@ export async function fetchTranscriptPayload(videoId) {
       lang: cached.lang || null,
       segments: parsed.lines,
       fetchedAt: cached.fetchedAt,
+      persistence: {
+        ok: true,
+        storage: 'localStorage',
+        status: 'existing-verified',
+      },
     };
   }
 
@@ -308,9 +325,7 @@ export async function fetchTranscriptPayload(videoId) {
       segments: parsed.lines,
       fetchedAt: new Date().toISOString(),
     };
-    const map = readCache();
-    map[videoId] = payload;
-    writeCache(map);
+    const persistence = writeTranscriptLocalCache(videoId, payload);
     console.log(`[transcript-payload] parsedLines=${parsed.lines.length} lang=${payload.lang || 'unknown'}`);
     if (parsed.lines.length > 0) {
       saveSegments(videoId, parsed.lines);
@@ -318,8 +333,9 @@ export async function fetchTranscriptPayload(videoId) {
     if (import.meta.env.DEV) {
       console.info(`[transcript] found count=${parsed.lines.length} lang=${payload.lang || 'unknown'}`);
     }
-    return payload;
-  } catch {
+    return { ...payload, persistence };
+  } catch (error) {
+    if (isTranscriptLocalStoragePersistenceError(error)) throw error;
     if (import.meta.env.DEV) {
       console.info('[transcript] unavailable reason=request-failed');
     }

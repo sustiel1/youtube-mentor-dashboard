@@ -44,10 +44,10 @@ import {
   validateChaptersForSave,
   validateChapterTimelineCoverage,
 } from "@/services/videoAnalytics";
-import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache } from "@/services/youtubeTranscript";
+import { fetchTranscript, fetchTranscriptPayload, getBestTranscript, parseTranscript, validateTranscriptUsable, clearTranscriptCache, getTranscriptStorageDiagnostics } from "@/services/youtubeTranscript";
 import { buildExternalVideoObject } from "@/services/youtubeOEmbed";
 import { clearSegments } from "@/lib/localSegmentStore";
-import { getVideoTranscriptText, resolveTranscriptForChapters } from "@/lib/videoTranscriptUtils";
+import { getTranscriptLookupVideoIds, getVideoTranscriptText, resolveTranscriptForChapters } from "@/lib/videoTranscriptUtils";
 import { deleteChunks } from "@/lib/localChunkStore";
 import { extractTimestampsFromDescription, getVideoIdFromUrl } from "@/services/youtubeMetadata";
 import { fetchVideoDescription, fetchVideoMetadata } from "@/services/youtubeApi";
@@ -56,7 +56,7 @@ import {
   setCachedVideoMetadata,
   shouldFetchVideoMetadata,
 } from "@/services/youtubeChapterCache";
-import { loadVideos } from "@/services/videoStorage";
+import { getLastVideoStorageWriteError, loadVideos } from "@/services/videoStorage";
 import { usePersistedVideo } from "@/hooks/usePersistedVideo";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
@@ -66,6 +66,11 @@ import {
   loadSavedAnalysis,
   saveSavedAnalysis,
 } from "@/lib/localAnalysisStore";
+import {
+  completeGemsAnalysisProvenance,
+  createPendingGemsAnalysisProvenance,
+  isVideoAnalyzed,
+} from "@/lib/gemsAnalyzedStatus";
 import { replaceLocalNotesForVideo } from "@/lib/localNoteStore";
 import {
   Dialog,
@@ -139,7 +144,24 @@ import {
 } from "@/config/workspaceHeadingRegistry";
 import { getWorkspaceItemSemanticTags } from "@/utils/workspaceMarketDimensions";
 import { QUICK_COPY_ACTIONS, QUICK_COPY_GROUPS } from "@/ai/quickCopyPrompts";
-import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName } from "@/lib/gemRecommender";
+import {
+  buildCanonicalGemsRegenerationPrompt,
+  buildGemsJsonRepairReport as buildValidatedGemsJsonRepairReport,
+  buildSafeGemsRepairReportSnapshot,
+  canonicalizeGemsPayloadForPersistence,
+  parseAndValidateGemsJson,
+  repairGemsJsonDeterministically,
+  selectAutomaticDeterministicGemsRepair,
+} from "@/lib/gemsJsonRepair";
+import {
+  GemsLocalPersistenceError,
+  getGemsDraftPersistenceWarning,
+  GEMS_STORAGE_QUOTA_MESSAGE,
+  persistCommittedMarketBrief,
+  persistVerifiedLocalValue,
+} from "@/lib/gemsLocalPersistence";
+import { requestGemsJsonRepair } from "@/services/gemsJsonRepair";
+import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName, resolveCanonicalBriefWorkflowVideo } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, MARKET_BRIEF_GEM_LABEL, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
@@ -152,6 +174,19 @@ import {
   persistMarketBriefData,
   preserveManualOverridesOnReanalysis,
 } from "@/lib/manualBriefOverrides";
+import {
+  selectNewestMarketBriefCandidate,
+  stampMarketBriefSource,
+} from "@/lib/marketBriefSourceSelection";
+import {
+  readCanonicalMarketBrief,
+  writeCanonicalMarketBrief,
+} from "@/lib/persistence/marketBriefCanonicalStore";
+import { readTranscriptLocalCache } from "@/lib/persistence/transcriptLocalStorageStore";
+import {
+  APPLICATION_STORAGE_MODES,
+  getApplicationStorageMode,
+} from "@/lib/persistence/storageMode";
 import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
 import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
 import { updateLocalVideo } from "@/lib/localVideoStore";
@@ -189,8 +224,18 @@ import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
 import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
 import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
-import { createGeminiJsonDebugReport } from '@/lib/geminiJsonDebugReport';
+import {
+  classifyGemsDiagnostic,
+  createGemsImportDiagnosticReport,
+  createGemsRecoveryStatusReport,
+} from '@/lib/gemsImportDiagnosticReport';
 import { UniversalTabSectionLabelRow, buildSectionChildItems } from "@/components/shared/UniversalTabSectionLabelRow";
+import { StaticVideoTimestampLink, StaticVideoTimestampProvider } from "@/components/shared/StaticVideoTimestampLink";
+import RowTimestampGenerator from "@/components/dashboard/RowTimestampGenerator";
+import { buildRowTimestampAnalysis, buildRowTimestampDescriptors, getRowTimestampActionState } from "@/lib/rowExtraction";
+import { createLocalStorageStore, createRowTimestampResolver, indexAnnotationsForVideo } from "@/lib/rowTimestampSidecar";
+import { mergeRowTimestampsIntoAnalysis } from "@/lib/rowTimestampMerge";
+import { buildRowTimestampTranscript, generateRowTimestamps, loadRowTimestampTranscript, resolveRowTimestampYoutubeId } from "@/services/rowTimestamps";
 import { ObsidianSaveLabel } from "@/components/shared/ObsidianIcon";
 import { UniversalTabBulkProvider } from "@/context/UniversalTabBulkContext";
 import { UniversalTabBulkToolbar } from "@/components/dashboard/UniversalTabBulkToolbar";
@@ -2178,22 +2223,92 @@ export function VideoDetailPanel({
   const { video: persistedVideo, patch: patchVideo, setVideo: setVideoState } = usePersistedVideo(videoProp?.id, videoProp);
   // Use videoProp as fallback while the persisted-state hook initializes on first select
   const video = persistedVideo ?? videoProp;
+  const transcriptStorageDiagnostics = getTranscriptStorageDiagnostics();
+  useEffect(() => {
+    if (transcriptStorageDiagnostics.backend !== APPLICATION_STORAGE_MODES.LOCAL_STORAGE) return;
+    const savedTranscript = getTranscriptLookupVideoIds(video)
+      .map((videoId) => readTranscriptLocalCache(videoId))
+      .find(Boolean);
+    if (!savedTranscript) return;
+    setVideoState((current) => {
+      if (!current) return current;
+      const currentImportedAt = Date.parse(current.transcriptImportedAt || '') || 0;
+      const savedImportedAt = Date.parse(savedTranscript.importedAt || savedTranscript.fetchedAt || '') || 0;
+      const currentHasTranscript = (
+        typeof current.transcript === 'string' && current.transcript.trim().length >= 40
+      ) || (
+        Array.isArray(current.transcriptSegments)
+        && current.transcriptSegments.reduce((sum, segment) => sum + String(segment?.text || '').trim().length, 0) >= 40
+      );
+      if (currentHasTranscript && currentImportedAt >= savedImportedAt) return current;
+      return {
+        ...current,
+        transcript: savedTranscript.body,
+        transcriptSegments: savedTranscript.segments,
+        transcriptSource: savedTranscript.source,
+        transcriptLanguage: savedTranscript.lang,
+        transcriptStatus: savedTranscript.status,
+        transcriptQuality: savedTranscript.quality,
+        transcriptLength: savedTranscript.body.length,
+        transcriptError: null,
+        transcriptImportedAt: savedTranscript.importedAt || savedTranscript.fetchedAt,
+      };
+    });
+  }, [
+    setVideoState,
+    transcriptStorageDiagnostics.backend,
+    video?.id,
+    video?.link,
+    video?.url,
+    video?.videoId,
+    video?.videoUrl,
+    video?.youtubeId,
+    video?.youtubeUrl,
+  ]);
+  const [rowTimestampVersion, setRowTimestampVersion] = useState(0);
+  const rowTimestampStore = useMemo(() => createLocalStorageStore(), []);
+  const rowTimestampRecordId = video?.id || video?._id || null;
+  const rowTimestampIndex = useMemo(
+    () => rowTimestampRecordId ? indexAnnotationsForVideo(rowTimestampStore, rowTimestampRecordId) : new Map(),
+    [rowTimestampStore, rowTimestampRecordId, rowTimestampVersion],
+  );
+  const timestampedVideo = useMemo(
+    () => mergeRowTimestampsIntoAnalysis(video, rowTimestampIndex),
+    [video, rowTimestampIndex],
+  );
   const [selectedItems, setSelectedItems] = useState(() => video?.selectedKnowledgeItems ?? {});
   const [isKnowledgePickerOpen, setIsKnowledgePickerOpen] = useState(false);
   const [isTranscriptViewerOpen, setIsTranscriptViewerOpen] = useState(false);
   const [isGemsPasteOpen, setIsGemsPasteOpen] = useState(false);
   const [isGemRawOpen, setIsGemRawOpen] = useState(false);
   const [gemsPasteInput, setGemsPasteInput] = useState("");
+  const [gemsPasteInputSource, setGemsPasteInputSource] = useState('empty');
   const [gemsCopyStatus, setGemsCopyStatus] = useState(null);
   const [gemsPasteError, setGemsPasteError] = useState("");
+  const [gemsDraftPersistenceWarning, setGemsDraftPersistenceWarning] = useState("");
+  const [gemsPersistenceError, setGemsPersistenceError] = useState("");
   const [gemsParsedErrorInfo, setGemsParsedErrorInfo] = useState(null);
   const [gemsRepairApplied, setGemsRepairApplied] = useState(false);
   const [gemsErrorContext, setGemsErrorContext] = useState(null);
   const [isAiRepairingGemsJson, setIsAiRepairingGemsJson] = useState(false);
   const [gemsAiRepairResult, setGemsAiRepairResult] = useState(null);
+  const [lastGemsRepairReport, setLastGemsRepairReport] = useState(null);
+  const [gemsRecoveryStatusReport, setGemsRecoveryStatusReport] = useState('');
   const [gemsAiRepairFailed, setGemsAiRepairFailed] = useState(false);
+  const gemsDiagnosticOccurrencesRef = useRef(new Map());
   const [gemsJsonApplied, setGemsJsonApplied] = useState(false);
   const [marketBriefData, setMarketBriefData] = useState(null);
+  const currentGemsVideoId = video?.id || video?.youtubeId || null;
+  useEffect(() => {
+    const snapshot = buildSafeGemsRepairReportSnapshot(gemsAiRepairResult, {
+      videoId: currentGemsVideoId,
+    });
+    if (snapshot) setLastGemsRepairReport(snapshot);
+  }, [currentGemsVideoId, gemsAiRepairResult]);
+  const rowTimestampAnalysis = useMemo(
+    () => buildRowTimestampAnalysis(video || {}, marketBriefData),
+    [video, marketBriefData],
+  );
   const [politicalSummary, setPoliticalSummary] = useState(null);
   const [isPoliticalSummaryLoading, setIsPoliticalSummaryLoading] = useState(false);
   const [politicalSummaryError, setPoliticalSummaryError] = useState(null);
@@ -2307,39 +2422,80 @@ export function VideoDetailPanel({
   }, [video?.id]);
   useEffect(() => { setSelectedItems(video?.selectedKnowledgeItems ?? {}); }, [video?.id]);
   useEffect(() => {
-    if (!video?.id && !video?.youtubeId) { setMarketBriefData(null); return; }
+    let cancelled = false;
+    if (!video?.id && !video?.youtubeId) { setMarketBriefData(null); return undefined; }
     const ids = [...new Set([video.id, video.youtubeId].filter(Boolean))];
-    let loaded = null;
-    let loadedFromKey = null;
-    for (const id of ids) {
+    const candidates = [];
+    ids.forEach((id, fallbackOrder) => {
       const key = `market_brief_${id}`;
       try {
         const stored = localStorage.getItem(key);
         if (stored) {
-          loaded = JSON.parse(stored);
-          loadedFromKey = key;
-          break;
+          candidates.push({
+            data: JSON.parse(stored),
+            origin: key,
+            fallbackOrder,
+          });
         }
       } catch {
-        loaded = null;
+        // Ignore a corrupt legacy alias and continue checking other candidates.
       }
+    });
+    if (video?.marketBriefData) {
+      candidates.push({
+        data: video.marketBriefData,
+        origin: 'video-record',
+        explicitTimestamp: video.marketBriefSavedAt,
+        fallbackOrder: ids.length,
+      });
     }
-    if (!loaded) loaded = video?.marketBriefData ?? null;
-    setMarketBriefData(loaded);
-    if (import.meta.env.DEV) {
+    const applySelectedCandidate = (availableCandidates) => {
+      if (cancelled) return;
+      const selected = selectNewestMarketBriefCandidate(availableCandidates);
+      const loaded = selected?.data ?? null;
+      setMarketBriefData(loaded);
+      setGemsJsonApplied(Boolean(loaded));
+      if (!import.meta.env.DEV) return;
       console.log('[MarketBriefLoad]', {
         videoId: video.id ?? null,
         youtubeId: video.youtubeId ?? null,
         keysTried: ids.map((id) => `market_brief_${id}`),
-        loadedFromKey,
+        loadedFromKey: selected?.origin ?? null,
+        resolvedTimestamp: selected?.resolvedTimestamp
+          ? new Date(selected.resolvedTimestamp).toISOString()
+          : null,
         exists: !!loaded,
         contentType: loaded?.contentType ?? null,
         hasRawData: !!loaded?.rawData,
         hasUtSummary: !!loaded?.universalTabs?.summary,
         hasUtSpecialized: !!loaded?.universalTabs?.specialized,
       });
+    };
+
+    applySelectedCandidate(candidates);
+    if (getApplicationStorageMode() === APPLICATION_STORAGE_MODES.INDEXED_DB) {
+      Promise.all(ids.map((id) => readCanonicalMarketBrief(id)))
+        .then((results) => {
+          const indexedDbCandidates = results
+            .filter(Boolean)
+            .map((result, index) => ({
+              data: result.data,
+              origin: `${result.storage}:${result.storageKey}`,
+              fallbackOrder: candidates.length + index,
+            }));
+          applySelectedCandidate([...candidates, ...indexedDbCandidates]);
+        })
+        .catch((error) => {
+          if (import.meta.env.DEV) {
+            console.warn('[MarketBriefLoad] IndexedDB read failed; legacy candidates retained', {
+              exceptionName: error?.name || 'Error',
+              exceptionMessage: error?.message || String(error),
+            });
+          }
+        });
     }
-  }, [video?.id, video?.youtubeId, video?.marketBriefData]);
+    return () => { cancelled = true; };
+  }, [video?.id, video?.youtubeId, video?.marketBriefData, video?.marketBriefSavedAt]);
   useEffect(() => {
     if (!video) { setPoliticalSummary(null); return; }
     const key = `political_summary_${video.id || video.youtubeId}`;
@@ -2368,27 +2524,41 @@ export function VideoDetailPanel({
   useEffect(() => {
     if (!isGemsPasteOpen) return;
     setGemsPasteError('');
+    setGemsDraftPersistenceWarning('');
+    setGemsPersistenceError('');
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
     setGemsErrorContext(null);
-    if (!video?.id) { setGemsPasteInput(''); return; }
-    // If user deliberately cleared, don't restore
-    if (localStorage.getItem(`gems-paste-cleared-${video.id}`) === '1') {
+    const videoId = video?.id || video?.youtubeId;
+    if (!videoId) {
       setGemsPasteInput('');
+      setGemsPasteInputSource('empty');
       return;
     }
-    setGemsPasteInput(localStorage.getItem(`gems-paste-${video.id}`) || '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGemsPasteOpen]);
+    let draft = '';
+    try { draft = localStorage.getItem(`gems-paste-${videoId}`) || ''; } catch { /* optional draft */ }
+    if (draft.trim()) {
+      setGemsPasteInput(draft);
+      setGemsPasteInputSource('draft');
+      return;
+    }
+    const savedPayload = marketBriefData || video?.marketBriefData || null;
+    if (savedPayload) {
+      setGemsPasteInput(JSON.stringify(canonicalizeGemsPayloadForPersistence(savedPayload), null, 2));
+      setGemsPasteInputSource('canonical');
+      return;
+    }
+    setGemsPasteInput('');
+    setGemsPasteInputSource('empty');
+  }, [isGemsPasteOpen, marketBriefData, video?.id, video?.youtubeId, video?.marketBriefData]);
   useEffect(() => {
     setCategoryOverride(null);
     setSubCategoryOverride(null);
     setRecApplied(false);
     setVaultSubtopics([]);
     setGemOverride(video?.gemOverride ?? null);
-    const appliedKey = video?.id ? `gems-applied-${video.id}` : null;
-    setGemsJsonApplied(appliedKey ? localStorage.getItem(appliedKey) === 'true' : false);
-  }, [video?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    setGemsJsonApplied(isVideoAnalyzed(video));
+  }, [video]);
   useEffect(() => {
     if (pendingBrainSave && !isKnowledgePickerOpen) {
       setBrainPickerOpen(true);
@@ -2477,13 +2647,13 @@ export function VideoDetailPanel({
   }, [subCategoryOverride, video?.confirmedSubCategory, video?.userConfirmedSubCategory, video?.subCategory, videoProp?.subCategory]);
 
   const effectiveVideo = useMemo(() => {
-    if (!video) return video;
+    if (!timestampedVideo) return timestampedVideo;
     return {
-      ...video,
+      ...timestampedVideo,
       category: effectiveCategory ?? video?.category ?? videoProp?.category ?? undefined,
       subCategory: effectiveSubCategory,
     };
-  }, [effectiveCategory, effectiveSubCategory, video, videoProp?.category]);
+  }, [effectiveCategory, effectiveSubCategory, timestampedVideo, video?.category, videoProp?.category]);
 
   const obsidianSettings = useObsidianSettingsState();
 
@@ -2526,6 +2696,11 @@ export function VideoDetailPanel({
     if (marketBriefData?.contentType === 'marketBrief') return 'morning-brief';
     return null;
   }, [briefDisplayClassification, normalizedSubCategory, marketBriefData?.contentType]);
+
+  const gemSelectionVideo = useMemo(
+    () => resolveCanonicalBriefWorkflowVideo(effectiveVideo, marketBriefData),
+    [effectiveVideo, marketBriefData]
+  );
 
   const handleSaveMarketBriefSection = useCallback(async (sectionId, payload) => {
     if (!marketBriefData) return;
@@ -3316,6 +3491,7 @@ export function VideoDetailPanel({
       analysisError: savedAnalysis.analysisError ?? undefined,
       analysisProvider: savedAnalysis.analysisProvider ?? undefined,
       analyzedAt: savedAnalysis.analyzedAt ?? undefined,
+      gemsAnalysisProvenance: savedAnalysis.gemsAnalysisProvenance ?? undefined,
       analysisVersion: savedAnalysis.analysisVersion ?? undefined,
       chapterSource: savedAnalysis.chapterSource ?? undefined,
       mainLesson: savedAnalysis.mainLesson ?? undefined,
@@ -3596,7 +3772,44 @@ export function VideoDetailPanel({
 
   const savedAnalysisTranscript = useMemo(
     () => (video?.id ? loadSavedAnalysis(video.id) : null),
-    [video?.id],
+    [video?.id, savedAnalysisMeta?.savedAt],
+  );
+  const rowTimestampYoutubeId = resolveRowTimestampYoutubeId(video);
+  const rowTimestampDescriptors = useMemo(
+    () => buildRowTimestampDescriptors({
+      analysis: rowTimestampAnalysis,
+      recordId: rowTimestampRecordId,
+      youtubeId: rowTimestampYoutubeId,
+      structuredMorningBrief: ['morning-brief', 'evening-brief'].includes(effectiveBriefSlug ?? normalizedSubCategory),
+    }),
+    [rowTimestampAnalysis, rowTimestampRecordId, rowTimestampYoutubeId, effectiveBriefSlug, normalizedSubCategory],
+  );
+  const rowTimestampResolver = useMemo(
+    () => createRowTimestampResolver(rowTimestampDescriptors, rowTimestampIndex),
+    [rowTimestampDescriptors, rowTimestampIndex],
+  );
+  const rowTimestampTranscript = useMemo(
+    () => buildRowTimestampTranscript(video, savedAnalysisTranscript, rowTimestampYoutubeId),
+    [video, savedAnalysisTranscript, rowTimestampYoutubeId],
+  );
+  const loadRowTimestampTranscriptForVideo = useCallback(
+    ({ signal }) => loadRowTimestampTranscript({
+      video,
+      savedAnalysis: savedAnalysisTranscript,
+      youtubeId: rowTimestampYoutubeId,
+      transcriptText: rowTimestampTranscript,
+      signal,
+    }),
+    [video, savedAnalysisTranscript, rowTimestampYoutubeId, rowTimestampTranscript],
+  );
+  const rowTimestampActionState = useMemo(
+    () => getRowTimestampActionState({
+      video,
+      youtubeId: rowTimestampYoutubeId,
+      analysis: rowTimestampAnalysis,
+      transcriptText: rowTimestampTranscript,
+    }),
+    [video, rowTimestampYoutubeId, rowTimestampAnalysis, rowTimestampTranscript],
   );
   const transcriptForChapters = useMemo(
     () => resolveTranscriptForChapters(video, savedAnalysisTranscript, videoDurationForChapters),
@@ -5910,6 +6123,77 @@ export function VideoDetailPanel({
     return saved;
   };
 
+  const persistRequiredGemsState = (updates, fallbackVideo) => {
+    const saved = patchVideo(updates);
+    if (!saved) {
+      if (fallbackVideo) {
+        setVideoState(fallbackVideo);
+        onVideoPatch?.(fallbackVideo);
+      }
+      throw new GemsLocalPersistenceError(
+        'שמירת הניתוח הסופי נכשלה. לא דווחה הצלחה והנתונים הקיימים נשמרו.',
+        { classification: 'storage-operation-failed' },
+      );
+    }
+    onVideoPatch?.(saved);
+    return saved;
+  };
+
+  const beginGemsImport = (parsed) => {
+    const provenance = createPendingGemsAnalysisProvenance(parsed);
+    return { provenance, pendingVideo: video };
+  };
+
+  const completeGemsImport = (pending, updates) => {
+    const completedProvenance = completeGemsAnalysisProvenance(pending.provenance);
+    const finalUpdates = {
+      ...updates,
+      analysisProvider: 'gems',
+      analysisStatus: 'analyzed',
+      analyzedAt: completedProvenance.tabsPersistedAt,
+      gemsAnalysisProvenance: completedProvenance,
+    };
+    const saved = persistRequiredGemsState(finalUpdates, pending.pendingVideo);
+    return { saved, completedProvenance };
+  };
+
+  const showGemsPersistenceFailure = (error) => {
+    if (error?.name !== 'GemsLocalPersistenceError') return false;
+    const message = error.classification === 'quota-exceeded'
+      ? GEMS_STORAGE_QUOTA_MESSAGE
+      : error.message;
+    setGemsPersistenceError(message);
+    setGemsPasteError('');
+    setGemsParsedErrorInfo(null);
+    setGemsErrorContext(null);
+    toast.error(message);
+    return true;
+  };
+
+  const showGemsDraftPersistenceFailure = (error) => {
+    if (error?.name !== 'GemsLocalPersistenceError') return false;
+    const message = getGemsDraftPersistenceWarning(error);
+    setGemsDraftPersistenceWarning(message);
+    toast.warning(message);
+    return true;
+  };
+
+  const persistRequiredGemsSnapshot = (savedVideo) => {
+    if (!video?.id) return null;
+    const snapshot = buildAnalysisSnapshot(savedVideo);
+    if (!saveSavedAnalysis(video.id, snapshot)) {
+      throw new GemsLocalPersistenceError(
+        'שמירת גיבוי הניתוח הסופי נכשלה. לא דווחה הצלחה.',
+        { classification: 'storage-operation-failed' },
+      );
+    }
+    setSavedAnalysisMeta(extractSavedAnalysisMeta({
+      analysisProvider: 'gems',
+      analysisSavedAt: snapshot.analysisSavedAt,
+    }));
+    return snapshot;
+  };
+
   const buildDefinedPatch = (patch) =>
     Object.fromEntries(
       Object.entries(patch).filter(([, value]) => value !== undefined)
@@ -5959,6 +6243,8 @@ export function VideoDetailPanel({
     setGemsJsonApplied(false);
     setGemsPasteInput("");
     setGemsPasteError("");
+    setGemsDraftPersistenceWarning("");
+    setGemsPersistenceError("");
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
     setGemsErrorContext(null);
@@ -5999,6 +6285,7 @@ export function VideoDetailPanel({
       analysisError: v.analysisError ?? null,
       analysisProvider: v.analysisProvider ?? null,
       analyzedAt: v.analyzedAt ?? null,
+      gemsAnalysisProvenance: v.gemsAnalysisProvenance ?? null,
       analysisVersion: v.analysisVersion ?? null,
       chapterSource: v.chapterSource ?? null,
       mainLesson: v.mainLesson ?? null,
@@ -6057,35 +6344,86 @@ export function VideoDetailPanel({
     toast.success("הניתוח נשמר");
   };
 
-  const _applyParsedGems = (parsed) => {
+  // Once a GEM has been applied for this video the raw paste buffer is no longer
+  // needed — it only exists to restore an in-progress paste. Left behind it bloats
+  // localStorage (dozens of ~40-50KB per-video keys) and later re-loads as a stale
+  // "draft" that hides the canonical JSON. Drop the buffer + reset the input state
+  // at every successful apply exit.
+  const finalizeGemsPasteAfterApply = () => {
+    const id = video?.id;
+    if (id) {
+      try {
+        localStorage.removeItem(`gems-paste-${id}`);
+        sessionStorage.removeItem(`gems-paste-${id}`);
+        localStorage.removeItem(`gems-paste-cleared-${id}`);
+      } catch { /* buffer cleanup is best-effort */ }
+    }
+    setGemsPasteInput('');
+    setGemsPasteInputSource('empty');
+  };
+
+  const _applyParsedGems = async (parsed) => {
     if (import.meta.env.DEV) {
       console.debug('[GEMS JSON] apply started');
       console.debug('[GEMS Parse] raw keys:', Object.keys(parsed || {}).join(', '));
       console.debug('[GEMS Parse] contentType:', parsed?.contentType);
     }
 
+    const canonicalParsed = canonicalizeGemsPayloadForPersistence(parsed);
+
     // ── Market Brief — handle separately before generic pipeline ──────────
-    if (parsed?.contentType === 'marketBrief') {
-      const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
+    if (canonicalParsed?.contentType === 'marketBrief') {
+      const marketBriefSavedAt = new Date().toISOString();
+      const parsedWithOverrides = stampMarketBriefSource(
+        preserveManualOverridesOnReanalysis(marketBriefData, canonicalParsed),
+        { source: 'paste-video', savedAt: marketBriefSavedAt },
+      );
       const videoId = video?.id || video?.youtubeId;
-      if (videoId) {
-        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
-        localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      const pending = beginGemsImport(canonicalParsed);
+      let sidecarWarning = null;
+      if (getApplicationStorageMode() === APPLICATION_STORAGE_MODES.INDEXED_DB) {
+        const persistenceResult = await writeCanonicalMarketBrief(videoId, parsedWithOverrides);
+        if (!persistenceResult.ok) {
+          throw new GemsLocalPersistenceError(
+            `שמירת הניתוח הסופי ב-IndexedDB נכשלה (${persistenceResult.code}). לא דווחה הצלחה והנתונים הקיימים נשמרו.`,
+            { classification: persistenceResult.code?.includes('quota') ? 'quota-exceeded' : 'storage-operation-failed' },
+          );
+        }
+        const completedProvenance = completeGemsAnalysisProvenance(pending.provenance);
+        const saved = {
+          ...pending.pendingVideo,
+          marketBriefData: parsedWithOverrides,
+          marketBriefSavedAt,
+          analysisProvider: 'gems',
+          analysisStatus: 'analyzed',
+          analyzedAt: completedProvenance.tabsPersistedAt,
+          gemsAnalysisProvenance: completedProvenance,
+        };
+        setVideoState(saved);
+        onVideoPatch?.(saved);
+        queryClient.invalidateQueries({ queryKey: ['videos'] });
+      } else {
+        ({ sidecarWarning } = persistCommittedMarketBrief({
+          videoId,
+          marketBriefData: parsedWithOverrides,
+          commitVideo: () => completeGemsImport(pending, {
+            marketBriefData: parsedWithOverrides,
+            marketBriefSavedAt,
+          }).saved,
+        }));
+        if (video?.id) try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
       }
-      // Persist into video entity so tabs refresh and data survives navigation
-      patchVideo({
-        marketBriefData: parsedWithOverrides,
-        analysisProvider: 'gems',
-        analysisStatus: 'analyzed',
-        analyzedAt: new Date().toISOString(),
-      });
       setMarketBriefData(parsedWithOverrides);
       setGemsJsonApplied(true);
       setGemsPasteError('');
+      setGemsDraftPersistenceWarning('');
+      setGemsPersistenceError('');
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('specialized'), 50);
+      if (sidecarWarning) toast.warning(sidecarWarning);
+      finalizeGemsPasteAfterApply();
       toast.success('📈 מבזק שוק נקלט בהצלחה ✓');
       return true;
     }
@@ -6094,44 +6432,60 @@ export function VideoDetailPanel({
     // Triggered when quick-copy result contains universalTabs.appBuilder
     // but NOT contentType: 'marketBrief' (which is handled above).
     if (parsed?.universalTabs?.appBuilder && parsed?.contentType !== 'marketBrief') {
+      const pending = beginGemsImport(parsed);
       const videoId = video?.id || video?.youtubeId;
       const sections = mapUniversalAppBuilderToSections(parsed.universalTabs.appBuilder);
-      if (videoId) {
-        saveAppBuilderDraft(videoId, sections);
-        localStorage.setItem(`gems-applied-${video.id}`, 'true');
+      if (!videoId || !saveAppBuilderDraft(videoId, sections)) {
+        throw new GemsLocalPersistenceError(
+          'שמירת טאב App Builder נכשלה. לא דווחה הצלחה.',
+          { classification: 'storage-operation-failed' },
+        );
       }
+      const { saved } = completeGemsImport(pending, {});
+      persistRequiredGemsSnapshot(saved);
+      if (video?.id) try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
       setGemsJsonApplied(true);
       setGemsPasteError('');
+      setGemsDraftPersistenceWarning('');
+      setGemsPersistenceError('');
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('app-builder'), 50);
+      finalizeGemsPasteAfterApply();
       toast.success('🏗️ App Builder נקלט בהצלחה — עוברים לטאב App Builder');
       return true;
     }
 
     // ── Macro / Universal Market GEM — contentType: 'market' with universalTabs ──────────
     // Routes through marketBriefData so all universalTabs.* tabs render correctly.
-    if (parsed?.contentType === 'market' && parsed?.universalTabs && typeof parsed.universalTabs === 'object') {
-      const parsedWithOverrides = preserveManualOverridesOnReanalysis(marketBriefData, parsed);
+    if (canonicalParsed?.contentType === 'market' && canonicalParsed?.universalTabs && typeof canonicalParsed.universalTabs === 'object') {
+      const marketBriefSavedAt = new Date().toISOString();
+      const parsedWithOverrides = stampMarketBriefSource(
+        preserveManualOverridesOnReanalysis(marketBriefData, canonicalParsed),
+        { source: 'paste-video', savedAt: marketBriefSavedAt },
+      );
       const videoId = video?.id || video?.youtubeId;
       if (videoId) {
-        localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(parsedWithOverrides));
-        localStorage.setItem(`gems-applied-${video.id}`, 'true');
+        persistVerifiedLocalValue(`market_brief_${videoId}`, parsedWithOverrides);
       }
-      patchVideo({
+      const pending = beginGemsImport(canonicalParsed);
+      const { saved } = completeGemsImport(pending, {
         marketBriefData: parsedWithOverrides,
-        analysisProvider: 'gems',
-        analysisStatus: 'analyzed',
-        analyzedAt: new Date().toISOString(),
+        marketBriefSavedAt,
       });
+      persistRequiredGemsSnapshot(saved);
+      if (video?.id) try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
       setMarketBriefData(parsedWithOverrides);
       setGemsJsonApplied(true);
       setGemsPasteError('');
+      setGemsDraftPersistenceWarning('');
+      setGemsPersistenceError('');
       setGemsParsedErrorInfo(null);
       setGemsRepairApplied(false);
       setIsGemsPasteOpen(false);
       setTimeout(() => setActiveTab('summary'), 50);
+      finalizeGemsPasteAfterApply();
       toast.success('📊 מאקרו GEM נקלט בהצלחה ✓');
       return true;
     }
@@ -6148,8 +6502,7 @@ export function VideoDetailPanel({
       console.debug('[GEMS JSON] normalized learning fields populated:', filled.join(', ') || '(none)');
       console.debug('[GEMS JSON] normalized keys:', Object.keys(normalized).join(', '));
     }
-    const gemsPatched = persistAnalysisState({ ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() });
-    if (import.meta.env.DEV) console.debug('[GEMS JSON] data mapped to app state, patched:', !!gemsPatched);
+    const pending = beginGemsImport(parsed);
 
     // Persist political summary — triggered by political data fields OR by the gem key
     // NOTE: brainHighlights is intentionally excluded — it appears in technical GEMs too
@@ -6168,23 +6521,25 @@ export function VideoDetailPanel({
         const videoId = video?.id || video?.youtubeId;
         if (videoId) {
           const savedKey = `political_summary_${videoId}`;
-          localStorage.setItem(savedKey, JSON.stringify(parsed));
+          persistVerifiedLocalValue(savedKey, parsed);
           setPoliticalSummary(parsed);
           if (import.meta.env.DEV) console.debug(`[PoliticalSummary] saved from GEMS JSON for videoId=${videoId}`);
         }
       }
     }
 
+    const { saved: gemsPatched } = completeGemsImport(pending, normalized);
+    if (import.meta.env.DEV) console.debug('[GEMS JSON] data mapped to app state, patched:', !!gemsPatched);
+
     if (video?.id) {
-      const nextVideo = { ...video, ...normalized, analysisProvider: 'gems', analysisStatus: 'analyzed', analyzedAt: new Date().toISOString() };
-      const snapshot = buildAnalysisSnapshot(nextVideo);
-      saveSavedAnalysis(video.id, snapshot);
-      setSavedAnalysisMeta(extractSavedAnalysisMeta({ analysisProvider: 'gems', analysisSavedAt: snapshot.analysisSavedAt }));
-      localStorage.setItem(`gems-applied-${video.id}`, 'true');
-      if (import.meta.env.DEV) console.debug(`[GEMS JSON] snapshot saved for videoId=${video.id}`);
+      persistRequiredGemsSnapshot(gemsPatched);
+      try { localStorage.setItem(`gems-applied-${video.id}`, 'true'); } catch {}
+      if (import.meta.env.DEV) console.debug(`[GEMS JSON] required snapshot saved for videoId=${video.id}`);
     }
     setGemsJsonApplied(true);
     setGemsPasteError("");
+    setGemsDraftPersistenceWarning("");
+    setGemsPersistenceError("");
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
     // Close modal first, then switch to the most relevant tab based on contentType
@@ -6200,232 +6555,241 @@ export function VideoDetailPanel({
         if (import.meta.env.DEV) console.debug('[Tabs] switched to political tab after GEM import');
       }
     }, 50);
+    finalizeGemsPasteAfterApply();
     toast.success("GEMS JSON נקלט בהצלחה ✓ הנתונים עודכנו");
     toast.success("הניתוח נשמר בהצלחה ✓");
     return true;
   };
 
-  const handleApplyGemsJson = () => {
-    // Start of a new attempt — clear any stale repair report from a previous attempt
-    // so an old "repair candidate" is never shown alongside a fresh error.
+  const handleApplyGemsJson = async () => {
+    const repairReportAtStart = buildSafeGemsRepairReportSnapshot(gemsAiRepairResult, {
+      videoId: currentGemsVideoId,
+    });
+    if (repairReportAtStart) setLastGemsRepairReport(repairReportAtStart);
     setGemsAiRepairResult(null);
     setGemsAiRepairFailed(false);
+    setGemsPersistenceError('');
     const raw = gemsPasteInput.trim();
     if (!raw) { setGemsPasteError("הדבק JSON לפני לחיצה על החל"); return; }
-    let parsed;
-    let parseErr = null;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (err) {
-      parseErr = err;
-    }
-    if (parseErr) {
-      const { repairedJson: repaired, fixes } = repairGemsJsonDetailed(raw);
-      try {
-        JSON.parse(repaired);
-        const loc = getJsonErrorLocation(raw, parseErr.message);
-        const ctx = loc ? getJsonErrorContext(raw, loc.pos) : null;
-        const translation = translateJsonError(parseErr.message);
-        setGemsParsedErrorInfo(loc ? { ...loc, msg: parseErr.message, translation } : null);
-        setGemsErrorContext(ctx);
-        setGemsPasteError(loc ? `JSON לא תקין — שורה ${loc.line}, עמודה ${loc.col}` : 'JSON לא תקין');
-        setGemsAiRepairResult({
-          source: 'fallback',
-          repairedJson: repaired,
-          changes: fixes,
-          report: buildGemsJsonRepairReport({
-            source: 'fallback',
-            raw,
-            repairedJson: repaired,
-            fixes,
-            errInfo: loc ? { ...loc, msg: parseErr.message, translation } : { msg: parseErr.message, translation },
-            errorContext: ctx,
-            reason: 'The pasted JSON was invalid, but the app found a valid deterministic repair candidate.',
-            prevention: [
-              'Return strict JSON only.',
-              'Escape all newline characters as \\n.',
-              'Keep all property names double-quoted.',
-              'Do not embed broken escaped blocks such as \\n\\"field\\" inside raw object structure.',
-            ],
-          }),
-        });
-        toast.info('נמצא תיקון JSON — אשר כדי להחיל אותו');
-        return;
-      } catch (repairErr) {
-        // Show error based on the repaired string (more accurate position after gershayim fixes)
-        const errMsg = repairErr.message || parseErr.message;
-        const loc = getJsonErrorLocation(repaired, errMsg);
-        const translation = translateJsonError(errMsg);
-        console.log('[JSON Debug] auto-repair failed');
-        console.log('[JSON Debug] parse error after repair:', errMsg);
-        console.log('[JSON Debug] error location:', loc?.line ?? '?', ':', loc?.col ?? '?');
-        const ctx = loc ? getJsonErrorContext(repaired, loc.pos) : null;
-        if (ctx) console.log('[JSON Debug] context:', ctx.find(l => l.isError)?.text ?? '');
-        setGemsParsedErrorInfo(loc ? { ...loc, msg: errMsg, translation } : null);
-        setGemsErrorContext(ctx);
-        const locStr = loc ? ` — שורה ${loc.line}, עמודה ${loc.col}` : '';
-        setGemsPasteError(`JSON לא תקין${locStr} — תיקון אוטומטי לא הצליח`);
-        return;
-      }
+    const result = parseAndValidateGemsJson(raw);
+    if (!result.ok) {
+      const outcome = repairGemsJsonDeterministically(raw);
+      const diagnostics = result.diagnostics;
+      setGemsParsedErrorInfo(diagnostics ? {
+        pos: diagnostics.position,
+        line: diagnostics.line,
+        col: diagnostics.column,
+        char: diagnostics.char,
+        msg: diagnostics.message,
+        translation: translateJsonError(diagnostics.message),
+      } : null);
+      setGemsErrorContext(diagnostics ? [{
+        lineNum: diagnostics.line ?? 1,
+        text: diagnostics.context,
+        isError: true,
+        truncated: diagnostics.contextTruncatedBefore || diagnostics.contextTruncatedAfter,
+      }] : null);
+      setGemsPasteError(diagnostics
+        ? `JSON לא תקין — שורה ${diagnostics.line}, עמודה ${diagnostics.column}${diagnostics.isEof ? ' (EOF)' : ''}`
+        : `JSON עבר parse אך נכשל באימות הסכמה — ${result.validation?.errors?.join(' | ') || 'מבנה לא מוכר'}`);
+      setGemsAiRepairResult({
+        ...outcome,
+        originalJson: raw,
+        validationStatus: outcome.status === 'regeneration-required' ? 'regeneration-required' : outcome.finalValidation?.ok ? 'validated' : 'failed',
+        regenerationPrompt: outcome.status === 'regeneration-required' ? buildCanonicalGemsRegenerationPrompt() : '',
+        report: buildValidatedGemsJsonRepairReport({ outcome, raw }),
+      });
+      toast.info(outcome.status === 'repaired'
+        ? 'נמצא תיקון שעבר parse ואימות סכמה — אשר כדי להחיל'
+        : outcome.status === 'regeneration-required'
+          ? 'הפלט נקטע ב-EOF — נדרשת יצירה מחדש'
+          : 'ה-JSON אינו ניתן לתיקון פנימי בטוח');
+      return;
     }
     setGemsParsedErrorInfo(null);
     setGemsErrorContext(null);
-    try { _applyParsedGems(parsed); } catch (err) { setGemsPasteError(`שגיאה בעיבוד: ${err.message}`); }
-  };
-
-  const handleRepairGemsJson = () => {
-    // Start of a new attempt — clear any stale repair report from a previous attempt.
-    setGemsAiRepairResult(null);
-    setGemsAiRepairFailed(false);
-    const raw = gemsPasteInput.trim();
-    if (!raw) return;
-    console.log(`[JSON Repair] before input length: ${raw.length}`);
-    const { repairedJson: repaired, fixes } = repairGemsJsonDetailed(raw);
-    console.log(`[JSON Repair] repaired output length: ${repaired.length}`);
-    let repairParseOk = false;
-    try { JSON.parse(repaired); repairParseOk = true; } catch {}
-    console.log(`[JSON Repair] repair success: ${repairParseOk}`);
     try {
-      JSON.parse(repaired);
-      const originalErr = (() => {
-        try { JSON.parse(raw); return null; } catch (err) { return err; }
-      })();
-      const loc = originalErr ? getJsonErrorLocation(raw, originalErr.message) : null;
-      const ctx = loc ? getJsonErrorContext(raw, loc.pos) : null;
-      const translation = originalErr ? translateJsonError(originalErr.message) : null;
-      console.log('[JSON Repair] parse success — applying repaired JSON');
-
-      // Apply the repaired JSON immediately so "התחל ניתוח" becomes enabled
-      console.log('[JSON Repair] calling setGemsPasteInput with repaired JSON');
-      setGemsPasteInput(repaired);
-      setGemsRepairApplied(true);
-      setGemsPasteError("");
-      setGemsParsedErrorInfo(null);
-      setGemsErrorContext(null);
-      if (video?.id) localStorage.setItem(`gems-paste-${video.id}`, repaired);
-
-      // Keep repair report available for review
-      setGemsAiRepairResult({
-        source: 'fallback',
-        repairedJson: repaired,
-        changes: fixes,
-        report: buildGemsJsonRepairReport({
-          source: 'fallback',
-          raw,
-          repairedJson: repaired,
-          fixes,
-          errInfo: loc ? { ...loc, msg: originalErr?.message || '', translation } : (originalErr ? { msg: originalErr.message, translation } : null),
-          errorContext: ctx,
-          reason: 'The JSON contained malformed escaped content or syntax that could be repaired deterministically inside the app.',
-          prevention: [
-            'Return strict JSON only.',
-            'Do not include raw line breaks inside string values.',
-            'Escape newlines as \\n.',
-            'Keep all property names double-quoted.',
-          ],
-        }),
-      });
-      toast.success(originalErr ? '✅ JSON תוקן — ניתן להתחיל ניתוח' : '✅ JSON תקין');
-    } catch (err2) {
-      console.log('[JSON Repair] parse failed after repair:', err2.message);
-      console.log(`[JSON Repair] setGemsPasteInput NOT called — textarea unchanged`);
-      const loc = getJsonErrorLocation(repaired, err2.message);
-      const ctx = loc ? getJsonErrorContext(repaired, loc.pos) : null;
-      setGemsErrorContext(ctx);
-      setGemsParsedErrorInfo(loc ? { ...loc, msg: err2.message, translation: translateJsonError(err2.message) } : null);
-      setGemsPasteError(loc ? `התיקון האוטומטי נכשל — הבעיה נמצאת ליד שורה ${loc.line}` : "תיקון אוטומטי לא הצליח — ערוך ידנית");
+      const saved = await _applyParsedGems(result.value);
+      if (saved && repairReportAtStart) {
+        setLastGemsRepairReport({
+          ...repairReportAtStart,
+          persistenceStatus: 'saved',
+        });
+        toast.info('📋 דוח התיקון האחרון זמין להעתקה בפעולות המהירות');
+      }
+    } catch (err) {
+      if (repairReportAtStart) {
+        setLastGemsRepairReport({
+          ...repairReportAtStart,
+          persistenceStatus: 'failed',
+        });
+      }
+      if (!showGemsPersistenceFailure(err)) {
+        setGemsPasteError(`שגיאה בעיבוד: ${err.message}`);
+      }
     }
   };
 
-  const handleAiRepairGemsJson = async () => {
-    // Start of a new attempt — clear any stale repair report from a previous attempt.
+  const handleRepairGemsJson = () => {
     setGemsAiRepairResult(null);
     setGemsAiRepairFailed(false);
     const raw = gemsPasteInput.trim();
     if (!raw) return;
+    const outcome = repairGemsJsonDeterministically(raw);
+    if (outcome.status === 'valid') {
+      setGemsPasteError('');
+      setGemsParsedErrorInfo(null);
+      setGemsErrorContext(null);
+      toast.info('ה-JSON כבר תקין ועבר אימות סכמה — אין צורך בתיקון');
+      return;
+    }
+    const diagnostics = outcome.original?.diagnostics;
+    setGemsParsedErrorInfo(diagnostics ? {
+      pos: diagnostics.position,
+      line: diagnostics.line,
+      col: diagnostics.column,
+      char: diagnostics.char,
+      msg: diagnostics.message,
+      translation: translateJsonError(diagnostics.message),
+    } : null);
+    setGemsErrorContext(diagnostics ? [{
+      lineNum: diagnostics.line ?? 1,
+      text: diagnostics.context,
+      isError: true,
+      truncated: diagnostics.contextTruncatedBefore || diagnostics.contextTruncatedAfter,
+    }] : null);
+    setGemsPasteError(outcome.status === 'regeneration-required'
+      ? `הפלט נקטע ב-EOF — שורה ${diagnostics?.line ?? '?'}, עמודה ${diagnostics?.column ?? '?'}; לא שוחזר תוכן חסר`
+      : outcome.status === 'repaired'
+        ? 'נמצא מועמד תיקון תקין — הקלט המקורי נשמר עד לאישור'
+        : `תיקון פנימי נכשל — ${diagnostics?.message || outcome.candidateValidation?.errors?.join(' | ') || 'שגיאה לא ידועה'}`);
+    setGemsAiRepairResult({
+      ...outcome,
+      originalJson: raw,
+      validationStatus: outcome.status === 'regeneration-required' ? 'regeneration-required' : outcome.finalValidation?.ok ? 'validated' : 'failed',
+      regenerationPrompt: outcome.status === 'regeneration-required' ? buildCanonicalGemsRegenerationPrompt() : '',
+      report: buildValidatedGemsJsonRepairReport({ outcome, raw }),
+    });
+    toast.info(outcome.status === 'repaired'
+      ? 'תיקון פנימי עבר parse ואימות סכמה — אשר כדי להחיל'
+      : outcome.status === 'regeneration-required'
+        ? 'הפלט נקטע — נדרשת יצירה מחדש בחוזה קצר'
+        : 'לא נמצא תיקון פנימי בטוח');
+  };
 
-    const deterministic = repairGemsJsonDetailed(raw);
-    const parseMessage = gemsParsedErrorInfo?.msg || gemsPasteError || "Invalid JSON";
-    const line = gemsParsedErrorInfo?.line ?? null;
-    const col = gemsParsedErrorInfo?.col ?? null;
-    const contextLines = gemsErrorContext
-      ? gemsErrorContext.map((ln) => `${String(ln.lineNum).padStart(4)}: ${ln.text}${ln.isError ? '  ◀' : ''}`).join('\n')
-      : '';
+  const handleAiRepairGemsJson = async () => {
+    setGemsAiRepairResult(null);
+    setGemsAiRepairFailed(false);
+    const raw = gemsPasteInput.trim();
+    if (!raw) return;
+    const preflight = parseAndValidateGemsJson(raw);
+    if (preflight.ok) {
+      setGemsPasteError('');
+      setGemsParsedErrorInfo(null);
+      setGemsErrorContext(null);
+      toast.info('ה-JSON כבר תקין ועבר אימות סכמה — תיקון AI לא נשלח');
+      return;
+    }
+    const deterministic = repairGemsJsonDeterministically(raw);
+    if (deterministic.status === 'regeneration-required') {
+      const diagnostics = deterministic.original?.diagnostics;
+      setGemsParsedErrorInfo(diagnostics ? {
+        pos: diagnostics.position,
+        line: diagnostics.line,
+        col: diagnostics.column,
+        char: diagnostics.char,
+        msg: diagnostics.message,
+        translation: translateJsonError(diagnostics.message),
+      } : null);
+      setGemsErrorContext(diagnostics ? [{
+        lineNum: diagnostics.line ?? 1,
+        text: diagnostics.context,
+        isError: true,
+        truncated: diagnostics.contextTruncatedBefore || diagnostics.contextTruncatedAfter,
+      }] : null);
+      setGemsPasteError('הפלט נקטע ב-EOF — לא נשלח לתיקון ולא שוחזר תוכן חסר');
+      setGemsAiRepairResult({
+        ...deterministic,
+        originalJson: raw,
+        validationStatus: 'regeneration-required',
+        regenerationPrompt: buildCanonicalGemsRegenerationPrompt(),
+        report: buildValidatedGemsJsonRepairReport({ outcome: deterministic, raw }),
+      });
+      toast.info('נדרשת יצירה מחדש בחוזה JSON קצר');
+      return;
+    }
 
     setIsAiRepairingGemsJson(true);
     try {
-      const res = await fetch('/api/gemini-repair-json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawJson: raw,
-          parserError: parseMessage,
-          line,
-          col,
-          contextLines,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`AI repair failed (${res.status})`);
-      }
-
-      const data = await res.json();
+      const data = await requestGemsJsonRepair({ rawJson: raw });
       const repairedJson = typeof data?.repairedJson === 'string' ? data.repairedJson.trim() : '';
-      if (!repairedJson) {
-        throw new Error('AI repair returned empty JSON');
+      if (data?.status === 'valid') {
+        toast.info('השרת אימת שה-JSON כבר תקין — לא בוצע תיקון');
+        return;
       }
-      JSON.parse(repairedJson);
-
-      setGemsAiRepairResult({
-        source: 'ai',
+      if (data?.status === 'regeneration-required') {
+        const outcome = { ...data, original: preflight, repairedJson: null };
+        setGemsPasteError('השרת זיהה EOF — נדרשת יצירה מחדש; תוכן חסר לא שוחזר');
+        setGemsAiRepairResult({
+          ...outcome,
+          originalJson: raw,
+          validationStatus: 'regeneration-required',
+          regenerationPrompt: buildCanonicalGemsRegenerationPrompt(),
+          report: buildValidatedGemsJsonRepairReport({ outcome, raw }),
+        });
+        toast.info('נדרשת יצירה מחדש בחוזה JSON קצר');
+        return;
+      }
+      const candidate = parseAndValidateGemsJson(repairedJson);
+      if (data?.status !== 'repaired' || !candidate.ok) {
+        const candidateReason = candidate.diagnostics?.message || candidate.validation?.errors?.join(' | ') || 'missing repairedJson';
+        const validationError = new Error(`Repair candidate failed final validation: ${candidateReason}`);
+        validationError.code = 'REPAIR_CANDIDATE_INVALID';
+        throw validationError;
+      }
+      const outcome = {
+        ...data,
+        status: 'repaired',
+        source: data.source === 'deterministic' ? 'deterministic' : 'ai',
         repairedJson,
-        changes: Array.isArray(data?.changes) ? data.changes : deterministic.fixes,
-        report: data?.report || buildGemsJsonRepairReport({
-          source: 'ai',
+        changes: Array.isArray(data?.changes) ? data.changes : [],
+        original: preflight,
+        finalValidation: candidate.validation,
+      };
+      setGemsPasteError('נמצא מועמד תיקון תקין — הקלט המקורי נשמר עד לאישור');
+      setGemsAiRepairResult({
+        ...outcome,
+        originalJson: raw,
+        validationStatus: 'validated',
+        report: buildValidatedGemsJsonRepairReport({
+          outcome,
           raw,
-          repairedJson,
-          fixes: Array.isArray(data?.changes) ? data.changes : deterministic.fixes,
-          errInfo: gemsParsedErrorInfo,
-          errorContext: gemsErrorContext,
-          reason: data?.why || 'The AI repaired malformed JSON structure and escaping issues.',
+          reason: data?.why || '',
           prevention: Array.isArray(data?.prevention) ? data.prevention : [],
           promptCorrection: data?.promptCorrection || '',
         }),
       });
-      toast.success('תיקון AI מוכן — אשר כדי להחיל');
+      toast.success(`${outcome.source === 'ai' ? 'תיקון AI' : 'תיקון פנימי'} עבר parse ואימות סכמה — אשר כדי להחיל`);
     } catch (err) {
       setGemsAiRepairFailed(true);
-      const fallbackReport = buildGemsJsonRepairReport({
-        source: 'fallback',
-        raw,
-        repairedJson: deterministic.repairedJson,
-        fixes: deterministic.fixes,
-        errInfo: gemsParsedErrorInfo,
-        errorContext: gemsErrorContext,
-        reason: 'AI repair was unavailable, so the app generated a deterministic repair report from the parser diagnostics.',
-        prevention: [
-          'Return strict JSON only.',
-          'Escape all newline characters as \\n.',
-          'Do not include markdown or wrapper prose around the JSON.',
-          'Do not leave numeric values without a property name.',
-        ],
-      });
-
-      let fallbackJson = deterministic.repairedJson;
-      try {
-        JSON.parse(fallbackJson);
-      } catch {
-        fallbackJson = '';
-      }
-
+      const serverError = {
+        code: err?.code || 'GEMINI_REPAIR_ERROR',
+        status: err?.status ?? null,
+        message: err?.message || 'AI repair failed.',
+      };
+      const outcome = { ...deterministic, original: preflight };
+      setGemsPasteError(`תיקון AI נכשל [${serverError.code}${serverError.status ? `, HTTP ${serverError.status}` : ''}] — ${serverError.message}`);
       setGemsAiRepairResult({
-        source: 'fallback',
-        repairedJson: fallbackJson,
-        changes: deterministic.fixes,
-        report: fallbackReport,
+        ...outcome,
+        originalJson: raw,
+        repairedJson: outcome.status === 'repaired' && outcome.finalValidation?.ok ? outcome.repairedJson : null,
+        serverError,
+        validationStatus: outcome.finalValidation?.ok ? 'validated' : 'failed',
+        report: buildValidatedGemsJsonRepairReport({ outcome, raw, serverError }),
       });
-      toast.info('תיקון AI לא זמין — הופק דוח תיקון בסיסי');
+      toast.info(outcome.status === 'repaired'
+        ? 'תיקון AI נכשל, אך מועמד פנימי מאומת זמין'
+        : 'תיקון AI נכשל — השגיאה המדויקת נשמרה בדוח');
     } finally {
       setIsAiRepairingGemsJson(false);
     }
@@ -6433,28 +6797,55 @@ export function VideoDetailPanel({
 
   const handleApplyAiRepairedJson = () => {
     if (!gemsAiRepairResult?.repairedJson) return;
-    try {
-      JSON.parse(gemsAiRepairResult.repairedJson);
-      setGemsPasteInput(gemsAiRepairResult.repairedJson);
-      setGemsRepairApplied(true);
-      setGemsPasteError("");
-      setGemsParsedErrorInfo(null);
+    const finalResult = parseAndValidateGemsJson(gemsAiRepairResult.repairedJson);
+    if (!finalResult.ok) {
+      const diagnostics = finalResult.diagnostics;
+      setGemsParsedErrorInfo(diagnostics ? {
+        pos: diagnostics.position,
+        line: diagnostics.line,
+        col: diagnostics.column,
+        char: diagnostics.char,
+        msg: diagnostics.message,
+        translation: translateJsonError(diagnostics.message),
+      } : null);
       setGemsErrorContext(null);
-      if (video?.id) localStorage.setItem(`gems-paste-${video.id}`, gemsAiRepairResult.repairedJson);
-      toast.success('JSON תקין — אפשר להמשיך ל"התחל ניתוח"');
-    } catch (err) {
-      const loc = getJsonErrorLocation(gemsAiRepairResult.repairedJson, err.message);
-      const ctx = loc ? getJsonErrorContext(gemsAiRepairResult.repairedJson, loc.pos) : null;
-      setGemsParsedErrorInfo(loc ? { ...loc, msg: err.message, translation: translateJsonError(err.message) } : null);
-      setGemsErrorContext(ctx);
-      setGemsPasteError(loc ? `JSON מתוקן עדיין לא תקין — שורה ${loc.line}, עמודה ${loc.col}` : 'JSON מתוקן עדיין לא תקין');
-      toast.error('התיקון לא עבר אימות JSON');
+      setGemsPasteError(diagnostics
+        ? `JSON מתוקן עדיין לא תקין — ${diagnostics.message}`
+        : `JSON מתוקן נכשל באימות סכמה — ${finalResult.validation?.errors?.join(' | ') || 'מבנה לא מוכר'}`);
+      toast.error('התיקון לא עבר parse ואימות סכמה');
+      return;
     }
+    try {
+      if (video?.id) {
+        persistVerifiedLocalValue(`gems-paste-${video.id}`, gemsAiRepairResult.repairedJson);
+        setGemsDraftPersistenceWarning('');
+      }
+    } catch (error) {
+      if (!showGemsDraftPersistenceFailure(error)) throw error;
+    }
+    setGemsPasteInput(gemsAiRepairResult.repairedJson);
+    setGemsPasteInputSource('corrected');
+    setGemsRepairApplied(true);
+    setGemsPasteError("");
+    setGemsPersistenceError("");
+    setGemsParsedErrorInfo(null);
+    setGemsErrorContext(null);
+    setGemsAiRepairResult((current) => current ? { ...current, validationStatus: 'applied' } : current);
+    toast.success('JSON עבר parse ואימות סכמה — אפשר להמשיך ל"התחל ניתוח"');
   };
 
-  const handleCopyAiRepairReport = () => {
+  const handleCopyAiRepairReport = (target = 'Codex') => {
     if (!gemsAiRepairResult?.report) return;
-    navigator.clipboard.writeText(gemsAiRepairResult.report).then(() => toast.success('דוח התיקון הועתק'));
+    navigator.clipboard.writeText(gemsAiRepairResult.report)
+      .then(() => toast.success(`דוח התיקון הועתק עבור ${target}`))
+      .catch(() => toast.error('לא ניתן להעתיק את דוח התיקון'));
+  };
+
+  const handleCopyLastGemsRepairReport = () => {
+    if (!lastGemsRepairReport?.report) return;
+    navigator.clipboard.writeText(lastGemsRepairReport.report)
+      .then(() => toast.success('דוח התיקון האחרון הועתק'))
+      .catch(() => toast.error('לא ניתן להעתיק את דוח התיקון האחרון'));
   };
 
   const handleCopyAiRepairedJson = () => {
@@ -6462,60 +6853,248 @@ export function VideoDetailPanel({
     navigator.clipboard.writeText(gemsAiRepairResult.repairedJson).then(() => toast.success('JSON מתוקן הועתק'));
   };
 
+  const handleCopyOriginalGemsJson = () => {
+    if (!gemsAiRepairResult?.originalJson) return;
+    navigator.clipboard.writeText(gemsAiRepairResult.originalJson)
+      .then(() => toast.success('קלט ה-JSON המקורי הועתק'))
+      .catch(() => toast.error('לא ניתן להעתיק את קלט ה-JSON המקורי'));
+  };
+
+  const handleCopyGemsRegenerationPrompt = () => {
+    if (!gemsAiRepairResult?.regenerationPrompt) return;
+    navigator.clipboard.writeText(gemsAiRepairResult.regenerationPrompt)
+      .then(() => toast.success('פרומפט היצירה מחדש הועתק'))
+      .catch(() => toast.error('לא ניתן להעתיק את פרומפט היצירה מחדש'));
+  };
+
+  const handleAutomaticGemsPaste = (event) => {
+    const pasted = event.clipboardData?.getData('text') || '';
+    const automaticRepair = selectAutomaticDeterministicGemsRepair(pasted);
+    if (!automaticRepair.shouldApply) return;
+
+    event.preventDefault();
+    const { originalJson, repairedJson, outcome } = automaticRepair;
+    setGemsPasteInput(repairedJson);
+    setGemsPasteInputSource('corrected');
+    setGemsRepairApplied(true);
+    setGemsPasteError('');
+    setGemsPersistenceError('');
+    setGemsParsedErrorInfo(null);
+    setGemsErrorContext(null);
+    setGemsAiRepairFailed(false);
+    setGemsAiRepairResult({
+      ...outcome,
+      originalJson,
+      validationStatus: 'applied',
+      report: buildValidatedGemsJsonRepairReport({
+        outcome,
+        raw: originalJson,
+        workId: 'YMD-GEMS-AUTO-REPAIR',
+      }),
+    });
+
+    if (video?.id) {
+      try {
+        persistVerifiedLocalValue(`gems-paste-${video.id}`, repairedJson);
+        localStorage.removeItem(`gems-paste-cleared-${video.id}`);
+        setGemsDraftPersistenceWarning('');
+      } catch (error) {
+        if (!showGemsDraftPersistenceFailure(error)) throw error;
+      }
+    } else {
+      setGemsDraftPersistenceWarning('');
+    }
+    toast.success('תיקון דטרמיניסטי עבר parse ואימות סכמה והוחל אוטומטית');
+  };
+
   const currentGemsJsonValidation = useMemo(() => {
     const raw = gemsPasteInput.trim();
-    if (!raw) return { hasValue: false, isValid: false, error: null };
-    try {
-      JSON.parse(raw);
-      return { hasValue: true, isValid: true, error: null };
-    } catch (error) {
-      return { hasValue: true, isValid: false, error };
-    }
+    if (!raw) return { hasValue: false, isValid: false, parseValid: false, schemaValid: false, error: null, result: null };
+    const result = parseAndValidateGemsJson(raw);
+    const error = result.diagnostics
+      ? new Error(result.diagnostics.message)
+      : (!result.validation?.ok ? new Error(result.validation?.errors?.join(' | ') || 'Schema validation failed') : null);
+    return {
+      hasValue: true,
+      isValid: result.ok,
+      parseValid: !result.diagnostics,
+      schemaValid: Boolean(result.validation?.ok),
+      error,
+      result,
+    };
   }, [gemsPasteInput]);
 
-  // Shows the "copy debug report to Claude Code" action whenever the pasted
-  // GEM JSON is currently invalid, an automatic repair failed, an AI repair
-  // failed, or a repair candidate exists but still doesn't parse.
+  useEffect(() => {
+    const raw = gemsPasteInput.trim();
+    if (!raw || currentGemsJsonValidation.isValid) return;
+
+    const outcome = repairGemsJsonDeterministically(raw);
+    const diagnostics = outcome.original?.diagnostics;
+    setGemsParsedErrorInfo(diagnostics ? {
+      pos: diagnostics.position,
+      line: diagnostics.line,
+      col: diagnostics.column,
+      char: diagnostics.char,
+      msg: diagnostics.message,
+      translation: translateJsonError(diagnostics.message),
+    } : null);
+    setGemsErrorContext(diagnostics ? [{
+      lineNum: diagnostics.line ?? 1,
+      text: diagnostics.context,
+      isError: true,
+      truncated: diagnostics.contextTruncatedBefore || diagnostics.contextTruncatedAfter,
+    }] : null);
+    setGemsPasteError(outcome.status === 'regeneration-required'
+      ? `הפלט נקטע ב-EOF — שורה ${diagnostics?.line ?? '?'}, עמודה ${diagnostics?.column ?? '?'}; לא שוחזר תוכן חסר`
+      : outcome.status === 'repaired'
+        ? 'נמצא מועמד תיקון תקין — הקלט המקורי נשמר עד לאישור'
+        : diagnostics
+          ? `JSON לא תקין — שורה ${diagnostics.line}, עמודה ${diagnostics.column}`
+          : `JSON עבר parse אך נכשל באימות הסכמה — ${outcome.original?.validation?.errors?.join(' | ') || 'מבנה לא מוכר'}`);
+    setGemsAiRepairResult({
+      ...outcome,
+      originalJson: raw,
+      validationStatus: outcome.status === 'regeneration-required' ? 'regeneration-required' : outcome.finalValidation?.ok ? 'validated' : 'failed',
+      regenerationPrompt: outcome.status === 'regeneration-required' ? buildCanonicalGemsRegenerationPrompt() : '',
+      report: buildValidatedGemsJsonRepairReport({ outcome, raw }),
+    });
+  }, [gemsPasteInput, currentGemsJsonValidation.isValid]);
+
+  const canStartGemsAnalysis = currentGemsJsonValidation.isValid;
+
+  // Keep the Claude Code diagnostic action available throughout the repair
+  // and persistence-error states, including after a validated candidate has been applied.
   const showClaudeCodeDebugReport = Boolean(
     gemsPasteError ||
+    gemsDraftPersistenceWarning ||
+    gemsPersistenceError ||
     (currentGemsJsonValidation.hasValue && !currentGemsJsonValidation.isValid) ||
-    (gemsAiRepairResult && !gemsAiRepairResult.repairedJson) ||
+    gemsAiRepairResult ||
     gemsAiRepairFailed
   );
 
-  const handleCopyClaudeCodeDebugReport = async () => {
+  const handleCopyClaudeCodeDebugReport = async (target = 'Codex') => {
     const videoId = video?.id || video?.youtubeId || null;
-    const videoUrl = getWatchUrl(video) || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
-    const channelName = video?.channelTitle || video?.channelName || video?.channel || '';
     let attemptedContentType = null;
-    try { attemptedContentType = JSON.parse(gemsPasteInput)?.contentType || null; } catch { /* invalid JSON — expected here */ }
-    const parseErrorText = gemsParsedErrorInfo?.msg || currentGemsJsonValidation.error?.message || gemsPasteError || '';
+    let attemptedSubtype = null;
+    try {
+      const attempted = JSON.parse(gemsPasteInput);
+      attemptedContentType = attempted?.contentType || null;
+      attemptedSubtype = attempted?.subtype || attempted?.briefSubtype || null;
+    } catch { /* invalid JSON — expected here */ }
+    const parseErrorText = gemsParsedErrorInfo?.msg || currentGemsJsonValidation.error?.message || gemsPasteError || gemsPersistenceError || gemsDraftPersistenceWarning || '';
+    const parserDiagnostics = currentGemsJsonValidation.result?.diagnostics || null;
+    const repairChanges = gemsAiRepairResult?.changes || [];
+    const classification = classifyGemsDiagnostic({
+      parseValid: currentGemsJsonValidation.parseValid,
+      schemaValid: currentGemsJsonValidation.schemaValid,
+      parserDiagnostics,
+      repairChanges,
+      draftPersistenceWarning: gemsDraftPersistenceWarning,
+      persistenceError: gemsPersistenceError,
+    });
+    const occurrenceCount = (gemsDiagnosticOccurrencesRef.current.get(classification.category) || 0) + 1;
+    gemsDiagnosticOccurrencesRef.current.set(classification.category, occurrenceCount);
 
-    const report = createGeminiJsonDebugReport({
-      videoTitle: video?.title || '',
+    const report = createGemsImportDiagnosticReport({
+      projectName: 'YouTube Mentor Dashboard',
+      workId: 'YMD-GEMS-IMPORT-RECOVERY',
+      sessionName: 'קליטת GEMS שחזור התוכן',
+      appVersion: import.meta.env.VITE_APP_VERSION || '0.0.1-local',
+      head: import.meta.env.VITE_GIT_HEAD || null,
       videoId,
-      videoUrl,
-      channelName,
+      videoTitle: video?.title || null,
       contentType: attemptedContentType || marketBriefData?.contentType || video?.contentType || '',
+      subtype: attemptedSubtype || effectiveBriefSlug || normalizedSubCategory || '',
       parseError: parseErrorText,
-      parseValid: currentGemsJsonValidation.isValid,
-      rawGeminiOutput: gemsPasteInput,
-      transcript,
-      repairCandidate: gemsAiRepairResult?.repairedJson || null,
-      aiRepairResult: gemsAiRepairResult?.source === 'ai' ? gemsAiRepairResult.report : null,
-      diagnostics: {
-        repairSource: gemsAiRepairResult?.source || null,
-        repairChanges: gemsAiRepairResult?.changes || [],
-        aiRepairFailed: gemsAiRepairFailed,
-        errorLocation: gemsParsedErrorInfo ? { line: gemsParsedErrorInfo.line, col: gemsParsedErrorInfo.col } : null,
+      parseValid: currentGemsJsonValidation.parseValid,
+      schemaValid: currentGemsJsonValidation.schemaValid,
+      rawGemsOutput: gemsPasteInput,
+      parserDiagnostics,
+      repairSource: gemsAiRepairResult?.source || null,
+      repairChanges,
+      repairStatus: gemsAiRepairResult?.validationStatus || null,
+      draftPersistenceWarning: gemsDraftPersistenceWarning || null,
+      persistenceError: gemsPersistenceError || null,
+      storageMetadata: {
+        canonical: {
+          layer: 'IndexedDB',
+          database: 'yt_mentor_app_data_v1',
+          objectStore: 'sourceEntries',
+          key: videoId ? `market_brief_${videoId}` : '(record id unavailable)',
+          mandatory: true,
+          readBackRequired: true,
+        },
+        draft: {
+          layer: 'localStorage',
+          key: videoId ? `gems-paste-${videoId}` : '(record id unavailable)',
+          mandatory: false,
+        },
+        compatibilitySidecar: {
+          layer: 'localStorage',
+          key: videoId ? `market_brief_${videoId}` : '(record id unavailable)',
+          mandatory: false,
+        },
       },
+      existingDataPreserved: true,
+      occurrenceCount,
     });
 
     try {
       await navigator.clipboard.writeText(report);
-      toast.success('דוח התיקון הועתק לקלוד קוד');
+      toast.success(`דוח האבחון הבטוח הועתק עבור ${target}`);
     } catch {
-      toast.error('לא ניתן היה להעתיק את דוח התיקון');
+      toast.error('לא ניתן היה להעתיק את דוח האבחון');
+    }
+  };
+
+  const handleCopyGemsRecoveryStatusReport = async () => {
+    const videoId = video?.id || video?.youtubeId || null;
+    const cardVideo = queryClient.getQueryData(['videos'])?.find((candidate) => candidate?.id === videoId) || video;
+    let attemptedContentType = null;
+    let attemptedSubtype = null;
+    try {
+      const attempted = JSON.parse(gemsPasteInput);
+      attemptedContentType = attempted?.contentType || null;
+      attemptedSubtype = attempted?.subtype || attempted?.briefSubtype || null;
+    } catch { /* The status report remains available for invalid input too. */ }
+
+    let report;
+    try {
+      report = createGemsRecoveryStatusReport({
+        projectName: 'YouTube Mentor Dashboard',
+        workId: 'YMD-GEMS-IMPORT-RECOVERY',
+        sessionName: 'קליטת GEMS שחזור התוכן',
+        appVersion: import.meta.env.VITE_APP_VERSION || '0.0.1-local',
+        head: import.meta.env.VITE_GIT_HEAD || null,
+        videoId,
+        videoTitle: video?.title || null,
+        contentType: attemptedContentType || marketBriefData?.contentType || video?.contentType || '',
+        subtype: attemptedSubtype || effectiveBriefSlug || normalizedSubCategory || '',
+        parseValid: currentGemsJsonValidation.parseValid,
+        schemaValid: currentGemsJsonValidation.schemaValid,
+        canStart: canStartGemsAnalysis,
+        inputSource: gemsPasteInputSource,
+        inputLength: gemsPasteInput.length,
+        storageMode: getApplicationStorageMode(),
+        canonicalAnalysisVisible: Boolean(marketBriefData),
+        cardAnalyzed: isVideoAnalyzed(cardVideo),
+        draftPersistenceWarning: gemsDraftPersistenceWarning || null,
+        persistenceError: gemsPersistenceError || null,
+        repairStatus: gemsAiRepairResult?.validationStatus || null,
+      });
+      setGemsRecoveryStatusReport(report);
+    } catch (error) {
+      console.error('[GEMS recovery status report] generation failed', error);
+      toast.error('לא ניתן היה ליצור את דוח מצב השחזור');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(report);
+      toast.success('דוח מצב השחזור הועתק ל-Codex');
+    } catch {
+      toast.error('לא ניתן היה להעתיק את דוח מצב השחזור');
     }
   };
 
@@ -6532,7 +7111,10 @@ export function VideoDetailPanel({
 
   const handleClearGemsPaste = () => {
     setGemsPasteInput('');
+    setGemsPasteInputSource('empty');
     setGemsPasteError('');
+    setGemsDraftPersistenceWarning('');
+    setGemsPersistenceError('');
     setGemsParsedErrorInfo(null);
     setGemsRepairApplied(false);
     setGemsErrorContext(null);
@@ -6594,6 +7176,7 @@ export function VideoDetailPanel({
       tags: [],
       analysisProvider: null,
       analyzedAt: null,
+      gemsAnalysisProvenance: null,
       analysisVersion: null,
       chapterSource: null,
       analysisStatus: "not_analyzed",
@@ -7688,6 +8271,15 @@ export function VideoDetailPanel({
       toast.error("לא ניתן לזהות videoId לסרטון הזה");
       return;
     }
+    const storageDiagnostics = getTranscriptStorageDiagnostics();
+    if (storageDiagnostics.backend !== APPLICATION_STORAGE_MODES.LOCAL_STORAGE) {
+      const reason = `Backend התמלול שנבחר עבור ${storageDiagnostics.origin || 'origin לא ידוע'} הוא ${storageDiagnostics.backend}; הגירת IndexedDB נדחתה ולא בוצעה שמירה.`;
+      console.warn('[transcript-storage] blocked', storageDiagnostics);
+      setAnalyzeError(reason);
+      toast.error(reason);
+      return;
+    }
+    console.info('[transcript-storage] selected', storageDiagnostics);
     setIsFetchingYtApiTranscript(true);
     console.log("[transcript] fetching via proxy ytId=" + ytId);
     try {
@@ -7716,6 +8308,8 @@ export function VideoDetailPanel({
         try { return validateTranscriptUsable({ segments }); } catch { return {}; }
       })();
 
+      const transcriptImportedAt = new Date().toISOString();
+
       const patch = buildDefinedPatch({
         transcript: body,
         transcriptSegments: segments,
@@ -7724,7 +8318,7 @@ export function VideoDetailPanel({
         transcriptStatus: "youtube",
         transcriptQuality: qualityResult.transcriptQuality || "low",
         transcriptError: null,
-        transcriptImportedAt: new Date().toISOString(),
+        transcriptImportedAt,
         category: effectiveCategory ?? resolvedVideoMode.category ?? undefined,
         subCategory: effectiveSubCategory || resolvedVideoMode.subCategory || undefined,
         uiMode: video?.uiMode ?? videoProp?.uiMode ?? resolvedVideoMode.mode ?? undefined,
@@ -7743,7 +8337,24 @@ export function VideoDetailPanel({
         gemType: patch.gemType ?? null,
         analysisType: patch.analysisType ?? null,
       });
-      persistAnalysisState(patch);
+      if (!payload?.persistence?.ok || payload.persistence.storage !== 'localStorage') {
+        const persistenceError = new Error('הורדת התמלול הצליחה, אך שמירתו ב-localStorage לא אומתה. לא דווחה הצלחה.');
+        persistenceError.name = 'TranscriptPersistenceError';
+        throw persistenceError;
+      }
+      const saved = updateLocalVideo(video?.id || video?.youtubeId, patch);
+      if (!saved) {
+        const storageFailure = getLastVideoStorageWriteError();
+        const persistenceError = new Error(
+          storageFailure?.classification === 'quota-exceeded'
+            ? 'התמלול נשמר במטמון, אך עדכון רשומת הסרטון ב-localStorage נכשל כי שטח האחסון מלא. לא דווחה הצלחה.'
+            : 'התמלול נשמר במטמון, אך עדכון רשומת הסרטון ב-localStorage נכשל. לא דווחה הצלחה.',
+        );
+        persistenceError.name = 'TranscriptPersistenceError';
+        throw persistenceError;
+      }
+      setVideoState(saved);
+      onVideoPatch?.(saved);
       setGemRecommendationVisible(true);
       console.log("[transcript] success lang=" + (payload?.lang || "?") + " segments=" + segments.length);
       setAnalyzeError(null);
@@ -7760,6 +8371,12 @@ export function VideoDetailPanel({
   const handleDeleteTranscript = () => {
     const ytId = video?.videoId || video?.youtubeId || getVideoIdFromUrl(getWatchUrl(video));
     let cleared = 0;
+
+    const storageDiagnostics = getTranscriptStorageDiagnostics();
+    if (storageDiagnostics.backend !== APPLICATION_STORAGE_MODES.LOCAL_STORAGE) {
+      toast.error(`Backend התמלול שנבחר הוא ${storageDiagnostics.backend}; לא בוצעה מחיקה.`);
+      return;
+    }
 
     // Clear per-videoId caches
     if (ytId) {
@@ -9092,8 +9709,8 @@ export function VideoDetailPanel({
                           <path d="M37 16L63 31.5L37 47V16Z" fill="white"/>
                         </svg>
                       ),
-                      label: 'נסה תמלול YouTube',
-                      sub: 'תמלול אוטומטי',
+                      label: hasStoredTranscript ? 'תמלול YouTube נשמר' : 'נסה תמלול YouTube',
+                      sub: hasStoredTranscript ? 'זמין לפתיחה חוזרת' : 'תמלול אוטומטי',
                       cn: 'text-red-700 dark:text-red-300',
                       onClick: handleYtApiTranscript,
                       disabled: isCheckingTranscript,
@@ -9198,6 +9815,17 @@ export function VideoDetailPanel({
 
                 {/* Secondary actions */}
                 <div className="flex flex-wrap gap-1.5 border-t border-slate-100 dark:border-zinc-800 pt-2">
+                  {lastGemsRepairReport?.videoId === currentGemsVideoId && (
+                    <button
+                      type="button"
+                      data-testid="gems-last-repair-report"
+                      onClick={handleCopyLastGemsRepairReport}
+                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 transition-all hover:bg-violet-100 hover:shadow-sm active:scale-95 dark:border-violet-800/40 dark:bg-violet-950/20 dark:text-violet-300"
+                    >
+                      <span className="text-xs leading-none">📋</span>
+                      <span>דוח אחרון ל-Codex / Claude</span>
+                    </button>
+                  )}
                   {[
                     {
                       id: 'fresh-reimport',
@@ -9459,6 +10087,11 @@ export function VideoDetailPanel({
             )}
 
             {/* ── טאבים ── */}
+            <StaticVideoTimestampProvider
+              youtubeId={rowTimestampYoutubeId}
+              activeTab={activeTab}
+              resolver={rowTimestampResolver}
+            >
             <UniversalTabBulkProvider
               activeTab={activeTab}
               multiSelected={multiSelected}
@@ -9497,6 +10130,22 @@ export function VideoDetailPanel({
                 subject={briefPresentationVideo?.title || effectiveSubCategory || effectiveCategory}
                 publishedAt={briefPresentationVideo?.publishedAt}
                 showSourceCaption={false}
+                action={rowTimestampActionState.shouldRender ? (
+                  <RowTimestampGenerator
+                    key={rowTimestampRecordId}
+                    video={{ ...video, durationSeconds: getVideoDurationSeconds(video) }}
+                    recordId={rowTimestampRecordId}
+                    youtubeId={rowTimestampYoutubeId}
+                    transcriptText={rowTimestampTranscript}
+                    loadTranscriptFn={loadRowTimestampTranscriptForVideo}
+                    analysis={rowTimestampAnalysis}
+                    rowDescriptors={rowTimestampDescriptors}
+                    generateFn={generateRowTimestamps}
+                    store={rowTimestampStore}
+                    disabledReason={rowTimestampActionState.disabledReason}
+                    onAnnotationsChanged={() => setRowTimestampVersion((version) => version + 1)}
+                  />
+                ) : null}
               />
               <UniversalTabBulkToolbar />
 
@@ -10161,8 +10810,8 @@ export function VideoDetailPanel({
                     const summaryTabBulkItems = [
                       ...buildSummaryBriefingCardBulkItems(dailyBriefing),
                       ...buildSummaryBriefingBulkItems(dailyBriefing),
-                      ...(Array.isArray(video.keyPoints)
-                        ? video.keyPoints.map((point, i) => ({
+                      ...(Array.isArray(effectiveVideo.keyPoints)
+                        ? effectiveVideo.keyPoints.map((point, i) => ({
                           id: `keypoints:${i}`,
                           text: String(point),
                           sectionLabel: 'נקודות מפתח',
@@ -10218,17 +10867,21 @@ export function VideoDetailPanel({
                           <p className={SUMMARY_LEAD_CLASS} data-section-content="סיכום">{summaryShort}</p>
                         </div>
                         )}
-                        {Array.isArray(video.keyPoints) && video.keyPoints.length > 0 ? (
+                        {Array.isArray(effectiveVideo.keyPoints) && effectiveVideo.keyPoints.length > 0 ? (
                           <>
                             <ul className="space-y-3 text-right" dir="rtl">
-                      {video.keyPoints.map((point, i) => {
+                      {effectiveVideo.keyPoints.map((point, i) => {
+                        const pointText = typeof point === 'string'
+                          ? point
+                          : String(point?.text || point?.title || point?.content || point?.summary || '').trim();
+                        if (!pointText) return null;
                         const itemId = `keypoints:${i}`;
                         const sentenceIsOpponent = opponentSentences.some(s => s.id === itemId);
                         const sentenceObj = opponentSentences.find(s => s.id === itemId);
                         if (keyPointsFilter === 'mine' && sentenceIsOpponent) return null;
                         if (keyPointsFilter === 'opponent' && !sentenceIsOpponent) return null;
                         return (
-                          <li key={i} className="flex items-start gap-2">
+                          <li key={i} data-static-time-candidate="true" className="flex items-start gap-2">
                             <span className={`mt-2.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                               sentenceIsOpponent
                                 ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
@@ -10236,20 +10889,26 @@ export function VideoDetailPanel({
                             }`}>
                               {i + 1}
                             </span>
-                            <BrainSelectableItem
-                              id={itemId}
-                              text={point}
-                              isSelected={multiSelected.has(itemId)}
-                              isSaved={isBrainItemSaved(point, 'keypoints')}
-                              onToggle={() => toggleMultiSelect(itemId, { text: point, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
-                              onSaveSingle={(note) => saveSingleItemToBrain(point, 'keypoints', 'נקודות מפתח', note)}
-                              onCopy={() => navigator.clipboard.writeText(point).then(() => toast.success('הועתק'))}
-                              isPolitical={effectiveGemInfo?.gemKey === 'political'}
-                              isOpponent={sentenceIsOpponent}
-                              onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: point, sourceTab: 'keypoints', sourceIndex: i })}
-                              opponentResponse={sentenceObj?.response || null}
-                              onSaveResponse={handleSaveOpponentResponse}
-                            />
+                            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+                              <BrainSelectableItem
+                                id={itemId}
+                                text={pointText}
+                                isSelected={multiSelected.has(itemId)}
+                                isSaved={isBrainItemSaved(pointText, 'keypoints')}
+                                onToggle={() => toggleMultiSelect(itemId, { text: pointText, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
+                                onSaveSingle={(note) => saveSingleItemToBrain(pointText, 'keypoints', 'נקודות מפתח', note)}
+                                onCopy={() => navigator.clipboard.writeText(pointText).then(() => toast.success('הועתק'))}
+                                isPolitical={effectiveGemInfo?.gemKey === 'political'}
+                                isOpponent={sentenceIsOpponent}
+                                onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: pointText, sourceTab: 'keypoints', sourceIndex: i })}
+                                opponentResponse={sentenceObj?.response || null}
+                                onSaveResponse={handleSaveOpponentResponse}
+                              />
+                              <StaticVideoTimestampLink
+                                videoId={rowTimestampYoutubeId}
+                                item={point}
+                              />
+                            </div>
                           </li>
                         );
                       })}
@@ -10548,9 +11207,12 @@ export function VideoDetailPanel({
                       <details className="mb-3 rounded-lg border border-slate-100 bg-slate-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 text-[10px]">
                         <summary className="cursor-pointer select-none px-2 py-1 text-slate-400 dark:text-zinc-500">🔍 chapter debug</summary>
                         <div className="px-2 pb-2 pt-0.5 space-y-0.5 font-mono text-slate-500 dark:text-zinc-400" dir="ltr">
-                          <div>hasTranscript: {String(hasStoredTranscript)}</div>
-                          <div>transcriptSource: {transcriptForChapters.source ?? "—"}</div>
-                          <div>lastChapterSource: {chapterTranscriptSource ?? "—"}</div>
+                            <div>hasTranscript: {String(hasStoredTranscript)}</div>
+                            <div>transcriptSource: {transcriptForChapters.source ?? "—"}</div>
+                            <div>transcriptBackend: {transcriptStorageDiagnostics.backend}</div>
+                            <div>transcriptOrigin: {transcriptStorageDiagnostics.origin ?? "—"}</div>
+                            <div>transcriptPolicy: {transcriptStorageDiagnostics.policy ?? "—"}</div>
+                            <div>lastChapterSource: {chapterTranscriptSource ?? "—"}</div>
                           <div>transcriptLen: {fullTranscriptText?.length ?? 0}</div>
                           <div>descriptionChapters: {descriptionChapters?.length ?? 0}</div>
                           <div>aiAnalysisChapters: {aiAnalysisChapters?.length ?? 0}</div>
@@ -11414,6 +12076,7 @@ export function VideoDetailPanel({
                       {universalInsightSections.length > 0 && (
                         <InsightsStructuredView
                           sections={universalInsightSections}
+                          videoId={rowTimestampYoutubeId}
                           onSaveToBrain={brainSaveInsights}
                           isSaved={isInsightSaved}
                           bulkSelection={bulkSelectionShare}
@@ -11426,6 +12089,7 @@ export function VideoDetailPanel({
                             <InsightsStructuredView
                               key={key}
                               sections={[{ key, label, items }]}
+                              videoId={rowTimestampYoutubeId}
                               cardClassName={highlight ? 'rounded-xl border border-indigo-200 bg-indigo-50/60 dark:border-indigo-800/50 dark:bg-indigo-950/20 px-4 py-3' : SUMMARY_CARD_CLASS}
                               onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
                               isSaved={(text) => isBrainItemSaved(text, tabKey)}
@@ -11447,6 +12111,7 @@ export function VideoDetailPanel({
                             />
                             <LearningTabContent
                               items={items}
+                              videoId={rowTimestampYoutubeId}
                               emptyLabel=""
                               onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
                               isSaved={(text) => isBrainItemSaved(text, tabKey)}
@@ -11595,6 +12260,7 @@ export function VideoDetailPanel({
                           )}
                           <LearningTabContent
                             items={items}
+                            videoId={rowTimestampYoutubeId}
                             emptyLabel=""
                             onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
                             isSaved={(text) => isBrainItemSaved(text, tabKey)}
@@ -11801,6 +12467,7 @@ export function VideoDetailPanel({
                 </div>
                 <SpecializedContentRenderer
                   effectiveVideo={briefPresentationVideo}
+                  youtubeId={rowTimestampYoutubeId}
                   normalizedSubCategory={effectiveBriefSlug ?? normalizedSubCategory}
                   marketBriefData={marketBriefData}
                   politicalSummary={politicalSummary}
@@ -11814,6 +12481,7 @@ export function VideoDetailPanel({
 
               </Tabs>
             </UniversalTabBulkProvider>
+            </StaticVideoTimestampProvider>
               </div>{/* closes main content */}
             </div>{/* closes main content row */}
             </PanelErrorBoundary>
@@ -12205,7 +12873,7 @@ export function VideoDetailPanel({
     <GemSelectionModal
       open={showGemModal}
       onOpenChange={setShowGemModal}
-      video={effectiveVideo}
+      video={gemSelectionVideo}
       topics={videoTopics}
       recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
       savedGemKey={gemOverride || null}
@@ -12574,14 +13242,15 @@ export function VideoDetailPanel({
     />
 
     {/* ── GEMS JSON Paste Dialog ────────────────────────────── */}
-    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); } }}>
-      <DialogContent dir="rtl" className="max-w-3xl w-[90vw] z-[200]">
-        <DialogHeader>
+    <Dialog open={isGemsPasteOpen} onOpenChange={(open) => { setIsGemsPasteOpen(open); if (!open) { setGemsPasteError(""); setGemsDraftPersistenceWarning(""); setGemsPersistenceError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); } }}>
+      <DialogContent dir="rtl" className="max-w-3xl w-[90vw] max-h-[90vh] overflow-hidden flex flex-col gap-4 z-[200]">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="text-right text-base font-bold">📥 הדבק JSON מ-GEMS</DialogTitle>
           <DialogDescription className="text-right text-sm text-slate-500">
             הדבק JSON שקיבלת מ-Gemini Gem (תוצאת ניתוח).
           </DialogDescription>
         </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-4 pl-1">
         <div className="flex justify-start">
           <button
             type="button"
@@ -12592,60 +13261,80 @@ export function VideoDetailPanel({
             {gemsCopyStatus === 'copied' ? 'הועתק ✅' : gemsCopyStatus === 'error' ? 'העתקה נכשלה' : '📋 העתק JSON'}
           </button>
         </div>
+        {gemsPasteInputSource === 'canonical' && (
+          <p data-testid="gems-canonical-json-source" className="text-xs text-emerald-700 dark:text-emerald-300 text-right">
+            מוצג כאן ה־JSON המתוקן והשמור של הסרטון. הצגתו אינה מבצעת שמירה או שינוי נוסף.
+          </p>
+        )}
+        {gemsPasteInputSource === 'corrected' && (
+          <p data-testid="gems-corrected-json-source" className="text-xs text-emerald-700 dark:text-emerald-300 text-right">
+            מוצג כאן מועמד התיקון המאומת במלואו; אפשר לעיין בו או להעתיק אותו לפני השמירה.
+          </p>
+        )}
         <textarea
           className={`w-full h-72 rounded-lg border p-3 text-xs text-slate-800 resize-y font-mono leading-relaxed focus:outline-none focus:ring-2 dark:bg-zinc-900 dark:text-zinc-100 ${
             gemsPasteError
               ? 'border-red-300 focus:ring-red-300 dark:border-red-700'
+              : gemsPersistenceError
+                ? 'border-amber-300 focus:ring-amber-300 dark:border-amber-700'
               : gemsRepairApplied
                 ? 'border-emerald-300 focus:ring-emerald-300 dark:border-emerald-700'
                 : 'border-slate-200 focus:ring-violet-300 dark:border-zinc-700'
           }`}
           placeholder='{ "allPoints": [...], "chapters": [...], ... }'
           value={gemsPasteInput}
+          onPaste={handleAutomaticGemsPaste}
           onChange={(e) => {
             const val = e.target.value;
             setGemsPasteInput(val);
-            setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false);
+            setGemsPasteInputSource(val.trim() ? 'edited' : 'empty');
+            setGemsPasteError(""); setGemsDraftPersistenceWarning(""); setGemsPersistenceError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false);
             if (video?.id) {
               if (val.trim()) {
-                localStorage.removeItem(`gems-paste-cleared-${video.id}`);
-                localStorage.setItem(`gems-paste-${video.id}`, val);
+                try {
+                  persistVerifiedLocalValue(`gems-paste-${video.id}`, val);
+                  localStorage.removeItem(`gems-paste-cleared-${video.id}`);
+                } catch (error) {
+                  if (!showGemsDraftPersistenceFailure(error)) throw error;
+                }
               } else {
                 localStorage.removeItem(`gems-paste-${video.id}`);
               }
             }
           }}
-          onPaste={(e) => {
-            const pasted = e.clipboardData.getData('text');
-            if (!pasted.trim()) return;
-            if (video?.id) localStorage.removeItem(`gems-paste-cleared-${video.id}`);
-            try { JSON.parse(pasted.trim()); } catch {
-              const repaired = repairGemsJson(pasted.trim());
-              try {
-                JSON.parse(repaired);
-                e.preventDefault();
-                setGemsPasteInput(repaired);
-                setGemsRepairApplied(true);
-                setGemsPasteError("");
-                setGemsParsedErrorInfo(null);
-                setGemsErrorContext(null);
-                if (video?.id) localStorage.setItem(`gems-paste-${video.id}`, repaired);
-              } catch { /* repair failed — let normal paste proceed */ }
-            }
-          }}
           dir="ltr"
         />
-        {gemsRepairApplied && !gemsPasteError && (
+        {gemsRepairApplied && !gemsPasteError && !gemsPersistenceError && (
           <p className="text-xs text-emerald-600 dark:text-emerald-400 text-right flex items-center gap-1 justify-end">
             <span>✅</span>
-            <span>JSON תוקן אוטומטית — ניתן להחיל</span>
+            <span>מועמד תיקון מאומת הוחל על הקלט</span>
           </p>
         )}
         {currentGemsJsonValidation.hasValue && currentGemsJsonValidation.isValid && (
           <p className="text-xs text-emerald-600 dark:text-emerald-400 text-right flex items-center gap-1 justify-end">
             <span>✅</span>
-            <span>JSON תקין</span>
+            <span>JSON עבר parse ואימות סכמה</span>
           </p>
+        )}
+        {gemsDraftPersistenceWarning && (
+          <div
+            data-testid="gems-draft-storage-warning"
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-right text-xs font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
+            role="status"
+          >
+            <p>טיוטת הקלט לא נשמרה</p>
+            <p className="mt-1 font-normal">{gemsDraftPersistenceWarning}</p>
+          </div>
+        )}
+        {gemsPersistenceError && (
+          <div
+            data-testid="gems-storage-error"
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-right text-xs font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
+            role="alert"
+          >
+            <p>שמירת הניתוח הסופי נכשלה</p>
+            <p className="mt-1 font-normal">{gemsPersistenceError}</p>
+          </div>
         )}
         {gemsPasteError && (
           <div className="space-y-1.5 text-right" dir="rtl">
@@ -12673,6 +13362,11 @@ export function VideoDetailPanel({
             )}
             {gemsErrorContext && gemsErrorContext.length > 0 && (
               <div className="mt-1 rounded border border-red-200 dark:border-red-800 overflow-hidden" dir="ltr">
+                {gemsErrorContext.some((ln) => ln.truncated) && (
+                  <div className="bg-amber-50 px-2 py-1 text-right text-[10px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300" dir="rtl">
+                    הקשר אבחוני מקוצר בלבד — אינו הקלט המלא ואינו JSON מתוקן
+                  </div>
+                )}
                 {gemsErrorContext.map((ln) => (
                   <div
                     key={ln.lineNum}
@@ -12697,15 +13391,23 @@ export function VideoDetailPanel({
               <div>
                 <p className="text-sm font-bold text-sky-800 dark:text-sky-200">🤖 דוח תיקון JSON</p>
                 <p className="text-[11px] text-sky-700 dark:text-sky-300">
-                  מקור: {gemsAiRepairResult.source === 'ai' ? 'AI' : 'תיקון פנימי'} · {Array.isArray(gemsAiRepairResult.changes) ? gemsAiRepairResult.changes.length : 0} שינויים
+                  מקור: {gemsAiRepairResult.source === 'ai' ? 'AI' : gemsAiRepairResult.source === 'deterministic' ? 'תיקון דטרמיניסטי' : 'אבחון בלבד'} · מצב: {gemsAiRepairResult.validationStatus === 'applied' ? 'הוחל לאחר אימות' : gemsAiRepairResult.validationStatus === 'validated' ? 'עבר parse וסכמה' : gemsAiRepairResult.status === 'regeneration-required' ? 'נדרשת יצירה מחדש' : 'נכשל'}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">
+                  קלט מקורי: נשמר בזיכרון לצורכי אבחון · {gemsAiRepairResult.originalJson?.length || 0} תווים
                 </p>
               </div>
-              {gemsAiRepairResult.repairedJson && (
+              {gemsAiRepairResult.repairedJson && gemsAiRepairResult.finalValidation?.ok && (
                 <span className="text-[11px] rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                  מוכן להחלה
+                  מועמד מאומת — מוכן להחלה
                 </span>
               )}
             </div>
+            {gemsAiRepairResult.serverError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300" dir="ltr">
+                Server error [{gemsAiRepairResult.serverError.code}{gemsAiRepairResult.serverError.status ? `, HTTP ${gemsAiRepairResult.serverError.status}` : ''}]: {gemsAiRepairResult.serverError.message}
+              </div>
+            )}
             {Array.isArray(gemsAiRepairResult.changes) && gemsAiRepairResult.changes.length > 0 && (
               <ul className="space-y-1 text-[11px] text-slate-700 dark:text-zinc-300">
                 {gemsAiRepairResult.changes.map((change, idx) => (
@@ -12716,18 +13418,46 @@ export function VideoDetailPanel({
             <pre className="max-h-56 overflow-auto rounded-lg border border-sky-200 bg-white/80 px-3 py-2 text-[11px] leading-5 text-slate-700 dark:border-sky-800 dark:bg-zinc-950 dark:text-zinc-200 whitespace-pre-wrap">
               {gemsAiRepairResult.report}
             </pre>
+            {gemsAiRepairResult.regenerationPrompt && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+                <p className="font-bold">יצירה מחדש נדרשת</p>
+                <p>הפלט הסתיים ב-EOF. לא שוחזר תוכן חסר; יש לבקש פלט קצר במבנה canonical.</p>
+                <button
+                  type="button"
+                  onClick={handleCopyGemsRegenerationPrompt}
+                  className="mt-2 rounded-lg border border-amber-300 px-3 py-1.5 text-xs hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-950/40"
+                >
+                  📋 העתק פרומפט יצירה מחדש
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 justify-start flex-row-reverse">
               <button
                 type="button"
-                onClick={handleCopyAiRepairReport}
+                onClick={() => handleCopyAiRepairReport('Codex')}
                 className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
               >
-                📋 העתק דוח לקודקס
+                📋 העתק ל-Codex
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyAiRepairReport('Claude Code')}
+                className="px-3 py-1.5 text-xs border border-sky-200 rounded-lg text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-300"
+              >
+                📋 העתק משימה ל-Claude Code
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyOriginalGemsJson}
+                disabled={!gemsAiRepairResult.originalJson}
+                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
+              >
+                📄 העתק קלט מקורי
               </button>
               <button
                 type="button"
                 onClick={handleCopyAiRepairedJson}
-                disabled={!gemsAiRepairResult.repairedJson}
+                disabled={!gemsAiRepairResult.repairedJson || !gemsAiRepairResult.finalValidation?.ok}
                 className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
               >
                 📄 העתק JSON מתוקן
@@ -12735,7 +13465,7 @@ export function VideoDetailPanel({
               <button
                 type="button"
                 onClick={handleApplyAiRepairedJson}
-                disabled={!gemsAiRepairResult.repairedJson}
+                disabled={!gemsAiRepairResult.repairedJson || !gemsAiRepairResult.finalValidation?.ok}
                 className="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 ✅ החל תיקון ל-JSON
@@ -12750,61 +13480,97 @@ export function VideoDetailPanel({
             </div>
           </div>
         )}
-        {showClaudeCodeDebugReport && (
-          <div className="flex justify-start">
-            <button
-              type="button"
-              onClick={handleCopyClaudeCodeDebugReport}
-              className="px-3 py-1.5 text-xs border border-violet-300 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
-            >
-              📋 העתק דוח לקלוד קוד
-            </button>
-          </div>
-        )}
         {import.meta.env.DEV && (
           <div dir="ltr" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-mono text-slate-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 flex flex-wrap gap-x-4 gap-y-0.5">
-            <span>parseValid: <b className={currentGemsJsonValidation.isValid ? 'text-emerald-600' : 'text-red-500'}>{String(currentGemsJsonValidation.isValid)}</b></span>
+            <span>parseValid: <b className={currentGemsJsonValidation.parseValid ? 'text-emerald-600' : 'text-red-500'}>{String(currentGemsJsonValidation.parseValid)}</b></span>
+            <span>schemaValid: <b className={currentGemsJsonValidation.schemaValid ? 'text-emerald-600' : 'text-red-500'}>{String(currentGemsJsonValidation.schemaValid)}</b></span>
             <span>parseError: <b>{currentGemsJsonValidation.error ? currentGemsJsonValidation.error.message.slice(0, 50) : 'none'}</b></span>
             <span>parsedJson: <b>{currentGemsJsonValidation.isValid ? 'exists' : 'missing'}</b></span>
-            <span>repairCandidate: <b>{gemsAiRepairResult ? 'exists' : 'missing'}</b></span>
-            <span>canStart: <b className={currentGemsJsonValidation.isValid ? 'text-emerald-600' : 'text-red-500'}>{String(currentGemsJsonValidation.isValid)}</b></span>
+            <span>repairCandidate: <b>{gemsAiRepairResult?.repairedJson && gemsAiRepairResult.finalValidation?.ok ? 'validated' : 'missing'}</b></span>
+            <span>repairStatus: <b>{gemsAiRepairResult?.validationStatus || 'none'}</b></span>
+            <span>canStart: <b className={canStartGemsAnalysis ? 'text-emerald-600' : 'text-red-500'}>{String(canStartGemsAnalysis)}</b></span>
           </div>
         )}
-        <div className="flex gap-2 justify-start flex-row-reverse">
-          <button
-            onClick={() => { setIsGemsPasteOpen(false); setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); }}
-            className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
-          >
-            ביטול
-          </button>
-          <button
-            onClick={handleClearGemsPaste}
-            disabled={!gemsPasteInput.trim()}
-            className="px-4 py-2 text-sm border border-rose-200 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 disabled:opacity-50 font-medium dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-400"
-          >
-            🗑️ מחק מלל
-          </button>
-          <button
-            onClick={handleRepairGemsJson}
-            disabled={!gemsPasteInput.trim()}
-            className="px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 disabled:opacity-50 font-medium dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
-          >
-            🔧 תקן JSON
-          </button>
-          <button
-            onClick={handleAiRepairGemsJson}
-            disabled={!gemsPasteInput.trim() || (!gemsPasteError && !gemsParsedErrorInfo) || isAiRepairingGemsJson}
-            className="px-4 py-2 text-sm border border-sky-300 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 disabled:opacity-50 font-medium dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300"
-          >
-            {isAiRepairingGemsJson ? '🤖 מתקן ומפיק דוח...' : '🤖 תקן JSON עם AI + הפק דוח'}
-          </button>
-          <button
-            onClick={handleApplyGemsJson}
-            disabled={!currentGemsJsonValidation.isValid}
-            className="px-5 py-2 text-sm bg-violet-600 text-white rounded-lg disabled:opacity-50 hover:bg-violet-700 font-semibold"
-          >
-            התחל ניתוח
-          </button>
+        </div>
+        <div className="shrink-0 space-y-2 border-t border-slate-200 bg-white pt-3 dark:border-zinc-800 dark:bg-zinc-950">
+          <div data-testid="gems-primary-actions" className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => { setIsGemsPasteOpen(false); setGemsPasteError(""); setGemsParsedErrorInfo(null); setGemsRepairApplied(false); setGemsErrorContext(null); setGemsAiRepairResult(null); setGemsAiRepairFailed(false); setIsAiRepairingGemsJson(false); }}
+              className="px-4 py-2 text-sm border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={handleApplyGemsJson}
+              disabled={!canStartGemsAnalysis}
+              className="px-5 py-2 text-sm bg-violet-600 text-white rounded-lg disabled:opacity-50 hover:bg-violet-700 font-semibold"
+            >
+              התחל ניתוח
+            </button>
+          </div>
+          <div data-testid="gems-secondary-actions" className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              data-testid="gems-copy-recovery-status-report"
+              onClick={handleCopyGemsRecoveryStatusReport}
+              className="shrink-0 px-3 py-2 text-sm border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 font-medium dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+            >
+              📋 העתק דוח מצב ל-Codex
+            </button>
+            {showClaudeCodeDebugReport && (
+            <>
+            <button
+              type="button"
+              onClick={() => handleCopyClaudeCodeDebugReport('Codex')}
+              className="shrink-0 px-3 py-2 text-sm border border-violet-300 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 font-medium dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
+            >
+              📋 העתק דוח ל-Codex
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopyClaudeCodeDebugReport('Claude Code')}
+              className="shrink-0 px-3 py-2 text-sm border border-sky-300 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 font-medium dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300"
+            >
+              📋 העתק משימה ל-Claude Code
+            </button>
+            </>
+            )}
+            <button
+              onClick={handleClearGemsPaste}
+              disabled={!gemsPasteInput.trim()}
+              className="shrink-0 px-4 py-2 text-sm border border-rose-200 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 disabled:opacity-50 font-medium dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-400"
+            >
+              🗑️ מחק מלל
+            </button>
+            <button
+              onClick={handleRepairGemsJson}
+              disabled={!gemsPasteInput.trim() || currentGemsJsonValidation.isValid}
+              className="shrink-0 px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 disabled:opacity-50 font-medium dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+            >
+              🔧 תקן JSON
+            </button>
+            <button
+              onClick={handleAiRepairGemsJson}
+              disabled={!gemsPasteInput.trim() || currentGemsJsonValidation.isValid || isAiRepairingGemsJson}
+              className="shrink-0 px-4 py-2 text-sm border border-sky-300 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 disabled:opacity-50 font-medium dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300"
+            >
+              {isAiRepairingGemsJson ? '🤖 מתקן ומפיק דוח...' : '🤖 תקן JSON עם AI + הפק דוח'}
+            </button>
+          </div>
+          {gemsRecoveryStatusReport && (
+            <div data-testid="gems-recovery-status-report" className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-800 dark:bg-emerald-950/20">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 text-right">
+                הדוח המעודכן מוצג כאן ואינו כולל את תוכן ה־JSON. אפשר להעתיק ולשלוח אותו ל‑Codex.
+              </p>
+              <textarea
+                readOnly
+                dir="ltr"
+                value={gemsRecoveryStatusReport}
+                aria-label="דוח מצב שחזור GEMS"
+                className="h-52 w-full resize-y rounded-lg border border-emerald-200 bg-white p-3 font-mono text-xs leading-relaxed text-slate-800 dark:border-emerald-800 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

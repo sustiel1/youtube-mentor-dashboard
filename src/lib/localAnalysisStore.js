@@ -21,16 +21,15 @@ export function loadSavedAnalysis(videoId) {
 export function saveSavedAnalysis(videoId, payload) {
   if (!videoId || !payload || typeof payload !== "object") return false;
   try {
-    localStorage.setItem(
-      getAnalysisKey(videoId),
-      JSON.stringify({
-        version: 1,
-        videoId,
-        savedAt: new Date().toISOString(),
-        ...payload,
-      })
-    );
-    return true;
+    const key = getAnalysisKey(videoId);
+    const serialized = JSON.stringify({
+      version: 1,
+      videoId,
+      savedAt: new Date().toISOString(),
+      ...payload,
+    });
+    localStorage.setItem(key, serialized);
+    return localStorage.getItem(key) === serialized;
   } catch {
     return false;
   }
@@ -79,4 +78,3 @@ export function loadSavedAnalysisWithDrive(videoId, { onDriveLoaded } = {}) {
 
   return local;
 }
-

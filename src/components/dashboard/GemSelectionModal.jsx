@@ -262,20 +262,33 @@ export function GemSelectionModal({
       `Category: ${category}`,
       `SubCategory: ${subCategory}`,
       "",
+      "JSON output requirements:",
+      'Return one complete strict JSON object. Escape every ASCII double quote inside a string value as \\".',
+      "Include every required comma between adjacent JSON properties and array items.",
+      "",
       "Transcript:",
       fullTranscriptText,
     ].join("\n");
+    // Start both privileged browser operations synchronously from the click.
+    // Awaiting clipboard first can consume transient user activation and cause
+    // the subsequent window.open call to be blocked as a popup.
+    let clipboardPromise = null;
     try {
-      await navigator.clipboard.writeText(payload);
-      toast.success("✓ התמלול הועתק — הדבק ב-Gemini עם Ctrl+V");
-    } catch {
-      toast.error("לא ניתן להעתיק ללוח");
+      clipboardPromise = navigator.clipboard.writeText(payload);
+    } catch { /* Keep opening the selected GEM and report the copy failure below. */ }
+    const gemOpened = openGeminiGemUrl(resolvedGemUrl);
+    if (!gemOpened) {
+      if (clipboardPromise) await clipboardPromise.catch(() => {});
+      toast.error(`לא ניתן לפתוח את ה-GEM ${selectedGem.label}.`);
       return;
     }
     console.log("[MorningBriefing] GEM opened:", selected);
-    if (!openGeminiGemUrl(resolvedGemUrl)) {
-      toast.error(`לא מוגדר URL ל-GEM ${selectedGem.label}. פתח ניהול GEMS והוסף קישור.`);
-      return;
+    try {
+      if (!clipboardPromise) throw new Error("Clipboard unavailable");
+      await clipboardPromise;
+      toast.success("✓ ה-GEM נפתח והתמלול הועתק — הדבק עם Ctrl+V");
+    } catch {
+      toast.error("ה-GEM נפתח, אך לא ניתן להעתיק ללוח — השתמש בכפתור ההעתקה הנפרד");
     }
     onGemOpened?.(selected);
     if (!summaryReceived) {
@@ -702,6 +715,7 @@ export function GemSelectionModal({
             <div className="shrink-0 flex gap-2 border-t border-slate-100 dark:border-zinc-800 px-5 py-4 bg-white dark:bg-zinc-950">
               <button
                 type="button"
+                data-testid="gem-open-copy-transcript"
                 onClick={handleOpenGem}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
               >

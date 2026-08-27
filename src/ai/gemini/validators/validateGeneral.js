@@ -3,24 +3,29 @@
  * Extracted from vite.config.js mergeGeminiExtendedAnalysisFields + validateGeminiFinalAnalysis (general path).
  */
 
+import {
+  dedupeTimedNarratives,
+  normalizeTimedNarrativeArray,
+} from './timedNarrative.js';
+
 function pickStrings(arr) {
   return (Array.isArray(arr) ? arr : []).map((x) => String(x || '').trim()).filter(Boolean);
 }
 
 export function normalizeGeneralResult(parsed) {
-  const keyPoints = [
-    ...pickStrings(parsed.keyPoints),
-    ...pickStrings(parsed.usefulKnowledge),
-    ...pickStrings(parsed.keyTakeaways),
-  ];
-  const keyInsights = [...new Set([
-    ...pickStrings(parsed.keyInsights),
-    ...pickStrings(parsed.insights),
-  ])];
-  const actionItems = [...new Set([
-    ...pickStrings(parsed.actionItems),
-    ...pickStrings(parsed.actionableIdeas),
-  ])];
+  const keyPoints = dedupeTimedNarratives([
+    ...normalizeTimedNarrativeArray(parsed.keyPoints),
+    ...normalizeTimedNarrativeArray(parsed.usefulKnowledge),
+    ...normalizeTimedNarrativeArray(parsed.keyTakeaways),
+  ], 80);
+  const keyInsights = dedupeTimedNarratives([
+    ...normalizeTimedNarrativeArray(parsed.keyInsights),
+    ...normalizeTimedNarrativeArray(parsed.insights),
+  ]);
+  const actionItems = dedupeTimedNarratives([
+    ...normalizeTimedNarrativeArray(parsed.actionItems),
+    ...normalizeTimedNarrativeArray(parsed.actionableIdeas),
+  ]);
 
   let fullSummary = String(parsed.fullSummary || '').trim();
   const sentiment = String(parsed.sentiment || '').trim();
@@ -37,9 +42,10 @@ export function normalizeGeneralResult(parsed) {
 
   return {
     ...parsed,
-    keyPoints: [...new Set(keyPoints)].slice(0, 80),
+    keyPoints,
     keyInsights,
     actionItems,
+    usefulKnowledge: normalizeTimedNarrativeArray(parsed.usefulKnowledge),
     fullSummary,
   };
 }

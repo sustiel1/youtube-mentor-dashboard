@@ -138,6 +138,7 @@ export function WorkspaceSaveReviewOverlay({
   defaultView = 'draft',          // which tab opens first
   videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
   onSaved,
+  onOpenLibrary,
 }) {
   const { topics, mainTopics, getSubTopics, addTopic } = useWorkspaceTopics();
   const {
@@ -828,9 +829,6 @@ export function WorkspaceSaveReviewOverlay({
       ? [{ key: 'draft', label: effectiveDraftItems.length > 0 ? `טיוטה (${effectiveDraftItems.length})` : 'טיוטה' }]
       : []),
     { key: 'recent', label: recentlySavedIds.length > 0 ? `נשמרו עכשיו (${recentlySavedIds.length})` : 'נשמרו עכשיו' },
-    { key: 'topics', label: isStocksView ? 'טבלת מניות' : 'לפי נושאים' },
-    { key: 'dates',  label: 'לפי תאריכים' },
-    { key: 'pinned', label: 'מועדפים/חשובים' },
   ];
 
   const showAnalysisBanner = currentAnalysisDraftItems.length > 0 && loadedDraftItems === null && activeView !== 'draft';
@@ -882,6 +880,15 @@ export function WorkspaceSaveReviewOverlay({
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {onOpenLibrary && (
+                <button
+                  type="button"
+                  onClick={onOpenLibrary}
+                  className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300"
+                >
+                  פתח בספרייה
+                </button>
+              )}
               <div className="relative">
                 <button
                   type="button"

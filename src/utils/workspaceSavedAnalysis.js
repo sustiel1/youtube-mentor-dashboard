@@ -5,6 +5,7 @@ import {
   classifyWorkspaceItemHeading,
   getWorkspaceNavigationCollectionForItem,
 } from '../config/workspaceHeadingRegistry.js';
+import { orderSpecializedSections } from '../lib/specializedSectionOrder.js';
 
 export const SAVED_ANALYSIS_TABS = [
   ...WORKSPACE_COLLECTION_HEADINGS.map(definition => ({
@@ -168,6 +169,7 @@ export function selectSavedAnalysisViewer(videoGroup) {
   const snapshotSections = videoGroup ? buildSnapshots(videoGroup) : [];
   const sections = [...textSections, ...snapshotSections];
   const byTab = Object.fromEntries(SAVED_ANALYSIS_TABS.map(tab => [tab.id, sections.filter(section => section.tabId === tab.id)]));
+  byTab.specialized = orderSpecializedSections(byTab.specialized);
   return {
     tabs: SAVED_ANALYSIS_TABS.map(tab => ({ ...tab, count: byTab[tab.id].length })),
     byTab,

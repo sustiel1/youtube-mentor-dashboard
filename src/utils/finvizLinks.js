@@ -270,6 +270,7 @@ const _FALLBACK_URL_MAP = new Map([
   ['usdx',              'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['us dollar index',   'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['dollar index',      'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
+  ['dollar',            'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['מדד הדולר',         'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
   ['btc',               'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
   ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
@@ -279,6 +280,8 @@ const _FALLBACK_URL_MAP = new Map([
   ['ethereum',          'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
   ['אתריום',            'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
   ['vix',               'https://www.tradingview.com/chart/?symbol=TVC:VIX'],
+  ['oil',               'https://www.tradingview.com/chart/?symbol=TVC:USOIL'],
+  ['bonds10y',          'https://www.tradingview.com/chart/?symbol=TVC:US10Y'],
   ['fear & greed',      'https://edition.cnn.com/markets/fear-and-greed'],
   ['fear and greed',    'https://edition.cnn.com/markets/fear-and-greed'],
 ]);
@@ -294,9 +297,12 @@ export function getExternalSymbolUrl(input) {
   const indexEtf = _INDEX_TICKER_OVERRIDE.get(normKey);
   if (indexEtf) return `${FINVIZ_BASE}${encodeURIComponent(indexEtf)}`;
 
+  const explicitFallback = _FALLBACK_URL_MAP.get(normKey);
+  if (explicitFallback) return explicitFallback;
+
   const finvizUrl = getFinvizUrl(input);
   if (finvizUrl) return finvizUrl;
-  return _FALLBACK_URL_MAP.get(normKey) ?? null;
+  return null;
 }
 
 /** Returns true if the input resolves to a known Finviz-linkable symbol. */
@@ -565,7 +571,12 @@ const _TV_ALIAS_MAP = new Map([
  */
 export function lookupTradingViewSymbol(name) {
   if (!name) return null;
-  return _TV_ALIAS_MAP.get(_normTv(name)) || null;
+  const normalized = _normTv(name);
+  const aliasSymbol = _TV_ALIAS_MAP.get(normalized);
+  if (aliasSymbol) return aliasSymbol;
+
+  const exchange = _TV_EXCHANGE_MAP.get(normalized);
+  return exchange ? `${exchange}:${normalized}` : null;
 }
 
 /** Opens TradingView symbol search for unresolvable labels. Never returns null. */

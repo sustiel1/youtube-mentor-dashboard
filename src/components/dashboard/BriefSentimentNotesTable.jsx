@@ -1,4 +1,5 @@
 import { DASHBOARD_TABLE_CELL_BODY_CLS, DASHBOARD_TABLE_HEAD_CLS } from './MorningBriefVisualPrimitives';
+import { translateKnownIndicatorEnumValue } from '@/lib/indicatorEnumDisplay';
 import {
   BRIEF_CELL,
   BRIEF_COL,
@@ -18,6 +19,7 @@ export const BRIEF_SENT_KEY_LABEL = {
 export function BriefSentimentCell({ value }) {
   if (!value) return <span className="text-slate-400 dark:text-zinc-500">—</span>;
   const v = String(value).toLowerCase();
+  const displayValue = translateKnownIndicatorEnumValue(value);
   const isPositive = v.includes('חיובי') || v.includes('bullish') || v.includes('long') || v.includes('buy') || v.includes('up') || v.includes('outperform') || v.includes('strong');
   const isNegative = v.includes('שלילי') || v.includes('bearish') || v.includes('short') || v.includes('sell') || v.includes('down') || v.includes('underperform') || v.includes('weak');
   const dot = isPositive ? 'bg-emerald-500' : isNegative ? 'bg-red-500' : 'bg-amber-400';
@@ -29,7 +31,7 @@ export function BriefSentimentCell({ value }) {
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${DASHBOARD_TABLE_CELL_BODY_CLS} ${textCls}`}>
       <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dot}`} aria-hidden />
-      <span>{value}</span>
+      <span>{displayValue}</span>
     </span>
   );
 }

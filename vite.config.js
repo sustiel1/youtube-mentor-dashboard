@@ -14,6 +14,21 @@ import {
   mergeItemsIntoObsidianNote,
   noteContainsItemMarker,
 } from './src/lib/obsidianNoteMerge.js'
+import {
+  parseTimedTranscriptSegments,
+  applyTimedNarrativeEvidenceGateToAnalysis,
+  computeTranscriptCoverage,
+} from './src/lib/timedNarrativeEvidenceGate.js'
+import {
+  applyEvidenceGateToRowAnnotations,
+  buildRowTimestampPrompt,
+} from './src/lib/rowTimestampAnnotation.js'
+import { fingerprintRowText } from './src/lib/rowTimestampSidecar.js'
+import { parseModelJsonSafely } from './src/lib/claudeJsonRepair.js'
+import {
+  runGemsJsonRepair,
+  serializeGemsRepairError,
+} from './src/server/gemsJsonRepairProvider.js'
 
 // ─── RSS Proxy Plugin ─────────────────────────────────────────────────────────
 // Route: GET /api/rss?channelId=UCxxxxxxxx
@@ -375,14 +390,19 @@ function makeGeminiVideoContentPlugin(env) {
       'בנוסף לשדות הרגילים, הוסף שדה attachedDocumentsInsights עם ניתוח ייעודי של המסמכים.',
     ] : [];
 
+    // Row timestamps (estimatedStartSeconds/sourceQuote/etc.) are
+    // intentionally NOT requested here. Normal analysis must never
+    // auto-generate them — that is a separate, explicit, per-video opt-in
+    // operation. See WORK-ID YMD-ONDEMAND-ROW-TIMES.
+    const narrativeItem = { text: '...' };
     const baseSchema = {
       shortSummary: '2-3 משפטים',
       fullSummary: '4-6 משפטים עם תובנות מעשיות',
-      keyPoints: ['...'],
+      keyPoints: [narrativeItem],
       chapters: [{ title: '...', startSeconds: 0, endSeconds: 120, summary: '...', keyPoints: ['...'] }],
-      keyInsights: ['...'],
-      actionItems: ['...'],
-      rules: ['...'],
+      keyInsights: [narrativeItem],
+      actionItems: [narrativeItem],
+      rules: [narrativeItem],
       mainLesson: '...',
       strategyOrMethod: '...',
       tags: ['...'],
@@ -503,15 +523,19 @@ function makeGeminiVideoContentPlugin(env) {
                 raw.replace(/^```json?\n?/i, '').replace(/\n?```$/, '').trim()
               );
               const parsed = JSON.parse(cleaned);
-              const sufficient = isResultSufficient(parsed);
+              // URL-only analysis has no timestamped transcript text to verify a
+              // sourceQuote against — gate with an empty segment list so any
+              // time claim is stripped rather than trusted on faith.
+              const gatedUrlResult = applyTimedNarrativeEvidenceGateToAnalysis(parsed, []);
+              const sufficient = isResultSufficient(gatedUrlResult);
               console.log(`[gemini-video-content] URL result sufficient=${sufficient}`);
 
               if (sufficient || analysisMode === 'url_only') {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ...parsed, analysisSource: 'youtube_url', analysisMode: 'fast', lowConfidence: !sufficient }));
+                res.end(JSON.stringify({ ...gatedUrlResult, analysisSource: 'youtube_url', analysisMode: 'fast', lowConfidence: !sufficient }));
                 return;
               }
-              urlAnalysisResult = parsed;
+              urlAnalysisResult = gatedUrlResult;
               console.log('[gemini-video-content] URL result insufficient — falling back to transcript');
             } catch (err) {
               urlAnalysisError = String(err?.message || err);
@@ -554,8 +578,19 @@ function makeGeminiVideoContentPlugin(env) {
             raw.replace(/^```json?\n?/i, '').replace(/\n?```$/, '').trim()
           );
           const parsed = JSON.parse(cleaned);
+          const txSegments = parseTimedTranscriptSegments(txText);
+          // Row timestamps are no longer requested (see
+          // buildGeminiAnalysisPrompt) — gated with an EMPTY segment list as
+          // defense in depth, guaranteeing none can survive the normal,
+          // automatic analysis path. See WORK-ID YMD-ONDEMAND-ROW-TIMES.
+          const gatedResult = applyTimedNarrativeEvidenceGateToAnalysis(parsed, []);
+          // Gemini's Stage 2 prompt already sends the full, untruncated
+          // transcript (see buildTxText above) — coverage is 'full' by
+          // construction here, unlike the Claude path's char-limited input.
+          const staticTimeCoverage = computeTranscriptCoverage(txSegments, txSegments, txText.length, txText.length);
+          console.log(`[gemini-video-content] transcript coverage`, staticTimeCoverage);
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ...parsed, analysisSource: 'transcript', analysisMode: 'transcript' }));
+          res.end(JSON.stringify({ ...gatedResult, analysisSource: 'transcript', analysisMode: 'transcript', staticTimeCoverage }));
         } catch (err) {
           const status = err?.status ?? err?.statusCode ?? 500;
           const isQuotaZero = status === 429 && String(err?.message || '').includes('limit: 0');
@@ -679,14 +714,6 @@ function makeGeminiPlugin(env) {
           res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
           return;
         }
-
-        const apiKey = env.GEMINI_API_KEY;
-        if (!apiKey) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'GEMINI_API_KEY_MISSING', message: 'Add GEMINI_API_KEY to .env' }));
-          return;
-        }
-
         try {
           const body = await new Promise((resolve, reject) => {
             let data = '';
@@ -694,88 +721,17 @@ function makeGeminiPlugin(env) {
             req.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
             req.on('error', reject);
           });
-
-          const {
-            rawJson = '',
-            parserError = '',
-            line = null,
-            col = null,
-            contextLines = '',
-          } = body || {};
-
-          if (!rawJson || typeof rawJson !== 'string') {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'MISSING_JSON', message: 'rawJson is required' }));
-            return;
-          }
-
-          const prompt = `
-You are a JSON repair assistant.
-Return STRICT JSON ONLY, no markdown, no explanation outside JSON.
-
-Task:
-1. Repair the broken JSON so it becomes valid parseable JSON.
-2. Explain what was broken.
-3. List exact changes made.
-4. Explain how to prevent the issue in the GEM prompt/schema.
-
-Input parser error:
-${parserError || 'Unknown parser error'}
-
-Location:
-line=${line ?? 'unknown'}, column=${col ?? 'unknown'}
-
-Surrounding lines:
-${contextLines || '(none)'}
-
-Broken JSON:
-${rawJson}
-
-Return EXACTLY this JSON shape:
-{
-  "repairedJson": "{ ... valid JSON string ... }",
-  "changes": ["change 1", "change 2"],
-  "why": "short explanation of why the JSON broke",
-  "prevention": ["prevention 1", "prevention 2"],
-  "promptCorrection": "short schema/prompt correction",
-  "report": "# GEMS JSON Repair Report\\n..."
-}
-
-Rules:
-- repairedJson must be valid JSON text as a string value.
-- Preserve the original data as much as possible.
-- Escape newline/control characters correctly.
-- Keep double-quoted property names.
-- Do not remove major sections unless absolutely necessary for validity.
-          `.trim();
-
-          const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-          const result = await model.generateContent(prompt);
-          const rawText = result.response.text().trim();
-          const cleaned = rawText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
-          const parsed = JSON.parse(cleaned);
-
-          if (!parsed?.repairedJson || typeof parsed.repairedJson !== 'string') {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'INVALID_AI_REPAIR_RESPONSE', message: 'AI response missing repairedJson' }));
-            return;
-          }
-
-          JSON.parse(parsed.repairedJson);
-
+          const result = await runGemsJsonRepair({
+            rawJson: body?.rawJson,
+            apiKey: env.GEMINI_API_KEY,
+            model: env.GEMINI_REPAIR_MODEL,
+          });
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(parsed));
+          res.end(JSON.stringify(result));
         } catch (err) {
-          const status = err.status ?? err.statusCode ?? 500;
-          const code =
-            status === 429 ? 'RATE_LIMIT' :
-            status === 401 ? 'INVALID_KEY' :
-            'GEMINI_REPAIR_ERROR';
-
-          res.writeHead(status, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: code, message: err.message }));
+          const failure = serializeGemsRepairError(err);
+          res.writeHead(failure.status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: failure.error, message: failure.message }));
         }
       });
     },
@@ -813,6 +769,346 @@ function sanitizeJsonGershayim(text) {
   }
 
   return s;
+}
+
+const ROW_TIMESTAMP_TRANSCRIPT_CHAR_LIMIT = 200_000;
+
+function makeRowTimestampsPlugin(env) {
+  return {
+    name: 'row-timestamps',
+    configureServer(server) {
+      server.middlewares.use('/api/generate-row-timestamps', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+
+        let body;
+        try {
+          body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', (chunk) => { data += chunk; });
+            req.on('end', () => {
+              try { resolve(JSON.parse(data || '{}')); } catch (error) { reject(error); }
+            });
+            req.on('error', reject);
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_JSON', message: 'Request body must be valid JSON' }));
+          return;
+        }
+
+        const rawTranscript = String(body?.transcript || '').trim();
+        const rows = (Array.isArray(body?.rows) ? body.rows : [])
+          .map((row) => {
+            const text = String(row?.text || '').trim();
+            return {
+              rowPath: String(row?.rowPath || ''),
+              text,
+              fingerprint: fingerprintRowText(text),
+            };
+          })
+          .filter((row) => row.rowPath && row.text);
+
+        if (!rawTranscript || rows.length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_INPUT', message: 'Timed transcript and existing rows are required' }));
+          return;
+        }
+
+        const apiKey = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
+        if (!apiKey) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'CLAUDE_API_KEY_MISSING', message: 'Missing ANTHROPIC_API_KEY' }));
+          return;
+        }
+
+        const transcript = rawTranscript.slice(0, ROW_TIMESTAMP_TRANSCRIPT_CHAR_LIMIT);
+        const selectedModel = env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+        try {
+          const providerResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: selectedModel,
+              max_tokens: 4_000,
+              temperature: 0.1,
+              system: [
+                'Return ONLY valid JSON.',
+                'Do not wrap the output in Markdown code fences.',
+                'Your entire response must be a single JSON object that starts with "{" and ends with "}".',
+              ].join('\n'),
+              messages: [{ role: 'user', content: buildRowTimestampPrompt({ transcriptText: transcript, rows }) }],
+            }),
+          });
+          const providerData = await providerResponse.json().catch(() => null);
+          if (!providerResponse.ok) {
+            const error = new Error(providerData?.error?.message || providerData?.message || 'Claude request failed');
+            error.status = providerResponse.status;
+            throw error;
+          }
+
+          const responseText = Array.isArray(providerData?.content)
+            ? providerData.content.filter((item) => item?.type === 'text').map((item) => item.text || '').join('\n')
+            : '';
+          const parsed = parseModelJsonSafely(responseText).value;
+          const segments = parseTimedTranscriptSegments(transcript);
+          const fullSegments = parseTimedTranscriptSegments(rawTranscript);
+          const { accepted, rejected } = applyEvidenceGateToRowAnnotations(parsed?.annotations, rows, segments);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            provider: 'claude',
+            model: selectedModel,
+            rowCount: rows.length,
+            accepted,
+            rejected,
+            staticTimeCoverage: {
+              totalChars: rawTranscript.length,
+              analyzedChars: transcript.length,
+              totalSegments: fullSegments.length,
+              analyzedSegments: segments.length,
+              skippedSegments: Math.max(0, fullSegments.length - segments.length),
+              status: segments.length >= fullSegments.length && fullSegments.length > 0
+                ? 'full'
+                : (fullSegments.length === 0 ? 'unknown' : 'partial'),
+            },
+            usage: providerData?.usage || null,
+          }));
+        } catch (error) {
+          const status = Number(error?.status) || 502;
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: error?.code || 'ROW_TIMESTAMPS_FAILED',
+            message: error?.message || 'Timestamp generation failed',
+          }));
+        }
+      });
+    },
+  };
+}
+
+// ─── Claude Video Analyze Plugin ────────────────────────────────────────────
+// Routes: GET /api/claude-video-analyze/status, POST /api/claude-video-analyze
+// Dev-only mirror of backend/analyze-video.function.js (general video analysis
+// with Claude). In PROD the client calls the Base44 "AnalyzeVideo" function
+// instead; this middleware only runs under `vite dev`.
+// Body: { videoId, title, transcript, durationSeconds, mentor?, category?, chaptersTarget? }
+// Returns: { shortSummary, fullSummary, keyPoints[], chapters[], mainLesson,
+//   keyInsights[], rules[], actionItems[], mistakesToAvoid[], strategyOrMethod,
+//   tags[], provider:'claude', model, isFallback:false, staticTimeCoverage }
+// ────────────────────────────────────────────────────────────────────────────
+const CLAUDE_ANALYZE_TRANSCRIPT_CHAR_LIMIT = 200_000;
+const CLAUDE_ANALYZE_MAX_TOKENS = 6_000;
+
+// Kept behaviourally identical to buildPrompt() in
+// backend/analyze-video.function.js — the two paths must produce the same
+// analysis shape for a given transcript. Row-timestamp fields are deliberately
+// not requested here (that is a separate opt-in operation).
+function buildClaudeAnalyzePrompt({ title, transcript, durationSeconds, mentor, category, chaptersTarget }) {
+  const narrativeItem = { text: '...' };
+  return [
+    'נתח את התמלול הבא בלבד והחזר JSON בלבד, בלי markdown ובלי טקסט נוסף.',
+    'שמור על תשובה קצרה ויציבה. אל תחזיר brainSummary, markdown, או שדות ארוכים שלא נתבקשו.',
+    'החזר רק את השדות הבאים ובאותו סדר.',
+    'shortSummary: 2-3 משפטים.',
+    'fullSummary: 4-6 משפטים.',
+    'keyPoints: עד 5 פריטים במבנה האובייקט שבסכמה.',
+    `chapters: בערך ${chaptersTarget} פרקים שמכסים את כל הסרטון.`,
+    'mainLesson: משפט קצר אחד.',
+    'keyInsights: עד 4 פריטים במבנה האובייקט שבסכמה.',
+    'rules: עד 4 פריטים במבנה האובייקט שבסכמה.',
+    'actionItems: עד 4 פריטים במבנה האובייקט שבסכמה.',
+    'mistakesToAvoid: עד 4 פריטים במבנה האובייקט שבסכמה.',
+    'strategyOrMethod: משפט קצר אחד או מחרוזת ריקה.',
+    'tags: עד 4 תגיות.',
+    'אם אין מספיק חומר לשדה מסוים, החזר מערך ריק או מחרוזת ריקה.',
+    'כל כותרת פרק חייבת להיות ספציפית ולא גנרית.',
+    '',
+    `כותרת: ${title}`,
+    mentor ? `מנטור: ${mentor}` : null,
+    category ? `קטגוריה: ${category}` : null,
+    Number.isFinite(Number(durationSeconds)) && Number(durationSeconds) > 0
+      ? `משך סרטון בשניות: ${Math.floor(Number(durationSeconds))}`
+      : null,
+    '',
+    'החזר רק JSON בפורמט הבא:',
+    JSON.stringify({
+      shortSummary: '...',
+      fullSummary: '...',
+      keyPoints: [narrativeItem],
+      chapters: [
+        {
+          title: '...',
+          startSeconds: 0,
+          endSeconds: 120,
+          summary: '...',
+          keyPoints: ['...'],
+        },
+      ],
+      mainLesson: '...',
+      keyInsights: [narrativeItem],
+      rules: [narrativeItem],
+      actionItems: [narrativeItem],
+      mistakesToAvoid: [narrativeItem],
+      strategyOrMethod: '...',
+      tags: ['...'],
+    }, null, 2),
+    '',
+    'אל תחזיר שום שדה נוסף.',
+    'Transcript:',
+    String(transcript || '').trim(),
+  ].filter(Boolean).join('\n');
+}
+
+function makeClaudeVideoAnalyzePlugin(env) {
+  const apiKey = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
+  const model = env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+  return {
+    name: 'claude-video-analyze',
+    configureServer(server) {
+      server.middlewares.use('/api/claude-video-analyze/status', (req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          configured: Boolean(apiKey),
+          provider: 'claude',
+          model,
+          missingEnvKey: apiKey ? null : 'ANTHROPIC_API_KEY',
+        }));
+      });
+
+      server.middlewares.use('/api/claude-video-analyze', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }));
+          return;
+        }
+
+        if (!apiKey) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'CLAUDE_API_KEY_MISSING', message: 'Missing ANTHROPIC_API_KEY' }));
+          return;
+        }
+
+        let body;
+        try {
+          body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', (chunk) => { data += chunk; });
+            req.on('end', () => {
+              try { resolve(JSON.parse(data || '{}')); } catch (error) { reject(error); }
+            });
+            req.on('error', reject);
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'INVALID_JSON', message: 'Request body must be valid JSON' }));
+          return;
+        }
+
+        const rawTranscript = String(body?.transcript || '').trim();
+        if (!rawTranscript) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'TRANSCRIPT_REQUIRED', message: 'Transcript is required for Claude analysis' }));
+          return;
+        }
+
+        const transcript = rawTranscript.slice(0, CLAUDE_ANALYZE_TRANSCRIPT_CHAR_LIMIT);
+        const durationSeconds = Number(body?.durationSeconds) || 0;
+        const chaptersTarget = Number(body?.chaptersTarget) > 0
+          ? Math.floor(Number(body.chaptersTarget))
+          : (durationSeconds > 0
+              ? (durationSeconds <= 14 * 60 ? 5 : durationSeconds <= 22 * 60 ? 7 : 8)
+              : 6);
+
+        const prompt = buildClaudeAnalyzePrompt({
+          title: String(body?.title || '').trim(),
+          transcript,
+          durationSeconds,
+          mentor: body?.mentor || null,
+          category: body?.category || null,
+          chaptersTarget,
+        });
+
+        try {
+          const providerResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: CLAUDE_ANALYZE_MAX_TOKENS,
+              temperature: 0.1,
+              system: [
+                'Return ONLY valid JSON.',
+                'Do not wrap the output in Markdown code fences.',
+                'Your entire response must be a single JSON object that starts with "{" and ends with "}".',
+              ].join('\n'),
+              messages: [{ role: 'user', content: prompt }],
+            }),
+          });
+          const providerData = await providerResponse.json().catch(() => null);
+          if (!providerResponse.ok) {
+            const error = new Error(providerData?.error?.message || providerData?.message || 'Claude request failed');
+            error.code = 'CLAUDE_ERROR';
+            error.status = providerResponse.status;
+            throw error;
+          }
+
+          const responseText = Array.isArray(providerData?.content)
+            ? providerData.content.filter((item) => item?.type === 'text').map((item) => item.text || '').join('\n')
+            : '';
+          const parsed = parseModelJsonSafely(responseText).value;
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            const error = new Error('Claude returned invalid JSON. Try Gemini or reduce transcript length.');
+            error.code = 'CLAUDE_INVALID_JSON';
+            error.status = 502;
+            throw error;
+          }
+
+          // Fail-closed with an empty segment list: guarantees no unverified
+          // row-timestamp fields survive the normal analysis path (matches
+          // backend/analyze-video.function.js).
+          const analysis = applyTimedNarrativeEvidenceGateToAnalysis(parsed, []);
+          const fullSegments = parseTimedTranscriptSegments(rawTranscript);
+          const analysisSegments = parseTimedTranscriptSegments(transcript);
+          const staticTimeCoverage = computeTranscriptCoverage(
+            fullSegments,
+            analysisSegments,
+            rawTranscript.length,
+            transcript.length,
+          );
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ...analysis,
+            provider: 'claude',
+            model,
+            isFallback: false,
+            staticTimeCoverage,
+          }));
+        } catch (error) {
+          const status = Number(error?.status) || 502;
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: error?.code || 'CLAUDE_ERROR',
+            message: error?.message || 'Claude analysis failed',
+          }));
+        }
+      });
+    },
+  };
 }
 
 // ─── Political Summary Plugin ────────────────────────────────────────────────
@@ -1886,6 +2182,8 @@ export default defineConfig(({ mode }) => {
       makeYoutubeTranscriptPlugin(),
       makeGeminiVideoContentPlugin(env),
       makeGeminiPlugin(env),
+      makeRowTimestampsPlugin(env),
+      makeClaudeVideoAnalyzePlugin(env),
       makePoliticalSummaryPlugin(env),
       makeYouTubeVideoMetadataPlugin(),
       makeVaultDiagnosticsPlugin(env),

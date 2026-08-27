@@ -13,6 +13,7 @@ function recordMetadata({ item, identity }, canonicalId) {
     </li>
   );
 }
+
 export function WorkspaceDuplicatePreview({ open, onOpenChange, items }) {
   const preview = buildWorkspaceDuplicatePreview(items);
   return (
@@ -57,3 +58,4 @@ export function WorkspaceDuplicatePreview({ open, onOpenChange, items }) {
     </Dialog.Root>
   );
 }
+

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('Workspace IndexedDB reader/writer survives reload and a second page in an isolated context', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/ytmdb-origin-export.html');
 
   const firstPass = await page.evaluate(async () => {
     const [{ openAppDataDb, createAppDataRepository }, { createWorkspacePersistence }, integrity] = await Promise.all([
@@ -108,7 +108,7 @@ test('Workspace IndexedDB reader/writer survives reload and a second page in an 
   expect(afterReload.payloadChecksum).toBe(firstPass.payloadChecksum);
 
   const secondPage = await page.context().newPage();
-  await secondPage.goto('/index.html');
+  await secondPage.goto('/ytmdb-origin-export.html');
   const secondPageRead = await secondPage.evaluate(async () => {
     const [{ openAppDataDb, createAppDataRepository }, { createWorkspacePersistence }] = await Promise.all([
       import('/src/lib/persistence/appDataDb.js'),

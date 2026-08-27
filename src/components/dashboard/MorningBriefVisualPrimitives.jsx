@@ -15,8 +15,10 @@ import {
   TONE,
 } from '@/lib/morningBriefVisuals';
 import { translateDisplayLabel } from '@/lib/specializedDisplayI18n';
-import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
-import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, getSectorFinvizUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { getHebrewDisplayLabel, translateImportanceLevel } from '@/lib/marketLabelTranslations';
+import { buildPerplexityEtfHoldingsUrl, getExternalSymbolUrl, resolveSectorMeta } from '@/utils/finvizLinks';
+import { resolveSectorTableFinvizLink } from '@/lib/sectorTablePresentation';
+import { translateKnownIndicatorEnumValue } from '@/lib/indicatorEnumDisplay';
 import { ResearchDropdownLink } from '@/components/shared/ResearchDropdown';
 
 /** Shared neutral surface for all Morning Brief dashboard sections. */
@@ -225,7 +227,7 @@ export function ImportanceBadge({ level, className = '', size = 'xs' }) {
     <span
       className={`inline tracking-wide uppercase whitespace-nowrap ${sizeCls} ${meta.textCls} ${className}`}
     >
-      {meta.label}
+      {translateImportanceLevel(meta.label) ?? meta.label}
     </span>
   );
 }
@@ -434,7 +436,11 @@ function buildSectorStatusParts(direction, relativeStrength) {
     const key = raw.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    parts.push({ kind: 'text', text: raw, tone: resolveTone(raw) });
+    parts.push({
+      kind: 'text',
+      text: translateKnownIndicatorEnumValue(raw),
+      tone: resolveTone(raw),
+    });
   }
 
   return parts;
@@ -453,11 +459,12 @@ export function SectorRow({
   const sectorName = String(sector || '').trim();
   const statusParts = buildSectorStatusParts(direction, relativeStrength);
   const meta = getSectorMeta(sectorName);
+  const sectorLink = resolveSectorTableFinvizLink(sectorName);
   const holdingsUrl = meta?.etf ? buildPerplexityEtfHoldingsUrl(meta.etf) : null;
   const displayLabel = meta?.he
     ? `${meta.he} (${sectorName})`
     : getHebrewDisplayLabel(sectorName);
-  const finvizUrl = meta?.finvizUrl ?? getSectorFinvizUrl(sectorName);
+  const finvizUrl = sectorLink?.url || null;
 
   if (!sectorName && statusParts.length === 0) return null;
 
@@ -471,11 +478,14 @@ export function SectorRow({
                 href={finvizUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="פתח ETF ב-Finviz ↗"
-                className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline`}
+                title={`פתיחת תעודת הסל ${sectorLink.ticker} ב־Finviz`}
+                aria-label={`פתיחת תעודת הסל ${sectorLink.ticker} ב־Finviz`}
+                className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2`}
                 onClick={(e) => e.stopPropagation()}
+                data-finviz-link={sectorLink.ticker}
               >
                 {displayLabel}
+                <span className="ms-1 text-xs" aria-hidden>↗</span>
               </a>
             ) : (
               <span className={DASHBOARD_TABLE_CELL_PRIMARY_CLS}>{displayLabel}</span>

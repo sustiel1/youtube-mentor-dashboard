@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:5184 ws://localhost:5184; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>YouTube Mentor — בקר מיגרציית אחסון</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f6f8fc;
+        color: #172033;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 28px; }
+      main { width: min(980px, 100%); margin: 0 auto; display: grid; gap: 18px; }
+      h1, h2, p { margin: 0; }
+      h1 { font-size: clamp(1.55rem, 3vw, 2.1rem); }
+      h2 { font-size: 1.12rem; }
+      .card {
+        background: #fff;
+        border: 1px solid #dbe2ef;
+        border-radius: 14px;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+        box-shadow: 0 8px 24px rgb(23 32 51 / 5%);
+      }
+      .warning { border-color: #e4b84d; background: #fff9e8; }
+      .danger { border-color: #d68787; background: #fff4f4; }
+      .status { min-height: 48px; padding: 12px 14px; border-radius: 10px; background: #edf2f8; }
+      .status[data-state="success"] { background: #e8f7ee; color: #145c32; }
+      .status[data-state="error"] { background: #fdecec; color: #8a2020; }
+      .status[data-state="running"] { background: #eef2ff; color: #293c8f; }
+      dl { display: grid; grid-template-columns: minmax(160px, 0.35fr) 1fr; gap: 9px 18px; margin: 0; }
+      dt { font-weight: 700; }
+      dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+      label { display: grid; gap: 7px; font-weight: 650; }
+      input {
+        width: 100%;
+        border: 1px solid #b9c4d6;
+        border-radius: 9px;
+        padding: 11px 12px;
+        font: inherit;
+        direction: ltr;
+        text-align: left;
+      }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      button {
+        border: 0;
+        border-radius: 9px;
+        padding: 11px 16px;
+        background: #3156d3;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button.secondary { background: #566174; }
+      button.danger-button { background: #9c2d2d; }
+      button:disabled { opacity: 0.46; cursor: not-allowed; }
+      code { direction: ltr; unicode-bidi: isolate; }
+      .small { color: #566174; font-size: 0.92rem; line-height: 1.55; }
+      pre {
+        margin: 0;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #f3f6fa;
+        overflow: auto;
+        direction: ltr;
+        text-align: left;
+        font: 0.88rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      @media (max-width: 640px) {
+        body { padding: 14px; }
+        dl { grid-template-columns: 1fr; }
+        dd { margin-bottom: 6px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card warning" aria-labelledby="page-title">
+        <h1 id="page-title">בקר מיגרציית אחסון מוגן</h1>
+        <p>
+          הדף אינרטי בטעינה. הוא אינו יוצר מסד נתונים, אינו קורא storage ואינו מייבא
+          מודולי אפליקציה עד ללחיצה ידנית.
+        </p>
+        <p class="small">
+          הפעלה ושינוי <code>VITE_YTMDB_STORAGE_MODE</code> יחד עם restart דורשים אישור נפרד.
+          הבקר לעולם אינו משנה את דגל ה־runtime ואינו מפעיל מחדש את Vite.
+        </p>
+      </section>
+
+      <section class="card" aria-labelledby="status-title">
+        <h2 id="status-title">מצב</h2>
+        <div id="controller-status" class="status" role="status" aria-live="polite" data-state="idle">
+          לא בוצעה פעולה. נדרש preflight ידני.
+        </div>
+        <div class="actions">
+          <button id="run-preflight" type="button">הרץ preflight קריאה בלבד</button>
+          <button id="abort-controller" class="secondary" type="button">בטל וסגור בקר</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="unexpected-db-title">
+        <h2 id="unexpected-db-title">Unexpected IndexedDB metadata</h2>
+        <p class="small">
+          Manual, read-only inspection only. Counts use <code>count()</code>; records, keys and values are never read.
+        </p>
+        <div class="actions">
+          <button id="inspect-unexpected-database" class="secondary" type="button">
+            Inspect unexpected database metadata
+          </button>
+        </div>
+        <pre id="unexpected-db-metadata" aria-live="polite">Not inspected.</pre>
+      </section>
+
+      <section class="card" aria-labelledby="source-delta-title">
+        <h2 id="source-delta-title">Approved source delta</h2>
+        <p class="small">
+          Manual, read-only comparison of the approved non-sensitive localStorage source with the inactive READY generation.
+          Only key names, sizes, hashes, categories, counts and hashed Workspace IDs may be shown.
+        </p>
+        <div class="actions">
+          <button id="inspect-source-delta" class="secondary" type="button">
+            Inspect approved source delta
+          </button>
+        </div>
+        <pre id="source-delta-report" aria-live="polite">Not inspected.</pre>
+      </section>
+
+      <section class="card" aria-labelledby="metadata-title">
+        <h2 id="metadata-title">מטא־דאטה בטוח בלבד</h2>
+        <dl>
+          <dt>Origin</dt><dd id="meta-origin">—</dd>
+          <dt>Git evidence</dt><dd id="meta-git">—</dd>
+          <dt>Storage mode</dt><dd id="meta-mode">—</dd>
+          <dt>Workspace</dt><dd id="meta-workspace">—</dd>
+          <dt>Approved source</dt><dd id="meta-source">—</dd>
+          <dt>IndexedDB</dt><dd id="meta-indexeddb">—</dd>
+          <dt>Backup evidence</dt><dd id="meta-backup">—</dd>
+          <dt>Migration state</dt><dd id="meta-migration">—</dd>
+          <dt>Source SHA-256</dt><dd id="meta-source-hash">—</dd>
+          <dt>Verification SHA-256</dt><dd id="meta-verification-hash">—</dd>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="prepare-title">
+        <h2 id="prepare-title">A. Prepare migration — ללא activation</h2>
+        <p class="small">
+          הקלד בדיוק <code>PREPARE 142 READ ONLY</code>. הפעולה מבצעת לכידות יציבות וקוראת
+          רק ל־<code>migrateLocalStorageToIndexedDb({ activate: false })</code>.
+        </p>
+        <label for="prepare-confirmation">
+          ביטוי אישור להכנה
+          <input id="prepare-confirmation" autocomplete="off" spellcheck="false" />
+        </label>
+        <div class="actions">
+          <button id="prepare-migration" type="button" disabled>Prepare migration</button>
+          <button id="verify-ready" class="secondary" type="button" disabled>Verify READY generation</button>
+        </div>
+      </section>
+
+      <section class="card danger" aria-labelledby="activate-title">
+        <h2 id="activate-title">B. Activate verified generation</h2>
+        <p class="small">
+          activation נשאר חסום עד שפעולת Verify READY עוברת במלואה. הוא אינו משנה runtime
+          ואינו מבצע restart.
+        </p>
+        <label for="activation-confirmation">
+          הקלד בדיוק <code>ACTIVATE VERIFIED GENERATION</code>
+          <input id="activation-confirmation" autocomplete="off" spellcheck="false" />
+        </label>
+        <label for="activation-generation-id">
+          Generation ID מדויק
+          <input id="activation-generation-id" autocomplete="off" spellcheck="false" />
+        </label>
+        <div class="actions">
+          <button id="activate-generation" class="danger-button" type="button" disabled>
+            Activate verified generation
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/dev/ytmdbOriginMigrationController.js"></script>
+  </body>
+</html>

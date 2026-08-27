@@ -1,0 +1,60 @@
+{
+  "morning": {
+    "video": {
+      "id": "fixture-morning",
+      "title": "מבזק בוקר — פתיחת השוק",
+      "contentType": "marketBrief",
+      "subCategory": "מבזק בוקר"
+    },
+    "payload": {
+      "contentType": "marketBrief",
+      "rawData": {
+        "marketOverview": {
+          "marketMood": "זהיר"
+        },
+        "indices": [
+          {
+            "symbol": "SPX",
+            "change": "+0.4%"
+          }
+        ]
+      },
+      "universalTabs": {
+        "specialized": {
+          "marketNews": [
+            "פתיחת מסחר יציבה"
+          ]
+        }
+      }
+    }
+  },
+  "evening": {
+    "video": {
+      "id": "fixture-evening",
+      "title": "מבזק ערב — סיכום יום המסחר",
+      "contentType": "marketBrief",
+      "subCategory": "מבזק ערב"
+    },
+    "payload": {
+      "contentType": "marketBrief",
+      "rawData": {
+        "marketOverview": {
+          "marketMood": "מעורב"
+        },
+        "indices": [
+          {
+            "symbol": "NDX",
+            "change": "-0.2%"
+          }
+        ]
+      },
+      "universalTabs": {
+        "specialized": {
+          "marketNews": [
+            "המסחר ננעל במגמה מעורבת"
+          ]
+        }
+      }
+    }
+  }
+}

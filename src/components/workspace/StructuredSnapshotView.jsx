@@ -7,6 +7,9 @@ import {
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
   DASHBOARD_TABLE_HEAD_CLS,
 } from '@/components/dashboard/MorningBriefVisualPrimitives';
+import { MarketAssetProviderLinks } from '@/components/shared/MarketAssetProviderLinks';
+import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
+import { normalizeStructuredSnapshotCollections } from '@/utils/structuredSnapshot';
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 
@@ -44,16 +47,17 @@ export function StructuredSnapshotView({ open, onOpenChange, snapshot, itemTitle
 
 export function StructuredSnapshotContent({ snapshot }) {
   if (!snapshot) return null;
+  const normalizedSnapshot = normalizeStructuredSnapshotCollections(snapshot);
   return (
     <div className="space-y-3" data-persisted-snapshot="true">
-      <SnapshotSection title="⭐ מניות שהוזכרו" count={snapshot.stocksTable?.length || 0}>
-        <StocksTable rows={snapshot.stocksTable} />
+      <SnapshotSection title="📊 סנטימנט שוק" count={normalizedSnapshot.sentimentTable.length}>
+        <SentimentTable rows={normalizedSnapshot.sentimentTable} />
       </SnapshotSection>
-      <SnapshotSection title="📈 שווקים" count={snapshot.marketsTable?.length || 0}>
-        <MarketsTable rows={snapshot.marketsTable} />
+      <SnapshotSection title="📈 שווקים" count={normalizedSnapshot.marketsTable.length}>
+        <MarketsTable rows={normalizedSnapshot.marketsTable} />
       </SnapshotSection>
-      <SnapshotSection title="📊 סנטימנט שוק" count={snapshot.sentimentTable?.length || 0}>
-        <SentimentTable rows={snapshot.sentimentTable} />
+      <SnapshotSection title="⭐ מניות שהוזכרו" count={normalizedSnapshot.stocksTable.length}>
+        <StocksTable rows={normalizedSnapshot.stocksTable} />
       </SnapshotSection>
     </div>
   );
@@ -112,10 +116,11 @@ function MarketsTable({ rows = [] }) {
   if (rows.length === 0) return <EmptyTableNote label="לא נשמרו נתוני שווקים בתמונת המצב הזו" />;
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700">
-      <table className="w-full min-w-[480px] text-right" dir="rtl">
+      <table className="w-full min-w-[640px] text-right" dir="rtl">
         <thead>
           <tr className="border-b border-slate-200 dark:border-zinc-700">
             <th className={TH_CLS}>נכס</th>
+            <th className={`${TH_CLS} text-center`}>קישורים</th>
             <th className={TH_CLS}>מגמה</th>
             <th className={TH_CLS}>עוצמה</th>
             <th className={TH_CLS}>הערה</th>
@@ -124,7 +129,10 @@ function MarketsTable({ rows = [] }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={`${r.asset || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
-              <td className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{r.asset || '—'}</td>
+              <td className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
+                <MarketAssetDescriptionTooltip asset={r.asset}>{r.asset || '—'}</MarketAssetDescriptionTooltip>
+              </td>
+              <td className={`${TD_CLS} text-center`}><MarketAssetProviderLinks asset={r.asset} /></td>
               <td className={TD_CLS}>{r.trend || '—'}</td>
               <td className={TD_CLS}>{r.strength || '—'}</td>
               <td className={TD_CLS}>{r.comment || '—'}</td>
@@ -140,12 +148,44 @@ function SentimentTable({ rows = [] }) {
   if (rows.length === 0) return <EmptyTableNote label="לא נשמר סנטימנט בתמונת המצב הזו" />;
   return (
     <div className="space-y-2">
-      {rows.map((r, i) => (
-        <div key={`${r.label || 'row'}-${i}`} className="rounded-xl border border-slate-200 dark:border-zinc-700 px-3 py-2 flex items-start gap-2">
-          <span className={`shrink-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{r.label || '—'}</span>
-          <span className={DASHBOARD_TABLE_CELL_MUTED_CLS}>{r.value || '—'}</span>
-        </div>
-      ))}
+      {rows.map((r, i) => {
+        const tone = getSentimentTone(r.value);
+        return (
+          <div key={`${r.label || 'row'}-${i}`} className="rounded-xl border border-slate-200 dark:border-zinc-700 px-3 py-2 flex items-start gap-2">
+            <span className={`shrink-0 ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>{r.label || '—'}</span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${tone.className}`}>
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${tone.dotClassName}`} />
+              {r.value || '—'}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+function getSentimentTone(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (/מתוח|מעורב|זהיר|תנודתי/.test(text)) {
+    return {
+      className: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+      dotClassName: 'bg-amber-500',
+    };
+  }
+  if (/שלילי|דובי|יריד/.test(text)) {
+    return {
+      className: 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300',
+      dotClassName: 'bg-red-500',
+    };
+  }
+  if (/חיובי|שורי|עליות?/.test(text)) {
+    return {
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+      dotClassName: 'bg-emerald-500',
+    };
+  }
+  return {
+    className: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+    dotClassName: 'bg-slate-400',
+  };
 }

@@ -159,6 +159,14 @@ export function createAppDataRepository(database) {
     return records;
   }
 
+  async function deleteRecords(storeName, keys) {
+    const transaction = database.transaction(storeName, 'readwrite');
+    const done = transactionDone(transaction);
+    const store = transaction.objectStore(storeName);
+    await Promise.all(keys.map((key) => requestResult(store.delete(key))));
+    await done;
+  }
+
   async function writeJournal(record) {
     const transaction = database.transaction(APP_DATA_STORES.MIGRATION_JOURNAL, 'readwrite');
     const done = transactionDone(transaction);
@@ -399,6 +407,7 @@ export function createAppDataRepository(database) {
     writeMeta,
     writeBatch,
     readRecords,
+    deleteRecords,
     writeJournal,
     listJournal,
     listByGeneration,

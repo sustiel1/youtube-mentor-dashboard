@@ -4,7 +4,6 @@
  */
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { cleanupMacroDisplayRows, cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
-import { parseMacroDisplayItem } from '@/lib/morningBriefDisplay';
 import { translateDisplayLabel, translateMarketStatusLabel } from '@/lib/specializedDisplayI18n';
 import {
   buildCardBulkItemsFromSections,
@@ -13,6 +12,7 @@ import {
 } from '@/lib/universalTabBulkItems';
 import {
   extractCalendarRows,
+  mergeMacroDisplayRows,
   extractMacroIndicatorRows,
   extractMarketDashboardRows,
   extractMarketRegimeCards,
@@ -25,8 +25,6 @@ import {
   extractKeyLevelRows,
   getSpecializedSrc,
   isRegimeDuplicateString,
-  macroRowRichness,
-  macroSemanticKey,
   normalizeMarketDashboardRow,
 } from '@/lib/morningBriefDisplay';
 
@@ -64,7 +62,7 @@ function filterOpportunityIdeas(marketBriefData, effectiveVideo) {
   });
 }
 
-function formatOpportunityText(idea) {
+export function formatMorningBriefOpportunityText(idea) {
   const titleText = String(idea.title || '').trim();
   const ticker = String(idea.ticker || '').trim().toUpperCase();
   const title = ticker ? `${ticker} · ${titleText}` : titleText;
@@ -81,17 +79,17 @@ function formatOpportunityText(idea) {
   return [title, description, ...tradePlan].filter(Boolean).join(' · ');
 }
 
-function formatMarketRowText(row) {
+export function formatMorningBriefMarketText(row) {
   return [row.asset, row.trend, row.strength, row.comment].filter(Boolean).join(' · ');
 }
 
-function formatMacroRowText(row) {
+export function formatMorningBriefMacroText(row) {
   return [row.indicator, row.value, row.change, row.frequency, row.description, row.impact]
     .filter(Boolean)
     .join(' · ');
 }
 
-function formatSectorRowText(row) {
+export function formatMorningBriefSectorText(row) {
   return [
     row.sector,
     row.direction && `זרימת כספים: ${row.direction}`,
@@ -102,7 +100,7 @@ function formatSectorRowText(row) {
   ].filter(Boolean).join(' · ');
 }
 
-function formatCalendarRowText(row) {
+export function formatMorningBriefCalendarText(row) {
   return [
     row.event,
     row.date,
@@ -113,7 +111,7 @@ function formatCalendarRowText(row) {
   ].filter(Boolean).join(' · ');
 }
 
-function formatStockRowText(stock) {
+export function formatMorningBriefStockText(stock) {
   return [
     stock.ticker,
     stock.company,
@@ -162,37 +160,27 @@ function uniqueTexts(items) {
   });
 }
 
+const INTERNAL_REGIME_FIELD_RE = /^[a-z][a-zA-Z0-9]*:\s*/;
+
 function stripInternalFieldLabels(text) {
-  let s = String(text || '').trim();
-  const re = /^(marketTrend|breadth|riskOn|riskOff|volatility|leadingSector|weakestSector|marketStrength)\s*:\s*/i;
-  while (re.test(s)) {
-    s = s.replace(re, '').trim();
+  const raw = String(text || '').trim();
+  if (!raw) return raw;
+  if (raw.includes(' | ')) {
+    return raw
+      .split(' | ')
+      .map((part) => stripInternalFieldLabels(part))
+      .filter(Boolean)
+      .join(' · ');
+  }
+  let s = raw;
+  while (INTERNAL_REGIME_FIELD_RE.test(s)) {
+    s = s.replace(INTERNAL_REGIME_FIELD_RE, '').trim();
   }
   return s;
 }
 
-function formatRegimeCardText(card) {
+export function formatMorningBriefRegimeText(card) {
   return `${translateMarketStatusLabel(card.label)}: ${stripInternalFieldLabels(card.value)}`;
-}
-
-function mergeMacroDisplayRows(primaryRows, fallbackItems) {
-  // Semantic (not exact-string) dedup: fallbackItems come from a separate legacy
-  // resolution path (extractVideoTabItems('brief-macro', ...)) and often re-describe
-  // the same event with different phrasing — merge by topic, keep the richer row.
-  const groups = new Map();
-  for (const row of primaryRows) {
-    groups.set(macroSemanticKey(row.indicator), row);
-  }
-  for (const item of fallbackItems) {
-    const parsed = parseMacroDisplayItem(item);
-    if (!parsed?.indicator) continue;
-    const key = macroSemanticKey(parsed.indicator);
-    const prev = groups.get(key);
-    if (!prev || macroRowRichness(parsed) > macroRowRichness(prev)) {
-      groups.set(key, parsed);
-    }
-  }
-  return [...groups.values()];
 }
 
 function mergeMarketRows(marketBriefData, indicesItems = []) {
@@ -242,18 +230,18 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
     sections.push({ key: 'news', label: '📰 חדשות', items: newsItems, tabKey: 'market-news' });
   }
 
-  const regimeItems = extractMarketRegimeCards(src).map(formatRegimeCardText).filter(Boolean);
+  const regimeItems = extractMarketRegimeCards(src).map(formatMorningBriefRegimeText).filter(Boolean);
   if (regimeItems.length) {
     sections.push({ key: 'market-regime', label: '📊 מצב שוק', items: regimeItems, tabKey: 'market-regime' });
   }
 
-  const sectorItems = extractSectorRows(src).map(formatSectorRowText).filter(Boolean);
+  const sectorItems = extractSectorRows(src).map(formatMorningBriefSectorText).filter(Boolean);
   if (sectorItems.length) {
     sections.push({ key: 'sectors', label: '📊 סקטורים', items: sectorItems, tabKey: 'brief-sectors' });
   }
 
   const opportunityItems = filterOpportunityIdeas(marketBriefData, effectiveVideo)
-    .map(formatOpportunityText)
+    .map(formatMorningBriefOpportunityText)
     .filter(Boolean);
   if (opportunityItems.length) {
     sections.push({ key: 'opportunities', label: '🎯 הזדמנויות', items: opportunityItems, tabKey: 'brief-opportunities' });
@@ -265,20 +253,20 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   }
 
   const stockItems = extractUnifiedStocks(marketBriefData, effectiveVideo)
-    .map(formatStockRowText)
+    .map(formatMorningBriefStockText)
     .filter(Boolean);
   if (stockItems.length) {
     sections.push({ key: 'stocks-mentioned', label: '⭐ מניות שהוזכרו', items: stockItems, tabKey: 'stocks-mentioned' });
   }
 
-  const calendarItems = extractCalendarRows(src).map(formatCalendarRowText).filter(Boolean);
+  const calendarItems = extractCalendarRows(src).map(formatMorningBriefCalendarText).filter(Boolean);
   if (calendarItems.length) {
     sections.push({ key: 'economic-calendar', label: '📅 לוח כלכלי', items: calendarItems, tabKey: 'brief-calendar' });
   }
 
   const macroFallback = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
   const macroItems = getMacroDisplayRows(marketBriefData, macroFallback)
-    .map(formatMacroRowText)
+    .map(formatMorningBriefMacroText)
     .filter(Boolean);
   if (macroItems.length) {
     sections.push({ key: 'macro', label: '🌍 מאקרו', items: macroItems, tabKey: 'brief-macro' });
@@ -292,7 +280,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   }
 
   const marketItems = mergeMarketRows(marketBriefData, indicesItems)
-    .map(formatMarketRowText)
+    .map(formatMorningBriefMarketText)
     .filter(Boolean);
   if (marketItems.length) {
     sections.push({ key: 'markets', label: '📈 שווקים', items: marketItems, tabKey: 'indices' });

@@ -168,8 +168,19 @@ const videoDetailSource = readFileSync(
   new URL("../src/components/dashboard/VideoDetailPanel.jsx", import.meta.url),
   "utf8",
 );
-assert.ok(modalSource.includes("await navigator.clipboard.writeText(payload);"));
+assert.ok(modalSource.includes("clipboardPromise = navigator.clipboard.writeText(payload);"));
 assert.ok(modalSource.includes("openGeminiGemUrl(resolvedGemUrl)"));
+assert.ok(modalSource.includes('data-testid="gem-open-copy-transcript"'));
+const openHandlerSource = modalSource.slice(
+  modalSource.indexOf("const handleOpenGem = async () =>"),
+  modalSource.indexOf("const handleSaveGem = async () =>"),
+);
+const clipboardStartIndex = openHandlerSource.indexOf("clipboardPromise = navigator.clipboard.writeText(payload)");
+const synchronousOpenIndex = openHandlerSource.indexOf("const gemOpened = openGeminiGemUrl(resolvedGemUrl)");
+const clipboardAwaitIndex = openHandlerSource.indexOf("await clipboardPromise");
+assert.ok(clipboardStartIndex >= 0, "clipboard write must start directly from the click");
+assert.ok(synchronousOpenIndex > clipboardStartIndex, "GEM open must start after initiating the clipboard write");
+assert.ok(clipboardAwaitIndex > synchronousOpenIndex, "GEM open must happen before the first clipboard await");
 assert.ok(modalSource.includes("const handleCopyOnly = async () =>"));
 assert.ok(modalSource.includes("renderSingleRow(MARKET_BRIEF_GEM)"));
 assert.ok(modalSource.includes("recommendedGem && !isMarketBriefWorkflow"));
@@ -188,7 +199,7 @@ assert.ok(modalSource.includes('type="button"'));
 assert.ok(modalSource.includes("focus-visible:ring-2"));
 assert.ok(modalSource.includes('showAdditionalOptions && "rotate-180"'));
 assert.doesNotMatch(modalSource, /(?:localStorage|indexedDB)[\s\S]{0,120}showAdditionalOptions/i);
-assert.ok(modalSource.includes('toast.error("לא ניתן להעתיק ללוח")'));
+assert.ok(modalSource.includes('toast.error("ה-GEM נפתח, אך לא ניתן להעתיק ללוח — השתמש בכפתור ההעתקה הנפרד")'));
 assert.ok(modalSource.includes('toast.error("אין תמלול להעתקה — ה-GEM נפתח ללא תוכן")'));
 assert.doesNotMatch(
   modalSource,

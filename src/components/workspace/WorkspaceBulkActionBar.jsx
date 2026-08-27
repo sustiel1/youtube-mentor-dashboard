@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Archive, Trash2, Copy, X, FileDown, FolderInput } from 'lucide-react';
 import { normalizeStockWorkspaceItem } from '@/utils/workspaceStockItems';
 import { cn } from '@/lib/utils';
+import { classifyWorkspaceItemHeading } from '@/config/workspaceHeadingRegistry';
 
 // ─── Copy / CSV helpers ───────────────────────────────────────────────────────
 
 export function formatWorkspaceItemsForCopy(items) {
   return items.map(item => {
     const s = normalizeStockWorkspaceItem(item);
+    const heading = classifyWorkspaceItemHeading(item);
     if (s.symbol) {
       return [
         `📈 ${s.symbol}${s.companyName ? ' — ' + s.companyName : ''}`,
@@ -21,7 +23,7 @@ export function formatWorkspaceItemsForCopy(items) {
     }
     return [
       `📹 ${item.videoTitle || item.title || 'פריט ללא כותרת'}`,
-      item.sourceTab  && `נושא: ${item.sourceTab}`,
+      heading && `לשונית: ${heading.label}`,
       item.tags?.length && `תגיות: ${item.tags.join(', ')}`,
       item.sourceTitle && `מקור: ${item.sourceTitle}`,
       item.notes      && `הערות: ${item.notes}`,

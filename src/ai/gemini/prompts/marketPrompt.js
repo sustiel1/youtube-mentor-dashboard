@@ -19,6 +19,8 @@ export function buildMarketAnalysisPrompt({
       : `צור ${chaptersTarget} פרקים שמכסים את כל הדיון. כל פרק צריך לכסות ticker ספציפי, נושא מסחרי, או תנאי שוק קונקרטי.`;
 
   return [
+    'STATIC NARRATIVE TIMES: Preserve an explicit source time as numeric timestampSeconds. When timestamped transcript segments defensibly locate a narrative source region, store numeric estimatedStartSeconds with timestampKind: estimated and, when available, timestampSource, timestampConfidence and sourceQuote.',
+    'If there is no defensible source region, omit all time fields. Never infer a narrative item time from item order and never divide the video into equal windows.',
     'נתח את התמלול הפיננסי/מסחרי הבא בלבד והחזר JSON בלבד, בלי markdown ובלי טקסט נוסף.',
     '',
     '═══ מטרת הניתוח ═══',

@@ -162,6 +162,18 @@ export function resolveVideoAnalyzedState(video) {
     };
   }
 
+  const canonicalEvidence = video?.canonicalMarketBriefEvidence;
+  if (canonicalEvidence?.analyzed === true) {
+    const canonicalAnalyzedAt = parseIsoTime(canonicalEvidence.analyzedAt) == null
+      ? null
+      : canonicalEvidence.analyzedAt;
+    return {
+      analyzed: true,
+      analyzedAt: canonicalAnalyzedAt,
+      contentIdentity: null,
+    };
+  }
+
   const legacyEvidence = resolveLegacyAnalysisTabEvidence(video);
   const legacyAnalyzedAt = parseIsoTime(legacyEvidence?.savedAt) == null ? null : legacyEvidence.savedAt;
   return {

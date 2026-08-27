@@ -43,6 +43,7 @@ import {
 import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { toast } from "sonner";
 import { parseYouTubeVideoId } from "@/lib/youtubeUrlParser";
+import { isVideoAnalyzed } from "@/lib/gemsAnalyzedStatus";
 import { X } from "lucide-react";
 
 // ── Source type display config ─────────────────────────────────────────────
@@ -487,7 +488,7 @@ export default function TopicKnowledgePage({ topicId: initialTopicId, navigateTo
                       </div>
 
                       {/* Badge: was the video analyzed by AI? */}
-                      {v.analyzedAt && (
+                      {isVideoAnalyzed(v) && (
                         <span className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                           נותח
                         </span>

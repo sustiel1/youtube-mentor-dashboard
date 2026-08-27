@@ -21,6 +21,7 @@ import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
 import {
   MarketAssetFuturesLink,
@@ -108,7 +109,12 @@ export function MorningBriefMarketsTable({
   presentation,
 }) {
   const fromSrc = extractMarketDashboardRows(getSpecializedSrc(marketBriefData));
-  const fromItems = items.map((i) => normalizeMarketDashboardRow(i)).filter(Boolean);
+  const fromItems = items
+    .map((item) => {
+      const row = normalizeMarketDashboardRow(item);
+      return row ? { ...row, rowTimestampSourceItem: item } : null;
+    })
+    .filter(Boolean);
 
   const seen = new Set();
   const merged = [...fromSrc, ...fromItems].filter((r) => {
@@ -158,6 +164,9 @@ export function MorningBriefMarketsTable({
         <tbody>
           {rows.map((row, i) => {
             const summary = formatRowText(row);
+            const timestampSourceItems = fromItems
+              .filter((candidate) => String(candidate.asset || '').trim() === String(row.asset || '').trim())
+              .map((candidate) => candidate.rowTimestampSourceItem);
             const pct = getMarketChangePct(row);
             const sentKey = marketRowSentimentKey(row);
             const mergedBulk = bulkSelection
@@ -220,7 +229,13 @@ export function MorningBriefMarketsTable({
                   </p>
                 </td>
                 <td className={`${BRIEF_MARKETS_CELL.actions} whitespace-nowrap`} data-markets-actions-cell>
-                  <div className="inline-flex items-center justify-center" dir="ltr">
+                  <div className="inline-flex items-center justify-center gap-1" dir="ltr">
+                    <StaticVideoTimestampLink
+                      items={timestampSourceItems}
+                      section="markets"
+                      productionRowId={`specialized:markets:${row.asset || i}`}
+                      displayText={summary}
+                    />
                     <MarketRowSaveActions
                       bulkSelection={bulkSelection}
                       mergedBulk={mergedBulk}

@@ -15,6 +15,10 @@ import {
   tryTopicDrivenChapters,
 } from '@/lib/chapterTopicBoundaries';
 import { formatChapterTime, parseChapterTimeToSeconds } from '@/lib/chapterTimestamp';
+import {
+  normalizeTimedNarrativeArray,
+  normalizeTimedNarrativeItem,
+} from '../ai/gemini/validators/timedNarrative.js';
 
 export function hasNonEmptyChapters(chapters) {
   return Array.isArray(chapters) && chapters.length > 0;
@@ -601,6 +605,13 @@ function normalizeStringArray(values) {
     .filter(Boolean);
 }
 
+function normalizeNarrativeArray(values) {
+  return normalizeTimedNarrativeArray(values).map((value) => {
+    if (typeof value === 'string') return cleanAtomicText(value);
+    return { ...value, text: cleanAtomicText(value.text) };
+  }).filter((value) => typeof value === 'string' ? Boolean(value) : Boolean(value.text));
+}
+
 /**
  * Normalizes a single learning item (string or structured GEM object).
  * Handles any object shape by: known aliases first, then "join all strings" fallback.
@@ -608,6 +619,11 @@ function normalizeStringArray(values) {
 function normalizeLearningItem(value) {
   if (typeof value === 'string') return cleanAtomicText(value);
   if (!value || typeof value !== 'object') return '';
+
+  const timedValue = normalizeTimedNarrativeItem(value);
+  if (timedValue && typeof timedValue === 'object') {
+    return { ...timedValue, text: cleanAtomicText(timedValue.text) };
+  }
 
   // term + definition (glossary / definitions tab)
   const term = String(value.term || '').trim();
@@ -1130,7 +1146,7 @@ export function normalizeAiAnalysisResult(result) {
       sample: rawKnowledgePoints[0],
     });
   }
-  const baseKeyPoints = normalizeStringArray(merged.keyPoints || nested.keyPoints || utB.keyPoints || bkB.keyPoints);
+  const baseKeyPoints = normalizeNarrativeArray(merged.keyPoints || nested.keyPoints || utB.keyPoints || bkB.keyPoints);
   const mergedKeyPoints = (() => {
     const extras = [...allPointsExtra, ...knowledgePointsExtra];
     return extras.length > 0 ? [...new Set([...baseKeyPoints, ...extras])] : baseKeyPoints;
@@ -1169,17 +1185,15 @@ export function normalizeAiAnalysisResult(result) {
       ? normalizeLearningArray(merged.mistakesToAvoid || nested.mistakesToAvoid)
       : fallbackMistakes,
     keyInsights: (() => {
-      const learningInsights = Array.isArray(learning.keyInsights)
-        ? learning.keyInsights.map(x => typeof x === 'string' ? x : String(x?.insight || x?.text || x?.title || '')).filter(Boolean)
-        : [];
-      const base = normalizeStringArray(merged.keyInsights || nested.keyInsights || utB.keyInsights || bkB.keyInsights);
+      const learningInsights = normalizeNarrativeArray(learning.keyInsights);
+      const base = normalizeNarrativeArray(merged.keyInsights || nested.keyInsights || utB.keyInsights || bkB.keyInsights);
       const combined = base.length > 0 ? [...new Set([...base, ...learningInsights])] : (learningInsights.length > 0 ? learningInsights : fallbackKeyInsights);
       return brainInsightsExtra.length > 0
         ? [...new Set([...combined, ...brainInsightsExtra])]
         : combined;
     })(),
-    actionItems: normalizeStringArray(merged.actionItems || nested.actionItems).length > 0
-      ? normalizeStringArray(merged.actionItems || nested.actionItems)
+    actionItems: normalizeNarrativeArray(merged.actionItems || nested.actionItems).length > 0
+      ? normalizeNarrativeArray(merged.actionItems || nested.actionItems)
       : fallbackActions,
     checklists: normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists).length > 0
       ? normalizeLearningArray(merged.checklists || nested.checklists || learning.checklists)

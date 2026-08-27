@@ -21,7 +21,7 @@ const LEARNING_KEYWORDS = [
 
 const MORNING_BRIEF_KEYWORDS = [
   'מבזק בוקר', 'morning brief', 'premarket', 'pre-market',
-  'סקירת בוקר', 'פתיחת שוק',
+  'סקירת בוקר', 'פתיחת שוק', 'מבזק פתיחת מסחר',
   // Live opening briefs, including titles without the "מבזק" prefix.
   'מבזק לייב', 'לייב פתיחה', 'market opening live brief',
 ];
@@ -607,6 +607,14 @@ export function formatNewsItem(item) {
   return title || description;
 }
 
+function formatWithCanonicalRowSource(item, formatter) {
+  const text = formatter(item);
+  if (!text) return null;
+  return item && typeof item === 'object'
+    ? { text, rowTimestampSourceItem: item }
+    : text;
+}
+
 /** Formats a sector item as a display string. Supports { sector, status }, { sector, trend }, { name, status }. */
 export function formatSectorItem(item) {
   if (!item) return '';
@@ -836,7 +844,9 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         // silently clobbered to an empty/thinner array by resolveSpecialized()'s shallow spread.
         const newsUnion = resolveSpecializedNewsItems(marketBriefData);
         return filterDiagnosticItems([
-          ...(newsUnion.length > 0 ? newsUnion.map(formatNewsItem) : pickArray(src, 'marketNews', 'headlines', 'news', 'topStories')),
+          ...(newsUnion.length > 0
+            ? newsUnion.map((item) => formatWithCanonicalRowSource(item, formatNewsItem)).filter(Boolean)
+            : pickArray(src, 'marketNews', 'headlines', 'news', 'topStories')),
           ...moText,
           ...pickArray(src, 'snapshot'),
         ]);
@@ -974,7 +984,9 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
             ...pickArray(video, 'macroEvents', 'macroHighlights', 'marketConditions'),
             ...pickArray(video, 'patterns'),
           ];
-      return rawMacro.map(formatMacroItem).filter(Boolean);
+      return rawMacro
+        .map((item) => formatWithCanonicalRowSource(item, formatMacroItem))
+        .filter(Boolean);
     }
 
     case 'brief-sentiment': {

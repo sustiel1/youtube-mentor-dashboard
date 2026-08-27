@@ -117,5 +117,6 @@ export function buildSectionChildItems(items, idPrefix, { sectionLabel = '', typ
     sectionLabel,
     type,
     tabScope,
+    sectionKey: idPrefix,
   }));
 }

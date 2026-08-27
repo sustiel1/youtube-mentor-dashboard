@@ -3,6 +3,7 @@ import { buildAtomicNotesFromVideo, buildVideoFullNote, resolvePrimaryTopic, slu
 import { resolveTopicBreadcrumb } from './topicFilters.js';
 import { getManualNotes } from './localManualNoteStore.js';
 import { getNotesByVideoId } from './localNoteStore.js';
+import { filterAnalyzedVideos } from './gemsAnalyzedStatus.js';
 
 const SOURCE_LABELS = { manual: 'ידני', notebooklm: 'NotebookLM', research: 'מחקר' };
 
@@ -160,7 +161,7 @@ export async function buildWorkspaceZip(videos, mentors, topics, { manualNotesOv
   }
 
   // 1. Analyzed video notes (no raw transcript, no manual note duplication)
-  const analyzedVideos = videos.filter((v) => v.analyzedAt);
+  const analyzedVideos = filterAnalyzedVideos(videos);
   for (const video of analyzedVideos) {
     const mentorName = mentorMap[video.mentorId] || video.channelTitle || '';
     const notes      = getNotesByVideoId(video.videoId || video.id);

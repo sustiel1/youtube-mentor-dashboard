@@ -3,6 +3,16 @@
  * Extracted from vite.config.js geminiPoliticalJsonSchemaExample.
  */
 export function getPoliticalSchemaExample({ chaptersTarget = 4 } = {}) {
+  const timedNarrativeItem = {
+    text: '...',
+    timestampSeconds: null,
+    estimatedStartSeconds: null,
+    estimatedEndSeconds: null,
+    timestampKind: null,
+    timestampSource: null,
+    timestampConfidence: null,
+    sourceQuote: null,
+  };
   const chapters = Array.from({ length: Math.min(chaptersTarget, 3) }, (_, i) => ({
     title: '...',
     startSeconds: i * 120,
@@ -14,11 +24,11 @@ export function getPoliticalSchemaExample({ chaptersTarget = 4 } = {}) {
     shortSummary: '...',
     mainClaim: '...',
     speakerPosition: '...',
-    arguments: ['...'],
-    weakPoints: ['...'],
-    counterArguments: ['...'],
-    socialMediaReplies: ['...'],
-    keyPoints: ['...'],
+    arguments: [timedNarrativeItem],
+    weakPoints: [timedNarrativeItem],
+    counterArguments: [timedNarrativeItem],
+    socialMediaReplies: [timedNarrativeItem],
+    keyPoints: [timedNarrativeItem],
     tags: ['...'],
     networkSlogans: [
       { text: '...', tone: 'חד/אירוני/רגשי/ענייני/מחאתי', useCase: 'תגובה קצרה/פוסט/כותרת/תגובת נגד', sourceIdea: '...' },
@@ -27,7 +37,7 @@ export function getPoliticalSchemaExample({ chaptersTarget = 4 } = {}) {
       { text: '...', tone: 'רגשי/חד/מחאתי/ענייני/אירוני', confidence: 94, sourceIdea: '...' },
     ],
     viralQuotes: ['...'],
-    debateResponses: ['...'],
+    debateResponses: [timedNarrativeItem],
     commentBank: ['...'],
     chapters,
   }, null, 2);

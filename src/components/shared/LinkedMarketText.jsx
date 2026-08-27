@@ -26,23 +26,44 @@ const _RENDER_RE = new RegExp(
  * All other text is preserved exactly as-is.
  * Returns the original string unchanged when no matches are found.
  */
-export function renderLinkedMarketText(text) {
+function contextualTextNode(text, key, contextualLink) {
+  if (!contextualLink || !String(text || '').trim()) return text;
+  return (
+    <a
+      key={key}
+      href={contextualLink.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={contextualLink.ariaLabel}
+      title={contextualLink.ariaLabel}
+      onClick={(event) => event.stopPropagation()}
+      className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+      data-contextual-sector-link={contextualLink.ticker}
+    >
+      {text}
+    </a>
+  );
+}
+
+export function renderLinkedMarketText(text, { contextualLink = null } = {}) {
   if (!text) return text;
   const nodes = [];
   let last = 0;
   _RENDER_RE.lastIndex = 0;
   let m;
   while ((m = _RENDER_RE.exec(text)) !== null) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
+    if (m.index > last) {
+      nodes.push(contextualTextNode(text.slice(last, m.index), `context-${last}`, contextualLink));
+    }
     if (m[1]) {
       const ticker = _HE_LOOKUP.get(m[1]);
       nodes.push(ticker && isSafeAnalysisTicker(ticker)
         ? <AnalysisTickerLink key={`he-${m.index}`} ticker={ticker}>{ticker}</AnalysisTickerLink>
-        : m[1]
+        : contextualTextNode(m[1], `context-he-${m.index}`, contextualLink)
       );
     } else if (m[2]) {
       if (_DENYLIST.has(m[2]) || !isSafeAnalysisTicker(m[2])) {
-        nodes.push(m[2]);
+        nodes.push(contextualTextNode(m[2], `context-en-${m.index}`, contextualLink));
       } else {
         nodes.push(
           <AnalysisTickerLink key={`en-${m.index}`} ticker={m[2]}>{m[2]}</AnalysisTickerLink>
@@ -51,7 +72,12 @@ export function renderLinkedMarketText(text) {
     }
     last = m.index + m[0].length;
   }
-  if (last < text.length) nodes.push(text.slice(last));
+  if (last < text.length) {
+    nodes.push(contextualTextNode(text.slice(last), `context-${last}`, contextualLink));
+  }
+  if (nodes.length === 0 && contextualLink) {
+    return contextualTextNode(text, 'context-all', contextualLink);
+  }
   if (nodes.every((n) => typeof n === 'string')) return text;
   return nodes;
 }

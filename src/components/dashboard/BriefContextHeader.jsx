@@ -13,7 +13,7 @@ const BRIEF_CONTEXT_CLS =
 /**
  * Shared subject + publish-date heading for the universal content tabs.
  */
-export function BriefContextHeader({ slug, subCategory, subject, publishedAt, layout = 'stacked', showSourceCaption = true }) {
+export function BriefContextHeader({ slug, subCategory, subject, publishedAt, layout = 'stacked', showSourceCaption = true, action = null }) {
   const meta = getBriefContextDisplay(slug, subCategory);
   const subjectTitle = meta?.title || String(subject || '').trim();
   if (!subjectTitle) return null;
@@ -29,9 +29,12 @@ export function BriefContextHeader({ slug, subCategory, subject, publishedAt, la
         data-brief-context-header
         data-shared-content-heading
       >
-        <p className={`${BRIEF_TITLE_CLS} leading-snug`}>
-          {parts.join(' | ')}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <p className={`${BRIEF_TITLE_CLS} min-w-0 leading-snug`}>
+            {parts.join(' | ')}
+          </p>
+          {action && <div data-shared-heading-action className="max-w-full shrink-0">{action}</div>}
+        </div>
       </div>
     );
   }
@@ -43,7 +46,10 @@ export function BriefContextHeader({ slug, subCategory, subject, publishedAt, la
       data-brief-context-header
       data-shared-content-heading
     >
-      <h1 className={BRIEF_TITLE_CLS}>{title}</h1>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <h1 className={`${BRIEF_TITLE_CLS} min-w-0`}>{title}</h1>
+        {action && <div data-shared-heading-action className="max-w-full shrink-0">{action}</div>}
+      </div>
       {showSourceCaption && meta?.context && (
         <p className={`${BRIEF_CONTEXT_CLS} mt-1`}>{meta.context}</p>
       )}

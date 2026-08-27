@@ -202,16 +202,22 @@ export function normalizeNewsItems(items) {
   const seen = new Set();
 
   for (const item of safe) {
+    const sourceItem = item && typeof item === 'object' && item.rowTimestampSourceItem
+      ? item.rowTimestampSourceItem
+      : item;
+    const normalizationInput = item && typeof item === 'object' && item.rowTimestampSourceItem
+      ? item.text
+      : item;
     let normalized = null;
-    if (typeof item === 'string') normalized = normalizeFromString(item);
-    else if (typeof item === 'object') normalized = normalizeFromObject(item);
-    else normalized = normalizeFromString(String(item));
+    if (typeof normalizationInput === 'string') normalized = normalizeFromString(normalizationInput);
+    else if (typeof normalizationInput === 'object') normalized = normalizeFromObject(normalizationInput);
+    else normalized = normalizeFromString(String(normalizationInput));
 
     if (!normalized?.title) continue;
     const sig = normalized.saveText.slice(0, 160);
     if (!sig || seen.has(sig)) continue;
     seen.add(sig);
-    out.push({ ...normalized, id: sig });
+    out.push({ ...normalized, id: sig, sourceItem });
   }
 
   return out;

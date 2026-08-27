@@ -13,6 +13,7 @@ import { downloadWorkspaceZip } from "@/lib/downloadWorkspaceZip";
 import { Archive, Download, BookMarked, Play, FileText, FolderOpen, X, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
+import { countAnalyzedVideos } from "@/lib/gemsAnalyzedStatus";
 
 export default function Workspace({ navigateTo, pageParams }) {
   const { data: topics = [], isLoading } = useTopics();
@@ -52,7 +53,7 @@ export default function Workspace({ navigateTo, pageParams }) {
     [mainTopics, knowledgeItems, videos]
   );
 
-  const totalAnalyzed = useMemo(() => videos.filter((v) => v.analyzedAt).length, [videos]);
+  const totalAnalyzed = useMemo(() => countAnalyzedVideos(videos), [videos]);
   const totalNotes = useMemo(() => topicStats.reduce((sum, t) => sum + t.noteCount, 0), [topicStats]);
   const totalBrainItems = useMemo(
     () => topicStats.reduce((sum, t) => sum + (t.learningCount || 0), 0),

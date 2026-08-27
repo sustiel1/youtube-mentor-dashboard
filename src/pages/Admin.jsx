@@ -43,6 +43,7 @@ import { updateChannelCollectionByChannelId, updateChannelCollectionByChannelNam
 import { GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
 import { CATEGORY_TO_NAME } from "@/config/topicConfig";
 import { getAllScanHistory, setScanHistory as persistScanHistory } from "@/lib/localScanHistoryStore";
+import { filterAnalyzedVideos } from "@/lib/gemsAnalyzedStatus";
 
 
 const SOURCE_TYPE_ICON = {
@@ -5706,7 +5707,7 @@ export default function Admin({ navigateTo = null }) {
   }
 
   async function handleExportWorkspaceZip() {
-    const analyzed = videos.filter((v) => v.analyzedAt);
+    const analyzed = filterAnalyzedVideos(videos);
     if (analyzed.length === 0) {
       toast.info("אין סרטונים מנותחים לייצוא");
       return;

@@ -9,6 +9,10 @@
 
 import { cleanupMarketDashboardRows } from '@/lib/macroDisplayCleanup';
 import { translateMarketTextInline } from '@/lib/marketLabelTranslations';
+import {
+  MARKET_INSTRUMENT_CLASS,
+  classifyMarketInstrument,
+} from '@/lib/marketInstrumentClassification';
 
 const INDEX_OVERVIEW_KEYS = new Set([
   'spx', 'nasdaq', 'dow', 'russell', 'vix', 'dollar', 'bitcoin', 'oil', 'bonds10y',
@@ -223,6 +227,7 @@ function applyManualOverridesToMergedSrc(merged, manualOverrides) {
         break;
       case 'markets':
         out.indices = ov.rows.map((r) => ({
+          ...r,
           name: r.asset,
           symbol: r.asset,
           trend: r.trend,
@@ -243,6 +248,7 @@ function applyManualOverridesToMergedSrc(merged, manualOverrides) {
         break;
       case 'stocksMentioned':
         out.stocksMentioned = ov.rows.map((s) => ({
+          ...s,
           symbol: s.ticker,
           ticker: s.ticker,
           company: s.company,
@@ -298,6 +304,10 @@ function pickArray(obj, ...keys) {
     if (Array.isArray(v) && v.length > 0) return v;
   }
   return [];
+}
+
+function collectArrayValues(obj, ...keys) {
+  return keys.flatMap((key) => (Array.isArray(obj?.[key]) ? obj[key] : []));
 }
 
 function formatDisplayValue(v) {
@@ -424,6 +434,7 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
     const ci = raw.indexOf(':');
     if (ci === -1) {
       const t = raw.trim();
+      if (classifyMarketInstrument(t) === MARKET_INSTRUMENT_CLASS.STOCK) return null;
       return t ? { asset: t.toUpperCase(), trend: '', strength: '', comment: '' } : null;
     }
     return normalizeMarketDashboardRow(
@@ -443,6 +454,7 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
   const asset = (
     pickString(raw, 'name', 'symbol', 'ticker', 'asset', 'index', 'metric') || defaultAsset
   ).toUpperCase();
+  if (classifyMarketInstrument(raw, asset) === MARKET_INSTRUMENT_CLASS.STOCK) return null;
 
   const directionRaw = pickString(raw, 'trend', 'shortTermTrend', 'direction', 'bias', 'phase');
   const strengthRaw = pickString(
@@ -450,7 +462,7 @@ export function normalizeMarketDashboardRow(raw, defaultAsset = '') {
   );
   const changeRaw = pickString(raw, 'change', 'pct', 'changePercent');
   const condition = pickString(raw, 'condition', 'state', 'status');
-  const note = pickString(raw, 'note', 'comment', 'description', 'insight', 'context');
+  const note = pickString(raw, 'note', 'comment', 'description', 'insight', 'context', 'reason', 'why');
 
   const trendIsToken = directionRaw && directionRaw.length <= 20 &&
     ['up', 'down', 'bullish', 'bearish', 'neutral', 'flat'].includes(directionRaw.toLowerCase());
@@ -488,7 +500,15 @@ export function extractMarketDashboardRows(src) {
     if (row) rows.push(row);
   };
 
-  for (const item of pickArray(src, 'indices', 'indexPerformance', 'indexData', 'keyLevels')) {
+  for (const item of collectArrayValues(src, 'indices', 'indexPerformance', 'indexData', 'keyLevels')) {
+    push(item);
+  }
+
+  for (const item of collectArrayValues(
+    src,
+    'stocksMentioned', 'stocks', 'watchlist', 'tickers', 'watchlistLevels',
+    'mentionedStocks', 'topStocks', 'stockPicks',
+  )) {
     push(item);
   }
 
@@ -540,7 +560,7 @@ export function extractOpportunityIdeas(src) {
   for (const { items, kind } of buckets) {
     for (const item of items) {
       const row = normalizeOpportunity(item);
-      if (row) raw.push({ ...row, kind: row.kind !== 'setup' ? row.kind : kind });
+      if (row) raw.push({ ...row, kind: row.kind !== 'setup' ? row.kind : kind, sourceItem: item });
     }
   }
 
@@ -593,7 +613,7 @@ export function extractRiskItems(src) {
       const arr = pickArray(src, key);
       for (const item of arr) {
         const r = normalizeRisk(item);
-        if (r) raw.push({ ...r, category: r.category || category });
+        if (r) raw.push({ ...r, category: r.category || category, sourceItem: item });
       }
     }
   }
@@ -625,6 +645,41 @@ function formatMacroChange(item) {
   }
   const dir = pickString(item, 'direction', 'trend');
   return dir || '';
+}
+
+function hasPresentValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== '';
+}
+
+function formatMetricValue(value, unit = '') {
+  if (!hasPresentValue(value)) return '';
+  const text = String(value).trim();
+  const cleanUnit = String(unit || '').trim();
+  if (!cleanUnit || text.includes(cleanUnit)) return text;
+  return cleanUnit === '%' ? `${text}%` : `${text} ${cleanUnit}`;
+}
+
+const UNKNOWN_CHANGE_VALUES = new Set(['unknown', 'לא ידוע']);
+
+function hasKnownChange(value) {
+  const text = String(value ?? '').trim().toLowerCase();
+  return Boolean(text) && !UNKNOWN_CHANGE_VALUES.has(text);
+}
+
+function extractExplicitPercentageChange(...values) {
+  const text = values.map((value) => String(value || '').trim()).filter(Boolean).join(' ');
+  if (!text) return '';
+
+  const arrow = text.match(/([↑↓])\s*(\d+(?:\.\d+)?)\s*%/);
+  if (arrow) return `${arrow[1] === '↑' ? '+' : '-'}${arrow[2]}%`;
+
+  const signed = text.match(/(?:^|\s)([+-]\d+(?:\.\d+)?)\s*%/);
+  if (signed) return `${signed[1]}%`;
+
+  const hebrewMove = text.match(/(?:^|\s)(עלה|עלתה|עלו|זינק|זינקה|זינקו|ירד|ירדה|ירדו|נפל|נפלה|נפלו|צנח|צנחה|צנחו|מחק|מחקה)\s+(?:ב[-־]?\s*)?(\d+(?:\.\d+)?)\s*%/);
+  if (!hebrewMove) return '';
+  const negative = /^(ירד|ירדה|ירדו|נפל|נפלה|נפלו|צנח|צנחה|צנחו|מחק|מחקה)$/.test(hebrewMove[1]);
+  return `${negative ? '-' : '+'}${hebrewMove[2]}%`;
 }
 
 function normalizeMacroIndicatorRow(item) {
@@ -675,6 +730,7 @@ function normalizeMacroIndicatorRow(item) {
       else if (line.startsWith('סקטורים:')) row.description = mergeContext(row.description, line.replace(/^סקטורים:\s*/, '').trim());
       else row.description = mergeContext(row.description, line);
     }
+    row.change = extractExplicitPercentageChange(row.description, row.impact);
     return row;
   }
 
@@ -683,20 +739,51 @@ function normalizeMacroIndicatorRow(item) {
   const eventName = pickString(item, 'event', 'title', 'subject');
   // 'factor' added for rawData.macroFactors items shaped { factor, note } (GEM macro schema).
   const indicator = pickString(item, 'name', 'factor', 'symbol', 'indicator', 'ticker', 'stock') || eventName;
-  const value = pickString(item, 'value', 'level', 'currentValue', 'price', 'current', 'when', 'date', 'time');
-  const change = formatMacroChange(item);
+  const legacyValue = pickString(item, 'value', 'level', 'currentValue', 'price', 'current', 'when', 'date', 'time');
+  const actualUnit = pickString(item, 'actualUnit', 'unit');
+  const hasCanonicalActualValue = Object.prototype.hasOwnProperty.call(item, 'actualValue');
+  const explicitActualValue = item.actualValue;
+  const value = hasCanonicalActualValue
+    ? formatMetricValue(explicitActualValue, actualUnit)
+    : legacyValue;
+  const directChange = formatMacroChange(item);
   const frequency = pickString(item, 'updateFrequency', 'frequency', 'cadence', 'period', 'importance', 'priority');
   const description = pickString(
     item,
     'description', 'comment', 'condition', 'note', 'notes', 'context', 'thesis', 'status', 'reason', 'sectors',
   );
   const impact = pickString(item, 'impact', 'marketImpact', 'effect', 'expectedImpact', 'sentiment', 'bias');
+  const extractedChange = extractExplicitPercentageChange(description, impact, pickString(item, 'status', 'note', 'notes'));
+  const change = hasKnownChange(directChange) || !extractedChange ? directChange : extractedChange;
 
   if (!indicator && !value && !description && !impact) return null;
 
   return {
     indicator: indicator || eventName || value || '—',
     value: eventName && indicator !== eventName ? pickString(item, 'date', 'time', 'when', 'value') : value,
+    actualValue: hasCanonicalActualValue
+      ? (hasPresentValue(explicitActualValue) ? explicitActualValue : null)
+      : (hasPresentValue(item.currentValue) ? item.currentValue : null),
+    actualUnit,
+    actualPeriod: pickString(item, 'actualPeriod'),
+    actualMetricType: pickString(item, 'actualMetricType'),
+    metricType: pickString(item, 'metricType'),
+    unit: pickString(item, 'unit'),
+    period: pickString(item, 'period'),
+    asOf: pickString(item, 'asOf'),
+    targetValue: item.targetValue ?? null,
+    referenceValue: item.referenceValue ?? item.expectedValue ?? item.consensusValue ?? item.previousValue ?? null,
+    referenceType: pickString(item, 'referenceType'),
+    referenceUnit: pickString(item, 'referenceUnit'),
+    referencePeriod: pickString(item, 'referencePeriod'),
+    referenceMetricType: pickString(item, 'referenceMetricType'),
+    gapValue: item.gapValue ?? null,
+    gapUnit: pickString(item, 'gapUnit'),
+    trend: pickString(item, 'trend', 'direction'),
+    sourceName: pickString(item, 'sourceName'),
+    sourceUrl: pickString(item, 'sourceUrl'),
+    sourceType: pickString(item, 'sourceType'),
+    verificationStatus: pickString(item, 'verificationStatus'),
     change,
     frequency,
     description,
@@ -706,7 +793,10 @@ function normalizeMacroIndicatorRow(item) {
 
 /** Parse one macro item (object or formatted string) for table display. */
 export function parseMacroDisplayItem(item) {
-  return normalizeMacroIndicatorRow(item);
+  const input = item && typeof item === 'object' && item.rowTimestampSourceItem
+    ? item.text
+    : item;
+  return normalizeMacroIndicatorRow(input);
 }
 
 /** Returns true when the indicator name is a raw value / number that leaked into the indicator column. */
@@ -751,7 +841,52 @@ export function macroSemanticKey(indicatorText) {
 
 export function macroRowRichness(row) {
   return (row.indicator?.length || 0) + (row.description?.length || 0)
-    + (row.value?.length || 0) + (row.impact?.length || 0);
+    + (row.value?.length || 0) + (row.change?.length || 0)
+    + (row.frequency?.length || 0) + (row.impact?.length || 0);
+}
+
+function richerText(left, right) {
+  const leftText = String(left || '').trim();
+  const rightText = String(right || '').trim();
+  return rightText.length > leftText.length ? right : left;
+}
+
+function mergeMacroRowsByField(primary, fallback) {
+  if (!primary) return { ...fallback };
+  if (!fallback) return { ...primary };
+
+  const merged = { ...fallback, ...primary };
+  for (const key of new Set([...Object.keys(fallback), ...Object.keys(primary)])) {
+    if (!hasPresentValue(primary[key]) && hasPresentValue(fallback[key])) merged[key] = fallback[key];
+  }
+  if (!hasKnownChange(primary.change) && hasKnownChange(fallback.change)) merged.change = fallback.change;
+  if (!hasKnownChange(primary.trend) && hasKnownChange(fallback.trend)) merged.trend = fallback.trend;
+  merged.description = richerText(primary.description, fallback.description);
+  merged.impact = richerText(primary.impact, fallback.impact);
+  merged.rowTimestampSourceItems = [
+    ...(Array.isArray(primary.rowTimestampSourceItems) ? primary.rowTimestampSourceItems : []),
+    ...(Array.isArray(fallback.rowTimestampSourceItems) ? fallback.rowTimestampSourceItems : []),
+  ];
+  return merged;
+}
+
+export function mergeMacroDisplayRows(primaryRows = [], fallbackItems = []) {
+  const groups = new Map();
+  const addRow = (row) => {
+    if (!row?.indicator) return;
+    const key = macroSemanticKey(row.indicator);
+    groups.set(key, mergeMacroRowsByField(groups.get(key), row));
+  };
+
+  for (const row of Array.isArray(primaryRows) ? primaryRows : []) addRow(row);
+  for (const item of Array.isArray(fallbackItems) ? fallbackItems : []) {
+    const row = parseMacroDisplayItem(item);
+    const sourceItem = item && typeof item === 'object' && item.rowTimestampSourceItem
+      ? item.rowTimestampSourceItem
+      : item;
+    addRow(row ? { ...row, rowTimestampSourceItems: [sourceItem] } : row);
+  }
+  return [...groups.values()];
 }
 
 /** Presentation-only macro rows for table UI (no schema / extractor changes). */
@@ -771,10 +906,24 @@ export function extractMacroIndicatorRows(src) {
   const groups = new Map();
   for (const row of rows) {
     const key = macroSemanticKey(row.indicator);
-    const prev = groups.get(key);
-    groups.set(key, !prev || macroRowRichness(row) > macroRowRichness(prev) ? row : prev);
+    groups.set(key, mergeMacroRowsByField(groups.get(key), row));
   }
   return [...groups.values()];
+}
+
+const CALENDAR_IMPORTANCE_VALUES = new Set([
+  'critical', 'high', 'medium-high', 'medium', 'medium-low', 'low',
+  'קריטי', 'קריטית', 'גבוה', 'גבוהה', 'בינוני', 'בינונית', 'נמוך', 'נמוכה',
+]);
+
+function isCalendarImportanceValue(value) {
+  return CALENDAR_IMPORTANCE_VALUES.has(String(value || '').trim().toLowerCase());
+}
+
+function looksLikeEventTimingText(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  return /\b(today|tomorrow|week|month|year|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|evening|after[- ]market)\b|היום|מחר|השבוע|שבוע|חודש|שנה|יום\s+(?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)|בוקר|ערב|לילה|תחילת|אמצע|סוף|\d{1,2}[:/.\-]\d{1,2}/i.test(text);
 }
 
 function normalizeCalendarRow(item) {
@@ -793,9 +942,23 @@ function normalizeCalendarRow(item) {
   if (typeof item !== 'object') return null;
 
   const event = pickString(item, 'event', 'title', 'name', 'subject', 'description');
-  const date = pickString(item, 'date', 'time', 'when', 'day');
-  const importance = pickString(item, 'importance', 'priority', 'significance');
-  const impact = pickString(item, 'impact', 'marketImpact', 'expectedImpact', 'effect');
+  const eventDate = pickString(item, 'eventDate', 'date', 'day');
+  const eventTime = pickString(item, 'eventTime', 'time');
+  const legacyWhen = pickString(item, 'when');
+  const sourceRelativeText = pickString(item, 'sourceRelativeText');
+  const timeframe = pickString(item, 'timeframe');
+  const timingStatus = pickString(item, 'timingStatus');
+  const relativeTiming = looksLikeEventTimingText(sourceRelativeText)
+    ? sourceRelativeText
+    : (looksLikeEventTimingText(timeframe) ? timeframe : '');
+  const date = timingStatus === 'conflicting'
+    ? ''
+    : ([eventDate, eventTime].filter(Boolean).join(' ') || legacyWhen || relativeTiming);
+  const suppliedImportance = pickString(item, 'importance', 'priority', 'significance', 'severity', 'importanceLevel');
+  const rawImpact = pickString(item, 'impact', 'marketImpact', 'expectedImpact', 'effect');
+  const impactCarriesImportance = !suppliedImportance && isCalendarImportanceValue(rawImpact);
+  const importance = suppliedImportance || (impactCarriesImportance ? rawImpact : '');
+  const impact = impactCarriesImportance ? '' : rawImpact;
   const type = pickString(item, 'type', 'category') || detectEventType(event);
 
   if (!event && !date) return null;
@@ -805,7 +968,12 @@ function normalizeCalendarRow(item) {
     importance,
     type,
     impact,
-    timeframe: pickString(item, 'timeframe', 'when'),
+    timeframe,
+    eventDate,
+    eventTime,
+    timezone: pickString(item, 'timezone', 'timeZone'),
+    sourceRelativeText,
+    timingStatus,
     affectedStocks: Array.isArray(item.affectedStocks)
       ? item.affectedStocks.map(safeCoerceString).filter(Boolean)
       : [],
@@ -877,9 +1045,12 @@ export function mergeCalendarRows(rows) {
     } else {
       const g = groups.get(canonical);
       g.sourceCount += 1;
-      // Prefer the row with more data fields filled in
-      const score = (r) => (r.importance ? 1 : 0) + (r.date ? 1 : 0) + (r.impact ? r.impact.length : 0);
-      if (score(row) > score(g.primary)) g.primary = row;
+      const merged = { ...g.primary };
+      for (const [key, value] of Object.entries(row)) {
+        if (!hasPresentValue(merged[key]) && hasPresentValue(value)) merged[key] = value;
+      }
+      merged.impact = richerText(g.primary.impact, row.impact);
+      g.primary = merged;
     }
 
     const g = groups.get(canonical);
@@ -1138,7 +1309,8 @@ function tickersInText(text) {
   const found = new Set();
   let m;
   const re = new RegExp(TICKER_RE.source, 'g');
-  while ((m = re.exec(text)) !== null) {
+  const searchableText = text.replace(/\bS&P(?:\s*500)?\b/g, '');
+  while ((m = re.exec(searchableText)) !== null) {
     const t = normalizeTicker(m[1]);
     if (t) found.add(t);
   }
@@ -1172,6 +1344,7 @@ function mergeContext(a, b) {
 
 function stockRecordFromObject(item, category = 'general') {
   if (!item) return null;
+  if (classifyMarketInstrument(item) === MARKET_INSTRUMENT_CLASS.MARKET) return null;
   if (typeof item === 'string') {
     const tickers = tickersInText(item);
     const ticker = tickers[0] || normalizeTicker(item);
@@ -1185,36 +1358,48 @@ function stockRecordFromObject(item, category = 'general') {
       category,
       actionability: humanizeActionability(category),
       notes: '',
+      rowTimestampSourceItems: [item],
     };
   }
   if (typeof item !== 'object') return null;
 
   const ticker = normalizeTicker(
-    pickString(item, 'symbol', 'ticker', 'stock', 'title', 'name')
+    pickString(item, 'symbol', 'ticker', 'stock', 'asset', 'title', 'name')
   ) || tickersInText(pickString(item, 'description', 'setup', 'idea'))[0];
   if (!ticker) return null;
+
+  const resolvedCategory = CATEGORY_RANK[item.category] ? item.category : category;
 
   const nameField = pickString(item, 'name');
   const company = pickString(item, 'company', 'nameHebrew', 'companyName')
     || (nameField && normalizeTicker(nameField) !== nameField ? nameField : '');
 
   return {
+    ...item,
     ticker,
     company,
-    context: pickString(item, 'reason', 'context', 'why', 'note', 'notes', 'thesis', 'description', 'status'),
+    context: pickString(item, 'reason', 'context', 'why', 'note', 'comment', 'thesis', 'description', 'status'),
     sentiment: humanizeSentiment(
-      pickString(item, 'sentiment', 'bias', 'outlook', 'mood', 'direction', 'action')
+      pickString(item, 'sentiment', 'bias', 'outlook', 'mood', 'direction', 'trend', 'action')
     ),
-    category,
-    actionability: humanizeActionability(category, item),
+    category: resolvedCategory,
+    actionability: humanizeActionability(resolvedCategory, item),
     notes: mergeContext(
-      pickString(item, 'catalyst', 'trigger', 'event', 'technicalState'),
-      pickString(item, 'level', 'price', 'target', 'entry')
+      pickString(item, 'notes'),
+      mergeContext(
+        pickString(item, 'catalyst', 'trigger', 'event', 'technicalState'),
+        pickString(item, 'level', 'price', 'target', 'entry')
+      )
     ),
-    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange', 'change'),
+    changePercent: pickString(item, 'changePercent', 'percentChange', 'pct', 'dailyChange', 'change')
+      || (/[%％]/.test(pickString(item, 'strength')) ? pickString(item, 'strength') : ''),
     timeframe: pickString(item, 'timeframe'),
     priority: pickString(item, 'priority', 'importance'),
     isNewToWatch: typeof item.isNewToWatch === 'boolean' ? item.isNewToWatch : null,
+    source: pickString(item, 'source', 'sourceType'),
+    sourceVideoId: pickString(item, 'sourceVideoId', 'source_video_id'),
+    videoId: pickString(item, 'videoId', 'youtubeId'),
+    rowTimestampSourceItems: [item],
   };
 }
 
@@ -1231,6 +1416,8 @@ function upsertStock(map, record) {
       ? record.category
       : prev.category;
   map.set(key, {
+    ...record,
+    ...prev,
     ticker: key,
     company: prev.company || record.company,
     context: mergeContext(prev.context, record.context),
@@ -1242,6 +1429,13 @@ function upsertStock(map, record) {
     timeframe: prev.timeframe || record.timeframe,
     priority: prev.priority || record.priority,
     isNewToWatch: prev.isNewToWatch ?? record.isNewToWatch,
+    source: prev.source || record.source,
+    sourceVideoId: prev.sourceVideoId || record.sourceVideoId,
+    videoId: prev.videoId || record.videoId,
+    rowTimestampSourceItems: [
+      ...(Array.isArray(prev.rowTimestampSourceItems) ? prev.rowTimestampSourceItems : []),
+      ...(Array.isArray(record.rowTimestampSourceItems) ? record.rowTimestampSourceItems : []),
+    ],
   });
 }
 
@@ -1249,16 +1443,6 @@ function upsertStock(map, record) {
  * Unified stock list from all existing specialized + video sources (presentation only).
  */
 export function extractUnifiedStocks(marketBriefData, video = null) {
-  const manualStocks = marketBriefData?.manualOverrides?.stocksMentioned;
-  if (manualStocks?.source === 'manual' && Array.isArray(manualStocks.rows)) {
-    return manualStocks.rows
-      .map((s) => ({
-        ...s,
-        categoryLabel: CATEGORY_LABELS[s.category] || CATEGORY_LABELS.general,
-      }))
-      .sort((a, b) => a.ticker.localeCompare(b.ticker));
-  }
-
   const src = getSpecializedSrc(marketBriefData);
   const map = new Map();
 
@@ -1269,7 +1453,31 @@ export function extractUnifiedStocks(marketBriefData, video = null) {
     }
   };
 
+  const ingestMisplacedMarketStocks = (source) => {
+    ingestList(
+      collectArrayValues(source, 'indices', 'indexPerformance', 'indexData', 'keyLevels'),
+      'watchlist',
+    );
+  };
+
+  const manualStocks = marketBriefData?.manualOverrides?.stocksMentioned;
+  const manualMarkets = marketBriefData?.manualOverrides?.markets;
+  if (manualMarkets?.source === 'manual' && Array.isArray(manualMarkets.rows)) {
+    ingestList(manualMarkets.rows, 'watchlist');
+  }
+  if (manualStocks?.source === 'manual' && Array.isArray(manualStocks.rows)) {
+    ingestList(manualStocks.rows, 'watchlist');
+    ingestMisplacedMarketStocks(src);
+    return [...map.values()]
+      .map((s) => ({
+        ...s,
+        categoryLabel: CATEGORY_LABELS[s.category] || CATEGORY_LABELS.general,
+      }))
+      .sort((a, b) => a.ticker.localeCompare(b.ticker));
+  }
+
   if (src) {
+    ingestMisplacedMarketStocks(src);
     ingestList(pickArray(src, 'stocksMentioned', 'stocks', 'watchlist', 'tickers', 'watchlistLevels', 'mentionedStocks', 'topStocks', 'stockPicks'), 'watchlist');
     ingestList(pickArray(src, 'opportunities', 'tradingOpportunities', 'trades', 'breakoutCandidates', 'breakouts', 'swingOpportunities', 'swingTrades'), 'opportunity');
     ingestList(pickArray(src, 'relativeStrengthLeaders', 'rsLeaders', 'momentumLeaders'), 'opportunity');
@@ -1305,6 +1513,8 @@ export function extractUnifiedStocks(marketBriefData, video = null) {
   }
 
   if (video) {
+    ingestMisplacedMarketStocks(video);
+    ingestMisplacedMarketStocks(video.analysis);
     ingestList(pickArray(video, 'stocksMentioned', 'mentionedStocks', 'tickers'), 'watchlist');
     ingestList(pickArray(video?.analysis, 'stocksMentioned'), 'watchlist');
     ingestList(pickArray(video, 'tradingSetups'), 'opportunity');

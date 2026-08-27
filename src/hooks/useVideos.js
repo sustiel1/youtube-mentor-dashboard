@@ -12,6 +12,7 @@ import {
 import { applyChannelCollectionsToVideos } from '@/lib/localChannelCollectionsStore';
 import { hasLocalVideoStoreSnapshot, wereLocalVideosCleared } from '@/services/videoStorage';
 import { isDriveConnected, deleteDriveFileById } from '@/lib/gdriveAnalysisStore';
+import { hydrateCanonicalVideoAnalysisEvidence } from '@/lib/canonicalVideoAnalysisHydration';
 
 function sortVideosDesc(videos) {
   return [...videos].sort(
@@ -43,13 +44,17 @@ export function useVideos() {
     queryKey: ['videos'],
     queryFn: async () => {
       if (!isBase44Enabled()) {
-        return applyChannelCollectionsToVideos(loadLocalFirstVideos());
+        return applyChannelCollectionsToVideos(
+          await hydrateCanonicalVideoAnalysisEvidence(loadLocalFirstVideos()),
+        );
       }
       try {
         const data = await Video.list('-publishedAt');
         return applyChannelCollectionsToVideos(data ?? []);
       } catch {
-        return applyChannelCollectionsToVideos(loadLocalFirstVideos());
+        return applyChannelCollectionsToVideos(
+          await hydrateCanonicalVideoAnalysisEvidence(loadLocalFirstVideos()),
+        );
       }
     },
   });

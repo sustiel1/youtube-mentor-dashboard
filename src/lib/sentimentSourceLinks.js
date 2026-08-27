@@ -4,18 +4,33 @@
  * Matching is alias-based (case-insensitive, trimmed).
  */
 
+import { resolveSectorTableFinvizLink } from './sectorTablePresentation.js';
+
 export const CNN_FEAR_GREED_URL = 'https://www.cnn.com/markets/fear-and-greed';
+export const FINVIZ_MARKET_MAP_URL = 'https://finviz.com/map';
 
 export const SENTIMENT_SOURCE_LINKS = [
   {
-    id: 'general_market_sentiment',
-    labelHe: 'סנטימנט כללי',
-    url: 'https://www.cnn.com/markets/fear-and-greed',
+    id: 'fear_greed',
+    labelHe: 'מדד הפחד והחמדנות',
+    url: CNN_FEAR_GREED_URL,
+    ariaLabel: 'פתיחת מדד הפחד והחמדנות של CNN',
     aliases: [
-      'general sentiment', 'market sentiment', 'fear and greed', 'risk on', 'risk off',
-      'סנטימנט כללי', 'סנטימנט שוק', 'פחד ותאווה', 'ריסק און', 'ריסק אוף',
-      'overall sentiment', 'general mood', 'אווירה כללית', 'מצב רוח כללי',
-      'fear & greed', 'פחד וחמדנות',
+      'fear and greed', 'fear & greed', 'פחד וחמדנות', 'פחד ותאווה',
+    ],
+  },
+  {
+    id: 'general_market_sentiment',
+    labelHe: 'מצב השוק הכללי',
+    url: FINVIZ_MARKET_MAP_URL,
+    ariaLabel: 'פתיחת מפת השוק של Finviz',
+    aliases: [
+      'general sentiment', 'market sentiment', 'broad market sentiment',
+      'overall sentiment', 'overall market condition', 'general mood',
+      'wall street opening', 'wall street open', 'opening on wall street',
+      'סנטימנט כללי', 'סנטימנט שוק', 'אווירה כללית', 'מצב רוח כללי',
+      'מצב השוק', 'מצב שוק כללי', 'פתיחת מסחר בוול סטריט', 'פתיחת וול סטריט',
+      'risk on', 'risk off', 'ריסק און', 'ריסק אוף',
     ],
   },
   {
@@ -212,9 +227,34 @@ function matchesAny(candidates, aliases) {
 export function getSentimentSourceLink(row) {
   if (!row) return null;
 
-  const primaryCandidates = [
+  const rawPrimaryCandidates = [
     row.label, row.type, row.category, row.title, row.name,
-  ].filter(Boolean).map(normalizeForMatch);
+  ].filter(Boolean);
+  const rawSupportingCandidates = [
+    row.value, row.note, row.description,
+  ].filter(Boolean);
+
+  const directSectorLink = rawPrimaryCandidates
+    .map(resolveSectorTableFinvizLink)
+    .find(Boolean);
+  const hasSectorContext = rawPrimaryCandidates
+    .some((candidate) => /(?:sector|סקטור)/i.test(String(candidate)));
+  const contextualSectorLink = hasSectorContext
+    ? resolveSectorTableFinvizLink([...rawPrimaryCandidates, ...rawSupportingCandidates].join(' '))
+    : null;
+  const sectorLink = directSectorLink || contextualSectorLink;
+
+  if (sectorLink) {
+    return {
+      id: 'sector_etf',
+      labelHe: `תעודת הסל ${sectorLink.ticker}`,
+      ticker: sectorLink.ticker,
+      url: sectorLink.url,
+      ariaLabel: `פתיחת תעודת הסל ${sectorLink.ticker} ב־Finviz`,
+    };
+  }
+
+  const primaryCandidates = rawPrimaryCandidates.map(normalizeForMatch);
 
   const fallbackCandidates = [
     row.note, row.description,

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src http://127.0.0.1:*; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>YouTube Mentor — בדיקת snapshot מקומי</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0b1020;
+        color: #e7eaf3;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #172554 0, #0b1020 48%);
+      }
+
+      main {
+        width: min(760px, calc(100vw - 32px));
+        box-sizing: border-box;
+        padding: 28px;
+        border: 1px solid #334155;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.96);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.55rem;
+      }
+
+      p {
+        line-height: 1.65;
+        color: #cbd5e1;
+      }
+
+      .notice {
+        padding: 12px 14px;
+        border: 1px solid #1d4ed8;
+        border-radius: 12px;
+        background: rgba(30, 64, 175, 0.18);
+      }
+
+      button {
+        width: 100%;
+        margin: 14px 0;
+        padding: 12px 18px;
+        border: 0;
+        border-radius: 11px;
+        background: #2563eb;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 11px 12px;
+        border: 1px solid #475569;
+        border-radius: 10px;
+        background: #0f172a;
+        color: inherit;
+        font: inherit;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: minmax(150px, 1fr) minmax(180px, 2fr);
+        gap: 8px 16px;
+        margin: 18px 0 0;
+      }
+
+      dt {
+        color: #94a3b8;
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+
+      [data-state="error"] {
+        color: #fca5a5;
+      }
+
+      [data-state="success"] {
+        color: #86efac;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>בדיקת snapshot מקומי ומוגבל ל־origin</h1>
+      <p class="notice">
+        הדף קורא רק מפתחות ומאגרים שנמצאים ב־allowlist של האפליקציה. המידע נשאר בזיכרון בלבד;
+        אין הורדה, הצפנה, שידור, שחזור או שינוי של האחסון.
+      </p>
+      <p id="collector-status" role="status" aria-live="polite" data-state="idle">
+        האיסוף אינו מופעל אוטומטית.
+      </p>
+      <button id="run-collector" type="button">בצע שתי קריאות read-only והשווה</button>
+      <section aria-labelledby="encrypted-backup-heading">
+        <h2 id="encrypted-backup-heading">גיבוי מוצפן בלבד</h2>
+        <p>
+          הפעל את ה־helper המקומי והזן כאן רק את מספר הפורט שהוא מציג. הסיסמה וה־payload
+          אינם מוצגים ואינם נשלחים כ־plaintext.
+        </p>
+        <label for="helper-port">פורט loopback מקומי</label>
+        <input id="helper-port" inputmode="numeric" autocomplete="off" maxlength="5" />
+        <button id="run-encrypted-backup" type="button" disabled>צור גיבוי YTMDBAK v1 מוצפן</button>
+        <p id="backup-status" role="status" aria-live="polite" data-state="idle">
+          ממתין ל־snapshot יציב ול־helper מקומי.
+        </p>
+      </section>
+      <dl aria-label="מטא־דאטה בטוח של האיסוף">
+        <dt>Origin</dt><dd id="meta-origin">—</dd>
+        <dt>localStorage</dt><dd id="meta-local">—</dd>
+        <dt>sessionStorage</dt><dd id="meta-session">—</dd>
+        <dt>IndexedDB</dt><dd id="meta-indexeddb">—</dd>
+        <dt>Cache Storage</dt><dd id="meta-cache">allowlist ריק</dd>
+        <dt>Workspace</dt><dd id="meta-workspace">—</dd>
+        <dt>Storage quota</dt><dd id="meta-quota">—</dd>
+        <dt>Snapshot SHA-256</dt><dd id="meta-hash">—</dd>
+      </dl>
+    </main>
+    <script type="module" src="/src/dev/ytmdbOriginExport.js"></script>
+  </body>
+</html>

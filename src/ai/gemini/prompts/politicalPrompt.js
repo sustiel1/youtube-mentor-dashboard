@@ -11,6 +11,8 @@ export function buildPoliticalAnalysisPrompt({
   chapterHintsText,
 }) {
   return [
+    'STATIC NARRATIVE TIMES: Preserve an explicit source time as numeric timestampSeconds. When timestamped transcript segments defensibly locate a narrative source region, store numeric estimatedStartSeconds with timestampKind: estimated and, when available, timestampSource, timestampConfidence and sourceQuote.',
+    'If there is no defensible source region, omit all time fields. Never infer a narrative item time from item order and never divide the video into equal windows.',
     'נתח את התמלול הפוליטי הבא בלבד והחזר JSON בלבד, בלי markdown ובלי טקסט נוסף.',
     '',
     '═══ מטרת הניתוח ═══',

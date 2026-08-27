@@ -10,6 +10,7 @@ import { generateKnowledgeChunks } from "@/lib/generateKnowledgeChunks";
 import { searchChunks } from "@/lib/chunkSearch";
 import { hasSegments, getSegments } from "@/lib/localSegmentStore";
 import { getManualNotes } from "@/lib/localManualNoteStore";
+import { isVideoAnalyzed } from "@/lib/gemsAnalyzedStatus";
 
 const SOURCE_BADGE = {
   ai:          { label: "AI",     cls: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" },
@@ -244,7 +245,7 @@ export default function KnowledgeSearch({ isDark, toggleTheme }) {
 
   // Auto-generate chunks for analyzed videos not yet indexed; enrich existing chunks lazily
   useEffect(() => {
-    const analyzed = videos.filter((v) => v.analyzedAt);
+    const analyzed = videos.filter(isVideoAnalyzed);
     if (!analyzed.length) return;
     let changed = false;
     for (const video of analyzed) {

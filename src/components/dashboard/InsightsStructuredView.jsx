@@ -12,6 +12,7 @@ import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSec
 import { mergeBulkSelection, formatBulkItemText } from '@/lib/universalTabBulkItems';
 import { formatInsightDisplayText, getInsightDisplayFields } from '@/lib/insightDisplay';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { StaticVideoTimestampActions } from '@/components/shared/StaticVideoTimestampLink';
 import {
   SUMMARY_CARD_CLASS,
   SUMMARY_CARD_TITLE_CLASS,
@@ -45,12 +46,12 @@ function rowSummary(row) {
   return formatInsightDisplayText(row);
 }
 
-function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, bulkSelection }) {
+function InsightCard({ row, videoId, productionRowId, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, bulkSelection }) {
   const summary = rowSummary(row);
   const saved = isSaved ? isSaved(summary) : false;
   const pxUrl = buildPxUrl(summary);
 
-  const actions = bulkSelection?.onQuickSaveBrain ? (
+  const quickActions = bulkSelection?.onQuickSaveBrain ? (
     <UniversalTabQuickSaveFromBulk
       bulkSelection={bulkSelection}
       text={summary}
@@ -66,10 +67,22 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
       compact
     />
   ) : null;
+  const actions = (
+    <StaticVideoTimestampActions
+      videoId={videoId}
+      item={row.source}
+      productionRowId={productionRowId}
+      section={bulkSelection?.sectionLabel || 'תובנות מרכזיות'}
+      displayText={summary}
+    >
+      {quickActions}
+    </StaticVideoTimestampActions>
+  );
 
   return (
     <UniversalTabSelectRow
       data-insight-row
+      data-static-time-candidate={videoId ? 'true' : undefined}
       className="group rounded-lg px-2 py-2.5 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors"
       checkbox={onBulkToggle ? (
         <UniversalTabCheckbox checked={!!bulkSelected} onChange={onBulkToggle} aria-label="בחר תובנה" />
@@ -100,7 +113,7 @@ function InsightCard({ row, onSaveToBrain, isSaved, bulkSelected, onBulkToggle, 
   );
 }
 
-function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
+function InsightList({ rows, videoId, onSaveToBrain, isSaved, bulkSelection }) {
   if (rows.length === 0) return null;
 
   return (
@@ -112,6 +125,8 @@ function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
           <InsightCard
             key={i}
             row={row}
+            videoId={videoId}
+            productionRowId={bulkId}
             onSaveToBrain={onSaveToBrain}
             isSaved={isSaved}
             bulkSelected={bulkId && bulkSelection?.multiSelected?.has(bulkId)}
@@ -137,6 +152,7 @@ function InsightList({ rows, onSaveToBrain, isSaved, bulkSelection }) {
 export function InsightsStructuredView({
   sections = [],
   items = [],
+  videoId = null,
   sectionLabelClassName = SUMMARY_CARD_TITLE_CLASS,
   cardClassName = SUMMARY_CARD_CLASS,
   onSaveToBrain,
@@ -181,6 +197,7 @@ export function InsightsStructuredView({
             ) : null}
             <InsightList
               rows={rows}
+              videoId={videoId}
               onSaveToBrain={onSaveToBrain}
               isSaved={isSaved}
               bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {
@@ -201,6 +218,7 @@ export function InsightsStructuredView({
     <div className={cardClassName} dir="rtl">
       <InsightList
         rows={flatRows}
+        videoId={videoId}
         onSaveToBrain={onSaveToBrain}
         isSaved={isSaved}
         bulkSelection={bulkSelection ? mergeBulkSelection(bulkSelection, {

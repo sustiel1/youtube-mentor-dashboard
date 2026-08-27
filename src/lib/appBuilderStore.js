@@ -31,9 +31,12 @@ function readAll() {
 
 function writeAll(data) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const serialized = JSON.stringify(data);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    return localStorage.getItem(STORAGE_KEY) === serialized;
   } catch (e) {
     console.warn('[appBuilderStore] write failed:', e?.message || e);
+    return false;
   }
 }
 
@@ -109,10 +112,10 @@ export function hasAppBuilderDraft(videoId) {
 
 /** Saves sections (partial or full) for a video. Merges with existing, preserves _meta. */
 export function saveAppBuilderDraft(videoId, sections = {}) {
-  if (!videoId) return;
+  if (!videoId || !sections || Object.keys(sections).length === 0) return false;
   const all = readAll();
   all[String(videoId)] = { ...(all[String(videoId)] ?? {}), ...sections };
-  writeAll(all);
+  return writeAll(all);
 }
 
 /** Records the timestamp of the last Obsidian export for this video. */

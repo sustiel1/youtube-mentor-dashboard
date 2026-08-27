@@ -2,23 +2,32 @@
  * Normalizes and validates market/trading content analysis results.
  */
 
+import {
+  dedupeTimedNarratives,
+  normalizeTimedNarrativeArray,
+} from './timedNarrative.js';
+
 function pickStrings(arr) {
   return (Array.isArray(arr) ? arr : []).map((x) => String(x || '').trim()).filter(Boolean);
 }
 
 export function normalizeMarketResult(parsed) {
-  const keyPoints = [
-    ...pickStrings(parsed?.keyPoints),
-    ...pickStrings(parsed?.tradingRules),
-  ];
+  const keyPoints = dedupeTimedNarratives([
+    ...normalizeTimedNarrativeArray(parsed?.keyPoints),
+    ...normalizeTimedNarrativeArray(parsed?.tradingRules),
+  ], 80);
   return {
     ...parsed,
     contentType: 'market',
-    keyPoints: [...new Set(keyPoints)].slice(0, 80),
+    keyPoints,
     stocksMentioned: pickStrings(parsed?.stocksMentioned),
-    tradingSetups: pickStrings(parsed?.tradingSetups),
-    tradingRules: pickStrings(parsed?.tradingRules),
-    riskRules: pickStrings(parsed?.riskRules),
+    keyInsights: normalizeTimedNarrativeArray(parsed?.keyInsights),
+    usefulKnowledge: normalizeTimedNarrativeArray(parsed?.usefulKnowledge),
+    tradingSetups: normalizeTimedNarrativeArray(parsed?.tradingSetups),
+    tradingRules: normalizeTimedNarrativeArray(parsed?.tradingRules),
+    riskRules: normalizeTimedNarrativeArray(parsed?.riskRules),
+    actionItems: normalizeTimedNarrativeArray(parsed?.actionItems),
+    warnings: normalizeTimedNarrativeArray(parsed?.warnings),
     keyLevels: pickStrings(parsed?.keyLevels),
     indicators: pickStrings(parsed?.indicators),
     marketConditions: pickStrings(parsed?.marketConditions),
@@ -67,8 +76,8 @@ export function serializeMarketResponse(parsed, modelId) {
     keyLevels: Array.isArray(parsed?.keyLevels) ? parsed.keyLevels : [],
     indicators: Array.isArray(parsed?.indicators) ? parsed.indicators : [],
     marketConditions: Array.isArray(parsed?.marketConditions) ? parsed.marketConditions : [],
-    actionItems: Array.isArray(parsed?.actionItems) ? parsed.actionItems : [],
-    warnings: Array.isArray(parsed?.warnings) ? parsed.warnings : [],
+    actionItems: normalizeTimedNarrativeArray(parsed?.actionItems),
+    warnings: normalizeTimedNarrativeArray(parsed?.warnings),
     tags: Array.isArray(parsed?.tags) ? parsed.tags : [],
   };
 }

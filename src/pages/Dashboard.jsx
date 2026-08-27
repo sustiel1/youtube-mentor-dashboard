@@ -1,5 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
-import { RefreshCw, X, GraduationCap, Play, Trash2, Moon, Sun, Plus, ExternalLink } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  Database,
+  ExternalLink,
+  GraduationCap,
+  HardDrive,
+  LayoutGrid,
+  Moon,
+  Play,
+  Plus,
+  RefreshCw,
+  Settings,
+  Sun,
+  Trash2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { FilterBar } from "@/components/dashboard/FilterBar";
@@ -27,10 +47,13 @@ import {
 import { getLocalStorageUsageMB, getStorageBreakdown, estimateEmbeddedTranscriptMB, stripEmbeddedTranscripts, cleanStorageCaches, clearLocalVideoData } from "@/services/videoStorage";
 import { clearAllAttachments } from "@/lib/attachmentStore";
 import { DriveStatusBadge } from "@/components/ui/DriveStatusBadge";
-import { IndexedDbStorageWarning, StorageStatusWidget } from "@/components/ui/StorageStatusWidget";
+import { IndexedDbStorageWarning } from "@/components/ui/StorageStatusWidget";
 import { useStorageMeter } from "@/hooks/useStorageMeter";
+import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import { isDriveConnected } from "@/lib/gdriveAnalysisStore";
 import { saveLocalVideo } from "@/lib/localVideoStore";
+import { formatStorageBytes, shortGenerationId } from "@/lib/persistence/storageMeter";
+import { getObsidianVaultRequestFields, useObsidianSettingsState } from "@/lib/obsidianVaultConfig";
 import { matchesVideoTitleSearch } from "@/lib/videoTitleSearch";
 import { countAnalyzedVideos, filterAnalyzedVideos, isVideoAnalyzed } from "@/lib/gemsAnalyzedStatus";
 
@@ -140,6 +163,157 @@ function formatChannelScanDate(value) {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
+function useObsidianDashboardStatus() {
+  const settings = useObsidianSettingsState();
+  const [status, setStatus] = useState({ state: "checking", label: "בודק חיבור…" });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+
+    const checkConnection = async () => {
+      setStatus({ state: "checking", label: "בודק חיבור…" });
+      try {
+        const requestFields = getObsidianVaultRequestFields();
+        const response = await fetch("/api/vault/diagnostics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vaultName: settings.vaultName || requestFields.vaultName,
+            vaultPath: settings.vaultPath || requestFields.vaultPath,
+            filePath: "",
+            createFolder: false,
+          }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`Obsidian diagnostics failed (${response.status})`);
+        const diagnostics = await response.json();
+        if (!active) return;
+        setStatus(
+          diagnostics?.vaultExists
+            ? { state: "connected", label: "מחובר" }
+            : { state: "disconnected", label: "לא מחובר" },
+        );
+      } catch (error) {
+        if (!active || error?.name === "AbortError") return;
+        setStatus({ state: "error", label: "שגיאת סנכרון" });
+      }
+    };
+
+    void checkConnection();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [settings.vaultName, settings.vaultPath]);
+
+  return status;
+}
+
+function DashboardStorageMeter({
+  snapshot,
+  fallbackUsageMB = 0,
+  breakdown,
+  onToggleBreakdown,
+  onCleanCaches,
+  onStripTranscripts,
+  onRefresh,
+  refreshing = false,
+}) {
+  const fallbackBytes = Math.max(0, Number(fallbackUsageMB) || 0) * 1024 * 1024;
+  const usageBytes = Number.isFinite(snapshot?.usageBytes) ? snapshot.usageBytes : fallbackBytes;
+  const quotaBytes = Number.isFinite(snapshot?.quotaBytes) ? snapshot.quotaBytes : null;
+  const headroomBytes = Number.isFinite(snapshot?.headroomBytes) ? snapshot.headroomBytes : null;
+  const actualPercent = quotaBytes > 0 ? Math.min(100, Math.max(0, (usageBytes / quotaBytes) * 100)) : null;
+  const visiblePercent = usageBytes > 0 && actualPercent != null ? Math.max(1, actualPercent) : actualPercent || 0;
+  const usageLabel = formatStorageBytes(usageBytes) || "לא זמין";
+  const availableLabel = formatStorageBytes(headroomBytes);
+  const progressText = availableLabel
+    ? `${usageLabel} בשימוש, ${availableLabel} זמינים`
+    : `${usageLabel} בשימוש, הקיבולת אינה זמינה`;
+
+  return (
+    <div className="relative flex w-full min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:w-auto sm:min-w-[210px] dark:border-zinc-700 dark:bg-zinc-900" data-testid="dashboard-storage-meter">
+      <HardDrive className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
+          <span className="font-semibold text-slate-800 dark:text-zinc-100">אחסון</span>
+          <span className="truncate tabular-nums text-slate-500 dark:text-zinc-400">
+            {snapshot?.loading ? "בודק אחסון…" : `${usageLabel} בשימוש`}
+          </span>
+        </div>
+        <div
+          role={actualPercent == null ? undefined : "progressbar"}
+          aria-label="שימוש באחסון המקומי"
+          aria-valuemin={actualPercent == null ? undefined : 0}
+          aria-valuemax={actualPercent == null ? undefined : 100}
+          aria-valuenow={actualPercent == null ? undefined : Number(actualPercent.toFixed(2))}
+          aria-valuetext={progressText}
+          className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700"
+        >
+          <div
+            className="h-full rounded-full bg-gradient-to-l from-indigo-600 to-violet-500 transition-[width]"
+            style={{ width: `${visiblePercent}%` }}
+          />
+        </div>
+        <p className="mt-1 truncate text-[10px] tabular-nums text-slate-500 dark:text-zinc-400">
+          {availableLabel ? `${availableLabel} זמינים` : "הקיבולת אינה זמינה"}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={refreshing}
+        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        aria-label="רענון נתוני האחסון"
+        title="רענון נתוני האחסון"
+      >
+        <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} aria-hidden="true" />
+      </button>
+      <details
+        className="group"
+        onToggle={(event) => {
+          if (event.currentTarget.open && !breakdown) onToggleBreakdown?.();
+          if (!event.currentTarget.open && breakdown) onToggleBreakdown?.();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") event.currentTarget.open = false;
+        }}
+      >
+        <summary className="cursor-pointer list-none rounded-lg px-2 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
+          פרטים
+        </summary>
+        <div className="fixed inset-x-3 top-24 z-[100] max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xl sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:min-w-[300px] dark:border-zinc-700 dark:bg-zinc-900" dir="rtl">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-slate-600 dark:text-zinc-300">
+            <dt>מצב פעיל</dt><dd className="font-semibold">{snapshot?.mode === "indexedDB" ? "IndexedDB" : "localStorage"}</dd>
+            <dt>שימוש משוער</dt><dd>{usageLabel}</dd>
+            <dt>מכסה משוערת</dt><dd>{formatStorageBytes(quotaBytes) || "לא זמינה"}</dd>
+            <dt>מקום זמין משוער</dt><dd>{availableLabel || "לא זמין"}</dd>
+            <dt>התמדה</dt><dd>{snapshot?.persisted === true ? "מתמשך" : snapshot?.persisted === false ? "לא מובטח" : "לא זמין"}</dd>
+            {snapshot?.mode === "indexedDB" && (
+              <>
+                <dt>מסד נתונים</dt><dd>{snapshot.database?.name || "לא זמין"} / v{snapshot.database?.version ?? "—"}</dd>
+                <dt>דור פעיל</dt><dd className="font-mono text-[10px]" dir="ltr">{shortGenerationId(snapshot.database?.activeGenerationId) || "לא זמין"}</dd>
+                <dt>רשומות Workspace</dt><dd>{snapshot.database?.workspaceRecordCount ?? "לא זמין"}</dd>
+              </>
+            )}
+          </dl>
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3 dark:border-zinc-800">
+            <button type="button" onClick={onCleanCaches} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+              נקה caches ישנים
+            </button>
+            {(breakdown?.embeddedTranscriptMB ?? 0) > 0.1 && (
+              <button type="button" onClick={onStripTranscripts} className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                הסר תמלולים כפולים ({breakdown.embeddedTranscriptMB} MB)
+              </button>
+            )}
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
 function applyFilters(videos, filters, topics, mentors = []) {
   return videos.filter((video) => {
     if (!matchesVideoTitleSearch(video.title, filters.search)) return false;
@@ -192,29 +366,38 @@ function SmartDashboard({
   activeFilter,
   onFilterClick,
   onClearFilter,
+  navigateTo,
+  workspaceCount = 0,
+  obsidianStatus,
 }) {
   const stats = useMemo(() => getDashboardStats(videos, mentors), [videos, mentors]);
-  if (!videos.length || !stats) return null;
+  if (!stats) return null;
 
-  const Card = ({ children, onClick, isActive = false, title }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        "bg-white border border-gray-100 rounded-xl px-4 py-3 text-right transition-all cursor-pointer hover:shadow-sm hover:-translate-y-0.5",
-        "dark:bg-zinc-900/80 dark:border-zinc-800 dark:hover:shadow-black/20",
-        isActive && "ring-2 ring-indigo-300 border-indigo-200 dark:ring-indigo-500/30 dark:border-indigo-500/30"
-      )}
-    >
-      {children}
-    </button>
-  );
+  const Card = ({ children, onClick, isActive = false, title, testId, ariaLabel }) => {
+    const Component = onClick ? "button" : "div";
+    return (
+      <Component
+        type={onClick ? "button" : undefined}
+        onClick={onClick}
+        title={title}
+        aria-label={ariaLabel}
+        data-testid={testId}
+        className={cn(
+          "bg-white border border-gray-100 rounded-xl px-4 py-3 text-right transition-all",
+          onClick && "cursor-pointer hover:shadow-sm hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+          "dark:bg-zinc-900/80 dark:border-zinc-800 dark:hover:shadow-black/20",
+          isActive && "ring-2 ring-indigo-300 border-indigo-200 dark:ring-indigo-500/30 dark:border-indigo-500/30"
+        )}
+      >
+        {children}
+      </Component>
+    );
+  };
 
   return (
     <div className="mt-4 mb-2 space-y-3" dir="rtl">
-      {/* Stats row — 5 cards, single row on desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* Stats row — exact RTL order, seven live cards on desktop */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <Card
           onClick={() => onFilterClick?.("today")}
           isActive={activeFilter === "today"}
@@ -260,6 +443,42 @@ function SmartDashboard({
           <p className="text-2xl font-bold text-amber-600">{permanentCount}</p>
           <p className="text-xs text-gray-500 mt-0.5">שמורים לצמיתות</p>
         </Card>
+        <Card
+          title={`מצב Obsidian: ${obsidianStatus?.label || "לא זמין"}`}
+          ariaLabel={`Obsidian, ${obsidianStatus?.label || "לא זמין"}`}
+          testId="dashboard-stat-obsidian"
+        >
+          <p className="mb-1 text-xs text-violet-500">Obsidian</p>
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-lg text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" aria-hidden="true">◆</span>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                obsidianStatus?.state === "connected" && "text-emerald-600 dark:text-emerald-400",
+                obsidianStatus?.state === "error" && "text-red-600 dark:text-red-400",
+                !["connected", "error"].includes(obsidianStatus?.state) && "text-slate-600 dark:text-zinc-300",
+              )}
+              aria-live="polite"
+            >
+              {obsidianStatus?.label || "לא זמין"}
+            </p>
+          </div>
+        </Card>
+        <Card
+          onClick={() => navigateTo?.("WorkspaceLibrary")}
+          title="פתח את ספריית Workspace"
+          ariaLabel={`פתיחת ספריית Workspace, ${workspaceCount} פריטים`}
+          testId="dashboard-stat-workspace"
+        >
+          <p className="mb-1 text-xs text-indigo-500">Workspace</p>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{workspaceCount}</p>
+              <p className="mt-0.5 text-xs text-gray-500">{workspaceCount} פריטים</p>
+            </div>
+            <LayoutGrid className="h-5 w-5 text-indigo-500" aria-hidden="true" />
+          </div>
+        </Card>
       </div>
 
     </div>
@@ -274,6 +493,7 @@ export default function Dashboard({
   toggleTheme,
   pageParams,
 }) {
+  const queryClient = useQueryClient();
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [isExternalVideoModalOpen, setIsExternalVideoModalOpen] = useState(false);
@@ -282,9 +502,12 @@ export default function Dashboard({
   const [isChannelScanning, setIsChannelScanning] = useState(false);
   const [channelScanInfo, setChannelScanInfo] = useState(() => getChannelScanState());
   const [channelScanProgress, setChannelScanProgress] = useState(null);
+  const [channelScanError, setChannelScanError] = useState(null);
   const [storageMB, setStorageMB] = useState(() => getLocalStorageUsageMB());
   const [storageBreakdown, setStorageBreakdown] = useState(null);
   const storageMeter = useStorageMeter();
+  const { items: workspaceItems } = useWorkspaceItems();
+  const obsidianStatus = useObsidianDashboardStatus();
   // Keep storageWarningMB for backward compat with the banner
   const storageWarningMB = storageMeter.mode === "localStorage" && storageMB > 4
     ? storageMB.toFixed(1)
@@ -401,11 +624,13 @@ export default function Dashboard({
       if (detail.state === "scanning") {
         setIsChannelScanning(true);
         setChannelScanProgress("סורק ערוצים...");
+        setChannelScanError(null);
         return;
       }
       if (detail.state === "completed") {
         setIsChannelScanning(false);
         setChannelScanProgress(null);
+        setChannelScanError(null);
         setChannelScanInfo({
           lastChannelScanAt: detail.lastChannelScanAt,
           nextChannelScanAt: detail.nextChannelScanAt,
@@ -513,6 +738,17 @@ export default function Dashboard({
     setPanelOpen(true);
   };
 
+  const handleVideoPatch = (patch) => {
+    const patchedVideoId = patch?.id || selectedVideo?.id;
+    setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null));
+    if (!patchedVideoId) return;
+    queryClient.setQueryData(['videos'], (current) => (
+      Array.isArray(current)
+        ? current.map((item) => (item.id === patchedVideoId ? { ...item, ...patch } : item))
+        : current
+    ));
+  };
+
   const handleSaveToggle = (video) => {
     saveVideo.mutate({ id: video.id, isSaved: !video.isSaved });
     if (selectedVideo?.id === video.id) {
@@ -570,6 +806,7 @@ export default function Dashboard({
     if (isChannelScanning) return;
     setIsChannelScanning(true);
     setChannelScanProgress("סורק ערוצים...");
+    setChannelScanError(null);
     try {
       const result = await runChannelScan(mentors, {
         reason: "manual",
@@ -589,7 +826,9 @@ export default function Dashboard({
         );
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "שגיאה בסריקת הערוצים");
+      const message = error instanceof Error ? error.message : "שגיאה בסריקת הערוצים";
+      setChannelScanError(message);
+      toast.error(message);
     } finally {
       setIsChannelScanning(false);
       setChannelScanProgress(null);
@@ -638,7 +877,7 @@ export default function Dashboard({
   };
 
   const handleDeleteAll = async () => {
-    const count = displayedVideos.length;
+    const count = videos.length;
     setIsDeleting(true);
     try {
       // 1. Remove all video records + per-video analysis keys from localStorage
@@ -680,208 +919,181 @@ export default function Dashboard({
   const channelScanSummaryText = lastChannelScanSummary
     ? `נסרקו ${lastChannelScanSummary.scannedChannels} ערוצים · נוספו ${lastChannelScanSummary.addedCount} סרטונים חדשים · ${lastChannelScanSummary.existingCount} סרטונים כבר קיימים · נכשלו ${lastChannelScanSummary.failedCount} ערוצים`
     : null;
+  const failedScanCount = Number(lastChannelScanSummary?.failedCount || 0);
+  const existingScanCount = Number(lastChannelScanSummary?.existingCount || 0);
+  const channelScanStatus = channelScanError
+    ? { label: "שגיאת סריקה", tone: "error", detail: channelScanError }
+    : isChannelScanning
+      ? { label: channelScanProgress || "סורק ערוצים…", tone: "running", detail: "הסריקה הידנית פעילה" }
+      : !lastChannelScanSummary
+        ? { label: "טרם בוצעה סריקה", tone: "idle", detail: "אין נתוני סריקה עדיין" }
+        : failedScanCount > 0
+          ? { label: "הושלם עם שגיאות", tone: "warning", detail: channelScanSummaryText }
+          : { label: "הכול מעודכן", tone: "success", detail: channelScanSummaryText };
 
   return (
     <div data-testid="page-dashboard" className="min-h-screen text-slate-900 dark:text-white">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/90">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Active KPI filter indicator */}
-              {activeDashboardFilter && (
-                <button
-                  onClick={() => setActiveDashboardFilter(null)}
-                  className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 rounded-full px-3 py-1 hover:bg-indigo-100 transition-colors"
-                >
-                  <span>מסנן: {KPI_FILTER_LABELS[activeDashboardFilter]}</span>
-                  <X className="h-3 w-3" />
-                </button>
+      <header className="sticky top-0 z-40 bg-slate-50/95 px-3 py-3 backdrop-blur-xl sm:px-6 dark:bg-zinc-950/95">
+        <div
+          className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+          dir="rtl"
+          data-testid="dashboard-control-panel"
+        >
+          <div className="flex flex-wrap items-stretch gap-2 border-b border-slate-200 p-3 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => navigateTo?.("Admin")}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-white px-3 py-2 text-xs font-semibold text-indigo-800 transition-colors hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-500/60 dark:bg-zinc-900 dark:text-indigo-200 dark:hover:bg-indigo-500/10"
+              aria-label="פתיחת הגדרות וניהול המערכת"
+              title="פתיחת הגדרות וניהול המערכת"
+              data-testid="dashboard-management-shortcut"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              <Settings className="h-4 w-4" aria-hidden="true" />
+              <span>מרכז הבקרה</span>
+            </button>
+
+            <div
+              className={cn(
+                "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold",
+                storageMeter.mode === "indexedDB"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
               )}
-              {filters.topicId && filters.topicId !== "all" && (
-                <button
-                  onClick={() => setFilters((prev) => ({ ...prev, topicId: "all" }))}
-                  className="flex items-center gap-1.5 text-xs text-violet-600 bg-violet-50 rounded-full px-3 py-1 hover:bg-violet-100 transition-colors"
-                >
-                  <span>נושא: {topics.find((t) => t.id === filters.topicId)?.name || "..."}</span>
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {filters.obsidianSaved && filters.obsidianSaved !== "all" && (
-                <button
-                  onClick={() => setFilters((prev) => ({ ...prev, obsidianSaved: "all" }))}
-                  className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-full px-3 py-1 hover:bg-emerald-100 transition-colors dark:text-emerald-300 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/40"
-                >
-                  <span>
-                    {OBSIDIAN_SAVED_FILTER_OPTIONS.find((o) => o.value === filters.obsidianSaved)?.label || "מוח"}
-                  </span>
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {filteredVideos.length !== videos.length && !activeDashboardFilter && !filters.topicId?.length && (
-                <span className="text-xs text-indigo-600 bg-indigo-50 rounded-full px-3 py-1">
-                  {filteredVideos.length} לאחר סינון
-                </span>
-              )}
-              {activeDashboardFilter && (
-                <span className="text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-1">
-                  {displayedVideos.length} סרטונים
-                </span>
-              )}
+              data-testid="dashboard-storage-mode"
+            >
+              <Database className="h-4 w-4" aria-hidden="true" />
+              <span>{storageMeter.mode === "indexedDB" ? "IndexedDB פעיל" : "localStorage פעיל"}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden lg:flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2 text-[11px] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70">
-                <div className="flex items-center gap-3 text-right" dir="rtl">
-                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                    <span className="text-slate-500 dark:text-zinc-400">סריקה אוטומטית</span>
-                    <span className="font-semibold text-cyan-700 dark:text-cyan-300">כל 8 שעות</span>
-                  </div>
-                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
-                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                    <span className="text-slate-500 dark:text-zinc-400">סריקה אחרונה</span>
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                      {formatChannelScanDate(channelScanInfo.lastChannelScanAt)}
-                    </span>
-                  </div>
-                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
-                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                    <span className="text-slate-500 dark:text-zinc-400">סריקה הבאה</span>
-                    <span className="font-semibold text-sky-700 dark:text-sky-300">
-                      {formatChannelScanDate(channelScanInfo.nextChannelScanAt)}
-                    </span>
-                  </div>
-                  <span className="h-4 w-px bg-slate-200 dark:bg-zinc-700" />
-                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                    <span className="text-slate-500 dark:text-zinc-400">סטטיסטיקת סריקה</span>
-                    <span
-                      className={cn(
-                        "max-w-[360px] truncate font-semibold",
-                        isChannelScanning
-                          ? "text-violet-700 dark:text-violet-300"
-                          : "text-fuchsia-700 dark:text-fuchsia-300"
-                      )}
-                    >
-                      {isChannelScanning
-                        ? channelScanProgress || "סורק ערוצים..."
-                        : channelScanSummaryText || "אין נתוני סריקה עדיין"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={handleManualChannelScan}
-                disabled={isChannelScanning}
-                className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${isChannelScanning ? "animate-spin" : ""}`} />
-                {isChannelScanning ? "סורק ערוצים..." : "סריקה ידנית"}
-              </button>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                title={isDark ? "עבור למצב בהיר" : "עבור למצב כהה"}
-              >
-                {isDark ? (
-                  <Sun className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5 shrink-0 text-slate-600 dark:text-zinc-300" />
-                )}
-                <span className="text-right">{isDark ? "מצב בהיר" : "מצב כהה"}</span>
-              </button>
-              <button
-                onClick={() => setDeleteAllConfirm(true)}
-                disabled={displayedVideos.length === 0 || isDeleting}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
-                title="מחק את כל הסרטונים המוצגים"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                מחק הכל
-              </button>
+
+            <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
               <DriveStatusBadge />
-              {/* ── Storage meter ── */}
-              {storageMeter.mode === "indexedDB" ? (
-                <StorageStatusWidget snapshot={storageMeter.snapshot} />
-              ) : (
-              <div className="relative flex flex-col items-end gap-0.5">
-                <div className="flex items-center gap-1.5" dir="ltr">
-                  <div className="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-700 overflow-hidden" title={`${storageMB} MB בשימוש מתוך ~5 MB`}>
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        storageMB >= 4.5 ? "bg-red-500" : storageMB >= 3.5 ? "bg-amber-400" : "bg-emerald-500"
-                      )}
-                      style={{ width: `${Math.min(100, (storageMB / 5) * 100)}%` }}
-                    />
-                  </div>
-                  <span className={cn(
-                    "text-[10px] tabular-nums font-medium",
-                    storageMB >= 4.5 ? "text-red-500" : storageMB >= 3.5 ? "text-amber-500" : "text-slate-400 dark:text-zinc-500"
-                  )}>
-                    {storageMB}MB
-                  </span>
-                  <button
-                    onClick={handleToggleBreakdown}
-                    title="הצג פירוט לפי קטגוריה"
-                    className="text-[10px] text-slate-400 hover:text-slate-700 dark:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                  >
-                    {storageBreakdown ? "▲" : "פירוט"}
-                  </button>
-                  <button
-                    onClick={handleCleanCaches}
-                    title="נקה caches ישנים (תמלולים, ניתוחים)"
-                    className="text-[10px] text-slate-400 hover:text-red-500 dark:text-zinc-600 dark:hover:text-red-400 transition-colors"
-                  >
-                    נקה
-                  </button>
-                </div>
-                {/* ── Breakdown panel ── */}
-                {storageBreakdown && (
-                  <div className="absolute top-full right-0 mt-1 z-50 min-w-[220px] rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg px-3 py-2.5 text-[11px]" dir="rtl">
-                    <div className="space-y-1.5">
-                      {[
-                        { label: "cache תמלולים", mb: storageBreakdown.transcriptsMB, color: "bg-blue-300" },
-                        { label: "ניתוחים AI",    mb: storageBreakdown.analysesMB,   color: "bg-violet-400" },
-                        { label: "מטא-דאטה סרטונים", mb: parseFloat(((storageBreakdown.videosMB || 0) - (storageBreakdown.embeddedTranscriptMB || 0)).toFixed(2)), color: "bg-emerald-400" },
-                        { label: "תמלולים בסרטונים ⚠️", mb: storageBreakdown.embeddedTranscriptMB ?? 0, color: "bg-orange-400", isLarge: (storageBreakdown.embeddedTranscriptMB ?? 0) > 0.3 },
-                        { label: "שאר",            mb: storageBreakdown.otherMB,      color: "bg-slate-400" },
-                      ].map(({ label, mb, color, isLarge }) => (
-                        <div key={label} className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
-                          <span className={cn("flex-1", isLarge ? "text-orange-600 dark:text-orange-400 font-medium" : "text-slate-600 dark:text-slate-400")}>{label}</span>
-                          <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">{mb} MB</span>
-                        </div>
-                      ))}
-                      <div className="border-t border-slate-100 dark:border-zinc-800 pt-1.5 flex justify-between font-semibold text-slate-700 dark:text-slate-300">
-                        <span>סה"כ</span>
-                        <span>{storageMB} MB</span>
-                      </div>
-                      {(storageBreakdown.embeddedTranscriptMB ?? 0) > 0.1 && (
-                        <div className="border-t border-slate-100 dark:border-zinc-800 pt-1.5">
-                          <p className="text-slate-500 dark:text-slate-400 mb-1 leading-tight">
-                            תמלולים נשמרים כפול — בתוך נתוני הסרטון ובcache נפרד.
-                          </p>
-                          <button
-                            onClick={handleStripTranscripts}
-                            className="w-full text-center rounded-md px-2 py-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 text-orange-700 dark:text-orange-400 font-medium transition-colors"
-                          >
-                            הסר תמלולים מהסרטונים ({storageBreakdown.embeddedTranscriptMB} MB)
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              )}
-              <button
-                onClick={() => { handleRefresh(); refreshStorageMeter(); }}
-                disabled={isLoading}
-                className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                רענון
-              </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleManualChannelScan}
+              disabled={isChannelScanning}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-indigo-600 to-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label={isChannelScanning ? "סריקת ערוצים מתבצעת" : "סרוק עכשיו"}
+              data-testid="dashboard-scan-now"
+            >
+              <RefreshCw className={cn("h-4 w-4", isChannelScanning && "animate-spin")} aria-hidden="true" />
+              <span>{isChannelScanning ? "סורק עכשיו…" : "סרוק עכשיו"}</span>
+            </button>
+
+            <DashboardStorageMeter
+              snapshot={storageMeter.snapshot}
+              fallbackUsageMB={storageMB}
+              breakdown={storageBreakdown}
+              onToggleBreakdown={handleToggleBreakdown}
+              onCleanCaches={handleCleanCaches}
+              onStripTranscripts={handleStripTranscripts}
+              onRefresh={() => { handleRefresh(); refreshStorageMeter(); }}
+              refreshing={isLoading}
+            />
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              title={isDark ? "עבור למצב בהיר" : "עבור למצב כהה"}
+              aria-label={isDark ? "עבור למצב בהיר" : "עבור למצב כהה"}
+              data-testid="dashboard-theme-toggle"
+            >
+              {isDark ? <Sun className="h-4 w-4 text-amber-400" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+              <span>{isDark ? "מצב בהיר" : "מצב כהה"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDeleteAllConfirm(true)}
+              disabled={videos.length === 0 || isDeleting}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 xl:mr-auto dark:border-red-500/50 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-500/10"
+              title="מחיקת כל נתוני הסרטונים המקומיים"
+              data-testid="dashboard-delete-all"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              <span>מחק הכול</span>
+            </button>
+          </div>
+
+          <div className="hidden grid-cols-2 divide-x divide-x-reverse divide-slate-200 px-2 py-2 md:grid lg:grid-cols-3 xl:grid-cols-6 dark:divide-zinc-800">
+            <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
+              <Clock className="h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">סריקה אחרונה</p>
+                <p className="truncate text-xs font-semibold tabular-nums text-slate-800 dark:text-zinc-100" dir="ltr">{formatChannelScanDate(channelScanInfo.lastChannelScanAt)}</p>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
+              <CalendarClock className="h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">סריקה הבאה</p>
+                <p className="truncate text-xs font-semibold tabular-nums text-slate-800 dark:text-zinc-100" dir="ltr">{formatChannelScanDate(channelScanInfo.nextChannelScanAt)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <AlertTriangle className={cn("h-4 w-4 shrink-0", failedScanCount > 0 ? "text-red-500" : "text-slate-400")} aria-hidden="true" />
+              <div>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">נכשלו</p>
+                <p className={cn("text-xs font-semibold tabular-nums", failedScanCount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-800 dark:text-zinc-100")}>{failedScanCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
+              <div>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">פריטים כבר קיימים</p>
+                <p className="text-xs font-semibold tabular-nums text-slate-800 dark:text-zinc-100">{existingScanCount}</p>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center gap-2 px-3 py-1.5" role="status" aria-live="polite" title={channelScanStatus.detail || undefined}>
+              {channelScanStatus.tone === "error" || channelScanStatus.tone === "warning"
+                ? <AlertTriangle className={cn("h-4 w-4 shrink-0", channelScanStatus.tone === "error" ? "text-red-500" : "text-amber-500")} aria-hidden="true" />
+                : <CheckCircle2 className={cn("h-4 w-4 shrink-0", channelScanStatus.tone === "success" ? "text-emerald-500" : "text-indigo-500")} aria-hidden="true" />}
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">מצב</p>
+                <p className={cn(
+                  "truncate text-xs font-semibold",
+                  channelScanStatus.tone === "success" && "text-emerald-600 dark:text-emerald-400",
+                  channelScanStatus.tone === "error" && "text-red-600 dark:text-red-400",
+                  channelScanStatus.tone === "warning" && "text-amber-600 dark:text-amber-400",
+                  ["idle", "running"].includes(channelScanStatus.tone) && "text-indigo-600 dark:text-indigo-300",
+                )}>{channelScanStatus.label}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <RefreshCw className="h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
+              <div>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400">סריקה אוטומטית</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-zinc-100">כל 8 שעות</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 px-3 py-2 md:hidden">
+            <div className="min-w-0" role="status" aria-live="polite">
+              <p className="truncate text-xs font-semibold text-slate-800 dark:text-zinc-100">{channelScanStatus.label}</p>
+              <p className="truncate text-[10px] tabular-nums text-slate-500 dark:text-zinc-400">
+                אחרונה: {formatChannelScanDate(channelScanInfo.lastChannelScanAt)}
+              </p>
+            </div>
+            <details className="relative shrink-0">
+              <summary className="cursor-pointer list-none rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:text-zinc-200">
+                פרטים
+              </summary>
+              <div className="absolute left-0 top-full z-50 mt-2 w-[min(310px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-slate-600 dark:text-zinc-300">
+                  <dt>סריקה אחרונה</dt><dd className="text-left tabular-nums" dir="ltr">{formatChannelScanDate(channelScanInfo.lastChannelScanAt)}</dd>
+                  <dt>סריקה הבאה</dt><dd className="text-left tabular-nums" dir="ltr">{formatChannelScanDate(channelScanInfo.nextChannelScanAt)}</dd>
+                  <dt>נכשלו</dt><dd>{failedScanCount}</dd>
+                  <dt>פריטים קיימים</dt><dd>{existingScanCount}</dd>
+                  <dt>מצב</dt><dd>{channelScanStatus.label}</dd>
+                  <dt>תזמון</dt><dd>כל 8 שעות</dd>
+                </dl>
+                {channelScanSummaryText && <p className="mt-3 border-t border-slate-100 pt-2 text-[10px] leading-relaxed text-slate-500 dark:border-zinc-800 dark:text-zinc-400">{channelScanSummaryText}</p>}
+              </div>
+            </details>
           </div>
         </div>
       </header>
@@ -910,7 +1122,58 @@ export default function Dashboard({
               activeFilter={activeDashboardFilter}
               onFilterClick={handleKpiFilterClick}
               onClearFilter={clearKpiFilter}
+              navigateTo={navigateTo}
+              workspaceCount={workspaceItems.length}
+              obsidianStatus={obsidianStatus}
             />
+
+            {(activeDashboardFilter
+              || (filters.topicId && filters.topicId !== "all")
+              || (filters.obsidianSaved && filters.obsidianSaved !== "all")
+              || filteredVideos.length !== videos.length) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2" dir="rtl" data-testid="dashboard-active-filters">
+                {activeDashboardFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveDashboardFilter(null)}
+                    className="flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-300"
+                  >
+                    <span>מסנן: {KPI_FILTER_LABELS[activeDashboardFilter]}</span>
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                )}
+                {filters.topicId && filters.topicId !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setFilters((prev) => ({ ...prev, topicId: "all" }))}
+                    className="flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs text-violet-700 transition-colors hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:bg-violet-500/10 dark:text-violet-300"
+                  >
+                    <span>נושא: {topics.find((topic) => topic.id === filters.topicId)?.name || "…"}</span>
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                )}
+                {filters.obsidianSaved && filters.obsidianSaved !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setFilters((prev) => ({ ...prev, obsidianSaved: "all" }))}
+                    className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  >
+                    <span>{OBSIDIAN_SAVED_FILTER_OPTIONS.find((option) => option.value === filters.obsidianSaved)?.label || "מסנן Obsidian"}</span>
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                )}
+                {filteredVideos.length !== videos.length && !activeDashboardFilter && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {filteredVideos.length} לאחר סינון
+                  </span>
+                )}
+                {activeDashboardFilter && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {displayedVideos.length} סרטונים
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Unified compact control row (Learning Center + filters + search + selection mode) */}
             <div
@@ -1047,10 +1310,15 @@ export default function Dashboard({
 
             {/* ── Confirm: delete all ── */}
             {deleteAllConfirm && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-4" dir="rtl">
-                <p className="text-sm text-red-700 font-medium">
-                  ⚠️ פעולה זו תמחק את כל {displayedVideos.length} הסרטונים המוצגים ולא ניתן לשחזר.
-                </p>
+              <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3" dir="rtl" role="alertdialog" aria-modal="true" aria-labelledby="delete-all-confirmation-title" aria-describedby="delete-all-confirmation-description">
+                <div>
+                  <p id="delete-all-confirmation-title" className="text-sm font-semibold text-red-800">
+                    מחיקת כל נתוני הסרטונים המקומיים
+                  </p>
+                  <p id="delete-all-confirmation-description" className="mt-1 text-xs leading-relaxed text-red-700">
+                    הפעולה תמחק {videos.length} רשומות סרטון מקומיות, מטמוני ניתוח AI, תמלולים ופרקים, ואת כל קבצי ה־attachment ב־IndexedDB. נושאים, מנטורים, קטגוריות, הגדרות ופריטי Workspace לא יימחקו. לא ניתן לשחזר פעולה זו.
+                  </p>
+                </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={handleDeleteAll}
@@ -1117,7 +1385,7 @@ export default function Dashboard({
         onLearningStatusChange={handleLearningStatusChange}
         onRemoveTopic={handleRemoveTopic}
         onAnalyzeDone={(result) => setSelectedVideo((prev) => ({ ...prev, ...result }))}
-        onVideoPatch={(patch) => setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null))}
+        onVideoPatch={handleVideoPatch}
         isDark={isDark}
         toggleTheme={toggleTheme}
         navigateTo={navigateTo}

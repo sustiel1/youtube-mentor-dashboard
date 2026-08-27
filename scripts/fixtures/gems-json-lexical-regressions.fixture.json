@@ -1,0 +1,13 @@
+{
+  "missingCommaLine3Column49": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\":{\"summary\":{\"x\":\"y\"}          \"chapters\":[]}\n}",
+  "unescapedHebrewAbbreviation": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\": {\n    \"summary\": {\"shortSummary\": \"תשואות האג\"ח עלו\"},\n    \"chapters\": []\n  }\n}",
+  "validCanonical": {
+    "contentType": "marketBrief",
+    "universalTabs": {
+      "summary": {
+        "shortSummary": "תקציר תקין"
+      },
+      "chapters": []
+    }
+  }
+}

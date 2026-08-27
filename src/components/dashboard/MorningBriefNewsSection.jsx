@@ -14,6 +14,7 @@ import { UNIVERSAL_TAB_CHECKBOX_COL_CLASS } from '@/components/shared/UniversalT
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 
 const NEWS_CARD_SENTIMENT = {
   positive: {
@@ -142,7 +143,13 @@ export function MorningBriefNewsCard({
       </div>
 
       {/* Save action */}
-      <div className="shrink-0 flex items-start pt-0.5">
+      <div className="shrink-0 flex items-start gap-1 pt-0.5">
+        <StaticVideoTimestampLink
+          item={item.sourceItem}
+          section="news"
+          productionRowId={`specialized:news:${item.id}`}
+          displayText={saveText}
+        />
         <NewsCardSaveActions
           bulkSelection={bulkSelection}
           text={saveText}

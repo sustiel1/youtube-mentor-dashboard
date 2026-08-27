@@ -8,6 +8,7 @@ import { getDashboardStats, resolveCanonicalChapters } from "@/services/videoAna
 import { getAllChunkCounts, saveChunks, hasChunks, deleteChunks, isChunkFresh, saveChunkMeta, enrichChunksWithExcerpts } from "@/lib/localChunkStore";
 import { generateKnowledgeChunks } from "@/lib/generateKnowledgeChunks";
 import { hasSegments, getSegments } from "@/lib/localSegmentStore";
+import { isVideoAnalyzed } from "@/lib/gemsAnalyzedStatus";
 
 const QUALITY_BADGE = {
   high:   { label: "גבוה",   cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
@@ -130,7 +131,7 @@ export default function KnowledgeLibrary({ isDark, toggleTheme }) {
   };
 
   useEffect(() => {
-    const analyzed = videos.filter((v) => v.analyzedAt);
+    const analyzed = videos.filter(isVideoAnalyzed);
     if (!analyzed.length) return;
     let changed = false;
     for (const video of analyzed) {
@@ -291,7 +292,7 @@ export default function KnowledgeLibrary({ isDark, toggleTheme }) {
                     <Badge map={SOURCE_BADGE} value={v.chapterSource} />
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {v.analyzedAt ? (
+                    {isVideoAnalyzed(v) ? (
                       <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">✓</span>
                     ) : (
                       <span className="text-slate-300 dark:text-zinc-600 text-xs">—</span>

@@ -155,6 +155,7 @@ BASE44_TOKEN=your_base44_token
 |---|---|---|
 | transcript threshold | `300` תווים | transcripts קצרים מ-300 תווים לא עוברים לניתוח |
 | `GEMINI_MOCK` | `false` | mock מחזיר טקסט מלאכותי שעובר quality gate לא נכון |
+| transcript localStorage origins | `http://127.0.0.1:5184` + `http://localhost:5184` | `AUTHORIZED_TRANSCRIPT_LOCAL_STORAGE_ORIGINS` ב-`transcriptLocalStorageStore.js` — שני origins של loopback מורשים בכוונה לשמירת תמלול ב-localStorage (Vite מגיש כברירת מחדל על localhost) |
 
 ### Environment Variables נדרשים
 

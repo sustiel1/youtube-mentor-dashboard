@@ -31,6 +31,15 @@ function joinSegments(segments) {
   return text.length >= MIN_CHARS ? text : null;
 }
 
+export function getTranscriptLookupVideoIds(video) {
+  const urlVideoIds = [video?.url, video?.link, video?.videoUrl, video?.youtubeUrl]
+    .map((value) => String(value || '').match(/[?&]v=([^&#]+)|youtu\.be\/([^?&#]+)|\/embed\/([^?&#]+)|\/shorts\/([^?&#]+)/))
+    .map((match) => match?.slice(1).find(Boolean) || null);
+  return [...new Set([video?.videoId, video?.youtubeId, ...urlVideoIds, video?.id]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean))];
+}
+
 export function getVideoTranscriptText(video) {
   if (!video) return null;
 
@@ -63,8 +72,7 @@ export function getVideoTranscriptText(video) {
   }
 
   // 7: localStorage segment store (fetched transcript stored by youtubeTranscript.js)
-  const videoId = video.videoId || video.id;
-  if (videoId) {
+  for (const videoId of getTranscriptLookupVideoIds(video)) {
     const storedSegs = getSegments(videoId);
     const joined = joinSegments(storedSegs);
     if (joined) return joined;
@@ -198,7 +206,7 @@ export function resolveTranscriptForChapters(video, savedAnalysis = null, durati
     }
   };
 
-  const videoId = video?.videoId || video?.id;
+  const videoIds = getTranscriptLookupVideoIds(video);
 
   pushSegments(video?.transcriptSegments, "video.transcriptSegments");
   pushSegments(video?.storedTranscriptSegments, "video.storedTranscriptSegments");
@@ -230,7 +238,7 @@ export function resolveTranscriptForChapters(video, savedAnalysis = null, durati
     }
   }
 
-  if (videoId) {
+  for (const videoId of videoIds) {
     pushSegments(getSegments(videoId), "localSegmentStore");
   }
 

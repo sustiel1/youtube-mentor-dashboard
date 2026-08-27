@@ -15,7 +15,12 @@ import {
 
 const MARKET_FIELD_RE = /\b(direction|change|level)\s*:/;
 function looksLikeMarketIndex(item) {
-  if (item && typeof item === 'object') return true;
+  if (item && typeof item === 'object') {
+    const source = item.rowTimestampSourceItem || item;
+    const identity = source.asset || source.index || source.symbol || source.ticker || source.name;
+    const marketValue = source.direction || source.change || source.level || source.trend || source.strength || source.comment;
+    return Boolean(identity && marketValue);
+  }
   if (typeof item !== 'string') return false;
   const ci = item.indexOf(':');
   if (ci === -1) return false;
@@ -31,7 +36,7 @@ const sectionProps = (presentation, bulkSelection, bulkSections) => ({
 });
 
 /**
- * Morning Brief dashboard — news-first section order.
+ * Morning Brief dashboard — sentiment-first presentation order.
  * Always renders all sections — empty states when data is sparse.
  * Presentation only; no GEM / extraction changes.
  */
@@ -54,34 +59,12 @@ export function MorningBriefDashboard({
 
   return (
     <div className="space-y-3" dir="rtl" data-morning-brief-dashboard>
-      <NewsSection
-        items={plainNewsItems}
-        onSaveToBrain={onSaveToBrain}
+      <SentimentSection
         marketBriefData={marketBriefData}
-        onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />
       <MarketRegimeSection
         marketBriefData={marketBriefData}
-        onSaveMarketBriefSection={onSaveMarketBriefSection}
-        {...shared}
-      />
-      <SectorOverviewSection
-        marketBriefData={marketBriefData}
-        onSaveMarketBriefSection={onSaveMarketBriefSection}
-        {...shared}
-      />
-      <OpportunitiesRisksDashboard
-        marketBriefData={marketBriefData}
-        effectiveVideo={effectiveVideo}
-        onSaveToBrain={onSaveToBrain}
-        onSaveMarketBriefSection={onSaveMarketBriefSection}
-        {...shared}
-      />
-      <StocksMentionedSection
-        marketBriefData={marketBriefData}
-        effectiveVideo={effectiveVideo}
-        onSaveToBrain={onSaveToBrain}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />
@@ -97,14 +80,36 @@ export function MorningBriefDashboard({
         onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />
-      <SentimentSection
+      <NewsSection
+        items={plainNewsItems}
+        onSaveToBrain={onSaveToBrain}
         marketBriefData={marketBriefData}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
+        {...shared}
+      />
+      <OpportunitiesRisksDashboard
+        marketBriefData={marketBriefData}
+        effectiveVideo={effectiveVideo}
+        onSaveToBrain={onSaveToBrain}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
+        {...shared}
+      />
+      <SectorOverviewSection
+        marketBriefData={marketBriefData}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />
       <MarketsSection
         marketBriefData={marketBriefData}
         indicesItems={indicesItems}
         onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📈 שווקים')}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
+        {...shared}
+      />
+      <StocksMentionedSection
+        marketBriefData={marketBriefData}
+        effectiveVideo={effectiveVideo}
+        onSaveToBrain={onSaveToBrain}
         onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />

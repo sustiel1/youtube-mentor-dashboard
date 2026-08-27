@@ -26,6 +26,11 @@ const LEGACY_VIDEO_KEYS = [
   "yt_mentor_videos_v1",
 ];
 const TRANSCRIPT_CACHE_KEY = "yt_mentor_transcript_cache_v1";
+let lastVideoStorageWriteError = null;
+
+export function getLastVideoStorageWriteError() {
+  return lastVideoStorageWriteError ? { ...lastVideoStorageWriteError } : null;
+}
 const YT_CHAPTER_CACHE_KEY = "yt_mentor_youtube_chapter_cache_v1";
 
 function extractVideoId(url) {
@@ -153,13 +158,34 @@ export function hasLocalVideoStoreSnapshot() {
 }
 
 // Overwrite the entire store
-export function saveVideos(videos) {
+export function saveVideos(videos, { reason = 'unspecified' } = {}) {
+  let serialized = '';
+  lastVideoStorageWriteError = null;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
+    serialized = JSON.stringify(videos);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    if (localStorage.getItem(STORAGE_KEY) !== serialized) {
+      throw new Error('video storage read-back mismatch');
+    }
     // If we successfully wrote videos, the store is no longer in "cleared" state.
-    localStorage.removeItem(CLEARED_MARK_KEY);
+    try { localStorage.removeItem(CLEARED_MARK_KEY); } catch {}
+    return true;
   } catch (e) {
-    console.warn("[videoStorage] write failed:", e.message);
+    const quotaExceeded = e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014;
+    lastVideoStorageWriteError = {
+      classification: quotaExceeded ? 'quota-exceeded' : 'storage-operation-failed',
+      reason,
+      storageLayer: 'localStorage',
+      key: STORAGE_KEY,
+      exceptionName: e?.name || 'Error',
+      exceptionMessage: e?.message || String(e),
+    };
+    console.warn('[videoStorage] write failed', {
+      ...lastVideoStorageWriteError,
+      payloadCodeUnits: serialized.length,
+      approximatePayloadBytes: serialized.length * 2,
+    });
+    return false;
   }
 }
 
@@ -273,7 +299,7 @@ export function updateStoredVideo(id, updates) {
   }
   const updated = { ...videos[idx], ...safeUpdates };
   videos[idx] = updated;
-  saveVideos(videos);
+  if (!saveVideos(videos, { reason: 'updateStoredVideo:primary' })) return null;
 
   // Auto-strip heavy fields from localStorage after analysis is saved.
   // Transcript text is kept intentionally — user deletes it explicitly via "מחק תמלול".
@@ -309,7 +335,7 @@ export function updateStoredVideo(id, updates) {
       }
 
       videos[idx] = stripped;
-      saveVideos(videos);
+      saveVideos(videos, { reason: 'updateStoredVideo:auto-strip' });
     }
   }
 

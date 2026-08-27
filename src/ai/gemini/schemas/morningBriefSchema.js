@@ -1,12 +1,13 @@
 /**
  * JSON schema example for Morning Brief GEM output.
- * Includes universalTabs (preferred) and legacy flat fields (fallback).
+ * Canonical generation contract: universalTabs only.
  *
- * The GEM prompt should return universalTabs at the top level.
- * The app reads universalTabs first; if absent, falls back to legacy flat keys.
+ * Existing legacy flat records remain readable by the application, but new
+ * model output must not duplicate the same content in both shapes.
  */
 export function getMorningBriefSchemaExample() {
   return JSON.stringify({
+    contentType: "marketBrief",
     universalTabs: {
       summary: [
         "Today's session opened with cautious optimism as Fed held rates steady.",
@@ -68,24 +69,6 @@ export function getMorningBriefSchemaExample() {
           "Middle East tension escalating — watch oil prices"
         ]
       }
-    },
-
-    // Legacy flat fields — still read as fallback when universalTabs is absent
-    shortSummary: "...",
-    chapters: [],
-    top5Insights: ["..."],
-    reusableKnowledge: ["..."],
-    keyTakeaways: ["..."],
-    actionChecklist: ["..."],
-    marketNews: ["..."],
-    indices: [],
-    stocksMentioned: [],
-    macro: [],
-    sentiment: ["..."],
-    calendar: [{ event: "...", date: "...", importance: "high|medium|low", impact: "..." }],
-    opportunities: ["..."],
-    risks: ["..."],
-    tags: ["..."],
-    obsidianTopics: ["..."]
+    }
   }, null, 2);
 }

@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  House, LayoutGrid, Bookmark, BookOpen, Library, Search,
+  LayoutGrid, Bookmark, BookOpen, Library, Search,
   Settings, UserPlus, BookPlus, ChevronDown, GripVertical,
   Pencil, Trash2, Check, X, BookMarked,
   Music4, Construction, Candy, HeartPulse, Landmark, ChefHat, Workflow, Bot, ChartCandlestick, Hash, Moon, Sun,
-  Layers, Cloud,
+  Layers, Cloud, Menu,
 } from "lucide-react";
 import { getTopicByName, TOPIC_CONFIG_BY_NAME } from "@/config/topicConfig";
 import { useUpdateTopic, useDeleteTopic } from "@/hooks/useTopics";
@@ -102,6 +102,7 @@ export function AppSidebar({
   const [draggingId, setDraggingId]           = useState(null);
   const [editingTopic, setEditingTopic]       = useState(null); // topic object being edited
   const [deletingId, setDeletingId]           = useState(null); // topic id awaiting confirm
+  const [mobileNavOpen, setMobileNavOpen]     = useState(false);
 
   const deleteTopic  = useDeleteTopic();
   const deleteMentor = useDeleteMentor();
@@ -137,6 +138,10 @@ export function AppSidebar({
       return [...updated, ...added];
     });
   }, [topics]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [currentPage]);
 
   // Drag-and-drop refs
   const dragId     = useRef(null);
@@ -193,44 +198,38 @@ export function AppSidebar({
   const activeMentor  = filters?.mentor || "all";
   const activeMentors = mentors.filter((m) => m.active);
 
-  const isHome =
-    currentPage === "Dashboard" &&
-    (filters?.category || "all") === "all" &&
-    activeMentor === "all";
-
   const toggleTopic = (id) =>
     setExpandedTopicId((prev) => (prev === id ? null : id));
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-l border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/95">
+    <>
+      <button
+        type="button"
+        onClick={() => setMobileNavOpen((open) => !open)}
+        className="fixed bottom-4 right-4 z-[60] inline-flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 md:hidden dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        aria-label={mobileNavOpen ? "סגירת תפריט הניווט" : "פתיחת תפריט הניווט"}
+        aria-controls="app-sidebar-navigation"
+        aria-expanded={mobileNavOpen}
+      >
+        {mobileNavOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+      </button>
 
-      {/* Logo + Home button */}
-      <div className="border-b border-slate-200 px-4 py-5 dark:border-zinc-800/80">
+      {mobileNavOpen && (
         <button
-          onClick={() => navigateTo("Dashboard")}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-right border border-transparent",
-            isHome
-              ? "bg-gradient-to-l from-red-600 to-red-500 text-white shadow-2xl border-red-400/20"
-              : "border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
-          )}
-        >
-          <div className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
-            isHome ? "bg-white/10" : "bg-slate-100 dark:bg-zinc-900"
-          )}>
-            <House className={cn("h-4 w-4", isHome ? "text-white" : "text-red-400")} />
-          </div>
-          <div className="text-right leading-tight">
-            <p className={cn("text-sm font-bold", isHome ? "text-white" : "text-slate-900 dark:text-white")}>
-              YouTube Mentor
-            </p>
-            <p className={cn("text-xs", isHome ? "text-white/70" : "text-slate-500 dark:text-zinc-500")}>
-              {isHome ? "מסך ראשי" : "Learning Hub"}
-            </p>
-          </div>
-        </button>
-      </div>
+          type="button"
+          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[1px] md:hidden"
+          aria-label="סגירת תפריט הניווט"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <aside
+        id="app-sidebar-navigation"
+        className={cn(
+          "fixed inset-y-0 right-0 z-50 flex h-dvh w-64 shrink-0 flex-col border-l border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out md:sticky md:top-0 md:z-auto md:h-screen md:translate-x-0 dark:border-zinc-800/80 dark:bg-zinc-950/95",
+          mobileNavOpen ? "translate-x-0" : "translate-x-full",
+        )}
+      >
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -596,7 +595,8 @@ export function AppSidebar({
         topic={editingTopic}
         onClose={() => setEditingTopic(null)}
       />
-    </aside>
+      </aside>
+    </>
   );
 }
 

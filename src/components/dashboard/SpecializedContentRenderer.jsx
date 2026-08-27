@@ -23,13 +23,21 @@ function looksLikeMarketIndex(item) {
   return tickerPart.length <= 12 && MARKET_FIELD_RE.test(rest);
 }
 
-function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, bulkSelection }) {
+const STATIC_TIME_NARRATIVE_TAB_KEYS = new Set([
+  'analysis-frameworks', 'investment-checklist', 'mistakes', 'checklists',
+  'setups', 'patterns', 'trading-brain', 'cause-effect', 'market-impact',
+  'political-ideology', 'political-theology', 'political-liberal',
+  'political-for', 'political-against', 'political-debates', 'political-reusable',
+]);
+
+function Section({ label, items, tabKey, sectionKey, videoId, onSaveToBrain, checkSaved, bulkSelection }) {
   return (
     <DedicatedContentSection
       label={label}
       items={items}
       tabKey={tabKey}
       sectionKey={sectionKey}
+      videoId={STATIC_TIME_NARRATIVE_TAB_KEYS.has(tabKey) ? videoId : null}
       onSaveToBrain={onSaveToBrain}
       checkSaved={checkSaved}
       bulkSelection={bulkSelection}
@@ -52,6 +60,7 @@ function Section({ label, items, tabKey, sectionKey, onSaveToBrain, checkSaved, 
  */
 export function SpecializedContentRenderer({
   effectiveVideo,
+  youtubeId = null,
   normalizedSubCategory,
   marketBriefData,
   politicalSummary,
@@ -62,6 +71,7 @@ export function SpecializedContentRenderer({
   bulkSelection = null,
 }) {
   const slug = normalizedSubCategory;
+  const timestampYoutubeId = youtubeId;
 
   const sect = (label, items, tabKey, sectionKey = tabKey) => (
     <Section
@@ -70,6 +80,7 @@ export function SpecializedContentRenderer({
       items={items}
       tabKey={tabKey}
       sectionKey={sectionKey}
+      videoId={timestampYoutubeId}
       onSaveToBrain={onSaveToBrain}
       checkSaved={checkSaved}
       bulkSelection={bulkSelection}
@@ -132,7 +143,7 @@ export function SpecializedContentRenderer({
   }
 
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
-  if (slug === 'morning-brief') {
+  if (slug === 'morning-brief' || slug === 'evening-brief') {
     const morningBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
     return renderBulkShell(morningBulkDefs, (
       <MorningBriefDashboard
