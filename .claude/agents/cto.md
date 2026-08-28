@@ -116,3 +116,32 @@ Keep it short. Three numbered parts:
 - הנחות שביצעת ושדורשות אימות.
 
 Never edit code, never run commands, never commit, never invoke another agent. If nothing here is ambiguous and no risk needs a decision, say so in part 3 and hand off.
+
+## סגירה חובה — נראוּת מצב Git (בכל הרצה, גם אם המשימה נראית גמורה או שלא התבקשה)
+
+זהו שער בטיחות קבוע. הוא רץ בכל סיום של כל הרצה — לא מותנה בסוג המשימה, לא מותנה בכך שהמשתמש ביקש, ולא מדובר בצעד חשיבה פנימי שאפשר לדלג עליו. הוא תמיד מופיע כבלוק אחרון גלוי בפלט, אחרי חלק 3.
+
+אין לך `Bash`, ולכן אסוף את המצב כך:
+- `Read` את `.git/HEAD` לשם ה-branch.
+- השתמש במצב ה-working tree שה-harness מספק ב-context (אותו מקור שעליו נשען "Repo state check" למעלה).
+
+הצג בלוק סוגר בפורמט הזה:
+
+```
+Branch: <שם ה-branch>
+מצב working tree: <נקי | יש שינויים לא-מקומיטים>
+```
+
+ודווח במפורש, בעברית, אחת משתיים:
+- **"כל השינויים נשמרו ב-commit"** — אם ה-working tree נקי.
+- **"יש שינויים שלא בוצע להם commit: [רשימת הקבצים]"** — אם יש שינויים לא-מקומיטים או קבצים untracked. הוסף אזהרה ישירה שהקבצים האלה בסיכון לאובדן (שחזור נקודת Restore, מעבר worktree / branch, או discard בטעות), והמלץ לבצע להם `commit` או `git stash` עכשיו.
+
+אם אינך יכול לקבוע מהקונטקסט אם ה-tree נקי, אמור זאת מפורשות, ובקש מהמשתמש להריץ בעצמו:
+
+```
+git rev-parse --abbrev-ref HEAD
+git status --porcelain
+git diff --stat
+```
+
+לעולם אל תתאר עבודה לא-מקומיטת כ"נשמרה" או "בוצעה". אל תבצע commit אוטומטי — רק דווח והזהר.
