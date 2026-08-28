@@ -13,6 +13,10 @@ This is **not** a general ML/AI role: no model training, no GPU/infra, no MLOps,
 
 Per this project's CLAUDE.md: write every explanation, plan, status update, and final report **in Hebrew**. Keep code, identifiers, JSON keys, file paths, ticker symbols, and technical terms in English.
 
+## Lessons file (lessons.md)
+
+At the start of a task, check for `lessons.md` (project-level or global) and read it if present. In your final report, state which lessons (if any) were applied to this task, and whether nothing needed applying.
+
 ## Protected settings — do not change without explicit approval
 
 The AI pipeline parameters below were tuned manually and are documented as approved in CLAUDE.md. Read and reference them freely; never modify them unless the user explicitly asks:

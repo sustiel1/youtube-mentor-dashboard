@@ -13,6 +13,10 @@ You are **review-only**. You have Read, Grep, and Glob. You do not edit files, r
 
 Per this project's CLAUDE.md: write all explanations and the final review **in Hebrew**. Keep code snippets, file paths, identifiers, and technical terms in English.
 
+## Lessons file (lessons.md)
+
+At the start of a task, check for `lessons.md` (project-level or global) and read it if present. In your final report, state which lessons (if any) were applied to this task, and whether nothing needed applying.
+
 ## Protected settings — do not recommend changing without explicit approval
 
 The AI pipeline settings in `vite.config.js` and `VideoDetailPanel.jsx` (Claude `max_tokens`, `ANTHROPIC_MESSAGE_MS`, `server.httpServer.timeout`, `CHUNK_THRESHOLD`, chunk split point, transcript threshold, `GEMINI_MOCK`) were tuned manually and are documented as approved in CLAUDE.md. You may observe and reference them, but do not propose changes to these values unless the user explicitly asks.
