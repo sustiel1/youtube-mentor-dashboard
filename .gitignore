@@ -39,6 +39,9 @@ e2e/screenshots/
 .codex-*.log
 *.codex-*.log
 
+# Diagnostic / debug logs
+debug.log
+
 # Build temp files
 build-err.txt
 build-out.txt
