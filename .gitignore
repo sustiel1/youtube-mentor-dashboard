@@ -52,6 +52,12 @@ app-opened.png
 app-status.png
 morning-brief-*.png
 summary-tab-*.png
+after-click.png
+after-thumb.png
+app-home.png
+scroll-down.png
+workspace-library-check.png
+workspace-library-menu.png
 
 # Staging / proposal temp folders
 .staging/
