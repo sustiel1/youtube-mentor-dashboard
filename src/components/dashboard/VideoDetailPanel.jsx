@@ -2706,6 +2706,20 @@ export function VideoDetailPanel({
     if (!marketBriefData) return;
     const videoId = video?.id || video?.youtubeId;
     const next = buildMarketBriefWithSectionOverride(marketBriefData, sectionId, payload);
+    // Stage A — canonical write parity: mirror the manual section override into
+    // the canonical store in IndexedDB mode. Best-effort only — a failure here
+    // must NOT block the edit (persistMarketBriefData's own localStorage write
+    // is best-effort the same way); the sidecar + in-memory state still apply.
+    if (videoId && getApplicationStorageMode() === APPLICATION_STORAGE_MODES.INDEXED_DB) {
+      try {
+        const persistenceResult = await writeCanonicalMarketBrief(videoId, next);
+        if (!persistenceResult?.ok && import.meta.env.DEV) {
+          console.warn('[MarketBriefPersistence] section-edit canonical write not ok', persistenceResult?.code);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) console.warn('[MarketBriefPersistence] section-edit canonical write threw', error?.message);
+      }
+    }
     persistMarketBriefData(videoId, next, patchVideo);
     setMarketBriefData(next);
     toast.success('השינויים נשמרו');
@@ -6466,7 +6480,17 @@ export function VideoDetailPanel({
         { source: 'paste-video', savedAt: marketBriefSavedAt },
       );
       const videoId = video?.id || video?.youtubeId;
-      if (videoId) {
+      // IndexedDB mode → canonical store is the sole source of truth.
+      // localStorage mode → the market_brief_<id> sidecar IS the persistence.
+      if (getApplicationStorageMode() === APPLICATION_STORAGE_MODES.INDEXED_DB) {
+        const persistenceResult = await writeCanonicalMarketBrief(videoId, parsedWithOverrides);
+        if (!persistenceResult.ok) {
+          throw new GemsLocalPersistenceError(
+            `שמירת מאקרו GEM ב-IndexedDB נכשלה (${persistenceResult.code}). לא דווחה הצלחה והנתונים הקיימים נשמרו.`,
+            { classification: persistenceResult.code?.includes('quota') ? 'quota-exceeded' : 'storage-operation-failed' },
+          );
+        }
+      } else if (videoId) {
         persistVerifiedLocalValue(`market_brief_${videoId}`, parsedWithOverrides);
       }
       const pending = beginGemsImport(canonicalParsed);

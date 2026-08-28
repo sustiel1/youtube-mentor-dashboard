@@ -46,9 +46,13 @@ assert.equal(localMode, videos, 'localStorage mode keeps the existing synchronou
 const useVideosSource = fs.readFileSync(new URL('../src/hooks/useVideos.js', import.meta.url), 'utf8');
 assert.match(useVideosSource, /await hydrateCanonicalVideoAnalysisEvidence\(loadLocalFirstVideos\(\)\)/);
 const panelSource = fs.readFileSync(new URL('../src/components/dashboard/VideoDetailPanel.jsx', import.meta.url), 'utf8');
-const canonicalWriteStart = panelSource.indexOf('const persistenceResult = await writeCanonicalMarketBrief');
+// Anchor to the marketBrief GEM-apply branch specifically — other market-brief
+// flows now also call writeCanonicalMarketBrief, so a bare first-match indexOf
+// is ambiguous.
+const marketBriefBranchStart = panelSource.indexOf("if (canonicalParsed?.contentType === 'marketBrief')");
+const canonicalWriteStart = panelSource.indexOf('await writeCanonicalMarketBrief', marketBriefBranchStart);
 const canonicalWriteEnd = panelSource.indexOf('} else {', canonicalWriteStart);
-assert.ok(canonicalWriteStart >= 0 && canonicalWriteEnd > canonicalWriteStart);
+assert.ok(marketBriefBranchStart >= 0 && canonicalWriteStart >= 0 && canonicalWriteEnd > canonicalWriteStart);
 assert.match(panelSource.slice(canonicalWriteStart, canonicalWriteEnd), /queryClient\.invalidateQueries\(\{ queryKey: \['videos'\] \}\)/);
 
 console.log('canonical-video-analysis-hydration-qa: PASS');

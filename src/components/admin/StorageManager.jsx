@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { APPLICATION_STORAGE_MODES, getApplicationStorageMode } from "@/lib/persistence/storageMode";
+import { migrateMarketBriefSidecars } from "@/lib/persistence/marketBriefSidecarMigration";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const KB = 1024;
@@ -592,6 +594,7 @@ export default function StorageManager() {
   const [showTopItems, setShowTopItems] = useState(false);
   const [showRecs, setShowRecs] = useState(true);
   const [showTranscriptDialog, setShowTranscriptDialog] = useState(false);
+  const [migratingBriefs, setMigratingBriefs] = useState(false);
 
   const scan = useCallback(() => {
     setLoading(true);
@@ -620,6 +623,29 @@ export default function StorageManager() {
     setConfirm(null);
     scan();
     toast.success(`${action.label} — הוסרו ${removed} ${removed === 1 ? "מפתח" : "מפתחות"}`);
+  };
+
+  const handleMigrateMarketBriefSidecars = async () => {
+    setMigratingBriefs(true);
+    try {
+      const r = await migrateMarketBriefSidecars();
+      if (r.skippedReason === 'not-indexeddb-mode') {
+        toast.info('מצב האחסון אינו IndexedDB — אין מה למזג.');
+      } else if (r.scanned === 0) {
+        toast.info('לא נמצאו עותקי market_brief ב-localStorage.');
+      } else {
+        const parts = [`נסרקו ${r.scanned}`, `הועברו ${r.migrated}`, `נמחקו ${r.removed}`];
+        if (r.failed.length) parts.push(`נכשלו ${r.failed.length}`);
+        if (r.skipped.length) parts.push(`דולגו ${r.skipped.length}`);
+        (r.failed.length ? toast.warning : toast.success)(parts.join(' · '), { duration: 6000 });
+        if (r.failed.length) console.warn('[market-brief-sidecar-migration] failures', r.failed);
+      }
+    } catch (error) {
+      toast.error(`מיזוג נכשל: ${error?.message || error}`);
+    } finally {
+      setMigratingBriefs(false);
+      scan();
+    }
   };
 
   const handleTranscriptCleanup = () => {
@@ -720,6 +746,38 @@ export default function StorageManager() {
 
           {/* ── Summary cards ── */}
           <SummaryCards data={data} />
+
+          {/* ── market_brief sidecar → IndexedDB migration (DEV) ── */}
+          {(() => {
+            const briefKeyCount = data.allKeys.filter((k) => k.startsWith("market_brief_")).length;
+            const isIdbMode = getApplicationStorageMode() === APPLICATION_STORAGE_MODES.INDEXED_DB;
+            if (briefKeyCount === 0) return null;
+            return (
+              <div className="rounded-2xl border border-indigo-200/70 bg-indigo-50/50 p-4 shadow-sm dark:border-indigo-800/30 dark:bg-indigo-950/10" dir="rtl">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
+                      עותקי <code className="font-mono">market_brief_*</code> ב-localStorage: {briefKeyCount}
+                    </p>
+                    <p className="mt-0.5 text-xs text-indigo-700/80 dark:text-indigo-400/80">
+                      {isIdbMode
+                        ? "מקור האמת הוא IndexedDB. המיזוג מעביר כל עותק ל-IndexedDB (עם אימות קריאה חוזרת) ומוחק אותו מ-localStorage."
+                        : "מצב האחסון אינו IndexedDB — המיזוג לא יפעל כרגע."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!isIdbMode || migratingBriefs}
+                    onClick={handleMigrateMarketBriefSidecars}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", migratingBriefs && "animate-spin")} />
+                    {migratingBriefs ? "ממזג..." : "מזג ל-IndexedDB"}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Category breakdown ── */}
           <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/70 overflow-hidden">

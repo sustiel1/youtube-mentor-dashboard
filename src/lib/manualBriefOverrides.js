@@ -14,6 +14,7 @@ import {
   extractUnifiedStocks,
   getSpecializedSrc,
 } from '@/lib/morningBriefDisplay';
+import { APPLICATION_STORAGE_MODES, getApplicationStorageMode } from '@/lib/persistence/storageMode';
 
 export const BRIEF_MANUAL_SECTION_IDS = {
   news: 'news',
@@ -114,7 +115,11 @@ export function buildMarketBriefWithSectionOverride(marketBriefData, sectionId, 
 }
 
 export function persistMarketBriefData(videoId, data, patchVideo) {
-  if (videoId) {
+  // localStorage mode only — the market_brief_<id> sidecar is the persistence
+  // there. In IndexedDB mode the canonical write happens at the call site
+  // (handleSaveMarketBriefSection); writing the sidecar too would just recreate
+  // the localStorage bloat the migration removed.
+  if (videoId && getApplicationStorageMode() !== APPLICATION_STORAGE_MODES.INDEXED_DB) {
     try {
       localStorage.setItem(`market_brief_${videoId}`, JSON.stringify(data));
     } catch (e) {
