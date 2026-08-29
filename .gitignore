@@ -38,6 +38,8 @@ e2e/screenshots/
 # Codex / QA log artifacts
 .codex-*.log
 *.codex-*.log
+.codex-backups/
+.codex-build-stock-identity-20260801/
 
 # Build temp files
 build-err.txt
