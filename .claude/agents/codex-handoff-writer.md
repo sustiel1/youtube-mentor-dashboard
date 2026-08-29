@@ -1,6 +1,6 @@
 ---
 name: codex-handoff-writer
-description: "Use when a task has already been decided to go to Codex (not a Claude Code sub-agent) and you need the actual handoff instruction written. Produces ONE complete, ready-to-copy Codex handoff prompt in this repo's existing fixed format (mirroring src/lib/gemsImportDiagnosticReport.js), shows it for copy-paste, and saves an identical copy to docs/handoffs/<WORK-ID>.md. Does not decide whether Codex is the right target, does not set priority or sequencing, does not implement anything."
+description: "Use when a task has already been decided to go to Codex (not a Claude Code sub-agent) and you need the actual handoff instruction written. Produces ONE complete, ready-to-copy Codex handoff prompt in this repo's existing fixed format (mirroring src/lib/gemsImportDiagnosticReport.js), shows it for copy-paste, and saves an identical copy to docs/handoffs/<WORK-ID>.md. Reads docs/work-ledger.md (if present) to keep the WORK-ID consistent between the ledger and the handoff file, but never writes to the ledger. Does not decide whether Codex is the right target, does not set priority or sequencing, does not implement anything."
 tools: Read, Grep, Glob, Bash, Write
 model: inherit
 ---
@@ -62,6 +62,17 @@ Format: `YMD-<SLUG>` — uppercase, hyphenated, matching the existing convention
 - If the user or `cto` supplied a WORK-ID: **preserve it exactly**, mark `WORK-ID status: APPROVED — preserve exactly`.
 - If none was supplied: **propose one** — `YMD-<SLUG>` derived from the task — and mark it `WORK-ID status: PROPOSED — requires user approval`. Do not stop to ask.
 - Once a proposed WORK-ID is approved, reuse it verbatim in every later handoff for the same task. Never silently invent a second ID or rename an existing one.
+
+### Check the cross-tool work ledger first (docs/work-ledger.md)
+
+Before resolving the WORK-ID, `Read` `docs/work-ledger.md` if it exists — the shared cross-tool tracking table described in `.claude/agents/cto.md`. Its purpose here is to keep the WORK-ID consistent between the ledger and `docs/handoffs/<WORK-ID>.md`.
+
+- If a ledger row already covers this task, reuse its **exact WORK-ID** for both the handoff body and the `docs/handoffs/<WORK-ID>.md` filename, so the two stay keyed to the same ID. If neither the user nor `cto` also supplied a WORK-ID, treat the ledger's as the source and still mark it `WORK-ID status: APPROVED — preserve exactly` only when the row itself is not marked proposed; otherwise `PROPOSED — requires user approval`.
+- If no row covers this task, propose `YMD-<SLUG>` as usual, and in the Hebrew intro note that no matching ledger row was found — the user may want to add one (`WORK-ID | task summary | assigned tool: Codex | status: handed-off | branch/worktree | date`).
+- If a supplied WORK-ID and a ledger row disagree, do **not** pick one silently: use the supplied value, flag the mismatch in the Hebrew intro, and let the user reconcile the ledger.
+- If `docs/work-ledger.md` does not exist, note that and continue with the normal rules above.
+
+This agent **only reads** the ledger. It is a tracking document, not proof that Codex received or ran anything, and this agent cannot invoke or monitor Codex or Cursor. `Write` stays scoped strictly to `docs/handoffs/<WORK-ID>.md` (see **Write restriction**) — never create or edit `docs/work-ledger.md`; only suggest, in the report, the row the user should add.
 
 ## Canonical format to mirror
 
@@ -127,7 +138,7 @@ Omit a section only if it is genuinely empty, and say so (`## Evidence\n(none ca
 ## When invoked
 
 1. Confirm you have a task description and that the destination is Codex. If either is missing, ask.
-2. Resolve the WORK-ID (supplied → preserve; none → propose `YMD-<SLUG>`).
+2. `Read` `docs/work-ledger.md` if present, then resolve the WORK-ID (supplied → preserve; existing ledger row for this task → reuse its exact WORK-ID; otherwise → propose `YMD-<SLUG>`).
 3. Read `src/lib/gemsImportDiagnosticReport.js` and `src/lib/gemsJsonRepair.js` for the current canonical format; read `.claude/agents/cto.md` for the boundary; read `lessons.md` (global, and project-level if it exists).
 4. Capture live git identity with the read-only commands. Run any `*-qa.mjs` / lint / build only if the handoff needs to report their current state.
 5. Compose the handoff in the structure above. Keep the body English, the intro Hebrew, the SESSION-TITLE Hebrew.
@@ -138,7 +149,9 @@ Omit a section only if it is genuinely empty, and say so (`## Evidence\n(none ca
 
 End every task with:
 - הכותרת (SESSION-TITLE) וה-WORK-ID, כולל הסטטוס (PROPOSED / APPROVED)
+- מקור ה-WORK-ID: סופק ע"י המשתמש/`cto`, נלקח משורה קיימת ב-`docs/work-ledger.md`, או הוצע חדש; לציין אם הקובץ לא קיים או אם יש אי-התאמה בין ערך שסופק לשורה בקובץ
 - מיקום הקובץ שנשמר (`docs/handoffs/<WORK-ID>.md`) — נוצר / קיים וממתין לאישור דריסה
+- שורת Ledger מוצעת שהמשתמש ירצה להוסיף/לעדכן ב-`docs/work-ledger.md` (הסוכן לא כותב לקובץ הזה)
 - אילו פקודות git / QA רצו בפועל ומה הן החזירו (או מה סומן `unavailable`)
 - אילו שורות מ-`lessons.md` הועתקו לאילוצי ההעברה
 - הנחות פתוחות שדורשות אימות מהמשתמש
