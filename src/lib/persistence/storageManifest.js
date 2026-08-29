@@ -56,6 +56,7 @@ export const LOCAL_STORAGE_FIXED_KEYS = Object.freeze([
   'workspace_library_v1',
   'workspace_topics_v1',
   'workspace_tab_preferences_v1',
+  'workspace_days_v1',
   'market_manual_finviz_mappings_v1',
   'market_aaii_weekly_sentiment_v1',
   'market_fear_greed_cache_v1',
@@ -119,6 +120,7 @@ const WORKSPACE_KEYS = new Set([
   'workspace_library_v1',
   'workspace_topics_v1',
   'workspace_tab_preferences_v1',
+  'workspace_days_v1',
 ]);
 
 const MEDIA_KEYS = new Set(['yt_thumb_cache_v1']);
@@ -189,6 +191,6 @@ export function listOwnedStorageKeys(storage) {
   return [...keys].sort();
 }
 
-if (LOCAL_STORAGE_FIXED_KEYS.length !== 66) {
-  throw new Error('Expected exactly 66 verified fixed localStorage keys');
+if (LOCAL_STORAGE_FIXED_KEYS.length !== 67) {
+  throw new Error('Expected exactly 67 verified fixed localStorage keys');
 }
