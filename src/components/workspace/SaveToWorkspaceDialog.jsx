@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useWorkspaceItems, useWorkspaceTopics } from "@/hooks/useWorkspaceLibrary";
 import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
+import {
+  getOpenWorkspaceDay,
+  attachItemToWorkspaceDay,
+  getWorkspaceDayPersistenceErrorMessage,
+} from "@/lib/workspaceDayStore";
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { updateKnowledgeItemsForVideo } from "@/lib/localKnowledgeItemStore";
 import {
@@ -60,6 +65,13 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
   const [showNewSub, setShowNewSub] = useState(false);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  // Stage 2 "Workspace Day" opt-in — only meaningful while a day is open.
+  const [attachToDay, setAttachToDay] = useState(false);
+  const openDay = useMemo(() => (open ? getOpenWorkspaceDay() : null), [open]);
+
+  useEffect(() => {
+    if (open) setAttachToDay(false);
+  }, [open]);
 
   useEffect(() => {
     if (!open || !video) return;
@@ -175,6 +187,20 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
     if (topicName) {
       try { updateLocalVideo(videoId, { category: topicName, subCategory: subTopicName }); } catch {}
       try { updateKnowledgeItemsForVideo(videoId, { category: topicName, subCategory: subTopicName }); } catch {}
+    }
+
+    // Opt-in attach to the currently open Workspace Day (Stage 2).
+    if (attachToDay && openDay && saveResult.item) {
+      const attachResult = attachItemToWorkspaceDay(openDay.id, { item: saveResult.item, video });
+      if (!attachResult.ok) {
+        toast.error(getWorkspaceDayPersistenceErrorMessage(attachResult));
+      } else if (attachResult.status === 'already_attached') {
+        toast.info('הפריט כבר מצורף ליום העבודה');
+      } else {
+        toast.success('הפריט צורף גם ליום העבודה');
+      }
+    } else if (attachToDay && openDay) {
+      toast.error('לא ניתן לצרף ליום — הפריט לא נשמר במלואו');
     }
 
     onSaved?.({ topicName, subTopicName });
@@ -500,6 +526,18 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
               ))}
             </div>
           </div>
+          {/* Attach to the open Workspace Day (Stage 2) — only shown when a day is open */}
+          {openDay && (
+            <label className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2.5 text-xs font-medium text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={attachToDay}
+                onChange={e => setAttachToDay(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 dark:border-zinc-600"
+              />
+              <span>צרף גם ליום העבודה של היום</span>
+            </label>
+          )}
         </div>
 
         {/* Sticky footer */}

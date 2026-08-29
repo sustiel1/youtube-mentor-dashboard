@@ -27,6 +27,7 @@ import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
+import { WorkspaceDay } from "@/components/workspace/WorkspaceDay";
 import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy, exportWorkspaceItemsToCsv } from "@/components/workspace/WorkspaceBulkActionBar";
 import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
 import { WorkspaceCollectionTiles } from "@/components/workspace/WorkspaceCollectionTiles";
@@ -728,6 +729,9 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
       </header>
 
       <main className={cn("px-4 sm:px-6 py-5 max-w-7xl mx-auto space-y-4", selectedCardIds.size > 0 && "pb-20")}>
+
+        {/* ══════════════════════ WORKSPACE DAY (Stage 2) ══════════════════════ */}
+        <WorkspaceDay />
 
         {/* ══════════════════════ NAVIGATION CARD ══════════════════════ */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
