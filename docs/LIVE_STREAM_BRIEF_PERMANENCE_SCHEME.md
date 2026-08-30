@@ -1,48 +1,61 @@
 # Live‑Stream Market Brief — Permanent vs Daily Knowledge Scheme
 
 > מסמך תכנון בלבד. אין שינוי קוד ללא אישור מפורש.
-> נוצר: 2026-08-30 · WORK-ID מוצע: `YMD-BRIEF-PERMANENCE-SPLIT`
+> עודכן: 2026-08-30 · WORK-ID: `YMD-BRIEF-PERMANENCE-SPLIT`
 
 מטרה: להפריד ידע **קבוע** (כללי מסחר חוזרים, דפוסי סיכון, תובנות שיטה) מתוכן
-**יומי/מתכלה** (מניות למעקב היום, סנטימנט היום) בסיכומי "מבזק לייב פתיחה"
-החוזרים, כך שספריית הידע ב‑Obsidian לא תצבור רעש מיושן.
+**יומי/מתכלה** (מניות למעקב, מצב שוק וסנטימנט יומי) בסיכומי "מבזק לייב פתיחה",
+כך שספריית הידע ב‑Obsidian לא תצבור רעש מיושן.
 
 ---
 
 ## 1. ביקורת מצב קיים (Audit)
 
-### 1.1 שני מנועי ניתוב
+### 1.1 הצינור הקיים
 
-| מנוע | תפקיד | פלט |
+| רכיב | תפקיד |
+|---|---|
+| `src/config/videoTabsConfig.js` | זיהוי כותרת וסיווג `morningBrief` |
+| `src/lib/morningBriefBulkSections.js` | יצירת סקשני המבזק |
+| `src/lib/obsidianVideoMergeItems.js` | הפיכת פריטי בחירה ל‑merge items |
+| `src/lib/obsidianNoteMerge.js` | הוספת bullet וסמן זהות, עם dedupe מדויק |
+| `src/lib/obsidianVaultMergeWrite.js` | כתיבת merge דרך `/api/vault/write` |
+| `src/lib/obsidianItemSaveStore.js` | מעקב שמירה ב‑`yt_obsidian_item_saves_v1` |
+
+`src/lib/obsidianRouting.js` מנתב פתק סרטון מלא (`V-<slug>.md`) ואינו נתיב
+שמירת הפריט. `src/lib/obsidianExport.js` הוא הבית של קטלוג התיקיות ובוני הפתקים.
+השינוי המתוכנן הוא שכבה מעל הצינור הקיים — לא מנוע ניתוב חדש.
+
+### 1.2 מפת המפיק בפועל
+
+כותרת שמכילה `מבזק לייב פתיחה` מסווגת כיום `morningBrief` ומנותבת ל‑`שוק ההון`.
+`buildMorningBriefBulkSections()` מפיק, כאשר יש תוכן, את המפתחות הבאים בדיוק:
+
+| `key` | `sectionLabel` | `tabKey` |
 |---|---|---|
-| `src/lib/obsidianRouting.js` | ניתוב ברמת סרטון לפי טקסונומיה | `{category}/{subCategory}/V-{slug}.md` |
-| `src/lib/obsidianExport.js` | קטלוג תיקיות סמנטי + חוקי מילות מפתח + בוני פתקים | `OBSIDIAN_FOLDER_CATALOG`, `FOLDER_KEYWORD_RULES`, `CATEGORY_TO_TOPIC`, `resolvePrimaryTopic()`, `ATOMIC_FIELD_TO_FOLDER`, `GEMS_V2_SECTION_PATHS` |
+| `news` | `📰 חדשות` | `market-news` |
+| `market-regime` | `📊 מצב שוק` | `market-regime` |
+| `sectors` | `📊 סקטורים` | `brief-sectors` |
+| `opportunities` | `🎯 הזדמנויות` | `brief-opportunities` |
+| `risks` | `⚠️ סיכונים` | `brief-risks` |
+| `stocks-mentioned` | `⭐ מניות שהוזכרו` | `stocks-mentioned` |
+| `economic-calendar` | `📅 לוח כלכלי` | `brief-calendar` |
+| `macro` | `🌍 מאקרו` | `brief-macro` |
+| `sentiment` | `📊 סנטימנט` | `brief-sentiment` |
+| `markets` | `📈 שווקים` | `indices` |
+| `levels` | `🎚️ רמות מפתח` | `key-levels` |
+| `top-insights` | `💡 תובנות מובילות` | `brief-conclusions` |
+| `learning-insights` | `🧠 לקחים` | `brief-conclusions` |
+| `all-points` | `📌 נקודות נוספות` | `brief-conclusions` |
 
-מנוע המיזוג (משותף לכל שמירת פריט): `src/lib/obsidianNoteMerge.js` →
-`mergeItemsIntoObsidianNote()` — סמני HTML comment `<!-- obsidian-item:{identityKey} -->`,
-הוספת bullet תחת `## sectionLabel`, dedupe לפי הסמן. כתיבה דרך
-`/api/vault/write?mode=merge` (`obsidianVaultMergeWrite.js`), מעקב ב‑
-`obsidianItemSaveStore` (`yt_obsidian_item_saves_v1`, localStorage).
+בנוסף, `buildMorningBriefCardBulkItems()` מפיק מעטפת כרטיס משולבת
+`opportunities-risks`, ובוני הסיכום מפיקים `thirty`, `market`, `watch`,
+`insights`, `risks`, `checklist`, `full` ו‑`raw` תחת `tabKey: 'summary'`.
 
-### 1.2 המבזק כבר ממופה
-
-כותרת שמכילה `מבזק לייב פתיחה` → מסווגת `morningBrief` (ראה
-`docs/MORNING_BRIEF_GEMS_ROUTING.md`) → נתיב `שוק ההון`.
-`buildMorningBriefBulkSections()` (`src/lib/morningBriefBulkSections.js`) כבר מייצר
-בדיוק את הקטגוריות שבמשימה:
-
-| קטגוריה במשימה | section key | sectionLabel | tabKey |
-|---|---|---|---|
-| Watch Today / מניות | `stocks-mentioned`, `levels` | ⭐ מניות שהוזכרו / 🎚️ רמות מפתח | `stocks-mentioned`, `key-levels` |
-| Risks | `risks` | ⚠️ סיכונים | `brief-risks` |
-| Key Insights | `top-insights`, `learning-insights` | 💡 תובנות מובילות / 🧠 לקחים | `brief-conclusions` |
-| Action Checklist | `opportunities` + לקחים ניתנים לפעולה | 🎯 הזדמנויות | `brief-opportunities` |
-| Market State | `market-regime`, `sentiment`, `markets`, `macro` | 📊 מצב שוק / 📊 סנטימנט / 📈 שווקים / 🌍 מאקרו | `brief-*` |
-| 30‑Second / Full Summary | `summary` (ב‑`collectVideoObsidianMergeItems`) | 📝 סיכום | `summary` |
-
-הפריטים כבר עוברים דרך `collectVideoObsidianMergeItems()` →
-`mergeItemsIntoObsidianNote()`. **הצינור קיים ופעיל** (אומת: `morningBriefBulkSections`
-→ `obsidianVideoMergeItems` → `obsidianNoteMerge`).
+**פער שאותר בביקורת:** `buildBulkItemsFromSections()` שומר את `key` רק בתוך `id`;
+`bulkEntryToMergeItem()` משתמש ב‑`sectionLabel` בתור `sectionKey`. לכן המפתחות
+הקנוניים נעלמים לפני ה‑merge. התכנון מוסיף `briefSectionKey` אופציונלי ושומר את
+משמעות `sectionKey` הקיימת ללא שינוי, כדי לא לשבור זהות או רשומות עבר.
 
 ### 1.3 סכמת האחסון הקיימת (per‑item)
 
@@ -53,13 +66,15 @@
 ```
 
 identityKey = `videoId + tabKey + sectionKey + text-hash(60)`.
+מפתח הרשומה ב‑store מוסיף גם `@destinationPath`; סמן הפתק אינו כולל נתיב.
 ב‑frontmatter של הפתק בלבד: `date`, `source`, `channel`, `topic`, `tags`.
+סדר הבלוק הקיים הוא bullet ולאחריו `<!-- obsidian-item:{identityKey} -->`.
 
 ### 1.4 מיפוי השדות המוצעים → מה כבר קיים
 
 | שדה מוצע | בית קיים | פער |
 |---|---|---|
-| `category` | `sectionLabel` / `tabKey` (`brief-*`) | ✅ קיים |
+| `category` | `sectionLabel` / `tabKey` (`brief-*`) | קיים, אך ה‑`key` הקנוני נזרק |
 | `date` | `frontmatter.date` בלבד — לא ברמת פריט | ⚠️ להוסיף לרשומה + ל‑bullet |
 | `ticker` | קיים רק בתוך הטקסט | ⚠️ שדה חדש, אופציונלי |
 | `text` | גוף ה‑bullet | ✅ |
@@ -74,144 +89,242 @@ identityKey = `videoId + tabKey + sectionKey + text-hash(60)`.
 
 ---
 
-## 2. התוספת המוצעת (עיצוב בלבד)
+## 2. חוזה העיצוב הסופי
 
-### 2.1 שתי יעדים קבועים בתוך הקטלוג הקיים
+### 2.1 יעדים קבועים
 
-1. **Permanent → פתק פלייבוק עומד יחיד**
+1. **Permanent — פתק פלייבוק עומד יחיד**
    `שוק ההון/ספריית ידע/צ'קליסטים/פלייבוק מסחר.md`
-   עם H2 יציבים: `## צ'קליסט פתיחת יום`, `## כללי ניהול סיכונים`,
-   `## דפוסי סיכון חוזרים`, `## תובנות שיטה`.
-   (כל התיקיות כבר קיימות ב‑`OBSIDIAN_FOLDER_CATALOG['שוק ההון']`.)
+2. **Daily — פתק ארכיון מתוארך**
+   `שוק ההון/מבזקים/{date}.md`, כאשר `{date}` הוא תאריך המבזק בפורמט
+   `YYYY-MM-DD`, לא יום ביצוע סריקת התפוגה.
 
-2. **Daily/ephemeral → פתק מתוארך**
-   `שוק ההון/מבזקים/YYYY-MM-DD.md` — תבנית שם `YYYY-MM-DD.md` כבר נתמכת
-   ב‑`generateDailyNote()`. נדרש רק להוסיף `'שוק ההון/מבזקים'` לקטלוג.
-   פריטי watch יכולים לחלופין ללכת ל‑`שוק ההון/רשימות מעקב` הקיים.
+במימוש עתידי תתווסף רק הרשומה `שוק ההון/מבזקים` ל‑
+`OBSIDIAN_FOLDER_CATALOG['שוק ההון']`; תיקיית `צ'קליסטים` כבר קיימת.
 
-### 2.2 הרחבת סכמת הרשומה (תואם לאחור — כל השדות אופציונליים)
+### 2.2 הרחבת `obsidianItemSaveStore`
 
-```
-{ …הקיים…, date?, ticker?, permanence?: 'permanent'|'daily', expiry?, sourceChannel? }
-```
+ממשיכים להשתמש ב‑`yt_obsidian_item_saves_v1`. כל השדות החדשים אופציונליים;
+רשומה ישנה שחסרים בה השדות נשארת שמורה ותקינה.
 
-ברירת מחדל: **לא** `'daily'` גורף. `permanence` נקבע לפי טבלת 2.4, עם אפשרות
-override ידני ב‑save‑picker.
+| שדה חדש | סוג | כלל וערך חסר |
+|---|---|---|
+| `briefSectionKey?` | `string` | מפתח קנוני מטבלה 2.4; `undefined` ברשומה ישנה |
+| `date?` | `string` | תאריך מקור `YYYY-MM-DD`; `undefined` אם אין תאריך אמין |
+| `ticker?` | `string` | ticker יחיד, מאומת מהשדה המובנה ומנורמל ל‑uppercase; לא מחלצים בטקסט חופשי |
+| `permanence?` | `'permanent' \| 'daily'` | לפי 2.4 או override; חסר ברשומה ישנה |
+| `expiry?` | `string` | היום הראשון שבו הפריט פג, `YYYY-MM-DD`; חסר ל‑permanent ולרשומה ישנה |
+| `sourceChannel?` | `string` | שם הערוץ כפי שנשמר במטא הסרטון; `undefined` אם אינו זמין |
 
-### 2.3 הרחבת הסמן (marker) — אדיטיבי ובטוח
+`sectionKey`, מפתח הזהות ומפתח הרשומה הקיימים אינם משנים משמעות. לפריט מבזק חדש
+`briefSectionKey`, `date` ו‑`permanence` הם חובה לוגית אצל המפיק, אך נשארים
+אופציונליים בסכמה כדי לשמור תאימות לאחור.
 
-שומרים את `<!-- obsidian-item:{identityKey} -->` (dedupe לא משתנה) ומוסיפים
-שורת מטא שנייה שהמנוע הנוכחי מתעלם ממנה (`includes()` בלבד):
+הכרעת `date`: תאריך מפורש ומאומת מכותרת/סכמת המבזק → `publishedAt` תקין → תאריך
+השמירה ב‑`Asia/Jerusalem`. אין קריאת רשת לצורך ההכרעה.
+
+### 2.3 סמן `ymd-meta` האדיטיבי
+
+בלוק חדש נכתב בסדר הבא, בלי לשנות את סמן הזהות:
 
 ```html
+* לעולם לא להגדיל פוזיציה מפסידה — [[V-slug|2026-08-30]]
 <!-- obsidian-item:vid123:brief-risks:ab12cd -->
-* אף פעם לא להגדיל פוזיציה מפסידה — [[V-slug|2026-08-30]]
-<!-- ymd-meta: permanence=permanent; date=2026-08-30; ticker=; ttl= -->
+<!-- ymd-meta:v1 briefSectionKey=risks permanence=permanent date=2026-08-30 expiry=- ticker=- sourceChannel=%D7%A2%D7%A8%D7%95%D7%A5 -->
 ```
 
-### 2.4 ברירת מחדל של permanence לפי סקשן
+חוזה השורה מדויק:
 
-| סקשן (section key) | permanence ברירת מחדל | יעד | expiry |
-|---|---|---|---|
-| `opportunities` (Action Checklist) | permanent | פלייבוק › צ'קליסט פתיחת יום | — |
-| `risks` | permanent (override ל‑daily אם "היום…") | פלייבוק › דפוסי סיכון חוזרים | — |
-| `learning-insights` / `top-insights` (שיטה) | permanent | פלייבוק › תובנות שיטה | — |
-| `stocks-mentioned` / `levels` (Watch Today) | daily | מבזק מתוארך / רשימות מעקב | +5 ימי מסחר |
-| `market-regime` / `sentiment` / `markets` / `macro` | daily | מבזק מתוארך | +1 יום |
-| `economic-calendar` | daily | מבזק מתוארך | תאריך האירוע |
-| `summary` (30‑Second / Full) | daily, לא מקודם | מבזק מתוארך | ארכיון עם הפתק |
+- שורה אחת מיד אחרי `obsidian-item`, בסדר השדות המוצג.
+- ערכים עוברים UTF‑8 `encodeURIComponent`; `-` מציין ערך חסר.
+- `v1` הוא גרסת פורמט הסמן בלבד ואינו מפתח storage חדש.
+- `identityKey` אינו כולל אף שדה חדש; `includes(existingMarker)` נשאר מנגנון
+  ה‑dedupe היחיד ב‑v1.
+- אם dedupe מוצא סמן ישן, הוא מדלג על הפריט כולו ואינו מבצע backfill ל‑meta.
+  הסריקה תדווח `missing-meta` ולא תנחש.
+
+### 2.4 טבלת ברירת המחדל הסופית
+
+`expiry` הוא היום הראשון שבו הפריט אינו פעיל; פריט daily פג כאשר
+`today >= expiry`. חישוב תאריך הוא date-only. “5 ימי מסחר” ב‑v1 פירושו חמישה
+ימי שני–שישי אחרי `date`, ללא שירות חיצוני וללא לוח חגים; המשתמש רשאי לתקן ידנית.
+
+| `briefSectionKey` | מפיק | ברירת מחדל | יעד | `expiry` |
+|---|---|---|---|---|
+| `news` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `market-regime` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `sectors` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `opportunities` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `risks` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `stocks-mentioned` | specialized | daily | `מבזקים/{date}.md` | אחרי 5 ימי שני–שישי |
+| `economic-calendar` | specialized | daily | `מבזקים/{date}.md` | היום שאחרי תאריך האירוע; fallback: `date + 1` |
+| `macro` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `sentiment` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `markets` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `levels` | specialized | daily | `מבזקים/{date}.md` | אחרי 5 ימי שני–שישי |
+| `top-insights` | specialized | permanent | פלייבוק › `נכנס לאחרונה — טרם מיזוג` (יעד קנוני: `תובנות שיטה`) | — |
+| `learning-insights` | specialized | permanent | פלייבוק › `נכנס לאחרונה — טרם מיזוג` (יעד קנוני: `תובנות שיטה`) | — |
+| `all-points` | specialized | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `opportunities-risks` | כרטיס משולב | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `summary:thirty` | summary | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `summary:market` | summary | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `summary:watch` | summary | daily | `מבזקים/{date}.md` | אחרי 5 ימי שני–שישי |
+| `summary:insights` | summary | permanent | פלייבוק › `נכנס לאחרונה — טרם מיזוג` | — |
+| `summary:risks` | summary | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `summary:checklist` | summary | permanent | פלייבוק › `נכנס לאחרונה — טרם מיזוג` | — |
+| `summary:full` | summary | daily | `מבזקים/{date}.md` | `date + 1` יום |
+| `summary:raw` | fallback `summaryShort` | daily | `מבזקים/{date}.md` | `date + 1` יום |
+
+הטבלה כוללת את כל 14 המפתחות שמפיק `buildMorningBriefBulkSections()`, את מפתח
+הכרטיס המשולב ואת כל מפתחות הסיכום. מפתח מבזק לא מוכר מקבל fallback שמרני:
+`daily`, יעד מתוארך ו‑`expiry = date + 1`.
+
+`opportunities` ו‑`risks` הם daily כברירת מחדל מפני שהמפיק הנוכחי מתאר בדרך כלל
+הזדמנות או סיכון של היום. כלל חוזר מתוכם יכול להיות מקודם ידנית ל‑permanent.
+
+### 2.5 התנהגות ה‑save-picker
+
+- לא שואלים בכל שמירה. ה‑picker מציג את ברירת המחדל מהטבלה ומאפשר toggle מפורש
+  בין `יומי` ל‑`קבוע`.
+- שינוי ל‑daily מחשב מחדש יעד ו‑expiry; שינוי ל‑permanent מסיר expiry ומנתב
+  לאזור ההמתנה בפלייבוק.
+- override משנה רק `permanence`, יעד ו‑expiry. הוא אינו משנה `date`, `ticker`,
+  `sourceChannel`, `briefSectionKey`, הטקסט או identity.
+- מסלול בחירת נתיב ידני נשאר אפשרי. daily שנשמר בפתק לא‑מתוארך יזוהה בסריקה.
+- כל טקסט UI חדש בעברית וב‑RTL.
 
 ---
 
-## 3. קידום / מיזוג — תכנון
+## 3. פלייבוק, קידום ותפוגה
 
-### 3.1 Permanent → פלייבוק עומד
+### 3.1 מבנה פתק הפלייבוק
 
-- בשמירה עם `permanence:'permanent'`, פריט המיזוג מנותב לפתק הפלייבוק במקום
-  לפתק המתוארך, **דרך אותו** `mergeItemsIntoObsidianNote()`. `sectionLabel` ממופה
-  ל‑H2 יציב בפלייבוק.
-- **Dedupe מדויק**: סמן הזהות כבר מונע הוספה חוזרת.
-- **כמעט‑כפילויות** (אותו כלל מנוסח אחרת בימים שונים): **תור סקירה ידני**, לא
-  auto‑merge. bullets חדשים נוחתים תחת `## נכנס לאחרונה (לא ממוזג)` עם תאריך
-  `ymd-meta`; מעבר ידני/תקופתי ("מזג פלייבוק", אולי כפתור DEV בהמשך) מקדם אותם
-  לסקשן הקנוני ומכווץ כפילויות.
-  נימוק — `lessons.md` 2026-07-28 / 2026-08-25: לא לשטח/למזג ידע מובנה בלי לשמר
-  provenance ובלי שער אנושי.
-- **Provenance**: כל bullet מקודם שומר backlink `— [[V-<slug>|<date>]]`.
-- **מונה חזרות**: אם הטקסט כבר קיים, במקום skip בלבד — לאפשר `(נצפה גם ב‑<date>)`
-  או bump ל‑count ב‑`ymd-meta`. כלל שחוזר = ביטחון גבוה.
+הפתק היחיד נשמר ב‑`שוק ההון/ספריית ידע/צ'קליסטים/פלייבוק מסחר.md` ובסדר H2
+יציב זה:
 
-### 3.2 Daily → תפוגה / ארכוב
+```markdown
+# פלייבוק מסחר
 
-- פריטים יומיים נכתבים ל‑`שוק ההון/מבזקים/YYYY-MM-DD.md`. **הפתק המתוארך הוא
-  הארכיון — שום דבר לא נמחק.**
-- `expiry` נשמר ב‑`ymd-meta` וב‑item store. סריקה תקופתית (תכנון:
-  `scripts/obsidian-brief-expiry-sweep.mjs`, opt‑in, או כפתור DEV) עושה **דיווח
-  קריאה‑בלבד קודם**: מאתרת bullets שפג תוקפם ויושבים בפתק **לא‑מתוארך** (למשל
-  בטעות ב‑רשימות מעקב), מעבירה אותם לפתק היום, ומשאירה tombstone
-  `<!-- expired: moved to מבזקים/YYYY-MM-DD -->`. **לעולם לא נוגעת בפלייבוק.**
-  נימוק — `lessons.md` 2026-08-30: אין מחיקה רקורסיבית; tombstone במקום delete.
-- `obsidianItemSaveStore` מקבל `permanence`/`expiry` כדי שאינדיקטור ה"נשמר"
-  יוכל להציג "פג תוקף" בלי סבב לוולט.
-- **Rollup שבועי** (אופציונלי, בהמשך): `generateWeeklyRecapNote()` → `W-YYYY-WW.md`
-  כבר קיים. מחוץ ל‑scope של v1.
+## נכנס לאחרונה — טרם מיזוג
+## צ'קליסט פתיחת יום
+## כללי ניהול סיכונים
+## דפוסי סיכון חוזרים
+## תובנות שיטה
+```
+
+כל פריט permanent חדש נכנס תחילה ל‑`## נכנס לאחרונה — טרם מיזוג`, עם backlink
+לסרטון, תאריך, סמן זהות ו‑`ymd-meta`. אין auto‑merge של כמעט‑כפילויות.
+
+מפת הסקירה הידנית מה‑`sectionLabel`/`briefSectionKey` אל H2 קנוני:
+
+| מקור | H2 קנוני לאחר אישור אנושי |
+|---|---|
+| `summary:checklist`; `צ'קליסט פעולה`; `📋 צ'קליסט פעולה` | `צ'קליסט פתיחת יום` |
+| כלל סיכון מפורש מתוך `risks` / `summary:risks` | `כללי ניהול סיכונים` |
+| דפוס חוזר מתוך `risks`; `⚠️ סיכונים`; `⚠️ סיכונים מרכזיים` | `דפוסי סיכון חוזרים` |
+| `summary:insights`; `top-insights`; `learning-insights`; `תובנות מרכזיות`; `💡 תובנות מובילות`; `🧠 לקחים`; `💡 התובנות החשובות ביותר` | `תובנות שיטה` |
+| `opportunities` או `opportunities-risks` שקודמו ידנית | `צ'קליסט פתיחת יום`, רק אחרי פיצול ואישור |
+| כל מקור אחר | נשאר באזור ההמתנה עד שהסוקר בוחר H2 |
+
+כרטיס משולב אינו מקודם כיחידה בלי ביקורת: הסוקר מפצל סיכון והזדמנות ושומר לכל
+bullet את סמן המקור. הטקסט המובנה נשמר כפי שהוצג; ticker או זהות סקשן אינם
+נזרקים, וערכי enum/status נשמרים רק עם התווית המאומתת שלהם. אין מונה חזרות או
+שכתוב אוטומטי ב‑v1.
+
+### 3.2 מנגנון daily, ארכיון ותפוגה
+
+- ברירת המחדל כותבת daily ישירות ל‑`שוק ההון/מבזקים/{date}.md`; הפתק המתוארך
+  הוא הארכיון הקבוע ושום פתק או bullet אינם נמחקים.
+- הטריגר שנבחר הוא **כפתור DEV**, לא סקריפט אוטומטי. Vault API נשאר dev-only.
+- לחיצה ראשונה `בדיקת תפוגה` היא read-only ומציגה: מועמדים, יעד ארכיון,
+  `missing-meta`, אי‑התאמה בין store לסמן ופריטים שכבר אורכבו.
+- פעולה שנייה ונפרדת `ארכב פריטים שפגו` דורשת אישור מפורש. היא פועלת רק על
+  daily שפג ונמצא בפתק לא‑מתוארך: מעתיקה את הבלוק לפתק `{date}.md` אם סמן
+  הזהות אינו קיים שם, ומשאירה ליד המקור tombstone אדיטיבי:
+
+```html
+<!-- ymd-expired:v1 archivedTo=%D7%A9%D7%95%D7%A7%20%D7%94%D7%94%D7%95%D7%9F%2F%D7%9E%D7%91%D7%96%D7%A7%D7%99%D7%9D%2F2026-08-30.md expiredOn=2026-08-31 -->
+```
+
+- “ארכב” פירושו copy + tombstone, לא move מוחק. הרצה חוזרת מזהה את ה‑tombstone
+  ומדווחת `already-archived`.
+- הסריקה מתחילה מהמועמדים ב‑item store, אך לפני כתיבה מאמתת בפתק את סמן הזהות
+  ואת `ymd-meta`. רשומה ישנה, meta חסר או אי‑התאמה נכנסים לדוח בלבד.
+- הסריקה לעולם אינה נוגעת ב‑`פלייבוק מסחר.md`, אינה מוחקת תיקייה ואינה משנה
+  פריט `permanent`.
+
+### 3.3 מפת צרכנים מלאה
+
+| שדה / סמן | מפיק ו‑save-picker | `obsidianNoteMerge` / dedupe | אינדיקטור saved/expired | סריקת תפוגה |
+|---|---|---|---|---|
+| `briefSectionKey` | נשמר מהמפתח הקנוני; קובע default | נכתב ל‑meta; לא נכנס לזהות | אינו משנה saved; מסביר מקור | מאמת התאמה ל‑meta ו‑fallback |
+| `date` | מוכרע פעם אחת ואינו משתנה ב‑override | נכתב ל‑meta; dedupe מתעלם | מוצג כהקשר בלבד | קובע את פתק הארכיון |
+| `ticker` | רק משדה מובנה מאומת; אחרת חסר | נכתב ל‑meta; dedupe מתעלם | אינו משנה saved/expired | מועתק כ‑provenance; אינו תנאי סריקה |
+| `permanence` | default מהטבלה או toggle | בוחר path/H2 ונכתב ל‑meta; לא בזהות | חסר/`permanent` נשאר saved; `daily` עשוי להיות expired | רק `daily` הוא מועמד; permanent תמיד מוחרג |
+| `expiry` | מחושב מחדש אחרי toggle | נכתב ל‑meta; dedupe מתעלם | `today >= expiry` ⇒ `נשמר — פג תוקף`; עדיין saved | תנאי הסף לסריקה |
+| `sourceChannel` | מועתק ממטא הסרטון | נכתב מקודד ל‑meta; dedupe מתעלם | אינו משנה סטטוס | נשמר בהעתקת הארכיון בלבד |
+| `ymd-meta` | נבנה מאותם ערכים שנרשמו ב‑store | נכתב אחרי סמן הזהות; `includes()` בודק רק `obsidian-item` | אין קריאת Vault; הסטטוס מגיע מה‑store | נדרש לאימות לפני apply; חסר ⇒ report-only |
+
+לשמירת תאימות, `isObsidianItemSaved()` ממשיך להחזיר `true` גם לפריט שפג.
+הצרכנים שמציגים סטטוס משתמשים ברשומה המלאה ומוסיפים מצב `expired`; bulk status
+נשאר “נשמר” ומקבל בנוסף מונה/תווית של פריטים שפג תוקפם. רשומה ישנה בלי
+`permanence` או `expiry` נשארת `saved`, לעולם לא `expired` אוטומטית.
 
 ---
 
-## 4. אילוצים / שימוש בתשתית קיימת
+## 4. אילוצים מחייבים
 
 - אין מנוע ניתוב חדש, אין store מקביל. שימוש חוזר:
   `mergeItemsIntoObsidianNote`, `obsidianVaultMergeWrite`, `/api/vault/*`,
   `obsidianItemSaveStore`, `OBSIDIAN_FOLDER_CATALOG`.
-- תיקיות חדשות = רק רשומות ב‑`OBSIDIAN_FOLDER_CATALOG['שוק ההון']`
-  (`מבזקים`; הפלייבוק חי תחת `צ'קליסטים` הקיים).
+- אין localStorage key חדש ואין שינוי במשמעות מפתח הזהות הקיים.
+- תיקיות חדשות = רק הרשומה `מבזקים` ב‑`OBSIDIAN_FOLDER_CATALOG['שוק ההון']`;
+  הפלייבוק חי תחת `צ'קליסטים` הקיים.
 - כל טקסט UI בעברית RTL.
 - Vault API ל‑dev בלבד (Risk #10 ב‑`SAVE_SYSTEM_ARCHITECTURE.md`) — המגבלה נשארת.
-- הגדרות ה‑AI המוגנות (`vite.config.js` / `VideoDetailPanel.jsx`) — לא נגועות.
+- אין שינוי ב‑`ytmdbOriginMigrationController.js`, ב‑`ytmdbOriginStorageManifest.js`
+  או ב‑key-count assertions של `storageManifest.js`.
+- הגדרות ה‑AI המוגנות (`vite.config.js` / `VideoDetailPanel.jsx`) אינן משתנות.
+- אין קריאת AI/GEMS בסיווג permanence או בסריקת התפוגה.
+- אין flatten או merge שמאבדים ticker, מפתח סקשן, תווית enum או provenance.
+- אין מחיקה. גם תיקון ידני משאיר סמן מקור; ניקוי תיקייה אינו חלק מהעיצוב.
 
 ---
 
-## 5. שאלות פתוחות לאישור לפני מימוש
+## 5. חמש החלטות סגורות
 
-1. פלייבוק יחיד עם H2, או פתק‑לכל‑קטגוריה (סיכון / שיטה / צ'קליסט)?
-   המלצה: להתחיל ב‑**יחיד** `פלייבוק מסחר.md`, לפצל רק אם יגדל.
-2. ברירת מחדל ל‑permanence כשהמשתמש לא מסווג — טבלת 2.4 + toggle override,
-   או לשאול תמיד? המלצה: ברירת מחדל לפי סקשן + override.
-3. כמעט‑כפילויות: auto‑merge או תור סקירה ידני? המלצה: ידני ל‑v1.
-4. סריקת תפוגה: סקריפט אוטומטי או כפתור DEV? המלצה: כפתור DEV + דו"ח
-   קריאה‑בלבד קודם.
-5. "live stream market analysis" = אותו "מבזק לייב פתיחה" (morningBrief), או
-   פורמט ערוץ נפרד? אם נפרד — עדיין משתמש באותו צינור דרך keyword כותרת חדש.
-
----
-
-## 6. WORK-ID מומלץ + שורת work-ledger מוצעת
-
-**WORK-ID:** `YMD-BRIEF-PERMANENCE-SPLIT` — status: `proposed`
-(פורמט `YMD-<SLUG>` תואם `src/lib/gemsImportDiagnosticReport.js`).
-
-**`docs/work-ledger.md` לא קיים.** מוצע ליצור אותו עם השורה (המשתמש מוסיף ידנית):
-
-```
-| WORK-ID | task summary | assigned tool | status | branch / worktree | last updated |
-|---|---|---|---|---|---|
-| YMD-BRIEF-PERMANENCE-SPLIT | Split live-stream brief items into permanent playbook vs daily expiring Obsidian notes | Claude Code | proposed | feat/brief-permanence-split (ליצירה מ-main) | 2026-08-30 |
-```
-
-הענף הנוכחי `docs/markdown-governance-cleanup` אינו קשור — מומלץ ענף חדש
-`feat/brief-permanence-split` מ‑`main`.
-
-**ניתוב מימוש עתידי** (אחרי אישור): `architect-reviewer` לאישור גבול הרחבת‑הסכמה →
-`obsidian-sync-engineer` למימוש → `frontend-rtl-developer` ל‑override ב‑save‑picker →
-`qa-release-reviewer` לפני commit.
+1. **פלייבוק יחיד עם H2 יציבים.** נימוק: נקודת עיון אחת, ללא פיצול מוקדם של
+   ידע מועט. פיצול עתידי דורש החלטת עיצוב חדשה.
+2. **ברירת מחדל לפי טבלה 2.4 + toggle, לא שאלה בכל שמירה.** נימוק: זרימה מהירה
+   עם override גלוי ו‑fallback שמרני ל‑daily.
+3. **כמעט‑כפילויות עוברות תור סקירה ידני.** נימוק: ניסוח דומה אינו זהות סמנטית,
+   ומיזוג אוטומטי עלול למחוק provenance או משמעות.
+4. **סריקת תפוגה מופעלת מכפתור DEV דו‑שלבי.** נימוק: report-only לפני mutation,
+   אישור מפורש, וללא תלות בתזמון או שירות חיצוני.
+5. **`live stream market analysis` הוא alias כותרת נפרד, אך לא פורמט נתונים או
+   מנוע נפרד.** במימוש עתידי תתווסף רק המחרוזת המדויקת והמנורמלת
+   `live stream market analysis` ל‑`MORNING_BRIEF_KEYWORDS`; לא מוסיפים keyword
+   רחב `market analysis`. לאחר הזיהוי הוא מסווג `morningBrief` ועובר באותו צינור.
 
 ---
 
-## 7. שלבים (כל שלב דורש אישור נפרד)
+## 6. זהות עבודה ומצב
 
-| שלב | תוכן |
-|---|---|
-| Phase 1 — עיצוב | המסמך הזה. ✅ |
-| Phase 2 — סכמה | שדות אופציונליים ב‑`obsidianItemSaveStore` + כותב `ymd-meta` ב‑`obsidianNoteMerge` (אדיטיבי) + `scripts/obsidian-permanence-qa.mjs` |
-| Phase 3 — מיפוי | טבלת ברירת‑מחדל סקשן→permanence + UI override ב‑save‑picker |
-| Phase 4 — תחזוקה | סקשן holding בפלייבוק + כפתור DEV לדו"ח תפוגה (קריאה‑בלבד) |
+- WORK-ID: `YMD-BRIEF-PERMANENCE-SPLIT`
+- Branch: `feat/brief-permanence-split`, נוצר ישירות מ‑`main`.
+- `docs/work-ledger.md` קיים בענף; משימת התכנון אינה משנה אותו.
+- מצב: עיצוב נסגר במסמך זה; מימוש, QA ו‑commit עדיין דורשים אישור מפורש.
+- בעל מימוש עתידי: `obsidian-sync-engineer`; התאמת UI RTL לאחר מכן.
+
+---
+
+## 7. שלבים עתידיים — כל שלב דורש אישור נפרד
+
+| שלב | תוכן | אימות עתידי |
+|---|---|---|
+| Phase 1 — עיצוב | המסמך הזה | סקירה עריכתית מול סעיפים 1–5 |
+| Phase 2 — סכמה וסמן | שדות אופציונליים + `ymd-meta` אדיטיבי | QA ממוקד לתאימות ול‑dedupe |
+| Phase 3 — מיפוי ו‑UI | שימור `briefSectionKey`, טבלת defaults ו‑toggle RTL | QA של producer→consumer ושל override |
+| Phase 4 — תחזוקה | כפתור DEV דו‑שלבי, report-only ואז archive copy+tombstone | fixture בלבד; הוכחת zero-delete ו‑playbook untouched |
+
+במשימת התכנון הנוכחית לא מוסיפים או מריצים `scripts/*-qa.mjs`, build או lint.
