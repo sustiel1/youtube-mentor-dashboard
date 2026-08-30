@@ -199,6 +199,34 @@ Components rendered through a portal mount under `document.body` and many librar
 
 ---
 
+## Asset link resolution — provider fallback rule (mandatory, applies to every ticker/asset rendered)
+
+**Every ticker or asset symbol rendered in the UI must be a clickable link. Never render one as unlinked plain text.**
+
+- **Finviz is the default provider for individual equities:** `https://finviz.com/quote.ashx?t=<TICKER>`.
+- **When Finviz has no usable page for the entity** — market indices (SPX, RUT, NDX, VIX), macro indicators (PPI, CPI, PCE, NFP), commodities, FX, and anything else that is not a single US-listed equity — **the fallback provider is il.investing.com.**
+- **Company names in free text** link to the same provider as their ticker when a ticker is identified in the same row; otherwise they stay unlinked (do not guess a ticker from a bare company name outside a row context).
+- **il.investing URLs must come from an explicit slug map maintained in code** for known entities. When an entity is not in the map, fall back to the site search URL: `https://il.investing.com/search/?q=<encoded term>`. **Guessed slugs are forbidden — they produce silent 404s.**
+- This applies to every saved-row table and text renderer, current and future (indices, stocks, sectors, news, opportunities, macro, sentiment, etc.).
+
+### Where this already lives — read before adding anything new
+
+Link resolution for this project is already spread across several modules; this rule does not introduce a new engine, it is the target convention for all of them:
+
+| Module | Scope | Fallback pattern today |
+|---|---|---|
+| `src/lib/marketAssetProviderLinks.js` | Curated multi-provider registry (`finviz` → `investing` → `tradingView` priority), explicit per-asset URLs, host-allowlist validation. | **No guaranteed fallback** — an asset missing from `VERIFIED_MARKET_ASSETS` simply has no link. This is the module closest to this rule's intent (`investing` already means `il.investing.com`) but does not yet guarantee "never unlinked." |
+| `src/lib/macroIndicatorLinks.js` | Macro indicators → il.investing.com. | **Already matches this rule exactly**: curated `INVESTING_IL_MAP` alias map, falls back to `buildInvestingSearchUrl()` (site search), never returns null, no guessed slugs. Use this as the reference implementation. |
+| `src/lib/sectorFinvizLinks.js` | Sector name → ETF ticker → Finviz quote URL only. | Returns `null` if unmapped — no investing.com involvement. |
+| `src/lib/marketRegimeExternalLinks.js` | Market-regime summary cards → Finviz only. | Narrow key/label map, `null` if unmapped. |
+| `src/utils/finvizLinks.js` | Oldest/broadest module: ticker & sector resolution → Finviz, plus a large ticker/sector/macro → **TradingView** alias map, and a small explicit fallback map to TradingView/CNN for a few non-equity symbols (DXY, BTC, ETH, VIX, oil, bonds10y, fear&greed). | **Conflicts with this rule** — its non-Finviz fallback is TradingView or CNN, not il.investing.com. |
+| `src/utils/analysisTickerLinks.js` | Ticker validator + Finviz URL builder with an explicit denylist (`NON_FINVIZ_ASSETS`: AI, BTC, CPI, DXY, ETH, FED, GDP, NASDAQ, NFP, PCE, SPX, TA35, VIX, …). | Denylisted symbols get **no link at all** today — a direct gap against "never unlinked." |
+| `docs/MACRO_INDICATOR_INVESTING_LINKS.md` | Existing doc for the macro→investing map. | Reference this alongside `macroIndicatorLinks.js` when extending the slug map. |
+
+**Ownership note:** `src/utils/finvizLinks.js`'s `_TV_ALIAS_MAP` / `_TV_EXCHANGE_MAP` and the sibling routing tables in `src/lib/detectMarketEntityType.js` / `src/lib/marketInstrumentClassification.js` are documented as load-bearing/protected in `.claude/agents/decision-signal-engineer.md` ("Protected settings" — adding a missing symbol is fine, silently changing existing mappings is not, guarded by `scripts/market-stock-classification-qa.mjs`). Any future il.investing.com slug map or fallback resolver that touches those files or their QA coverage should be coordinated with that agent's scope, not edited unilaterally from here.
+
+---
+
 ## Accessibility & quality (every component)
 
 - Semantic HTML, correct ARIA roles/labels in Hebrew, visible focus states.
