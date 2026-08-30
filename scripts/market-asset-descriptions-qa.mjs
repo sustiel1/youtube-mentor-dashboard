@@ -76,7 +76,10 @@ for (const [label, source] of [['dedicated content', liveSource], ['saved snapsh
   assert.ok(source.includes('<MarketAssetDescriptionTooltip'), `${label} attaches shared tooltip to the asset`);
   assert.equal(source.includes('data-market-asset-description-mobile'), false, `${label} removes mobile description text`);
   assert.equal(source.includes('data-market-asset-description>'), false, `${label} removes desktop description cell`);
-  assert.ok(source.includes('<MarketAssetProviderLinks'), `${label} preserves provider links`);
+  assert.ok(
+    source.includes('<MarketAssetProviderLinks') || source.includes('<MarketAssetLinksMenu'),
+    `${label} preserves provider links (inline pills or the compact menu)`,
+  );
 }
 
 const snapshotStocksSource = snapshotSource.slice(snapshotSource.indexOf('function StocksTable'), snapshotSource.indexOf('function MarketsTable'));

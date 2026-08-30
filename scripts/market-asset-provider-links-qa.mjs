@@ -295,11 +295,14 @@ for (const componentPath of [
   const linksHeading = source.indexOf('>קישורים</th>');
   assert.ok(assetHeading >= 0 && linksHeading > assetHeading, `${componentPath} links column follows asset`);
   assert.ok(source.includes('<MarketAssetDescriptionTooltip'));
-  assert.ok(source.includes('<MarketAssetProviderLinks'));
   if (componentPath.includes('MorningBriefMarketsTable')) {
+    // Live table: inline provider pills, Finviz hidden (still reachable via the asset-name preferred link).
+    assert.ok(source.includes('<MarketAssetProviderLinks'), `${componentPath} keeps the inline provider pills`);
     assert.ok(source.includes('hiddenProviders={MARKETS_TABLE_HIDDEN_PROVIDERS}'));
   } else {
-    assert.equal(source.includes('hiddenProviders='), false, `${componentPath} keeps the shared default provider list`);
+    // Saved snapshot: same links consolidated into one compact popover menu, Finviz hidden for parity.
+    assert.ok(source.includes('<MarketAssetLinksMenu'), `${componentPath} consolidates provider links into the compact menu`);
+    assert.ok(source.includes('hiddenProviders={SNAPSHOT_MARKETS_HIDDEN_PROVIDERS}'), `${componentPath} hides Finviz for parity with the live table`);
   }
 }
 
