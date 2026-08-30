@@ -5,9 +5,17 @@
  * `src/components/workspace/StructuredSnapshotView.jsx` (committed with the
  * snapshot Markets table redesign). It is duplicated here — not imported — so
  * this module can be reused by the saved-rows Markets table without editing the
- * structured-snapshot file. A future cleanup can make StructuredSnapshotView
- * import from here and delete its local copy.
+ * structured-snapshot file (still true and untouched here — StructuredSnapshotView.jsx
+ * is out of scope for this fix; its own copy of the regex is unaffected). A
+ * future cleanup can make StructuredSnapshotView import from here and delete
+ * its local copy — at which point it would inherit this fix too.
+ *
+ * The bullish branch's "עול"/"עלי" substrings also match inside the unrelated
+ * word "פעולה" ("action" — a common activity-tag label in saved GEM rows),
+ * per lessons.md (2026-08-30). `getMarketTrendTone` strips that known
+ * false-positive whole word before testing — see hebrewSentimentTokenGuard.js.
  */
+import { stripSentimentFalsePositiveTokens } from '@/lib/hebrewSentimentTokenGuard';
 
 const PILL_TONE_SLATE = {
   className: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
@@ -16,7 +24,7 @@ const PILL_TONE_SLATE = {
 
 /** Market trend → pill tone (עולה / יורד / דשדוש). */
 export function getMarketTrendTone(value) {
-  const text = String(value || '').trim().toLowerCase();
+  const text = stripSentimentFalsePositiveTokens(String(value || '').trim()).toLowerCase();
   if (/דשדוש|מדשדש|צידי|יציב|ללא שינוי|שטוח|מעורב|ניטרל/.test(text)) {
     return {
       className: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300',

@@ -3,6 +3,8 @@
 // All parsing is conservative: returns null when uncertain.
 // Never modifies stored data — only fills display gaps.
 
+import { stripSentimentFalsePositiveTokens } from '@/lib/hebrewSentimentTokenGuard';
+
 const TICKER_RE = /^[A-Z]{1,6}(?:\.[A-Z]{1,2})?$/;
 
 export function isTickerLike(s) {
@@ -30,10 +32,20 @@ export function looksLikeStockSection(label) {
 const BEARISH_RE = /(יורד|יורדת|ירידה|נפילה|שלילי|שורט|מכירה|לחץ|הורדת דירוג|כישלון|סיכון|bearish)/i;
 const BULLISH_RE = /(עולה|עלייה|חיובי|לונג|קנייה|חזק|פריצה|breakout|momentum|bullish|דוחות טובים|גאות)/i;
 
-/** Best-effort sentiment guess from free text. Returns null when unclear. */
+/**
+ * Best-effort sentiment guess from free text. Returns null when unclear.
+ *
+ * Strips known false-positive whole words (see hebrewSentimentTokenGuard.js —
+ * specifically "פעולה", the activity-tag label that contains "עולה" as a
+ * substring) before testing the regexes above, so a row that merely mentions
+ * that unrelated word is not misread as bullish. This does not affect the
+ * intentional substring/prefix matching the regexes above rely on for real
+ * inflections (e.g. "שעולה", "לירידה") — only that one exact whole word is
+ * ever removed.
+ */
 export function inferSentimentFromText(text) {
   if (!text) return null;
-  const lc = String(text).toLowerCase();
+  const lc = stripSentimentFalsePositiveTokens(String(text)).toLowerCase();
   if (BEARISH_RE.test(lc)) return 'negative';
   if (BULLISH_RE.test(lc)) return 'positive';
   return null;

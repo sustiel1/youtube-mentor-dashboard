@@ -3,6 +3,8 @@
  * No extraction / schema changes — tolerates partial or missing fields.
  */
 
+import { stripSentimentFalsePositiveTokens } from '@/lib/hebrewSentimentTokenGuard';
+
 export const TONE = { BULLISH: 'bullish', BEARISH: 'bearish', NEUTRAL: 'neutral' };
 
 /** Finer-grained direction for stock / opportunity cards. */
@@ -259,6 +261,10 @@ const NUMERIC_CHANGE_ARROW_UP = '↑';
 const NUMERIC_CHANGE_ARROW_DOWN = '↓';
 
 const BEARISH_PERCENT_CTX = /יורד|יריד|שליל|אדום|down|bearish|drop|crash|דילול|loss|sell|weak|חלש/i;
+// BULLISH_PERCENT_CTX's "עול" substring also matches inside the unrelated
+// word "פעולה" ("action" — a common activity-tag label). Callers below strip
+// that known false-positive whole word (stripSentimentFalsePositiveTokens)
+// before testing against context text — see hebrewSentimentTokenGuard.js.
 const BULLISH_PERCENT_CTX = /עול|עלי|חיוב|ירוק|up|bullish|rally|gain|פריצ|טסה|strong|חזק/i;
 
 const TRAILING_DIRECTION_SUFFIX_RE =
@@ -297,7 +303,11 @@ function buildNumericChangeResult(num, { includePercent = true } = {}) {
 }
 
 function inferSignedNumber(unsignedNum, contextText) {
-  const ctx = String(contextText || '');
+  // Stripped once and reused below for resolveTone(ctx) too — that fallback
+  // reads BULLISH_TOKENS (which also contains 'עולה') via the same
+  // substring-style matching, so it is exposed to the identical
+  // "פעולה" collision as BULLISH_PERCENT_CTX.
+  const ctx = stripSentimentFalsePositiveTokens(String(contextText || ''));
   const bullish = BULLISH_PERCENT_CTX.test(ctx);
   const bearish = BEARISH_PERCENT_CTX.test(ctx);
   if (bullish && !bearish) return Math.abs(unsignedNum);
@@ -574,7 +584,11 @@ export function parseStockMovePercentFromText(textParts, fallbackTone = null) {
   if (Number.isNaN(num)) return null;
 
   const matchIdx = blob.indexOf(match[0]);
-  const window = blob.slice(Math.max(0, matchIdx - 48), matchIdx + match[0].length + 8);
+  // Stripped for the same reason as inferSignedNumber's ctx above — this
+  // window is tested against BULLISH_PERCENT_CTX/BEARISH_PERCENT_CTX below.
+  const window = stripSentimentFalsePositiveTokens(
+    blob.slice(Math.max(0, matchIdx - 48), matchIdx + match[0].length + 8),
+  );
 
   let tone = TONE.NEUTRAL;
   if (hebrewByMatch) {

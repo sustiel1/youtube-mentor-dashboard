@@ -18,6 +18,7 @@
     "test:saved-market-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-market-rows-qa.mjs",
     "test:saved-stock-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-stock-rows-qa.mjs",
     "test:saved-sector-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-sector-rows-qa.mjs",
+    "test:hebrew-sentiment-token-guard": "node --import ./scripts/register-src-aliases.mjs scripts/hebrew-sentiment-token-guard-qa.mjs",
     "test:workspace-brief-routing": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-brief-routing-qa.mjs",
     "test:workspace-market-dimensions": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-market-dimensions-qa.mjs",
     "test:workspace-analysis-parity": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-analysis-parity-qa.mjs",
