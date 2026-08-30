@@ -53,3 +53,29 @@ export function isSectorRowsSection(section) {
     && section.entries.length > 0
     && section.provenance.some(entry => entry.originalItemType === 'brief-sectors');
 }
+
+/**
+ * True when a text section is an aggregate of individually-saved
+ * "🎯 הזדמנויות" rows. 'brief-opportunities' is the raw type every producer
+ * (MacroGemDashboard.jsx, MorningBriefPanels.jsx, SpecializedContentRenderer.jsx)
+ * agrees on for both bulk-review and quick-save paths — same pattern as
+ * isSectorRowsSection, and unlike stocks-mentioned there is no 'stock'-style
+ * display-title override to worry about here.
+ */
+export function isOpportunityRowsSection(section) {
+  return !section.snapshot
+    && section.entries.length > 0
+    && section.provenance.some(entry => entry.originalItemType === 'brief-opportunities');
+}
+
+/**
+ * True when a text section is an aggregate of individually-saved
+ * "📰 חדשות" rows. 'market-news' is the raw type both real producers
+ * (morningBriefNewsNormalize.js's saveText, SpecializedContentRenderer.jsx's
+ * sect() paths) and both save paths agree on.
+ */
+export function isNewsRowsSection(section) {
+  return !section.snapshot
+    && section.entries.length > 0
+    && section.provenance.some(entry => entry.originalItemType === 'market-news');
+}

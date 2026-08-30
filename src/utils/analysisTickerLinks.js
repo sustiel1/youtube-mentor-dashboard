@@ -2,7 +2,7 @@ const FINVIZ_QUOTE_BASE = 'https://finviz.com/quote.ashx?t=';
 
 const NON_FINVIZ_ASSETS = new Set([
   'AI', 'BTC', 'BTCUSD', 'CPI', 'DXY', 'ETH', 'ETHUSD', 'ETF', 'FED', 'FOMC',
-  'GDP', 'NASDAQ', 'NDX', 'NFP', 'PCE', 'SPX', 'TA35', 'TA125', 'USD', 'VIX',
+  'GDP', 'NASDAQ', 'NDX', 'NFP', 'PCE', 'PPI', 'SPX', 'TA35', 'TA125', 'USD', 'VIX',
 ]);
 
 export function normalizeAnalysisTicker(value) {

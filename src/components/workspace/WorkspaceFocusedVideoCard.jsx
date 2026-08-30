@@ -6,7 +6,15 @@ import { WorkspaceCollectionTiles } from '@/components/workspace/WorkspaceCollec
 import { SavedMarketRowsTable } from '@/components/workspace/SavedMarketRowsTable';
 import { SavedStockRowsTable } from '@/components/workspace/SavedStockRowsTable';
 import { SavedSectorRowsTable } from '@/components/workspace/SavedSectorRowsTable';
-import { isMarketRowsSection, isStockRowsSection, isSectorRowsSection } from '@/utils/workspaceSavedRowsDetection';
+import { SavedOpportunityRowsTable } from '@/components/workspace/SavedOpportunityRowsTable';
+import { SavedNewsRows } from '@/components/workspace/SavedNewsRows';
+import {
+  isMarketRowsSection,
+  isStockRowsSection,
+  isSectorRowsSection,
+  isOpportunityRowsSection,
+  isNewsRowsSection,
+} from '@/utils/workspaceSavedRowsDetection';
 import { ContentRoutingBridge } from '@/components/shared/ContentRoutingBridge';
 import {
   selectContentRoutingState,
@@ -162,6 +170,68 @@ function SavedSectorSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   );
 }
 
+/**
+ * Same card shell as SavedTextSection, but the bullet list is replaced by
+ * SavedOpportunityRowsTable (trade-plan table for the dominant producer
+ * shape, news-style fallback rows for the MacroGemDashboard shape).
+ * SavedTextSection / AnalysisList are left untouched for every other type.
+ */
+function SavedOpportunitySection({ section, selectedIds, onToggleGroup, videoUrl }) {
+  const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
+  const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
+  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
+  const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
+  const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
+  return (
+    <AnalysisSectionCard
+      title={section.heading}
+      icon={section.icon || collectionIcon}
+      count={section.entries.length + section.fields.length}
+      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
+      className="shadow-sm"
+    >
+      <div className="space-y-3" data-persisted-record-count={recordIds.length}>
+        <AnalysisFieldGrid fields={section.fields} />
+        <SavedOpportunityRowsTable entries={section.entries} />
+        <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
+      </div>
+      {technicalDetails(section)}
+    </AnalysisSectionCard>
+  );
+}
+
+/**
+ * Same card shell as SavedTextSection, but the bullet list is replaced by
+ * SavedNewsRows (topic chip + entity chips + tone-bordered row, not a table
+ * — news text is free-form and would produce mostly "—" table cells).
+ * SavedTextSection / AnalysisList are left untouched for every other type.
+ */
+function SavedNewsSection({ section, selectedIds, onToggleGroup, videoUrl }) {
+  const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
+  const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
+  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
+  const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
+  const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
+  return (
+    <AnalysisSectionCard
+      title={section.heading}
+      icon={section.icon || collectionIcon}
+      count={section.entries.length + section.fields.length}
+      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
+      className="shadow-sm"
+    >
+      <div className="space-y-3" data-persisted-record-count={recordIds.length}>
+        <AnalysisFieldGrid fields={section.fields} />
+        <SavedNewsRows entries={section.entries} />
+        <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
+      </div>
+      {technicalDetails(section)}
+    </AnalysisSectionCard>
+  );
+}
+
 function SnapshotSection({ section, selectedIds, onToggleGroup }) {
   const recordIds = section.provenance.map(entry => entry.recordId);
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
@@ -200,6 +270,12 @@ export function WorkspaceSavedAnalysisContent({ group, activeCollection, selecte
           }
           if (isSectorRowsSection(section)) {
             return <SavedSectorSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
+          }
+          if (isOpportunityRowsSection(section)) {
+            return <SavedOpportunitySection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
+          }
+          if (isNewsRowsSection(section)) {
+            return <SavedNewsSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
           }
           return <SavedTextSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
         })}
