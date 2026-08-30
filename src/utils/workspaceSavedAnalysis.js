@@ -92,7 +92,7 @@ function labelledFields(item, text) {
   });
 }
 
-function provenanceFor(item, sectionHeading) {
+export function provenanceFor(item, sectionHeading) {
   const identity = getWorkspaceItemIdentity(item);
   const heading = classifyWorkspaceItemHeading(item);
   return {
@@ -102,7 +102,7 @@ function provenanceFor(item, sectionHeading) {
     sourceTab: heading?.label || item.sourceTab || item.savedSectionType || item.sectionType || null,
     sourceSectionId: item.sourceSectionId || null,
     sourceSectionHeading: item.sourceHeading || sectionHeading,
-    originalItemType: item.itemType || null,
+    originalItemType: item.originalItemType || item.itemType || null,
     sourceTimestamp: sourceTimestamp(item),
     savedAt: item.savedAt || null,
     contentHash: item.contentHash || identity?.contentHash || null,
