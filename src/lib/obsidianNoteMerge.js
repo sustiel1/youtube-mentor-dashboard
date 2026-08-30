@@ -54,18 +54,47 @@ export function insertBulletIntoSection(content, sectionLabel, bulletBlock) {
   return `${base.trimEnd()}\n${block}`;
 }
 
-function buildBulletBlock(text, identityKey, timestamp) {
+const YMD_META_FIELDS = ['briefSectionKey', 'permanence', 'date', 'expiry', 'ticker', 'sourceChannel'];
+
+/**
+ * Additive `ymd-meta` marker line (see docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md §2.3).
+ * Emitted only when at least one of the 6 fields is supplied; otherwise omitted entirely
+ * (no all-`-` line). Never part of identity/dedupe — `noteContainsItemMarker` only ever
+ * checks the `obsidian-item:` marker.
+ */
+function buildYmdMetaLine(meta) {
+  if (!meta || typeof meta !== 'object') return '';
+  const hasAny = YMD_META_FIELDS.some((field) => {
+    const value = meta[field];
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  });
+  if (!hasAny) return '';
+
+  const parts = YMD_META_FIELDS.map((field) => {
+    const value = meta[field];
+    const encoded = (value === undefined || value === null || String(value).trim() === '')
+      ? '-'
+      : encodeURIComponent(String(value));
+    return `${field}=${encoded}`;
+  });
+  return `<!-- ymd-meta:v1 ${parts.join(' ')} -->`;
+}
+
+function buildBulletBlock(text, identityKey, timestamp, meta) {
   const body = String(text || '').trim();
   const marker = buildObsidianItemMarker(identityKey);
   const ts = timestamp ? ` (${timestamp})` : '';
-  return `* ${body}${ts}\n${marker}`;
+  const metaLine = buildYmdMetaLine(meta);
+  const lines = [`* ${body}${ts}`, marker];
+  if (metaLine) lines.push(metaLine);
+  return lines.join('\n');
 }
 
 /**
  * @param {object} params
  * @param {string} [params.existingContent]
  * @param {string} [params.videoTitle]
- * @param {Array<{ text, sectionLabel?, identityKey, timestamp? }>} params.items
+ * @param {Array<{ text, sectionLabel?, identityKey, timestamp?, meta?: { briefSectionKey?, permanence?, date?, expiry?, ticker?, sourceChannel? } }>} params.items
  * @param {string[]} [params.footerLines]
  * @returns {{ content: string, changed: boolean, added: number, skipped: number }}
  */
@@ -95,7 +124,7 @@ export function mergeItemsIntoObsidianNote({
       return;
     }
 
-    const bulletBlock = buildBulletBlock(item.text, identityKey, item.timestamp);
+    const bulletBlock = buildBulletBlock(item.text, identityKey, item.timestamp, item.meta);
     content = insertBulletIntoSection(content, item.sectionLabel, bulletBlock);
     added += 1;
   });

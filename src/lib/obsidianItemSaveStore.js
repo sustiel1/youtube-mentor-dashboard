@@ -57,6 +57,19 @@ export function buildObsidianItemDedupeKey({ videoId, tabKey, sectionKey, text, 
   return path ? `${identity}@${path}` : identity;
 }
 
+/**
+ * @param {object} params
+ * @param {string} [params.briefSectionKey] — canonical morning-brief producer key (see design §2.4). Optional.
+ * @param {string} [params.date] — source date `YYYY-MM-DD`. Optional.
+ * @param {string} [params.ticker] — single ticker, normalized uppercase. Optional.
+ * @param {'permanent'|'daily'} [params.permanence] — optional permanence classification.
+ * @param {string} [params.expiry] — first inactive date `YYYY-MM-DD`, daily-only. Optional.
+ * @param {string} [params.sourceChannel] — channel name from video metadata. Optional.
+ *
+ * All six fields are additive (docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md §2.2) and are
+ * only written into the stored entry when provided; an entry missing them (old-shape record)
+ * remains fully valid and continues to resolve as saved everywhere.
+ */
 export function recordObsidianItemSave({
   videoId,
   tabKey,
@@ -64,6 +77,12 @@ export function recordObsidianItemSave({
   text,
   destinationPath,
   savedAt,
+  briefSectionKey,
+  date,
+  ticker,
+  permanence,
+  expiry,
+  sourceChannel,
 } = {}) {
   const path = normalizeObsidianPath(destinationPath);
   const body = String(text || '').trim();
@@ -80,6 +99,28 @@ export function recordObsidianItemSave({
     destinationPath: path,
     savedAt: savedAt || new Date().toISOString(),
   };
+
+  const normalizedBriefSectionKey = briefSectionKey !== undefined && briefSectionKey !== null
+    ? String(briefSectionKey).trim()
+    : '';
+  if (normalizedBriefSectionKey) entry.briefSectionKey = normalizedBriefSectionKey;
+
+  const normalizedDate = date !== undefined && date !== null ? String(date).trim() : '';
+  if (normalizedDate) entry.date = normalizedDate;
+
+  const normalizedTicker = ticker !== undefined && ticker !== null ? String(ticker).trim().toUpperCase() : '';
+  if (normalizedTicker) entry.ticker = normalizedTicker;
+
+  if (permanence === 'permanent' || permanence === 'daily') entry.permanence = permanence;
+
+  const normalizedExpiry = expiry !== undefined && expiry !== null ? String(expiry).trim() : '';
+  if (normalizedExpiry) entry.expiry = normalizedExpiry;
+
+  const normalizedSourceChannel = sourceChannel !== undefined && sourceChannel !== null
+    ? String(sourceChannel).trim()
+    : '';
+  if (normalizedSourceChannel) entry.sourceChannel = normalizedSourceChannel;
+
   store[key] = entry;
   writeStore(store);
   return entry;

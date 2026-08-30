@@ -69,5 +69,54 @@ const fourth = mergeItemsIntoObsidianNote({
 assert('manual line preserved', fourth.content.includes(manualLine));
 assert('sentence D added', fourth.content.includes('* sentence D'));
 
+// 6. ymd-meta (Phase 2, YMD-BRIEF-PERMANENCE-SPLIT) — omitted when no fields supplied
+const noMeta = mergeItemsIntoObsidianNote({
+  videoTitle: 'no meta',
+  items: [{ text: 'plain item', sectionLabel: 'תובנות מרכזיות', identityKey: 'obsidian-item:vid1:insights:plain:general' }],
+});
+assert('no ymd-meta line when no fields supplied', !noMeta.content.includes('ymd-meta'));
+
+// 7. ymd-meta emitted, exact field order, encodeURIComponent + '-' for missing
+const metaKey = 'obsidian-item:vid1:insights:withmeta:general';
+const withMeta = mergeItemsIntoObsidianNote({
+  videoTitle: 'with meta',
+  items: [{
+    text: 'meta item',
+    sectionLabel: 'תובנות מרכזיות',
+    identityKey: metaKey,
+    meta: {
+      briefSectionKey: 'risks',
+      permanence: 'permanent',
+      date: '2026-08-30',
+      // expiry intentionally omitted -> '-'
+      ticker: undefined, // -> '-'
+      sourceChannel: 'ערוץ',
+    },
+  }],
+});
+const expectedMetaLine = '<!-- ymd-meta:v1 briefSectionKey=risks permanence=permanent date=2026-08-30 expiry=- ticker=- sourceChannel=%D7%A2%D7%A8%D7%95%D7%A5 -->';
+assert('ymd-meta line present with exact field order + encoding', withMeta.content.includes(expectedMetaLine), withMeta.content);
+
+// meta line must sit immediately after the identity marker, as one atomic block
+const markerLine = buildObsidianItemMarker(metaKey);
+assert(
+  'ymd-meta line follows identity marker directly',
+  withMeta.content.includes(`${markerLine}\n${expectedMetaLine}`),
+);
+
+// 8. Duplicate with an existing identity marker: skipped entirely, no backfill of ymd-meta
+const dupNoBackfill = mergeItemsIntoObsidianNote({
+  existingContent: noMeta.content, // note has 'plain item' with NO ymd-meta
+  items: [{
+    text: 'plain item',
+    sectionLabel: 'תובנות מרכזיות',
+    identityKey: 'obsidian-item:vid1:insights:plain:general',
+    meta: { briefSectionKey: 'risks', permanence: 'daily', date: '2026-08-30' },
+  }],
+});
+assert('duplicate with meta is skipped (no insert)', dupNoBackfill.skipped === 1 && dupNoBackfill.added === 0);
+assert('content unchanged — no backfill of ymd-meta onto existing bullet', dupNoBackfill.content === noMeta.content);
+assert('no ymd-meta line was backfilled anywhere', !dupNoBackfill.content.includes('ymd-meta'));
+
 console.log(`\nMerge QA: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
