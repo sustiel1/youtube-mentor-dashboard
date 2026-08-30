@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Trash2,
   TriangleAlert,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
 import { useWorkspaceDays } from "@/hooks/useWorkspaceDays";
+import { exportWorkspaceDayToObsidian } from "@/lib/workspaceDayObsidianExport";
 import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import {
   getWorkspaceDayReadModel,
@@ -34,7 +36,8 @@ import {
 /**
  * Stage 2 UI for the "Workspace Day" feature. Read-only wiring on top of the
  * Stage 1 store (via useWorkspaceDays) — no scheduling, no auto-open, no
- * auto-close, no Obsidian export.
+ * auto-close. Obsidian export (Stage 3) is manual only: a per-closed-day button
+ * that calls exportWorkspaceDayToObsidian; never triggered automatically.
  */
 
 // A day open this many days or longer gets a non-blocking "close me" warning.
@@ -90,6 +93,7 @@ export function WorkspaceDay() {
   const [collapsed, setCollapsed] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDeleteDayId, setConfirmDeleteDayId] = useState(null);
+  const [exportingDayId, setExportingDayId] = useState(null);
   const sectionRef = useRef(null);
 
   const liveItemsById = useMemo(
@@ -189,6 +193,25 @@ export function WorkspaceDay() {
     }
     toast.success("היום נפתח מחדש");
     scrollIntoView();
+  };
+
+  const handleExportDay = async (day) => {
+    if (!day || exportingDayId) return;
+    setExportingDayId(day.id);
+    try {
+      const result = await exportWorkspaceDayToObsidian(day);
+      if (!result.ok) {
+        toast.error(result.userMessage || "ייצוא היום ל-Obsidian נכשל");
+        return;
+      }
+      toast.success("היום יוצא ל-Obsidian", {
+        description: `נתיב: ${result.savedPath}${result.added ? ` · ${result.added} פריטים חדשים` : ""}`,
+      });
+    } catch (error) {
+      toast.error("ייצוא היום ל-Obsidian נכשל");
+    } finally {
+      setExportingDayId(null);
+    }
   };
 
   const handleConfirmDeleteDay = () => {
@@ -398,6 +421,15 @@ export function WorkspaceDay() {
                       </span>
                       <span className="text-xs text-slate-400 dark:text-zinc-500">{count} פריטים</span>
                       <div className="ms-auto flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleExportDay(day)}
+                          disabled={exportingDayId === day.id}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-300"
+                        >
+                          <Upload className="h-3 w-3" />
+                          {exportingDayId === day.id ? "מייצא…" : "ייצא ל-Obsidian"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleReopen(day.id)}

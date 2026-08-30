@@ -470,7 +470,7 @@ export function getExportPath(type, primaryTopic, filename) {
 
 // ── YAML frontmatter builder ───────────────────────────────────────────────────
 
-function buildFrontmatter({ type, format, topic, source, channel, tags = [], date, created, related = [] }) {
+export function buildFrontmatter({ type, format, topic, source, channel, tags = [], date, created, related = [] }) {
   const cleanTags = tags.map(cleanTag).filter(Boolean);
   const relatedLinks = related.filter(Boolean).map((r) => `[[${r}]]`);
   const fmt = String(format || '').trim().toLowerCase();

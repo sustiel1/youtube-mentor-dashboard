@@ -12,6 +12,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:merge-vault": "node scripts/obsidian-merge-vault-qa.mjs",
+    "test:workspace-day-obsidian-export": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-day-obsidian-export-qa.mjs",
     "test:workspace-counts": "node scripts/workspace-library-counts-qa.mjs",
     "test:structured-snapshot": "node scripts/structured-snapshot-qa.mjs",
     "test:workspace-brief-routing": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-brief-routing-qa.mjs",
