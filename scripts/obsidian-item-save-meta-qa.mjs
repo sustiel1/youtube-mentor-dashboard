@@ -25,6 +25,8 @@ const {
   isObsidianItemSaved,
   resolveObsidianItemSaveEntry,
   resolveObsidianBulkItemStatus,
+  listObsidianItemSaveEntries,
+  resolveEntryIdentityKey,
 } = await import('../src/lib/obsidianItemSaveStore.js');
 
 let passed = 0;
@@ -124,6 +126,16 @@ const invalidPermEntry = recordObsidianItemSave({
   permanence: 'sometimes',
 });
 assert('invalid permanence value rejected (not stored)', !('permanence' in invalidPermEntry));
+
+// (Phase 4 prep) listObsidianItemSaveEntries / resolveEntryIdentityKey — read-only enumeration
+const allEntries = listObsidianItemSaveEntries();
+// 3 distinct destinationPaths were saved above (the old/new-shape pair share
+// one dedupeKey — same identity+path, new-shape overwrote it in place).
+assert('listObsidianItemSaveEntries returns every distinct stored entry (3 distinct destination paths saved above)', allEntries.length >= 3);
+assert('every listed entry carries its own dedupeKey', allEntries.every((e) => typeof e.dedupeKey === 'string' && e.dedupeKey.length > 0));
+const listedNewShape = allEntries.find((e) => e.dedupeKey === buildObsidianItemDedupeKey(baseParams));
+assert('listObsidianItemSaveEntries entry matches what recordObsidianItemSave stored', listedNewShape?.briefSectionKey === 'risks' && listedNewShape?.permanence === 'daily');
+assert('resolveEntryIdentityKey recovers the exact identityKey used to build the dedupeKey', resolveEntryIdentityKey(listedNewShape) === buildObsidianItemIdentityKey(baseParams));
 
 console.log(`\nItem-save meta QA: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

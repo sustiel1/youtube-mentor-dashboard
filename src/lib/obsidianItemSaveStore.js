@@ -126,6 +126,33 @@ export function recordObsidianItemSave({
   return entry;
 }
 
+/**
+ * Read-only enumeration of every stored entry (Phase 4 maintenance tooling,
+ * docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md §3.2). Returns each entry with
+ * its own dedupe key attached as `.dedupeKey` so callers can act on a
+ * specific record without recomputing it. Never mutates the store.
+ */
+export function listObsidianItemSaveEntries() {
+  const store = readStore();
+  return Object.entries(store).map(([dedupeKey, entry]) => ({ ...entry, dedupeKey }));
+}
+
+/**
+ * Recovers an entry's identity key (the part `obsidianNoteMerge.js`'s
+ * `buildObsidianItemMarker`/`noteContainsItemMarker` use) from its
+ * `.dedupeKey` (`identityKey@destinationPath` — see
+ * buildObsidianItemDedupeKey above). Every real stored entry has a
+ * destinationPath (recordObsidianItemSave rejects saving without one), so
+ * the '@' separator is always present. Kept here, not re-derived by
+ * maintenance-tooling callers, so the dedupe-key format stays owned by
+ * this one file.
+ */
+export function resolveEntryIdentityKey(entry) {
+  const dedupeKey = String(entry?.dedupeKey || '');
+  const at = dedupeKey.lastIndexOf('@');
+  return at >= 0 ? dedupeKey.slice(0, at) : dedupeKey;
+}
+
 function findEntriesForIdentity(identityKey) {
   const store = readStore();
   const prefix = `${identityKey}@`;
