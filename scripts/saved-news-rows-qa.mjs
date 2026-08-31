@@ -132,6 +132,16 @@ try {
     assert.equal(markup.includes('data-saved-news-rows'), false, 'falls back to plain text');
   });
 
+  check('REGRESSION (live QA, 2026-08-31): a real single-line news save whose own body merely mentions the word "חדשות" still renders as a visible row, not an empty card', () => {
+    const markup = render([realNewsItem({
+      id: 'ws-item:news-heading-collision-1',
+      notes: 'עדכון חדשות: הפד הותיר את הריבית ללא שינוי בהחלטתו האחרונה',
+    })]);
+    assert.ok(markup.includes('data-saved-news-rows'), 'still routes to SavedNewsRows');
+    assert.ok(markup.includes('data-news-style-row'), 'the row actually rendered — this used to be silently dropped to zero rows');
+    assert.ok(markup.includes('עדכון חדשות'), 'the real saved text is visible in the markup');
+  });
+
   check('opportunity/stock/sector/market routing is unaffected by the new news path', () => {
     const markup = render([{
       id: 'ws-item:indices-1',

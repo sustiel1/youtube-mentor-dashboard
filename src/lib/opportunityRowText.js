@@ -36,6 +36,31 @@
  * identical to a legitimate no-ticker Layer-1 row and is accepted as such —
  * that ambiguity is irreducible from text shape alone and is already the
  * approved behavior for a genuine no-trade-plan Layer-1 row.
+ *
+ * KNOWN OPEN FINDING (found in live QA, NOT fixed here — see the
+ * 2026-08-31 fix-pass report): a THIRD producer path reaches this module
+ * with a bare, field-free single segment that LOOKS identical to the
+ * legitimate no-ticker case above, but isn't one. SpecializedContentRenderer
+ * .jsx's evening-brief flow saves raw `universalTabs.specialized
+ * .opportunities` objects (the same {ticker, title, detail, entry, stop,
+ * target, rrRatio, timeframe, confidence} shape formatMorningBriefOpportunityText
+ * formats) through `formatBulkItemText` (universalTabBulkItems.js) instead —
+ * a generic one-field-wins formatter whose priority list (text/title/
+ * content/summary/.../setup/pattern) does not include entry/stop/target/
+ * timeframe/ticker at all. The result is a bare fragment (just the idea's
+ * title, with entry/stop/target/ticker silently discarded before this
+ * module ever sees the text) that this module cannot tell apart from a
+ * genuine, intentional no-trade-plan Layer-1 row (case 1 above with no
+ * ticker and no trade-plan fields) — both are, by the time they reach here,
+ * one bare segment with no ticker and no field labels. Rejecting every bare
+ * single segment to force it into the Layer-2 raw-text fallback would also
+ * misclassify every genuine no-trade-plan row that way, which is not an
+ * improvement — it trades one cosmetic issue (sparse "—" columns on a row
+ * that legitimately has no trade plan) for a real regression (a real,
+ * already-approved simple table row losing its table formatting). Recovering
+ * the discarded fields isn't possible from text shape alone either way — the
+ * data loss happens upstream in formatBulkItemText, outside this file. Left
+ * unresolved pending an explicit decision on which upstream file to change.
  */
 import { isTickerLike } from '@/utils/workspaceStockItems';
 

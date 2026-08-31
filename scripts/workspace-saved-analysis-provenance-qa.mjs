@@ -10,6 +10,15 @@ const items = [
   { id: 'insight', videoId: 'KOom2PCpl6Q', itemType: 'insight', sourceTab: 'insights', videoTitle: 'תובנות — Source video', identityPayload: { lesson: 'להמתין לאישור', whyImportant: 'מפחית סיכון' }, savedAt: '2026-08-08' },
   { id: 'knowledge', videoId: 'KOom2PCpl6Q', itemType: 'checklist', sourceTab: 'useful-knowledge', videoTitle: 'צ׳קליסט פעולה — Source video', notes: 'בדוק נזילות', savedAt: '2026-08-07' },
   { id: 'market-state', videoId: 'KOom2PCpl6Q', itemType: 'snippet', sourceTab: 'summary', videoTitle: 'מצב השוק — Source video', notes: 'label: מצב כללי | value: חיובי מתוח | sentiment: bullish | reason: תנודתיות גבוהה', savedAt: '2026-08-07' },
+  // REGRESSION (found in live browser QA, 2026-08-31): a real single-line
+  // news save whose own body text merely mentions the word "חדשות" was
+  // being silently dropped entirely — cleanHeading()'s substring check
+  // (`key.includes('חדשות')`), reused to detect a content line that is just
+  // a stray echo of the section heading, doesn't distinguish "the line IS
+  // basically just the heading" from "the line is a real sentence that
+  // happens to mention that word once". Section ended up with provenance
+  // but zero entries (header showed a record count, body rendered nothing).
+  { id: 'news-mentions-heading-word', videoId: 'KOom2PCpl6Q', itemType: 'snippet', sourceTab: 'market-news', sourceHeading: '📰 חדשות', originalItemType: 'market-news', notes: 'עדכון חדשות: הפד הותיר את הריבית ללא שינוי בהחלטתו האחרונה', savedAt: '2026-08-11' },
   ...[1, 2, 3, 4].map(index => ({ id: `snapshot-${index}`, videoId: 'KOom2PCpl6Q', itemType: 'structured-snapshot', sourceTab: 'Specialized', structuredSnapshot: snapshot(), savedAt: `2026-08-0${index}` })),
   { id: 'snapshot-history', videoId: 'KOom2PCpl6Q', itemType: 'structured-snapshot', sourceTab: 'Specialized', structuredSnapshot: snapshot('BBB'), savedAt: '2026-07-31' },
 ];
@@ -46,7 +55,13 @@ for (const section of Object.values(viewer.byTab).flat()) {
   assert.ok(section.provenance.every(entry => persistedIds.has(entry.recordId)), `rendered block ${section.id} maps only to persisted records`);
 }
 assert.deepEqual(new Set(viewer.renderedRecordIds), persistedIds, 'every persisted child ID remains reachable');
+
+const savedNewsHeadingCollision = Object.values(viewer.byTab).flat()
+  .find(section => section.provenance.some(entry => entry.recordId === 'news-mentions-heading-word'));
+assert.ok(savedNewsHeadingCollision, 'the news-mentioning-"חדשות" item is still classified into a section');
+assert.equal(savedNewsHeadingCollision.entries.length, 1, 'REGRESSION: a real news sentence that merely mentions the heading word "חדשות" is kept as a real entry, not dropped as a heading echo');
+assert.equal(savedNewsHeadingCollision.entries[0]?.text, 'עדכון חדשות: הפד הותיר את הריבית ללא שינוי בהחלטתו האחרונה');
 assert.equal(JSON.stringify(items), originalJson, 'viewer selector does not mutate persistence input');
 assert.equal(viewer.emptyMessage, 'לא נשמר תוכן מסוג זה');
 
-console.log('Workspace saved-analysis provenance QA: 30 assertions passed');
+console.log('Workspace saved-analysis provenance QA: 33 assertions passed');

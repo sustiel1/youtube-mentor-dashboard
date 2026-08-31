@@ -41,6 +41,34 @@ function headingIcon(value) {
   return String(value || '').match(/\p{Extended_Pictographic}(?:\uFE0F)?/u)?.[0] || null;
 }
 
+/**
+ * True when a content line is itself just a stray echo of the section
+ * heading (e.g. an AI response that repeats "\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA" as its own first
+ * bullet, with no real content) \u2014 such lines are dropped so they don't show
+ * up as a duplicate of the card title. See buildTextSections() below.
+ *
+ * cleanHeading() classifies several canonical headings (\u05D7\u05D3\u05E9\u05D5\u05EA, \u05EA\u05D5\u05D1\u05E0\u05D5\u05EA
+ * \u05DE\u05E8\u05DB\u05D6\u05D9\u05D5\u05EA, \u05E1\u05D9\u05DB\u05D5\u05E0\u05D9\u05DD \u05DE\u05E8\u05DB\u05D6\u05D9\u05D9\u05DD, \u05DE\u05E6\u05D1 \u05D4\u05E9\u05D5\u05E7, ...) via `key.includes(...)` substring
+ * checks \u2014 correct for short raw heading strings, but far too loose when
+ * reused against a full content line: any real sentence that merely
+ * mentions one of those keywords once (e.g. a saved news row whose own text
+ * is "\u05E2\u05D3\u05DB\u05D5\u05DF \u05D7\u05D3\u05E9\u05D5\u05EA: \u05D4\u05E4\u05D3 \u05D4\u05D5\u05EA\u05D9\u05E8 \u05D0\u05EA \u05D4\u05E8\u05D9\u05D1\u05D9\u05EA \u05DC\u05DC\u05D0 \u05E9\u05D9\u05E0\u05D5\u05D9...") would also match
+ * `cleanHeading(line) === heading` and get silently dropped, leaving the
+ * section with provenance but zero renderable entries (bug found in live
+ * QA: header showed "1 \u05E8\u05E9\u05D5\u05DE\u05D5\u05EA \u05DE\u05E7\u05D5\u05E8", body rendered nothing).
+ *
+ * The length guard below keeps the original heading-echo behavior (the line
+ * is essentially just the heading, nothing else) while excluding any line
+ * that merely contains the keyword among substantially more real content.
+ */
+function isHeadingEchoLine(line, heading) {
+  if (cleanHeading(line) !== heading) return false;
+  const strip = (value) => normalized(value).replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+  const strippedLine = strip(line);
+  const strippedHeading = strip(heading);
+  return strippedLine.length <= strippedHeading.length + 12;
+}
+
 function persistedText(item) {
   const identity = item?.identityPayload;
   const app = item?.appPayload || item?.appBrief;
@@ -136,7 +164,7 @@ function buildTextSections(items) {
     const seenLines = new Set(section.entries.map(entry => normalized(entry.text)));
     for (const line of fields.length > 0 ? [] : textLines(text)) {
       const lineKey = normalized(line);
-      if (!lineKey || cleanHeading(line) === heading || seenLines.has(lineKey)) continue;
+      if (!lineKey || isHeadingEchoLine(line, heading) || seenLines.has(lineKey)) continue;
       seenLines.add(lineKey);
       section.entries.push({ text: line, rank: persistedRank(item), recordIds: [item.id] });
     }
