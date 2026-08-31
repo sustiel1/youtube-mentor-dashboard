@@ -120,6 +120,7 @@ import {
 import { mergeItemsIntoObsidianNote } from '@/lib/obsidianNoteMerge';
 import { readObsidianVaultMarkdown, writeObsidianWithItemMerge } from '@/lib/obsidianVaultMergeWrite';
 import { collectVideoObsidianMergeItems } from '@/lib/obsidianVideoMergeItems';
+import { buildBriefPermanenceMeta } from '@/lib/briefPermanenceMeta';
 import { getAppBuilderDraft, mapUniversalAppBuilderToSections, saveAppBuilderDraft } from '@/lib/appBuilderStore';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { MarketBriefView } from "./MarketBriefView";
@@ -4663,17 +4664,21 @@ export function VideoDetailPanel({
     return [`מקור: [${video?.title || ''}](${watchUrl})`];
   }, [video]);
 
-  const toObsidianMergeItem = useCallback((item) => ({
-    text: item.text,
-    sectionLabel: item.sectionLabel || 'כללי',
-    identityKey: buildObsidianItemIdentityKey({
-      videoId: video?.youtubeId || video?.id,
-      tabKey: item.type || item.tabScope || 'multi',
-      sectionKey: item.sectionLabel || '',
+  const toObsidianMergeItem = useCallback((item, permanenceOverride = null) => {
+    const meta = buildBriefPermanenceMeta({ id: item.id, video, permanenceOverride });
+    return {
       text: item.text,
-    }),
-    timestamp: item.timestamp || '',
-  }), [video?.id, video?.youtubeId]);
+      sectionLabel: item.sectionLabel || 'כללי',
+      identityKey: buildObsidianItemIdentityKey({
+        videoId: video?.youtubeId || video?.id,
+        tabKey: item.type || item.tabScope || 'multi',
+        sectionKey: item.sectionLabel || '',
+        text: item.text,
+      }),
+      timestamp: item.timestamp || '',
+      ...(meta ? { meta } : {}),
+    };
+  }, [video]);
 
   const bumpObsidianItemSaveUi = useCallback(() => {
     setObsidianItemSaveRevision((n) => n + 1);
@@ -5267,6 +5272,7 @@ export function VideoDetailPanel({
           sectionKey: source.sectionLabel || item.sectionLabel || '',
           text: item.text,
           destinationPath: result.savedPath || finalPath,
+          ...(item.meta || {}),
         });
       });
       return { savedPath: result.savedPath || finalPath };
@@ -5290,6 +5296,7 @@ export function VideoDetailPanel({
         sectionKey: item.sectionLabel || '',
         text: item.text,
         destinationPath: result.savedPath || finalPath,
+        ...(item.meta || {}),
       });
     });
     return { savedPath: result.savedPath || finalPath };
@@ -5722,6 +5729,7 @@ export function VideoDetailPanel({
       return {
         videoId: videoIdForQuickSave,
         items: [{
+          id: pendingObsidianRowSave.id,
           text: pendingObsidianRowSave.text,
           tabKey: pendingObsidianRowSave.type || pendingObsidianRowSave.tabScope || 'multi',
           sectionKey: pendingObsidianRowSave.sectionLabel || '',
@@ -5733,6 +5741,7 @@ export function VideoDetailPanel({
       return {
         videoId: videoIdForQuickSave,
         items: [...multiSelected.values()].map((item) => ({
+          id: item.id,
           text: item.text,
           tabKey: item.type || item.tabScope || 'multi',
           sectionKey: item.sectionLabel || '',
@@ -12161,7 +12170,7 @@ export function VideoDetailPanel({
         }
       }}
       video={effectiveVideo}
-      onConfirm={async ({ brainId, subBrainId, customBrainName, customSubName, subtitle, filename, path: pickerPath }) => {
+      onConfirm={async ({ brainId, subBrainId, customBrainName, customSubName, subtitle, filename, path: pickerPath, permanenceOverride = null }) => {
         setBrainPickerOpen(false);
         if (multiObsidianPickerMode) {
           if (obsidianSaveIntent?.mode === 'mapping') {
@@ -12201,8 +12210,8 @@ export function VideoDetailPanel({
             }, { destinationPath: savePath }));
 
           const mergeItems = isRowSave
-            ? [toObsidianMergeItem(rowItem)]
-            : unsavedBulkItems.map(toObsidianMergeItem);
+            ? [toObsidianMergeItem(rowItem, permanenceOverride)]
+            : unsavedBulkItems.map((item) => toObsidianMergeItem(item, permanenceOverride));
 
           if (!isRowSave && mergeItems.length === 0) {
             openResolvedObsidianPath(savePath);
@@ -12244,6 +12253,7 @@ export function VideoDetailPanel({
                 sectionKey: rowItem.sectionLabel || '',
                 text: rowItem.text,
                 destinationPath: savedPath,
+                ...(mergeItems[0]?.meta || {}),
               });
               setPendingObsidianRowSave(null);
             } else {
@@ -12255,6 +12265,7 @@ export function VideoDetailPanel({
                   sectionKey: source.sectionLabel || item.sectionLabel || '',
                   text: item.text,
                   destinationPath: savedPath,
+                  ...(item.meta || {}),
                 });
               });
               multiSelectClearWithBrain();

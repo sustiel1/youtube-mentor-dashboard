@@ -15,6 +15,12 @@ import {
   hasObsidianSavedStatus,
 } from "@/lib/obsidianSavedStatus";
 import { resolveObsidianBulkItemStatus } from "@/lib/obsidianItemSaveStore";
+import {
+  resolveBriefSectionKeyFromBulkId,
+  resolveBriefPermanenceDefault,
+  resolveBriefDestinationPath,
+  resolveBriefDate,
+} from "@/lib/briefPermanenceMeta";
 import { ObsidianIcon } from "@/components/shared/ObsidianIcon";
 import { normalizeCategoryName, GEM_CATEGORY_MAP } from "@/lib/gemRecommender";
 import { getObsidianSettings } from "@/lib/obsidianVaultConfig";
@@ -299,6 +305,13 @@ export function BrainDestinationPicker({
   const [filenameDraft, setFilenameDraft] = useState("");
   const [isFilenameEditing, setIsFilenameEditing] = useState(false);
 
+  // Live-stream brief permanence split (docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md
+  // §2.5), Phase 3. null = no explicit user toggle yet — the per-item §2.4
+  // table default applies untouched, computed independently by the callers
+  // of buildBriefPermanenceMeta(); this state only carries an EXPLICIT
+  // override once the user actually clicks the toggle below.
+  const [permanenceState, setPermanenceState] = useState(null);
+
   // Custom destinations persisted in localStorage
   const [customDests, setCustomDests] = useState(() => loadCustomDests());
 
@@ -365,6 +378,34 @@ export function BrainDestinationPicker({
     });
   }, [isObsidianFlow, obsidianSaveContext, pathPreview, video?.obsidianSavedStatus?.savedPath]);
 
+  /**
+   * Live-stream brief permanence split (§2.5), Phase 3. Detects whether the
+   * current save batch contains at least one recognized morning-brief item
+   * (obsidianSaveContext.items[].id resolving to a §2.4 key) and, if so,
+   * resolves the batch's §2.4 default permanence + the suggested destination
+   * for display. `mixed: true` when items in the batch have different
+   * defaults — the toggle still works, it just overrides every item in the
+   * batch uniformly (an explicit, visible user action), same as choosing a
+   * single destination for a mixed multi-select save already works today.
+   */
+  const briefBatchInfo = useMemo(() => {
+    if (!isObsidianFlow || !obsidianSaveContext?.items?.length) return null;
+    const keys = obsidianSaveContext.items
+      .map((item) => resolveBriefSectionKeyFromBulkId(item.id))
+      .filter(Boolean);
+    if (keys.length === 0) return null;
+    const defaults = keys.map((key) => resolveBriefPermanenceDefault(key).permanence);
+    const mixed = new Set(defaults).size > 1;
+    const defaultPermanence = defaults[0];
+    const date = resolveBriefDate(video);
+    return { recognizedCount: keys.length, mixed, defaultPermanence, date };
+  }, [isObsidianFlow, obsidianSaveContext, video]);
+
+  const effectivePermanence = permanenceState || briefBatchInfo?.defaultPermanence || null;
+  const suggestedBriefPath = briefBatchInfo && effectivePermanence
+    ? resolveBriefDestinationPath(effectivePermanence, briefBatchInfo.date)
+    : null;
+
   const obsidianPickerHeader = obsidianItemStatus
     ? getObsidianPickerHeaderLabel({
       allSaved: obsidianItemStatus.allSaved,
@@ -390,6 +431,7 @@ export function BrainDestinationPicker({
     setSubtitleDraft(detectSubtitle(video));
     setFilenameDraft(sanitizeFilename(video?.title || ""));
     setIsFilenameEditing(false);
+    setPermanenceState(null);
 
     const freshDests = loadCustomDests();
     setCustomDests(freshDests);
@@ -584,6 +626,9 @@ export function BrainDestinationPicker({
       subtitle: subtitleDraft.trim(),
       filename: effectiveFilename,
       path: pathPreview,
+      // null when the user never touched the brief-permanence toggle below —
+      // callers apply their own §2.4 table default in that case.
+      permanenceOverride: briefBatchInfo ? permanenceState : null,
       replaceExisting,
     };
   }
@@ -732,6 +777,60 @@ export function BrainDestinationPicker({
                   </ul>
                 </div>
               )}
+            </div>
+          )}
+
+          {isObsidianFlow && briefBatchInfo && (
+            <div
+              className="rounded-2xl border border-amber-200 bg-amber-50/60 px-4 py-4 dark:border-amber-800/50 dark:bg-amber-950/20 space-y-3"
+              data-brief-permanence-toggle
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                סיווג מבזק — קבוע או יומי
+              </p>
+              <div className="flex items-center gap-2" dir="rtl">
+                <button
+                  type="button"
+                  onClick={() => setPermanenceState('daily')}
+                  aria-pressed={effectivePermanence === 'daily'}
+                  className={cn(
+                    "flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors",
+                    effectivePermanence === 'daily'
+                      ? "border-amber-500 bg-amber-500 text-white"
+                      : "border-amber-200 bg-white text-amber-800 hover:bg-amber-50 dark:border-amber-800/60 dark:bg-zinc-950 dark:text-amber-300",
+                  )}
+                >
+                  יומי — מבזק היום
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPermanenceState('permanent')}
+                  aria-pressed={effectivePermanence === 'permanent'}
+                  className={cn(
+                    "flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors",
+                    effectivePermanence === 'permanent'
+                      ? "border-amber-500 bg-amber-500 text-white"
+                      : "border-amber-200 bg-white text-amber-800 hover:bg-amber-50 dark:border-amber-800/60 dark:bg-zinc-950 dark:text-amber-300",
+                  )}
+                >
+                  קבוע — ידע לפלייבוק
+                </button>
+              </div>
+              {permanenceState === null && (
+                <p className="text-xs text-amber-700/80 dark:text-amber-300/80 text-right">
+                  ברירת מחדל אוטומטית ({briefBatchInfo.defaultPermanence === 'permanent' ? 'קבוע' : 'יומי'}
+                  {briefBatchInfo.mixed ? ' — הפריטים הנבחרים משתייכים לסוגים שונים' : ''}) — ניתן לשנות.
+                </p>
+              )}
+              {suggestedBriefPath && (
+                <p className="text-xs text-slate-600 dark:text-zinc-400 text-right" dir="ltr">
+                  <span dir="rtl">📁 יעד מוצע: </span>
+                  <bdi>{suggestedBriefPath}</bdi>
+                </p>
+              )}
+              <p className="text-[11px] text-slate-500 dark:text-zinc-500 text-right">
+                בחירת הקטגוריה בפועל למטה עדיין קובעת את מיקום השמירה בפועל.
+              </p>
             </div>
           )}
 

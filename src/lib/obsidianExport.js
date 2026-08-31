@@ -57,6 +57,7 @@ export const OBSIDIAN_FOLDER_CATALOG = {
     'שוק ההון/ניתוח פונדמנטלי',
     'שוק ההון/מדד ה VIX',
     // ── Logical folders (may not yet exist — created on first save) ──────
+    'שוק ההון/מבזקים',    // live-stream brief permanence split, daily archive (docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md §2.1)
     'שוק ההון/ניתוח טכני',
     'שוק ההון/מסחר יומי',
     'שוק ההון/מסחר סווינג',

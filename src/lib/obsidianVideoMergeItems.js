@@ -2,6 +2,7 @@
  * Collect video / app-builder content as Obsidian merge items (same engine as per-row saves).
  */
 import { buildObsidianItemIdentityKey } from '@/lib/obsidianItemSaveStore';
+import { buildBriefPermanenceMeta } from '@/lib/briefPermanenceMeta';
 import { APP_BUILDER_SECTIONS } from '@/lib/appBuilderStore';
 import { extractUniversalTabContent, extractUniversalTabFlatItems } from '@/lib/universalTabSections';
 import { buildDailyBriefingView } from '@/lib/summaryBriefingDisplay';
@@ -30,11 +31,21 @@ function dedupeMergeItems(items = []) {
   });
 }
 
-export function bulkEntryToMergeItem(entry, videoId) {
+/**
+ * @param {object} entry
+ * @param {string} videoId
+ * @param {object} [video] — optional; when supplied, morning-brief items (entry.id
+ *   resolving to a recognized §2.4 producer key) get their permanence-split
+ *   `meta` attached (docs/LIVE_STREAM_BRIEF_PERMANENCE_SCHEME.md, Phase 3).
+ *   Omitting it (existing call sites) is fully backward compatible — meta
+ *   is simply not attached, same as before this parameter existed.
+ */
+export function bulkEntryToMergeItem(entry, videoId, video = null) {
   const text = String(entry?.text || '').trim();
   if (!text) return null;
   const tabKey = entry?.type || entry?.tabScope || 'multi';
   const sectionKey = entry?.sectionLabel || '';
+  const meta = video ? buildBriefPermanenceMeta({ id: entry?.id, video }) : null;
   return {
     text,
     sectionLabel: sectionKey || 'כללי',
@@ -45,13 +56,14 @@ export function bulkEntryToMergeItem(entry, videoId) {
       text,
     }),
     timestamp: entry?.timestamp || '',
+    ...(meta ? { meta } : {}),
   };
 }
 
-export function bulkEntriesToMergeItems(entries = [], videoId) {
+export function bulkEntriesToMergeItems(entries = [], videoId, video = null) {
   return dedupeMergeItems(
     (Array.isArray(entries) ? entries : [])
-      .map((entry) => bulkEntryToMergeItem(entry, videoId))
+      .map((entry) => bulkEntryToMergeItem(entry, videoId, video))
       .filter(Boolean),
   );
 }
@@ -245,7 +257,7 @@ export function collectVideoObsidianMergeItems({
 
   pushNotes(bulkEntries, videoNotes);
 
-  const fromBulk = bulkEntriesToMergeItems(bulkEntries, videoId);
+  const fromBulk = bulkEntriesToMergeItems(bulkEntries, videoId, effectiveVideo);
   const appItems = appBuilderSections && typeof appBuilderSections === 'object'
     ? buildAppBuilderMergeItems({ videoId, sections: appBuilderSections })
     : [];
