@@ -19,6 +19,8 @@ import {
   getSavedStockSentimentTone,
 } from '@/lib/stockRowVisuals';
 import { parseStockRowFromText } from '@/lib/stockRowText';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 /** Sector pill — ticker-only lookup, no dependency on the saved row's free text. */
 function SectorPill({ ticker }) {
@@ -90,14 +92,17 @@ function FilterChip({ label, count, isActive, onClick }) {
   );
 }
 
-export function SavedStockRowsTable({ entries = [] }) {
+export function SavedStockRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const [activeCat, setActiveCat] = useState('all');
+  const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   const rows = useMemo(() => entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
+    const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
     const parsed = parseStockRowFromText(text);
     return {
       text: String(text || ''),
+      recordIds,
       parsed,
       category: parsed ? deriveSyntheticStockCategory(parsed.sentiment) : null,
     };
@@ -129,6 +134,7 @@ export function SavedStockRowsTable({ entries = [] }) {
       <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700 [scrollbar-gutter:stable]">
         <table className="w-full min-w-[760px] text-right table-fixed border-collapse" dir="rtl">
           <colgroup>
+            {showCheckboxCol && <col style={{ width: '32px' }} />}
             <col style={{ width: '84px' }} />
             <col style={{ width: '160px' }} />
             <col style={{ width: '104px' }} />
@@ -138,6 +144,7 @@ export function SavedStockRowsTable({ entries = [] }) {
           </colgroup>
           <thead>
             <tr className="border-b border-slate-200 dark:border-zinc-700">
+              {showCheckboxCol && <th className={TH_CLS} aria-label="בחירה" />}
               <th className={TH_CLS}>טיקר</th>
               <th className={TH_CLS}>סקטור</th>
               <th className={`${TH_CLS} text-center`}>סנטימנט</th>
@@ -149,15 +156,21 @@ export function SavedStockRowsTable({ entries = [] }) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-sm text-slate-400 dark:text-zinc-600">
+                <td colSpan={showCheckboxCol ? 7 : 6} className="py-6 text-center text-sm text-slate-400 dark:text-zinc-600">
                   אין מניות בקטגוריה זו
                 </td>
               </tr>
             ) : (
               filtered.map((row, i) => {
+                const selection = rowSelectionProps({ recordIds: row.recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${row.text}` });
                 if (!row.parsed) {
                   return (
                     <tr key={`${row.text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                      {showCheckboxCol && (
+                        <td className={`${TD_CLS} text-center`}>
+                          {selection && <UniversalTabCheckbox {...selection} />}
+                        </td>
+                      )}
                       <td colSpan={6} className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
                         <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{row.text}</span>
                       </td>
@@ -169,6 +182,11 @@ export function SavedStockRowsTable({ entries = [] }) {
                 const catKey = row.category;
                 return (
                   <tr key={`${symbol || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                    {showCheckboxCol && (
+                      <td className={`${TD_CLS} text-center`}>
+                        {selection && <UniversalTabCheckbox {...selection} />}
+                      </td>
+                    )}
                     <td className={`${TD_CLS} whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
                       <AnalysisTickerLink ticker={symbol}>{symbol || '—'}</AnalysisTickerLink>
                     </td>

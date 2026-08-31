@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { findMarketEntityLinksInText } from '@/lib/marketEntityLinkResolver';
 import { deriveNewsTone, deriveNewsTopic, NEWS_TONE_META, NEWS_TOPIC_LABELS } from '@/lib/newsRowVisuals';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 /**
  * Row list for individually-saved "📰 חדשות" rows AND (per approved Phase 2
@@ -32,16 +34,23 @@ function FilterChip({ label, count, isActive, onClick }) {
 }
 
 /** One row: topic chip + entity chips + full text, tone border on the visual right edge. */
-export function NewsStyleTextRow({ topic, entityLinks, text }) {
+export function NewsStyleTextRow({ topic, entityLinks, text, recordIds, selectedIds, onToggleGroup }) {
   const tone = deriveNewsTone(text);
   const toneMeta = NEWS_TONE_META[tone];
+  const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
   return (
     <div
       dir="rtl"
-      className={`flex flex-col gap-1.5 rounded-l-xl rounded-r-none border border-r-[3px] border-slate-200 dark:border-zinc-700/60 ${toneMeta.borderClass} bg-white dark:bg-zinc-900 px-3 py-2.5`}
+      className={`flex items-start gap-2 rounded-l-xl rounded-r-none border border-r-[3px] border-slate-200 dark:border-zinc-700/60 ${toneMeta.borderClass} bg-white dark:bg-zinc-900 px-3 py-2.5`}
       data-news-style-row
       data-news-row-tone={tone}
     >
+      {selection && (
+        <span className="shrink-0 pt-1">
+          <UniversalTabCheckbox {...selection} />
+        </span>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <span
           className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
@@ -69,20 +78,22 @@ export function NewsStyleTextRow({ topic, entityLinks, text }) {
       <p className="text-[13px] leading-snug text-slate-700 dark:text-zinc-300 break-words [overflow-wrap:anywhere]">
         {text}
       </p>
+      </div>
     </div>
   );
 }
 
-export function SavedNewsRows({ entries = [] }) {
+export function SavedNewsRows({ entries = [], selectedIds, onToggleGroup }) {
   const [activeTopic, setActiveTopic] = useState('all');
 
   const rows = useMemo(() => entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
     const safeText = String(text || '').trim();
     if (!safeText) return null;
+    const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
     const entityLinks = findMarketEntityLinksInText(safeText);
     const topic = deriveNewsTopic(safeText, entityLinks);
-    return { text: safeText, entityLinks, topic };
+    return { text: safeText, recordIds, entityLinks, topic };
   }).filter(Boolean), [entries]);
 
   const { counts, filtered } = useMemo(() => {
@@ -111,7 +122,15 @@ export function SavedNewsRows({ entries = [] }) {
       </div>
       <div className="flex flex-col gap-2">
         {filtered.map((row, i) => (
-          <NewsStyleTextRow key={`${row.text}-${i}`} topic={row.topic} entityLinks={row.entityLinks} text={row.text} />
+          <NewsStyleTextRow
+            key={`${row.text}-${i}`}
+            topic={row.topic}
+            entityLinks={row.entityLinks}
+            text={row.text}
+            recordIds={row.recordIds}
+            selectedIds={selectedIds}
+            onToggleGroup={onToggleGroup}
+          />
         ))}
       </div>
     </div>

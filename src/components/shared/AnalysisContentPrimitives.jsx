@@ -9,6 +9,8 @@ import {
 } from '@/components/dashboard/MorningBriefVisualPrimitives';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { buildPersistedYouTubeTimestampUrl } from '@/utils/analysisTickerLinks';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 export const ANALYSIS_SECTION_CARD_CLASS = SUMMARY_CARD_CLASS;
 export const ANALYSIS_BODY_TEXT_CLASS = DASHBOARD_TABLE_CELL_BODY_CLS;
@@ -52,15 +54,22 @@ export function AnalysisSectionCard({
   );
 }
 
-export function AnalysisList({ entries = [] }) {
+export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
   if (entries.length === 0) return null;
   return (
     <ul className="space-y-0.5 text-right" dir="rtl">
       {entries.map((entry, index) => {
         const text = typeof entry === 'string' ? entry : entry.text;
         const rank = typeof entry === 'object' ? entry.rank : null;
+        const recordIds = typeof entry === 'object' ? entry.recordIds : null;
+        const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
         return (
           <li key={`${text}-${index}`} className="flex items-start justify-end gap-2 rounded-lg px-2 py-2 hover:bg-slate-50/80 dark:hover:bg-zinc-800/60">
+            {selection && (
+              <span className="shrink-0 pt-1">
+                <UniversalTabCheckbox {...selection} />
+              </span>
+            )}
             <span className={cn('min-w-0 flex-1 whitespace-pre-wrap break-words text-right', ANALYSIS_BODY_TEXT_CLASS)}>
               {renderLinkedMarketText(text)}
             </span>

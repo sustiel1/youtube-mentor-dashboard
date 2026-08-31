@@ -8,6 +8,8 @@ import { PILL_CLS, ENTRY_PILL_CLS, STOP_PILL_CLS, TIMEFRAME_PILL_CLS } from '@/l
 import { resolveMarketEntityLink, findMarketEntityLinksInText } from '@/lib/marketEntityLinkResolver';
 import { deriveNewsTopic } from '@/lib/newsRowVisuals';
 import { NewsStyleTextRow } from '@/components/workspace/SavedNewsRows';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 /**
  * Table + fallback row list for individually-saved "🎯 הזדמנויות" rows.
@@ -81,8 +83,9 @@ function ValuePill({ value, toneClass }) {
   );
 }
 
-export function SavedOpportunityRowsTable({ entries = [] }) {
+export function SavedOpportunityRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const [activeTimeframe, setActiveTimeframe] = useState('all');
+  const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   const { tableRows, fallbackRows } = useMemo(() => {
     const table = [];
@@ -91,13 +94,14 @@ export function SavedOpportunityRowsTable({ entries = [] }) {
       const text = typeof entry === 'string' ? entry : entry?.text;
       const safeText = String(text || '').trim();
       if (!safeText) continue;
+      const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
       const parsed = parseOpportunityRowLayer1(safeText);
       if (parsed) {
-        table.push(parsed);
+        table.push({ ...parsed, recordIds });
       } else {
         const entityLinks = findMarketEntityLinksInText(safeText);
         const topic = deriveNewsTopic(safeText, entityLinks);
-        fallback.push({ text: safeText, entityLinks, topic });
+        fallback.push({ text: safeText, recordIds, entityLinks, topic });
       }
     }
     return { tableRows: table, fallbackRows: fallback };
@@ -137,6 +141,7 @@ export function SavedOpportunityRowsTable({ entries = [] }) {
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-700 [scrollbar-gutter:stable]">
             <table className="w-full min-w-[640px] text-right table-fixed border-collapse" dir="rtl">
               <colgroup>
+                {showCheckboxCol && <col style={{ width: '32px' }} />}
                 <col style={{ width: '84px' }} />
                 <col />
                 <col style={{ width: '96px' }} />
@@ -145,6 +150,7 @@ export function SavedOpportunityRowsTable({ entries = [] }) {
               </colgroup>
               <thead>
                 <tr className="border-b border-slate-200 dark:border-zinc-700">
+                  {showCheckboxCol && <th className={TH_CLS} aria-label="בחירה" />}
                   <th className={TH_CLS}>מניה</th>
                   <th className={TH_CLS}>סטאפ</th>
                   <th className={`${TH_CLS} text-center`}>כניסה</th>
@@ -155,32 +161,40 @@ export function SavedOpportunityRowsTable({ entries = [] }) {
               <tbody>
                 {filteredTableRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-sm text-slate-400 dark:text-zinc-600">
+                    <td colSpan={showCheckboxCol ? 6 : 5} className="py-6 text-center text-sm text-slate-400 dark:text-zinc-600">
                       אין הזדמנויות בטווח זה
                     </td>
                   </tr>
                 ) : (
-                  filteredTableRows.map((row, i) => (
-                    <tr key={`${row.ticker || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
-                      <td className={`${TD_CLS} whitespace-nowrap`}>
-                        <TickerLink ticker={row.ticker} />
-                      </td>
-                      <td className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
-                        <p className="line-clamp-2 [overflow-wrap:anywhere]" title={row.setup || undefined}>
-                          {row.setup || '—'}
-                        </p>
-                      </td>
-                      <td className={`${TD_CLS} text-center`}>
-                        <ValuePill value={row.entry} toneClass={ENTRY_PILL_CLS} />
-                      </td>
-                      <td className={`${TD_CLS} text-center`}>
-                        <ValuePill value={row.stop} toneClass={STOP_PILL_CLS} />
-                      </td>
-                      <td className={`${TD_CLS} text-center`}>
-                        <ValuePill value={row.timeframe} toneClass={TIMEFRAME_PILL_CLS} />
-                      </td>
-                    </tr>
-                  ))
+                  filteredTableRows.map((row, i) => {
+                    const selection = rowSelectionProps({ recordIds: row.recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${row.ticker || row.setup || 'הזדמנות'}` });
+                    return (
+                      <tr key={`${row.ticker || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                        {showCheckboxCol && (
+                          <td className={`${TD_CLS} text-center`}>
+                            {selection && <UniversalTabCheckbox {...selection} />}
+                          </td>
+                        )}
+                        <td className={`${TD_CLS} whitespace-nowrap`}>
+                          <TickerLink ticker={row.ticker} />
+                        </td>
+                        <td className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
+                          <p className="line-clamp-2 [overflow-wrap:anywhere]" title={row.setup || undefined}>
+                            {row.setup || '—'}
+                          </p>
+                        </td>
+                        <td className={`${TD_CLS} text-center`}>
+                          <ValuePill value={row.entry} toneClass={ENTRY_PILL_CLS} />
+                        </td>
+                        <td className={`${TD_CLS} text-center`}>
+                          <ValuePill value={row.stop} toneClass={STOP_PILL_CLS} />
+                        </td>
+                        <td className={`${TD_CLS} text-center`}>
+                          <ValuePill value={row.timeframe} toneClass={TIMEFRAME_PILL_CLS} />
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -191,7 +205,15 @@ export function SavedOpportunityRowsTable({ entries = [] }) {
       {fallbackRows.length > 0 && (
         <div className="flex flex-col gap-2" data-saved-opportunity-fallback-rows>
           {fallbackRows.map((row, i) => (
-            <NewsStyleTextRow key={`${row.text}-${i}`} topic={row.topic} entityLinks={row.entityLinks} text={row.text} />
+            <NewsStyleTextRow
+              key={`${row.text}-${i}`}
+              topic={row.topic}
+              entityLinks={row.entityLinks}
+              text={row.text}
+              recordIds={row.recordIds}
+              selectedIds={selectedIds}
+              onToggleGroup={onToggleGroup}
+            />
           ))}
         </div>
       )}

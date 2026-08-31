@@ -22,6 +22,7 @@ import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useWorkspaceItems, useWorkspaceTopics } from "@/hooks/useWorkspaceLibrary";
+import { useWorkspaceDays } from "@/hooks/useWorkspaceDays";
 import { useVideos } from "@/hooks/useVideos";
 import { useMentors } from "@/hooks/useMentors";
 import { useTopics } from "@/hooks/useTopics";
@@ -428,6 +429,55 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   };
   const clearCardSelection = () => setSelectedCardIds(new Set());
 
+  // Single shared useWorkspaceDays() instance for this whole page — passed
+  // down as props to <WorkspaceDay /> instead of letting it call the hook
+  // again internally. See WorkspaceDay.jsx's own comment: two independent
+  // instances of this hook don't share live state (no event bus in the
+  // Stage 1 store), so opening a day there would never be seen by this
+  // page's "הוסף ליום העבודה" button, and attaching an item from here would
+  // never show up in the day widget without a page reload.
+  const {
+    openDay,
+    closedDays: workspaceDays,
+    reload: reloadWorkspaceDays,
+    createDay: createWorkspaceDay,
+    attachItem,
+    detachItem: detachWorkspaceDayItem,
+    closeDay: closeWorkspaceDay,
+    reopenDay: reopenWorkspaceDay,
+    refreshMember: refreshWorkspaceDayMember,
+    deleteDay: deleteWorkspaceDay,
+  } = useWorkspaceDays();
+
+  /**
+   * Loops the current selection through the existing attachItemToWorkspaceDay
+   * mutation (one call per item — the store's own dedup key already prevents
+   * double-attaching the same item to the same day).
+   */
+  const handleAddSelectedToWorkspaceDay = () => {
+    if (!openDay) return;
+    const selected = items.filter(i => selectedCardIds.has(i.id));
+    if (!selected.length) return;
+    let attached = 0;
+    let deduped = 0;
+    let failed = 0;
+    for (const item of selected) {
+      const result = attachItem(openDay.id, { item });
+      if (!result?.ok) { failed += 1; continue; }
+      if (result.status === 'already_attached') deduped += 1; else attached += 1;
+    }
+    if (failed > 0) {
+      toast.error(`${attached + deduped} מתוך ${selected.length} נוספו ליום העבודה; ${failed} נכשלו`);
+    } else if (attached === 0) {
+      toast.info(deduped > 0 ? 'כל הפריטים המסומנים כבר נמצאים ביום העבודה הפתוח' : 'לא נוספו פריטים');
+    } else {
+      toast.success(deduped > 0
+        ? `${attached} פריטים נוספו ליום העבודה (${deduped} כבר היו בו)`
+        : `${attached} פריטים נוספו ליום העבודה`);
+    }
+    clearCardSelection();
+  };
+
   const handleCopySelected = () => {
     const selected = items.filter(i => selectedCardIds.has(i.id));
     const text = formatWorkspaceItemsForCopy(selected);
@@ -731,7 +781,17 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
       <main className={cn("px-4 sm:px-6 py-5 max-w-7xl mx-auto space-y-4", selectedCardIds.size > 0 && "pb-20")}>
 
         {/* ══════════════════════ WORKSPACE DAY (Stage 2) ══════════════════════ */}
-        <WorkspaceDay />
+        <WorkspaceDay
+          openDay={openDay}
+          closedDays={workspaceDays}
+          reload={reloadWorkspaceDays}
+          createDay={createWorkspaceDay}
+          detachItem={detachWorkspaceDayItem}
+          closeDay={closeWorkspaceDay}
+          reopenDay={reopenWorkspaceDay}
+          refreshMember={refreshWorkspaceDayMember}
+          deleteDay={deleteWorkspaceDay}
+        />
 
         {/* ══════════════════════ NAVIGATION CARD ══════════════════════ */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1147,19 +1207,34 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
         )}
 
         {focusedVideoGroup ? (
-          <WorkspaceFocusedVideoCard
-            group={focusedVideoGroup}
-            visibleGroup={focusedVisibleGroup}
-            activeCollection={activeCollection}
-            selectedIds={selectedCardIds}
-            onCollectionSelect={value => { handleCollectionSelect(value); clearCardSelection(); }}
-            onClearFocus={handleClearVideoFocus}
-            onOpenVideo={() => handleSourceVideoClick(focusedVideoGroup)}
-            onToggleGroup={toggleGroupSelection}
-            onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
-            collectionCounts={collectionCounts}
-            topics={topics}
-          />
+          <>
+            <WorkspaceFocusedVideoCard
+              group={focusedVideoGroup}
+              visibleGroup={focusedVisibleGroup}
+              activeCollection={activeCollection}
+              selectedIds={selectedCardIds}
+              onCollectionSelect={value => { handleCollectionSelect(value); clearCardSelection(); }}
+              onClearFocus={handleClearVideoFocus}
+              onOpenVideo={() => handleSourceVideoClick(focusedVideoGroup)}
+              onToggleGroup={toggleGroupSelection}
+              onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
+              collectionCounts={collectionCounts}
+              topics={topics}
+            />
+            {/* Same bar/handlers as the all-videos view below — the row/section
+                checkboxes inside WorkspaceFocusedVideoCard write to the same
+                selectedCardIds set, so it needs to be reachable here too. */}
+            <WorkspaceBulkActionBar
+              count={selectedCardIds.size}
+              onCopy={handleCopySelected}
+              onArchive={() => handleArchiveCards([...selectedCardIds], true)}
+              onDelete={() => setConfirmBulkDelete(true)}
+              onClearSelection={clearCardSelection}
+              onExportCsv={handleExportCsvSelected}
+              onAddToWorkspaceDay={openDay ? handleAddSelectedToWorkspaceDay : undefined}
+              fixed
+            />
+          </>
         ) : <>
           <section data-workspace-scope="global">
             <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">כל הסרטונים</h2>
@@ -1206,6 +1281,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onDelete={() => setConfirmBulkDelete(true)}
               onClearSelection={clearCardSelection}
               onExportCsv={handleExportCsvSelected}
+              onAddToWorkspaceDay={openDay ? handleAddSelectedToWorkspaceDay : undefined}
               fixed
             />
 

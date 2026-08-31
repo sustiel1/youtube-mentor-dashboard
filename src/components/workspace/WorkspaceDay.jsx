@@ -18,7 +18,6 @@ import { he } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
-import { useWorkspaceDays } from "@/hooks/useWorkspaceDays";
 import { exportWorkspaceDayToObsidian } from "@/lib/workspaceDayObsidianExport";
 import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
 import {
@@ -35,9 +34,19 @@ import {
 
 /**
  * Stage 2 UI for the "Workspace Day" feature. Read-only wiring on top of the
- * Stage 1 store (via useWorkspaceDays) — no scheduling, no auto-open, no
- * auto-close. Obsidian export (Stage 3) is manual only: a per-closed-day button
- * that calls exportWorkspaceDayToObsidian; never triggered automatically.
+ * Stage 1 store — no scheduling, no auto-open, no auto-close. Obsidian export
+ * (Stage 3) is manual only: a per-closed-day button that calls
+ * exportWorkspaceDayToObsidian; never triggered automatically.
+ *
+ * The useWorkspaceDays() hook itself is called ONCE by the parent
+ * (WorkspaceLibrary.jsx) and passed down here as props — not called again
+ * internally. The Stage 1 store has no event bus, so two independent
+ * useWorkspaceDays() instances (this component's own, and the one
+ * WorkspaceLibrary.jsx needs for its "הוסף ליום העבודה" bulk-action button)
+ * would each hold a stale copy of `days` the instant the OTHER one mutated it
+ * — e.g. opening a day here would never be seen by the bulk-action bar's
+ * `openDay` check. Lifting the single hook instance up removes that class of
+ * bug entirely instead of patching each direction with ad-hoc reload calls.
  */
 
 // A day open this many days or longer gets a non-blocking "close me" warning.
@@ -69,18 +78,17 @@ function driftLabel(member) {
   return "המקור השתנה מאז הצירוף";
 }
 
-export function WorkspaceDay() {
-  const {
-    openDay,
-    closedDays,
-    reload,
-    createDay,
-    detachItem,
-    closeDay,
-    reopenDay,
-    refreshMember,
-    deleteDay,
-  } = useWorkspaceDays();
+export function WorkspaceDay({
+  openDay,
+  closedDays,
+  reload,
+  createDay,
+  detachItem,
+  closeDay,
+  reopenDay,
+  refreshMember,
+  deleteDay,
+}) {
   const { items } = useWorkspaceItems();
 
   // The Stage 1 store has no event bus. Re-read the days whenever the library

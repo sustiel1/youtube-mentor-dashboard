@@ -11,6 +11,8 @@ import { resolveSectorTableFinvizLink } from '@/lib/sectorFinvizLinks';
 import { PILL_CLS, SECTOR_PILL_CLS, getSectorTone } from '@/lib/stockRowVisuals';
 import { getSectorRowSentimentTone, getSectorRowSentimentLabel } from '@/lib/sectorRowVisuals';
 import { parseSectorRowFromText } from '@/lib/sectorRowText';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 /**
  * Table view for individually-saved "🏭 סקטורים" rows aggregated under a
@@ -58,13 +60,16 @@ function SectorNamePill({ sector }) {
   );
 }
 
-export function SavedSectorRowsTable({ entries = [] }) {
+export function SavedSectorRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const rows = entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
-    return { text: String(text || ''), parsed: parseSectorRowFromText(text) };
+    const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
+    return { text: String(text || ''), recordIds, parsed: parseSectorRowFromText(text) };
   }).filter((row) => row.text);
 
   if (rows.length === 0) return null;
+
+  const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   return (
     <div
@@ -73,22 +78,30 @@ export function SavedSectorRowsTable({ entries = [] }) {
     >
       <table className="w-full min-w-[560px] text-right table-fixed border-collapse" dir="rtl">
         <colgroup>
+          {showCheckboxCol && <col style={{ width: '32px' }} />}
           <col style={{ width: '190px' }} />
           <col style={{ width: '120px' }} />
           <col />
         </colgroup>
         <thead>
           <tr className="border-b border-slate-200 dark:border-zinc-700">
+            {showCheckboxCol && <th className={TH_CLS} aria-label="בחירה" />}
             <th className={TH_CLS}>סקטור</th>
             <th className={`${TH_CLS} text-center`}>סנטימנט</th>
             <th className={TH_CLS}>הערה</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ text, parsed }, i) => {
+          {rows.map(({ text, recordIds, parsed }, i) => {
+            const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
             if (!parsed) {
               return (
                 <tr key={`${text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                  {showCheckboxCol && (
+                    <td className={`${TD_CLS} text-center`}>
+                      {selection && <UniversalTabCheckbox {...selection} />}
+                    </td>
+                  )}
                   <td colSpan={3} className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
                     <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {renderLinkedMarketText(text)}
@@ -101,6 +114,11 @@ export function SavedSectorRowsTable({ entries = [] }) {
             const tone = sentimentRaw ? getSectorRowSentimentTone(sentimentRaw) : null;
             return (
               <tr key={`${sector || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                {showCheckboxCol && (
+                  <td className={`${TD_CLS} text-center`}>
+                    {selection && <UniversalTabCheckbox {...selection} />}
+                  </td>
+                )}
                 <td className={TD_CLS}>
                   <SectorNamePill sector={sector} />
                 </td>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, Trash2, Copy, X, FileDown, FolderInput } from 'lucide-react';
+import { Archive, Trash2, Copy, X, FileDown, FolderInput, CalendarPlus } from 'lucide-react';
 import { normalizeStockWorkspaceItem } from '@/utils/workspaceStockItems';
 import { cn } from '@/lib/utils';
 import { classifyWorkspaceItemHeading } from '@/config/workspaceHeadingRegistry';
@@ -83,6 +83,8 @@ export function exportWorkspaceItemsToCsv(items, filename = 'workspace-export.cs
  *   onExportCsv      {function} — optional CSV export; button hidden if absent
  *   reassignTopics   {array}    — real top-level topics [{id, name}]; enables the reassign dropdown when present with onReassign
  *   onReassign       {function} — (topicId) => void; called when the user picks a target topic and confirms
+ *   onAddToWorkspaceDay {function} — attach selected items to the open workspace day; button
+ *                                    hidden if absent (caller passes it only when a day is open)
  *   disabled         {boolean}  — disable all buttons
  *   fixed            {boolean}  — fixed to viewport bottom (full-page); default flows naturally (dialog use)
  */
@@ -93,6 +95,7 @@ export function WorkspaceBulkActionBar({
   onDelete,
   onClearSelection,
   onExportCsv,
+  onAddToWorkspaceDay,
   reassignTopics,
   onReassign,
   disabled = false,
@@ -199,6 +202,18 @@ export function WorkspaceBulkActionBar({
           >
             <FileDown className="h-3.5 w-3.5" />
             ייצוא CSV
+          </button>
+        )}
+
+        {onAddToWorkspaceDay && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onAddToWorkspaceDay}
+            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" />
+            הוסף ליום העבודה
           </button>
         )}
       </div>

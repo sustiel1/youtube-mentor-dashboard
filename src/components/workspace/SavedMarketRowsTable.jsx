@@ -8,6 +8,8 @@ import { MarketAssetPreferredLink } from '@/components/shared/MarketAssetProvide
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { getMarketTrendTone, MARKET_PILL_CLS } from '@/lib/marketRowVisuals';
 import { parseMarketRowFromText } from '@/lib/marketRowText';
+import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { rowSelectionProps } from '@/lib/workspaceRowSelection';
 
 /**
  * Table view for individually-saved "indices" rows aggregated under a
@@ -30,13 +32,16 @@ function isNumericStrength(value) {
   return /\d/.test(String(value || ''));
 }
 
-export function SavedMarketRowsTable({ entries = [] }) {
+export function SavedMarketRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const rows = entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
-    return { text: String(text || ''), parsed: parseMarketRowFromText(typeof entry === 'string' ? entry : entry?.text) };
+    const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
+    return { text: String(text || ''), recordIds, parsed: parseMarketRowFromText(typeof entry === 'string' ? entry : entry?.text) };
   }).filter((row) => row.text);
 
   if (rows.length === 0) return null;
+
+  const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   return (
     <div
@@ -45,6 +50,7 @@ export function SavedMarketRowsTable({ entries = [] }) {
     >
       <table className="w-full min-w-[720px] text-right table-fixed border-collapse" dir="rtl">
         <colgroup>
+          {showCheckboxCol && <col style={{ width: '32px' }} />}
           <col style={{ width: '170px' }} />
           <col style={{ width: '64px' }} />
           <col style={{ width: '120px' }} />
@@ -53,6 +59,7 @@ export function SavedMarketRowsTable({ entries = [] }) {
         </colgroup>
         <thead>
           <tr className="border-b border-slate-200 dark:border-zinc-700">
+            {showCheckboxCol && <th className={TH_CLS} aria-label="בחירה" />}
             <th className={TH_CLS}>נכס</th>
             <th className={`${TH_CLS} text-center`}>קישורים</th>
             <th className={`${TH_CLS} text-center`}>מגמה</th>
@@ -61,10 +68,16 @@ export function SavedMarketRowsTable({ entries = [] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ text, parsed }, i) => {
+          {rows.map(({ text, recordIds, parsed }, i) => {
+            const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
             if (!parsed) {
               return (
                 <tr key={`${text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                  {showCheckboxCol && (
+                    <td className={`${TD_CLS} text-center`}>
+                      {selection && <UniversalTabCheckbox {...selection} />}
+                    </td>
+                  )}
                   <td colSpan={5} className={`${TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
                     <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {renderLinkedMarketText(text)}
@@ -77,6 +90,11 @@ export function SavedMarketRowsTable({ entries = [] }) {
             const tone = trend ? getMarketTrendTone(trend) : null;
             return (
               <tr key={`${asset || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                {showCheckboxCol && (
+                  <td className={`${TD_CLS} text-center`}>
+                    {selection && <UniversalTabCheckbox {...selection} />}
+                  </td>
+                )}
                 <td className={`${TD_CLS} whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
                   {asset
                     ? <MarketAssetPreferredLink asset={asset} showQualifier={false}>{asset}</MarketAssetPreferredLink>

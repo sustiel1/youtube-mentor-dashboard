@@ -72,7 +72,7 @@ function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <AnalysisList entries={section.entries} />
+        <AnalysisList entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -102,7 +102,7 @@ function SavedMarketSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <SavedMarketRowsTable entries={section.entries} />
+        <SavedMarketRowsTable entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -132,7 +132,7 @@ function SavedStockSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <SavedStockRowsTable entries={section.entries} />
+        <SavedStockRowsTable entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -162,7 +162,7 @@ function SavedSectorSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <SavedSectorRowsTable entries={section.entries} />
+        <SavedSectorRowsTable entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -193,7 +193,7 @@ function SavedOpportunitySection({ section, selectedIds, onToggleGroup, videoUrl
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <SavedOpportunityRowsTable entries={section.entries} />
+        <SavedOpportunityRowsTable entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -224,7 +224,7 @@ function SavedNewsSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <SavedNewsRows entries={section.entries} />
+        <SavedNewsRows entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
