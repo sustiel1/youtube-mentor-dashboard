@@ -1,8 +1,19 @@
-import { buildFinvizQuoteUrl, HE_CARD_COMPANY_ALIASES } from '@/utils/finvizLinks';
+import { buildFinvizQuoteUrl, getExternalSymbolUrl, HE_CARD_COMPANY_ALIASES } from '@/utils/finvizLinks';
 
-// Macro/economic abbreviations + currency codes that must not be mistaken for stock tickers.
-const _DENYLIST = new Set([
-  'CPI', 'PCE', 'GDP', 'NFP', 'FOMC', 'FED', 'ETF', 'ETFS', 'AI', 'EPS',
+// Pure business/finance jargon abbreviations — NOT a market instrument on
+// their own (no ticker, no index, no macro indicator), so they must never
+// get a link at all. Kept deliberately small: everything NOT in this list
+// is treated as a candidate market entity and resolved via
+// getExternalSymbolUrl (Finviz for equities, il.investing.com for indices/
+// macro/commodities/FX — see ".claude/agents/frontend-rtl-developer.md" →
+// "Asset link resolution — provider fallback rule"), never left unlinked.
+//
+// USD/ILS are kept here (not treated as linkable entities) deliberately —
+// they appear constantly as part of other terms (e.g. "USD/ILS") and were
+// already excluded before this fix; turning every bare "USD" mention into a
+// link would be a new, noisier behavior this task wasn't asked to add.
+const _NON_ENTITY_TERMS = new Set([
+  'ETF', 'ETFS', 'AI', 'EPS',
   'YOY', 'QOQ', 'MOM', 'IPO', 'CEO', 'CFO', 'CTO', 'COO',
   'YTD', 'ROI', 'ROE', 'ROA', 'DCF', 'PE', 'PB',
   'US', 'EU', 'UK', 'EM', 'FX', 'DJ', 'VC', 'TA',
@@ -18,9 +29,13 @@ const _RENDER_RE = new RegExp(
 );
 
 /**
- * Renders market text with inline Finviz links for known tickers and Hebrew company aliases.
- * Hebrew alias → displays as English ticker link (e.g. מטה → META).
- * English [A-Z]{2,6} word → linked, unless in _DENYLIST.
+ * Renders market text with inline links for known tickers, Hebrew company
+ * aliases, and market/macro entities.
+ * Hebrew alias → displays as an English ticker link to Finviz (e.g. מטה → META).
+ * English [A-Z]{2,6} word → resolved via getExternalSymbolUrl (Finviz for
+ * equities, il.investing.com for indices/macro/commodities/FX — never left
+ * unlinked), unless it's pure jargon in _NON_ENTITY_TERMS (not a market
+ * instrument at all, e.g. "CEO", "ROI").
  * All other text is preserved exactly as-is.
  * Returns the original string unchanged when no matches are found.
  */
@@ -43,17 +58,15 @@ export function renderLinkedMarketText(text) {
         : m[1]
       );
     } else if (m[2]) {
-      if (_DENYLIST.has(m[2])) {
-        nodes.push(m[2]);
-      } else {
-        nodes.push(
-          <a key={`en-${m.index}`} href={buildFinvizQuoteUrl(m[2])} target="_blank"
+      const url = _NON_ENTITY_TERMS.has(m[2]) ? null : getExternalSymbolUrl(m[2]);
+      nodes.push(url
+        ? <a key={`en-${m.index}`} href={url} target="_blank"
              rel="noopener noreferrer" dir="ltr"
-             title={`Open ${m[2]} on Finviz`}
+             title={`Open ${m[2]}`}
              className="font-semibold underline decoration-dotted hover:decoration-solid"
              onClick={(e) => e.stopPropagation()}>{m[2]}</a>
-        );
-      }
+        : m[2]
+      );
     }
     last = m.index + m[0].length;
   }

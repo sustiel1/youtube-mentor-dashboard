@@ -1,3 +1,5 @@
+import { resolveMacroIndicatorInvestingUrl } from '../lib/macroIndicatorLinks.js';
+
 const FINVIZ_BASE = 'https://finviz.com/quote.ashx?t=';
 
 /** Daily chart URL with &p=d for sector/ETF Finviz links. */
@@ -264,39 +266,63 @@ export function getFinvizUrl(input) {
   return ticker ? `${FINVIZ_BASE}${encodeURIComponent(ticker)}` : null;
 }
 
-// Fallback URLs for symbols not supported by Finviz (DXY, crypto, etc.)
-const _FALLBACK_URL_MAP = new Map([
-  ['dxy',               'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['usdx',              'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['us dollar index',   'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['dollar index',      'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['מדד הדולר',         'https://www.tradingview.com/chart/?symbol=TVC:DXY'],
-  ['btc',               'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['bitcoin',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['btcusd',            'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['ביטקוין',           'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD'],
-  ['eth',               'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['ethereum',          'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['אתריום',            'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT'],
-  ['vix',               'https://www.tradingview.com/chart/?symbol=TVC:VIX'],
-  ['fear & greed',      'https://edition.cnn.com/markets/fear-and-greed'],
-  ['fear and greed',    'https://edition.cnn.com/markets/fear-and-greed'],
+// One explicit exception to the il.investing.com fallback rule: the CNN
+// Fear & Greed index has no equivalent page on il.investing.com (the
+// closest match there is VIX, which is a related-but-different instrument),
+// while this CNN URL is the exact, real landing page for that specific
+// index — not a guessed slug. See ".claude/agents/frontend-rtl-developer.md"
+// → "Asset link resolution — provider fallback rule".
+const _FEAR_GREED_URL = 'https://edition.cnn.com/markets/fear-and-greed';
+const _FEAR_GREED_ALIASES = new Set(['fear & greed', 'fear and greed', 'fear&greed', 'פחד וחמדנות']);
+
+// Bare non-equity codes that must NEVER be treated as a Finviz ticker.
+// resolveFinvizTicker's step 1 ("1-6 uppercase letters = a valid ticker")
+// has no concept of "known to have no real Finviz page" — passed a bare
+// "DXY" or "VIX" (already uppercase, no spaces), it matches that rule and
+// getFinvizUrl happily returns a broken finviz.com/quote.ashx?t=DXY/VIX
+// page, silently pre-empting the il.investing.com fallback below (verified:
+// this bug already existed before this fix — lowercase/full-phrase input
+// like "dxy" or "US Dollar Index" DID reach the old TradingView fallback
+// map, but the exact bare uppercase form never did). Checked before Finviz
+// is attempted at all, so every input shape for these routes correctly.
+// List: DXY/BTC/ETH/VIX from the fallback map this replaces, plus the
+// macro-indicator examples named directly in the fallback rule itself
+// (PPI, CPI, PCE, NFP) and their close cousins (GDP, FOMC, FED). Deliberately
+// excludes SPX/NDX/IXIC/DJIA/RUT (already routed to a working Finviz ETF
+// proxy via _INDEX_TICKER_OVERRIDE above — a different, already-correct
+// design, not a bug) and pure jargon like "AI" (not a market instrument at
+// all — that filtering belongs to the free-text linkifier, not here).
+const _NON_FINVIZ_BARE_CODES = new Set([
+  'DXY', 'USDX', 'BTC', 'BTCUSD', 'ETH', 'ETHUSD', 'VIX',
+  'PPI', 'CPI', 'PCE', 'NFP', 'GDP', 'FOMC', 'FED',
 ]);
 
 /**
  * Resolves any market symbol to an external research URL.
- * Priority: index-ticker override (SPX/IXIC/RUT → ETF proxy) → Finviz → TradingView fallback.
- * Returns null if no URL is known — never returns a broken link.
+ * Priority: index-ticker override (SPX/IXIC/RUT → ETF proxy) → known
+ * non-Finviz bare codes (DXY/BTC/ETH/VIX, see above) → Finviz →
+ * il.investing.com (specific page via macroIndicatorLinks.js's curated map,
+ * otherwise its site-search fallback — never a guessed slug) → the one
+ * explicit Fear & Greed exception above.
+ * Never returns null for non-empty input — never an unlinked symbol.
  */
 export function getExternalSymbolUrl(input) {
-  // Index cash tickers must be caught before Finviz — they have no valid quote page there.
   const normKey = _norm(input);
+  if (!normKey) return null;
+
+  // Index cash tickers must be caught before Finviz — they have no valid quote page there.
   const indexEtf = _INDEX_TICKER_OVERRIDE.get(normKey);
   if (indexEtf) return `${FINVIZ_BASE}${encodeURIComponent(indexEtf)}`;
 
-  const finvizUrl = getFinvizUrl(input);
-  if (finvizUrl) return finvizUrl;
-  return _FALLBACK_URL_MAP.get(normKey) ?? null;
+  const upperInput = String(input).trim().toUpperCase();
+  if (!_NON_FINVIZ_BARE_CODES.has(upperInput)) {
+    const finvizUrl = getFinvizUrl(input);
+    if (finvizUrl) return finvizUrl;
+  }
+
+  if (_FEAR_GREED_ALIASES.has(normKey)) return _FEAR_GREED_URL;
+
+  return resolveMacroIndicatorInvestingUrl(input);
 }
 
 /** Returns true if the input resolves to a known Finviz-linkable symbol. */

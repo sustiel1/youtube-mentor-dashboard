@@ -8,6 +8,8 @@
     "dev": "vite",
     "seed": "node scripts/run-seed.js",
     "export:brain-structure": "node scripts/exportBrainStructure.js",
+    "test:asset-link-fallback": "node scripts/asset-link-fallback-qa.mjs",
+    "test:linked-market-text-fallback": "node scripts/linked-market-text-fallback-qa.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
