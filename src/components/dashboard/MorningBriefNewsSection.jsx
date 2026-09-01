@@ -40,6 +40,7 @@ function NewsCardSaveActions({
   sectionLabel,
   tabKey,
   onSaveToBrain,
+  selectionPayload,
 }) {
   const hasQuick = bulkSelection?.onQuickSaveBrain
     || bulkSelection?.onQuickSaveObsidian
@@ -53,6 +54,7 @@ function NewsCardSaveActions({
           tabScope: 'specialized',
         })}
         text={text}
+        selectionPayload={selectionPayload}
       />
     );
   }
@@ -94,6 +96,7 @@ export function MorningBriefNewsCard({
           sectionLabel="📰 חדשות"
           tabKey="market-news"
           bulkSelection={bulkSelection}
+          selectionPayload={{ newsMetadata: item.newsMetadata }}
         />
       </div>
 
@@ -156,6 +159,7 @@ export function MorningBriefNewsCard({
           sectionLabel="📰 חדשות"
           tabKey="market-news"
           onSaveToBrain={onSaveToBrain}
+          selectionPayload={{ newsMetadata: item.newsMetadata }}
         />
       </div>
     </div>

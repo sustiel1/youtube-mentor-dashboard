@@ -10,6 +10,7 @@ import {
   formatBulkItemText,
   formatCardBulkText,
 } from '@/lib/universalTabBulkItems';
+import { MAX_NEWS_ITEMS, normalizeNewsItems } from '@/lib/morningBriefNewsNormalize';
 import {
   extractCalendarRows,
   mergeMacroDisplayRows,
@@ -38,19 +39,14 @@ function stripInternalNewsFieldLabel(text) {
   return s;
 }
 
-function normalizeNewsStrings(items) {
-  const safe = Array.isArray(items) ? items.filter(Boolean) : [];
-  return safe.map((item) => {
-    if (typeof item === 'string') return stripInternalNewsFieldLabel(item);
-    if (typeof item === 'object') {
-      return stripInternalNewsFieldLabel(
-        [item.headline, item.title, item.content, item.details, item.source, item.impact]
-          .filter(Boolean)
-          .join(' — '),
-      );
-    }
-    return stripInternalNewsFieldLabel(String(item));
-  }).filter(Boolean);
+function normalizeNewsBulkItems(items) {
+  return normalizeNewsItems(items)
+    .slice(0, MAX_NEWS_ITEMS)
+    .map((item) => ({
+      text: stripInternalNewsFieldLabel(item.saveText),
+      selectionPayload: { newsMetadata: item.newsMetadata },
+    }))
+    .filter((item) => item.text);
 }
 
 function filterOpportunityIdeas(marketBriefData, effectiveVideo) {
@@ -225,7 +221,7 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
 
   const sections = [];
 
-  const newsItems = normalizeNewsStrings(plainNewsItems);
+  const newsItems = normalizeNewsBulkItems(plainNewsItems);
   if (newsItems.length) {
     sections.push({ key: 'news', label: '📰 חדשות', items: newsItems, tabKey: 'market-news' });
   }
@@ -347,7 +343,15 @@ export function buildMorningBriefCardBulkItems(sections = []) {
   return buildCardBulkItemsFromSections(cardSections, 'specialized');
 }
 
-/** Resolve bulk id matching buildBulkItemsFromSections('specialized', ...). */
+/**
+ * Resolve bulk id matching buildBulkItemsFromSections('specialized', ...).
+ * NOTE: this findIndex-based id resolution relies on `.text` values in
+ * `sec.items` being unique. For the `news` section that uniqueness is
+ * currently guaranteed by the dedup that already runs inside
+ * normalizeNewsItems (called via normalizeNewsBulkItems) before this
+ * function is ever invoked. A future refactor that changes how `news`
+ * section items are built must not silently break that guarantee.
+ */
 export function resolveMorningBriefBulkId(sections, sectionKey, text) {
   const sec = sections.find((s) => s.key === sectionKey);
   if (!sec) return null;
@@ -370,6 +374,9 @@ export function resolveMorningBriefSectionChildItems(sections, sectionKey) {
     sectionLabel: sec.label,
     type: sec.tabKey || 'specialized',
     tabScope: 'specialized',
+    ...(item && typeof item === 'object' && item.selectionPayload
+      ? item.selectionPayload
+      : {}),
   }));
 }
 

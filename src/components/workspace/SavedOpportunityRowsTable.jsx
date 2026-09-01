@@ -10,6 +10,11 @@ import { deriveNewsTopic } from '@/lib/newsRowVisuals';
 import { NewsStyleTextRow } from '@/components/workspace/SavedNewsRows';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 /**
  * Table + fallback row list for individually-saved "🎯 הזדמנויות" rows.
@@ -85,6 +90,7 @@ function ValuePill({ value, toneClass }) {
 
 export function SavedOpportunityRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const [activeTimeframe, setActiveTimeframe] = useState('all');
+  const revealIds = useWorkspaceRecordRevealIds();
   const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   const { tableRows, fallbackRows } = useMemo(() => {
@@ -168,8 +174,9 @@ export function SavedOpportunityRowsTable({ entries = [], selectedIds, onToggleG
                 ) : (
                   filteredTableRows.map((row, i) => {
                     const selection = rowSelectionProps({ recordIds: row.recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${row.ticker || row.setup || 'הזדמנות'}` });
+                    const reveal = getWorkspaceRecordRevealState(row.recordIds, revealIds);
                     return (
-                      <tr key={`${row.ticker || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                      <tr key={`${row.ticker || 'row'}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                         {showCheckboxCol && (
                           <td className={`${TD_CLS} text-center`}>
                             {selection && <UniversalTabCheckbox {...selection} />}

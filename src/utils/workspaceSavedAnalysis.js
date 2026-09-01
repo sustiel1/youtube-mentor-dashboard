@@ -80,6 +80,79 @@ function persistedText(item) {
   return String(candidates.find(value => typeof value === 'string' && value.trim()) || '').trim();
 }
 
+function firstSavedText(...values) {
+  return values.find(value => typeof value === 'string' && value.trim())?.trim() || '';
+}
+
+function savedArray(...values) {
+  const candidate = values.find(value => Array.isArray(value) && value.length > 0)
+    || values.find(Array.isArray);
+  return candidate ? candidate.filter(Boolean) : [];
+}
+
+function parseLegacyNewsText(text) {
+  const parts = String(text || '').split(/\s+[—–-]\s+/).map(part => part.trim()).filter(Boolean);
+  const impactIndex = parts.findIndex(part => /^השפעה\s*:/i.test(part));
+  return {
+    title: parts[0] || '',
+    description: parts.slice(1, impactIndex >= 0 ? impactIndex : 2).join(' — '),
+    impact: impactIndex >= 0 ? parts[impactIndex].replace(/^השפעה\s*:\s*/i, '').trim() : '',
+  };
+}
+
+/** Structured, display-only news entry. Existing persisted records are never rewritten. */
+export function buildSavedNewsEntry(item = {}, text = persistedText(item)) {
+  const identity = item?.identityPayload && typeof item.identityPayload === 'object'
+    ? item.identityPayload
+    : {};
+  const legacy = parseLegacyNewsText(text);
+  const legacyTitle = /^(?:bullish|bearish|neutral|positive|negative|חיובי|שלילי|ניטרלי)$/i.test(legacy.title)
+    ? ''
+    : legacy.title;
+  const sourceVideoTitle = firstSavedText(item.sourceVideoTitle, item.sourceTitle);
+  const itemVideoTitle = firstSavedText(item.videoTitle, item.title);
+  const compatibleVideoTitle = itemVideoTitle
+    && normalized(itemVideoTitle) !== normalized(sourceVideoTitle)
+    && !/^\s*(?:📰\s*)?חדשות\s*[—–-]/u.test(itemVideoTitle)
+      ? itemVideoTitle
+      : '';
+  const headline = firstSavedText(item.newsTitle, identity.title, legacyTitle, compatibleVideoTitle)
+    || 'פריט חדשות ללא כותרת';
+  const description = firstSavedText(
+    item.newsDescription,
+    identity.description,
+    item.newsContent,
+    identity.content,
+    legacy.description,
+  );
+  const impact = firstSavedText(item.impact, identity.impact, legacy.impact);
+  const sentiment = firstSavedText(item.sentiment, identity.sentiment);
+  const symbols = savedArray(item.symbols, item.tickers, identity.symbols, identity.tickers);
+  const links = savedArray(item.links, identity.links);
+  const sourceMetadata = [item.sourceMetadata, identity.sourceMetadata]
+    .find(value => value && typeof value === 'object' && !Array.isArray(value)) || {};
+  const fallbackDescription = description || (
+    headline === 'פריט חדשות ללא כותרת'
+      ? 'לא נשמרו כותרת או תיאור עבור הרשומה הישנה.'
+      : 'לא נשמר תיאור עבור פריט חדשות זה.'
+  );
+  const displayText = text || [headline, fallbackDescription, impact ? `השפעה: ${impact}` : ''].filter(Boolean).join(' — ');
+
+  return {
+    text: displayText,
+    headline,
+    description: fallbackDescription,
+    sentiment,
+    impact,
+    symbols,
+    links,
+    sourceMetadata,
+    rank: persistedRank(item),
+    recordIds: [item.id],
+    structuredNews: true,
+  };
+}
+
 function sourceTimestamp(item) {
   return item?.timestamp ?? item?.startTime ?? item?.segmentStart ?? item?.sourceTimestamp ?? null;
 }
@@ -134,6 +207,8 @@ export function provenanceFor(item, sectionHeading) {
     sourceTimestamp: sourceTimestamp(item),
     savedAt: item.savedAt || null,
     contentHash: item.contentHash || identity?.contentHash || null,
+    sourceBriefSlug: item.sourceBriefSlug || item.briefSlug || null,
+    sourceVideoType: item.sourceVideoType || null,
   };
 }
 
@@ -145,9 +220,12 @@ function buildTextSections(items) {
     const heading = cleanHeading(rawHeading);
     const tabId = getWorkspaceNavigationCollectionForItem(item, 'unclassified');
     const text = persistedText(item);
-    let fields = labelledFields(item, text);
-    if (fields.length === 0 && /^(bullish|bearish|neutral|חיובי|שלילי|ניטרלי)$/i.test(text)) fields = [{ label: 'סנטימנט', value: text }];
-    if (!text && fields.length === 0 && tabId !== 'topics') continue;
+    const isNewsItem = item?.originalItemType === 'market-news';
+    let fields = isNewsItem ? [] : labelledFields(item, text);
+    if (!isNewsItem && fields.length === 0 && /^(bullish|bearish|neutral|חיובי|שלילי|ניטרלי)$/i.test(text)) {
+      fields = [{ label: 'סנטימנט', value: text }];
+    }
+    if (!text && fields.length === 0 && !isNewsItem && tabId !== 'topics') continue;
     const key = `${tabId}|${normalized(heading)}`;
     const section = sectionMap.get(key) || {
       id: key,
@@ -162,7 +240,12 @@ function buildTextSections(items) {
     section.provenance.push(provenance);
 
     const seenLines = new Set(section.entries.map(entry => normalized(entry.text)));
-    for (const line of fields.length > 0 ? [] : textLines(text)) {
+    if (isNewsItem) {
+      const newsEntry = buildSavedNewsEntry(item, text);
+      const newsKey = normalized(newsEntry.text);
+      if (newsKey && !seenLines.has(newsKey)) section.entries.push(newsEntry);
+    }
+    for (const line of isNewsItem || fields.length > 0 ? [] : textLines(text)) {
       const lineKey = normalized(line);
       if (!lineKey || isHeadingEchoLine(line, heading) || seenLines.has(lineKey)) continue;
       seenLines.add(lineKey);

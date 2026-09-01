@@ -44,6 +44,7 @@ import {
   getWorkspaceHeadingLabel,
 } from "@/config/workspaceHeadingRegistry";
 import { getWorkspaceItemSemanticTags } from "@/utils/workspaceMarketDimensions";
+import { buildWorkspaceNewsFields } from "@/lib/newsSelectionMetadata";
 
 // ─── Market status workflow constants ─────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -685,7 +686,7 @@ export function WorkspaceSaveReviewOverlay({
   }
 
   const handleSaveAll = useCallback(async () => {
-    if (effectiveDraftItems.length === 0) return;
+    if (effectiveDraftItems.length === 0 || isSaving) return;
     setIsSaving(true);
     const savedIds    = [];
     const pendingItems = [];
@@ -720,6 +721,7 @@ export function WorkspaceSaveReviewOverlay({
 
       let titlePart;
       let stockExtraFields = {};
+      const newsExtraFields = buildWorkspaceNewsFields(item);
 
       if (isStockRow) {
         const parsed = parseStockFromText(item.text);
@@ -748,6 +750,8 @@ export function WorkspaceSaveReviewOverlay({
             sourceTitle:   videoContext.videoTitle || null,
           };
         }
+      } else if (newsExtraFields.newsTitle) {
+        titlePart = newsExtraFields.newsTitle;
       } else {
         titlePart = item.sectionLabel
           ? `${item.sectionLabel} — ${(videoContext.videoTitle || '').slice(0, 40)}`
@@ -797,30 +801,51 @@ export function WorkspaceSaveReviewOverlay({
         sourceVideoType: videoContext.sourceVideoType || null,
         sourceBriefSlug: videoContext.sourceBriefSlug || null,
         ...(provenance || {}),
+        ...newsExtraFields,
         ...stockExtraFields, // additive: only present on stock items
       });
       savedIds.push(id);
     }
 
+    let persistenceResult = {
+      ok: true,
+      status: 'already_exists',
+      saved: 0,
+      failed: 0,
+      persistedItems: libraryItems,
+    };
     if (pendingItems.length > 0) {
       const saveResult = await saveItemsBulk(pendingItems);
       if (reportWorkspaceWriteFailure(saveResult)) {
         setIsSaving(false);
         return;
       }
+      persistenceResult = saveResult;
     }
 
     await reload();
-    setRecentlySavedIds(savedIds);
+    const persistedIds = new Set((persistenceResult.persistedItems || []).map(item => item?.id).filter(Boolean));
+    const confirmedSavedIds = savedIds.filter(id => persistedIds.has(id));
+    setRecentlySavedIds(confirmedSavedIds);
     setActiveView('recent');
     setIsSaving(false);
-    if (skippedCount > 0) {
-      toast.success(`⭐ ${savedIds.length} פריטים נשמרו, ${skippedCount} כבר נשמרו קודם ולא נוספו שוב`);
+    if (persistenceResult.failed > 0) {
+      toast.warning(`נשמרו ${confirmedSavedIds.length} פריטים; ${persistenceResult.failed} פריטים לא נשמרו`);
+    } else if (skippedCount > 0 && confirmedSavedIds.length > 0) {
+      toast.success(`⭐ ${confirmedSavedIds.length} פריטים נשמרו, ${skippedCount} כבר נשמרו קודם ולא נוספו שוב`);
+    } else if (confirmedSavedIds.length === 0 && skippedCount > 0) {
+      toast.info(`${skippedCount} פריטים כבר שמורים ולא נוספו שוב`);
     } else {
-      toast.success(`⭐ ${savedIds.length} פריטים נשמרו ל-Workspace Library`);
+      toast.success(`⭐ ${confirmedSavedIds.length} פריטים נשמרו ל-Workspace Library`);
     }
-    onSaved?.({ count: savedIds.length, skipped: skippedCount });
-  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, findByContentHash, saveItemsBulk, reload, onSaved]);
+    onSaved?.({
+      count: confirmedSavedIds.length,
+      skipped: skippedCount,
+      failed: persistenceResult.failed || 0,
+      recordIds: confirmedSavedIds,
+      persistenceResult,
+    });
+  }, [effectiveDraftItems, topicId, subTopicId, flags, tags, notes, videoContext, selectedMainTopic, selectedSubTopic, findByContentHash, isSaving, libraryItems, saveItemsBulk, reload, onSaved]);
 
   // ── View tabs ─────────────────────────────────────────────────────────────────
 

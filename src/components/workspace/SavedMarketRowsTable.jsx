@@ -10,6 +10,11 @@ import { getMarketTrendTone, MARKET_PILL_CLS } from '@/lib/marketRowVisuals';
 import { parseMarketRowFromText } from '@/lib/marketRowText';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 /**
  * Table view for individually-saved "indices" rows aggregated under a
@@ -33,6 +38,7 @@ function isNumericStrength(value) {
 }
 
 export function SavedMarketRowsTable({ entries = [], selectedIds, onToggleGroup }) {
+  const revealIds = useWorkspaceRecordRevealIds();
   const rows = entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
     const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
@@ -70,9 +76,10 @@ export function SavedMarketRowsTable({ entries = [], selectedIds, onToggleGroup 
         <tbody>
           {rows.map(({ text, recordIds, parsed }, i) => {
             const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
+            const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
             if (!parsed) {
               return (
-                <tr key={`${text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                <tr key={`${text}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                   {showCheckboxCol && (
                     <td className={`${TD_CLS} text-center`}>
                       {selection && <UniversalTabCheckbox {...selection} />}
@@ -89,7 +96,7 @@ export function SavedMarketRowsTable({ entries = [], selectedIds, onToggleGroup 
             const { asset, trend, strength, comment } = parsed;
             const tone = trend ? getMarketTrendTone(trend) : null;
             return (
-              <tr key={`${asset || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+              <tr key={`${asset || 'row'}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                 {showCheckboxCol && (
                   <td className={`${TD_CLS} text-center`}>
                     {selection && <UniversalTabCheckbox {...selection} />}

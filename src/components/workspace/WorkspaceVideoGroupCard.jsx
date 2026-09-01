@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Edit2, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import { WORKSPACE_COLLECTION_HEADINGS } from '@/config/workspaceHeadingRegistry';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 const COLLECTIONS = [
   ...WORKSPACE_COLLECTION_HEADINGS.map(definition => ({
@@ -15,6 +20,7 @@ function dateText(value) { try { return value ? new Date(value).toLocaleDateStri
 
 export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleItem, onToggleGroup, onOpenVideo, onOpenItem, onEditItem, onArchiveItem, onDeleteItem, focusItemId, onFocusVideo, isFocused = false }) {
   const [expanded, setExpanded] = useState(false);
+  const revealIds = useWorkspaceRecordRevealIds();
   useEffect(() => {
     if (isFocused || (focusItemId && group.items.some(item => item.id === focusItemId))) setExpanded(true);
   }, [focusItemId, group.items, isFocused]);
@@ -37,7 +43,10 @@ export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleIt
       </div>
       {expanded && <div className="space-y-4 border-t border-slate-200 bg-slate-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">{COLLECTIONS.map(({ id: collection }) => {
         const versions = group.versions.filter(version => version.collection === collection); if (!versions.length) return null;
-        return <section key={collection}><h4 className="mb-2 font-bold">{LABELS[collection]}</h4><div className="space-y-2">{versions.map(version => <div key={version.contentKey} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900"><div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => onOpenItem(version.canonical)} className="font-semibold text-indigo-700 hover:underline dark:text-indigo-300">{version.canonical.sourceHeading || version.canonical.videoTitle || version.canonical.title || 'פריט שמור'}</button><span className="text-xs text-slate-500">{dateText(version.canonical.savedAt)}</span>{version.copyCount > 1 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{version.copyCount} שמירות זהות</span>}</div><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-slate-500">פרטים טכניים</summary><div className="mt-2 flex flex-wrap gap-2">{version.records.map(item => <div key={item.id} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] dark:border-zinc-700"><input aria-label={`בחר רשומה שמורה מתאריך ${dateText(item.savedAt)}`} type="checkbox" checked={selectedIds.has(item.id)} onChange={() => onToggleItem(item.id)} /><span className="font-mono">{item.id}</span><button onClick={() => onEditItem(item)} aria-label="ערוך"><Edit2 className="h-3 w-3" /></button><button onClick={() => onArchiveItem(item)} aria-label={item.archivedAt ? 'שחזר' : 'ארכיון'}>{item.archivedAt ? <ArchiveRestore className="h-3 w-3" /> : <Archive className="h-3 w-3" />}</button><button onClick={() => onDeleteItem(item)} aria-label="מחק"><Trash2 className="h-3 w-3 text-red-500" /></button></div>)}</div></details></div>)}</div></section>;
+        return <section key={collection}><h4 className="mb-2 font-bold">{LABELS[collection]}</h4><div className="space-y-2">{versions.map(version => {
+          const reveal = getWorkspaceRecordRevealState(version.records.map(item => item.id), revealIds);
+          return <div key={version.contentKey} {...reveal.attributes} className={`rounded-xl border border-slate-200 bg-white p-3 transition-colors dark:border-zinc-700 dark:bg-zinc-900 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}><div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => onOpenItem(version.canonical)} className="font-semibold text-indigo-700 hover:underline dark:text-indigo-300">{version.canonical.sourceHeading || version.canonical.videoTitle || version.canonical.title || 'פריט שמור'}</button><span className="text-xs text-slate-500">{dateText(version.canonical.savedAt)}</span>{version.copyCount > 1 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{version.copyCount} שמירות זהות</span>}</div><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-slate-500">פרטים טכניים</summary><div className="mt-2 flex flex-wrap gap-2">{version.records.map(item => <div key={item.id} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] dark:border-zinc-700"><input aria-label={`בחר רשומה שמורה מתאריך ${dateText(item.savedAt)}`} type="checkbox" checked={selectedIds.has(item.id)} onChange={() => onToggleItem(item.id)} /><span className="font-mono">{item.id}</span><button onClick={() => onEditItem(item)} aria-label="ערוך"><Edit2 className="h-3 w-3" /></button><button onClick={() => onArchiveItem(item)} aria-label={item.archivedAt ? 'שחזר' : 'ארכיון'}>{item.archivedAt ? <ArchiveRestore className="h-3 w-3" /> : <Archive className="h-3 w-3" />}</button><button onClick={() => onDeleteItem(item)} aria-label="מחק"><Trash2 className="h-3 w-3 text-red-500" /></button></div>)}</div></details></div>;
+        })}</div></section>;
       })}</div>}
     </article>
   );

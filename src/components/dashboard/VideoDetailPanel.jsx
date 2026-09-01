@@ -224,6 +224,9 @@ import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
 import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
 import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
 import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
+import { buildWorkspaceSelectionDraft } from '@/lib/workspaceSelectionDraft';
+import { buildWorkspaceNewsFields } from '@/lib/newsSelectionMetadata';
+import { buildWorkspaceSaveRevealParams } from '@/lib/workspaceSaveNavigation';
 import {
   classifyGemsDiagnostic,
   createGemsImportDiagnosticReport,
@@ -2325,6 +2328,7 @@ export function VideoDetailPanel({
   const [workspaceCurrentAnalysisItems, setWorkspaceCurrentAnalysisItems] = useState([]);
   const [isSavingStructuredSnapshot, setIsSavingStructuredSnapshot] = useState(false);
   const structuredSnapshotSaveInFlightRef = useRef(false);
+  const workspaceSingleSaveInFlightIdsRef = useRef(new Set());
   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
@@ -5641,18 +5645,30 @@ export function VideoDetailPanel({
     toast.success(`📊 יוצאו ${items.length} פריטים ל-CSV`);
   }, [multiSelected, video?.title]);
 
+  const navigateFromPanel = useCallback((page, params = {}) => {
+    if (!navigateTo) {
+      toast.error('לא ניתן לפתוח את הפריט השמור');
+      return false;
+    }
+    onOpenChange(false);
+    setTimeout(() => navigateTo(page, params), 80);
+    return true;
+  }, [navigateTo, onOpenChange]);
+
+  const navigateToSavedWorkspace = useCallback((persistenceResult, recordIds) => {
+    const params = buildWorkspaceSaveRevealParams({
+      persistenceResult,
+      recordIds,
+      topics: getWorkspaceTopics(),
+    });
+    if (!params) return false;
+    return navigateFromPanel('WorkspaceLibrary', params);
+  }, [navigateFromPanel]);
+
   const handleSaveSelectedToWorkspace = () => {
     if (multiSelected.size === 0) return;
     const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
-    const snapshot = [...multiSelected.entries()].map(([id, item]) => ({
-      id,
-      text: item.text || '',
-      sectionLabel: item.sectionLabel || '',
-      type: item.type || item.tabScope || '',
-      tabScope: item.tabScope || activeTab,
-      sectionKey: item.sectionKey || item.sourceSectionId || item.type || 'unsectioned',
-      timestamp: item.timestamp ?? null,
-    }));
+    const snapshot = buildWorkspaceSelectionDraft(multiSelected.entries(), activeTab);
     setWorkspaceDraftItems(snapshot);
     setWorkspaceDraftContext({
       videoTitle: effectiveVideo?.title || '',
@@ -5756,10 +5772,10 @@ export function VideoDetailPanel({
 
       if (saveResult.status === 'already_exists') {
         toast.info('תמונת המצב הזאת כבר שמורה בספרייה');
-        return;
+      } else {
+        toast.success('תמונת מצב נשמרה ל-Workspace Library');
       }
-
-      toast.success('תמונת מצב נשמרה ל-Workspace Library');
+      if (saveResult.item?.id) navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
     } finally {
       structuredSnapshotSaveInFlightRef.current = false;
       setIsSavingStructuredSnapshot(false);
@@ -5866,7 +5882,7 @@ export function VideoDetailPanel({
     setBrainPickerOpen(true);
   }, []);
 
-  const saveSingleItemToWorkspace = useCallback(async ({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId }) => {
+  const saveSingleItemToWorkspace = useCallback(async ({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId, newsMetadata }) => {
     const sourceVideoId = effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || 'unknown';
     const body = String(text || '').trim();
     if (!body) return;
@@ -5884,63 +5900,67 @@ export function VideoDetailPanel({
       }),
     });
     const wsId = itemDedupeKey(sourceVideoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
-    const now = new Date().toISOString();
-    const sourceTitle = effectiveVideo?.title || '';
-    const title = sourceTitle.slice(0, 40);
-    const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
-    const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
-    const saveResult = await persistWorkspaceItem({
-      id: wsId,
-      videoId: null,
-      sourceVideoTitle: sourceTitle,
-      videoTitle: `${sectionLabel || 'פריט'} — ${title || sourceVideoId}`.slice(0, 80),
-      videoUrl: effectiveVideo?.url || (sourceVideoId !== 'unknown' ? `https://www.youtube.com/watch?v=${sourceVideoId}` : null),
-      channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
-      thumbnail: effectiveVideo?.thumbnail || (sourceVideoId !== 'unknown' ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
-      topicId: sourceTopic.topicId,
-      subTopicId: null,
-      topicName: sourceTopic.topicName,
-      subTopicName: null,
-      category: sourceTopic.category,
-      subCategory: null,
-      notes: `${body}${tsLine}`,
-      flags: {},
-      tags: [],
-      sourceTab: sourceTab || null,
-      itemType: 'snippet',
-      originalItemType: type || 'snippet',
-      identityPayload: { text: body },
-      sourceTimestamp: timestamp ?? null,
-      savedAt: now,
-      sourceVideoType: videoType,
-      sourceBriefSlug: effectiveBriefSlug,
-      ...(provenance || {}),
-    });
-    if (!saveResult.ok) {
-      toast.error(getWorkspacePersistenceErrorMessage(saveResult));
-      return;
+    if (workspaceSingleSaveInFlightIdsRef.current.has(wsId)) return;
+    workspaceSingleSaveInFlightIdsRef.current.add(wsId);
+    try {
+      const now = new Date().toISOString();
+      const sourceTitle = effectiveVideo?.title || '';
+      const title = sourceTitle.slice(0, 40);
+      const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
+      const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
+      const newsFields = buildWorkspaceNewsFields({ text: body, type, newsMetadata });
+      const workspaceTitle = newsFields.newsTitle
+        ? newsFields.newsTitle
+        : `${sectionLabel || 'פריט'} — ${title || sourceVideoId}`;
+      const saveResult = await persistWorkspaceItem({
+        id: wsId,
+        videoId: null,
+        sourceVideoTitle: sourceTitle,
+        videoTitle: workspaceTitle.slice(0, 80),
+        videoUrl: effectiveVideo?.url || (sourceVideoId !== 'unknown' ? `https://www.youtube.com/watch?v=${sourceVideoId}` : null),
+        channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+        thumbnail: effectiveVideo?.thumbnail || (sourceVideoId !== 'unknown' ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
+        topicId: sourceTopic.topicId,
+        subTopicId: null,
+        topicName: sourceTopic.topicName,
+        subTopicName: null,
+        category: sourceTopic.category,
+        subCategory: null,
+        notes: `${body}${tsLine}`,
+        flags: {},
+        tags: [],
+        sourceTab: sourceTab || null,
+        itemType: 'snippet',
+        originalItemType: type || 'snippet',
+        identityPayload: { text: body },
+        sourceTimestamp: timestamp ?? null,
+        savedAt: now,
+        sourceVideoType: videoType,
+        sourceBriefSlug: effectiveBriefSlug,
+        ...(provenance || {}),
+        ...newsFields,
+      });
+      if (!saveResult.ok) {
+        toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+        return;
+      }
+      setSavedItemKeys(previous => {
+        const next = new Set(previous);
+        next.add(wsId);
+        return next;
+      });
+      if (saveResult.status === 'already_exists') {
+        toast.info('כבר נשמר ל-Workspace');
+      } else {
+        toast.success('⭐ נשמר ל-Workspace');
+      }
+      if (saveResult.item?.id) {
+        navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
+      }
+    } finally {
+      workspaceSingleSaveInFlightIdsRef.current.delete(wsId);
     }
-    setSavedItemKeys(previous => {
-      const next = new Set(previous);
-      next.add(wsId);
-      return next;
-    });
-    if (saveResult.status === 'already_exists') {
-      toast.info('כבר נשמר ל-Workspace');
-      return;
-    }
-    toast.success('⭐ נשמר ל-Workspace');
-  }, [effectiveBriefSlug, effectiveVideo, persistWorkspaceItem, videoType]);
-
-  const navigateFromPanel = useCallback((page, params = {}) => {
-    if (!navigateTo) {
-      toast.error('לא ניתן לפתוח את הפריט השמור');
-      return false;
-    }
-    onOpenChange(false);
-    setTimeout(() => navigateTo(page, params), 80);
-    return true;
-  }, [navigateTo, onOpenChange]);
+  }, [effectiveBriefSlug, effectiveVideo, navigateToSavedWorkspace, persistWorkspaceItem, videoType]);
 
   const openSavedBrainItem = useCallback((text, tabKey) => {
     const videoId = video?.youtubeId || video?.id;
@@ -5959,11 +5979,11 @@ export function VideoDetailPanel({
       toast.error('לא ניתן לפתוח את הפריט השמור');
       return false;
     }
-    if (status.topicId) {
-      return navigateFromPanel('TopicKnowledgePage', { topicId: status.topicId });
-    }
-    return navigateFromPanel('WorkspaceLibrary', {});
-  }, [navigateFromPanel, video?.id, video?.youtubeId]);
+    return navigateToSavedWorkspace(
+      { ok: true, persistedItems: persistedWorkspaceItems },
+      status.itemId ? [status.itemId] : [],
+    );
+  }, [navigateToSavedWorkspace, persistedWorkspaceItems, video?.id, video?.youtubeId]);
 
   const videoIdForQuickSave = video?.youtubeId || video?.id;
 
@@ -13243,13 +13263,14 @@ export function VideoDetailPanel({
       onOpenChange={setWorkspaceSaveOpen}
       video={effectiveVideo}
       sourceTab={workspaceSourceTab}
-      onSaved={({ topicName, subTopicName } = {}) => {
+      onSaved={({ topicName, subTopicName, recordIds, persistenceResult } = {}) => {
         setWorkspaceSaveOpen(false);
         // Propagate topic change through React Query so video cards + header refresh
         if (topicName) {
           try { saveVideoFields({ category: topicName, subCategory: subTopicName || '' }); } catch {}
         }
         toast.success('✅ הסרטון נשמר ל-Workspace Library');
+        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
       }}
     />
 
@@ -13261,7 +13282,10 @@ export function VideoDetailPanel({
       currentAnalysisDraftItems={workspaceCurrentAnalysisItems}
       defaultView={workspaceDraftDefaultView}
       videoContext={workspaceDraftContext}
-      onSaved={() => multiSelectClearWithBrain()}
+      onSaved={({ recordIds, persistenceResult } = {}) => {
+        multiSelectClearWithBrain();
+        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
+      }}
       onOpenLibrary={() => navigateFromPanel('WorkspaceLibrary')}
     />
 

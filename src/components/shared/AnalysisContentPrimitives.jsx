@@ -11,6 +11,11 @@ import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { buildPersistedYouTubeTimestampUrl } from '@/utils/analysisTickerLinks';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 export const ANALYSIS_SECTION_CARD_CLASS = SUMMARY_CARD_CLASS;
 export const ANALYSIS_BODY_TEXT_CLASS = DASHBOARD_TABLE_CELL_BODY_CLS;
@@ -55,6 +60,7 @@ export function AnalysisSectionCard({
 }
 
 export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
+  const revealIds = useWorkspaceRecordRevealIds();
   if (entries.length === 0) return null;
   return (
     <ul className="space-y-0.5 text-right" dir="rtl">
@@ -63,8 +69,9 @@ export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
         const rank = typeof entry === 'object' ? entry.rank : null;
         const recordIds = typeof entry === 'object' ? entry.recordIds : null;
         const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
+        const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
         return (
-          <li key={`${text}-${index}`} className="flex items-start justify-end gap-2 rounded-lg px-2 py-2 hover:bg-slate-50/80 dark:hover:bg-zinc-800/60">
+          <li key={`${text}-${index}`} {...reveal.attributes} className={cn('flex items-start justify-end gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/60', reveal.highlighted && WORKSPACE_RECORD_REVEAL_CLASS)}>
             {selection && (
               <span className="shrink-0 pt-1">
                 <UniversalTabCheckbox {...selection} />
@@ -84,15 +91,17 @@ export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
 }
 
 export function AnalysisFieldGrid({ fields = [] }) {
+  const revealIds = useWorkspaceRecordRevealIds();
   if (fields.length === 0) return null;
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
-      {fields.map(field => (
-        <div key={`${field.label}|${field.value}`} className="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 dark:border-zinc-700/70 dark:bg-zinc-900">
+      {fields.map(field => {
+        const reveal = getWorkspaceRecordRevealState(field.recordIds, revealIds);
+        return <div key={`${field.label}|${field.value}`} {...reveal.attributes} className={cn('rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 transition-colors dark:border-zinc-700/70 dark:bg-zinc-900', reveal.highlighted && WORKSPACE_RECORD_REVEAL_CLASS)}>
           <dt className="text-base font-bold text-slate-800 dark:text-zinc-100">{field.label}</dt>
           <dd className={cn('mt-1 whitespace-pre-wrap', ANALYSIS_BODY_TEXT_CLASS)}>{renderLinkedMarketText(field.value)}</dd>
-        </div>
-      ))}
+        </div>;
+      })}
     </dl>
   );
 }

@@ -4,6 +4,7 @@
  */
 
 import { resolveTone, TONE } from '@/lib/morningBriefVisuals';
+import { buildNewsSelectionMetadata } from '@/lib/newsSelectionMetadata';
 
 export const MAX_NEWS_ITEMS = 6;
 export const COLLAPSED_NEWS_ITEMS = 3;
@@ -217,7 +218,11 @@ export function normalizeNewsItems(items) {
     const sig = normalized.saveText.slice(0, 160);
     if (!sig || seen.has(sig)) continue;
     seen.add(sig);
-    out.push({ ...normalized, id: sig, sourceItem });
+    const normalizedItem = { ...normalized, id: sig, sourceItem };
+    out.push({
+      ...normalizedItem,
+      newsMetadata: buildNewsSelectionMetadata(normalizedItem),
+    });
   }
 
   return out;

@@ -11,6 +11,7 @@ export function MorningBriefBulkCheckbox({
   sectionLabel = '',
   tabKey = 'specialized',
   bulkSelection = null,
+  selectionPayload = null,
   className = UNIVERSAL_TAB_CHECKBOX_INPUT_CLASS,
 }) {
   if (!bulkSelection?.onToggle || !text || !sectionKey) return null;
@@ -25,6 +26,7 @@ export function MorningBriefBulkCheckbox({
       type="checkbox"
       checked={checked}
       onChange={() => bulkSelection.onToggle(id, {
+        ...(selectionPayload || {}),
         text: String(text).trim(),
         sectionLabel: sectionLabel || sectionKey,
         type: tabKey,

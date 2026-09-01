@@ -73,6 +73,7 @@ export function resolveWorkspaceSaveStatus(videoId, tabKey, text) {
   if (!item) {
     return {
       saved: false,
+      itemId: null,
       location: 'Workspace / קטעים',
       savedAt: null,
       openPath: null,
@@ -81,6 +82,7 @@ export function resolveWorkspaceSaveStatus(videoId, tabKey, text) {
   }
   return {
     saved: true,
+    itemId: item.id || null,
     location: item.workspacePath || item.sectionName || 'Workspace',
     savedAt: formatSavedDate(item.updatedAt || item.createdAt),
     openPath: item.workspacePath || null,

@@ -13,6 +13,11 @@ import { getSectorRowSentimentTone, getSectorRowSentimentLabel } from '@/lib/sec
 import { parseSectorRowFromText } from '@/lib/sectorRowText';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 /**
  * Table view for individually-saved "🏭 סקטורים" rows aggregated under a
@@ -61,6 +66,7 @@ function SectorNamePill({ sector }) {
 }
 
 export function SavedSectorRowsTable({ entries = [], selectedIds, onToggleGroup }) {
+  const revealIds = useWorkspaceRecordRevealIds();
   const rows = entries.map((entry) => {
     const text = typeof entry === 'string' ? entry : entry?.text;
     const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
@@ -94,9 +100,10 @@ export function SavedSectorRowsTable({ entries = [], selectedIds, onToggleGroup 
         <tbody>
           {rows.map(({ text, recordIds, parsed }, i) => {
             const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
+            const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
             if (!parsed) {
               return (
-                <tr key={`${text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                <tr key={`${text}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                   {showCheckboxCol && (
                     <td className={`${TD_CLS} text-center`}>
                       {selection && <UniversalTabCheckbox {...selection} />}
@@ -113,7 +120,7 @@ export function SavedSectorRowsTable({ entries = [], selectedIds, onToggleGroup 
             const { sector, sentimentRaw, note } = parsed;
             const tone = sentimentRaw ? getSectorRowSentimentTone(sentimentRaw) : null;
             return (
-              <tr key={`${sector || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+              <tr key={`${sector || 'row'}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                 {showCheckboxCol && (
                   <td className={`${TD_CLS} text-center`}>
                     {selection && <UniversalTabCheckbox {...selection} />}

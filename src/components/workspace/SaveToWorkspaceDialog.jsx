@@ -65,6 +65,7 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
   const [showNewSub, setShowNewSub] = useState(false);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   // Stage 2 "Workspace Day" opt-in — only meaningful while a day is open.
   const [attachToDay, setAttachToDay] = useState(false);
   const openDay = useMemo(() => (open ? getOpenWorkspaceDay() : null), [open]);
@@ -134,7 +135,10 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
 
   const handleSave = async () => {
     const videoId = video?.id || video?.videoId;
-    if (!videoId) return;
+    if (!videoId || isSaving) return;
+    setIsSaving(true);
+
+    try {
 
     const topicName    = selectedMainTopic?.name || '';
     const subTopicName = selectedSubTopic?.name  || '';
@@ -178,10 +182,10 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
       gemId: video?.selectedGemId || null,
     });
 
-    if (!saveResult.ok) {
-      toast.error(getWorkspacePersistenceErrorMessage(saveResult));
-      return;
-    }
+      if (!saveResult.ok) {
+        toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+        return;
+      }
 
     // Sync topic to video record and knowledge items so all views stay consistent
     if (topicName) {
@@ -203,7 +207,16 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
       toast.error('לא ניתן לצרף ליום — הפריט לא נשמר במלואו');
     }
 
-    onSaved?.({ topicName, subTopicName });
+      onSaved?.({
+        topicName,
+        subTopicName,
+        recordIds: saveResult.item?.id ? [saveResult.item.id] : [],
+        item: saveResult.item || null,
+        persistenceResult: saveResult,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddTopic = () => {
@@ -552,9 +565,10 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+            disabled={isSaving}
+            className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
-            ⭐ שמור ל-Workspace
+            {isSaving ? 'שומר...' : '⭐ שמור ל-Workspace'}
           </button>
         </div>
       </DialogContent>

@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react';
 import { findMarketEntityLinksInText } from '@/lib/marketEntityLinkResolver';
 import { deriveNewsTone, deriveNewsTopic, NEWS_TONE_META, NEWS_TOPIC_LABELS } from '@/lib/newsRowVisuals';
+import { translateSentimentValue } from '@/lib/sentimentDisplayI18n';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import { cn } from '@/lib/utils';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 /**
  * Row list for individually-saved "📰 חדשות" rows AND (per approved Phase 2
@@ -33,15 +40,64 @@ function FilterChip({ label, count, isActive, onClick }) {
   );
 }
 
-/** One row: topic chip + entity chips + full text, tone border on the visual right edge. */
-export function NewsStyleTextRow({ topic, entityLinks, text, recordIds, selectedIds, onToggleGroup }) {
-  const tone = deriveNewsTone(text);
+function normalizedSourceLinks(links = []) {
+  const seen = new Set();
+  return (Array.isArray(links) ? links : []).flatMap((link, index) => {
+    const url = typeof link === 'string' ? link.trim() : String(link?.url || link?.href || link?.link || '').trim();
+    if (!url || seen.has(url)) return [];
+    seen.add(url);
+    return [{
+      url,
+      label: typeof link === 'object'
+        ? String(link.label || link.title || link.name || `מקור ${index + 1}`).trim()
+        : `מקור ${index + 1}`,
+    }];
+  });
+}
+
+function sourceMetadataText(sourceMetadata = {}) {
+  if (!sourceMetadata || typeof sourceMetadata !== 'object') return '';
+  return [
+    sourceMetadata.source,
+    sourceMetadata.sourceName,
+    sourceMetadata.publisher,
+    sourceMetadata.author,
+    sourceMetadata.publishedAt || sourceMetadata.date,
+  ].map(value => String(value || '').trim()).filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · ');
+}
+
+/** One row: primary news content first; sentiment and source data remain supporting metadata. */
+export function NewsStyleTextRow({
+  topic,
+  entityLinks,
+  text,
+  headline = '',
+  description = '',
+  sentiment = '',
+  impact = '',
+  links = [],
+  sourceMetadata = {},
+  structuredNews = false,
+  recordIds,
+  selectedIds,
+  onToggleGroup,
+}) {
+  const revealIds = useWorkspaceRecordRevealIds();
+  const tone = deriveNewsTone([sentiment, headline, description, impact, text].filter(Boolean).join(' '));
   const toneMeta = NEWS_TONE_META[tone];
+  const sentimentLabel = translateSentimentValue(sentiment);
+  const sourceText = sourceMetadataText(sourceMetadata);
+  const sourceLinks = normalizedSourceLinks([
+    ...(Array.isArray(links) ? links : []),
+    ...(sourceMetadata?.url ? [{ url: sourceMetadata.url, label: 'מקור' }] : []),
+  ]);
   const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
+  const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
   return (
     <div
       dir="rtl"
-      className={`flex items-start gap-2 rounded-l-xl rounded-r-none border border-r-[3px] border-slate-200 dark:border-zinc-700/60 ${toneMeta.borderClass} bg-white dark:bg-zinc-900 px-3 py-2.5`}
+      {...reveal.attributes}
+      className={cn(`flex items-start gap-2 rounded-l-xl rounded-r-none border border-r-[3px] border-slate-200 dark:border-zinc-700/60 ${toneMeta.borderClass} bg-white dark:bg-zinc-900 px-3 py-2.5 transition-colors`, reveal.highlighted && WORKSPACE_RECORD_REVEAL_CLASS)}
       data-news-style-row
       data-news-row-tone={tone}
     >
@@ -74,10 +130,37 @@ export function NewsStyleTextRow({ topic, entityLinks, text, recordIds, selected
             {link.display}
           </a>
         ))}
+        {sourceLinks.map((link) => (
+          <a
+            key={link.url}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
+            data-news-source-link
+          >
+            {link.label}
+          </a>
+        ))}
       </div>
-      <p className="text-[13px] leading-snug text-slate-700 dark:text-zinc-300 break-words [overflow-wrap:anywhere]">
-        {text}
-      </p>
+      {structuredNews ? (
+        <>
+          <h4 className="text-sm font-extrabold leading-snug text-slate-900 dark:text-zinc-100 break-words" data-news-headline>{headline}</h4>
+          <p className="text-[13px] leading-relaxed text-slate-700 dark:text-zinc-300 break-words [overflow-wrap:anywhere]" data-news-description>{description}</p>
+          {(sentimentLabel || impact || sourceText) && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-zinc-400" data-news-metadata>
+              {sentimentLabel && <span data-news-sentiment><span className="font-semibold">סנטימנט:</span> {sentimentLabel}</span>}
+              {impact && <span data-news-impact><span className="font-semibold">השפעה:</span> {impact}</span>}
+              {sourceText && <span data-news-source><span className="font-semibold">מקור:</span> {sourceText}</span>}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-[13px] leading-snug text-slate-700 dark:text-zinc-300 break-words [overflow-wrap:anywhere]">
+          {text}
+        </p>
+      )}
       </div>
     </div>
   );
@@ -91,9 +174,27 @@ export function SavedNewsRows({ entries = [], selectedIds, onToggleGroup }) {
     const safeText = String(text || '').trim();
     if (!safeText) return null;
     const recordIds = typeof entry === 'object' ? entry?.recordIds : null;
-    const entityLinks = findMarketEntityLinksInText(safeText);
-    const topic = deriveNewsTopic(safeText, entityLinks);
-    return { text: safeText, recordIds, entityLinks, topic };
+    const headline = typeof entry === 'object' ? String(entry?.headline || '').trim() : '';
+    const description = typeof entry === 'object' ? String(entry?.description || '').trim() : '';
+    const sentiment = typeof entry === 'object' ? String(entry?.sentiment || '').trim() : '';
+    const impact = typeof entry === 'object' ? String(entry?.impact || '').trim() : '';
+    const symbols = typeof entry === 'object' && Array.isArray(entry?.symbols) ? entry.symbols : [];
+    const entityText = [headline, description, impact, symbols.join(' '), safeText].filter(Boolean).join(' ');
+    const entityLinks = findMarketEntityLinksInText(entityText);
+    const topic = deriveNewsTopic(entityText, entityLinks);
+    return {
+      text: safeText,
+      headline,
+      description,
+      sentiment,
+      impact,
+      links: typeof entry === 'object' ? entry?.links : [],
+      sourceMetadata: typeof entry === 'object' ? entry?.sourceMetadata : {},
+      structuredNews: Boolean(typeof entry === 'object' && entry?.structuredNews),
+      recordIds,
+      entityLinks,
+      topic,
+    };
   }).filter(Boolean), [entries]);
 
   const { counts, filtered } = useMemo(() => {
@@ -127,6 +228,13 @@ export function SavedNewsRows({ entries = [], selectedIds, onToggleGroup }) {
             topic={row.topic}
             entityLinks={row.entityLinks}
             text={row.text}
+            headline={row.headline}
+            description={row.description}
+            sentiment={row.sentiment}
+            impact={row.impact}
+            links={row.links}
+            sourceMetadata={row.sourceMetadata}
+            structuredNews={row.structuredNews}
             recordIds={row.recordIds}
             selectedIds={selectedIds}
             onToggleGroup={onToggleGroup}

@@ -169,7 +169,13 @@ console.log('\n11. extractVideoTabItems integration — clobbering bug reproduct
   assert('market-news tab is NOT empty despite empty specialized.marketNews', newsTabItems.length > 0);
   assert(
     'market-news tab keeps the headline+impact text',
-    newsTabItems.some((i) => typeof i === 'string' && i.includes('מייקרוסופט') && i.includes('אקסבוקס')),
+    newsTabItems.some((i) => {
+      const text = typeof i === 'string' ? i : i?.text;
+      const source = typeof i === 'object' ? i?.rowTimestampSourceItem : null;
+      return text?.includes('מייקרוסופט')
+        && text?.includes('אקסבוקס')
+        && (!source || source.headline?.includes('מייקרוסופט'));
+    }),
   );
   assert('brief-sectors tab is NOT empty despite empty specialized.sectorRotation', sectorTabItems.length > 0);
   assert(

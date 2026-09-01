@@ -45,6 +45,7 @@ export function buildQuickSaveMeta(meta = {}) {
     type: meta.type || meta.tabScope || 'multi',
     tabScope: meta.tabScope || meta.type || 'multi',
     timestamp: meta.timestamp || '',
+    ...(meta.newsMetadata ? { newsMetadata: meta.newsMetadata } : {}),
   };
 }
 
@@ -331,11 +332,13 @@ export function UniversalTabQuickSaveFromBulk({
   pxUrl,
   compact = true,
   className = '',
+  selectionPayload = null,
 }) {
   if (!bulkSelection?.onQuickSaveBrain && !bulkSelection?.onQuickSaveObsidian && !bulkSelection?.onQuickSaveWorkspace) {
     return null;
   }
   const meta = buildQuickSaveMeta({
+    ...(selectionPayload || {}),
     text,
     sectionLabel: sectionLabel ?? bulkSelection.sectionLabel,
     type: type ?? bulkSelection.type,

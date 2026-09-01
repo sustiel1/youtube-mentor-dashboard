@@ -44,7 +44,7 @@ export function buildBulkItemsFromSections(sections = [], tabScope, idPrefix = t
   sections.forEach(({ key, label, items, tabKey }) => {
     const sourceTab = tabKey || tabScope;
     const list = Array.isArray(items) ? items : [];
-    list.map(formatBulkItemText).filter(Boolean).forEach((text, i) => {
+    list.map((item) => ({ item, text: formatBulkItemText(item) })).filter(({ text }) => Boolean(text)).forEach(({ item, text }, i) => {
       out.push({
         id: `${idPrefix}:${key || sourceTab}:${i}`,
         text,
@@ -52,6 +52,9 @@ export function buildBulkItemsFromSections(sections = [], tabScope, idPrefix = t
         type: sourceTab,
         tabScope,
         sectionKey: key || sourceTab,
+        ...(item && typeof item === 'object' && item.selectionPayload
+          ? item.selectionPayload
+          : {}),
       });
     });
   });

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Star, X, Trash2, Edit2, Plus, Search, Settings, Archive, ArchiveRestore, MoreVertical, Copy, FileDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/workspace/ConfirmDialog";
 import { VIRTUAL_TAXONOMY } from "@/utils/workspaceVirtualTaxonomy";
@@ -54,6 +54,7 @@ import {
   selectWorkspaceSemanticFilterCounts,
 } from "@/utils/workspaceMarketDimensions";
 import { checksumWorkspacePayloadsExcludingTopicAssignment } from "@/utils/workspaceBriefRouting";
+import { WorkspaceRecordRevealProvider } from "@/context/WorkspaceRecordRevealContext";
 
 // ─── Market status workflow ────────────────────────────────────────────────────
 const MARKET_STATUS_TABS = [
@@ -111,6 +112,15 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   const [briefRoutingPreviewOpen, setBriefRoutingPreviewOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState(null);
   const [handledRouteKey, setHandledRouteKey] = useState('');
+  const [revealedRecordIds, setRevealedRecordIds] = useState([]);
+  const [revealedRecordCount, setRevealedRecordCount] = useState(0);
+  const handledRevealTokenRef = useRef('');
+  // Absolute close deadline (Date.now() + 7000 at open time) for the reveal highlight.
+  // Kept in a ref (source of truth) + mirrored to state so a dedicated effect can
+  // schedule the close timer independently of `items` re-renders (see below).
+  const closeDeadlineRef = useRef(0);
+  const [revealCloseAt, setRevealCloseAt] = useState(0);
+  const scrolledRevealTokenRef = useRef('');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -184,6 +194,36 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     }
     setHandledRouteKey(routeKey);
   }, [allMainTabs, handledRouteKey, items, pageParams, topics, validSemanticFilterIds]);
+
+  useEffect(() => {
+    const revealIds = [...new Set((Array.isArray(pageParams.revealRecordIds) ? pageParams.revealRecordIds : [])
+      .map(value => String(value || '').trim())
+      .filter(id => items.some(item => String(item?.id) === id)))];
+    const revealToken = String(pageParams.revealToken || '');
+    if (!revealToken || handledRevealTokenRef.current === revealToken || revealIds.length === 0) return undefined;
+    handledRevealTokenRef.current = revealToken;
+    setRevealedRecordIds(revealIds);
+    setRevealedRecordCount(Number(pageParams.revealCount) || revealIds.length);
+    // Fix the close deadline once, at open time, so later `items` changes (which
+    // re-run this effect's dependency check) cannot postpone or drop the close.
+    closeDeadlineRef.current = Date.now() + 7000;
+    setRevealCloseAt(closeDeadlineRef.current);
+    return undefined;
+  }, [items, pageParams.revealCount, pageParams.revealRecordIds, pageParams.revealToken]);
+
+  // Owns the actual close timer. Depends only on `revealCloseAt`, NOT on `items`,
+  // so an unrelated items reload during the 7s window cannot tear down and drop
+  // this timer without rescheduling it. A new reveal token produces a new
+  // `revealCloseAt` value above, which correctly supersedes the previous timer.
+  useEffect(() => {
+    if (!revealCloseAt) return undefined;
+    const delay = Math.max(0, revealCloseAt - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      setRevealedRecordIds([]);
+      setRevealedRecordCount(0);
+    }, delay);
+    return () => window.clearTimeout(timeoutId);
+  }, [revealCloseAt]);
 
   function toggleTabVisibility(vtId) {
     const newPrefs = {
@@ -548,6 +588,20 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     };
   }, [filteredItems, focusedVideoGroup]);
 
+  useEffect(() => {
+    const firstId = revealedRecordIds[0];
+    const revealToken = String(pageParams.revealToken || '');
+    if (!firstId || !revealToken || scrolledRevealTokenRef.current === revealToken) return undefined;
+    const frameId = window.requestAnimationFrame(() => {
+      const target = [...document.querySelectorAll('[data-workspace-record-highlight="true"]')]
+        .find(element => String(element.getAttribute('data-workspace-record-ids') || '').split(/\s+/).includes(firstId));
+      if (!target) return;
+      scrolledRevealTokenRef.current = revealToken;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeCollection, focusedVisibleGroup, pageParams.revealToken, revealedRecordIds]);
+
   const toggleGroupSelection = (ids, selected) => {
     setSelectedCardIds(previous => {
       const next = new Set(previous);
@@ -692,6 +746,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
 
   // ── render ────────────────────────────────────────────────────────────────────
   return (
+    <WorkspaceRecordRevealProvider recordIds={revealedRecordIds}>
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:bg-zinc-950" dir="rtl">
 
       {/* ══════════════════════ HEADER ══════════════════════ */}
@@ -1206,6 +1261,18 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
           </div>
         )}
 
+        {revealedRecordCount > 0 && (
+          <div
+            role="status"
+            data-workspace-saved-count={revealedRecordCount}
+            className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            {revealedRecordCount === 1
+              ? 'הפריט שנשמר מסומן ומוצג כעת'
+              : `${revealedRecordCount} הפריטים שנשמרו מסומנים ומוצגים כעת`}
+          </div>
+        )}
+
         {focusedVideoGroup ? (
           <>
             <WorkspaceFocusedVideoCard
@@ -1439,6 +1506,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
         />
       )}
     </div>
+    </WorkspaceRecordRevealProvider>
   );
 }
 

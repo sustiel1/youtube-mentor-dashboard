@@ -23,12 +23,18 @@ import {
 import { getWorkspaceSourceVideoId } from '@/utils/workspaceItemIdentity';
 import { getObsidianItemSavesForVideo } from '@/lib/obsidianItemSaveStore';
 import { buildObsidianOpenUrl, getActiveObsidianVaultConfig } from '@/lib/obsidianVaultConfig';
+import { getBriefContextDisplay } from '@/lib/briefContextDisplay';
 import {
   AnalysisFieldGrid,
   AnalysisList,
   AnalysisSectionCard,
   AnalysisTimestampLink,
 } from '@/components/shared/AnalysisContentPrimitives';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 function dateText(value) {
   try { return value ? new Date(value).toLocaleDateString('he-IL') : 'ללא תאריך'; }
@@ -213,12 +219,20 @@ function SavedNewsSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
+  // Only show a morning/evening label when every saved item in this section
+  // agrees on the same brief slug — a mixed section would otherwise show one
+  // misleading label for items from a different brief.
+  const briefSlugs = new Set(section.provenance.map(entry => entry.sourceBriefSlug).filter(Boolean));
+  const briefLabel = briefSlugs.size === 1 ? getBriefContextDisplay([...briefSlugs][0])?.title : null;
+  const metadata = [`נשמר לאחרונה ${dateText(latestSave)}`, briefLabel, `${recordIds.length} רשומות מקור`]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <AnalysisSectionCard
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={metadata}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -234,20 +248,24 @@ function SavedNewsSection({ section, selectedIds, onToggleGroup, videoUrl }) {
 
 function SnapshotSection({ section, selectedIds, onToggleGroup }) {
   const recordIds = section.provenance.map(entry => entry.recordId);
+  const revealIds = useWorkspaceRecordRevealIds();
+  const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
   return (
-    <AnalysisSectionCard
-      title={section.copyCount > 1 ? `תמונת מצב אחת · ${section.copyCount} שמירות זהות` : 'תמונת מצב אחת'}
-      icon="📊"
-      metadata={`${recordIds.length} רשומות מקור שמורות`}
-      checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label="בחר תמונת מצב שמורה" className="mt-2 h-4 w-4 shrink-0" />}
-      className="shadow-sm"
-    >
-      <div data-persisted-record-count={recordIds.length}>
-        <StructuredSnapshotContent snapshot={section.snapshot} />
-        {technicalDetails(section)}
-      </div>
-    </AnalysisSectionCard>
+    <div {...reveal.attributes} className={reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : undefined}>
+      <AnalysisSectionCard
+        title={section.copyCount > 1 ? `תמונת מצב אחת · ${section.copyCount} שמירות זהות` : 'תמונת מצב אחת'}
+        icon="📊"
+        metadata={`${recordIds.length} רשומות מקור שמורות`}
+        checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label="בחר תמונת מצב שמורה" className="mt-2 h-4 w-4 shrink-0" />}
+        className="shadow-sm"
+      >
+        <div data-persisted-record-count={recordIds.length}>
+          <StructuredSnapshotContent snapshot={section.snapshot} />
+          {technicalDetails(section)}
+        </div>
+      </AnalysisSectionCard>
+    </div>
   );
 }
 
@@ -309,6 +327,12 @@ export function WorkspaceFocusedVideoCard({
   collectionCounts, topics = [],
 }) {
   const viewer = selectSavedAnalysisViewer(visibleGroup);
+  const revealIds = useWorkspaceRecordRevealIds();
+  const renderedIds = new Set(viewer.renderedRecordIds);
+  const unrenderedRecordIds = group.items
+    .map(item => item?.id)
+    .filter(id => id && revealIds.has(id) && !renderedIds.has(id));
+  const fallbackReveal = getWorkspaceRecordRevealState(unrenderedRecordIds, revealIds);
   const duplicateIds = group.exactDuplicateGroups.flatMap(version => version.records.slice(1).map(item => item.id));
   const sourceVideoId = group.items.map(getWorkspaceSourceVideoId).find(Boolean) || group.videoId || null;
   const obsidianEntries = getObsidianItemSavesForVideo(sourceVideoId);
@@ -338,7 +362,12 @@ export function WorkspaceFocusedVideoCard({
   });
 
   return (
-    <article data-video-key={group.videoKey} data-workspace-scope="video" className="overflow-hidden rounded-3xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-zinc-900">
+    <article
+      data-video-key={group.videoKey}
+      data-workspace-scope="video"
+      {...fallbackReveal.attributes}
+      className={`overflow-hidden rounded-3xl border border-indigo-200 bg-white shadow-sm transition-colors dark:border-indigo-800 dark:bg-zinc-900 ${fallbackReveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}
+    >
       <header className="grid gap-5 p-5 md:grid-cols-[240px_1fr]">
         <div className="aspect-video overflow-hidden rounded-2xl bg-slate-100 dark:bg-zinc-800">{group.thumbnail && <img src={group.thumbnail} alt="" className="h-full w-full object-cover" />}</div>
         <div className="min-w-0 space-y-4 text-right">

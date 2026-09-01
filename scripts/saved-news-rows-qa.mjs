@@ -142,6 +142,92 @@ try {
     assert.ok(markup.includes('עדכון חדשות'), 'the real saved text is visible in the markup');
   });
 
+  check('three structured saved news records render their own headline and description before sentiment metadata', () => {
+    const records = [
+      {
+        title: 'כותרת חדשות חיובית ייחודית',
+        description: 'תיאור חיובי השייך רק לרשומה הראשונה.',
+        sentiment: 'positive',
+        impact: 'השפעה חיובית על שוק המניות',
+        symbol: 'NVDA',
+      },
+      {
+        title: 'כותרת חדשות ניטרלית ייחודית',
+        description: 'תיאור ניטרלי השייך רק לרשומה השנייה.',
+        sentiment: 'neutral',
+        impact: 'השפעה מוגבלת בטווח הקצר',
+        symbol: 'INTC',
+      },
+      {
+        title: 'כותרת חדשות שלילית ייחודית',
+        description: 'תיאור שלילי השייך רק לרשומה השלישית.',
+        sentiment: 'negative',
+        impact: 'לחץ אפשרי על הסקטור',
+        symbol: 'GOOGL',
+      },
+    ].map((news, index) => realNewsItem({
+      id: `ws-item:structured-news-${index + 1}`,
+      videoTitle: news.title,
+      notes: `${news.title} — ${news.description} — השפעה: ${news.impact}`,
+      rawSourceText: `${news.title} — ${news.description} — השפעה: ${news.impact}`,
+      newsTitle: news.title,
+      newsDescription: news.description,
+      newsContent: news.description,
+      sentiment: news.sentiment,
+      impact: news.impact,
+      symbols: [news.symbol],
+      links: [{ url: `https://example.com/news-${index + 1}`, label: `מקור ${index + 1}` }],
+      sourceMetadata: { source: `סוכנות ${index + 1}`, publishedAt: `2026-08-31T0${index + 6}:00:00Z` },
+      identityPayload: {
+        text: `${news.title} — ${news.description} — השפעה: ${news.impact}`,
+        title: news.title,
+        description: news.description,
+        content: news.description,
+        sentiment: news.sentiment,
+        impact: news.impact,
+        symbols: [news.symbol],
+      },
+    }));
+
+    const markup = render(records);
+    assert.equal((markup.match(/data-news-style-row/g) || []).length, 3, 'three distinct news rows render');
+    records.forEach((record) => {
+      assert.ok(markup.includes(record.newsTitle), `headline renders: ${record.newsTitle}`);
+      assert.ok(markup.includes(record.newsDescription), `description renders: ${record.newsDescription}`);
+      assert.ok(markup.includes(record.impact), `impact renders: ${record.impact}`);
+      assert.equal(
+        markup.split(`data-news-headline="true">${record.newsTitle}</h4>`).length - 1,
+        1,
+        `headline is rendered once as primary text: ${record.newsTitle}`,
+      );
+    });
+    assert.ok(markup.includes('סנטימנט:</span> חיובי'), 'positive is translated to the existing Hebrew convention');
+    assert.ok(markup.includes('סנטימנט:</span> ניטרלי'), 'neutral is translated to the existing Hebrew convention');
+    assert.ok(markup.includes('סנטימנט:</span> שלילי'), 'negative is translated to the existing Hebrew convention');
+    assert.equal(markup.includes('>positive<'), false, 'raw positive is not the primary content');
+    assert.equal(markup.includes('>neutral<'), false, 'raw neutral is not the primary content');
+    assert.equal(markup.includes('>negative<'), false, 'raw negative is not the primary content');
+    assert.ok(markup.includes('data-news-source-link'), 'source links remain available');
+    assert.ok(markup.includes('סוכנות 1'), 'source metadata remains visible');
+    assert.ok(markup.includes('data-entity-chip="NVDA"'), 'symbols remain available as linked entity chips');
+  });
+
+  check('a malformed legacy news record with sentiment only gets readable fallback text without rewriting storage', () => {
+    const markup = render([realNewsItem({
+      id: 'ws-item:legacy-sentiment-only',
+      videoTitle: '📰 חדשות — סרטון מקור',
+      notes: '',
+      rawSourceText: '',
+      sentiment: 'negative',
+      identityPayload: { text: 'negative', sentiment: 'negative' },
+    })]);
+    assert.ok(markup.includes('data-saved-news-rows'), 'legacy record stays routed through the news renderer');
+    assert.ok(markup.includes('פריט חדשות ללא כותרת'), 'missing headline receives a clear fallback');
+    assert.ok(markup.includes('לא נשמרו כותרת או תיאור עבור הרשומה הישנה.'), 'missing description receives a compatible fallback');
+    assert.ok(markup.includes('סנטימנט:</span> שלילי'), 'sentiment remains supporting Hebrew metadata');
+    assert.equal(markup.includes('>negative<'), false, 'raw sentiment does not reappear as a primary field');
+  });
+
   check('opportunity/stock/sector/market routing is unaffected by the new news path', () => {
     const markup = render([{
       id: 'ws-item:indices-1',

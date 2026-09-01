@@ -21,6 +21,11 @@ import {
 import { parseStockRowFromText } from '@/lib/stockRowText';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import {
+  getWorkspaceRecordRevealState,
+  useWorkspaceRecordRevealIds,
+  WORKSPACE_RECORD_REVEAL_CLASS,
+} from '@/context/WorkspaceRecordRevealContext';
 
 /** Sector pill — ticker-only lookup, no dependency on the saved row's free text. */
 function SectorPill({ ticker }) {
@@ -94,6 +99,7 @@ function FilterChip({ label, count, isActive, onClick }) {
 
 export function SavedStockRowsTable({ entries = [], selectedIds, onToggleGroup }) {
   const [activeCat, setActiveCat] = useState('all');
+  const revealIds = useWorkspaceRecordRevealIds();
   const showCheckboxCol = !!(selectedIds && onToggleGroup);
 
   const rows = useMemo(() => entries.map((entry) => {
@@ -163,9 +169,10 @@ export function SavedStockRowsTable({ entries = [], selectedIds, onToggleGroup }
             ) : (
               filtered.map((row, i) => {
                 const selection = rowSelectionProps({ recordIds: row.recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${row.text}` });
+                const reveal = getWorkspaceRecordRevealState(row.recordIds, revealIds);
                 if (!row.parsed) {
                   return (
-                    <tr key={`${row.text}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                    <tr key={`${row.text}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                       {showCheckboxCol && (
                         <td className={`${TD_CLS} text-center`}>
                           {selection && <UniversalTabCheckbox {...selection} />}
@@ -181,7 +188,7 @@ export function SavedStockRowsTable({ entries = [], selectedIds, onToggleGroup }
                 const sentTone = getSavedStockSentimentTone(sentiment);
                 const catKey = row.category;
                 return (
-                  <tr key={`${symbol || 'row'}-${i}`} className="border-b border-slate-100 dark:border-zinc-800 last:border-0">
+                  <tr key={`${symbol || 'row'}-${i}`} {...reveal.attributes} className={`border-b border-slate-100 transition-colors dark:border-zinc-800 last:border-0 ${reveal.highlighted ? WORKSPACE_RECORD_REVEAL_CLASS : ''}`}>
                     {showCheckboxCol && (
                       <td className={`${TD_CLS} text-center`}>
                         {selection && <UniversalTabCheckbox {...selection} />}
