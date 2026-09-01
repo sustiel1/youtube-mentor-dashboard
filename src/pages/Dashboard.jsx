@@ -35,6 +35,7 @@ import { useTopics } from "@/hooks/useTopics";
 import { videoBelongsToTopicFamily, mentorBelongsToTopicFamily } from "@/lib/topicFilters";
 import { getCategoryCodeForTopicName } from "@/config/topicConfig";
 import { getDashboardStats, isVideoAddedOnLocalCalendarDay } from "@/services/videoAnalytics";
+import { findVideoByIdOrUrl } from "@/utils/workspaceVideoGrouping";
 import {
   matchesObsidianSavedFilter,
   OBSIDIAN_SAVED_FILTER_OPTIONS,
@@ -606,12 +607,13 @@ export default function Dashboard({
     const targetId = pageParams?.openVideoId;
     if (!targetId) return;
 
-    const existing =
-      videos.find((v) => v.videoId === targetId) ||
-      videos.find((v) => v.id === targetId) ||
-      null;
-
     const meta = pageParams?.openVideoMeta;
+
+    // Same id-field precedence as WorkspaceLibrary's handleSourceVideoClick
+    // (videoId / id / youtubeId), then a URL fallback for items saved before
+    // real video records ever populated youtubeId/videoId — see
+    // findVideoByIdOrUrl in utils/workspaceVideoGrouping.js.
+    const existing = findVideoByIdOrUrl(videos, { targetId, targetUrl: meta?.url });
     const fallback = existing || (meta && typeof meta === "object" ? meta : null) || { id: targetId, videoId: targetId };
 
     setSelectedVideo((prev) => mergeSelectedVideoState(fallback, prev));

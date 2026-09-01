@@ -37,6 +37,27 @@ export function getWorkspaceVideoIdentity(item) {
   return normalizeWorkspaceVideoUrl(item?.videoUrl || item?.sourceUrl);
 }
 
+export function extractYoutubeIdFromUrl(url) {
+  return normalizeWorkspaceVideoUrl(url)?.videoId ?? null;
+}
+
+// Resolves a saved workspace item's source video against the live `videos`
+// list. Tries the id/videoId/youtubeId triple-check first; if that misses,
+// falls back to matching the YouTube id embedded in each side's URL — this
+// covers items saved before real video records ever populated youtubeId/
+// videoId (their group key is derived from the URL and can't match those
+// fields), without inventing a match when there genuinely isn't one.
+export function findVideoByIdOrUrl(videos, { targetId = null, targetUrl = null } = {}) {
+  if (!Array.isArray(videos)) return null;
+  const byId = targetId
+    ? videos.find((v) => v.videoId === targetId || v.id === targetId || v.youtubeId === targetId)
+    : null;
+  if (byId) return byId;
+  const targetYoutubeId = targetUrl ? extractYoutubeIdFromUrl(targetUrl) : null;
+  if (!targetYoutubeId) return null;
+  return videos.find((v) => extractYoutubeIdFromUrl(v.url) === targetYoutubeId) || null;
+}
+
 function logicalContentKey(item) {
   const identity = getWorkspaceItemIdentity(item);
   return identity?.key || (item?.contentHash ? `${item.itemType || item.sourceTab || 'legacy'}|${item.contentHash}` : `record:${item.id}`);

@@ -5668,6 +5668,11 @@ export function VideoDetailPanel({
   const handleSaveSelectedToWorkspace = () => {
     if (multiSelected.size === 0) return;
     const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+    // Same fallback as SaveToWorkspaceDialog.jsx's handleSave: most real
+    // records never populate youtubeId/videoId, so without falling back to
+    // the record's own internal id, sourceVideoId ends up null and the
+    // saved item's group key can never resolve back to this video.
+    const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
     const snapshot = buildWorkspaceSelectionDraft(multiSelected.entries(), activeTab);
     setWorkspaceDraftItems(snapshot);
     setWorkspaceDraftContext({
@@ -5677,7 +5682,7 @@ export function VideoDetailPanel({
       videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
       sourceTab: getWorkspaceSourceTab(activeTab),
       sourceTabId: getWorkspaceSourceTab(activeTab),
-      sourceVideoId: youtubeId || null,
+      sourceVideoId: youtubeId || videoIdFallback || null,
       sourceVideoType: videoType,
       sourceBriefSlug: effectiveBriefSlug,
       videoPublishedAt: effectiveVideo?.publishedAt || null,
@@ -5715,6 +5720,9 @@ export function VideoDetailPanel({
       }
 
       const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+      // Same fallback as SaveToWorkspaceDialog.jsx's handleSave — see
+      // handleSaveSelectedToWorkspace above for why this is required.
+      const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
       const videoTitle = effectiveVideo?.title || '';
       const savedAtIso = new Date().toISOString();
 
@@ -5753,7 +5761,7 @@ export function VideoDetailPanel({
         videoPublishedAt: effectiveVideo?.publishedAt || null,
         structuredSnapshot,
         ...createWorkspaceProvenance({
-          sourceVideoId: youtubeId,
+          sourceVideoId: youtubeId || videoIdFallback || null,
           sourceTabId: 'structured-snapshot',
           sourceSectionId: 'structured-snapshot',
           sourceHeading: getWorkspaceHeadingLabel('structured-snapshot', 'תמונת מצב'),

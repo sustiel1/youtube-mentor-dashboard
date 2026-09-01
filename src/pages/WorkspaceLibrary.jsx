@@ -34,7 +34,7 @@ import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore
 import { WorkspaceCollectionTiles } from "@/components/workspace/WorkspaceCollectionTiles";
 import { StructuredSnapshotView } from "@/components/workspace/StructuredSnapshotView";
 import { WorkspaceDuplicatePreview } from "@/components/workspace/WorkspaceDuplicatePreview";
-import { checksumWorkspaceItemIds, selectCollectionForScope, selectVideoGroups, selectWorkspaceVideoGroups } from "@/utils/workspaceVideoGrouping";
+import { checksumWorkspaceItemIds, selectCollectionForScope, selectVideoGroups, selectWorkspaceVideoGroups, findVideoByIdOrUrl } from "@/utils/workspaceVideoGrouping";
 import { buildVideoPublishedAtLookup } from "@/utils/workspaceSavedAnalysis";
 import { WorkspaceVideoGroupCard } from "@/components/workspace/WorkspaceVideoGroupCard";
 import { WorkspaceFocusedVideoCard, WorkspaceGlobalSavedAnalysisGroup } from "@/components/workspace/WorkspaceFocusedVideoCard";
@@ -109,6 +109,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   const [newWorkflowStatusName, setNewWorkflowStatusName] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [activeCollection, setActiveCollection] = useState(null);
+  const [pinnedCollection, setPinnedCollection] = useState(null);
   const [openSnapshotItem, setOpenSnapshotItem] = useState(null);
   const [duplicatePreviewOpen, setDuplicatePreviewOpen] = useState(false);
   const [briefRoutingPreviewOpen, setBriefRoutingPreviewOpen] = useState(false);
@@ -286,6 +287,16 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   }), [activeCollection, allVideoGrouping.videoGroups, allVideoGrouping.withoutVideo, pageParams.video]);
   const focusedVideoGroup = scopeSelection.focusedVideoGroup;
   const scopeItems = focusedVideoGroup ? focusedVideoGroup.items : items;
+
+  // Pin the most recently saved-from video above the "כל הסרטונים" list when
+  // nothing is explicitly focused via the `video` URL param — derived from
+  // each group's existing latestSaveDate, no new persistence.
+  const pinnedRecentGroup = useMemo(() => {
+    if (focusedVideoGroup) return null;
+    return allVideoGrouping.videoGroups.reduce((latest, group) => (
+      !latest || String(group.latestSaveDate || '') > String(latest.latestSaveDate || '') ? group : latest
+    ), null);
+  }, [focusedVideoGroup, allVideoGrouping.videoGroups]);
 
   const virtTopicCount = useMemo(() => {
     return Object.fromEntries(allMainTabs.map(vt => {
@@ -613,9 +624,28 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   };
 
   const handleSourceVideoClick = (group) => {
-    const fullVideo = videos.find(video => video.id === group.videoId || video.videoId === group.videoId || video.youtubeId === group.videoId);
+    const fullVideo = findVideoByIdOrUrl(videos, { targetId: group.videoId, targetUrl: group.videoUrl });
     if (fullVideo) { setSelectedVideo(fullVideo); setPanelOpen(true); return; }
     if (group.videoUrl) window.open(group.videoUrl, '_blank', 'noopener');
+  };
+
+  const handleReturnToAnalysis = (group) => {
+    if (!navigateTo || !group?.videoId) return;
+    const fullVideo = findVideoByIdOrUrl(videos, { targetId: group.videoId, targetUrl: group.videoUrl });
+    const fallbackVideo = fullVideo || {
+      id: group.videoId,
+      videoId: group.videoId,
+      title: group.videoTitle || 'Untitled',
+      channelTitle: group.channel || '',
+      thumbnail: group.thumbnail || null,
+      url: group.videoUrl || undefined,
+    };
+    // Prefer the resolved record's own canonical id over group.videoId: the
+    // group key can be sourced from any of a saved item's id/videoId/youtubeId
+    // fields (see the triple-check above), while Dashboard's deep-link effect
+    // and usePersistedVideo() key their own lookups off the real video's `id`
+    // — passing a mismatched id string reopens the panel without its analysis.
+    navigateTo('Dashboard', { openVideoId: fallbackVideo.id || group.videoId, openVideoMeta: fallbackVideo });
   };
 
   const handleFocusVideo = (group) => {
@@ -1285,6 +1315,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onCollectionSelect={value => { handleCollectionSelect(value); clearCardSelection(); }}
               onClearFocus={handleClearVideoFocus}
               onOpenVideo={() => handleSourceVideoClick(focusedVideoGroup)}
+              onReturnToAnalysis={() => handleReturnToAnalysis(focusedVideoGroup)}
               onToggleGroup={toggleGroupSelection}
               onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
               collectionCounts={collectionCounts}
@@ -1306,6 +1337,22 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
             />
           </>
         ) : <>
+          {pinnedRecentGroup && (
+            <WorkspaceFocusedVideoCard
+              group={pinnedRecentGroup}
+              activeCollection={pinnedCollection}
+              selectedIds={selectedCardIds}
+              onCollectionSelect={setPinnedCollection}
+              showClearFocus={false}
+              onOpenVideo={() => handleSourceVideoClick(pinnedRecentGroup)}
+              onReturnToAnalysis={() => handleReturnToAnalysis(pinnedRecentGroup)}
+              onToggleGroup={toggleGroupSelection}
+              onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
+              collectionCounts={pinnedRecentGroup.collectionUniqueCounts}
+              topics={topics}
+              videoLookup={videoLookup}
+            />
+          )}
           <section data-workspace-scope="global">
             <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">כל הסרטונים</h2>
             <p className="text-sm text-slate-500 dark:text-zinc-400">תוכן שנשמר מכל הסרטונים בספרייה</p>

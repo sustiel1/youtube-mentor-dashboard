@@ -25,9 +25,7 @@ function readFromStorage(videoId) {
  * - Re-syncs from storage when videoId changes (new video selected).
  */
 export function usePersistedVideo(videoId, seedVideo) {
-  const [currentVideo, setCurrentVideo] = useState(() =>
-    readFromStorage(videoId) ?? seedVideo ?? null
-  );
+  const [currentVideo, setCurrentVideo] = useState(() => readFromStorage(videoId) ?? seedVideo ?? null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
