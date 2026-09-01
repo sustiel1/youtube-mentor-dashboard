@@ -176,6 +176,7 @@ export function SaveToWorkspaceDialog({ open, onOpenChange, video, onSaved, sour
       sourceBriefSlug: briefClassification.type === 'morningBrief'
         ? 'morning-brief'
         : briefClassification.type === 'eveningBrief' ? 'evening-brief' : null,
+      videoPublishedAt: video?.publishedAt || null,
       autoDetected,
       category: topicName || video?.category || null,
       subCategory: subTopicName || video?.subCategory || null,

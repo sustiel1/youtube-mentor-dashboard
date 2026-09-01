@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { groupWorkspaceItemsByVideo } from '../src/utils/workspaceVideoGrouping.js';
-import { selectSavedAnalysisSections, selectSavedAnalysisViewer } from '../src/utils/workspaceSavedAnalysis.js';
+import {
+  selectSavedAnalysisSections,
+  selectSavedAnalysisViewer,
+  provenanceFor,
+  buildVideoPublishedAtLookup,
+} from '../src/utils/workspaceSavedAnalysis.js';
 
 const snapshot = (ticker = 'AAA') => ({ videoId: 'KOom2PCpl6Q', savedAt: '2026-08-10T08:00:00Z', stocksTable: [{ ticker, company: 'Persisted' }], marketsTable: [], sentimentTable: [{ label: 'מצב', value: 'זהיר' }] });
 const items = [
@@ -64,4 +69,41 @@ assert.equal(savedNewsHeadingCollision.entries[0]?.text, 'עדכון חדשות:
 assert.equal(JSON.stringify(items), originalJson, 'viewer selector does not mutate persistence input');
 assert.equal(viewer.emptyMessage, 'לא נשמר תוכן מסוג זה');
 
-console.log('Workspace saved-analysis provenance QA: 33 assertions passed');
+// ── videoPublishedAt resolution (TRADINGBRAIN-SAVEDROWS-NEWS-FRESHNESS) ────────
+// Priority: (a) item's own persisted field, (b) videoId -> publishedAt lookup
+// built from an in-memory videos list, (c) null — never undefined/crash.
+const noMatchItem = { id: 'no-match', sourceVideoId: 'unknown-video' };
+assert.equal(
+  provenanceFor(noMatchItem, 'סעיף').videoPublishedAt,
+  null,
+  'no persisted field and no lookup match resolves to null, not undefined',
+);
+
+const videos = [{ id: 'vid-1', youtubeId: 'yt-1', publishedAt: '2026-08-20T09:00:00Z' }];
+const lookup = buildVideoPublishedAtLookup(videos);
+const lookupMatchItem = { id: 'lookup-match', sourceVideoId: 'yt-1' };
+assert.equal(
+  provenanceFor(lookupMatchItem, 'סעיף', lookup).videoPublishedAt,
+  '2026-08-20T09:00:00Z',
+  'item whose source video id resolves in the lookup map gets the looked-up publishedAt',
+);
+
+const persistedWinsItem = { id: 'persisted-wins', sourceVideoId: 'yt-1', videoPublishedAt: '2025-01-01T00:00:00Z' };
+assert.equal(
+  provenanceFor(persistedWinsItem, 'סעיף', lookup).videoPublishedAt,
+  '2025-01-01T00:00:00Z',
+  'an item with its own persisted videoPublishedAt uses that value even when a lookup match also exists',
+);
+
+// Backward compatibility: an existing call site that omits the new optional
+// parameter (selectSavedAnalysisViewer(group) above, called with one arg)
+// still resolves videoPublishedAt to null rather than throwing, since none
+// of its fixture items carry a persisted videoPublishedAt and no lookup was
+// supplied.
+const legacyCallSection = Object.values(viewer.byTab).flat()[0];
+assert.ok(
+  legacyCallSection.provenance.every(entry => entry.videoPublishedAt === null),
+  'existing selectSavedAnalysisViewer(group) call site (no videoLookup arg) still works, videoPublishedAt falls back to null',
+);
+
+console.log('Workspace saved-analysis provenance QA: 37 assertions passed');

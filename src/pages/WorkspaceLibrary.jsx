@@ -35,6 +35,7 @@ import { WorkspaceCollectionTiles } from "@/components/workspace/WorkspaceCollec
 import { StructuredSnapshotView } from "@/components/workspace/StructuredSnapshotView";
 import { WorkspaceDuplicatePreview } from "@/components/workspace/WorkspaceDuplicatePreview";
 import { checksumWorkspaceItemIds, selectCollectionForScope, selectVideoGroups, selectWorkspaceVideoGroups } from "@/utils/workspaceVideoGrouping";
+import { buildVideoPublishedAtLookup } from "@/utils/workspaceSavedAnalysis";
 import { WorkspaceVideoGroupCard } from "@/components/workspace/WorkspaceVideoGroupCard";
 import { WorkspaceFocusedVideoCard, WorkspaceGlobalSavedAnalysisGroup } from "@/components/workspace/WorkspaceFocusedVideoCard";
 import { WorkspaceTopicManager } from "@/components/workspace/WorkspaceTopicManager";
@@ -92,6 +93,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   const { data: videos = [] } = useVideos();
   const { data: mentors = [] } = useMentors();
   const { data: systemTopics = [] } = useTopics();
+  const videoLookup = useMemo(() => buildVideoPublishedAtLookup(videos), [videos]);
 
   const [search, setSearch] = useState('');
   const [filterVirtTopicId, setFilterVirtTopicId] = useState('');
@@ -1287,6 +1289,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
               collectionCounts={collectionCounts}
               topics={topics}
+              videoLookup={videoLookup}
             />
             {/* Same bar/handlers as the all-videos view below — the row/section
                 checkboxes inside WorkspaceFocusedVideoCard write to the same
@@ -1370,6 +1373,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                   selectedIds={selectedCardIds}
                   onToggleGroup={toggleGroupSelection}
                   onFocusVideo={() => handleFocusVideo(group)}
+                  videoLookup={videoLookup}
                 />
               ) : (
                 <WorkspaceVideoGroupCard

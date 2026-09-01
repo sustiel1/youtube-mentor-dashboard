@@ -23,7 +23,7 @@ import {
 import { getWorkspaceSourceVideoId } from '@/utils/workspaceItemIdentity';
 import { getObsidianItemSavesForVideo } from '@/lib/obsidianItemSaveStore';
 import { buildObsidianOpenUrl, getActiveObsidianVaultConfig } from '@/lib/obsidianVaultConfig';
-import { getBriefContextDisplay } from '@/lib/briefContextDisplay';
+import { getBriefContextDisplay, formatBriefPublishDatePlain } from '@/lib/briefContextDisplay';
 import {
   AnalysisFieldGrid,
   AnalysisList,
@@ -39,6 +39,84 @@ import {
 function dateText(value) {
   try { return value ? new Date(value).toLocaleDateString('he-IL') : 'ללא תאריך'; }
   catch { return 'ללא תאריך'; }
+}
+
+/**
+ * `HH:mm` (24-hour, he-IL, local browser timezone) for a publish timestamp
+ * whose DATE portion has already been confirmed valid via
+ * formatBriefPublishDatePlain(). Returns '' (never a stray time with no
+ * date) when the time itself can't be produced in the expected shape.
+ */
+function publishedTimeText(publishedAt) {
+  try {
+    const time = new Date(publishedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return /^\d{1,2}:\d{2}$/.test(time) ? time : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Shared metadata line for all six saved-row section renderers
+ * (SavedTextSection / SavedMarketSection / SavedStockSection /
+ * SavedSectorSection / SavedOpportunitySection / SavedNewsSection).
+ * Composes, in RTL reading order (rightmost first):
+ *   1. "פורסם {publish date} {HH:mm}" — bold/emphasized, since this is the
+ *      value a trader actually cares about. Only shown when at least one
+ *      provenance entry resolves a videoPublishedAt (own persisted field or
+ *      the videoLookup fallback, see provenanceFor() in
+ *      workspaceSavedAnalysis.js). Omitted entirely when no publish date
+ *      resolves, when the date is technically present but invalid
+ *      ("Invalid Date"), or when the section's saved items come from more
+ *      than one source video (2026-09-01: a mixed-video section showing one
+ *      video's publish date would misrepresent the others — same unanimity
+ *      guard as the brief label below, just keyed on sourceVideoId) — never
+ *      rendered with a lone time and no date.
+ *   2. The morning/evening brief label — only when every saved item in the
+ *      section agrees on the same sourceBriefSlug (a mixed section would
+ *      otherwise show one misleading label for items from a different
+ *      brief). Generalized from the news-only logic that used to live here.
+ *   3. "נשמר לאחרונה {save date}" — kept, but de-emphasized and moved after
+ *      the publish date per user feedback (2026-09-01): the save date is
+ *      the least important value for a trader and must not visually lead.
+ *   4. "{N} רשומות מקור" — unchanged from before this task.
+ * Returns JSX (not a plain string) so the publish-date segment can be bold
+ * while the rest stays regular weight; AnalysisContentPrimitives.jsx's
+ * `metadata` prop already renders whatever node it's given.
+ */
+function buildSectionMetadataLine(provenance, recordCount) {
+  const latestSave = provenance.reduce((latest, entry) => (
+    String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest
+  ), '');
+  const sourceVideoIds = new Set(provenance.map(entry => entry.sourceVideoId).filter(Boolean));
+  const singleVideoSection = sourceVideoIds.size <= 1;
+  const publishedAt = singleVideoSection
+    ? provenance.find(entry => entry.videoPublishedAt)?.videoPublishedAt || null
+    : null;
+  const publishDatePlain = formatBriefPublishDatePlain(publishedAt);
+  let publishedText = null;
+  if (publishDatePlain) {
+    const timeText = publishedTimeText(publishedAt);
+    publishedText = timeText ? `פורסם ${publishDatePlain} ${timeText}` : `פורסם ${publishDatePlain}`;
+  }
+  const briefSlugs = new Set(provenance.map(entry => entry.sourceBriefSlug).filter(Boolean));
+  const briefLabel = briefSlugs.size === 1 ? getBriefContextDisplay([...briefSlugs][0])?.title : null;
+  // Everything except the publish date stays a single plain-text node, joined
+  // exactly like before this feature — only the publish date gets its own
+  // bold element. When there's no publish date to show, this returns a plain
+  // string, byte-identical to the pre-freshness-feature output.
+  const restText = [
+    briefLabel,
+    `נשמר לאחרונה ${dateText(latestSave)}`,
+    `${recordCount} רשומות מקור`,
+  ].filter(Boolean).join(' · ');
+  if (!publishedText) return restText;
+  return (
+    <>
+      <strong className="font-extrabold text-slate-800 dark:text-zinc-100">{publishedText}</strong>
+      {restText ? ` · ${restText}` : null}
+    </>
+  );
 }
 
 function technicalDetails(section) {
@@ -64,7 +142,6 @@ function technicalDetails(section) {
 function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
   return (
@@ -72,7 +149,7 @@ function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -94,7 +171,6 @@ function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
 function SavedMarketSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
   return (
@@ -102,7 +178,7 @@ function SavedMarketSection({ section, selectedIds, onToggleGroup, videoUrl }) {
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -124,7 +200,6 @@ function SavedMarketSection({ section, selectedIds, onToggleGroup, videoUrl }) {
 function SavedStockSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
   return (
@@ -132,7 +207,7 @@ function SavedStockSection({ section, selectedIds, onToggleGroup, videoUrl }) {
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -154,7 +229,6 @@ function SavedStockSection({ section, selectedIds, onToggleGroup, videoUrl }) {
 function SavedSectorSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
   return (
@@ -162,7 +236,7 @@ function SavedSectorSection({ section, selectedIds, onToggleGroup, videoUrl }) {
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -185,7 +259,6 @@ function SavedSectorSection({ section, selectedIds, onToggleGroup, videoUrl }) {
 function SavedOpportunitySection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
   return (
@@ -193,7 +266,7 @@ function SavedOpportunitySection({ section, selectedIds, onToggleGroup, videoUrl
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={`נשמר לאחרונה ${dateText(latestSave)} · ${recordIds.length} רשומות מקור`}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -216,23 +289,14 @@ function SavedOpportunitySection({ section, selectedIds, onToggleGroup, videoUrl
 function SavedNewsSection({ section, selectedIds, onToggleGroup, videoUrl }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
-  const latestSave = section.provenance.reduce((latest, entry) => String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest, '');
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
   const collectionIcon = getWorkspaceHeadingByCollection(section.tabId)?.emoji || '';
-  // Only show a morning/evening label when every saved item in this section
-  // agrees on the same brief slug — a mixed section would otherwise show one
-  // misleading label for items from a different brief.
-  const briefSlugs = new Set(section.provenance.map(entry => entry.sourceBriefSlug).filter(Boolean));
-  const briefLabel = briefSlugs.size === 1 ? getBriefContextDisplay([...briefSlugs][0])?.title : null;
-  const metadata = [`נשמר לאחרונה ${dateText(latestSave)}`, briefLabel, `${recordIds.length} רשומות מקור`]
-    .filter(Boolean)
-    .join(' · ');
   return (
     <AnalysisSectionCard
       title={section.heading}
       icon={section.icon || collectionIcon}
       count={section.entries.length + section.fields.length}
-      metadata={metadata}
+      metadata={buildSectionMetadataLine(section.provenance, recordIds.length)}
       checkbox={<input type="checkbox" checked={selected} onChange={() => onToggleGroup(recordIds, !selected)} aria-label={`בחר את התוכן השמור תחת ${section.heading}`} className="mt-2 h-4 w-4 shrink-0" />}
       className="shadow-sm"
     >
@@ -269,8 +333,8 @@ function SnapshotSection({ section, selectedIds, onToggleGroup }) {
   );
 }
 
-export function WorkspaceSavedAnalysisContent({ group, activeCollection, selectedIds, onToggleGroup }) {
-  const viewer = selectSavedAnalysisViewer(group);
+export function WorkspaceSavedAnalysisContent({ group, activeCollection, selectedIds, onToggleGroup, videoLookup }) {
+  const viewer = selectSavedAnalysisViewer(group, videoLookup);
   const { collectionId, sections } = selectSavedAnalysisSections(viewer, activeCollection);
   return (
     <div className="space-y-3 bg-slate-50/60 p-5 dark:bg-zinc-950/30" data-saved-analysis-tab={collectionId}>
@@ -301,7 +365,7 @@ export function WorkspaceSavedAnalysisContent({ group, activeCollection, selecte
   );
 }
 
-export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, selectedIds, onToggleGroup, onFocusVideo }) {
+export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, selectedIds, onToggleGroup, onFocusVideo, videoLookup }) {
   const logicalItemCount = group.uniqueContentCount || 0;
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900" data-workspace-source-video={group.videoKey}>
@@ -316,7 +380,7 @@ export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, sel
         </div>
         <button type="button" onClick={onFocusVideo} aria-label={`פתח אוסף שמור מהסרטון ${group.videoTitle}`} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">פתח אוסף</button>
       </header>
-      <WorkspaceSavedAnalysisContent group={group} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
+      <WorkspaceSavedAnalysisContent group={group} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} />
     </article>
   );
 }
@@ -324,9 +388,9 @@ export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, sel
 export function WorkspaceFocusedVideoCard({
   group, activeCollection, selectedIds, onCollectionSelect, onClearFocus,
   onOpenVideo, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
-  collectionCounts, topics = [],
+  collectionCounts, topics = [], videoLookup,
 }) {
-  const viewer = selectSavedAnalysisViewer(visibleGroup);
+  const viewer = selectSavedAnalysisViewer(visibleGroup, videoLookup);
   const revealIds = useWorkspaceRecordRevealIds();
   const renderedIds = new Set(viewer.renderedRecordIds);
   const unrenderedRecordIds = group.items
@@ -396,7 +460,7 @@ export function WorkspaceFocusedVideoCard({
           />
         </div>
       ) : (
-        <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
+        <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} />
       )}
     </article>
   );

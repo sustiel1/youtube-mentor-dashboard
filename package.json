@@ -20,6 +20,7 @@
     "test:saved-sector-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-sector-rows-qa.mjs",
     "test:saved-opportunity-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-opportunity-rows-qa.mjs",
     "test:saved-news-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-news-rows-qa.mjs",
+    "test:saved-rows-publish-metadata": "node --import ./scripts/register-src-aliases.mjs scripts/saved-rows-publish-metadata-qa.mjs",
     "test:news-workspace-multiselect": "node --import ./scripts/register-src-aliases.mjs scripts/news-workspace-multiselect-qa.mjs",
     "test:workspace-save-reveal": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-save-reveal-qa.mjs",
     "test:workspace-reveal-timer-lifecycle": "node scripts/workspace-reveal-timer-lifecycle-qa.mjs",

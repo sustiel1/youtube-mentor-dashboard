@@ -137,7 +137,7 @@ export function WorkspaceSaveReviewOverlay({
   draftItems = [],                // [{ id, text, sectionLabel, type }] — from selection bar
   currentAnalysisDraftItems = [], // [{ id, text, sectionLabel, type }] — from top Workspace button
   defaultView = 'draft',          // which tab opens first
-  videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab }
+  videoContext = {},              // { videoTitle, channelName, thumbnail, videoUrl, sourceTab, videoPublishedAt }
   onSaved,
   onOpenLibrary,
 }) {
@@ -800,6 +800,7 @@ export function WorkspaceSaveReviewOverlay({
         sourceTimestamp: item.timestamp ?? null,
         sourceVideoType: videoContext.sourceVideoType || null,
         sourceBriefSlug: videoContext.sourceBriefSlug || null,
+        videoPublishedAt: videoContext.videoPublishedAt || null,
         ...(provenance || {}),
         ...newsExtraFields,
         ...stockExtraFields, // additive: only present on stock items

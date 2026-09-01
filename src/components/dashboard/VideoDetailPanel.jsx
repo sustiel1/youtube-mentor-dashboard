@@ -5680,6 +5680,7 @@ export function VideoDetailPanel({
       sourceVideoId: youtubeId || null,
       sourceVideoType: videoType,
       sourceBriefSlug: effectiveBriefSlug,
+      videoPublishedAt: effectiveVideo?.publishedAt || null,
     });
     setWorkspaceCurrentAnalysisItems([]);
     setWorkspaceDraftDefaultView('draft');
@@ -5749,6 +5750,7 @@ export function VideoDetailPanel({
         itemType: 'structured-snapshot',
         sourceVideoType: videoType,
         sourceBriefSlug: effectiveBriefSlug,
+        videoPublishedAt: effectiveVideo?.publishedAt || null,
         structuredSnapshot,
         ...createWorkspaceProvenance({
           sourceVideoId: youtubeId,
@@ -5937,6 +5939,7 @@ export function VideoDetailPanel({
         savedAt: now,
         sourceVideoType: videoType,
         sourceBriefSlug: effectiveBriefSlug,
+        videoPublishedAt: effectiveVideo?.publishedAt || null,
         ...(provenance || {}),
         ...newsFields,
       });

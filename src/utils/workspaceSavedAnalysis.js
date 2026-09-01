@@ -157,6 +157,49 @@ function sourceTimestamp(item) {
   return item?.timestamp ?? item?.startTime ?? item?.segmentStart ?? item?.sourceTimestamp ?? null;
 }
 
+/**
+ * Builds a videoId -> publishedAt lookup Map from an in-memory videos list
+ * (e.g. the array already returned by useVideos()). Keys on every identifier
+ * a saved item might carry as its source video id (`id`, `youtubeId`,
+ * `videoId`) so `getWorkspaceSourceVideoId(item)` matches regardless of which
+ * shape the caller used when the item was originally saved. Pure/no I/O —
+ * callers own fetching the videos list; this only indexes it.
+ */
+export function buildVideoPublishedAtLookup(videos) {
+  const map = new Map();
+  for (const video of Array.isArray(videos) ? videos : []) {
+    if (!video?.publishedAt) continue;
+    for (const key of [video.id, video.youtubeId, video.videoId]) {
+      const normalizedKey = key != null ? String(key).trim() : '';
+      if (normalizedKey && !map.has(normalizedKey)) map.set(normalizedKey, video.publishedAt);
+    }
+  }
+  return map;
+}
+
+/**
+ * Resolution priority for a saved item's original-video publish timestamp:
+ *   1. The item's own persisted `videoPublishedAt` (a decision-time snapshot
+ *      taken when the item was saved — see Step 2 save-site changes).
+ *   2. A display-time lookup against `videoLookup` (videoId -> publishedAt),
+ *      built by the caller from whatever video records it already has in
+ *      memory (see buildVideoPublishedAtLookup above).
+ *   3. null — never throws, never produces "Invalid Date".
+ */
+function resolveVideoPublishedAt(item, videoLookup) {
+  if (typeof item?.videoPublishedAt === 'string' && item.videoPublishedAt.trim()) {
+    return item.videoPublishedAt;
+  }
+  if (videoLookup && typeof videoLookup.get === 'function') {
+    const videoId = getWorkspaceSourceVideoId(item);
+    if (videoId) {
+      const found = videoLookup.get(videoId);
+      if (typeof found === 'string' && found.trim()) return found;
+    }
+  }
+  return null;
+}
+
 function persistedRank(item) {
   const value = item?.identityPayload?.rank ?? item?.rank ?? item?.priorityOrder ?? null;
   const rank = Number(value);
@@ -193,7 +236,7 @@ function labelledFields(item, text) {
   });
 }
 
-export function provenanceFor(item, sectionHeading) {
+export function provenanceFor(item, sectionHeading, videoLookup) {
   const identity = getWorkspaceItemIdentity(item);
   const heading = classifyWorkspaceItemHeading(item);
   return {
@@ -209,10 +252,11 @@ export function provenanceFor(item, sectionHeading) {
     contentHash: item.contentHash || identity?.contentHash || null,
     sourceBriefSlug: item.sourceBriefSlug || item.briefSlug || null,
     sourceVideoType: item.sourceVideoType || null,
+    videoPublishedAt: resolveVideoPublishedAt(item, videoLookup),
   };
 }
 
-function buildTextSections(items) {
+function buildTextSections(items, videoLookup) {
   const sectionMap = new Map();
   for (const item of items) {
     if (item?.itemType === 'structured-snapshot' && item?.structuredSnapshot) continue;
@@ -236,7 +280,7 @@ function buildTextSections(items) {
       fields: [],
       provenance: [],
     };
-    const provenance = provenanceFor(item, rawHeading);
+    const provenance = provenanceFor(item, rawHeading, videoLookup);
     section.provenance.push(provenance);
 
     const seenLines = new Set(section.entries.map(entry => normalized(entry.text)));
@@ -261,7 +305,7 @@ function buildTextSections(items) {
   return [...sectionMap.values()];
 }
 
-function buildSnapshots(videoGroup) {
+function buildSnapshots(videoGroup, videoLookup) {
   return videoGroup.versions.filter(version => (
     version.canonical?.itemType === 'structured-snapshot' && version.canonical?.structuredSnapshot
   )).map(version => ({
@@ -270,14 +314,21 @@ function buildSnapshots(videoGroup) {
     heading: 'תמונת מצב',
     snapshot: version.canonical.structuredSnapshot,
     copyCount: version.copyCount,
-    provenance: version.records.map(item => provenanceFor(item, 'תמונת מצב')),
+    provenance: version.records.map(item => provenanceFor(item, 'תמונת מצב', videoLookup)),
   }));
 }
 
-export function selectSavedAnalysisViewer(videoGroup) {
+/**
+ * @param {object} videoGroup
+ * @param {Map<string,string>} [videoLookup] Optional videoId -> publishedAt
+ *   map (see buildVideoPublishedAtLookup). Omitted by existing call sites —
+ *   backward compatible; provenance.videoPublishedAt then falls back to only
+ *   the item's own persisted field (or null).
+ */
+export function selectSavedAnalysisViewer(videoGroup, videoLookup) {
   const items = Array.isArray(videoGroup?.items) ? videoGroup.items : [];
-  const textSections = buildTextSections(items);
-  const snapshotSections = videoGroup ? buildSnapshots(videoGroup) : [];
+  const textSections = buildTextSections(items, videoLookup);
+  const snapshotSections = videoGroup ? buildSnapshots(videoGroup, videoLookup) : [];
   const sections = [...textSections, ...snapshotSections];
   const byTab = Object.fromEntries(SAVED_ANALYSIS_TABS.map(tab => [tab.id, sections.filter(section => section.tabId === tab.id)]));
   byTab.specialized = orderSpecializedSections(byTab.specialized);
