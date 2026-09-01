@@ -251,3 +251,23 @@ At the end of every implementation task, report:
 - Remaining risks or limitations
 - Commit status
 - Recommended next step
+
+**Open Items Ledger requirement:** any unresolved gap, known limitation, or deferred
+decision left at the end of a task must also be **appended as a row in
+`docs/open-items-ledger.md`** — not just mentioned in the final report. This applies
+to every agent (not only `backlog-tracker`, which maintains and re-verifies the file
+but does not generate the gaps itself):
+
+- If the agent has `Write` access: append the row directly, following the file's
+  existing table format (`WORK-ID | description | status | last-checked | owning
+  agent`) — additive only, never rewrite or remove another agent's rows, never touch
+  any file in the ledger beyond that one append.
+- If the agent is review-only (no `Write` — e.g. `architect-reviewer`, `cto`,
+  `macro-sector-context-engineer`, `qa-release-reviewer`,
+  `security-secrets-auditor`): **propose** the exact row text in the final report
+  instead, and say plainly that it was not written to the file — the same pattern
+  already used for `docs/work-ledger.md` proposals.
+- A task with zero unresolved gaps does not need a row — do not invent one to satisfy
+  this rule.
+- Invoke `backlog-tracker` (or ask the user to) when the ledger needs a full
+  re-verification pass, not on every routine append.
