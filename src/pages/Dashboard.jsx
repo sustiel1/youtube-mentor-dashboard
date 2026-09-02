@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { FilterBar } from "@/components/dashboard/FilterBar";
+import { FilterBar, LibrarySearchInput } from "@/components/dashboard/FilterBar";
 import { ExternalVideoModal } from "@/components/dashboard/ExternalVideoModal";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { VideoDetailPanel } from "@/components/dashboard/VideoDetailPanel";
@@ -396,7 +396,7 @@ function SmartDashboard({
   };
 
   return (
-    <div className="mt-4 mb-2 space-y-3" dir="rtl">
+    <div className="mt-1 mb-2 space-y-3" dir="rtl">
       {/* Stats row — exact RTL order, seven live cards on desktop */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <Card
@@ -1118,11 +1118,18 @@ export default function Dashboard({
         </div>
       )}
 
-      <main className="px-6 py-6">
+      <main className="px-6 pb-6 pt-1">
         {isLoading ? (
           <DashboardSkeleton />
         ) : (
           <>
+            <LibrarySearchInput
+              filters={filters}
+              onFiltersChange={setFilters}
+              className="relative w-full"
+              inputClassName="h-10 rounded-xl shadow-sm"
+            />
+
             <SmartDashboard
               mentors={mentors}
               videos={videos}
@@ -1185,7 +1192,7 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* Unified compact control row (Learning Center + filters + search + selection mode) */}
+            {/* Unified compact control row (Learning Center + filters + selection mode) */}
             <div
               dir="rtl"
               className="mt-4 mb-3 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm backdrop-blur flex flex-row items-center gap-3 flex-nowrap overflow-x-auto dark:border-zinc-800/80 dark:bg-zinc-950/70 dark:shadow-2xl"
@@ -1206,6 +1213,7 @@ export default function Dashboard({
 
               <FilterBar
                 compact
+                showSearch={false}
                 filters={filters}
                 onFiltersChange={setFilters}
                 mentors={mentors.filter((m) => m.active)}

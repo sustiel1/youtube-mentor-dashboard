@@ -15,7 +15,21 @@ import {
 } from "@/lib/topicFilters";
 import { OBSIDIAN_SAVED_FILTER_OPTIONS } from "@/lib/obsidianSavedStatus";
 
-export function FilterBar({ filters, onFiltersChange, mentors, topics = [], compact = false }) {
+export function LibrarySearchInput({ filters, onFiltersChange, className, inputClassName = "" }) {
+  return (
+    <div dir="rtl" className={className} data-testid="library-search-field">
+      <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+      <Input
+        placeholder="חיפוש לפי כותרת..."
+        value={filters.search}
+        onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+        className={`border-slate-200 bg-white pr-9 text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white ${inputClassName}`}
+      />
+    </div>
+  );
+}
+
+export function FilterBar({ filters, onFiltersChange, mentors, topics = [], compact = false, showSearch = true }) {
   const handleChange = (key, value) => {
     onFiltersChange({ ...filters, [key]: value });
   };
@@ -54,16 +68,13 @@ export function FilterBar({ filters, onFiltersChange, mentors, topics = [], comp
       dir="rtl"
       className={compact ? "flex items-center gap-2 flex-nowrap flex-row" : "flex flex-wrap items-center gap-3 mb-6"}
     >
-      {/* Search (right edge in RTL row when compact) */}
-      <div className={compact ? "relative w-[180px] shrink-0" : "relative flex-1 min-w-[200px]"}>
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-        <Input
-          placeholder="חיפוש לפי כותרת..."
-          value={filters.search}
-          onChange={(e) => handleChange("search", e.target.value)}
-          className="border-slate-200 bg-white pr-9 text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+      {showSearch && (
+        <LibrarySearchInput
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          className={compact ? "relative w-[180px] shrink-0" : "relative flex-1 min-w-[200px]"}
         />
-      </div>
+      )}
 
       <Select
         value={filters.mentor}
