@@ -141,6 +141,12 @@ export function classifyAaiiSpread(spread) {
   return resolveTone(numericSpread > 0 ? `+${numericSpread}` : String(numericSpread));
 }
 
+// Bull-Bear Spread is derived arithmetic (bullish minus bearish), never independent
+// data — always recompute it rather than trusting a pasted or previously stored value.
+export function computeAaiiSpread(bullish, bearish) {
+  return Number((bullish - bearish).toFixed(1));
+}
+
 const AAII_SPREAD_INTERPRETATIONS = Object.freeze({
   bullish: Object.freeze({
     light: Object.freeze({
@@ -226,6 +232,9 @@ export function formatAaiiSpread(spread) {
   return `${numericSpread > 0 ? '+' : ''}${numericSpread.toFixed(1)}`;
 }
 
+// bullBearSpread is accepted for backward-compatible call shapes (e.g. a pasted
+// line's own field) but is never trusted: the spread is always recomputed from
+// bullish/bearish, so a pasted or previously stored spread can never block a save.
 export function validateAaiiParsedValues({
   bullish,
   bullishAverage,
@@ -233,7 +242,6 @@ export function validateAaiiParsedValues({
   neutralAverage,
   bearish,
   bearishAverage,
-  bullBearSpread,
 } = {}) {
   const base = validateAaiiWeeklyDraft({ bullish, neutral, bearish });
   if (!base.valid) return base;
@@ -243,26 +251,15 @@ export function validateAaiiParsedValues({
     return { valid: false, error: 'ממוצעי AAII חייבים להיות מספרים בין 0 ל־100.' };
   }
 
-  const spread = normalizeAaiiSpreadInput(bullBearSpread);
-  if (spread == null) {
-    return { valid: false, error: 'מרווח השוריים–דוביים חייב להיות מספר תקין.' };
-  }
-
-  const expectedSpread = base.bullish - base.bearish;
-  if (Math.abs(spread - expectedSpread) > AAII_WEEKLY_SENTIMENT_SPREAD_TOLERANCE) {
-    return {
-      valid: false,
-      error: `המרווח שהודבק (${spread.toFixed(1)}) אינו תואם לשוריים פחות דוביים (${expectedSpread.toFixed(1)}).`,
-    };
-  }
+  const bullBearSpread = computeAaiiSpread(base.bullish, base.bearish);
 
   return {
     ...base,
     bullishAverage: averages[0],
     neutralAverage: averages[1],
     bearishAverage: averages[2],
-    bullBearSpread: spread,
-    sentiment: classifyAaiiSpread(spread),
+    bullBearSpread,
+    sentiment: classifyAaiiSpread(bullBearSpread),
   };
 }
 
@@ -306,23 +303,31 @@ export function validateAaiiWeeklyDraft({ bullish, neutral, bearish } = {}) {
   return { valid: true, bullish: b, neutral: n, bearish: be, total };
 }
 
+// Does an already-persisted/draft record carry a complete, usable set of the three
+// long-run AAII averages? Used to decide whether to keep them across an editor
+// save that isn't a fresh paste — unlike bullBearSpread, averages cannot be
+// reconstructed from bullish/neutral/bearish, so they must be carried forward explicitly.
+export function hasAaiiWeeklyAverages(record) {
+  return ['bullishAverage', 'neutralAverage', 'bearishAverage']
+    .every((key) => normalizeAaiiPercentInput(record?.[key]) != null);
+}
+
 // Builds a full weekly record from a validated draft + the user-selected publication date.
+// bullBearSpread is always recomputed from bullish/bearish (never taken from the draft),
+// on a manual save and a fresh paste alike — see computeAaiiSpread.
 export function buildAaiiWeeklyRecord(draft, publicationDateInput, { now = new Date() } = {}) {
   const validated = validateAaiiWeeklyDraft(draft);
   if (!validated.valid) return validated;
 
-  const hasParsedDetails = [
-    'bullishAverage',
-    'neutralAverage',
-    'bearishAverage',
-    'bullBearSpread',
-  ].some((key) => Object.prototype.hasOwnProperty.call(draft || {}, key));
-  const parsedDetails = hasParsedDetails ? validateAaiiParsedValues(draft) : null;
+  const hasAverageFields = ['bullishAverage', 'neutralAverage', 'bearishAverage']
+    .some((key) => Object.prototype.hasOwnProperty.call(draft || {}, key));
+  const parsedDetails = hasAverageFields ? validateAaiiParsedValues(draft) : null;
   if (parsedDetails && !parsedDetails.valid) return parsedDetails;
 
   const period = getWeeklyPeriod(publicationDateInput);
   if (!period) return { valid: false, error: 'תאריך פרסום לא תקין' };
 
+  const bullBearSpread = computeAaiiSpread(validated.bullish, validated.bearish);
   const publicationDate = toLocalDateOnly(publicationDateInput);
   return {
     valid: true,
@@ -332,12 +337,12 @@ export function buildAaiiWeeklyRecord(draft, publicationDateInput, { now = new D
       bullish: validated.bullish,
       neutral: validated.neutral,
       bearish: validated.bearish,
+      bullBearSpread,
+      sentiment: classifyAaiiSpread(bullBearSpread),
       ...(parsedDetails ? {
         bullishAverage: parsedDetails.bullishAverage,
         neutralAverage: parsedDetails.neutralAverage,
         bearishAverage: parsedDetails.bearishAverage,
-        bullBearSpread: parsedDetails.bullBearSpread,
-        sentiment: parsedDetails.sentiment,
       } : {}),
       publicationDate: formatLocalDateOnly(publicationDate),
       updatedAt: now.toISOString(),

@@ -5,6 +5,7 @@ import {
   formatWeeklyPeriodLabel,
   getAaiiSpreadInterpretation,
   getWeeklyPeriod,
+  hasAaiiWeeklyAverages,
   normalizeAaiiPercentInput,
   parseAaiiResultsLine,
   validateAaiiWeeklyDraft,
@@ -17,11 +18,19 @@ function todayLocalDateOnly() {
   return formatLocalDateOnly(new Date());
 }
 
+// Carries the three long-run averages forward from the stored record so a plain
+// re-save (no fresh paste) does not silently erase them — bullBearSpread is
+// deliberately NOT carried forward here; it is always recomputed from bullish/bearish.
 function buildDraft(currentRecord) {
   return {
     bullish: currentRecord ? String(currentRecord.bullish) : '',
     neutral: currentRecord ? String(currentRecord.neutral) : '',
     bearish: currentRecord ? String(currentRecord.bearish) : '',
+    ...(currentRecord && hasAaiiWeeklyAverages(currentRecord) ? {
+      bullishAverage: currentRecord.bullishAverage,
+      neutralAverage: currentRecord.neutralAverage,
+      bearishAverage: currentRecord.bearishAverage,
+    } : {}),
     publicationDate: currentRecord?.publicationDate || todayLocalDateOnly(),
   };
 }

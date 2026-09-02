@@ -375,15 +375,58 @@ const parseHandlerSource = editorSource.slice(
 assert.match(parseHandlerSource, /if \(!parsed\.valid\)[\s\S]*setParsedPreview\(null\)[\s\S]*return;/);
 assert.doesNotMatch(parseHandlerSource, /setDraft\(/, 'parsing must not partially overwrite manual fields');
 
-// --- wiring: sentiment section renders the stateful container beside FearGreedScoreCard ---
+// --- wiring: sentiment section renders the stateful container beside FearGreedScoreCardContainer ---
 assert.match(panelsSource, /equalHeaderLinkColumns[\s\S]*headerLinks=/);
 assert.match(
   panelsSource,
-  /headerLinks=\{\(\s*<>\s*<FearGreedScoreCard sourceUrl=\{CNN_FEAR_GREED_URL\} \/>\s*<AAIIWeeklySentimentCardContainer \/>\s*<\/>\s*\)\}/,
+  /headerLinks=\{\(\s*<>\s*<FearGreedScoreCardContainer \/>\s*<AAIIWeeklySentimentCardContainer \/>\s*<\/>\s*\)\}/,
 );
 assert.match(
   panelsSource,
   /import \{ AAIIWeeklySentimentCardContainer \} from '\.\/AAIIWeeklySentimentCardContainer';/,
 );
+assert.match(
+  panelsSource,
+  /import \{ FearGreedScoreCardContainer \} from '\.\/FearGreedScoreCardContainer';/,
+);
+
+// --- plain re-save (no fresh paste) preserves averages: proves the tooltip's own
+// fallback (formatHistoricalAverage -> normalizeAAIIPercent(value) == null ? 'לא זמין' : ...)
+// never fires after the editor's buildDraft() carries an existing week's averages forward.
+// (The Radix Tooltip's portalled content is intentionally absent from renderToStaticMarkup
+// output — see the "historical averages stay inside the closed tooltip" assertion above —
+// so this checks the exact upstream data contract the tooltip's fallback depends on instead.)
+assert.match(componentSource, /const normalized = normalizeAAIIPercent\(value\);/);
+assert.match(componentSource, /normalized == null \? 'לא זמין'/);
+const pastedRecord = aaiiWeeklySentimentLib.buildAaiiWeeklyRecord(
+  {
+    bullish: 35.5, bullishAverage: 37.5,
+    neutral: 24.6, neutralAverage: 31,
+    bearish: 39.9, bearishAverage: 31.5,
+    bullBearSpread: -4.4,
+  },
+  '2026-08-19',
+  { now: new Date('2026-08-20T09:30:00.000Z') },
+).record;
+const plainResaveDraft = {
+  bullish: String(pastedRecord.bullish),
+  neutral: String(pastedRecord.neutral),
+  bearish: String(pastedRecord.bearish),
+  ...(aaiiWeeklySentimentLib.hasAaiiWeeklyAverages(pastedRecord) ? {
+    bullishAverage: pastedRecord.bullishAverage,
+    neutralAverage: pastedRecord.neutralAverage,
+    bearishAverage: pastedRecord.bearishAverage,
+  } : {}),
+  publicationDate: pastedRecord.publicationDate,
+};
+const plainResaved = aaiiWeeklySentimentLib.buildAaiiWeeklyRecord(
+  plainResaveDraft,
+  plainResaveDraft.publicationDate,
+  { now: new Date('2026-08-21T10:00:00.000Z') },
+).record;
+for (const key of ['bullishAverage', 'neutralAverage', 'bearishAverage']) {
+  assert.notEqual(normalizeAAIIPercent(plainResaved[key]), null, `${key} must survive a plain re-save`);
+  assert.equal(plainResaved[key], pastedRecord[key], `${key} must be byte-identical after a no-op re-save`);
+}
 
 console.log('AAII weekly sentiment card QA: PASS');

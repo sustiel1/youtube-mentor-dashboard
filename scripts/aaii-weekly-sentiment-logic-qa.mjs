@@ -6,6 +6,7 @@ import {
   AAII_WEEKLY_SENTIMENT_SPREAD_TOLERANCE,
   buildAaiiWeeklyRecord,
   classifyAaiiSpread,
+  computeAaiiSpread,
   createEmptyAaiiWeeklyStore,
   formatAaiiSpread,
   formatDisplayDate,
@@ -14,6 +15,7 @@ import {
   getLatestApplicableAaiiWeeklyRecord,
   getAaiiSpreadInterpretation,
   getWeeklyPeriod,
+  hasAaiiWeeklyAverages,
   listAaiiWeeklyRecordsDescending,
   normalizeAaiiPercentInput,
   parseAaiiResultsLine,
@@ -69,11 +71,20 @@ const invalidTotal = parseAaiiResultsLine(invalidTotalLine);
 assert.equal(invalidTotal.valid, false);
 assert.match(invalidTotal.error, /100/);
 
+// A pasted spread that no longer matches bullish-bearish must NOT block the save
+// (acceptance C/D) — the recomputed spread (bullish - bearish) wins silently.
 const spreadMismatchLine = VALID_AAII_LINE.replace('-4.4 pp', '-3.4 pp');
 const spreadMismatch = parseAaiiResultsLine(spreadMismatchLine);
-assert.equal(spreadMismatch.valid, false);
-assert.match(spreadMismatch.error, /אינו תואם/);
+assert.equal(spreadMismatch.valid, true, 'a spread/bullish-bearish mismatch must never block a save');
+assert.equal(spreadMismatch.bullBearSpread, -4.4, 'the pasted -3.4 must be ignored in favor of the computed 35.5-39.9');
 assert.equal(AAII_WEEKLY_SENTIMENT_SPREAD_TOLERANCE, 0.1);
+
+// computeAaiiSpread: the sole source of truth for the spread, always derived, always
+// rounded to one decimal — verified against the AAII site's own published arithmetic.
+assert.equal(computeAaiiSpread(32.9, 44.4), -11.5);
+assert.equal(computeAaiiSpread(49.5, 28.2), 21.3);
+assert.equal(computeAaiiSpread(34, 34), 0);
+assert.equal(computeAaiiSpread(0, 100), -100);
 
 // Classification delegates to the application's existing signed-value tone rules.
 assert.equal(classifyAaiiSpread(-4.4), 'bearish');
@@ -116,9 +127,10 @@ assert.equal(formatAaiiSpread(-4.4), '-4.4');
 assert.equal(formatAaiiSpread(0), '0.0');
 assert.match(AAII_SPREAD_NOT_FORECAST_TEXT, /לא תחזית/);
 
-// A rejected parse remains a separate result and cannot mutate or partially replace existing values.
+// A rejected parse (still possible for a genuinely malformed line, e.g. a missing
+// field) remains a separate result and cannot mutate or partially replace existing values.
 const existingValues = Object.freeze({ bullish: '49.5', neutral: '22.3', bearish: '28.2' });
-const valuesAfterRejectedParse = spreadMismatch.valid ? { ...existingValues, ...spreadMismatch } : existingValues;
+const valuesAfterRejectedParse = missingField.valid ? { ...existingValues, ...missingField } : existingValues;
 assert.strictEqual(valuesAfterRejectedParse, existingValues);
 assert.deepEqual(valuesAfterRejectedParse, { bullish: '49.5', neutral: '22.3', bearish: '28.2' });
 
@@ -275,6 +287,9 @@ assert.equal(built.record.weekStart, '2026-02-18');
 assert.equal(built.record.weekEnd, '2026-02-25');
 assert.equal(built.record.publicationDate, '2026-02-19');
 assert.equal(built.record.bullish, 49.5);
+// bullBearSpread/sentiment are always computed, even for a bare manual save with no averages.
+assert.equal(built.record.bullBearSpread, 21.3);
+assert.equal(built.record.sentiment, 'bullish');
 
 const builtFromPaste = buildAaiiWeeklyRecord(parsedLine, '2026-08-19', {
   now: new Date('2026-08-20T09:30:00.000Z'),
@@ -295,10 +310,122 @@ assert.equal(persistedParsedRecord.sentiment, 'bearish');
 
 const legacyBuilt = buildAaiiWeeklyRecord({ bullish: 49.5, neutral: 22.3, bearish: 28.2 }, '2026-02-19');
 assert.equal(legacyBuilt.valid, true);
-assert.equal('bullishAverage' in legacyBuilt.record, false, 'legacy manual records keep their existing shape');
+assert.equal('bullishAverage' in legacyBuilt.record, false, 'legacy manual records keep their existing shape (no averages)');
+assert.equal(legacyBuilt.record.bullBearSpread, 21.3, 'spread is always computed, even without averages');
+assert.equal(legacyBuilt.record.sentiment, 'bullish');
 
 const builtInvalid = buildAaiiWeeklyRecord({ bullish: 60, neutral: 30, bearish: 30 }, '2026-02-19');
 assert.equal(builtInvalid.valid, false);
+
+// --- TRADINGBRAIN-AAII-SENTIMENT-SAVE-DATALOSS: acceptance criteria A-G ---
+// hasAaiiWeeklyAverages: the exact predicate AAIIWeeklySentimentEditor.jsx's buildDraft()
+// uses to decide whether to carry a stored week's averages forward into the draft.
+assert.equal(hasAaiiWeeklyAverages(builtFromPaste.record), true);
+assert.equal(hasAaiiWeeklyAverages(legacyBuilt.record), false);
+assert.equal(hasAaiiWeeklyAverages({ bullishAverage: 37.5, neutralAverage: 31, bearishAverage: null }), false);
+assert.equal(hasAaiiWeeklyAverages(null), false);
+assert.equal(hasAaiiWeeklyAverages(undefined), false);
+
+// Simulates AAIIWeeklySentimentEditor.jsx's buildDraft(currentRecord): carries bullish/
+// neutral/bearish (as strings, matching the number-input fields) and, only when complete,
+// the three averages — deliberately never bullBearSpread, which is always recomputed.
+function simulateBuildDraft(currentRecord) {
+  return {
+    bullish: String(currentRecord.bullish),
+    neutral: String(currentRecord.neutral),
+    bearish: String(currentRecord.bearish),
+    ...(hasAaiiWeeklyAverages(currentRecord) ? {
+      bullishAverage: currentRecord.bullishAverage,
+      neutralAverage: currentRecord.neutralAverage,
+      bearishAverage: currentRecord.bearishAverage,
+    } : {}),
+    publicationDate: currentRecord.publicationDate,
+  };
+}
+
+const storedWithAverages = buildAaiiWeeklyRecord(
+  { bullish: 32.9, bullishAverage: 37.5, neutral: 22.7, neutralAverage: 31, bearish: 44.4, bearishAverage: 31.5 },
+  '2026-08-19',
+  { now: new Date('2026-08-20T09:30:00.000Z') },
+).record;
+assert.equal(storedWithAverages.bullBearSpread, -11.5, 'AAII site arithmetic: 32.9 - 44.4 = -11.5');
+
+// A. Open an existing week with stored averages, press Save with nothing changed ->
+// averages are byte-identical to what was stored before.
+const noopResaveDraft = simulateBuildDraft(storedWithAverages);
+const noopResaved = buildAaiiWeeklyRecord(
+  noopResaveDraft,
+  noopResaveDraft.publicationDate,
+  { now: new Date('2026-08-21T10:00:00.000Z') },
+).record;
+assert.equal(noopResaved.bullishAverage, storedWithAverages.bullishAverage);
+assert.equal(noopResaved.neutralAverage, storedWithAverages.neutralAverage);
+assert.equal(noopResaved.bearishAverage, storedWithAverages.bearishAverage);
+assert.equal(noopResaved.bullBearSpread, storedWithAverages.bullBearSpread, 'unchanged bullish/bearish -> unchanged computed spread');
+
+// B. Edit bullish/bearish manually (no fresh paste) -> averages preserved unchanged,
+// bullBearSpread recomputed from the NEW bullish/bearish.
+const manualEditDraft = { ...simulateBuildDraft(storedWithAverages), bullish: '30.0', bearish: '47.3' };
+const manualEdited = buildAaiiWeeklyRecord(
+  manualEditDraft,
+  manualEditDraft.publicationDate,
+  { now: new Date('2026-08-21T11:00:00.000Z') },
+).record;
+assert.equal(manualEdited.bullishAverage, storedWithAverages.bullishAverage, 'averages survive a manual bullish/bearish edit');
+assert.equal(manualEdited.neutralAverage, storedWithAverages.neutralAverage);
+assert.equal(manualEdited.bearishAverage, storedWithAverages.bearishAverage);
+assert.equal(manualEdited.bullBearSpread, -17.3, 'spread recomputed from the edited values (30.0 - 47.3)');
+assert.notEqual(manualEdited.bullBearSpread, storedWithAverages.bullBearSpread);
+
+// C. bullBearSpread is always recomputed from bullish/bearish, on manual save and fresh
+// paste alike; a spread present in a pasted line or an older record never overrides it.
+const pasteWithStaleSpread = buildAaiiWeeklyRecord(
+  { bullish: 30.0, bullishAverage: 37.5, neutral: 22.7, neutralAverage: 31, bearish: 47.3, bearishAverage: 31.5, bullBearSpread: -11.5 },
+  '2026-08-26',
+  { now: new Date('2026-08-27T09:00:00.000Z') },
+).record;
+assert.equal(pasteWithStaleSpread.bullBearSpread, -17.3, 'the stale pasted -11.5 must never override the computed value');
+
+// D. A spread mismatch never blocks a save; only the three percentage values are validated.
+const mismatchedDraft = {
+  bullish: 30.0, bullishAverage: 37.5, neutral: 22.7, neutralAverage: 31, bearish: 47.3, bearishAverage: 31.5, bullBearSpread: 999,
+};
+const mismatchedResult = buildAaiiWeeklyRecord(mismatchedDraft, '2026-08-26', { now: new Date('2026-08-27T09:00:00.000Z') });
+assert.equal(mismatchedResult.valid, true, 'an absurd pasted spread must not block the save');
+assert.equal(mismatchedResult.record.bullBearSpread, -17.3);
+const invalidAverageDraft = { ...mismatchedDraft, bullishAverage: 101 };
+assert.equal(buildAaiiWeeklyRecord(invalidAverageDraft, '2026-08-26').valid, false, 'the three average values are still validated 0-100');
+
+// E. Records saved before this change (no averages, legacy shape) keep working unchanged.
+const preExistingLegacyRecord = { bullish: 49.5, neutral: 22.3, bearish: 28.2, weekStart: '2026-01-01', weekEnd: '2026-01-08', publicationDate: '2026-01-02', updatedAt: '2026-01-02T00:00:00.000Z' };
+assert.equal(hasAaiiWeeklyAverages(preExistingLegacyRecord), false);
+const legacyResaveDraft = simulateBuildDraft(preExistingLegacyRecord);
+assert.equal('bullishAverage' in legacyResaveDraft, false, 'nothing to carry forward for a pre-fix legacy record');
+const legacyResaved = buildAaiiWeeklyRecord(legacyResaveDraft, legacyResaveDraft.publicationDate).record;
+assert.equal('bullishAverage' in legacyResaved, false);
+assert.equal(legacyResaved.bullBearSpread, computeAaiiSpread(49.5, 28.2));
+
+// F. Weeks other than the edited one are untouched by a same-week resave.
+let dataLossStore = createEmptyAaiiWeeklyStore();
+dataLossStore = upsertAaiiWeeklyRecord(dataLossStore, { ...storedWithAverages, weekStart: '2026-08-12', weekEnd: '2026-08-19' });
+dataLossStore = upsertAaiiWeeklyRecord(dataLossStore, storedWithAverages);
+const untouchedWeek = dataLossStore.records['2026-08-12'];
+dataLossStore = upsertAaiiWeeklyRecord(dataLossStore, noopResaved);
+assert.deepEqual(dataLossStore.records['2026-08-12'], untouchedWeek, 'an unrelated week must be byte-identical after a same-week resave');
+
+// G. Zero values in bullish/neutral/bearish survive a full draft -> save -> store round trip.
+const zeroDraft = { bullish: '0', neutral: '0', bearish: '100', publicationDate: '2026-08-19' };
+const zeroBuilt = buildAaiiWeeklyRecord(zeroDraft, zeroDraft.publicationDate);
+assert.equal(zeroBuilt.valid, true);
+assert.equal(zeroBuilt.record.bullish, 0);
+assert.equal(zeroBuilt.record.neutral, 0);
+assert.equal(zeroBuilt.record.bearish, 100);
+const zeroStoreRoundTrip = JSON.parse(JSON.stringify(upsertAaiiWeeklyRecord(createEmptyAaiiWeeklyStore(), zeroBuilt.record)));
+const persistedZeroRecord = zeroStoreRoundTrip.records[zeroBuilt.record.weekStart];
+assert.equal(persistedZeroRecord.bullish, 0);
+assert.notEqual(persistedZeroRecord.bullish, null);
+assert.notEqual(persistedZeroRecord.bullish, undefined);
+assert.equal(persistedZeroRecord.bullBearSpread, -100);
 
 // --- same-week update without duplication vs. new-week record creation ---
 let store = createEmptyAaiiWeeklyStore();
