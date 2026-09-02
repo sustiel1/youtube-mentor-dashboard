@@ -1438,6 +1438,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                   focusItemId={focusedItemId}
                   onFocusVideo={() => handleFocusVideo(group)}
                   isFocused={focusedVideoGroup?.videoKey === group.videoKey}
+                  videoLookup={videoLookup}
                 />
               ))}
             </div>

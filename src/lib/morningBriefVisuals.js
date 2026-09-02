@@ -84,7 +84,12 @@ function norm(s) {
 
 /** Classify free-text market tokens into bullish / bearish / neutral. */
 export function resolveTone(text) {
-  const t = norm(text);
+  // 2026-09-01: strip known Hebrew false-positive substring collisions
+  // (e.g. "פעולה" containing "עולה") before token matching — the same
+  // guard already used internally by inferSignedNumber() in this file,
+  // and by the 3 other modules fixed per lessons.md's 2026-08-30 entry.
+  // resolveTone() itself was the widely-shared entry point those never covered.
+  const t = norm(stripSentimentFalsePositiveTokens(text));
   if (!t) return TONE.NEUTRAL;
   if (BULLISH_TOKENS.some((tok) => t.includes(tok))) return TONE.BULLISH;
   if (BEARISH_TOKENS.some((tok) => t.includes(tok))) return TONE.BEARISH;

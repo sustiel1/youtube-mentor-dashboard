@@ -6,6 +6,8 @@ import {
   useWorkspaceRecordRevealIds,
   WORKSPACE_RECORD_REVEAL_CLASS,
 } from '@/context/WorkspaceRecordRevealContext';
+import { buildSectionMetadataLine } from '@/components/workspace/WorkspaceFocusedVideoCard';
+import { provenanceFor } from '@/utils/workspaceSavedAnalysis';
 
 const COLLECTIONS = [
   ...WORKSPACE_COLLECTION_HEADINGS.map(definition => ({
@@ -18,7 +20,7 @@ const LABELS = Object.fromEntries(COLLECTIONS.map(collection => [collection.id, 
 
 function dateText(value) { try { return value ? new Date(value).toLocaleDateString('he-IL') : 'ללא תאריך'; } catch { return 'ללא תאריך'; } }
 
-export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleItem, onToggleGroup, onOpenVideo, onOpenItem, onEditItem, onArchiveItem, onDeleteItem, focusItemId, onFocusVideo, isFocused = false }) {
+export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleItem, onToggleGroup, onOpenVideo, onOpenItem, onEditItem, onArchiveItem, onDeleteItem, focusItemId, onFocusVideo, isFocused = false, videoLookup }) {
   const [expanded, setExpanded] = useState(false);
   const revealIds = useWorkspaceRecordRevealIds();
   useEffect(() => {
@@ -28,6 +30,12 @@ export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleIt
   const mainTopic = topics.find(topic => topic.id === group.topicId);
   const subTopic = topics.find(topic => topic.id === group.subTopicId);
   const collectionCounts = group.collectionUniqueCounts;
+  // Reuses the same shared metadata-line composition as the focused-video view
+  // (buildSectionMetadataLine) instead of this card's own older, date-only,
+  // no-time, no-videoLookup-fallback "פורסם" field — provenanceFor() already
+  // knows how to resolve videoPublishedAt (own field or videoLookup fallback).
+  const cardProvenance = group.items.map(item => provenanceFor(item, group.videoTitle, videoLookup));
+  const metadataLine = buildSectionMetadataLine(cardProvenance, group.items.length);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-video-key={group.videoKey}>
@@ -35,7 +43,7 @@ export function WorkspaceVideoGroupCard({ group, topics, selectedIds, onToggleIt
         {!isFocused && <div className="aspect-video overflow-hidden rounded-xl bg-slate-100 dark:bg-zinc-800">{group.thumbnail ? <img src={group.thumbnail} alt="" className="h-full w-full object-cover" /> : null}</div>}
         <div className="min-w-0 space-y-2 text-right">
           <div className="flex items-start gap-2"><input aria-label={`בחר את כל השמירות של ${group.videoTitle}`} type="checkbox" checked={allSelected} onChange={() => onToggleGroup(group.items.map(item => item.id), !allSelected)} className="mt-1 h-4 w-4" /><div><h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">{group.videoTitle || 'סרטון ללא כותרת'}</h3><p className="text-sm text-slate-500">{group.channel || 'ערוץ לא ידוע'}</p></div></div>
-          <div className="flex flex-wrap gap-2 text-xs text-slate-500"><span>{group.items.length} שמירות</span><span>· {group.uniqueContentCount} תכנים ייחודיים</span>{group.exactDuplicateGroups.length > 0 && <span>· {group.exactDuplicateGroups.reduce((sum, version) => sum + version.copyCount - 1, 0)} כפילויות זהות</span>}<span>· שמירה אחרונה {dateText(group.latestSaveDate)}</span>{group.originalVideoDate && <span>· פורסם {dateText(group.originalVideoDate)}</span>}</div>
+          <div className="flex flex-wrap gap-2 text-xs text-slate-500"><span>{group.items.length} שמירות</span><span>· {group.uniqueContentCount} תכנים ייחודיים</span>{group.exactDuplicateGroups.length > 0 && <span>· {group.exactDuplicateGroups.reduce((sum, version) => sum + version.copyCount - 1, 0)} כפילויות זהות</span>}<span>· {metadataLine}</span></div>
           <div className="flex flex-wrap gap-1.5">{COLLECTIONS.filter(({ id }) => collectionCounts[id] > 0).map(({ id, label }) => <span key={id} className="rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">{label} {collectionCounts[id]}</span>)}</div>
           {(mainTopic || subTopic) && <p className="text-xs text-slate-500">{mainTopic?.name || ''}{subTopic ? ` / ${subTopic.name}` : ''}</p>}
         </div>

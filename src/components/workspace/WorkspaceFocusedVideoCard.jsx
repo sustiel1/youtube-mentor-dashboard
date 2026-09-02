@@ -59,7 +59,10 @@ function publishedTimeText(publishedAt) {
 /**
  * Shared metadata line for all six saved-row section renderers
  * (SavedTextSection / SavedMarketSection / SavedStockSection /
- * SavedSectorSection / SavedOpportunitySection / SavedNewsSection).
+ * SavedSectorSection / SavedOpportunitySection / SavedNewsSection), and
+ * (2026-09-02) also reused by WorkspaceVideoGroupCard.jsx for the default
+ * "כל הסרטונים" view's card-level line — exported so that file can import it
+ * instead of re-implementing the same date/time/brief-label composition.
  * Composes, in RTL reading order (rightmost first):
  *   1. "פורסם {publish date} {HH:mm}" — bold/emphasized, since this is the
  *      value a trader actually cares about. Only shown when at least one
@@ -84,7 +87,7 @@ function publishedTimeText(publishedAt) {
  * while the rest stays regular weight; AnalysisContentPrimitives.jsx's
  * `metadata` prop already renders whatever node it's given.
  */
-function buildSectionMetadataLine(provenance, recordCount) {
+export function buildSectionMetadataLine(provenance, recordCount) {
   const latestSave = provenance.reduce((latest, entry) => (
     String(entry.savedAt || '') > latest ? String(entry.savedAt || '') : latest
   ), '');
