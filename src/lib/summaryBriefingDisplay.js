@@ -5,6 +5,7 @@
 import { valueToDisplayItems } from '@/lib/universalTabSections';
 import { mergeMorningBriefSpecializedSource } from '@/lib/morningBriefDisplay';
 import { formatStockStatusText } from '@/lib/stockStatusDisplay';
+import { localizeStructuredDisplayText } from '@/lib/structuredDisplayText';
 
 const MAX_THIRTY_SECOND = 5;
 const MAX_INSIGHTS = 5;
@@ -14,7 +15,7 @@ function uniqueStrings(items = [], limit = 20) {
   const out = [];
   const seen = new Set();
   for (const raw of items) {
-    const text = String(raw || '').trim();
+    const text = localizeStructuredDisplayText(raw);
     if (!text || seen.has(text.toLowerCase())) continue;
     seen.add(text.toLowerCase());
     out.push(text);
@@ -69,17 +70,17 @@ function formatCalendarWatch(item) {
 
 function formatObjectLine(obj) {
   const stockLine = formatStockStatusText(obj);
-  if (stockLine) return stockLine;
+  if (stockLine) return localizeStructuredDisplayText(stockLine);
   if (!obj || typeof obj !== 'object') return String(obj ?? '').trim();
   const text = String(
     obj.text || obj.insight || obj.point || obj.content || obj.summary ||
     obj.title || obj.name || obj.rule || obj.description || obj.risk || ''
   ).trim();
-  if (text) return text;
-  return Object.entries(obj)
+  if (text) return localizeStructuredDisplayText(text);
+  return localizeStructuredDisplayText(Object.entries(obj)
     .filter(([, v]) => v != null && typeof v !== 'object')
     .map(([k, v]) => `${k}: ${v}`)
-    .join(' | ');
+    .join(' | '));
 }
 
 function inferToneLabel(...candidates) {
@@ -213,11 +214,11 @@ export function buildDailyBriefingView({
     overview.marketTrend ? `מגמה: ${overview.marketTrend}` : '',
   ], 4);
 
-  const statusExplanation = moodRaw
+  const statusExplanation = localizeStructuredDisplayText(moodRaw
     || sentimentLines[0]
     || overview.marketStrength
     || overview.breadth
-    || '';
+    || '');
 
   const marketStatus = (tone || statusExplanation)
     ? {

@@ -1,4 +1,5 @@
 import { formatStockStatusText } from './stockStatusDisplay';
+import { localizeStructuredDisplayText } from './structuredDisplayText';
 
 /** Merge shared bulk handlers (quick save, toggle) with row-specific overrides. */
 export function mergeBulkSelection(base, overrides = {}) {
@@ -9,8 +10,8 @@ export function mergeBulkSelection(base, overrides = {}) {
 /** Format a tab item to plain text (mirrors LearningTabContent.formatItem). */
 export function formatBulkItemText(item) {
   const stockLine = formatStockStatusText(item);
-  if (stockLine) return stockLine;
-  if (typeof item === 'string') return item.trim();
+  if (stockLine) return localizeStructuredDisplayText(stockLine);
+  if (typeof item === 'string') return localizeStructuredDisplayText(item);
   if (!item || typeof item !== 'object') return String(item ?? '').trim();
   const nested = item.items || item.bullets || item.points;
   if (Array.isArray(nested) && nested.length > 0) {
@@ -20,7 +21,7 @@ export function formatBulkItemText(item) {
       .filter(Boolean)
       .map((line) => `• ${line}`)
       .join('\n');
-    if (title && body) return `${title}\n${body}`;
+    if (title && body) return `${localizeStructuredDisplayText(title)}\n${body}`;
     if (body) return body;
   }
   const text = (
@@ -28,9 +29,9 @@ export function formatBulkItemText(item) {
     item.name || item.rule || item.description || item.insight || item.fact ||
     item.definition || item.setup || item.pattern || ''
   ).trim();
-  if (text) return text;
+  if (text) return localizeStructuredDisplayText(text);
   const val = Object.values(item).find((v) => typeof v === 'string' && v.trim());
-  return val ? val.trim() : '';
+  return val ? localizeStructuredDisplayText(val) : '';
 }
 
 /**

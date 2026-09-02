@@ -5,6 +5,7 @@
 import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import { formatStockStatusText } from '@/lib/stockStatusDisplay';
 import { getInsightDisplayFields } from '@/lib/insightDisplay';
+import { localizeStructuredDisplayText } from '@/lib/structuredDisplayText';
 
 const TAB_UT_KEYS = {
   summary: 'summary',
@@ -69,25 +70,25 @@ function coerceDisplayText(v) {
 
 function formatObjectLine(obj) {
   const stockLine = formatStockStatusText(obj);
-  if (stockLine) return stockLine;
+  if (stockLine) return localizeStructuredDisplayText(stockLine);
   if (!obj || typeof obj !== 'object') return coerceDisplayText(obj);
   const text = coerceDisplayText(
     obj.text || obj.insight || obj.point || obj.content || obj.summary ||
     obj.title || obj.name || obj.rule || obj.description || ''
   );
-  if (text) return text;
+  if (text) return localizeStructuredDisplayText(text);
   const parts = Object.entries(obj)
     .filter(([, v]) => v != null && typeof v !== 'object')
     .map(([k, v]) => `${k}: ${v}`)
     .filter(Boolean);
-  return parts.join(' | ');
+  return localizeStructuredDisplayText(parts.join(' | '));
 }
 
 /** Flatten one JSON value into display strings (no section titles). */
 export function valueToDisplayItems(val) {
   if (val == null) return [];
   if (typeof val === 'string') {
-    const t = val.trim();
+    const t = localizeStructuredDisplayText(val);
     return t ? [t] : [];
   }
   if (typeof val === 'number' || typeof val === 'boolean') {

@@ -15,11 +15,12 @@ import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQ
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
+import { localizeStructuredDisplayText } from '@/lib/structuredDisplayText';
 
 function formatItem(item) {
   const stockLine = formatStockStatusText(item);
-  if (stockLine) return stockLine;
-  if (typeof item === 'string') return item.trim();
+  if (stockLine) return localizeStructuredDisplayText(stockLine);
+  if (typeof item === 'string') return localizeStructuredDisplayText(item);
   if (!item || typeof item !== 'object') return String(item ?? '').trim();
   const nested = item.items || item.bullets || item.points;
   if (Array.isArray(nested) && nested.length > 0) {
@@ -29,7 +30,7 @@ function formatItem(item) {
       .filter(Boolean)
       .map((line) => `• ${line}`)
       .join('\n');
-    if (title && body) return `${title}\n${body}`;
+    if (title && body) return `${localizeStructuredDisplayText(title)}\n${body}`;
     if (body) return body;
   }
   const text = (
@@ -37,9 +38,9 @@ function formatItem(item) {
     item.name || item.rule || item.description || item.insight || item.fact ||
     item.definition || item.setup || item.pattern || ''
   ).trim();
-  if (text) return text;
+  if (text) return localizeStructuredDisplayText(text);
   const val = Object.values(item).find(v => typeof v === 'string' && v.trim());
-  return val ? val.trim() : '';
+  return val ? localizeStructuredDisplayText(val) : '';
 }
 
 function copyText(text) {

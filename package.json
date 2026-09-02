@@ -25,6 +25,7 @@
     "test:workspace-save-reveal": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-save-reveal-qa.mjs",
     "test:workspace-reveal-timer-lifecycle": "node scripts/workspace-reveal-timer-lifecycle-qa.mjs",
     "test:hebrew-sentiment-token-guard": "node --import ./scripts/register-src-aliases.mjs scripts/hebrew-sentiment-token-guard-qa.mjs",
+    "test:structured-display-text": "node --import ./scripts/register-src-aliases.mjs scripts/structured-display-text-qa.mjs",
     "test:workspace-row-selection": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-row-selection-qa.mjs",
     "test:workspace-brief-routing": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-brief-routing-qa.mjs",
     "test:workspace-market-dimensions": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-market-dimensions-qa.mjs",
