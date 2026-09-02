@@ -191,6 +191,7 @@ import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
 import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
 import { updateLocalVideo } from "@/lib/localVideoStore";
 import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
+import { useSavedRowIndex } from "@/hooks/useSavedRowIndex";
 import { PdfUploader } from "@/components/upload/PdfUploader";
 import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
 import { WorkspaceSaveReviewOverlay } from "@/components/workspace/WorkspaceSaveReviewOverlay";
@@ -6050,6 +6051,13 @@ export function VideoDetailPanel({
     return null;
   }, [videoIdForQuickSave, pendingObsidianRowSave, multiObsidianPickerMode, multiSelected]);
 
+  // "Already saved to Workspace" per-row indicator index — built once per
+  // render, scoped to effectiveVideo where a saved item's video is
+  // resolvable, with a backward-compatible unscoped fallback for legacy
+  // saves that predate the sourceVideoId fix (see workspaceSavedRowLookup.js
+  // and useSavedRowIndex.js).
+  const savedRowIndex = useSavedRowIndex(effectiveVideo);
+
   const bulkSelectionShare = useMemo(() => ({
     multiSelected,
     onToggle: toggleMultiSelect,
@@ -6059,6 +6067,7 @@ export function VideoDetailPanel({
     onClear: multiSelectClear,
     videoId: videoIdForQuickSave,
     obsidianItemSaveRevision,
+    savedRowIndex,
     onQuickSaveBrain: (meta) => {
       const tabKey = meta.type || meta.tabScope || 'multi';
       if (isBrainItemSaved(meta.text, tabKey)) {
@@ -6099,6 +6108,7 @@ export function VideoDetailPanel({
     multiSelectClear,
     videoIdForQuickSave,
     obsidianItemSaveRevision,
+    savedRowIndex,
     isBrainItemSaved,
     openSavedBrainItem,
     saveSingleItemToBrain,

@@ -19,7 +19,9 @@ import {
 } from '@/lib/morningBriefVisuals';
 import { MorningBriefBulkCheckbox } from './MorningBriefBulkCheckbox';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
+import { SavedRowIndicator } from '@/components/shared/UniversalTabSelectRow';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
@@ -185,14 +187,16 @@ export function MorningBriefMarketsTable({
               >
                 <td className={BRIEF_MARKETS_CELL.asset}>
                   <div className="flex min-w-0 items-start gap-2">
-                    <MorningBriefBulkCheckbox
-                      bulkSections={bulkSections}
-                      sectionKey="markets"
-                      text={summary}
-                      sectionLabel="📈 שווקים"
-                      tabKey="indices"
-                      bulkSelection={bulkSelection}
-                    />
+                    <div className="flex shrink-0 flex-col items-center gap-1">
+                      <MorningBriefBulkCheckbox
+                        bulkSections={bulkSections}
+                        sectionKey="markets"
+                        text={summary}
+                        sectionLabel="📈 שווקים"
+                        tabKey="indices"
+                        bulkSelection={bulkSelection}
+                      />
+                    </div>
                     <span className={`block shrink-0 whitespace-nowrap ${DASHBOARD_TABLE_CELL_PRIMARY_CLS}`}>
                       <MarketAssetDescriptionTooltip
                         asset={row.asset}
@@ -242,6 +246,7 @@ export function MorningBriefMarketsTable({
                       text={summary}
                       onSaveToBrain={onSaveToBrain}
                     />
+                    {isRowAlreadySaved(summary, 'indices', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                   </div>
                 </td>
               </tr>

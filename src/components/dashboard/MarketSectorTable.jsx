@@ -168,10 +168,15 @@ function SectorNameCell({ sector, showHelperLinks = true }) {
  * Shared sectors table: ☐ | סקטור | סנטימנט | הערה / סיבה | save
  * Leading/trailing cells are injected so Morning Brief can add checkbox + save actions.
  */
+/** `BRIEF_CELL.save` minus the hover-reveal opacity classes — the badge below must stay always-visible. */
+const SECTOR_SAVE_CELL_CLS = 'py-2 pl-1 pr-0 align-middle';
+const SECTOR_SAVE_HOVER_WRAPPER_CLS = 'opacity-0 group-hover:opacity-100 transition-opacity';
+
 export function MarketSectorTable({
   rows = [],
   renderLeadingCell = null,
   renderTrailingCell = null,
+  renderTrailingBadge = null,
   getRowOptions = null,
   rowClassName = 'border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group',
   showHelperLinks = true,
@@ -230,8 +235,11 @@ export function MarketSectorTable({
                     </div>
                   </td>
                   {renderTrailingCell ? (
-                    <td className={BRIEF_CELL.save}>
-                      {renderTrailingCell(item, i, normalized)}
+                    <td className={SECTOR_SAVE_CELL_CLS}>
+                      <div className={SECTOR_SAVE_HOVER_WRAPPER_CLS}>
+                        {renderTrailingCell(item, i, normalized)}
+                      </div>
+                      {renderTrailingBadge ? renderTrailingBadge(item, i, normalized) : null}
                     </td>
                   ) : null}
                 </tr>
@@ -258,8 +266,11 @@ export function MarketSectorTable({
                   </p>
                 </td>
                 {renderTrailingCell ? (
-                  <td className={BRIEF_CELL.save}>
-                    {renderTrailingCell(item, i, normalized)}
+                  <td className={SECTOR_SAVE_CELL_CLS}>
+                    <div className={SECTOR_SAVE_HOVER_WRAPPER_CLS}>
+                      {renderTrailingCell(item, i, normalized)}
+                    </div>
+                    {renderTrailingBadge ? renderTrailingBadge(item, i, normalized) : null}
                   </td>
                 ) : null}
               </tr>

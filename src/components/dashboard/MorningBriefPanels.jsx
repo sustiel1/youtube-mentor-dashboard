@@ -125,7 +125,9 @@ import {
   UNIVERSAL_TAB_CHECKBOX_COL_CLASS,
   UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS,
   UniversalTabSelectRow,
+  SavedRowIndicator,
 } from '@/components/shared/UniversalTabSelectRow';
+import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
@@ -1095,14 +1097,16 @@ function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
                 className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group"
               >
                 <td className={BRIEF_CELL.checkbox}>
-                  <MorningBriefBulkCheckbox
-                    bulkSections={bulkSections}
-                    sectionKey="market-regime"
-                    text={displayText}
-                    sectionLabel="📊 מצב שוק"
-                    tabKey="market-regime"
-                    bulkSelection={bulkSelection}
-                  />
+                  <div className="flex flex-col items-center gap-1">
+                    <MorningBriefBulkCheckbox
+                      bulkSections={bulkSections}
+                      sectionKey="market-regime"
+                      text={displayText}
+                      sectionLabel="📊 מצב שוק"
+                      tabKey="market-regime"
+                      bulkSelection={bulkSelection}
+                    />
+                  </div>
                 </td>
                 <td className={BRIEF_CELL.short}>
                   {externalLink ? (
@@ -1133,13 +1137,16 @@ function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
                 <td className={BRIEF_CELL.notes}>
                   <BriefNewsNotesText text={displayValue} row={rowCtx} translateIndicatorEnums />
                 </td>
-                <td className={BRIEF_CELL.save}>
-                  <BriefQuickSaveActions
-                    bulkSelection={bulkSelection}
-                    text={displayText}
-                    sectionLabel="📊 מצב שוק"
-                    tabKey="market-regime"
-                  />
+                <td className="py-2 pl-1 pr-0 align-middle">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <BriefQuickSaveActions
+                      bulkSelection={bulkSelection}
+                      text={displayText}
+                      sectionLabel="📊 מצב שוק"
+                      tabKey="market-regime"
+                    />
+                  </div>
+                  {isRowAlreadySaved(displayText, 'market-regime', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                 </td>
               </tr>
             );
@@ -1462,14 +1469,16 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
           ]}
           getRowOptions={(row) => ({ sentKey: row.sentKey })}
           renderLeadingCell={(row, _i, normalized) => (
-            <MorningBriefBulkCheckbox
-              bulkSections={bulkSections}
-              sectionKey="sectors"
-              text={formatMorningBriefSectorText(row)}
-              sectionLabel="🏭 סקטורים"
-              tabKey="brief-sectors"
-              bulkSelection={bulkSelection}
-            />
+            <div className="flex flex-col items-center gap-1">
+              <MorningBriefBulkCheckbox
+                bulkSections={bulkSections}
+                sectionKey="sectors"
+                text={formatMorningBriefSectorText(row)}
+                sectionLabel="🏭 סקטורים"
+                tabKey="brief-sectors"
+                bulkSelection={bulkSelection}
+              />
+            </div>
           )}
           renderTrailingCell={(row, _i, normalized) => (
             <BriefQuickSaveActions
@@ -1478,6 +1487,11 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
               sectionLabel="🏭 סקטורים"
               tabKey="brief-sectors"
             />
+          )}
+          renderTrailingBadge={(row, _i) => (
+            isRowAlreadySaved(formatMorningBriefSectorText(row), 'brief-sectors', bulkSelection?.savedRowIndex)
+              ? <SavedRowIndicator />
+              : null
           )}
         />
       </div>
@@ -1701,14 +1715,16 @@ export function MacroSection({
                     data-macro-row
                   >
                     <td className={BRIEF_CELL.checkbox}>
-                      <MorningBriefBulkCheckbox
-                        bulkSections={bulkSections}
-                        sectionKey="macro"
-                        text={summary}
-                        sectionLabel="🌍 מאקרו"
-                        tabKey="brief-macro"
-                        bulkSelection={bulkSelection}
-                      />
+                      <div className="flex flex-col items-center gap-1">
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="macro"
+                          text={summary}
+                          sectionLabel="🌍 מאקרו"
+                          tabKey="brief-macro"
+                          bulkSelection={bulkSelection}
+                        />
+                      </div>
                     </td>
                     <td className={BRIEF_CELL.short}>
                       <div className="flex items-center gap-1 min-w-0">
@@ -1781,29 +1797,32 @@ export function MacroSection({
                         <span className="text-slate-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
-                    <td className={BRIEF_CELL.save}>
-                      <StaticVideoTimestampLink
-                        items={row.rowTimestampSourceItems}
-                        section="macro"
-                        productionRowId={`specialized:macro:${row.indicator || i}`}
-                        displayText={summary}
-                      />
-                      {onSaveToBrain ? (
-                        <BriefRowSaveActions
-                          bulkSelection={bulkSelection}
-                          text={summary}
-                          sectionLabel="🌍 מאקרו"
-                          tabKey="brief-macro"
-                          onSaveToBrain={onSaveToBrain}
+                    <td className="py-2 pl-1 pr-0 align-middle">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <StaticVideoTimestampLink
+                          items={row.rowTimestampSourceItems}
+                          section="macro"
+                          productionRowId={`specialized:macro:${row.indicator || i}`}
+                          displayText={summary}
                         />
-                      ) : (
-                        <BriefQuickSaveActions
-                          bulkSelection={bulkSelection}
-                          text={summary}
-                          sectionLabel="🌍 מאקרו"
-                          tabKey="brief-macro"
-                        />
-                      )}
+                        {onSaveToBrain ? (
+                          <BriefRowSaveActions
+                            bulkSelection={bulkSelection}
+                            text={summary}
+                            sectionLabel="🌍 מאקרו"
+                            tabKey="brief-macro"
+                            onSaveToBrain={onSaveToBrain}
+                          />
+                        ) : (
+                          <BriefQuickSaveActions
+                            bulkSelection={bulkSelection}
+                            text={summary}
+                            sectionLabel="🌍 מאקרו"
+                            tabKey="brief-macro"
+                          />
+                        )}
+                      </div>
+                      {isRowAlreadySaved(summary, 'brief-macro', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                     </td>
                   </tr>
                 );
@@ -1999,14 +2018,16 @@ export function SentimentSection({
                 return (
                   <tr key={`${label}-${i}`} className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-sentiment-item>
                     <td className={BRIEF_CELL.checkbox}>
-                      <MorningBriefBulkCheckbox
-                        bulkSections={bulkSections}
-                        sectionKey="sentiment"
-                        text={bulkText}
-                        sectionLabel="📊 סנטימנט"
-                        tabKey="brief-sentiment"
-                        bulkSelection={bulkSelection}
-                      />
+                      <div className="flex flex-col items-center gap-1">
+                        <MorningBriefBulkCheckbox
+                          bulkSections={bulkSections}
+                          sectionKey="sentiment"
+                          text={bulkText}
+                          sectionLabel="📊 סנטימנט"
+                          tabKey="brief-sentiment"
+                          bulkSelection={bulkSelection}
+                        />
+                      </div>
                     </td>
                     <td className={BRIEF_CELL.short}>
                       {sourceLink ? (
@@ -2049,13 +2070,16 @@ export function SentimentSection({
                         {visibleDescriptionText || '—'}
                       </p>
                     </td>
-                    <td className={BRIEF_CELL.save}>
-                      <BriefQuickSaveActions
-                        bulkSelection={bulkSelection}
-                        text={bulkText}
-                        sectionLabel="📊 סנטימנט"
-                        tabKey="brief-sentiment"
-                      />
+                    <td className="py-2 pl-1 pr-0 align-middle">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <BriefQuickSaveActions
+                          bulkSelection={bulkSelection}
+                          text={bulkText}
+                          sectionLabel="📊 סנטימנט"
+                          tabKey="brief-sentiment"
+                        />
+                      </div>
+                      {isRowAlreadySaved(bulkText, 'brief-sentiment', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                     </td>
                   </tr>
                 );
@@ -2109,14 +2133,16 @@ function CalendarTableRow({ row, bulkSections, bulkSelection }) {
   return (
     <tr className={`border-b border-slate-100/80 dark:border-zinc-800/40 ${COMPARISON_ROW_HOVER} transition-colors group`} data-calendar-row>
       <td className={BRIEF_CELL.checkbox}>
-        <MorningBriefBulkCheckbox
-          bulkSections={bulkSections}
-          sectionKey="economic-calendar"
-          text={calendarBulkText}
-          sectionLabel="📅 לוח כלכלי"
-          tabKey="brief-calendar"
-          bulkSelection={bulkSelection}
-        />
+        <div className="flex flex-col items-center gap-1">
+          <MorningBriefBulkCheckbox
+            bulkSections={bulkSections}
+            sectionKey="economic-calendar"
+            text={calendarBulkText}
+            sectionLabel="📅 לוח כלכלי"
+            tabKey="brief-calendar"
+            bulkSelection={bulkSelection}
+          />
+        </div>
       </td>
       <td className={BRIEF_CELL.short}>
         <p className={`${BRIEF_NOTES_TEXT_CLS}`} title={row.event}>
@@ -2143,13 +2169,16 @@ function CalendarTableRow({ row, bulkSections, bulkSelection }) {
           <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
         )}
       </td>
-      <td className={BRIEF_CELL.save}>
-        <BriefQuickSaveActions
-          bulkSelection={bulkSelection}
-          text={calendarText}
-          sectionLabel="📅 לוח כלכלי"
-          tabKey="brief-calendar"
-        />
+      <td className="py-2 pl-1 pr-0 align-middle">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <BriefQuickSaveActions
+            bulkSelection={bulkSelection}
+            text={calendarText}
+            sectionLabel="📅 לוח כלכלי"
+            tabKey="brief-calendar"
+          />
+        </div>
+        {isRowAlreadySaved(calendarBulkText, 'brief-calendar', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
       </td>
     </tr>
   );
@@ -2596,23 +2625,28 @@ export function OpportunitiesRisksDashboard({
                       pxUrl={null}
                       dataAttrs={{ 'data-opportunity-item': true }}
                       checkbox={(
-                        <MorningBriefBulkCheckbox
-                          bulkSections={bulkSections}
-                          sectionKey="opportunities"
-                          text={selectionText}
-                          sectionLabel="🎯 הזדמנויות"
-                          tabKey="brief-opportunities"
-                          bulkSelection={bulkSelection}
-                        />
+                        <div className="flex flex-col items-center gap-1">
+                          <MorningBriefBulkCheckbox
+                            bulkSections={bulkSections}
+                            sectionKey="opportunities"
+                            text={selectionText}
+                            sectionLabel="🎯 הזדמנויות"
+                            tabKey="brief-opportunities"
+                            bulkSelection={bulkSelection}
+                          />
+                        </div>
                       )}
                       saveActions={(
-                        <BriefRowSaveActions
-                          bulkSelection={bulkSelection}
-                          text={saveText}
-                          sectionLabel="🎯 הזדמנויות"
-                          tabKey="brief-opportunities"
-                          onSaveToBrain={onSaveToBrain}
-                        />
+                        <>
+                          <BriefRowSaveActions
+                            bulkSelection={bulkSelection}
+                            text={saveText}
+                            sectionLabel="🎯 הזדמנויות"
+                            tabKey="brief-opportunities"
+                            onSaveToBrain={onSaveToBrain}
+                          />
+                          {isRowAlreadySaved(selectionText, 'brief-opportunities', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
+                        </>
                       )}
                     />
                   );
@@ -2644,23 +2678,28 @@ export function OpportunitiesRisksDashboard({
                       pxUrl={null}
                       dataAttrs={{ 'data-risk-item': true }}
                       checkbox={(
-                        <MorningBriefBulkCheckbox
-                          bulkSections={bulkSections}
-                          sectionKey="risks"
-                          text={risk.text}
-                          sectionLabel="⚠️ סיכונים"
-                          tabKey="brief-risks"
-                          bulkSelection={bulkSelection}
-                        />
+                        <div className="flex flex-col items-center gap-1">
+                          <MorningBriefBulkCheckbox
+                            bulkSections={bulkSections}
+                            sectionKey="risks"
+                            text={risk.text}
+                            sectionLabel="⚠️ סיכונים"
+                            tabKey="brief-risks"
+                            bulkSelection={bulkSelection}
+                          />
+                        </div>
                       )}
                       saveActions={(
-                        <BriefRowSaveActions
-                          bulkSelection={bulkSelection}
-                          text={risk.text}
-                          sectionLabel="⚠️ סיכונים"
-                          tabKey="brief-risks"
-                          onSaveToBrain={onSaveToBrain}
-                        />
+                        <>
+                          <BriefRowSaveActions
+                            bulkSelection={bulkSelection}
+                            text={risk.text}
+                            sectionLabel="⚠️ סיכונים"
+                            tabKey="brief-risks"
+                            onSaveToBrain={onSaveToBrain}
+                          />
+                          {isRowAlreadySaved(risk.text, 'brief-risks', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
+                        </>
                       )}
                     />
                   );
@@ -2877,14 +2916,16 @@ function StockMentionTableRow({
   return (
     <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
       <td className={BRIEF_CELL.checkbox}>
-        <MorningBriefBulkCheckbox
-          bulkSections={bulkSections}
-          sectionKey="stocks-mentioned"
-          text={selectionText}
-          sectionLabel="⭐ מניות שהוזכרו"
-          tabKey="stocks-mentioned"
-          bulkSelection={bulkSelection}
-        />
+        <div className="flex flex-col items-center gap-1">
+          <MorningBriefBulkCheckbox
+            bulkSections={bulkSections}
+            sectionKey="stocks-mentioned"
+            text={selectionText}
+            sectionLabel="⭐ מניות שהוזכרו"
+            tabKey="stocks-mentioned"
+            bulkSelection={bulkSelection}
+          />
+        </div>
       </td>
       {/* סימול */}
       <td className={BRIEF_CELL.short}>
@@ -2965,20 +3006,23 @@ function StockMentionTableRow({
         )}
       </td>
       ) : null}
-      <td className={BRIEF_CELL.save}>
-        <StaticVideoTimestampLink
-          items={stock.rowTimestampSourceItems}
-          section="stocks-mentioned"
-          productionRowId={`specialized:stock:${ticker}`}
-          displayText={summary}
-        />
-        <BriefRowSaveActions
-          bulkSelection={bulkSelection}
-          text={summary}
-          sectionLabel="⭐ מניות שהוזכרו"
-          tabKey="stocks-mentioned"
-          onSaveToBrain={onSaveToBrain}
-        />
+      <td className="py-2 pl-1 pr-0 align-middle">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <StaticVideoTimestampLink
+            items={stock.rowTimestampSourceItems}
+            section="stocks-mentioned"
+            productionRowId={`specialized:stock:${ticker}`}
+            displayText={summary}
+          />
+          <BriefRowSaveActions
+            bulkSelection={bulkSelection}
+            text={summary}
+            sectionLabel="⭐ מניות שהוזכרו"
+            tabKey="stocks-mentioned"
+            onSaveToBrain={onSaveToBrain}
+          />
+        </div>
+        {isRowAlreadySaved(selectionText, 'stocks-mentioned', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
       </td>
     </tr>
   );

@@ -8,11 +8,13 @@ import {
   NumericChangeSpan,
 } from "./MorningBriefVisualPrimitives";
 import {
+  SavedRowIndicator,
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from "@/components/shared/UniversalTabSelectRow";
 import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQuickSaveActions";
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
+import { isRowAlreadySaved } from "@/utils/workspaceSavedRowLookup";
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 import { localizeStructuredDisplayText } from '@/lib/structuredDisplayText';
@@ -85,6 +87,12 @@ function ItemRow({
   connectButton = null,
   rowClassName = 'group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors',
 }) {
+  const alreadySaved = isRowAlreadySaved(
+    text,
+    bulkSelection?.type || bulkSelection?.tabScope || null,
+    bulkSelection?.savedRowIndex,
+  );
+
   const actions = (
     <div className="flex items-center gap-0.5 shrink-0">
       <StaticVideoTimestampLink
@@ -127,6 +135,7 @@ function ItemRow({
       >
         <Copy className="h-3 w-3" />
       </button>
+      {alreadySaved && <SavedRowIndicator />}
     </div>
   );
 

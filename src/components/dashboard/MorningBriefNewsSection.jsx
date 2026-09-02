@@ -10,9 +10,10 @@ import {
   DASHBOARD_TABLE_CELL_MUTED_CLS,
   DASHBOARD_TABLE_CELL_PRIMARY_CLS,
 } from './MorningBriefVisualPrimitives';
-import { UNIVERSAL_TAB_CHECKBOX_COL_CLASS } from '@/components/shared/UniversalTabSelectRow';
+import { SavedRowIndicator, UNIVERSAL_TAB_CHECKBOX_COL_CLASS } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk } from '@/components/shared/UniversalTabQuickSaveActions';
 import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
+import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 
@@ -161,6 +162,7 @@ export function MorningBriefNewsCard({
           onSaveToBrain={onSaveToBrain}
           selectionPayload={{ newsMetadata: item.newsMetadata }}
         />
+        {isRowAlreadySaved(saveText, 'market-news', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
       </div>
     </div>
   );

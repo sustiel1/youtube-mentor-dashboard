@@ -18,7 +18,7 @@ export const SAVED_ANALYSIS_TABS = [
 
 const EMPTY_MESSAGE = 'לא נשמר תוכן מסוג זה';
 
-function normalized(value) {
+export function normalized(value) {
   return String(value || '').trim().toLocaleLowerCase('he').replace(/\s+/g, ' ');
 }
 
@@ -69,7 +69,7 @@ function isHeadingEchoLine(line, heading) {
   return strippedLine.length <= strippedHeading.length + 12;
 }
 
-function persistedText(item) {
+export function persistedText(item) {
   const identity = item?.identityPayload;
   const app = item?.appPayload || item?.appBrief;
   const candidates = [

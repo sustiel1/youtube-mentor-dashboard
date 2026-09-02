@@ -13,9 +13,10 @@ import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { resolveFinvizTicker } from '@/utils/finvizLinks';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { MarketSectorTable } from './MarketSectorTable';
-import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
+import { SavedRowIndicator, UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
+import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 
 // ── Hebrew label map for raw English GEM keys ────────────────────────
 
@@ -338,8 +339,11 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                         <span className={DASHBOARD_TABLE_CELL_BODY_CLS} dir="ltr">{item}</span>
                       )}
                     </td>
-                    <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MacroSaveCluster text={item} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={strPxUrl} />
+                    <td className="py-2 pl-1 pr-0 w-8 align-middle">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MacroSaveCluster text={item} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={strPxUrl} />
+                      </div>
+                      {isRowAlreadySaved(item, 'stocks-mentioned', merged?.savedRowIndex) && <SavedRowIndicator />}
                     </td>
                   </tr>
                 );
@@ -390,8 +394,11 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                       {renderLinkedMarketText(reason) || '—'}
                     </p>
                   </td>
-                  <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MacroSaveCluster text={rowText} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={stockPxUrl} />
+                  <td className="py-2 pl-1 pr-0 w-8 align-middle">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MacroSaveCluster text={rowText} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={stockPxUrl} />
+                    </div>
+                    {isRowAlreadySaved(rowText, 'stocks-mentioned', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </td>
                 </tr>
               );
@@ -433,6 +440,11 @@ function MacroSectorsSection({ sectors, onSaveToBrain, bulkSelection }) {
             bulkSelection={merged}
             pxUrl={buildPerplexityResearchQuery(item, 'sectors')}
           />
+        )}
+        renderTrailingBadge={(_item, _i, normalized) => (
+          isRowAlreadySaved(normalized.rowText, 'brief-sectors', merged?.savedRowIndex)
+            ? <SavedRowIndicator />
+            : null
         )}
       />
     </SectionCard>
@@ -651,14 +663,17 @@ function MacroResearchSection({ title, items, sectionKey, formatItem, pxUrlBuild
           return (
             <li key={i} className="group flex items-start gap-2 py-2 px-1 first:pt-0 last:pb-0 hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 rounded transition-colors">
               {onToggle && (
-                <div className="shrink-0 mt-1">
+                <div className="shrink-0 mt-1 flex flex-col items-center gap-1">
                   <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />
                 </div>
               )}
               <span className="mt-1.5 text-indigo-300 dark:text-indigo-600 shrink-0 select-none text-[10px]">▸</span>
               <p className={`flex-1 text-sm leading-relaxed ${DASHBOARD_TABLE_CELL_BODY_CLS} break-words [overflow-wrap:anywhere] whitespace-pre-line`}>{renderLinkedMarketText(text)}</p>
-              <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MacroSaveCluster text={text} sectionKey={sectionKey} sectionLabel={title} onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+              <div className="shrink-0 flex items-center gap-1">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MacroSaveCluster text={text} sectionKey={sectionKey} sectionLabel={title} onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+                </div>
+                {isRowAlreadySaved(text, sectionKey, merged?.savedRowIndex) && <SavedRowIndicator />}
               </div>
             </li>
           );
@@ -765,7 +780,7 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
                   </div>
 
                   {/* Checkbox */}
-                  <div className="shrink-0 flex flex-col items-end">
+                  <div className="shrink-0 flex flex-col items-end gap-1">
                     {onToggle && <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />}
                   </div>
                 </div>
@@ -790,6 +805,7 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
                 <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100/80 dark:border-zinc-800/60 flex-wrap">
                   <div className="mr-auto flex items-center gap-1">
                     <MacroSaveCluster text={rowText} sectionKey="macro-highlights" sectionLabel="⭐ היילייטים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
+                    {isRowAlreadySaved(rowText, 'macro-highlights', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </div>
                 </div>
               </div>
@@ -913,7 +929,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
             >
               {/* Checkbox — far right in RTL (first in DOM) */}
               {onToggle && (
-                <div className="shrink-0 pt-0.5">
+                <div className="shrink-0 pt-0.5 flex flex-col items-center gap-1">
                   <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />
                 </div>
               )}
@@ -940,8 +956,9 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
               </div>
 
               {/* Save — far left in RTL */}
-              <div className="shrink-0 flex items-center">
+              <div className="shrink-0 flex items-center gap-1">
                 <MacroSaveCluster text={rowText} sectionKey="macro-warnings" sectionLabel="🔔 אזהרות ופעולות למעקב" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={buildPerplexityResearchQuery(item, 'warnings')} />
+                {isRowAlreadySaved(rowText, 'macro-warnings', merged?.savedRowIndex) && <SavedRowIndicator />}
               </div>
             </div>
           );
@@ -1057,7 +1074,9 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
                   className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors group"
                 >
                   <td className="py-2 pr-2 pl-0 align-middle">
-                    {onToggle && <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />}
+                    <div className="flex flex-col items-center gap-1">
+                      {onToggle && <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />}
+                    </div>
                   </td>
                   <td className="px-2 py-2.5 align-middle">
                     <p className="text-sm font-bold leading-snug text-slate-900 dark:text-zinc-50 break-words [overflow-wrap:anywhere] line-clamp-3">
@@ -1104,6 +1123,7 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
                         </a>
                       )}
                       <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
+                      {isRowAlreadySaved(rowText, 'brief-macro', merged?.savedRowIndex) && <SavedRowIndicator />}
                     </div>
                   </td>
                 </tr>
@@ -1260,7 +1280,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
                   </div>
                 </div>
                 {onToggle && (
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex flex-col items-center gap-1">
                     <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />
                   </div>
                 )}
@@ -1277,8 +1297,9 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                <div className="mr-auto">
+                <div className="mr-auto flex items-center gap-1">
                   <MacroSaveCluster text={rowText} sectionKey="brief-opportunities" sectionLabel="💡 הזדמנויות" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+                  {isRowAlreadySaved(rowText, 'brief-opportunities', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </div>
               </div>
             </div>
@@ -1357,7 +1378,7 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
                   </div>
                 </div>
                 {onToggle && (
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex flex-col items-center gap-1">
                     <UniversalTabCheckbox checked={isChecked} onChange={onToggle} />
                   </div>
                 )}
@@ -1371,8 +1392,9 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
               )}
               {/* buttons */}
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
-                <div className="mr-auto">
+                <div className="mr-auto flex items-center gap-1">
                   <MacroSaveCluster text={rowText} sectionKey="brief-risks" sectionLabel="⚠️ סיכונים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+                  {isRowAlreadySaved(rowText, 'brief-risks', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </div>
               </div>
             </div>
@@ -1611,8 +1633,11 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                       <span className={`font-mono ${DASHBOARD_TABLE_CELL_BODY_CLS}`} dir="ltr">{item}</span>
                     )}
                   </td>
-                  <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MacroSaveCluster text={item} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxStrPxUrl} />
+                  <td className="py-2 pl-1 pr-0 w-8 align-middle">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MacroSaveCluster text={item} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxStrPxUrl} />
+                    </div>
+                    {isRowAlreadySaved(item, 'indices', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </td>
                 </tr>
               );
@@ -1659,8 +1684,11 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                 <td className="px-2 py-2 align-middle max-w-[22rem]">
                   <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}>{renderLinkedMarketText(reason) || '—'}</p>
                 </td>
-                <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxPxUrl} />
+                <td className="py-2 pl-1 pr-0 w-8 align-middle">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxPxUrl} />
+                  </div>
+                  {isRowAlreadySaved(rowText, 'indices', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </td>
               </tr>
             );
