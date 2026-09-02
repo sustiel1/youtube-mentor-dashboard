@@ -387,8 +387,8 @@ export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, sel
 
 export function WorkspaceFocusedVideoCard({
   group, activeCollection, selectedIds, onCollectionSelect, onClearFocus,
-  onOpenVideo, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
-  collectionCounts, topics = [], videoLookup,
+  onOpenVideo, onReturnToAnalysis, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
+  collectionCounts, topics = [], videoLookup, showClearFocus = true,
 }) {
   const viewer = selectSavedAnalysisViewer(visibleGroup, videoLookup);
   const revealIds = useWorkspaceRecordRevealIds();
@@ -437,7 +437,7 @@ export function WorkspaceFocusedVideoCard({
         <div className="min-w-0 space-y-4 text-right">
           <div><p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">תוכן שנשמר מהסרטון</p><h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">{group.videoTitle || 'סרטון ללא כותרת'}</h2><p className="text-sm text-slate-500 dark:text-zinc-400">{group.channel || 'ערוץ לא ידוע'}{group.originalVideoDate ? ` · פורסם ${dateText(group.originalVideoDate)}` : ''}</p></div>
           <p className="text-sm text-slate-600 dark:text-zinc-300">{group.items.length} רשומות שמורות · {viewer.renderedRecordIds.length} רשומות בעלות תוכן שניתן להצגה · שמירה אחרונה {dateText(group.latestSaveDate)}</p>
-          <div className="flex flex-wrap gap-2"><button type="button" onClick={onOpenVideo} aria-label={`פתח את סרטון המקור ${group.videoTitle}`} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"><ExternalLink className="h-4 w-4" />פתח סרטון</button><button type="button" onClick={onClearFocus} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">חזרה לכל הסרטונים</button>{duplicateIds.length > 0 && <button type="button" onClick={() => onRequestDuplicateCleanup(duplicateIds)} className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-bold text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-amber-700 dark:text-amber-300">נקה כפילויות</button>}</div>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={onOpenVideo} aria-label={`פתח את סרטון המקור ${group.videoTitle}`} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"><ExternalLink className="h-4 w-4" />פתח סרטון</button>{showClearFocus && <button type="button" onClick={onClearFocus} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">חזרה לכל הסרטונים</button>}{onReturnToAnalysis && <button type="button" onClick={onReturnToAnalysis} aria-label={`חזרה לניתוח הסרטון ${group.videoTitle}`} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">חזרה לניתוח הסרטון</button>}{duplicateIds.length > 0 && <button type="button" onClick={() => onRequestDuplicateCleanup(duplicateIds)} className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-bold text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-amber-700 dark:text-amber-300">נקה כפילויות</button>}</div>
         </div>
       </header>
 
