@@ -208,7 +208,10 @@
       "Bash(node --check vite.config.js)",
       "Bash(curl -s -X POST -H \"Content-Type: application/json\" -d '{\"videoId\":\"test1\",\"title\":\"מבוא לניהול סיכונים במסחר\",\"durationSeconds\":600,\"transcript\":\"[0] שלום וברוכים הבאים. [5] היום נדבר על ניהול סיכונים. [30] הכלל הראשון הוא לא לסכן יותר מאחוז אחד מהתיק בעסקה אחת. [90] הכלל השני הוא תמיד להגדיר סטופ לוס לפני הכניסה לעסקה. [150] טעות נפוצה היא להזיז את הסטופ לוס אחרי שהעסקה נכנסת להפסד. [200] לסיכום, משמעת היא המפתח להצלחה במסחר לאורך זמן.\"}' http://localhost:5199/api/claude-video-analyze)",
       "Bash(npm ls *)",
-      "Bash(echo \"=== EXIT $? ===\")"
+      "Bash(echo \"=== EXIT $? ===\")",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(git show *)",
+      "Bash(rm head_video_panel_check.tmp)"
     ],
     "additionalDirectories": [
       "C:\\Users\\11\\.cursor",
