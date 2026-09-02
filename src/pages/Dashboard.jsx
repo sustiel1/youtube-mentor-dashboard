@@ -742,7 +742,15 @@ export default function Dashboard({
 
   const handleVideoPatch = (patch) => {
     const patchedVideoId = patch?.id || selectedVideo?.id;
-    setSelectedVideo((prev) => (prev ? { ...prev, ...patch } : null));
+    setSelectedVideo((prev) => {
+      if (!prev) return null;
+      // A patch naming a different video's id is a stale async result (transcript
+      // fetch, AI analysis, fresh-import pipeline) from a video the user has since
+      // navigated away from — applying it would silently swap the open panel to
+      // that other video. See TRADINGBRAIN-ADDBYLINK-VIDEO-MISMATCH.
+      if (patch?.id && prev.id && patch.id !== prev.id) return prev;
+      return { ...prev, ...patch };
+    });
     if (!patchedVideoId) return;
     queryClient.setQueryData(['videos'], (current) => (
       Array.isArray(current)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { updateStoredVideo } from '@/services/videoStorage';
 
@@ -27,6 +27,14 @@ function readFromStorage(videoId) {
 export function usePersistedVideo(videoId, seedVideo) {
   const [currentVideo, setCurrentVideo] = useState(() => readFromStorage(videoId) ?? seedVideo ?? null);
   const queryClient = useQueryClient();
+  // Long-running async work (transcript fetch, AI analysis, fresh-import pipeline)
+  // captures this hook's setters in a closure and can resolve after the caller has
+  // since switched to a different video — the panel component itself stays mounted
+  // across that switch, so a late setVideo/patch call would otherwise silently
+  // overwrite the video the user is now looking at with the previous video's data.
+  // This ref always holds the latest videoId so such stale writes can be dropped.
+  const videoIdRef = useRef(videoId);
+  videoIdRef.current = videoId;
 
   useEffect(() => {
     if (!videoId) { setCurrentVideo(null); return; }
@@ -36,6 +44,7 @@ export function usePersistedVideo(videoId, seedVideo) {
   const patch = useCallback((updates) => {
     if (!videoId) return null;
     const saved = updateStoredVideo(videoId, updates);
+    if (videoIdRef.current !== videoId) return saved; // stale — panel has moved on
     if (saved) {
       setCurrentVideo(saved);
     } else {
@@ -45,5 +54,15 @@ export function usePersistedVideo(videoId, seedVideo) {
     return saved;
   }, [videoId, queryClient]);
 
-  return { video: currentVideo, patch, setVideo: setCurrentVideo };
+  const setVideo = useCallback((next) => {
+    setCurrentVideo((prev) => {
+      const nextValue = typeof next === 'function' ? next(prev) : next;
+      if (nextValue?.id && videoIdRef.current && nextValue.id !== videoIdRef.current) {
+        return prev; // stale write for a video the panel no longer shows
+      }
+      return nextValue;
+    });
+  }, []);
+
+  return { video: currentVideo, patch, setVideo };
 }
