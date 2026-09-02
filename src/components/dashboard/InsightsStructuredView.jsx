@@ -4,12 +4,14 @@
 
 import { Lightbulb } from 'lucide-react';
 import {
+  SavedRowIndicator,
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from '@/components/shared/UniversalTabSelectRow';
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { UniversalTabSectionLabelRow } from '@/components/shared/UniversalTabSectionLabelRow';
 import { mergeBulkSelection, formatBulkItemText } from '@/lib/universalTabBulkItems';
+import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { formatInsightDisplayText, getInsightDisplayFields } from '@/lib/insightDisplay';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampActions } from '@/components/shared/StaticVideoTimestampLink';
@@ -50,6 +52,15 @@ function InsightCard({ row, videoId, productionRowId, onSaveToBrain, isSaved, bu
   const summary = rowSummary(row);
   const saved = isSaved ? isSaved(summary) : false;
   const pxUrl = buildPxUrl(summary);
+  const savedRowCategory = bulkSelection?.type || bulkSelection?.tabScope || null;
+  // Rows with a "why it matters" field persist as `lesson\nלמה זה חשוב: ...`
+  // (the same string isRowAlreadySaved() checks). Older/re-analyzed saves can
+  // carry slightly different why-text for the same lesson, so also accept a
+  // lesson-only match — additive, does not change what gets persisted.
+  const alreadySaved = isRowAlreadySaved(summary, savedRowCategory, bulkSelection?.savedRowIndex)
+    || (row.whyImportant
+      ? isRowAlreadySaved(row.lesson, savedRowCategory, bulkSelection?.savedRowIndex)
+      : false);
 
   const quickActions = bulkSelection?.onQuickSaveBrain ? (
     <UniversalTabQuickSaveFromBulk
@@ -76,6 +87,7 @@ function InsightCard({ row, videoId, productionRowId, onSaveToBrain, isSaved, bu
       displayText={summary}
     >
       {quickActions}
+      {alreadySaved && <SavedRowIndicator />}
     </StaticVideoTimestampActions>
   );
 

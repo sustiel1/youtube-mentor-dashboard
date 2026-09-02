@@ -199,4 +199,34 @@ check('resolveVideoScope returns null when neither sourceVideoId nor a parseable
   assert.equal(resolveVideoScope({ videoUrl: 'not a url' }), null);
 });
 
+// ── insight rows with a "why it matters" field (TRADINGBRAIN-INSIGHTS-
+// SAVEDROW-INDICATOR Round 2): InsightCard's summary is `lesson\nלמה זה
+// חשוב: why`. A saved record whose persisted text is lesson-only (e.g. an
+// older save, or a later re-analysis reworded the why-text) will never
+// satisfy an exact match against today's full lesson+why summary — this is
+// the mechanism the InsightCard fallback (try full summary, then lesson-only
+// when row.whyImportant exists) is built to cover. ──
+check('insight row with why-text: a lesson-ONLY saved record does NOT match the full lesson+why summary', () => {
+  const lesson = 'דוח חזק אינו מבטיח עלייה במניה.';
+  const why = 'הציפיות כבר עשויות להיות מגולמות במחיר.';
+  const fullSummary = `${lesson}\nלמה זה חשוב: ${why}`;
+  const lessonOnlySaved = { id: 'ws-insight-lesson-only', itemType: 'insights', sourceVideoId: 'internal-1', rawSourceText: lesson };
+  const index = buildSavedRowIndex([lessonOnlySaved], scopesOf(video1));
+  assert.equal(isRowAlreadySaved(fullSummary, 'insights', index), false, 'exact-match against the full concatenated string must fail — this is the reported bug');
+});
+check('insight row with why-text: the SAME lesson-only saved record DOES match on lesson-only text — the fallback candidate InsightCard now tries', () => {
+  const lesson = 'דוח חזק אינו מבטיח עלייה במניה.';
+  const lessonOnlySaved = { id: 'ws-insight-lesson-only', itemType: 'insights', sourceVideoId: 'internal-1', rawSourceText: lesson };
+  const index = buildSavedRowIndex([lessonOnlySaved], scopesOf(video1));
+  assert.equal(isRowAlreadySaved(lesson, 'insights', index), true, 'lesson-only fallback must succeed — this is what makes InsightCard show the ✓ tag');
+});
+check('insight row with why-text: a saved record that DOES include the matching full summary matches on the first (non-fallback) candidate', () => {
+  const lesson = 'דוח חזק אינו מבטיח עלייה במניה.';
+  const why = 'הציפיות כבר עשויות להיות מגולמות במחיר.';
+  const fullSummary = `${lesson}\nלמה זה חשוב: ${why}`;
+  const fullTextSaved = { id: 'ws-insight-full', itemType: 'insights', sourceVideoId: 'internal-1', rawSourceText: fullSummary };
+  const index = buildSavedRowIndex([fullTextSaved], scopesOf(video1));
+  assert.equal(isRowAlreadySaved(fullSummary, 'insights', index), true);
+});
+
 console.log(`\nsaved-row video-scoping QA: ${count} checks passed`);
