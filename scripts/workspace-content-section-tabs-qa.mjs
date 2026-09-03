@@ -85,7 +85,10 @@ const sharedTabSource = readFileSync(new URL('../src/components/workspace/Worksp
 ok(pageSource.includes('setActiveContentSectionId'), 'page owns temporary React state');
 ok(!pageSource.includes('workspace_content_section'), 'content-section state has no persistence key');
 ok(sharedTabSource.includes('aria-pressed={activeValue === tab.value}'), 'the unrelated shared pill row keeps its own accessible active-state pattern');
-ok(componentSource.includes('dir="rtl"') && componentSource.includes('overflow-x-auto') && componentSource.includes('flex-nowrap'), 'row is RTL and horizontally scrollable, never wraps to a second line');
+// Pill-capsule redesign (TRADINGBRAIN-WORKSPACE-SECTIONTABS-PILL-REDESIGN):
+// the row now wraps onto additional lines at narrow widths instead of
+// scrolling horizontally, so the old "never wraps" pin is inverted here.
+ok(componentSource.includes('dir="rtl"') && componentSource.includes('flex-wrap'), 'row is RTL and wraps instead of overflowing at narrow widths');
 
 // Underline-tab redesign: proper ARIA tab roles with roving tabindex,
 // replacing the pill row's aria-pressed usage which doesn't fit tab semantics.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LayoutGrid, Flag, Star, Sun, GraduationCap, Trophy, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   VIDEO_ANALYSIS_HEADINGS,
@@ -6,6 +7,25 @@ import {
   getWorkspaceHeadingByCollection,
   getWorkspaceNavigationCollectionForItem,
 } from '@/config/workspaceHeadingRegistry';
+
+// Section headings are free-form Hebrew text (not the fixed 7-collection
+// registry), so icons are matched by keyword with a neutral fallback for
+// anything unrecognized.
+const SECTION_ICON_KEYWORDS = [
+  { keywords: ['מסקנ'], Icon: Flag },
+  { keywords: ['מרכזי'], Icon: Star },
+  { keywords: ['לימוד'], Icon: Sun },
+  { keywords: ['לקח', 'שוק'], Icon: GraduationCap },
+  { keywords: ['מסחר'], Icon: Trophy },
+];
+
+function getSectionIcon(label) {
+  const text = String(label || '');
+  for (const { keywords, Icon } of SECTION_ICON_KEYWORDS) {
+    if (keywords.some(keyword => text.includes(keyword))) return Icon;
+  }
+  return Layers;
+}
 
 // Canonical heading order, keyed by workspaceCollection — mirrors the order
 // headings actually appear in a video analysis. Sections whose dominant
@@ -83,8 +103,6 @@ const NAV_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End']);
 export function WorkspaceContentSectionTabs({ navigation, activeValue, onSelect }) {
   const tabs = useMemo(() => (navigation?.showTabs ? buildDisplayTabs(navigation) : null), [navigation]);
   const tabRefs = useRef([]);
-  const scrollRef = useRef(null);
-  const [edgeFade, setEdgeFade] = useState({ start: false, end: false });
 
   const activeIndex = useMemo(() => {
     if (!tabs) return 0;
@@ -93,26 +111,6 @@ export function WorkspaceContentSectionTabs({ navigation, activeValue, onSelect 
   }, [tabs, activeValue]);
   const [focusedIndex, setFocusedIndex] = useState(activeIndex);
   useEffect(() => { setFocusedIndex(activeIndex); }, [activeIndex]);
-
-  const updateEdgeFade = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    const distanceFromStart = Math.abs(el.scrollLeft);
-    setEdgeFade({
-      start: distanceFromStart > 4,
-      end: distanceFromStart < maxScroll - 4,
-    });
-  }, []);
-
-  useEffect(() => {
-    updateEdgeFade();
-    const el = scrollRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(updateEdgeFade);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [tabs, updateEdgeFade]);
 
   const moveFocus = useCallback((index) => {
     if (!tabs) return;
@@ -135,53 +133,54 @@ export function WorkspaceContentSectionTabs({ navigation, activeValue, onSelect 
   if (!tabs) return null;
 
   return (
-    <nav aria-label="סעיפי תוכן" data-workspace-content-section-tabs="true" dir="rtl" className="border-b border-slate-200 dark:border-zinc-800">
-      <div className="relative">
-        {edgeFade.start && (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white dark:from-zinc-950 to-transparent" />
-        )}
-        {edgeFade.end && (
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white dark:from-zinc-950 to-transparent" />
-        )}
-        <div
-          ref={scrollRef}
-          role="tablist"
-          aria-label="סעיפי תוכן"
-          aria-orientation="horizontal"
-          dir="rtl"
-          className="flex flex-nowrap items-center gap-5 overflow-x-auto overscroll-x-contain"
-          onScroll={updateEdgeFade}
-          onKeyDown={handleKeyDown}
-        >
-          {tabs.map((tab, index) => {
-            const isActive = activeValue === tab.value;
-            return (
-              <button
-                key={tab.value}
-                ref={el => { tabRefs.current[index] = el; }}
-                type="button"
-                role="tab"
-                id={`workspace-content-section-tab-${tab.value || 'all'}`}
-                aria-selected={isActive}
-                tabIndex={focusedIndex === index ? 0 : -1}
-                title={tab.label}
-                onClick={() => moveFocus(index)}
-                className={cn(
-                  'shrink-0 whitespace-nowrap border-b-2 -mb-px py-2 text-sm font-normal transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-offset-1 focus-visible:rounded-sm',
-                  isActive
-                    ? 'border-violet-600 text-slate-900 dark:border-violet-400 dark:text-zinc-100'
-                    : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100',
-                )}
-              >
-                <span className="inline-block max-w-[9rem] truncate align-middle">{tab.label}</span>
-                {typeof tab.count === 'number' && (
-                  <span className="ms-1.5 align-middle text-xs font-normal text-slate-400 dark:text-zinc-500">{tab.count}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+    <nav aria-label="סעיפי תוכן" data-workspace-content-section-tabs="true" dir="rtl">
+      <div
+        role="tablist"
+        aria-label="סעיפי תוכן"
+        aria-orientation="horizontal"
+        dir="rtl"
+        className="flex flex-wrap items-center gap-1.5 rounded-full border border-slate-200/70 bg-slate-100/60 p-1.5 dark:border-zinc-700/60 dark:bg-zinc-800/50"
+        onKeyDown={handleKeyDown}
+      >
+        {tabs.map((tab, index) => {
+          const isActive = activeValue === tab.value;
+          const Icon = index === 0 ? LayoutGrid : getSectionIcon(tab.label);
+          return (
+            <button
+              key={tab.value}
+              ref={el => { tabRefs.current[index] = el; }}
+              type="button"
+              role="tab"
+              id={`workspace-content-section-tab-${tab.value || 'all'}`}
+              aria-selected={isActive}
+              tabIndex={focusedIndex === index ? 0 : -1}
+              title={tab.label}
+              onClick={() => moveFocus(index)}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-1 focus-visible:rounded-full',
+                isActive
+                  ? 'bg-blue-600 text-white dark:bg-blue-500'
+                  : 'bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800',
+              )}
+            >
+              <Icon className={cn('size-3.5 shrink-0', isActive ? 'text-white' : 'text-slate-400 dark:text-zinc-500')} aria-hidden="true" />
+              <span className="inline-block max-w-[9rem] truncate align-middle">{tab.label}</span>
+              {typeof tab.count === 'number' && (
+                <span
+                  className={cn(
+                    'inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none',
+                    isActive
+                      ? 'bg-white/25 text-white'
+                      : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400',
+                  )}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
