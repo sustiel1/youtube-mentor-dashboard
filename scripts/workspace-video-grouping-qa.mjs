@@ -116,4 +116,14 @@ assert.deepEqual(focusedScopeCounts.all, { uniqueCount: 2, recordCount: 3, video
 assert.equal(focusedScopeCounts.summary.recordCount, 0, 'focused-video empty collections remain honest');
 assert.deepEqual(scopedRecords.map(item => item.id), ['v1-insight', 'v1-insight-copy', 'v1-snapshot', 'v2-summary', 'v3-other-topic', 'legacy-no-video'], 'canonical selector never mutates persisted input');
 
-console.log('Workspace video grouping QA: 66 assertions passed');
+const saveOrderRecords = [
+  { id: 'order-a', videoId: 'video-a', videoTitle: 'בבב', itemType: 'insight', sourceTab: 'insights', savedAt: '2026-01-01', updatedAt: '2026-06-01', identityPayload: { text: 'order-a' } },
+  { id: 'order-b', videoId: 'video-b', videoTitle: 'גגג', itemType: 'insight', sourceTab: 'insights', savedAt: '2026-03-01', identityPayload: { text: 'order-b' } },
+  { id: 'order-c', videoId: 'video-c', videoTitle: 'אאא', itemType: 'insight', sourceTab: 'insights', savedAt: '2026-06-01', identityPayload: { text: 'order-c' } },
+];
+const saveOrderResult = groupWorkspaceItemsByVideo(saveOrderRecords);
+const reSavedGroup = saveOrderResult.videoGroups.find(entry => entry.videoId === 'video-a');
+assert.equal(reSavedGroup.latestSaveDate, '2026-06-01', 'a re-save that only bumps updatedAt (never savedAt) is still reflected in latestSaveDate');
+assert.deepEqual(saveOrderResult.videoGroups.map(entry => entry.videoId), ['video-c', 'video-a', 'video-b'], 'groups are ordered by latestSaveDate desc, ties broken by videoTitle asc');
+
+console.log('Workspace video grouping QA: 68 assertions passed');

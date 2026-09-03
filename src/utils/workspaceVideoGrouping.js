@@ -116,10 +116,26 @@ export function groupWorkspaceItemsByVideo(items = []) {
       [...WORKSPACE_COLLECTION_IDS, 'unclassified'].map(key => [key, group.versions.filter(version => version.collection === key).length]),
     );
     group.collectionUniqueCounts.reusableKnowledge = group.collectionUniqueCounts.knowledge;
-    group.latestSaveDate = group.items.reduce((latest, item) => String(item.savedAt || '') > latest ? String(item.savedAt || '') : latest, '');
+    // A re-save of an already-saved item only ever bumps `updatedAt`, never
+    // `savedAt` (see workspaceLibraryStore.js) — so "most recently saved"
+    // must consider both fields per item, not just the original savedAt.
+    group.latestSaveDate = group.items.reduce((latest, item) => {
+      const itemLatest = String(item.savedAt || '') > String(item.updatedAt || '')
+        ? String(item.savedAt || '')
+        : String(item.updatedAt || '');
+      return itemLatest > latest ? itemLatest : latest;
+    }, '');
   }
 
-  return { videoGroups: [...groups.values()], withoutVideo, persistedCount: items.length, videoCount: groups.size };
+  // Explicit sort so the returned group order always reflects most-recent-save-first,
+  // instead of relying on Map insertion order (a side effect of the pre-sorted input
+  // items array) as an implicit ordering. Ties broken by video title.
+  const videoGroups = [...groups.values()].sort((a, b) => (
+    String(b.latestSaveDate || '').localeCompare(String(a.latestSaveDate || ''))
+    || String(a.videoTitle || '').localeCompare(String(b.videoTitle || ''), 'he')
+  ));
+
+  return { videoGroups, withoutVideo, persistedCount: items.length, videoCount: groups.size };
 }
 
 export const WORKSPACE_SCOPE_COLLECTIONS = [
@@ -274,6 +290,85 @@ export function getWorkspaceSectionLabel(item, collection = 'other') {
   const titlePrefix = title.split(/\s+[—–-]\s+/)[0]?.trim();
   if (titlePrefix && titlePrefix !== title) return titlePrefix;
   return SECTION_LABEL_FALLBACKS[collection] || SECTION_LABEL_FALLBACKS.unclassified;
+}
+
+export const WORKSPACE_CONTENT_SECTION_FALLBACK_ID = '__without-section__';
+
+const NON_MEANINGFUL_CONTENT_SECTION_IDS = new Set(['', 'null', 'undefined', 'unsectioned']);
+
+function normalizeWorkspaceHeadingText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+export function getWorkspaceContentSectionId(item) {
+  const heading = normalizeWorkspaceHeadingText(item?.sourceHeading);
+  if (heading && !NON_MEANINGFUL_CONTENT_SECTION_IDS.has(heading.toLowerCase())) {
+    return heading;
+  }
+  const sourceSectionId = String(item?.sourceSectionId ?? '').trim();
+  if (sourceSectionId && !NON_MEANINGFUL_CONTENT_SECTION_IDS.has(sourceSectionId.toLowerCase())) {
+    return sourceSectionId;
+  }
+  const routedSectionId = String(item?.contentRouting?.sourceSectionId ?? '').trim();
+  return NON_MEANINGFUL_CONTENT_SECTION_IDS.has(routedSectionId.toLowerCase())
+    ? WORKSPACE_CONTENT_SECTION_FALLBACK_ID
+    : routedSectionId;
+}
+
+export function selectWorkspaceContentSectionTabs(items = [], { collectionId = null } = {}) {
+  const scopedItems = Array.isArray(items) ? items : [];
+  const sectionMap = new Map();
+
+  for (const item of scopedItems) {
+    const id = getWorkspaceContentSectionId(item);
+    const section = sectionMap.get(id) || {
+      id,
+      label: id === WORKSPACE_CONTENT_SECTION_FALLBACK_ID
+        ? 'ללא סעיף'
+        : getWorkspaceSectionLabel(item, collectionId || collectionForItem(item)),
+      items: [],
+    };
+    section.items.push(item);
+    sectionMap.set(id, section);
+  }
+
+  const sections = [...sectionMap.values()].map(section => ({
+    ...section,
+    count: countUniqueWorkspaceContents(section.items),
+  }));
+  const showTabs = Boolean(collectionId) && sections.length >= 2;
+
+  return {
+    showTabs,
+    sections,
+    tabs: [
+      { value: '', label: 'הכול', count: countUniqueWorkspaceContents(scopedItems) },
+      ...sections.map(section => ({ value: section.id, label: section.label, count: section.count })),
+    ],
+  };
+}
+
+export function resolveWorkspaceContentSectionSelection(activeSectionId, navigation) {
+  const selectedId = String(activeSectionId || '');
+  if (!navigation?.showTabs || !selectedId) return '';
+  return navigation.sections.some(section => section.id === selectedId) ? selectedId : '';
+}
+
+export function filterWorkspaceItemsByContentSection(items = [], activeSectionId = '') {
+  const selectedId = String(activeSectionId || '');
+  if (!selectedId) return Array.isArray(items) ? items : [];
+  return (Array.isArray(items) ? items : []).filter(item => getWorkspaceContentSectionId(item) === selectedId);
+}
+
+export function selectWorkspaceContentSectionPresentation(selection, activeSectionId = '') {
+  const items = filterWorkspaceItemsByContentSection(selection?.items, activeSectionId);
+  const grouping = groupWorkspaceItemsByVideo(items);
+  return {
+    ...selection,
+    ...grouping,
+    items,
+    reachableItemIds: getWorkspaceGroupingReachability(grouping),
+  };
 }
 
 export function selectFocusedVideoPresentation(videoGroup) {

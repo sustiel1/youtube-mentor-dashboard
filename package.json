@@ -29,6 +29,7 @@
     "test:workspace-row-selection": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-row-selection-qa.mjs",
     "test:workspace-brief-routing": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-brief-routing-qa.mjs",
     "test:workspace-market-dimensions": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-market-dimensions-qa.mjs",
+    "test:workspace-content-section-tabs": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-content-section-tabs-qa.mjs",
     "test:workspace-analysis-parity": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-analysis-parity-qa.mjs",
     "test:content-routing-bridge": "node --import ./scripts/register-src-aliases.mjs scripts/content-routing-bridge-qa.mjs",
     "test:workspace-aggregate-navigation": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-aggregate-navigation-qa.mjs",

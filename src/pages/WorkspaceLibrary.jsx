@@ -17,6 +17,7 @@ import {
   getCustomWorkflowTabs,
 } from "@/utils/workspaceTabPreferences";
 import { WorkspaceTabRow } from "@/components/workspace/WorkspaceTabRow";
+import { WorkspaceContentSectionTabs } from "@/components/workspace/WorkspaceContentSectionTabs";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -32,9 +33,10 @@ import { WorkspaceDay } from "@/components/workspace/WorkspaceDay";
 import { WorkspaceBulkActionBar, formatWorkspaceItemsForCopy, exportWorkspaceItemsToCsv } from "@/components/workspace/WorkspaceBulkActionBar";
 import { getWorkspacePersistenceErrorMessage } from "@/lib/workspaceLibraryStore";
 import { WorkspaceCollectionTiles } from "@/components/workspace/WorkspaceCollectionTiles";
+import { WorkspaceScopeTiles } from "@/components/workspace/WorkspaceScopeTiles";
 import { StructuredSnapshotView } from "@/components/workspace/StructuredSnapshotView";
 import { WorkspaceDuplicatePreview } from "@/components/workspace/WorkspaceDuplicatePreview";
-import { checksumWorkspaceItemIds, selectCollectionForScope, selectVideoGroups, selectWorkspaceVideoGroups, findVideoByIdOrUrl } from "@/utils/workspaceVideoGrouping";
+import { checksumWorkspaceItemIds, resolveWorkspaceContentSectionSelection, selectCollectionForScope, selectGlobalCollections, selectVideoCollections, selectVideoGroups, selectWorkspaceContentSectionPresentation, selectWorkspaceContentSectionTabs, selectWorkspaceVideoGroups, findVideoByIdOrUrl } from "@/utils/workspaceVideoGrouping";
 import { buildVideoPublishedAtLookup } from "@/utils/workspaceSavedAnalysis";
 import { WorkspaceVideoGroupCard } from "@/components/workspace/WorkspaceVideoGroupCard";
 import { WorkspaceFocusedVideoCard, WorkspaceGlobalSavedAnalysisGroup } from "@/components/workspace/WorkspaceFocusedVideoCard";
@@ -110,6 +112,8 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   const [sortBy, setSortBy] = useState('newest');
   const [activeCollection, setActiveCollection] = useState(null);
   const [pinnedCollection, setPinnedCollection] = useState(null);
+  const [activeContentSectionId, setActiveContentSectionId] = useState('');
+  const [pinnedContentSectionId, setPinnedContentSectionId] = useState('');
   const [openSnapshotItem, setOpenSnapshotItem] = useState(null);
   const [duplicatePreviewOpen, setDuplicatePreviewOpen] = useState(false);
   const [briefRoutingPreviewOpen, setBriefRoutingPreviewOpen] = useState(false);
@@ -297,6 +301,61 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
       !latest || String(group.latestSaveDate || '') > String(latest.latestSaveDate || '') ? group : latest
     ), null);
   }, [focusedVideoGroup, allVideoGrouping.videoGroups]);
+  const pinnedRecentCollectionCounts = useMemo(
+    () => pinnedRecentGroup ? selectVideoCollections(pinnedRecentGroup) : null,
+    [pinnedRecentGroup],
+  );
+  // Unlike pinnedRecentGroup (which nulls itself once a video is focused via
+  // the URL), this stays available regardless of focus — the "סרטון אחרון"
+  // scope tile needs it to know its own target/selected state either way.
+  const mostRecentVideoGroup = useMemo(() => (
+    allVideoGrouping.videoGroups.reduce((latest, group) => (
+      !latest || String(group.latestSaveDate || '') > String(latest.latestSaveDate || '') ? group : latest
+    ), null)
+  ), [allVideoGrouping.videoGroups]);
+  const globalUniqueContentCount = useMemo(() => countUniqueWorkspaceContents(items), [items]);
+  // Per-collection unique counts across ALL videos, used only to decide
+  // whether switching the scope tile would leave the active category empty
+  // (see scopeTiles below) — reuses the same selector selectCollectionForScope
+  // already calls for the unfocused case, instead of writing a parallel count.
+  const globalCollectionCounts = useMemo(
+    () => selectGlobalCollections(allVideoGrouping.videoGroups, allVideoGrouping.withoutVideo),
+    [allVideoGrouping.videoGroups, allVideoGrouping.withoutVideo],
+  );
+  const pinnedCollectionItems = useMemo(() => {
+    if (!pinnedRecentGroup || !pinnedCollection) return pinnedRecentGroup?.items || [];
+    return selectWorkspaceVideoGroups({
+      items: pinnedRecentGroup.items,
+      collectionId: pinnedCollection,
+    }).items;
+  }, [pinnedCollection, pinnedRecentGroup]);
+  const pinnedContentSectionNavigation = useMemo(
+    () => selectWorkspaceContentSectionTabs(pinnedCollectionItems, { collectionId: pinnedCollection }),
+    [pinnedCollection, pinnedCollectionItems],
+  );
+  const effectivePinnedContentSectionId = resolveWorkspaceContentSectionSelection(
+    pinnedContentSectionId,
+    pinnedContentSectionNavigation,
+  );
+  const pinnedVisibleGroup = useMemo(() => {
+    if (!pinnedRecentGroup) return null;
+    const selection = selectWorkspaceContentSectionPresentation(
+      { items: pinnedCollectionItems },
+      effectivePinnedContentSectionId,
+    );
+    return selection.videoGroups.find(group => group.videoKey === pinnedRecentGroup.videoKey) || {
+      ...pinnedRecentGroup,
+      items: [],
+      versions: [],
+      exactDuplicateGroups: [],
+      uniqueContentCount: 0,
+    };
+  }, [effectivePinnedContentSectionId, pinnedCollectionItems, pinnedRecentGroup]);
+
+  useEffect(() => { setPinnedContentSectionId(''); }, [pinnedCollection, pinnedRecentGroup?.videoKey]);
+  useEffect(() => {
+    if (pinnedContentSectionId !== effectivePinnedContentSectionId) setPinnedContentSectionId(effectivePinnedContentSectionId);
+  }, [effectivePinnedContentSectionId, pinnedContentSectionId]);
 
   const virtTopicCount = useMemo(() => {
     return Object.fromEntries(allMainTabs.map(vt => {
@@ -416,7 +475,32 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   );
 
   const collectionCounts = allCollectionsSelection.collectionCounts;
-  const filteredItems = visibleVideoSelection.items;
+  const contentSectionNavigation = useMemo(
+    () => selectWorkspaceContentSectionTabs(visibleVideoSelection.items, { collectionId: activeCollection }),
+    [activeCollection, visibleVideoSelection.items],
+  );
+  const effectiveContentSectionId = resolveWorkspaceContentSectionSelection(
+    activeContentSectionId,
+    contentSectionNavigation,
+  );
+  const groupedPresentation = useMemo(
+    () => selectWorkspaceContentSectionPresentation(visibleVideoSelection, effectiveContentSectionId),
+    [effectiveContentSectionId, visibleVideoSelection],
+  );
+  const filteredItems = groupedPresentation.items;
+
+  useEffect(() => { setActiveContentSectionId(''); }, [
+    activeCollection,
+    filterVirtTopicId,
+    filterVirtSubtopic,
+    filterSemanticTags,
+    search,
+    statusFilters,
+    pageParams.video,
+  ]);
+  useEffect(() => {
+    if (activeContentSectionId !== effectiveContentSectionId) setActiveContentSectionId(effectiveContentSectionId);
+  }, [activeContentSectionId, effectiveContentSectionId]);
 
   // Active *filters* only — topic/subtopic navigation (tabs) is intentionally excluded,
   // this only covers the filter-bar controls (search/flags/status/source/tags).
@@ -582,7 +666,6 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
   // Mirrors the exact filter used to render the grid below, so the count/delete
   // target always matches what's actually on screen (never the hidden archived/active set).
   const deletableVisibleItems = filteredItems;
-  const groupedPresentation = visibleVideoSelection;
   const workspaceIdChecksum = useMemo(() => checksumWorkspaceItemIds(items), [items]);
   const workspacePayloadChecksum = useMemo(
     () => checksumWorkspacePayloadsExcludingTopicAssignment(items),
@@ -648,24 +731,69 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     navigateTo('Dashboard', { openVideoId: fallbackVideo.id || group.videoId, openVideoMeta: fallbackVideo });
   };
 
-  const handleFocusVideo = (group) => {
+  // `dropCollection` lets a caller switch scope without carrying the active
+  // category along when that category would land empty in the new scope
+  // (see scopeTiles below) — every other call site omits it and keeps the
+  // original always-preserve-collection behavior.
+  const handleFocusVideo = (group, { dropCollection = false } = {}) => {
     navigateTo?.('WorkspaceLibrary', {
       video: group.videoId || group.videoKey,
       ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
       ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
-      ...(activeCollection ? { collection: activeCollection } : {}),
+      ...(!dropCollection && activeCollection ? { collection: activeCollection } : {}),
       ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
     });
   };
 
-  const handleClearVideoFocus = () => {
+  const handleClearVideoFocus = ({ dropCollection = false } = {}) => {
     navigateTo?.('WorkspaceLibrary', {
       ...(filterVirtTopicId ? { topicId: filterVirtTopicId } : {}),
       ...(filterVirtSubtopic ? { subtopicId: filterVirtSubtopic } : {}),
-      ...(activeCollection ? { collection: activeCollection } : {}),
+      ...(!dropCollection && activeCollection ? { collection: activeCollection } : {}),
       ...(filterSemanticTags.length > 0 ? { semantic: filterSemanticTags.join(',') } : {}),
     });
   };
+
+  // The two scope tiles reuse the existing video-focus mechanism (the `video`
+  // URL param via handleFocusVideo/handleClearVideoFocus) — no new state.
+  // Exactly one is always selected and clicking the already-active tile is a
+  // no-op (no deselect), unlike the category tiles below. Switching scope
+  // keeps the active category selected by default; the one exception is when
+  // the target scope has zero content in that category, in which case the
+  // category resets to "all categories" for the new scope (dropCollection)
+  // rather than showing an empty grid under a category tab that doesn't apply.
+  const scopeTiles = useMemo(() => {
+    const allVideosSelected = !focusedVideoGroup;
+    const allVideosCategoryEmpty = !!activeCollection && (globalCollectionCounts[activeCollection]?.uniqueCount || 0) === 0;
+    const tiles = [{
+      id: 'all-videos',
+      emoji: '🎬',
+      label: 'כל הסרטונים',
+      description: 'כל התוכן השמור מכל הסרטונים בספרייה',
+      count: { uniqueCount: globalUniqueContentCount, recordCount: items.length, videoCount: allVideoGrouping.videoCount },
+      selected: allVideosSelected,
+      onSelect: () => { if (focusedVideoGroup) handleClearVideoFocus({ dropCollection: allVideosCategoryEmpty }); },
+    }];
+    if (mostRecentVideoGroup) {
+      const recentSelected = focusedVideoGroup?.videoKey === mostRecentVideoGroup.videoKey;
+      const recentCategoryEmpty = !!activeCollection && (mostRecentVideoGroup.collectionUniqueCounts?.[activeCollection] || 0) === 0;
+      tiles.push({
+        id: 'recent-video',
+        emoji: '🕐',
+        label: 'סרטון אחרון',
+        description: 'התוכן שנשמר מהסרטון האחרון ששמרת ממנו',
+        count: {
+          uniqueCount: mostRecentVideoGroup.uniqueContentCount || 0,
+          recordCount: mostRecentVideoGroup.items.length,
+          videoCount: 1,
+        },
+        selected: recentSelected,
+        onSelect: () => { if (!recentSelected) handleFocusVideo(mostRecentVideoGroup, { dropCollection: recentCategoryEmpty }); },
+      });
+    }
+    return tiles;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleFocusVideo/handleClearVideoFocus are stable per-render closures over already-listed values
+  }, [activeCollection, focusedVideoGroup, globalCollectionCounts, globalUniqueContentCount, items.length, allVideoGrouping.videoCount, mostRecentVideoGroup]);
 
   const handleCollectionSelect = (collection) => {
     navigateTo?.('WorkspaceLibrary', {
@@ -1275,6 +1403,21 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
           </div>}
         </div>
 
+        <WorkspaceScopeTiles tiles={scopeTiles} />
+
+        {!focusedVideoGroup && (
+          <>
+            <WorkspaceCollectionTiles counts={collectionCounts} activeCollection={activeCollection} scopeLabel="כל הסרטונים" onSelect={value => { handleCollectionSelect(value); clearCardSelection(); }} />
+            <div className="mt-4">
+              <WorkspaceContentSectionTabs
+                navigation={contentSectionNavigation}
+                activeValue={effectiveContentSectionId}
+                onSelect={setActiveContentSectionId}
+              />
+            </div>
+          </>
+        )}
+
         {/* ══════════════════════ MANAGE TOPICS PANEL ══════════════════════ */}
         {manageTopicsOpen && (
           <WorkspaceTopicManager
@@ -1307,6 +1450,19 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
 
         {focusedVideoGroup ? (
           <>
+            <WorkspaceCollectionTiles
+              counts={collectionCounts}
+              activeCollection={activeCollection}
+              scopeLabel={`התוכן שנשמר מהסרטון: ${focusedVideoGroup.videoTitle || 'ללא כותרת'}`}
+              onSelect={value => { handleCollectionSelect(value); clearCardSelection(); }}
+            />
+            <div className="mt-4">
+              <WorkspaceContentSectionTabs
+                navigation={contentSectionNavigation}
+                activeValue={effectiveContentSectionId}
+                onSelect={setActiveContentSectionId}
+              />
+            </div>
             <WorkspaceFocusedVideoCard
               group={focusedVideoGroup}
               visibleGroup={focusedVisibleGroup}
@@ -1319,8 +1475,12 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onToggleGroup={toggleGroupSelection}
               onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
               collectionCounts={collectionCounts}
+              contentSectionNavigation={contentSectionNavigation}
+              activeContentSectionId={effectiveContentSectionId}
+              onContentSectionSelect={setActiveContentSectionId}
               topics={topics}
               videoLookup={videoLookup}
+              hideOwnCollectionNav
             />
             {/* Same bar/handlers as the all-videos view below — the row/section
                 checkboxes inside WorkspaceFocusedVideoCard write to the same
@@ -1337,27 +1497,21 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
             />
           </>
         ) : <>
-          {pinnedRecentGroup && (
-            <WorkspaceFocusedVideoCard
-              group={pinnedRecentGroup}
-              activeCollection={pinnedCollection}
-              selectedIds={selectedCardIds}
-              onCollectionSelect={setPinnedCollection}
-              showClearFocus={false}
-              onOpenVideo={() => handleSourceVideoClick(pinnedRecentGroup)}
-              onReturnToAnalysis={() => handleReturnToAnalysis(pinnedRecentGroup)}
-              onToggleGroup={toggleGroupSelection}
-              onRequestDuplicateCleanup={setConfirmDuplicateCleanupIds}
-              collectionCounts={pinnedRecentGroup.collectionUniqueCounts}
-              topics={topics}
-              videoLookup={videoLookup}
-            />
-          )}
+          {/* The pinned-recent-video detail card (WorkspaceFocusedVideoCard for
+              pinnedRecentGroup) was intentionally removed from this all-videos
+              (!focusedVideoGroup) branch: it duplicated the same expanded
+              single-video detail (checkboxes, סיכומים, סיכום ב-30 שניות) that
+              "סרטון אחרון" already shows via the focusedVideoGroup TRUE branch
+              above, and this branch should render ONLY the video-cards list
+              below it. pinnedRecentGroup/pinnedCollection/pinnedContentSectionId/
+              pinnedRecentCollectionCounts/pinnedContentSectionNavigation/
+              effectivePinnedContentSectionId/pinnedCollectionItems/
+              pinnedVisibleGroup are intentionally left defined but unused here
+              — see WORK-ID TRADINGBRAIN-WORKSPACE-TILES-PLACEMENT. */}
           <section data-workspace-scope="global">
             <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">כל הסרטונים</h2>
             <p className="text-sm text-slate-500 dark:text-zinc-400">תוכן שנשמר מכל הסרטונים בספרייה</p>
           </section>
-          <WorkspaceCollectionTiles counts={collectionCounts} activeCollection={activeCollection} scopeLabel="כל הסרטונים" onSelect={value => { handleCollectionSelect(value); clearCardSelection(); }} />
         </>}
 
         {/* ══════════════════════ CONTENT ══════════════════════ */}

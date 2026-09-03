@@ -3,6 +3,7 @@ import { StructuredSnapshotContent } from '@/components/workspace/StructuredSnap
 import { selectSavedAnalysisSections, selectSavedAnalysisViewer } from '@/utils/workspaceSavedAnalysis';
 import { getWorkspaceHeadingByCollection } from '@/config/workspaceHeadingRegistry';
 import { WorkspaceCollectionTiles } from '@/components/workspace/WorkspaceCollectionTiles';
+import { WorkspaceContentSectionTabs } from '@/components/workspace/WorkspaceContentSectionTabs';
 import { SavedMarketRowsTable } from '@/components/workspace/SavedMarketRowsTable';
 import { SavedStockRowsTable } from '@/components/workspace/SavedStockRowsTable';
 import { SavedSectorRowsTable } from '@/components/workspace/SavedSectorRowsTable';
@@ -392,6 +393,8 @@ export function WorkspaceFocusedVideoCard({
   group, activeCollection, selectedIds, onCollectionSelect, onClearFocus,
   onOpenVideo, onReturnToAnalysis, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
   collectionCounts, topics = [], videoLookup, showClearFocus = true,
+  contentSectionNavigation, activeContentSectionId = '', onContentSectionSelect,
+  hideOwnCollectionNav = false,
 }) {
   const viewer = selectSavedAnalysisViewer(visibleGroup, videoLookup);
   const revealIds = useWorkspaceRecordRevealIds();
@@ -444,14 +447,23 @@ export function WorkspaceFocusedVideoCard({
         </div>
       </header>
 
-      <div className="border-y border-slate-200 p-5 dark:border-zinc-800">
-        <WorkspaceCollectionTiles
-          counts={collectionCounts}
-          activeCollection={activeCollection}
-          scopeLabel={`התוכן שנשמר מהסרטון: ${group.videoTitle || 'ללא כותרת'}`}
-          onSelect={onCollectionSelect}
-        />
-      </div>
+      {!hideOwnCollectionNav && (
+        <div className="border-y border-slate-200 p-5 dark:border-zinc-800">
+          <WorkspaceCollectionTiles
+            counts={collectionCounts}
+            activeCollection={activeCollection}
+            scopeLabel={`התוכן שנשמר מהסרטון: ${group.videoTitle || 'ללא כותרת'}`}
+            onSelect={onCollectionSelect}
+          />
+          <div className="mt-4">
+            <WorkspaceContentSectionTabs
+              navigation={contentSectionNavigation}
+              activeValue={activeContentSectionId}
+              onSelect={onContentSectionSelect}
+            />
+          </div>
+        </div>
+      )}
 
       {activeCollection === 'topics' ? (
         <div className="bg-slate-50/60 p-5 dark:bg-zinc-950/30">
