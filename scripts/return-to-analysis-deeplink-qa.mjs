@@ -61,8 +61,19 @@ assert.equal(
 );
 assert.match(
   workspaceLibrarySource,
-  /navigateTo\('Dashboard',\s*\{\s*openVideoId:\s*fallbackVideo\.id \|\| group\.videoId,\s*openVideoMeta:\s*fallbackVideo\s*\}\)/,
+  /navigateTo\('Dashboard',\s*\{\s*openVideoId:\s*fullVideo\.id \|\| group\.videoId,\s*openVideoMeta:\s*fullVideo\s*\}\)/,
   'handleReturnToAnalysis prefers the resolved record\'s own id over the raw group key',
+);
+// TRADINGBRAIN-WORKSPACE-CARD-BUTTON-DEDUPE (2026-09-03): handleReturnToAnalysis
+// and handleSourceVideoClick were merged into a single "open video" button
+// (Dashboard target, findVideoByIdOrUrl resolution, external-tab fallback on
+// a miss). The prior fallbackVideo stub object — which used to make
+// handleReturnToAnalysis navigate to Dashboard anyway on a resolution miss,
+// producing an empty "לא בוצע ניתוח" panel — must never come back.
+assert.doesNotMatch(
+  workspaceLibrarySource,
+  /fallbackVideo/,
+  'handleReturnToAnalysis no longer builds a stub fallbackVideo object on a resolution miss',
 );
 assert.match(
   videoDetailPanelSource,
@@ -126,4 +137,4 @@ const naResolved = findVideoByIdOrUrl(videos, { targetId: naGroup.videoId, targe
 assert.ok(naResolved, 'a genuinely un-analyzed video still resolves to its real (unanalyzed) record, not null');
 assert.equal(naResolved.shortSummary, undefined, 'no shortSummary is fabricated for a genuinely un-analyzed video — the CTA path is preserved');
 
-console.log('return-to-analysis deep-link QA: 13 assertions passed');
+console.log('return-to-analysis deep-link QA: 14 assertions passed');

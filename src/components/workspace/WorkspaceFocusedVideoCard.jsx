@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { StructuredSnapshotContent } from '@/components/workspace/StructuredSnapshotView';
 import { selectSavedAnalysisSections, selectSavedAnalysisViewer } from '@/utils/workspaceSavedAnalysis';
+import { buildItemsById } from '@/lib/workspaceRowSelection';
 import { getWorkspaceHeadingByCollection } from '@/config/workspaceHeadingRegistry';
 import { WorkspaceCollectionTiles } from '@/components/workspace/WorkspaceCollectionTiles';
 import { WorkspaceContentSectionTabs } from '@/components/workspace/WorkspaceContentSectionTabs';
@@ -143,7 +144,7 @@ function technicalDetails(section) {
   );
 }
 
-function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
+function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl, itemsById, onToggleRowFlag }) {
   const recordIds = [...new Set(section.provenance.map(entry => entry.recordId))];
   const selected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
   const sourceTimestamp = section.provenance.find(entry => entry.sourceTimestamp != null)?.sourceTimestamp ?? null;
@@ -159,7 +160,7 @@ function SavedTextSection({ section, selectedIds, onToggleGroup, videoUrl }) {
     >
       <div className="space-y-3" data-persisted-record-count={recordIds.length}>
         <AnalysisFieldGrid fields={section.fields} />
-        <AnalysisList entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} />
+        <AnalysisList entries={section.entries} selectedIds={selectedIds} onToggleGroup={onToggleGroup} itemsById={itemsById} onToggleRowFlag={onToggleRowFlag} />
         <AnalysisTimestampLink videoUrl={videoUrl} timestamp={sourceTimestamp} />
       </div>
       {technicalDetails(section)}
@@ -337,9 +338,13 @@ function SnapshotSection({ section, selectedIds, onToggleGroup }) {
   );
 }
 
-export function WorkspaceSavedAnalysisContent({ group, activeCollection, selectedIds, onToggleGroup, videoLookup }) {
+export function WorkspaceSavedAnalysisContent({ group, activeCollection, selectedIds, onToggleGroup, videoLookup, onToggleRowFlag }) {
   const viewer = selectSavedAnalysisViewer(group, videoLookup);
   const { collectionId, sections } = selectSavedAnalysisSections(viewer, activeCollection);
+  // Built from the same live group.items every render (group is itself a
+  // memoized derivation of WorkspaceLibrary's `items` state), so flags read
+  // here are always current — no separate prop thread needed just for reads.
+  const itemsById = buildItemsById(group.items);
   return (
     <div className="space-y-3 bg-slate-50/60 p-5 dark:bg-zinc-950/30" data-saved-analysis-tab={collectionId}>
       {sections.length === 0
@@ -363,13 +368,13 @@ export function WorkspaceSavedAnalysisContent({ group, activeCollection, selecte
           if (isNewsRowsSection(section)) {
             return <SavedNewsSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
           }
-          return <SavedTextSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} />;
+          return <SavedTextSection key={section.id} section={section} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoUrl={group.videoUrl} itemsById={itemsById} onToggleRowFlag={onToggleRowFlag} />;
         })}
     </div>
   );
 }
 
-export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, selectedIds, onToggleGroup, onFocusVideo, videoLookup }) {
+export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, selectedIds, onToggleGroup, onFocusVideo, videoLookup, onToggleRowFlag }) {
   const logicalItemCount = group.uniqueContentCount || 0;
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900" data-workspace-source-video={group.videoKey}>
@@ -384,7 +389,7 @@ export function WorkspaceGlobalSavedAnalysisGroup({ group, activeCollection, sel
         </div>
         <button type="button" onClick={onFocusVideo} aria-label={`פתח אוסף שמור מהסרטון ${group.videoTitle}`} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">פתח אוסף</button>
       </header>
-      <WorkspaceSavedAnalysisContent group={group} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} />
+      <WorkspaceSavedAnalysisContent group={group} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} onToggleRowFlag={onToggleRowFlag} />
     </article>
   );
 }
@@ -394,7 +399,7 @@ export function WorkspaceFocusedVideoCard({
   onOpenVideo, onReturnToAnalysis, onToggleGroup, onRequestDuplicateCleanup, visibleGroup = group,
   collectionCounts, topics = [], videoLookup, showClearFocus = true,
   contentSectionNavigation, activeContentSectionId = '', onContentSectionSelect,
-  hideOwnCollectionNav = false,
+  hideOwnCollectionNav = false, onToggleRowFlag,
 }) {
   const viewer = selectSavedAnalysisViewer(visibleGroup, videoLookup);
   const revealIds = useWorkspaceRecordRevealIds();
@@ -443,7 +448,23 @@ export function WorkspaceFocusedVideoCard({
         <div className="min-w-0 space-y-4 text-right">
           <div><p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">תוכן שנשמר מהסרטון</p><h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">{group.videoTitle || 'סרטון ללא כותרת'}</h2><p className="text-sm text-slate-500 dark:text-zinc-400">{group.channel || 'ערוץ לא ידוע'}{group.originalVideoDate ? ` · פורסם ${dateText(group.originalVideoDate)}` : ''}</p></div>
           <p className="text-sm text-slate-600 dark:text-zinc-300">{group.items.length} רשומות שמורות · {viewer.renderedRecordIds.length} רשומות בעלות תוכן שניתן להצגה · שמירה אחרונה {dateText(group.latestSaveDate)}</p>
-          <div className="flex flex-wrap gap-2"><button type="button" onClick={onOpenVideo} aria-label={`פתח את סרטון המקור ${group.videoTitle}`} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"><ExternalLink className="h-4 w-4" />פתח סרטון</button>{showClearFocus && <button type="button" onClick={onClearFocus} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">חזרה לכל הסרטונים</button>}{onReturnToAnalysis && <button type="button" onClick={onReturnToAnalysis} aria-label={`חזרה לניתוח הסרטון ${group.videoTitle}`} className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-800 dark:text-indigo-300">חזרה לניתוח הסרטון</button>}{duplicateIds.length > 0 && <button type="button" onClick={() => onRequestDuplicateCleanup(duplicateIds)} className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-bold text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-amber-700 dark:text-amber-300">נקה כפילויות</button>}</div>
+          {/* Single merged "open video" button (2026-09-03/04,
+              TRADINGBRAIN-WORKSPACE-CARD-BUTTON-DEDUPE): the two previous
+              open-video buttons (onOpenVideo's old label, and
+              onReturnToAnalysis's label) both tried to open the video with
+              different targets and fallback behavior — merged per explicit
+              user decision into one button that keeps onReturnToAnalysis's
+              underlying handler (Dashboard target, external-tab fallback,
+              see WorkspaceLibrary.jsx) AND its original visible label below
+              (corrected 2026-09-04 — an earlier round of this same merge
+              briefly used the other button's old label instead; the user's
+              decision keeps this one's original label). onOpenVideo itself
+              is untouched and still passed to ContentRoutingBridge's
+              onOpenAnalysis below. The all-videos-scope button
+              (onClearFocus/showClearFocus) was removed entirely — the
+              always-visible scope tile at the top of WorkspaceLibrary
+              already covers it. */}
+          <div className="flex flex-wrap gap-2">{onReturnToAnalysis && <button type="button" onClick={onReturnToAnalysis} aria-label={`חזרה לניתוח הסרטון ${group.videoTitle}`} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"><ExternalLink className="h-4 w-4" />חזרה לניתוח הסרטון</button>}{duplicateIds.length > 0 && <button type="button" onClick={() => onRequestDuplicateCleanup(duplicateIds)} className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-bold text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-amber-700 dark:text-amber-300">נקה כפילויות</button>}</div>
         </div>
       </header>
 
@@ -475,7 +496,7 @@ export function WorkspaceFocusedVideoCard({
           />
         </div>
       ) : (
-        <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} />
+        <WorkspaceSavedAnalysisContent group={visibleGroup} activeCollection={activeCollection} selectedIds={selectedIds} onToggleGroup={onToggleGroup} videoLookup={videoLookup} onToggleRowFlag={onToggleRowFlag} />
       )}
     </article>
   );

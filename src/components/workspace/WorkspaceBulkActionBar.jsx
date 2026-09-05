@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, Trash2, Copy, X, FileDown, FolderInput, CalendarPlus } from 'lucide-react';
+import { Archive, Trash2, Copy, X, FileDown, FolderInput, CalendarPlus, Star, AlertCircle, RotateCcw } from 'lucide-react';
 import { normalizeStockWorkspaceItem } from '@/utils/workspaceStockItems';
 import { cn } from '@/lib/utils';
 import { classifyWorkspaceItemHeading } from '@/config/workspaceHeadingRegistry';
@@ -85,6 +85,9 @@ export function exportWorkspaceItemsToCsv(items, filename = 'workspace-export.cs
  *   onReassign       {function} — (topicId) => void; called when the user picks a target topic and confirms
  *   onAddToWorkspaceDay {function} — attach selected items to the open workspace day; button
  *                                    hidden if absent (caller passes it only when a day is open)
+ *   onMarkFavorite   {function} — mark all selected as favorite; button hidden if absent
+ *   onMarkImportant  {function} — mark all selected as important; button hidden if absent
+ *   onMarkMustWatch  {function} — mark all selected as must-watch-again; button hidden if absent
  *   disabled         {boolean}  — disable all buttons
  *   fixed            {boolean}  — fixed to viewport bottom (full-page); default flows naturally (dialog use)
  */
@@ -96,6 +99,9 @@ export function WorkspaceBulkActionBar({
   onClearSelection,
   onExportCsv,
   onAddToWorkspaceDay,
+  onMarkFavorite,
+  onMarkImportant,
+  onMarkMustWatch,
   reassignTopics,
   onReassign,
   disabled = false,
@@ -122,7 +128,7 @@ export function WorkspaceBulkActionBar({
         className="flex items-center gap-1 rounded-xl bg-zinc-700 hover:bg-zinc-600 px-2.5 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 disabled:opacity-50"
       >
         <X className="h-3.5 w-3.5" />
-        נקה
+        בטל בחירה
       </button>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -202,6 +208,46 @@ export function WorkspaceBulkActionBar({
           >
             <FileDown className="h-3.5 w-3.5" />
             ייצוא CSV
+          </button>
+        )}
+
+        {(onMarkFavorite || onMarkImportant || onMarkMustWatch) && (
+          <div className="w-px h-5 bg-white/20 shrink-0" />
+        )}
+
+        {onMarkFavorite && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onMarkFavorite}
+            className="flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            <Star className="h-3.5 w-3.5" />
+            מועדפים
+          </button>
+        )}
+
+        {onMarkImportant && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onMarkImportant}
+            className="flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            <AlertCircle className="h-3.5 w-3.5" />
+            חשוב
+          </button>
+        )}
+
+        {onMarkMustWatch && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onMarkMustWatch}
+            className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            לצפות שוב
           </button>
         )}
 

@@ -41,3 +41,52 @@ export function rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaL
     'aria-label': ariaLabel,
   };
 }
+
+/**
+ * Per-row status-flag adapter (TRADINGBRAIN-WORKSPACE-STATUS-FLAGS-PLACEMENT
+ * follow-up): resolves which of a row's underlying persisted item(s) carry an
+ * active status flag, using the SAME `entry.recordIds` contract as
+ * rowSelectionProps above (in practice always exactly one id per row —
+ * buildTextSections() in workspaceSavedAnalysis.js always emits
+ * `recordIds: [item.id]` — but this stays defensive/plural like its sibling
+ * in case a future producer ever merges rows).
+ *
+ * `itemsById` is a plain Map<id, item> built by the caller from the same
+ * `group.items` the row's content was rendered from (always the live,
+ * up-to-date item objects, since group is a memoized derivation of the
+ * WorkspaceLibrary `items` state) — not threaded from further up, so no new
+ * prop chain is needed just to read flags.
+ */
+const STATUS_FLAG_FIELD = { favorite: 'isFavorite', important: 'isImportant', mustWatch: 'mustWatchAgain' };
+const STATUS_DISPLAY_ORDER = ['favorite', 'important', 'mustWatch'];
+const STATUS_PRIORITY_ORDER = ['important', 'mustWatch', 'favorite'];
+const STATUS_ACCENT_CLASS = {
+  important: 'border-r-red-500 dark:border-r-red-500',
+  mustWatch: 'border-r-blue-500 dark:border-r-blue-500',
+  favorite: 'border-r-amber-500 dark:border-r-amber-500',
+};
+
+export function resolveRowStatus({ recordIds, itemsById }) {
+  const ids = (Array.isArray(recordIds) ? recordIds : [recordIds]).filter(Boolean);
+  const active = new Set();
+  if (itemsById && ids.length > 0) {
+    for (const id of ids) {
+      const flags = itemsById.get(id)?.flags;
+      if (!flags) continue;
+      for (const key of STATUS_DISPLAY_ORDER) {
+        if (flags[STATUS_FLAG_FIELD[key]]) active.add(key);
+      }
+    }
+  }
+  const priorityKey = STATUS_PRIORITY_ORDER.find((key) => active.has(key)) || null;
+  return {
+    ids,
+    activeKeys: STATUS_DISPLAY_ORDER.filter((key) => active.has(key)),
+    accentClass: priorityKey ? STATUS_ACCENT_CLASS[priorityKey] : '',
+  };
+}
+
+/** Builds the `itemsById` map `resolveRowStatus` consumes, from a group's items. */
+export function buildItemsById(items = []) {
+  return new Map((items || []).filter(Boolean).map((item) => [item.id, item]));
+}

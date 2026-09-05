@@ -10,7 +10,8 @@ import {
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { buildPersistedYouTubeTimestampUrl } from '@/utils/analysisTickerLinks';
 import { UniversalTabCheckbox } from '@/components/shared/UniversalTabSelectRow';
-import { rowSelectionProps } from '@/lib/workspaceRowSelection';
+import { rowSelectionProps, resolveRowStatus } from '@/lib/workspaceRowSelection';
+import { WorkspaceRowStatusBadges } from '@/components/workspace/WorkspaceRowStatusBadges';
 import {
   getWorkspaceRecordRevealState,
   useWorkspaceRecordRevealIds,
@@ -59,7 +60,7 @@ export function AnalysisSectionCard({
   );
 }
 
-export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
+export function AnalysisList({ entries = [], selectedIds, onToggleGroup, itemsById, onToggleRowFlag }) {
   const revealIds = useWorkspaceRecordRevealIds();
   if (entries.length === 0) return null;
   return (
@@ -70,8 +71,17 @@ export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
         const recordIds = typeof entry === 'object' ? entry.recordIds : null;
         const selection = rowSelectionProps({ recordIds, selectedIds, onToggleGroup, ariaLabel: `בחר את השורה: ${text}` });
         const reveal = getWorkspaceRecordRevealState(recordIds, revealIds);
+        const rowStatus = resolveRowStatus({ recordIds, itemsById });
         return (
-          <li key={`${text}-${index}`} {...reveal.attributes} className={cn('flex items-start justify-end gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/60', reveal.highlighted && WORKSPACE_RECORD_REVEAL_CLASS)}>
+          <li
+            key={`${text}-${index}`}
+            {...reveal.attributes}
+            className={cn(
+              'flex items-start justify-end gap-2 rounded-lg border-r-[3px] border-r-transparent px-2 py-2 transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/60',
+              reveal.highlighted && WORKSPACE_RECORD_REVEAL_CLASS,
+              rowStatus.accentClass,
+            )}
+          >
             {selection && (
               <span className="shrink-0 pt-1">
                 <UniversalTabCheckbox {...selection} />
@@ -79,6 +89,12 @@ export function AnalysisList({ entries = [], selectedIds, onToggleGroup }) {
             )}
             <span className={cn('min-w-0 flex-1 whitespace-pre-wrap break-words text-right', ANALYSIS_BODY_TEXT_CLASS)}>
               {renderLinkedMarketText(text)}
+              {rowStatus.activeKeys.length > 0 && (
+                <WorkspaceRowStatusBadges
+                  activeKeys={rowStatus.activeKeys}
+                  onRemove={(key) => onToggleRowFlag?.(rowStatus.ids, key)}
+                />
+              )}
             </span>
             <span aria-hidden="true" className={cn('shrink-0 text-indigo-500', rank != null ? 'min-w-7 font-mono text-xs font-bold' : 'pt-1')}>
               {rank != null ? `#${rank}` : '•'}

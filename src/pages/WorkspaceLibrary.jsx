@@ -18,6 +18,8 @@ import {
 } from "@/utils/workspaceTabPreferences";
 import { WorkspaceTabRow } from "@/components/workspace/WorkspaceTabRow";
 import { WorkspaceContentSectionTabs } from "@/components/workspace/WorkspaceContentSectionTabs";
+import { WorkspaceStatusFilterPills } from "@/components/workspace/WorkspaceStatusFilterPills";
+import { WorkspaceItemFlagToggles } from "@/components/workspace/WorkspaceItemFlagToggles";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -438,6 +440,68 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     tags: filterTags,
   }), [filterFavorite, filterImportant, filterMarketStatus, filterMustWatch, filterSourceTab, filterTags, isStocksView, showArchivedCards]);
 
+  // Status-pill active state for the pill-row filters, and the shared toggle
+  // handler for both filtering and marking. Live counts (statusPillCounts)
+  // are computed further below, once the rest of the filtering pipeline
+  // (activeCollection/effectiveContentSectionId) exists to reuse.
+  const statusPillActive = useMemo(() => ({
+    favorite: filterFavorite,
+    important: filterImportant,
+    mustWatch: filterMustWatch,
+  }), [filterFavorite, filterImportant, filterMustWatch]);
+
+  const toggleStatusPillFilter = (key) => {
+    if (key === 'favorite') setFilterFavorite(p => !p);
+    else if (key === 'important') setFilterImportant(p => !p);
+    else if (key === 'mustWatch') setFilterMustWatch(p => !p);
+  };
+
+  const STATUS_FLAG_FIELD = { favorite: 'isFavorite', important: 'isImportant', mustWatch: 'mustWatchAgain' };
+
+  // Row-level single-item toggle: flags are stored/replaced as a whole object
+  // per updateWorkspaceItem's shallow-merge semantics (workspaceLibraryStore.js),
+  // so every toggle sends the full merged flags object, same as
+  // EditWorkspaceItemModal's existing save path.
+  const handleToggleItemFlag = (item, key) => {
+    const field = STATUS_FLAG_FIELD[key];
+    if (!field) return;
+    updateItem(item.id, { flags: { ...(item.flags || {}), [field]: !item.flags?.[field] } });
+  };
+
+  // Bulk mark: always SETS the flag true for every selected item (mirrors the
+  // existing bulk-archive action, which also hardcodes `true` rather than
+  // toggling per item). Runs sequentially (not Promise.all) so each
+  // load-modify-persist write completes before the next starts — updateItem
+  // reads the full item list from storage on every call, so concurrent writes
+  // could otherwise race and drop an earlier item's change.
+  const handleBulkSetItemFlag = async (key) => {
+    const field = STATUS_FLAG_FIELD[key];
+    if (!field) return;
+    const ids = [...selectedCardIds];
+    for (const id of ids) {
+      const current = items.find(i => i.id === id);
+      if (!current) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await updateItem(id, { flags: { ...(current.flags || {}), [field]: true } });
+    }
+  };
+
+  // Per-row status-badge removal (saved-analysis content rows — AnalysisList):
+  // badges only render for an ACTIVE status, so a click always removes it
+  // rather than toggling; recordIds is the row's own entry.recordIds (in
+  // practice always one id — see resolveRowStatus's own note).
+  const handleRemoveRowFlag = async (recordIds, key) => {
+    const field = STATUS_FLAG_FIELD[key];
+    if (!field) return;
+    const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+    for (const id of ids) {
+      const current = items.find(i => i.id === id);
+      if (!current?.flags?.[field]) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await updateItem(id, { flags: { ...current.flags, [field]: false } });
+    }
+  };
+
   const allCollectionsSelection = useMemo(() => selectWorkspaceVideoGroups({
     items: scopeItems,
     mainTopic: activeVirtTopic,
@@ -488,6 +552,52 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     [effectiveContentSectionId, visibleVideoSelection],
   );
   const filteredItems = groupedPresentation.items;
+
+  // Status-pill facet counts (root cause of the reported bug: the previous
+  // version counted from `scopeItems` — scope-tile only — ignoring the
+  // collection tile, section tab and search). Reuses the exact same
+  // selectWorkspaceVideoGroups + selectWorkspaceContentSectionPresentation
+  // pipeline as visibleVideoSelection/groupedPresentation above (same args),
+  // with only favorite/important/mustWatch forced off — every non-status
+  // filter (scope, collection, section, search, archived, marketStatus,
+  // sourceTab, tags) stays applied. Facet semantics: each pill's count
+  // ignores ALL THREE status filters (including its own), so activating one
+  // status never changes what the others report — they always answer "how
+  // many items in the current (non-status) view carry this status".
+  const statusFiltersForCounts = useMemo(() => ({
+    ...statusFilters,
+    favorite: false,
+    important: false,
+    mustWatch: false,
+  }), [statusFilters]);
+  const countsBaseSelection = useMemo(() => selectWorkspaceVideoGroups({
+    items: scopeItems,
+    mainTopic: activeVirtTopic,
+    subtopic: activeOrganizationalSubtopic,
+    collectionId: activeCollection || 'all',
+    semanticTags: filterSemanticTags,
+    searchQuery: search,
+    statusFilters: statusFiltersForCounts,
+    sortBy,
+  }), [activeCollection, activeOrganizationalSubtopic, activeVirtTopic, filterSemanticTags, scopeItems, search, sortBy, statusFiltersForCounts]);
+  const countsBasePresentation = useMemo(
+    () => selectWorkspaceContentSectionPresentation(countsBaseSelection, effectiveContentSectionId),
+    [countsBaseSelection, effectiveContentSectionId],
+  );
+  const statusPillCounts = useMemo(() => ({
+    favorite: countsBasePresentation.items.filter(item => !!item.flags?.isFavorite).length,
+    important: countsBasePresentation.items.filter(item => !!item.flags?.isImportant).length,
+    mustWatch: countsBasePresentation.items.filter(item => !!item.flags?.mustWatchAgain).length,
+  }), [countsBasePresentation.items]);
+
+  // If the scope/collection/section/search changed under an already-active
+  // status filter and its facet count dropped to 0, clear it automatically
+  // so the user is never stuck looking at an empty result with no way back.
+  useEffect(() => {
+    if (filterFavorite && statusPillCounts.favorite === 0) setFilterFavorite(false);
+    if (filterImportant && statusPillCounts.important === 0) setFilterImportant(false);
+    if (filterMustWatch && statusPillCounts.mustWatch === 0) setFilterMustWatch(false);
+  }, [statusPillCounts, filterFavorite, filterImportant, filterMustWatch]);
 
   useEffect(() => { setActiveContentSectionId(''); }, [
     activeCollection,
@@ -712,23 +822,41 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
     if (group.videoUrl) window.open(group.videoUrl, '_blank', 'noopener');
   };
 
+  // Merged "open video" action for the focused card (2026-09-03,
+  // TRADINGBRAIN-WORKSPACE-CARD-BUTTON-DEDUPE): the card used to render this
+  // handler AND handleSourceVideoClick as two separate buttons that both
+  // tried to "open the video" but disagreed on where a resolved video landed
+  // (in-place VideoDetailPanel vs. the Dashboard route) and, more
+  // importantly, on what happened when findVideoByIdOrUrl couldn't resolve a
+  // match: handleSourceVideoClick opened YouTube externally, while this
+  // handler used to navigate to Dashboard anyway with a fallback stub object
+  // that lacks analysis fields — producing an empty "לא בוצע ניתוח" panel.
+  // Per explicit user decision, the single surviving button keeps THIS
+  // handler's target (Dashboard's fully analyzed screen) but adopts
+  // handleSourceVideoClick's external-tab failure path instead of the stub;
+  // the stub-fallback branch must never be reintroduced.
+  //
+  // Guard (restored 2026-09-04): only the `navigateTo` half of the original
+  // early-return guard survives. If `navigateTo` isn't available, do nothing
+  // at all — do NOT fall through to the external-tab fallback either, since
+  // that fallback exists specifically to compensate for an unresolvable
+  // VIDEO, not for a missing navigation capability. The `group.videoId`
+  // half stays removed on purpose: a video resolvable only via URL (no
+  // videoId) must still work, and a genuinely unresolvable one must still
+  // fall through to the external YouTube tab.
   const handleReturnToAnalysis = (group) => {
-    if (!navigateTo || !group?.videoId) return;
+    if (!navigateTo) return;
     const fullVideo = findVideoByIdOrUrl(videos, { targetId: group.videoId, targetUrl: group.videoUrl });
-    const fallbackVideo = fullVideo || {
-      id: group.videoId,
-      videoId: group.videoId,
-      title: group.videoTitle || 'Untitled',
-      channelTitle: group.channel || '',
-      thumbnail: group.thumbnail || null,
-      url: group.videoUrl || undefined,
-    };
-    // Prefer the resolved record's own canonical id over group.videoId: the
-    // group key can be sourced from any of a saved item's id/videoId/youtubeId
-    // fields (see the triple-check above), while Dashboard's deep-link effect
-    // and usePersistedVideo() key their own lookups off the real video's `id`
-    // — passing a mismatched id string reopens the panel without its analysis.
-    navigateTo('Dashboard', { openVideoId: fallbackVideo.id || group.videoId, openVideoMeta: fallbackVideo });
+    if (fullVideo) {
+      // Prefer the resolved record's own canonical id over group.videoId: the
+      // group key can be sourced from any of a saved item's id/videoId/youtubeId
+      // fields (see the triple-check above), while Dashboard's deep-link effect
+      // and usePersistedVideo() key their own lookups off the real video's `id`
+      // — passing a mismatched id string reopens the panel without its analysis.
+      navigateTo('Dashboard', { openVideoId: fullVideo.id || group.videoId, openVideoMeta: fullVideo });
+      return;
+    }
+    if (group.videoUrl) window.open(group.videoUrl, '_blank', 'noopener');
   };
 
   // `dropCollection` lets a caller switch scope without carrying the active
@@ -1270,26 +1398,6 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                 />
               </div>
 
-              {[
-                { key: 'favorite',  label: '⭐ מועדפים',   active: filterFavorite,  set: () => setFilterFavorite(p => !p)  },
-                { key: 'important', label: '🔴 חשוב',       active: filterImportant, set: () => setFilterImportant(p => !p) },
-                { key: 'mustwatch', label: '🔁 לצפות שוב',  active: filterMustWatch, set: () => setFilterMustWatch(p => !p) },
-              ].map(({ key, label, active, set }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={set}
-                  className={cn(
-                    'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                    active
-                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-
               {!isStocksView && items.some(i => i.archivedAt) && (
                 <button
                   type="button"
@@ -1415,6 +1523,9 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                 onSelect={setActiveContentSectionId}
               />
             </div>
+            <div className="mt-2">
+              <WorkspaceStatusFilterPills active={statusPillActive} counts={statusPillCounts} onToggle={toggleStatusPillFilter} />
+            </div>
           </>
         )}
 
@@ -1463,6 +1574,9 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                 onSelect={setActiveContentSectionId}
               />
             </div>
+            <div className="mt-2">
+              <WorkspaceStatusFilterPills active={statusPillActive} counts={statusPillCounts} onToggle={toggleStatusPillFilter} />
+            </div>
             <WorkspaceFocusedVideoCard
               group={focusedVideoGroup}
               visibleGroup={focusedVisibleGroup}
@@ -1481,6 +1595,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               topics={topics}
               videoLookup={videoLookup}
               hideOwnCollectionNav
+              onToggleRowFlag={handleRemoveRowFlag}
             />
             {/* Same bar/handlers as the all-videos view below — the row/section
                 checkboxes inside WorkspaceFocusedVideoCard write to the same
@@ -1493,6 +1608,9 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onClearSelection={clearCardSelection}
               onExportCsv={handleExportCsvSelected}
               onAddToWorkspaceDay={openDay ? handleAddSelectedToWorkspaceDay : undefined}
+              onMarkFavorite={() => handleBulkSetItemFlag('favorite')}
+              onMarkImportant={() => handleBulkSetItemFlag('important')}
+              onMarkMustWatch={() => handleBulkSetItemFlag('mustWatch')}
               fixed
             />
           </>
@@ -1553,6 +1671,9 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
               onClearSelection={clearCardSelection}
               onExportCsv={handleExportCsvSelected}
               onAddToWorkspaceDay={openDay ? handleAddSelectedToWorkspaceDay : undefined}
+              onMarkFavorite={() => handleBulkSetItemFlag('favorite')}
+              onMarkImportant={() => handleBulkSetItemFlag('important')}
+              onMarkMustWatch={() => handleBulkSetItemFlag('mustWatch')}
               fixed
             />
 
@@ -1575,6 +1696,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                   onToggleGroup={toggleGroupSelection}
                   onFocusVideo={() => handleFocusVideo(group)}
                   videoLookup={videoLookup}
+                  onToggleRowFlag={handleRemoveRowFlag}
                 />
               ) : (
                 <WorkspaceVideoGroupCard
@@ -1589,6 +1711,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                   onEditItem={setEditItem}
                   onArchiveItem={item => handleArchiveCards([item.id], !item.archivedAt)}
                   onDeleteItem={requestDeleteCard}
+                  onToggleItemFlag={handleToggleItemFlag}
                   focusItemId={focusedItemId}
                   onFocusVideo={() => handleFocusVideo(group)}
                   isFocused={focusedVideoGroup?.videoKey === group.videoKey}
@@ -1601,7 +1724,7 @@ export default function WorkspaceLibrary({ navigateTo, pageParams = {}, isDark, 
                 <h2 className="text-lg font-bold">פריטים ללא סרטון ({groupedPresentation.withoutVideo.length})</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {groupedPresentation.withoutVideo.map(item => (
-                    <WorkspaceVideoCard key={item.id} item={item} topics={topics} onOpen={() => handleVideoClick(item)} onDelete={() => requestDeleteCard(item)} onEdit={() => setEditItem(item)} onArchive={() => handleArchiveCards([item.id], !item.archivedAt)} selected={selectedCardIds.has(item.id)} onToggleSelect={() => toggleCardSelect(item.id)} />
+                    <WorkspaceVideoCard key={item.id} item={item} topics={topics} onOpen={() => handleVideoClick(item)} onDelete={() => requestDeleteCard(item)} onEdit={() => setEditItem(item)} onArchive={() => handleArchiveCards([item.id], !item.archivedAt)} selected={selectedCardIds.has(item.id)} onToggleSelect={() => toggleCardSelect(item.id)} onToggleFlag={key => handleToggleItemFlag(item, key)} />
                   ))}
                 </div>
               </section>
@@ -1737,7 +1860,7 @@ function FilterChip({ label, onRemove }) {
 
 // ─── WorkspaceVideoCard ───────────────────────────────────────────────────────
 
-function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit, onArchive, showMarketStatus = false, onStatusChange, selected = false, onToggleSelect }) {
+function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit, onArchive, showMarketStatus = false, onStatusChange, selected = false, onToggleSelect, onToggleFlag }) {
   const mainTopic = topics.find(t => t.id === item.topicId);
   const subTopic = topics.find(t => t.id === item.subTopicId);
 
@@ -1856,6 +1979,12 @@ function WorkspaceVideoCard({ item, topics, onOpen, onDelete, onEdit, onArchive,
             </span>
           )}
         </div>
+
+        {onToggleFlag && (
+          <div className="flex items-center justify-end pt-1 border-t border-slate-100 dark:border-zinc-800">
+            <WorkspaceItemFlagToggles flags={item.flags} onToggle={key => onToggleFlag(key)} />
+          </div>
+        )}
 
         {showMarketStatus && (
           <div className="mt-1 pt-1.5 border-t border-slate-100 dark:border-zinc-800">
