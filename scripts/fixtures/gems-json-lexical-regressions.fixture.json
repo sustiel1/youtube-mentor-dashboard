@@ -1,6 +1,10 @@
 {
   "missingCommaLine3Column49": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\":{\"summary\":{\"x\":\"y\"}          \"chapters\":[]}\n}",
   "unescapedHebrewAbbreviation": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\": {\n    \"summary\": {\"shortSummary\": \"תשואות האג\"ח עלו\"},\n    \"chapters\": []\n  }\n}",
+  "unescapedQuotedPhrase": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\": {\n    \"summary\": {\"shortSummary\": \"המרצה אמר \"זהירות\" בשוק\"},\n    \"chapters\": []\n  }\n}",
+  "missingCommaBetweenStringValues": "{\"contentType\":\"marketBrief\",\"universalTabs\":{\"summary\":{\"a\":\"b\"   \"c\":\"d\"},\"chapters\":[]}}",
+  "unescapedQuotedWordFollowedByComma": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\": {\n    \"summary\": {\"shortSummary\": \"למרות לחץ בקהילה סביב \"קריסה\", המדדים יציבים\"},\n    \"chapters\": []\n  }\n}",
+  "arrayOfHebrewStringsWithTrailingComma": "{\n  \"contentType\": \"marketBrief\",\n  \"universalTabs\": {\n    \"summary\": {\"shortSummary\": \"תקציר\"},\n    \"chapters\": [],\n    \"topicsSubtopics\": [\"א\", \"ב\", \"ג\",]\n  }\n}",
   "validCanonical": {
     "contentType": "marketBrief",
     "universalTabs": {

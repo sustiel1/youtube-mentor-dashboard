@@ -52,6 +52,42 @@ assert.equal(
   'תשואות האג"ח עלו',
 );
 
+const quotedPhraseRepair = repairGemsJsonDeterministically(fixture.unescapedQuotedPhrase);
+assert.equal(quotedPhraseRepair.status, 'repaired');
+assert.match(quotedPhraseRepair.changes.join(' '), /unescaped quote/);
+assert.equal(parseAndValidateGemsJson(quotedPhraseRepair.repairedJson).ok, true);
+assert.equal(
+  JSON.parse(quotedPhraseRepair.repairedJson).universalTabs.summary.shortSummary,
+  'המרצה אמר "זהירות" בשוק',
+);
+
+const missingCommaBetweenStrings = repairGemsJsonDeterministically(fixture.missingCommaBetweenStringValues);
+assert.equal(missingCommaBetweenStrings.status, 'repaired');
+assert.match(missingCommaBetweenStrings.changes.join(' '), /Inserted missing property comma/);
+assert.doesNotMatch(missingCommaBetweenStrings.changes.join(' '), /unescaped quote/);
+assert.deepEqual(
+  JSON.parse(missingCommaBetweenStrings.repairedJson).universalTabs.summary,
+  { a: 'b', c: 'd' },
+);
+
+const quotedWordCommaRepair = repairGemsJsonDeterministically(fixture.unescapedQuotedWordFollowedByComma);
+assert.equal(quotedWordCommaRepair.status, 'repaired');
+assert.match(quotedWordCommaRepair.changes.join(' '), /unescaped quote/);
+assert.equal(parseAndValidateGemsJson(quotedWordCommaRepair.repairedJson).ok, true);
+assert.equal(
+  JSON.parse(quotedWordCommaRepair.repairedJson).universalTabs.summary.shortSummary,
+  'למרות לחץ בקהילה סביב "קריסה", המדדים יציבים',
+);
+
+const arrayOfStringsRepair = repairGemsJsonDeterministically(fixture.arrayOfHebrewStringsWithTrailingComma);
+assert.equal(arrayOfStringsRepair.status, 'repaired');
+assert.deepEqual(arrayOfStringsRepair.changes, ['Removed trailing comma(s).']);
+assert.equal(parseAndValidateGemsJson(arrayOfStringsRepair.repairedJson).ok, true);
+assert.deepEqual(
+  JSON.parse(arrayOfStringsRepair.repairedJson).universalTabs.topicsSubtopics,
+  ['א', 'ב', 'ג'],
+);
+
 const eof = repairGemsJsonDeterministically(validRaw.slice(0, -5));
 assert.equal(eof.status, 'regeneration-required');
 assert.equal(eof.repairedJson, null);

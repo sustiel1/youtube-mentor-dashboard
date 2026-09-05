@@ -361,12 +361,40 @@ function escapeLiteralControlsInsideStrings(text) {
   return output;
 }
 
+function startsValidJsonToken(text, index) {
+  let cursor = index;
+  while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
+  if (cursor >= text.length) return false;
+  const char = text[cursor];
+  if (char === '"' || char === '{' || char === '[' || char === '}' || char === ']') return true;
+  if (char === '-' || (char >= '0' && char <= '9')) return true;
+  return text.startsWith('true', cursor) || text.startsWith('false', cursor) || text.startsWith('null', cursor);
+}
+
+// A quote inside an open string is a real closer only if, once whitespace is
+// skipped, the next character can legally follow a JSON value. `}` `]` `:`
+// are unambiguous. `"` is ambiguous (a missing comma before the next key) and
+// deferred to insertProvenMissingPropertyComma rather than guessed here. `,`
+// is only accepted if it is actually followed by another JSON token \u2014 a bare
+// Hebrew comma after a quoted word (e.g. `\u05e1\u05d1\u05d9\u05d1 "\u05e7\u05e8\u05d9\u05e1\u05d4", \u05d4\u05de\u05d3\u05d3\u05d9\u05dd`) is natural
+// punctuation, not a property separator, and must not close the string.
+// Anything else (a Hebrew abbreviation letter, a quoted word) is a literal
+// quote the model left unescaped and must be escaped in place.
+function isLikelyStringTerminatorAhead(text, index) {
+  let cursor = index;
+  while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
+  if (cursor >= text.length) return true;
+  const next = text[cursor];
+  if (next === '}' || next === ']' || next === ':' || next === '"') return true;
+  if (next === ',') return startsValidJsonToken(text, cursor + 1);
+  return false;
+}
+
 function escapeUnescapedQuotesInsideWords(text) {
   let output = '';
   let inString = false;
   let escaped = false;
   let changes = 0;
-  const wordChar = /[\u05B0-\u05FF\w]/;
 
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
@@ -381,14 +409,19 @@ function escapeUnescapedQuotesInsideWords(text) {
       continue;
     }
     if (char === '"') {
-      const previous = text[index - 1] || '';
-      const next = text[index + 1] || '';
-      if (inString && wordChar.test(previous) && wordChar.test(next)) {
-        output += '\\"';
-        changes += 1;
+      if (!inString) {
+        inString = true;
+        output += char;
         continue;
       }
-      inString = !inString;
+      if (isLikelyStringTerminatorAhead(text, index + 1)) {
+        inString = false;
+        output += char;
+        continue;
+      }
+      output += '\\"';
+      changes += 1;
+      continue;
     }
     output += char;
   }
