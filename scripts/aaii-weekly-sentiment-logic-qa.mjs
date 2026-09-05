@@ -61,10 +61,58 @@ assert.equal(parseAaiiResultsLine(whitespaceLine).valid, true);
 const unicodeMinusLine = VALID_AAII_LINE.replace('-4.4', '−4.4');
 assert.equal(parseAaiiResultsLine(unicodeMinusLine).bullBearSpread, -4.4);
 
+// Neutral's own Avg is missing (but Bullish/Neutral/Bearish are all still found by
+// the tolerant fallback) — this now fails the more specific averages check, not the
+// blanket "can't recognize" check.
 const missingFieldLine = 'Bullish 35.5% Avg 37.5% Neutral 24.6% Bearish 39.9% Avg 31.5% ▼ Bull–Bear Spread: -4.4 pp';
 const missingField = parseAaiiResultsLine(missingFieldLine);
 assert.equal(missingField.valid, false);
-assert.match(missingField.error, /שבעת השדות/);
+assert.match(missingField.error, /ממוצעי AAII/);
+
+// Genuinely unrecognizable text (none of the three labels present at all) still
+// hits the blanket "can't recognize the AAII line" error.
+const unrecognizableText = "This week's results\nWeek ending September 2, 2026\nnothing useful here";
+const unrecognizable = parseAaiiResultsLine(unrecognizableText);
+assert.equal(unrecognizable.valid, false);
+assert.match(unrecognizable.error, /שבעת השדות/);
+
+// The real aaii.com copy-paste block: multi-line, page-title/date preamble, labels
+// on their own lines, and an up-arrow (▲) before "Bull–Bear Spread" for a positive
+// spread — none of which the strict single-line format tolerates.
+const realWebsitePaste = `This week's results\nWeek ending September 2, 2026\nBullish\n39.7%\nAvg 37.5%\nNeutral\n22.7%\nAvg 31.0%\nBearish\n37.6%\nAvg 31.5%\n▲ Bull–Bear Spread: +2.1 pp`;
+const realWebsiteParsed = parseAaiiResultsLine(realWebsitePaste);
+assert.equal(realWebsiteParsed.valid, true, 'the real aaii.com copy-paste block must parse');
+assert.deepEqual(
+  {
+    bullish: realWebsiteParsed.bullish,
+    bullishAverage: realWebsiteParsed.bullishAverage,
+    neutral: realWebsiteParsed.neutral,
+    neutralAverage: realWebsiteParsed.neutralAverage,
+    bearish: realWebsiteParsed.bearish,
+    bearishAverage: realWebsiteParsed.bearishAverage,
+    bullBearSpread: realWebsiteParsed.bullBearSpread,
+    weekEndingDate: realWebsiteParsed.weekEndingDate,
+  },
+  {
+    bullish: 39.7,
+    bullishAverage: 37.5,
+    neutral: 22.7,
+    neutralAverage: 31,
+    bearish: 37.6,
+    bearishAverage: 31.5,
+    bullBearSpread: 2.1,
+    weekEndingDate: '2026-09-02',
+  },
+);
+assert.equal(realWebsiteParsed.bullBearSpread, computeAaiiSpread(39.7, 37.6), 'spread is always recomputed bullish-bearish, never the pasted +2.1');
+
+// Bullish/Neutral/Bearish in reversed order must parse identically.
+const reorderedPaste = `Bearish 37.6% Avg 31.5% Bullish 39.7% Avg 37.5% Neutral 22.7% Avg 31.0% Bull-Bear Spread: +2.1 pp`;
+const reorderedParsed = parseAaiiResultsLine(reorderedPaste);
+assert.equal(reorderedParsed.valid, true, 'field order must not matter');
+assert.equal(reorderedParsed.bullish, 39.7);
+assert.equal(reorderedParsed.neutral, 22.7);
+assert.equal(reorderedParsed.bearish, 37.6);
 
 const invalidTotalLine = 'Bullish 50.0% Avg 37.5% Neutral 30.0% Avg 31.0% Bearish 30.0% Avg 31.5% ▼ Bull–Bear Spread: 20.0 pp';
 const invalidTotal = parseAaiiResultsLine(invalidTotalLine);

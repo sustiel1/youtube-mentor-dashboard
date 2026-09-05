@@ -373,7 +373,19 @@ const parseHandlerSource = editorSource.slice(
   editorSource.indexOf('const handleSave'),
 );
 assert.match(parseHandlerSource, /if \(!parsed\.valid\)[\s\S]*setParsedPreview\(null\)[\s\S]*return;/);
-assert.doesNotMatch(parseHandlerSource, /setDraft\(/, 'parsing must not partially overwrite manual fields');
+// Parsing must never silently overwrite the manually-entered bullish/neutral/bearish
+// fields (those only flow into the draft via handleSave's {...draft, ...parsedPreview}
+// merge, at save time) — a parsed "Week ending" date is the one deliberate exception,
+// since it should be visible in the date input immediately, before the user saves.
+assert.doesNotMatch(parseHandlerSource, /setDraft\([^)]*bullish/i, 'parsing must not overwrite the bullish field directly');
+assert.doesNotMatch(parseHandlerSource, /setDraft\([^)]*neutral/i, 'parsing must not overwrite the neutral field directly');
+assert.doesNotMatch(parseHandlerSource, /setDraft\([^)]*bearish/i, 'parsing must not overwrite the bearish field directly');
+assert.match(parseHandlerSource, /if \(parsed\.weekEndingDate\)/, 'a parsed "Week ending" date should update the publication date field');
+assert.match(
+  parseHandlerSource,
+  /setDraft\(\(prev\) => \(\{ \.\.\.prev, publicationDate: parsed\.weekEndingDate \}\)\)/,
+  'a parsed week-ending date must only ever set publicationDate, nothing else',
+);
 
 // --- wiring: sentiment section renders the stateful container beside FearGreedScoreCardContainer ---
 assert.match(panelsSource, /equalHeaderLinkColumns[\s\S]*headerLinks=/);

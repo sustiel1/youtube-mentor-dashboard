@@ -85,6 +85,9 @@ export function AAIIWeeklySentimentEditor({
       return;
     }
     setParsedPreview(parsed);
+    if (parsed.weekEndingDate) {
+      setDraft((prev) => ({ ...prev, publicationDate: parsed.weekEndingDate }));
+    }
     setError(null);
   };
 

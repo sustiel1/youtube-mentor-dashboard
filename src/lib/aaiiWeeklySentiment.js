@@ -16,7 +16,22 @@ export const AAII_FRESHNESS_LABELS = Object.freeze({
   [AAII_FRESHNESS_STATES.UNCERTAIN]: 'בדיקת עדכון',
 });
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+// Strict single-line format (backward compatible fast path): exact field order,
+// only whitespace tolerated around/between tokens, nothing else in the string.
 const AAII_RESULTS_LINE_PATTERN = /^\s*Bullish\s+(\d+(?:\.\d+)?)\s*%\s*Avg\s+(\d+(?:\.\d+)?)\s*%\s*Neutral\s+(\d+(?:\.\d+)?)\s*%\s*Avg\s+(\d+(?:\.\d+)?)\s*%\s*Bearish\s+(\d+(?:\.\d+)?)\s*%\s*Avg\s+(\d+(?:\.\d+)?)\s*%\s*(?:[▼▽]\s*)?Bull\s*[‐‑‒–—−-]\s*Bear\s+Spread\s*:\s*([+\-−]?\d+(?:\.\d+)?)\s*pp\s*$/iu;
+
+// Tolerant fallback (real aaii.com copy-paste): each label + its value/Avg found
+// anywhere in the text, independent of order and of any surrounding page text
+// (title, "Week ending …" line, trend arrow glyph before the spread).
+function buildAaiiFieldPattern(label) {
+  return new RegExp(`${label}\\s*[\\r\\n]*\\s*(\\d+(?:\\.\\d+)?)\\s*%(?:\\s*[\\r\\n]*\\s*Avg\\s+(\\d+(?:\\.\\d+)?)\\s*%)?`, 'iu');
+}
+const AAII_SPREAD_FREEFORM_PATTERN = /Bull\s*[‐‑‒–—−-]\s*Bear\s+Spread\s*:\s*([+\-−]?\d+(?:\.\d+)?)\s*pp/iu;
+const AAII_WEEK_ENDING_PATTERN = /Week\s+ending\s+([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/iu;
+const MONTH_NAME_TO_INDEX = Object.freeze({
+  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+});
 
 // Parses a 'YYYY-MM-DD' string (or Date) into a local-midnight Date. Deliberately
 // avoids `new Date('YYYY-MM-DD')` / `toISOString()`, both of which operate in UTC
@@ -263,24 +278,60 @@ export function validateAaiiParsedValues({
   };
 }
 
+// Extracts a 'Week ending <Month> <Day>, <Year>' date (aaii.com's own wording) into
+// a 'YYYY-MM-DD' string, or null if the text has no such phrase / an unknown month.
+export function parseAaiiWeekEndingDate(input) {
+  const match = AAII_WEEK_ENDING_PATTERN.exec(String(input || ''));
+  if (!match) return null;
+  const monthIndex = MONTH_NAME_TO_INDEX[match[1].toLowerCase()];
+  if (monthIndex == null) return null;
+  const date = new Date(Number(match[3]), monthIndex, Number(match[2]));
+  return Number.isNaN(date.getTime()) ? null : formatLocalDateOnly(date);
+}
+
 export function parseAaiiResultsLine(input) {
-  const match = AAII_RESULTS_LINE_PATTERN.exec(String(input || ''));
-  if (!match) {
+  const text = String(input || '');
+
+  const strictMatch = AAII_RESULTS_LINE_PATTERN.exec(text);
+  if (strictMatch) {
+    return validateAaiiParsedValues({
+      bullish: parseAaiiDecimal(strictMatch[1]),
+      bullishAverage: parseAaiiDecimal(strictMatch[2]),
+      neutral: parseAaiiDecimal(strictMatch[3]),
+      neutralAverage: parseAaiiDecimal(strictMatch[4]),
+      bearish: parseAaiiDecimal(strictMatch[5]),
+      bearishAverage: parseAaiiDecimal(strictMatch[6]),
+      bullBearSpread: parseAaiiDecimal(strictMatch[7]),
+    });
+  }
+
+  // Fall back to the tolerant, order-independent extraction (real aaii.com paste).
+  const bullishMatch = buildAaiiFieldPattern('Bullish').exec(text);
+  const neutralMatch = buildAaiiFieldPattern('Neutral').exec(text);
+  const bearishMatch = buildAaiiFieldPattern('Bearish').exec(text);
+  if (!bullishMatch || !neutralMatch || !bearishMatch) {
     return {
       valid: false,
       error: 'לא ניתן לזהות את שורת AAII. ודא שכל שבעת השדות קיימים ובסדר הנכון.',
     };
   }
 
-  return validateAaiiParsedValues({
-    bullish: parseAaiiDecimal(match[1]),
-    bullishAverage: parseAaiiDecimal(match[2]),
-    neutral: parseAaiiDecimal(match[3]),
-    neutralAverage: parseAaiiDecimal(match[4]),
-    bearish: parseAaiiDecimal(match[5]),
-    bearishAverage: parseAaiiDecimal(match[6]),
-    bullBearSpread: parseAaiiDecimal(match[7]),
+  const spreadMatch = AAII_SPREAD_FREEFORM_PATTERN.exec(text);
+  const parsed = validateAaiiParsedValues({
+    bullish: parseAaiiDecimal(bullishMatch[1]),
+    bullishAverage: bullishMatch[2] != null ? parseAaiiDecimal(bullishMatch[2]) : null,
+    neutral: parseAaiiDecimal(neutralMatch[1]),
+    neutralAverage: neutralMatch[2] != null ? parseAaiiDecimal(neutralMatch[2]) : null,
+    bearish: parseAaiiDecimal(bearishMatch[1]),
+    bearishAverage: bearishMatch[2] != null ? parseAaiiDecimal(bearishMatch[2]) : null,
+    // Sanity-check only — validateAaiiParsedValues always recomputes the real
+    // spread from bullish/bearish, so a missing/mismatched pasted value never blocks a save.
+    bullBearSpread: spreadMatch ? parseAaiiDecimal(spreadMatch[1]) : null,
   });
+  if (!parsed.valid) return parsed;
+
+  const weekEndingDate = parseAaiiWeekEndingDate(text);
+  return weekEndingDate ? { ...parsed, weekEndingDate } : parsed;
 }
 
 // Validates a draft { bullish, neutral, bearish }. Never infers or fabricates a
