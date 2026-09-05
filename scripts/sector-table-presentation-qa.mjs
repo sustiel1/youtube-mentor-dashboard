@@ -188,7 +188,12 @@ const visualPrimitivesSource = readFileSync(
 );
 assert.ok(visualPrimitivesSource.includes('flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-x-3'));
 assert.ok(visualPrimitivesSource.includes('flex min-w-0 flex-wrap items-center justify-between gap-2 md:shrink-0 md:justify-start'));
-assert.ok(mentionedStocksSource.includes('resolveSectorTableFinvizLink(sectorLabel)'));
+// TRADINGBRAIN-STOCKS-SECTOR-ENRICHMENT: the sector cell now resolves via the
+// shared resolveStockSectorDisplay() (ticker map + stored-value-first order)
+// instead of calling resolveSectorTableFinvizLink(sectorLabel) directly —
+// same underlying Finviz link helper (sectorFinvizLinks.js), reused inside
+// the shared resolver rather than called a second time in this component.
+assert.ok(mentionedStocksSource.includes('resolveStockSectorDisplay({ ticker, storedSector: stock.sector })'));
 assert.ok(mentionedStocksSource.includes('href={sectorLink.url}'));
 assert.ok(mentionedStocksSource.includes('target="_blank"'));
 assert.ok(mentionedStocksSource.includes('rel="noopener noreferrer"'));

@@ -6,8 +6,7 @@ import {
   DASHBOARD_TABLE_HEAD_CLS,
 } from '@/components/dashboard/MorningBriefVisualPrimitives';
 import { AnalysisTickerLink } from '@/components/shared/AnalysisTickerLink';
-import { getStockSectorMeta } from '@/lib/stockSectorMap';
-import { buildSectorTableFinvizUrl } from '@/lib/sectorFinvizLinks';
+import { resolveStockSectorDisplay } from '@/lib/stockSectorEnrichment';
 import {
   PILL_CLS,
   SECTOR_PILL_CLS,
@@ -27,30 +26,29 @@ import {
   WORKSPACE_RECORD_REVEAL_CLASS,
 } from '@/context/WorkspaceRecordRevealContext';
 
-/** Sector pill — ticker-only lookup, no dependency on the saved row's free text. */
+/** Sector pill — ticker-only lookup (saved rows carry no stored sector value), via the shared resolver. */
 function SectorPill({ ticker }) {
-  const meta = getStockSectorMeta(ticker);
-  if (!meta?.sectorHe) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
-  const url = buildSectorTableFinvizUrl(meta.sectorEtf);
+  const meta = resolveStockSectorDisplay({ ticker });
+  if (!meta?.label) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
   const content = (
     <>
-      <span className="truncate">{meta.sectorHe}</span>
-      <span dir="ltr" className="text-[10px] font-bold opacity-70">{meta.sectorEtf}</span>
+      <span className="truncate">{meta.label}</span>
+      {meta.etf && <span dir="ltr" className="text-[10px] font-bold opacity-70">{meta.etf}</span>}
     </>
   );
-  if (!url) {
-    return <span className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.sectorEtf)}`}>{content}</span>;
+  if (!meta.url) {
+    return <span className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.etf)}`}>{content}</span>;
   }
   return (
     <a
-      href={url}
+      href={meta.url}
       target="_blank"
       rel="noopener noreferrer"
       onClick={(event) => event.stopPropagation()}
-      title={`פתיחת תעודת הסל ${meta.sectorEtf} (${meta.sector}) ב־Finviz`}
-      aria-label={`פתיחת סקטור ${meta.sectorHe} דרך תעודת הסל ${meta.sectorEtf} ב־Finviz`}
-      className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.sectorEtf)} cursor-pointer transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-zinc-900`}
-      data-stock-sector-link={meta.sectorEtf}
+      title={`פתיחת תעודת הסל ${meta.etf} (${meta.label}) ב־Finviz`}
+      aria-label={`פתיחת סקטור ${meta.label} דרך תעודת הסל ${meta.etf} ב־Finviz`}
+      className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.etf)} cursor-pointer transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-zinc-900`}
+      data-stock-sector-link={meta.etf}
     >
       {content}
       <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />

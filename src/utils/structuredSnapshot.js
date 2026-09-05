@@ -45,6 +45,10 @@ export function normalizeStockRow(s = {}) {
     company:       s.company || '',
     context:       s.context || '',
     sentiment:     s.sentiment || '',
+    // Existing stored sector value, if the source ever provided one — kept
+    // as-is (never overwritten by the static ticker→sector fallback map).
+    // See src/lib/stockSectorEnrichment.js's resolveStockSectorDisplay().
+    sector:        s.sector || '',
     category:      s.category || '',
     actionability: s.actionability || '',
     notes:         s.notes || '',

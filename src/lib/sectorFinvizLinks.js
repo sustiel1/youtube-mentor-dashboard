@@ -34,6 +34,12 @@ const EXACT_SECTOR_ETF_ALIASES = new Map([
   ['פרסום וצריכה רגישה', 'XLY'],
   ['ביוטכנולוגיה', 'XBI'],
   ['ביוטכנולוגיה ותרופות', 'XLV'],
+  // TRADINGBRAIN-STOCKS-SECTOR-ENRICHMENT round 2: AI-extracted automotive labels.
+  // Finviz files auto manufacturers under Consumer Cyclical (XLY) -- one of the
+  // 11 canonical sector ETFs, not a dedicated auto fund (no CARZ).
+  ['רכב', 'XLY'],
+  ['רכב חשמלי', 'XLY'],
+  ['יצרניות רכב', 'XLY'],
 ]);
 
 const EXACT_COMPOUND_SECTOR_ETF_LINKS = new Map([

@@ -1355,6 +1355,8 @@ function stockRecordFromObject(item, category = 'general') {
       company: '',
       context: isTickerOnly ? '' : item.trim(),
       sentiment: '',
+      // Free-text stock mentions never carry a structured sector value.
+      sector: '',
       category,
       actionability: humanizeActionability(category),
       notes: '',
@@ -1382,6 +1384,10 @@ function stockRecordFromObject(item, category = 'general') {
     sentiment: humanizeSentiment(
       pickString(item, 'sentiment', 'bias', 'outlook', 'mood', 'direction', 'trend', 'action')
     ),
+    // Existing stored sector value, if the AI-extracted item ever provided
+    // one — kept as-is, never overwritten by the static ticker→sector
+    // fallback map (see src/lib/stockSectorEnrichment.js).
+    sector: pickString(item, 'sector', 'sectorName'),
     category: resolvedCategory,
     actionability: humanizeActionability(resolvedCategory, item),
     notes: mergeContext(
@@ -1422,6 +1428,7 @@ function upsertStock(map, record) {
     company: prev.company || record.company,
     context: mergeContext(prev.context, record.context),
     sentiment: prev.sentiment || record.sentiment,
+    sector: prev.sector || record.sector,
     category,
     actionability: humanizeActionability(category, { importance: prev.actionability || record.actionability }),
     notes: mergeContext(prev.notes, record.notes),

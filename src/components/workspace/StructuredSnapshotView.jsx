@@ -10,8 +10,7 @@ import {
 } from '@/components/dashboard/MorningBriefVisualPrimitives';
 import { MarketAssetLinksMenu } from '@/components/shared/MarketAssetLinksMenu';
 import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
-import { getStockSectorMeta } from '@/lib/stockSectorMap';
-import { buildSectorTableFinvizUrl } from '@/lib/sectorFinvizLinks';
+import { resolveStockSectorDisplay } from '@/lib/stockSectorEnrichment';
 import { normalizeStructuredSnapshotCollections } from '@/utils/structuredSnapshot';
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -132,29 +131,28 @@ function getActivityTone(value) {
 const PILL_CLS = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold';
 const SECTOR_PILL_CLS = `${PILL_CLS} max-w-full whitespace-nowrap`;
 
-function SectorPill({ ticker }) {
-  const meta = getStockSectorMeta(ticker);
-  if (!meta?.sectorHe) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
-  const url = buildSectorTableFinvizUrl(meta.sectorEtf);
+function SectorPill({ ticker, storedSector }) {
+  const meta = resolveStockSectorDisplay({ ticker, storedSector });
+  if (!meta?.label) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
   const content = (
     <>
-      <span className="truncate">{meta.sectorHe}</span>
-      <span dir="ltr" className="text-[10px] font-bold opacity-70">{meta.sectorEtf}</span>
+      <span className="truncate">{meta.label}</span>
+      {meta.etf && <span dir="ltr" className="text-[10px] font-bold opacity-70">{meta.etf}</span>}
     </>
   );
-  if (!url) {
-    return <span className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.sectorEtf)}`}>{content}</span>;
+  if (!meta.url) {
+    return <span className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.etf)}`}>{content}</span>;
   }
   return (
     <a
-      href={url}
+      href={meta.url}
       target="_blank"
       rel="noopener noreferrer"
       onClick={(event) => event.stopPropagation()}
-      title={`פתיחת תעודת הסל ${meta.sectorEtf} (${meta.sector}) ב־Finviz`}
-      aria-label={`פתיחת סקטור ${meta.sectorHe} דרך תעודת הסל ${meta.sectorEtf} ב־Finviz`}
-      className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.sectorEtf)} cursor-pointer transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-zinc-900`}
-      data-stock-sector-link={meta.sectorEtf}
+      title={`פתיחת תעודת הסל ${meta.etf} (${meta.label}) ב־Finviz`}
+      aria-label={`פתיחת סקטור ${meta.label} דרך תעודת הסל ${meta.etf} ב־Finviz`}
+      className={`${SECTOR_PILL_CLS} ${getSectorTone(meta.etf)} cursor-pointer transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-zinc-900`}
+      data-stock-sector-link={meta.etf}
     >
       {content}
       <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -251,7 +249,7 @@ function StocksTable({ rows = [] }) {
                       <AnalysisTickerLink ticker={r.ticker}>{r.ticker || '—'}</AnalysisTickerLink>
                     </td>
                     <td className={STOCK_TD_CLS}>
-                      <SectorPill ticker={r.ticker} />
+                      <SectorPill ticker={r.ticker} storedSector={r.sector} />
                     </td>
                     <td className={`${STOCK_TD_CLS} ${DASHBOARD_TABLE_CELL_MUTED_CLS}`}>
                       <p className="line-clamp-1 [overflow-wrap:anywhere]" title={r.context || undefined}>

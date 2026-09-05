@@ -15,6 +15,7 @@
     "test:workspace-day-obsidian-export": "node --import ./scripts/register-src-aliases.mjs scripts/workspace-day-obsidian-export-qa.mjs",
     "test:workspace-counts": "node scripts/workspace-library-counts-qa.mjs",
     "test:structured-snapshot": "node scripts/structured-snapshot-qa.mjs",
+    "test:sector-enrichment-map": "node scripts/sector-enrichment-map-qa.mjs",
     "test:saved-market-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-market-rows-qa.mjs",
     "test:saved-stock-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-stock-rows-qa.mjs",
     "test:saved-sector-rows": "node --import ./scripts/register-src-aliases.mjs scripts/saved-sector-rows-qa.mjs",

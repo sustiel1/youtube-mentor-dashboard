@@ -69,13 +69,13 @@ check('snapshot has the expected top-level shape', () => {
 check('stock rows keep provided fields and fill missing ones with "" (not undefined)', () => {
   assert.deepStrictEqual(snapshot.stocksTable[0], {
     ticker: 'AAPL', company: 'Apple', context: 'רבעון חזק', sentiment: 'חיובי',
-    category: 'watchlist', actionability: 'למעקב', notes: 'הערה',
+    sector: '', category: 'watchlist', actionability: 'למעקב', notes: 'הערה',
     changePercent: '', timeframe: '', priority: '', isNewToWatch: null,
     source: '', sourceVideoId: '', videoId: '', links: null,
     url: '', tradingViewUrl: '', investingUrl: '',
   });
   assert.deepStrictEqual(snapshot.stocksTable[1], {
-    ticker: 'TSLA', company: '', context: '', sentiment: '', category: '', actionability: '', notes: '',
+    ticker: 'TSLA', company: '', context: '', sentiment: '', sector: '', category: '', actionability: '', notes: '',
     changePercent: '', timeframe: '', priority: '', isNewToWatch: null,
     source: '', sourceVideoId: '', videoId: '', links: null,
     url: '', tradingViewUrl: '', investingUrl: '',

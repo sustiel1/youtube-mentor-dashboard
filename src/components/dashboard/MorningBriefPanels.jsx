@@ -26,7 +26,6 @@ import {
   FINVIZ_MARKET_MAP_LINK,
   resolveMarketRegimeRowLink,
 } from '@/lib/marketRegimeExternalLinks';
-import { resolveSectorTableFinvizLink } from '@/lib/sectorTablePresentation';
 import {
   DISPLAY_COLUMN_TITLES,
   DISPLAY_SECTION_TITLES,
@@ -94,7 +93,7 @@ import {
   SECTION_EDIT_COLUMNS,
   getEditableRowsForSection,
 } from '@/lib/manualBriefOverrides';
-import { getStockSectorMeta } from '@/lib/stockSectorMap';
+import { resolveStockSectorDisplay } from '@/lib/stockSectorEnrichment';
 import { resolveMorningBriefPresentation, morningBriefSectionCount, morningBriefShowsSummaryCounters, morningBriefSubsectionTitle, countOpportunitiesAndRisks } from '@/lib/morningBriefPresentation';
 import {
   formatMorningBriefCalendarText,
@@ -2909,9 +2908,9 @@ function StockMentionTableRow({
   const sentKey = stockSentimentColumnKey(stock);
   const ticker = String(stock.ticker || '').trim();
   const notesText = [stock.context, stock.notes].filter(Boolean).map((s) => String(s).trim()).filter(Boolean).join(' · ');
-  const sectorMeta = getStockSectorMeta(ticker);
-  const sectorLabel = String(sectorMeta?.sectorHe || '').trim();
-  const sectorLink = resolveSectorTableFinvizLink(sectorLabel);
+  const sectorMeta = resolveStockSectorDisplay({ ticker, storedSector: stock.sector });
+  const sectorLabel = String(sectorMeta?.label || '').trim();
+  const sectorLink = sectorMeta?.url ? { ticker: sectorMeta.etf, url: sectorMeta.url } : null;
 
   return (
     <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-item>
