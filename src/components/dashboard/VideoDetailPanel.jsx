@@ -61,6 +61,7 @@ import { usePersistedVideo } from "@/hooks/usePersistedVideo";
 import { useUpdateSummary } from "@/hooks/useVideos";
 import { useNotesByVideo } from "@/hooks/useNotes";
 import { formatVideoDuration } from "@/lib/videoDuration";
+import { formatIsraelPublishMeta } from "@/lib/briefContextDisplay";
 import {
   deleteSavedAnalysis,
   loadSavedAnalysis,
@@ -10274,6 +10275,8 @@ export function VideoDetailPanel({
                 subject={briefPresentationVideo?.title || effectiveSubCategory || effectiveCategory}
                 publishedAt={briefPresentationVideo?.publishedAt}
                 showSourceCaption={false}
+                publishMetaText={formatIsraelPublishMeta(briefPresentationVideo?.publishedAt)}
+                durationText={videoDuration || null}
                 action={rowTimestampActionState.shouldRender ? (
                   <RowTimestampGenerator
                     key={rowTimestampRecordId}

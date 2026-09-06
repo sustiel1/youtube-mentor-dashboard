@@ -10,10 +10,13 @@ const BRIEF_TITLE_CLS =
 const BRIEF_CONTEXT_CLS =
   'text-sm sm:text-base font-semibold text-slate-600 dark:text-zinc-400 leading-snug';
 
+const BRIEF_META_CHIP_CLS =
+  'inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400 shrink-0';
+
 /**
  * Shared subject + publish-date heading for the universal content tabs.
  */
-export function BriefContextHeader({ slug, subCategory, subject, publishedAt, layout = 'stacked', showSourceCaption = true, action = null }) {
+export function BriefContextHeader({ slug, subCategory, subject, publishedAt, layout = 'stacked', showSourceCaption = true, action = null, publishMetaText = null, durationText = null }) {
   const meta = getBriefContextDisplay(slug, subCategory);
   const subjectTitle = meta?.title || String(subject || '').trim();
   if (!subjectTitle) return null;
@@ -48,6 +51,18 @@ export function BriefContextHeader({ slug, subCategory, subject, publishedAt, la
     >
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <h1 className={`${BRIEF_TITLE_CLS} min-w-0`}>{title}</h1>
+        {publishMetaText && (
+          <span dir="ltr" className={BRIEF_META_CHIP_CLS}>
+            <span aria-hidden="true">🕐</span>
+            {publishMetaText}
+          </span>
+        )}
+        {durationText && (
+          <span dir="ltr" className={BRIEF_META_CHIP_CLS}>
+            <span aria-hidden="true">⏱️</span>
+            {durationText}
+          </span>
+        )}
         {action && <div data-shared-heading-action className="max-w-full shrink-0">{action}</div>}
       </div>
       {showSourceCaption && meta?.context && (

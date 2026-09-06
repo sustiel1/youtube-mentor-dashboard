@@ -77,3 +77,44 @@ export function formatBriefPublishDatePlain(publishedAt) {
   const parts = formatBriefPublishDateParts(publishedAt);
   return parts?.plain ?? null;
 }
+
+function formatIsraelDatePlain(d) {
+  const parts = new Intl.DateTimeFormat('he-IL', {
+    timeZone: 'Asia/Jerusalem',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(d);
+  const get = (type) => parts.find((p) => p.type === type)?.value;
+  return `${get('day')}.${get('month')}.${get('year')}`;
+}
+
+/** Israel-local (Asia/Jerusalem, DST-safe) publish date + time for the header meta chip. */
+export function formatIsraelPublishMeta(publishedAt) {
+  if (!publishedAt) return null;
+  try {
+    const d = new Date(publishedAt);
+    if (Number.isNaN(d.getTime())) return null;
+
+    const israelDatePlain = formatIsraelDatePlain(d);
+    const israelTime = new Intl.DateTimeFormat('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(d);
+
+    const localDatePlain = formatBriefPublishDatePlain(publishedAt);
+    if (localDatePlain && localDatePlain !== israelDatePlain) {
+      const weekday = new Intl.DateTimeFormat('he-IL', {
+        timeZone: 'Asia/Jerusalem',
+        weekday: 'short',
+      }).format(d);
+      return `${weekday}, ${israelDatePlain} · ${israelTime}`;
+    }
+
+    return `${israelDatePlain} · ${israelTime}`;
+  } catch {
+    return null;
+  }
+}
