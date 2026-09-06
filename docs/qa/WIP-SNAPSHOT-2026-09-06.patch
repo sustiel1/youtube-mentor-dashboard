@@ -1,0 +1,1428 @@
+diff --git a/.claude/settings.json b/.claude/settings.json
+index af37041..4b40015 100644
+--- a/.claude/settings.json
++++ b/.claude/settings.json
+@@ -211,7 +211,17 @@
+       "Bash(echo \"=== EXIT $? ===\")",
+       "Bash(echo \"---exit:$?---\")",
+       "Bash(git show *)",
+-      "Bash(rm head_video_panel_check.tmp)"
++      "Bash(rm head_video_panel_check.tmp)",
++      "Bash(node --check src/pages/WorkspaceLibrary.jsx)",
++      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\\\Users\\\\11\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\User Data\" --profile-directory=\"Default\" \"http://localhost:5184\")",
++      "Bash(curl -s http://localhost:9222/json/version)",
++      "Bash(curl -s http://localhost:9222/json)",
++      "Bash(curl -s \"http://localhost:9222/json/close/C83C626858BB9A186005663DFD62E502\")",
++      "Bash(curl -s \"http://localhost:9222/json/close/F207DBB681F7AEAFFF6E1DCCEFC66B46\")",
++      "Bash(curl -s \"http://localhost:9222/json\")",
++      "Bash(curl -s -X PUT \"http://localhost:9222/json/new?http://localhost:5184/workspace-library\")",
++      "Bash(node --import ./scripts/register-src-aliases.mjs scripts/pinned-recent-video-card-qa.mjs)",
++      "Bash(echo \"COMMIT_EXIT=$?\")"
+     ],
+     "additionalDirectories": [
+       "C:\\Users\\11\\.cursor",
+diff --git a/docs/open-items-ledger.md b/docs/open-items-ledger.md
+index 981b0d2..f466913 100644
+--- a/docs/open-items-ledger.md
++++ b/docs/open-items-ledger.md
+@@ -137,6 +137,8 @@
+ | TRADINGBRAIN-WORKSPACE-OPENVIDEO-LABEL | המשתמש ביצע QA ידני ואישר ("הכל בסדר") על כל הרשימה שנמסרה לו. השינוי כבר committed מראש כ-`8c598519c1204386b1234b834bd8fe04477cbe3f`, ancestor של HEAD הנוכחי (`dc3a0fbc...` בזמן כתיבה זו). Push ל-`origin` טרם בוצע — מקומי בלבד על `feat/saved-market-rows-table`. | awaiting-push | 2026-09-06 | unassigned |
+ | TRADINGBRAIN-WORKSPACE-OPENVIDEO-LABEL | מסלול ההצלחה של הכפתור (`handleSourceVideoClick` מוצא וידאו תואם ופותח את פאנל הניתוח בפועל) אומת רק בקריאת קוד — כל שורות ה-QA-fixture הקיימות בסביבת הפיתוח הנוכחית (וידאו שנמחק/Case test row/מבזק לייב/סקירת שוק לדוגמה) חסרות רשומת וידאו אמיתית תואמת, ולכן כל לחיצה שנבדקה בדפדפן הפעילה רק את מסלול ה-fallback ליוטיוב חיצוני. נדרש אימות חזותי מול נתון אמיתי (וידאו שנשמר בפועל עם רשומה תואמת ב-`videos`). קובץ: `src/pages/WorkspaceLibrary.jsx` (`handleSourceVideoClick`), `src/components/workspace/WorkspaceVideoGroupCard.jsx`. | open | 2026-09-06 | qa-release-reviewer |
+ | TRADINGBRAIN-WORKSPACE-OPENVIDEO-LABEL | commit `8c598519` (הכולל את `docs/open-items-ledger.md`) ספג בטעות 2 שורות זרות (על `TRADINGBRAIN-PANEL-THUMBNAIL-INLINE-PLAYER`) שנכתבו ע"י session מקביל אחר וישבו לא-committed על הדיסק לפני שהריצה הזו עשתה `git add` על הקובץ השלם — האימות שבוצע לפני אותו commit היה `git diff --cached --stat` (שמות קבצים בלבד) ולא `git diff --cached` מלא, כך שהתוכן הזר לא נתפס. לא תוקן — תיקון דורש `amend`/עריכת היסטוריה על commit שכבר לא-tip (מכוסה כעת ע"י `dc3a0fb`), ולא בוצע ללא אישור מפורש. קובץ: `docs/open-items-ledger.md`, branch `feat/saved-market-rows-table`. לקח נרשם ב-lessons.md המשותף (2026-09-06). | needs-user-decision | 2026-09-06 | backlog-tracker |
++| TRADINGBRAIN-ANALYSIS-HEADER-PUBLISH-META | תוקן כפל תאריך בשורת הכותרת של תגית ה"פורסם" מול כותרת המבזק — `src/lib/briefContextDisplay.js` (`formatIsraelPublishMeta`, שורות ~81-144, פונקציה שנוספה בעצמה כ-WIP לא-committed ע"י session קודם על אותו worktree): כעת משווה את התאריך שכבר מוצג בכותרת (`formatBriefPublishDatePlain`, getters מקומיים) מול התאריך של `publishedAt` ב-Asia/Jerusalem (יום/חודש/שנה כמספרים, לא string match), ומחזיר "פורסם HH:MM" באותו יום או "פורסם DD.MM · HH:MM" (ללא שנה) ביום שונה; `null` אם אין timestamp תקין. `VideoDetailPanel.jsx`/`BriefContextHeader.jsx` לא נערכו כלל — אותו שם פונקציה/signature/call site, שינוי פנימי בלבד. Build עבר (exit 0); `brief-gem-selector-qa.mjs` עבר (עם `--import ./scripts/register-src-aliases.mjs`); נבדק ידנית ב-Node (same-day, null, invalid, וסימולציית diff-day עם עותק חד-פעמי של הלוגיקה, כי Node ב-Windows מתעלם מ-TZ env). **פער פתוח**: אין אימות חי בדפדפן (אין browser tool זמין לסוכן זה) — 4 המקרים המבוקשים (מבזק+וידאו באותו יום / ביום שונה / ללא publish time / ללא duration) לא נבדקו ויזואלית מול `http://127.0.0.1:5184/` (אומת רק שהשרת רץ מה-worktree הנכון, PID 30096, ומגיב 200). לא-קשור לשינוי הזה, נצפה תוך כדי אימות: `pinned-recent-video-card-qa.mjs` ו-`publish-date-header-coverage-qa.mjs` עדיין נכשלים על assertions ישנות/stale ב-`WorkspaceLibrary.jsx`/`WorkspaceVideoGroupCard.jsx` — כבר מתועד בשורות אחרות בקובץ זה, לא נגרם ולא תוקן ע"י שינוי זה. | open | 2026-09-06 | frontend-rtl-developer |
++| TRADINGBRAIN-ANALYSIS-HEADER-PUBLISH-META | **תיקון קריטי לשורה שמעלי (2026-09-06, אותה session, לפני כל QA משתמש)**: הקוד שנמסר על-ידי `frontend-rtl-developer` בשורה שמעלי לא תאם בפועל את מה שהדוח שלו טען. שלושה פערים אומתו ישירות מקריאת `src/lib/briefContextDisplay.js` (לא מהדוח): (1) המילה "פורסם" לא הופיעה בכלל במחרוזת המוחזרת — היא לא הודפסה בשום שלב לפני שהתגית מגיעה ל-JSX (`BriefContextHeader.jsx` מדפיס רק אייקון + `publishMetaText` כמו שהוא), בניגוד לצילום המסך שסיפק המשתמש ולדרישת הקבלה המפורשת. (2) המסלול "אותו יום" (כאשר `localDatePlain === israelDatePlain`) החזיר בטעות תאריך+שעה מלאים (`${israelDatePlain} · ${israelTime}`) במקום שעה בלבד — כלומר התיקון לא פתר בפועל את בעיית הכפילות במקרה הנפוץ (זהה ליום המבזק), שהוא בדיוק המקרה שהצילום מסך תיעד. (3) המסלול "יום שונה" הוסיף שם יום (`weekday`) שלא נדרש והחזיר תאריך מלא כולל שנה (`DD.MM.YYYY`) במקום `DD.MM` בלבד כפי שנדרש. תוקן ישירות (לא ע"י `frontend-rtl-developer`) ב-`src/lib/briefContextDisplay.js`: המחרוזת המוחזרת כעת `פורסם HH:MM` (אותו יום) או `פורסם DD.MM · HH:MM` (יום שונה, ללא שנה, ללא weekday). אומת ידנית ב-Node (סביבת ה-sandbox היא עצמה Asia/Jerusalem, כך שלא ניתן היה לשחזר runtime את מסלול "יום שונה" בפועל בסביבה הזו — אומת רק בקריאת קוד שהפורמט תואם); `null`/invalid עדיין מחזירים `null`. `npm run build` עבר (exit 0) לאחר התיקון. **עדיין לא בוצע אימות חי בדפדפן** (4 המקרים) — נותר פתוח בדיוק כמו בשורה שמעלי. הלקח: דוח "✅" מסוכן לא אומת מול קריאה ישירה של ה-diff בפועל; אומת ע"י ה-orchestrating session לפני מסירה למשתמש. | open | 2026-09-06 | claude (orchestrator) |
+ 
+ *(Empty table body is a valid state — it means no known open items, not that none were checked. Never delete this section header.)*
+ 
+diff --git a/scripts/brief-gem-selector-qa.mjs b/scripts/brief-gem-selector-qa.mjs
+index dc706b3..5947d6e 100644
+--- a/scripts/brief-gem-selector-qa.mjs
++++ b/scripts/brief-gem-selector-qa.mjs
+@@ -182,13 +182,27 @@ assert.ok(clipboardStartIndex >= 0, "clipboard write must start directly from th
+ assert.ok(synchronousOpenIndex > clipboardStartIndex, "GEM open must start after initiating the clipboard write");
+ assert.ok(clipboardAwaitIndex > synchronousOpenIndex, "GEM open must happen before the first clipboard await");
+ assert.ok(modalSource.includes("const handleCopyOnly = async () =>"));
+-assert.ok(modalSource.includes("renderSingleRow(MARKET_BRIEF_GEM)"));
+-assert.ok(modalSource.includes("recommendedGem && !isMarketBriefWorkflow"));
++// The compact picker now opens unconditionally for every video (brief and
++// non-brief, any confidence level, including "ממתין לסיווג" with no
++// recommendation at all) — renderCompactTopRow() renders the generic
++// `recommendedGem` lookup (which resolves to MARKET_BRIEF_GEM for brief
++// videos — asserted behaviorally above via resolveWorkflowGemRecommendation)
++// via renderSingleRow's showConfidence option, or a non-interactive
++// "ממתין לסיווג" placeholder when there's no recommendation at all.
++// CLEAR_WINNER_CONFIDENCE_THRESHOLD no longer gates the layout — it only
++// styles the confidence badge (confident vs. weak match).
++// See TRADINGBRAIN-GEMPICKER-COMPACT-SCORING.
++assert.ok(modalSource.includes("renderCompactTopRow()"));
++assert.equal((modalSource.match(/renderCompactTopRow\(\)/g) || []).length, 1);
++assert.ok(modalSource.includes("return renderSingleRow(recommendedGem, null, { showConfidence: true });"));
++assert.ok(modalSource.includes("ממתין לסיווג"));
++assert.ok(modalSource.includes("CLEAR_WINNER_CONFIDENCE_THRESHOLD"));
++assert.ok(modalSource.includes("hasClearWinner(gem.key, recommendedConfidencePct)"));
++assert.doesNotMatch(modalSource, /isCompactPicker/);
+ assert.ok(modalSource.includes("BRIEF_WORKFLOW_HIDDEN_LABELS"));
+ assert.ok(modalSource.includes("visibleDynamicTopicGems.map((gem) => renderSingleRow(gem))"));
+-assert.equal((modalSource.match(/renderSingleRow\(MARKET_BRIEF_GEM\)/g) || []).length, 1);
+-assert.ok(modalSource.includes("shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })"));
+-assert.ok(modalSource.includes("savedGemKey !== MARKET_BRIEF_GEM_KEY"));
++assert.ok(modalSource.includes("shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })"));
++assert.ok(modalSource.includes("savedGemKey !== workflowRecommendedGemKey"));
+ assert.ok(modalSource.includes("setShowAdditionalOptions("));
+ assert.ok(modalSource.includes("aria-expanded={showAdditionalOptions}"));
+ assert.ok(modalSource.includes("aria-controls={additionalOptionsId}"));
+diff --git a/scripts/pinned-recent-video-card-qa.mjs b/scripts/pinned-recent-video-card-qa.mjs
+index af7ea70..2fc8ef8 100644
+--- a/scripts/pinned-recent-video-card-qa.mjs
++++ b/scripts/pinned-recent-video-card-qa.mjs
+@@ -4,6 +4,8 @@
+ // (no `video` URL param) view, without touching the focused-via-URL path.
+ import assert from 'node:assert/strict';
+ import { readFileSync } from 'node:fs';
++import { groupWorkspaceItemsByVideo, selectVideoCollections } from '../src/utils/workspaceVideoGrouping.js';
++import { selectSavedAnalysisViewer } from '../src/utils/workspaceSavedAnalysis.js';
+ 
+ const pageSource = readFileSync(new URL('../src/pages/WorkspaceLibrary.jsx', import.meta.url), 'utf8');
+ const cardSource = readFileSync(new URL('../src/components/workspace/WorkspaceFocusedVideoCard.jsx', import.meta.url), 'utf8');
+@@ -11,9 +13,17 @@ const cardSource = readFileSync(new URL('../src/components/workspace/WorkspaceFo
+ // ── 1. Structural guards ────────────────────────────────────────────────
+ assert.match(pageSource, /const pinnedRecentGroup = useMemo\(\(\) => \{\s*\n\s*if \(focusedVideoGroup\) return null;/, 'pinnedRecentGroup is only computed when nothing is focused via the URL');
+ assert.match(pageSource, /showClearFocus=\{false\}/, 'the pinned card instance suppresses "חזרה לכל הסרטונים" (meaningless when already on the all-videos view)');
+-assert.match(pageSource, /collectionCounts=\{pinnedRecentGroup\.collectionUniqueCounts\}/, 'the pinned card uses its own per-video collection counts, not the global scope\'s counts');
++assert.match(pageSource, /pinnedRecentGroup \? selectVideoCollections\(pinnedRecentGroup\) : null/, 'the pinned card derives the canonical unique/record count shape from its own persisted group');
++assert.match(pageSource, /collectionCounts=\{pinnedRecentCollectionCounts\}/, 'the pinned card receives canonical per-video collection counts, not number-only unique counts');
++assert.doesNotMatch(pageSource, /collectionCounts=\{pinnedRecentGroup\.collectionUniqueCounts\}/, 'the number-only count map cannot be passed to WorkspaceCollectionTiles');
+ assert.match(cardSource, /showClearFocus\s*=\s*true,?\s*\n\}\) \{/, 'showClearFocus defaults to true — existing focused-via-URL callers are unaffected');
+-assert.match(cardSource, /\{showClearFocus && <button type="button" onClick=\{onClearFocus\}/, '"חזרה לכל הסרטונים" is conditionally rendered, not unconditionally removed');
++// TRADINGBRAIN-WORKSPACE-CARD-BUTTON-DEDUPE (2026-09-03): the "חזרה לכל
++// הסרטונים" button was removed from the card entirely (confirmed duplicate
++// of the always-visible "כל הסרטונים" WorkspaceScopeTiles tile rendered
++// unconditionally at the top of WorkspaceLibrary.jsx) — this assertion is
++// intentionally now a negative one, superseding the prior "conditionally
++// rendered, not unconditionally removed" check above it in git history.
++assert.doesNotMatch(cardSource, /חזרה לכל הסרטונים/, '"חזרה לכל הסרטונים" no longer renders anywhere in the focused card — superseded by the always-visible scope tile');
+ 
+ // ── 2. Behavioral guard: the max-latestSaveDate reduce, mirrored from the real logic ──
+ function pickPinnedRecentGroup(videoGroups, focusedVideoGroup) {
+@@ -41,4 +51,39 @@ const afterNewSave = [
+ ];
+ assert.equal(pickPinnedRecentGroup(afterNewSave, null)?.videoKey, 'v4', 'saving from a new video re-pins to that video on the next render');
+ 
+-console.log('pinned-recent-video-card QA: 8 assertions passed');
++// The saved-analysis sections and collection tiles must derive from the same
++// persisted group. These valid legacy-shaped records intentionally have no
++// sourceVideoId; their shared video URL still keeps them in the pinned group.
++const riskRows = [1, 2, 3].map(number => ({
++  id: `risk-${number}`,
++  sourceVideoId: null,
++  videoUrl: 'https://youtu.be/abcdefghijk',
++  itemType: 'specialized',
++  sourceTabId: 'specialized',
++  sourceHeading: 'סיכונים',
++  identityPayload: { text: `persisted risk ${number}` },
++  savedAt: `2026-09-0${number}T12:00:00.000Z`,
++}));
++const pinnedRiskGroup = groupWorkspaceItemsByVideo(riskRows).videoGroups[0];
++const pinnedCounts = selectVideoCollections(pinnedRiskGroup);
++const visibleRiskSection = selectSavedAnalysisViewer(pinnedRiskGroup).byTab.specialized
++  .find(section => section.heading === 'סיכונים');
++assert.equal(pinnedRiskGroup.items.length, 3, 'the pinned saved-analysis group retains all three visible source rows');
++assert.equal(visibleRiskSection?.provenance.length, 3, 'the visible Risks section exposes the same three persisted source rows');
++assert.deepEqual(
++  { uniqueCount: pinnedCounts.specialized.uniqueCount, recordCount: pinnedCounts.specialized.recordCount },
++  { uniqueCount: 3, recordCount: 3 },
++  'the pinned Targeted Content tile receives 3 unique contents and 3 saves from the same persisted group',
++);
++assert.deepEqual(
++  { uniqueCount: pinnedCounts.summary.uniqueCount, recordCount: pinnedCounts.summary.recordCount },
++  { uniqueCount: 0, recordCount: 0 },
++  'an empty pinned collection remains honestly zero',
++);
++const afterRemovalCounts = selectVideoCollections(groupWorkspaceItemsByVideo(riskRows.slice(0, 2)).videoGroups[0]);
++assert.equal(afterRemovalCounts.specialized.recordCount, 2, 'removing a saved row immediately recalculates the pinned count');
++const addedRiskRow = { ...riskRows[2], id: 'risk-4', identityPayload: { text: 'persisted risk 4' } };
++const afterSaveCounts = selectVideoCollections(groupWorkspaceItemsByVideo([...riskRows, addedRiskRow]).videoGroups[0]);
++assert.equal(afterSaveCounts.specialized.recordCount, 4, 'adding a saved row immediately recalculates the pinned count');
++
++console.log('pinned-recent-video-card QA: 16 assertions passed');
+diff --git a/src/ai/gemini/gemContentRouter.js b/src/ai/gemini/gemContentRouter.js
+index 149f504..a749423 100644
+--- a/src/ai/gemini/gemContentRouter.js
++++ b/src/ai/gemini/gemContentRouter.js
+@@ -28,6 +28,8 @@
+  *   - Ticker symbols and technical terms: English
+  */
+ 
++import { UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
++
+ // ── Fine-grained content type constants ──────────────────────────────────────
+ export const CONTENT_TYPES = {
+   MARKET_BRIEF:  'marketBrief',
+@@ -256,14 +258,20 @@ export function resolveContentClassification(video, transcriptText = '') {
+     };
+   }
+ 
+-  // Phase 4: General fallback
++  // Phase 4: no real signal at all — decision 14's pending state, not the
++  // real 'general' (כללי) content type/GEM. Unlike classifyVideoForGem() in
++  // gemRecommender.js, this function has no explicit-category-boost step
++  // that could manufacture a false score from category context alone —
++  // Phase 2/3 above already require a real keyword match (transcript
++  // score>=2 / title score>=1) before returning, so reaching here already
++  // means genuinely zero signal. No reordering needed, only the value below.
+   return {
+-    contentType:    CONTENT_TYPES.GENERAL,
+-    recommendedGem: 'general',
+-    confidence:     'low',
+-    confidencePct:  30,
+-    reason:         'לא זוהה תוכן ייעודי — כללי כברירת מחדל',
+-    source:         'fallback',
++    contentType:    UNCLASSIFIED_GEM_KEY,
++    recommendedGem: UNCLASSIFIED_GEM_KEY,
++    confidence:     'none',
++    confidencePct:  0,
++    reason:         'לא זוהו אותות סיווג ברורים — ממתין לסיווג ידני',
++    source:         'unclassified',
+   };
+ }
+ 
+diff --git a/src/components/dashboard/ExternalVideoModal.jsx b/src/components/dashboard/ExternalVideoModal.jsx
+index 15751b9..7022a76 100644
+--- a/src/components/dashboard/ExternalVideoModal.jsx
++++ b/src/components/dashboard/ExternalVideoModal.jsx
+@@ -130,6 +130,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [],
+   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+   const [deleteManualContentToo, setDeleteManualContentToo] = useState(false);
+   const [isResetting, setIsResetting] = useState(false);
++  const [thumbnailUnavailable, setThumbnailUnavailable] = useState(false);
+   const inputRef = useRef(null);
+   const resetInFlightRef = useRef(false);
+   const queryClient = useQueryClient();
+@@ -150,6 +151,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [],
+     setDeleteConfirmOpen(false);
+     setDeleteManualContentToo(false);
+     setIsResetting(false);
++    setThumbnailUnavailable(false);
+     resetInFlightRef.current = false;
+     setTimeout(() => inputRef.current?.focus(), 80);
+   }, [open]);
+@@ -178,6 +180,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [],
+     setDuplicateVideo(null);
+     setDeleteConfirmOpen(false);
+     setDeleteManualContentToo(false);
++    setThumbnailUnavailable(false);
+     if (phase === STATE.restore_prompt || phase === STATE.duplicate_prompt) {
+       setPhase(STATE.idle);
+     }
+@@ -774,24 +777,55 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [],
+ 
+           {isReadyState && videoId && !isRestorePrompt && (
+             <div className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-2.5">
+-              <img
+-                src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+-                alt="תצוגה מקדימה"
+-                className="w-24 h-14 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-zinc-700"
+-                onError={(event) => {
+-                  if (!event.target.dataset.triedHq) {
+-                    event.target.dataset.triedHq = "1";
+-                    event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+-                  } else {
+-                    event.target.style.display = "none";
+-                  }
+-                }}
+-              />
++              {thumbnailUnavailable ? (
++                <div className="w-24 h-14 rounded-lg shrink-0 border border-dashed border-slate-300 dark:border-zinc-700 flex flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-zinc-600">
++                  <AlertCircle className="h-4 w-4" />
++                  <span className="text-[9px] leading-none">אין תמונה</span>
++                </div>
++              ) : (
++                <img
++                  key={videoId}
++                  src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
++                  alt="תצוגה מקדימה"
++                  className="w-24 h-14 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-zinc-700"
++                  onLoad={(event) => {
++                    // YouTube's thumbnail CDN returns HTTP 404 for a video that
++                    // doesn't exist (deleted/private/mistyped id) but WITH a
++                    // valid tiny placeholder JPEG body (120x90) — the browser
++                    // treats that as a successful <img> load, so onError never
++                    // fires and the old fallback chain silently did nothing.
++                    // Real thumbnails are always at least mqdefault (320x180).
++                    if (event.target.naturalWidth > 0 && event.target.naturalWidth <= 120) {
++                      if (!event.target.dataset.triedHq) {
++                        event.target.dataset.triedHq = "1";
++                        event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
++                      } else {
++                        setThumbnailUnavailable(true);
++                      }
++                    }
++                  }}
++                  onError={(event) => {
++                    if (!event.target.dataset.triedHq) {
++                      event.target.dataset.triedHq = "1";
++                      event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
++                    } else {
++                      setThumbnailUnavailable(true);
++                    }
++                  }}
++                />
++              )}
+               <div className="flex-1 min-w-0">
+                 <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">youtube.com/watch?v={videoId}</p>
+-                <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
+-                  אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, תובנות מרכזיות וייצוא.
+-                </p>
++                {thumbnailUnavailable ? (
++                  <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
++                    <AlertCircle className="h-3 w-3 shrink-0" />
++                    לא נמצאה תמונה ממוזערת לסרטון הזה — ודא שהקישור וה-ID נכונים לפני ההוספה
++                  </p>
++                ) : (
++                  <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
++                    אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, תובנות מרכזיות וייצוא.
++                  </p>
++                )}
+               </div>
+             </div>
+           )}
+diff --git a/src/components/dashboard/GemRecommendationCard.jsx b/src/components/dashboard/GemRecommendationCard.jsx
+index 0f7c1d9..7b0dfdb 100644
+--- a/src/components/dashboard/GemRecommendationCard.jsx
++++ b/src/components/dashboard/GemRecommendationCard.jsx
+@@ -1,4 +1,4 @@
+-import { getRelatedGemTemplates } from "@/lib/gemRecommender";
++import { getRelatedGemTemplates, UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
+ import { cn } from "@/lib/utils";
+ 
+ /**
+@@ -12,7 +12,12 @@ export function GemRecommendationCard({
+   onDismiss,
+   opening = false,
+ }) {
+-  if (!recommendation?.gemKey) return null;
++  // Unclassified is a real, truthy gemKey (decision 14) but not an actual
++  // recommendation — this card must stay hidden for it exactly as it was
++  // when gemKey used to be null, otherwise it renders a fake "GEM מומלץ"
++  // card whose "פתח GEM מומלץ" button would try to open a GEM that doesn't
++  // exist.
++  if (!recommendation?.gemKey || recommendation.gemKey === UNCLASSIFIED_GEM_KEY) return null;
+ 
+   const confidencePct = Number(recommendation.confidencePct) || 0;
+   const detectedKeywords = Array.isArray(recommendation.detectedKeywords) ? recommendation.detectedKeywords : [];
+diff --git a/src/components/dashboard/GemSelectionModal.jsx b/src/components/dashboard/GemSelectionModal.jsx
+index e98dd8a..5954576 100644
+--- a/src/components/dashboard/GemSelectionModal.jsx
++++ b/src/components/dashboard/GemSelectionModal.jsx
+@@ -55,8 +55,21 @@ const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, MARKET_BRIEF_GEM, ...TJS_GEMS, ...KNO
+ // Keys that use saveGemConfigSnapshot (vs. direct localStorage for dynamic topics)
+ const FIXED_GEM_KEYS = new Set(ALL_FIXED_GEMS.map((g) => g.key));
+ 
+-const shouldExpandAdditionalOptions = ({ isMarketBriefWorkflow, savedGemKey }) =>
+-  isMarketBriefWorkflow && Boolean(savedGemKey) && savedGemKey !== MARKET_BRIEF_GEM_KEY;
++// The compact picker (recommended GEM pinned at top, everything else
++// collapsed behind "אפשרויות נוספות") now opens for every video regardless
++// of confidence — it no longer gates the layout. Repurposed instead of
++// removed: it now decides how the confidence badge on that top row is
++// styled — "confident match" (amber) vs. "weak match" (muted), so the user
++// can tell at a glance. 70 sits just below the confidencePct a "high
++// confidence" classifyVideoForGem() match produces (score>=6 && margin>=3 →
++// confidencePct ~74+).
++const CLEAR_WINNER_CONFIDENCE_THRESHOLD = 70;
++
++const hasClearWinner = (gemKey, confidencePct) =>
++  Boolean(gemKey) && typeof confidencePct === "number" && confidencePct >= CLEAR_WINNER_CONFIDENCE_THRESHOLD;
++
++const shouldExpandAdditionalOptions = ({ savedGemKey, workflowRecommendedGemKey }) =>
++  Boolean(savedGemKey) && savedGemKey !== workflowRecommendedGemKey;
+ 
+ // Topic IDs already covered by fixed GEMs — excluded from dynamic list
+ const EXCLUDED_TOPIC_IDS = new Set(["t2", "t_pol"]);
+@@ -119,6 +132,7 @@ export function GemSelectionModal({
+   video,
+   topics = [],
+   recommendedGemKey,
++  recommendedConfidencePct = null,
+   savedGemKey,
+   onSave,
+   fullTranscriptText = "",
+@@ -148,7 +162,7 @@ export function GemSelectionModal({
+   const [summaryDraft, setSummaryDraft]         = useState('');
+   const [summaryError, setSummaryError]         = useState('');
+   const [showAdditionalOptions, setShowAdditionalOptions] = useState(() =>
+-    shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
++    shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })
+   );
+   const wasOpenRef = useRef(false);
+   const [expandedCategory, setExpandedCategory] = useState(() =>
+@@ -201,7 +215,7 @@ export function GemSelectionModal({
+       refreshUrls();
+       setExpandedCategory(getCategoryForKey(initialKey, dynamicTopicGems));
+       setShowAdditionalOptions(
+-        shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
++        shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })
+       );
+       const vid = video?.id;
+       const alreadyHasSummary = Boolean(video?.gemSummary);
+@@ -373,11 +387,15 @@ export function GemSelectionModal({
+ 
+   // ── Accordion rows ────────────────────────────────────────────────────────
+ 
+-  const renderSingleRow = (gem, icon) => {
++  const renderSingleRow = (gem, icon, { showConfidence = false } = {}) => {
+     const isSel    = gem.key === selected;
+     const isRec    = gem.key === workflowRecommendedGemKey;
+     const isSavedK = gem.key === savedGemKey;
+     const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
++    // Only the compact top row passes showConfidence — everywhere else (the
++    // collapsed "additional options" list, TJS accordion children) keeps the
++    // plain "AI מומלץ" badge unchanged.
++    const isConfidentRec = showConfidence && hasClearWinner(gem.key, recommendedConfidencePct);
+     return (
+       <button
+         key={gem.key}
+@@ -394,7 +412,16 @@ export function GemSelectionModal({
+       >
+         <span className="text-base leading-none shrink-0">{icon || gem.icon}</span>
+         <span className="text-sm font-semibold flex-1">{gem.label}</span>
+-        {isRec && <span className="rounded-full bg-amber-400 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">AI מומלץ</span>}
++        {isRec && (
++          <span className={cn(
++            "rounded-full text-[9px] font-bold px-1.5 py-0.5 shrink-0",
++            showConfidence && !isConfidentRec
++              ? "bg-slate-300 text-slate-700 dark:bg-zinc-600 dark:text-zinc-200"
++              : "bg-amber-400 text-white"
++          )}>
++            AI מומלץ{showConfidence && typeof recommendedConfidencePct === "number" ? ` ${recommendedConfidencePct}%` : ''}
++          </span>
++        )}
+         {isSavedK && !isSel && <span className="rounded-full bg-emerald-500 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">✓ נשמר</span>}
+         {isSel && <span className="text-[10px] opacity-70 shrink-0">✓ נבחר</span>}
+         {!hasUrl && <span className="text-[10px] opacity-50 shrink-0" title="אין URL">⚠</span>}
+@@ -402,6 +429,22 @@ export function GemSelectionModal({
+     );
+   };
+ 
++  const renderCompactTopRow = () => {
++    if (!recommendedGem) {
++      // Unclassified: no GEM to preselect — a non-interactive placeholder
++      // row instead of a broken/empty one. The user's next click goes
++      // straight into the options list below.
++      return (
++        <div className="w-full flex items-center gap-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-right dark:border-zinc-700 dark:bg-zinc-900/50">
++          <span className="text-base leading-none shrink-0">⏳</span>
++          <span className="text-sm font-semibold flex-1 text-slate-500 dark:text-zinc-400">ממתין לסיווג</span>
++          <span className="text-[10px] text-slate-400 dark:text-zinc-500 shrink-0">בחר GEM למטה</span>
++        </div>
++      );
++    }
++    return renderSingleRow(recommendedGem, null, { showConfidence: true });
++  };
++
+   const renderTJSAccordion = () => {
+     const isExpanded  = expandedCategory === "tjs";
+     const anySelected = TJS_GEMS.some((g) => g.key === selected);
+@@ -440,6 +483,17 @@ export function GemSelectionModal({
+     );
+   };
+ 
++  const renderFullGemOptionsList = () => (
++    <>
++      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
++      {renderTJSAccordion()}
++      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
++      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
++      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
++      {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
++    </>
++  );
++
+   // ── Render ────────────────────────────────────────────────────────────────
+ 
+   return (
+@@ -481,35 +535,9 @@ export function GemSelectionModal({
+                 </div>
+               </div>
+ 
+-              {/* ── 2. Recommended GEM card ───────────────── */}
+-              {recommendedGem && !isMarketBriefWorkflow && (
+-                <button
+-                  type="button"
+-                  onClick={() => handleSelect(recommendedGem.key)}
+-                  className={cn(
+-                    "w-full flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-right transition-all",
+-                    selected === recommendedGem.key
+-                      ? "border-amber-400 bg-amber-500 text-white shadow-md"
+-                      : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30"
+-                  )}
+-                >
+-                  <span className="text-xl leading-none shrink-0">{recommendedGem.icon}</span>
+-                  <div className="flex-1 min-w-0 text-right">
+-                    <div className="text-sm font-bold leading-snug">{recommendedGem.label}</div>
+-                    <div className="text-[10px] opacity-70 leading-snug line-clamp-1">{recommendedGem.description}</div>
+-                  </div>
+-                  <span className={cn(
+-                    "rounded-full text-[9px] font-bold px-2 py-0.5 shrink-0",
+-                    selected === recommendedGem.key
+-                      ? "bg-white/25 text-white"
+-                      : "bg-amber-200 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300"
+-                  )}>
+-                    ⭐ AI מומלץ
+-                  </span>
+-                </button>
+-              )}
+-
+-              {/* ── 3. Accordion category list ────────────── */}
++              {/* ── 2. Accordion category list — always compact: recommended
++                   GEM (or "ממתין לסיווג") pinned at top, everything else
++                   collapsed behind "אפשרויות נוספות" ──────────────────── */}
+               <div>
+                 <div className="mb-2.5 flex items-center justify-between">
+                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500">בחר GEM</span>
+@@ -520,51 +548,44 @@ export function GemSelectionModal({
+                 </div>
+ 
+                 <div className="space-y-1.5">
+-                  {isMarketBriefWorkflow ? (
+-                    <>
+-                      {renderSingleRow(MARKET_BRIEF_GEM)}
+-                      <button
+-                        type="button"
+-                        aria-expanded={showAdditionalOptions}
+-                        aria-controls={additionalOptionsId}
+-                        onClick={() => setShowAdditionalOptions((isExpanded) => !isExpanded)}
+-                        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 dark:focus-visible:ring-offset-zinc-950"
+-                      >
+-                        <span>אפשרויות נוספות</span>
+-                        <ChevronDown
+-                          aria-hidden="true"
+-                          className={cn(
+-                            "h-4 w-4 shrink-0 transition-transform duration-200",
+-                            showAdditionalOptions && "rotate-180"
+-                          )}
+-                        />
+-                      </button>
+-                      <div
+-                        id={additionalOptionsId}
+-                        hidden={!showAdditionalOptions}
+-                        className="space-y-1.5 border-r-2 border-indigo-100 pr-2 dark:border-indigo-900/60"
+-                      >
++                  {renderCompactTopRow()}
++                  <button
++                    type="button"
++                    aria-expanded={showAdditionalOptions}
++                    aria-controls={additionalOptionsId}
++                    onClick={() => setShowAdditionalOptions((isExpanded) => !isExpanded)}
++                    className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 dark:focus-visible:ring-offset-zinc-950"
++                  >
++                    <span>אפשרויות נוספות</span>
++                    <ChevronDown
++                      aria-hidden="true"
++                      className={cn(
++                        "h-4 w-4 shrink-0 transition-transform duration-200",
++                        showAdditionalOptions && "rotate-180"
++                      )}
++                    />
++                  </button>
++                  <div
++                    id={additionalOptionsId}
++                    hidden={!showAdditionalOptions}
++                    className="space-y-1.5 border-r-2 border-indigo-100 pr-2 dark:border-indigo-900/60"
++                  >
++                    {isMarketBriefWorkflow ? (
++                      <>
+                         {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
+                         {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+                         {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
+                         {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
+                         {visibleDynamicTopicGems.map((gem) => renderSingleRow(gem))}
+-                      </div>
+-                    </>
+-                  ) : (
+-                    <>
+-                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
+-                      {renderTJSAccordion()}
+-                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+-                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
+-                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
+-                      {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
+-                    </>
+-                  )}
++                      </>
++                    ) : (
++                      renderFullGemOptionsList()
++                    )}
++                  </div>
+                 </div>
+               </div>
+ 
+-              {/* ── 4. Selected GEM details + URL ─────────── */}
++              {/* ── 3. Selected GEM details + URL ─────────── */}
+               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
+                 <div className="flex items-center gap-2">
+                   <span className="text-lg leading-none">{selectedGem.icon}</span>
+diff --git a/src/components/dashboard/VideoDetailPanel.jsx b/src/components/dashboard/VideoDetailPanel.jsx
+index b5ec8e1..8f1c72e 100644
+--- a/src/components/dashboard/VideoDetailPanel.jsx
++++ b/src/components/dashboard/VideoDetailPanel.jsx
+@@ -162,7 +162,7 @@ import {
+   persistVerifiedLocalValue,
+ } from "@/lib/gemsLocalPersistence";
+ import { requestGemsJsonRepair } from "@/services/gemsJsonRepair";
+-import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName, resolveCanonicalBriefWorkflowVideo } from "@/lib/gemRecommender";
++import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName, resolveCanonicalBriefWorkflowVideo, UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
+ import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
+ import { getGemConfigSnapshot, getGemUrl, MARKET_BRIEF_GEM_LABEL, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
+ import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
+@@ -192,7 +192,7 @@ import { useThumbnailFallback } from "@/hooks/useThumbnailFallback";
+ import { saveFreshImportRecordLocally, buildFreshImportRecord, clearVideoGeneratedCaches, consumeFreshImportFlag, stripFreshImportFlags } from "@/lib/videoFreshImport";
+ import { updateLocalVideo } from "@/lib/localVideoStore";
+ import { useWorkspaceItems } from "@/hooks/useWorkspaceLibrary";
+-import { useSavedRowIndex } from "@/hooks/useSavedRowIndex";
++import { useSavedRowIndex } from "@/hooks/useSavedRowIndex";
+ import { PdfUploader } from "@/components/upload/PdfUploader";
+ import { SaveToWorkspaceDialog } from "@/components/workspace/SaveToWorkspaceDialog";
+ import { WorkspaceSaveReviewOverlay } from "@/components/workspace/WorkspaceSaveReviewOverlay";
+@@ -225,10 +225,10 @@ import { buildContextualAiAnalysisPrompt } from '@/lib/aiAnalysisQuestionBank';
+ import { generatePerplexityQuestions } from '@/lib/perplexityQuestionBank';
+ import { PerplexityQuestionPanel } from '@/components/shared/PerplexityQuestionPanel';
+ import { FixedQuestionsPanel } from '@/components/shared/FixedQuestionsPanel';
+-import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
+-import { buildWorkspaceSelectionDraft } from '@/lib/workspaceSelectionDraft';
+-import { buildWorkspaceNewsFields } from '@/lib/newsSelectionMetadata';
+-import { buildWorkspaceSaveRevealParams } from '@/lib/workspaceSaveNavigation';
++import { buildSelectedItemsCsv, downloadCsv } from '@/lib/csvExport';
++import { buildWorkspaceSelectionDraft } from '@/lib/workspaceSelectionDraft';
++import { buildWorkspaceNewsFields } from '@/lib/newsSelectionMetadata';
++import { buildWorkspaceSaveRevealParams } from '@/lib/workspaceSaveNavigation';
+ import {
+   classifyGemsDiagnostic,
+   createGemsImportDiagnosticReport,
+@@ -1046,6 +1046,11 @@ function buildAnalysisQualityExplanation({
+ 
+ const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2", gems: "GEMS JSON" };
+ const MARKET_GEM_KEYS = new Set(["fundamental", "technical", "news", "macro"]);
++// Minimum confidencePct for trusting recommendTjsGemFromTranscript's transcript-only,
++// 4-key result (news/macro/dayTrading/appBuilder) over classifyVideoForGem's full
++// 7-key result. Shared by displayGemInfo and the GemSelectionModal recommendation
++// props — see the tjsRecIsTrusted comment near `const tjsRec = ...` for why.
++const TJS_RECOMMENDATION_TRUST_THRESHOLD = 60;
+ const POLITICS_CATEGORY = "פוליטיקה";
+ const MARKET_CATEGORY = "שוק ההון";
+ const BRAIN_CUSTOM_DESTS_KEY = "brain_custom_dests_v1";
+@@ -2272,6 +2277,11 @@ export function VideoDetailPanel({
+   const [isSavingManualTranscript, setIsSavingManualTranscript] = useState(false);
+   const [isFetchingYtApiTranscript, setIsFetchingYtApiTranscript] = useState(false);
+   const [isFreshImportRunning, setIsFreshImportRunning] = useState(false);
++  // TRADINGBRAIN-FRESHIMPORT-COST-GUARD: pendingFreshImport auto-opens this
++  // dialog instead of auto-running the paid Claude analysis — see the
++  // pendingFreshImport useEffect and handleConfirmFreshImportGate/
++  // handleCancelFreshImportGate below.
++  const [freshImportConfirmPending, setFreshImportConfirmPending] = useState(false);
+   const [geminiStatus, setGeminiStatus] = useState("idle");
+   const [geminiMessage, setGeminiMessage] = useState(null);
+   const [geminiAnalysisMode, setGeminiAnalysisMode] = useState("smart");
+@@ -2418,9 +2428,9 @@ export function VideoDetailPanel({
+   const [workspaceDraftContext, setWorkspaceDraftContext] = useState({});
+   const [workspaceDraftDefaultView, setWorkspaceDraftDefaultView] = useState('draft');
+   const [workspaceCurrentAnalysisItems, setWorkspaceCurrentAnalysisItems] = useState([]);
+-  const [isSavingStructuredSnapshot, setIsSavingStructuredSnapshot] = useState(false);
+-  const structuredSnapshotSaveInFlightRef = useRef(false);
+-  const workspaceSingleSaveInFlightIdsRef = useRef(new Set());
++  const [isSavingStructuredSnapshot, setIsSavingStructuredSnapshot] = useState(false);
++  const structuredSnapshotSaveInFlightRef = useRef(false);
++  const workspaceSingleSaveInFlightIdsRef = useRef(new Set());
+   const [obsidianSettingsOpen, setObsidianSettingsOpen] = useState(false);
+   const [obsidianSettingsTargetPath, setObsidianSettingsTargetPath] = useState("");
+   const [obsidianSettingsAutoOpenTarget, setObsidianSettingsAutoOpenTarget] = useState(false);
+@@ -3704,7 +3714,10 @@ export function VideoDetailPanel({
+   // handleQuickCopy defined after videoDuration+fullTranscriptText to avoid TDZ — see below.
+ 
+   const handleApplyRecommendation = useCallback(async () => {
+-    if (!gemRec) return;
++    // Not currently wired to any button (dead code as of this audit — kept
++    // for whoever re-wires it later); guarded anyway so an unclassified
++    // video can never have its category silently blanked via this path.
++    if (!gemRec || gemRec.gemKey === UNCLASSIFIED_GEM_KEY) return;
+     const catLabel = categoryOverride ?? gemRec.recommendedCategoryLabel ?? null;
+     const subCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
+     const firstTopicId = Array.isArray(video?.topicIds) ? video.topicIds[0] : null;
+@@ -5728,44 +5741,44 @@ export function VideoDetailPanel({
+     setIsFixedQuestionsOpen(true);
+   }, [multiSelected]);
+ 
+-  const handleCsvExport = useCallback(() => {
++  const handleCsvExport = useCallback(() => {
+     if (multiSelected.size === 0) return;
+     const items = [...multiSelected.values()];
+     const csv = buildSelectedItemsCsv(items, video?.title || '');
+     const slug = String(video?.title || 'items').slice(0, 40).replace(/[^a-zA-Zא-ת\d]/g, '-').replace(/-+/g, '-');
+     downloadCsv(csv, `${slug}.csv`);
+-    toast.success(`📊 יוצאו ${items.length} פריטים ל-CSV`);
+-  }, [multiSelected, video?.title]);
+-
+-  const navigateFromPanel = useCallback((page, params = {}) => {
+-    if (!navigateTo) {
+-      toast.error('לא ניתן לפתוח את הפריט השמור');
+-      return false;
+-    }
+-    onOpenChange(false);
+-    setTimeout(() => navigateTo(page, params), 80);
+-    return true;
+-  }, [navigateTo, onOpenChange]);
+-
+-  const navigateToSavedWorkspace = useCallback((persistenceResult, recordIds) => {
+-    const params = buildWorkspaceSaveRevealParams({
+-      persistenceResult,
+-      recordIds,
+-      topics: getWorkspaceTopics(),
+-    });
+-    if (!params) return false;
+-    return navigateFromPanel('WorkspaceLibrary', params);
+-  }, [navigateFromPanel]);
+-
+-  const handleSaveSelectedToWorkspace = () => {
++    toast.success(`📊 יוצאו ${items.length} פריטים ל-CSV`);
++  }, [multiSelected, video?.title]);
++
++  const navigateFromPanel = useCallback((page, params = {}) => {
++    if (!navigateTo) {
++      toast.error('לא ניתן לפתוח את הפריט השמור');
++      return false;
++    }
++    onOpenChange(false);
++    setTimeout(() => navigateTo(page, params), 80);
++    return true;
++  }, [navigateTo, onOpenChange]);
++
++  const navigateToSavedWorkspace = useCallback((persistenceResult, recordIds) => {
++    const params = buildWorkspaceSaveRevealParams({
++      persistenceResult,
++      recordIds,
++      topics: getWorkspaceTopics(),
++    });
++    if (!params) return false;
++    return navigateFromPanel('WorkspaceLibrary', params);
++  }, [navigateFromPanel]);
++
++  const handleSaveSelectedToWorkspace = () => {
+     if (multiSelected.size === 0) return;
+     const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+-    // Same fallback as SaveToWorkspaceDialog.jsx's handleSave: most real
+-    // records never populate youtubeId/videoId, so without falling back to
+-    // the record's own internal id, sourceVideoId ends up null and the
+-    // saved item's group key can never resolve back to this video.
+-    const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
+-    const snapshot = buildWorkspaceSelectionDraft(multiSelected.entries(), activeTab);
++    // Same fallback as SaveToWorkspaceDialog.jsx's handleSave: most real
++    // records never populate youtubeId/videoId, so without falling back to
++    // the record's own internal id, sourceVideoId ends up null and the
++    // saved item's group key can never resolve back to this video.
++    const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
++    const snapshot = buildWorkspaceSelectionDraft(multiSelected.entries(), activeTab);
+     setWorkspaceDraftItems(snapshot);
+     setWorkspaceDraftContext({
+       videoTitle: effectiveVideo?.title || '',
+@@ -5774,10 +5787,10 @@ export function VideoDetailPanel({
+       videoUrl: effectiveVideo?.url || (youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null),
+       sourceTab: getWorkspaceSourceTab(activeTab),
+       sourceTabId: getWorkspaceSourceTab(activeTab),
+-      sourceVideoId: youtubeId || videoIdFallback || null,
++      sourceVideoId: youtubeId || videoIdFallback || null,
+       sourceVideoType: videoType,
+       sourceBriefSlug: effectiveBriefSlug,
+-      videoPublishedAt: effectiveVideo?.publishedAt || null,
++      videoPublishedAt: effectiveVideo?.publishedAt || null,
+     });
+     setWorkspaceCurrentAnalysisItems([]);
+     setWorkspaceDraftDefaultView('draft');
+@@ -5812,9 +5825,9 @@ export function VideoDetailPanel({
+       }
+ 
+       const youtubeId = effectiveVideo?.youtubeId || effectiveVideo?.videoId;
+-      // Same fallback as SaveToWorkspaceDialog.jsx's handleSave — see
+-      // handleSaveSelectedToWorkspace above for why this is required.
+-      const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
++      // Same fallback as SaveToWorkspaceDialog.jsx's handleSave — see
++      // handleSaveSelectedToWorkspace above for why this is required.
++      const videoIdFallback = effectiveVideo?.id || effectiveVideo?.videoId;
+       const videoTitle = effectiveVideo?.title || '';
+       const savedAtIso = new Date().toISOString();
+ 
+@@ -5850,10 +5863,10 @@ export function VideoDetailPanel({
+         itemType: 'structured-snapshot',
+         sourceVideoType: videoType,
+         sourceBriefSlug: effectiveBriefSlug,
+-        videoPublishedAt: effectiveVideo?.publishedAt || null,
++        videoPublishedAt: effectiveVideo?.publishedAt || null,
+         structuredSnapshot,
+         ...createWorkspaceProvenance({
+-          sourceVideoId: youtubeId || videoIdFallback || null,
++          sourceVideoId: youtubeId || videoIdFallback || null,
+           sourceTabId: 'structured-snapshot',
+           sourceSectionId: 'structured-snapshot',
+           sourceHeading: getWorkspaceHeadingLabel('structured-snapshot', 'תמונת מצב'),
+@@ -5872,12 +5885,12 @@ export function VideoDetailPanel({
+         return;
+       }
+ 
+-      if (saveResult.status === 'already_exists') {
+-        toast.info('תמונת המצב הזאת כבר שמורה בספרייה');
+-      } else {
+-        toast.success('תמונת מצב נשמרה ל-Workspace Library');
+-      }
+-      if (saveResult.item?.id) navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
++      if (saveResult.status === 'already_exists') {
++        toast.info('תמונת המצב הזאת כבר שמורה בספרייה');
++      } else {
++        toast.success('תמונת מצב נשמרה ל-Workspace Library');
++      }
++      if (saveResult.item?.id) navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
+     } finally {
+       structuredSnapshotSaveInFlightRef.current = false;
+       setIsSavingStructuredSnapshot(false);
+@@ -5984,7 +5997,7 @@ export function VideoDetailPanel({
+     setBrainPickerOpen(true);
+   }, []);
+ 
+-  const saveSingleItemToWorkspace = useCallback(async ({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId, newsMetadata }) => {
++  const saveSingleItemToWorkspace = useCallback(async ({ text, sectionLabel, type, tabScope, timestamp, sectionKey, sourceSectionId, newsMetadata }) => {
+     const sourceVideoId = effectiveVideo?.youtubeId || effectiveVideo?.videoId || effectiveVideo?.id || 'unknown';
+     const body = String(text || '').trim();
+     if (!body) return;
+@@ -6000,70 +6013,70 @@ export function VideoDetailPanel({
+         originalItemType: type,
+         itemType: type,
+       }),
+-    });
+-    const wsId = itemDedupeKey(sourceVideoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
+-    if (workspaceSingleSaveInFlightIdsRef.current.has(wsId)) return;
+-    workspaceSingleSaveInFlightIdsRef.current.add(wsId);
+-    try {
+-      const now = new Date().toISOString();
+-      const sourceTitle = effectiveVideo?.title || '';
+-      const title = sourceTitle.slice(0, 40);
+-      const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
+-      const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
+-      const newsFields = buildWorkspaceNewsFields({ text: body, type, newsMetadata });
+-      const workspaceTitle = newsFields.newsTitle
+-        ? newsFields.newsTitle
+-        : `${sectionLabel || 'פריט'} — ${title || sourceVideoId}`;
+-      const saveResult = await persistWorkspaceItem({
+-        id: wsId,
+-        videoId: null,
+-        sourceVideoTitle: sourceTitle,
+-        videoTitle: workspaceTitle.slice(0, 80),
+-        videoUrl: effectiveVideo?.url || (sourceVideoId !== 'unknown' ? `https://www.youtube.com/watch?v=${sourceVideoId}` : null),
+-        channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
+-        thumbnail: effectiveVideo?.thumbnail || (sourceVideoId !== 'unknown' ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
+-        topicId: sourceTopic.topicId,
+-        subTopicId: null,
+-        topicName: sourceTopic.topicName,
+-        subTopicName: null,
+-        category: sourceTopic.category,
+-        subCategory: null,
+-        notes: `${body}${tsLine}`,
+-        flags: {},
+-        tags: [],
+-        sourceTab: sourceTab || null,
+-        itemType: 'snippet',
+-        originalItemType: type || 'snippet',
+-        identityPayload: { text: body },
+-        sourceTimestamp: timestamp ?? null,
+-        savedAt: now,
+-        sourceVideoType: videoType,
+-        sourceBriefSlug: effectiveBriefSlug,
+-        videoPublishedAt: effectiveVideo?.publishedAt || null,
+-        ...(provenance || {}),
+-        ...newsFields,
+-      });
+-      if (!saveResult.ok) {
+-        toast.error(getWorkspacePersistenceErrorMessage(saveResult));
+-        return;
+-      }
+-      setSavedItemKeys(previous => {
+-        const next = new Set(previous);
+-        next.add(wsId);
+-        return next;
+-      });
+-      if (saveResult.status === 'already_exists') {
+-        toast.info('כבר נשמר ל-Workspace');
+-      } else {
+-        toast.success('⭐ נשמר ל-Workspace');
+-      }
+-      if (saveResult.item?.id) {
+-        navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
+-      }
+-    } finally {
+-      workspaceSingleSaveInFlightIdsRef.current.delete(wsId);
+-    }
+-  }, [effectiveBriefSlug, effectiveVideo, navigateToSavedWorkspace, persistWorkspaceItem, videoType]);
++    });
++    const wsId = itemDedupeKey(sourceVideoId, sourceTab, body).replace(/^brain-item:/, 'ws-item:');
++    if (workspaceSingleSaveInFlightIdsRef.current.has(wsId)) return;
++    workspaceSingleSaveInFlightIdsRef.current.add(wsId);
++    try {
++      const now = new Date().toISOString();
++      const sourceTitle = effectiveVideo?.title || '';
++      const title = sourceTitle.slice(0, 40);
++      const tsLine = timestamp ? `\nזמן: ${timestamp}` : '';
++      const sourceTopic = resolveStructuredSnapshotTopic(effectiveVideo, getWorkspaceTopics());
++      const newsFields = buildWorkspaceNewsFields({ text: body, type, newsMetadata });
++      const workspaceTitle = newsFields.newsTitle
++        ? newsFields.newsTitle
++        : `${sectionLabel || 'פריט'} — ${title || sourceVideoId}`;
++      const saveResult = await persistWorkspaceItem({
++        id: wsId,
++        videoId: null,
++        sourceVideoTitle: sourceTitle,
++        videoTitle: workspaceTitle.slice(0, 80),
++        videoUrl: effectiveVideo?.url || (sourceVideoId !== 'unknown' ? `https://www.youtube.com/watch?v=${sourceVideoId}` : null),
++        channelName: effectiveVideo?.channelTitle || effectiveVideo?.channelName || '',
++        thumbnail: effectiveVideo?.thumbnail || (sourceVideoId !== 'unknown' ? `https://img.youtube.com/vi/${sourceVideoId}/mqdefault.jpg` : null),
++        topicId: sourceTopic.topicId,
++        subTopicId: null,
++        topicName: sourceTopic.topicName,
++        subTopicName: null,
++        category: sourceTopic.category,
++        subCategory: null,
++        notes: `${body}${tsLine}`,
++        flags: {},
++        tags: [],
++        sourceTab: sourceTab || null,
++        itemType: 'snippet',
++        originalItemType: type || 'snippet',
++        identityPayload: { text: body },
++        sourceTimestamp: timestamp ?? null,
++        savedAt: now,
++        sourceVideoType: videoType,
++        sourceBriefSlug: effectiveBriefSlug,
++        videoPublishedAt: effectiveVideo?.publishedAt || null,
++        ...(provenance || {}),
++        ...newsFields,
++      });
++      if (!saveResult.ok) {
++        toast.error(getWorkspacePersistenceErrorMessage(saveResult));
++        return;
++      }
++      setSavedItemKeys(previous => {
++        const next = new Set(previous);
++        next.add(wsId);
++        return next;
++      });
++      if (saveResult.status === 'already_exists') {
++        toast.info('כבר נשמר ל-Workspace');
++      } else {
++        toast.success('⭐ נשמר ל-Workspace');
++      }
++      if (saveResult.item?.id) {
++        navigateToSavedWorkspace(saveResult, [saveResult.item.id]);
++      }
++    } finally {
++      workspaceSingleSaveInFlightIdsRef.current.delete(wsId);
++    }
++  }, [effectiveBriefSlug, effectiveVideo, navigateToSavedWorkspace, persistWorkspaceItem, videoType]);
+ 
+   const openSavedBrainItem = useCallback((text, tabKey) => {
+     const videoId = video?.youtubeId || video?.id;
+@@ -6075,18 +6088,18 @@ export function VideoDetailPanel({
+     return navigateFromPanel('TopicKnowledgePage', { topicId: status.topicId });
+   }, [navigateFromPanel, video?.id, video?.youtubeId]);
+ 
+-  const openSavedWorkspaceItem = useCallback((text, tabKey) => {
++  const openSavedWorkspaceItem = useCallback((text, tabKey) => {
+     const videoId = video?.youtubeId || video?.id;
+     const status = resolveWorkspaceSaveStatus(videoId, tabKey, text);
+     if (!status.saved) {
+       toast.error('לא ניתן לפתוח את הפריט השמור');
+       return false;
+     }
+-    return navigateToSavedWorkspace(
+-      { ok: true, persistedItems: persistedWorkspaceItems },
+-      status.itemId ? [status.itemId] : [],
+-    );
+-  }, [navigateToSavedWorkspace, persistedWorkspaceItems, video?.id, video?.youtubeId]);
++    return navigateToSavedWorkspace(
++      { ok: true, persistedItems: persistedWorkspaceItems },
++      status.itemId ? [status.itemId] : [],
++    );
++  }, [navigateToSavedWorkspace, persistedWorkspaceItems, video?.id, video?.youtubeId]);
+ 
+   const videoIdForQuickSave = video?.youtubeId || video?.id;
+ 
+@@ -6142,13 +6155,13 @@ export function VideoDetailPanel({
+     return null;
+   }, [videoIdForQuickSave, pendingObsidianRowSave, multiObsidianPickerMode, multiSelected]);
+ 
+-  // "Already saved to Workspace" per-row indicator index — built once per
+-  // render, scoped to effectiveVideo where a saved item's video is
+-  // resolvable, with a backward-compatible unscoped fallback for legacy
+-  // saves that predate the sourceVideoId fix (see workspaceSavedRowLookup.js
+-  // and useSavedRowIndex.js).
+-  const savedRowIndex = useSavedRowIndex(effectiveVideo);
+-
++  // "Already saved to Workspace" per-row indicator index — built once per
++  // render, scoped to effectiveVideo where a saved item's video is
++  // resolvable, with a backward-compatible unscoped fallback for legacy
++  // saves that predate the sourceVideoId fix (see workspaceSavedRowLookup.js
++  // and useSavedRowIndex.js).
++  const savedRowIndex = useSavedRowIndex(effectiveVideo);
++
+   const bulkSelectionShare = useMemo(() => ({
+     multiSelected,
+     onToggle: toggleMultiSelect,
+@@ -6158,7 +6171,7 @@ export function VideoDetailPanel({
+     onClear: multiSelectClear,
+     videoId: videoIdForQuickSave,
+     obsidianItemSaveRevision,
+-    savedRowIndex,
++    savedRowIndex,
+     onQuickSaveBrain: (meta) => {
+       const tabKey = meta.type || meta.tabScope || 'multi';
+       if (isBrainItemSaved(meta.text, tabKey)) {
+@@ -6199,7 +6212,7 @@ export function VideoDetailPanel({
+     multiSelectClear,
+     videoIdForQuickSave,
+     obsidianItemSaveRevision,
+-    savedRowIndex,
++    savedRowIndex,
+     isBrainItemSaved,
+     openSavedBrainItem,
+     saveSingleItemToBrain,
+@@ -8234,23 +8247,56 @@ export function VideoDetailPanel({
+     const token = `${video.id}:${video.freshImportRequestedAt || "pending"}`;
+     if (freshImportAutoRunRef.current === token) return;
+     freshImportAutoRunRef.current = token;
+-    runFreshImportPipeline({
+-      resetBeforeAnalysis: false,
+-      consumePending: true,
+-      triggerSource: video.freshImportSource || "duplicate_modal",
+-    }).catch((err) => {
+-      console.error("[FreshImport] auto run failed:", err?.message);
+-      toast.error(err?.message || "ייבוא מחדש מאפס נכשל");
+-    });
++    // TRADINGBRAIN-FRESHIMPORT-COST-GUARD: this used to call
++    // runFreshImportPipeline directly here, auto-firing a real paid Claude
++    // request with no confirmation between the "ייבא מחדש מאפס" click and the
++    // charge. Now it only opens the confirm dialog — the pipeline itself
++    // (unchanged) runs from handleConfirmFreshImportGate below.
++    setFreshImportConfirmPending(true);
+   }, [
+     open,
+-    runFreshImportPipeline,
+     video?.freshImportRequestedAt,
+     video?.freshImportSource,
+     video?.id,
+     video?.pendingFreshImport,
+   ]);
+ 
++  const handleConfirmFreshImportGate = useCallback(() => {
++    setFreshImportConfirmPending(false);
++    runFreshImportPipeline({
++      resetBeforeAnalysis: false,
++      consumePending: true,
++      triggerSource: video?.freshImportSource || "duplicate_modal",
++    }).catch((err) => {
++      console.error("[FreshImport] auto run failed:", err?.message);
++      toast.error(err?.message || "ייבוא מחדש מאפס נכשל");
++    });
++  }, [runFreshImportPipeline, video?.freshImportSource]);
++
++  // Cancelling only clears the pending flag (so a later reload/reopen can't
++  // silently re-fire the paid request) — it does not touch transcript/
++  // analysis fields. Whatever "ייבא מחדש מאפס" already reset before the panel
++  // opened stays exactly as it was; nothing further is deleted or overwritten.
++  const handleCancelFreshImportGate = useCallback(() => {
++    setFreshImportConfirmPending(false);
++    if (video?.id && video?.pendingFreshImport) {
++      // Explicit false/null, not consumeFreshImportFlag's delete-based strip:
++      // forceUpsertVideo persists via `{...storedRecord, ...record}`, and a
++      // deleted (missing) key is invisible to that spread — it silently
++      // leaves the already-stored `pendingFreshImport: true` in place. Only
++      // an explicit override actually clears it. Confirmed live: the delete
++      // form left the flag `true` in storage after "ביטול".
++      persistFreshImportRecord({
++        ...video,
++        pendingFreshImport: false,
++        freshImportRequestedAt: null,
++        freshImportSource: null,
++      }, { syncRemote: false }).catch((err) => {
++        console.error("[FreshImport] cancel-clear failed:", err?.message);
++      });
++    }
++  }, [video, persistFreshImportRecord]);
++
+   if (!video) return null;
+ 
+   const relativeDate = (() => {
+@@ -8765,8 +8811,18 @@ export function VideoDetailPanel({
+   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
+ 
+   const tjsRec = recommendTjsGemFromTranscript(fullTranscriptText);
+-
+-  const displayGemInfo = (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60)
++  // recommendTjsGemFromTranscript is a separate, transcript-only, 4-key
++  // recommender (news/macro/dayTrading/appBuilder) — distinct from
++  // classifyVideoForGem's 7-key classifier (effectiveGemInfo). Its own floor
++  // (topScore>=36 in gemRecommender.js) is low enough that generic overlap
++  // vocabulary (e.g. dayTrading's bare 'תמיכה'/'התנגדות' also matching
++  // technical-analysis content) can win with a low-confidence match. Only
++  // trust it over the 7-key classifier once it clears this bar — reused by
++  // both displayGemInfo below and the GemSelectionModal props further down,
++  // so the two never disagree about which recommender "won".
++  const tjsRecIsTrusted = Boolean(tjsRec?.recommendedGemKey) && tjsRec.confidencePct >= TJS_RECOMMENDATION_TRUST_THRESHOLD;
++
++  const displayGemInfo = tjsRecIsTrusted
+     ? { gemKey: tjsRec.gemKey, gemLabel: tjsRec.gemLabel, gemIcon: tjsRec.gemIcon, confidencePct: tjsRec.confidencePct, confidence: tjsRec.confidence, reason: tjsRec.reason, detectedKeywords: tjsRec.detectedKeywords, phase: 'accurate', isManual: false }
+     : effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
+ 
+@@ -8776,7 +8832,7 @@ export function VideoDetailPanel({
+       toast.error("אין תמלול זמין לשליחה");
+       return;
+     }
+-    if (!gemKey) return;
++    if (!gemKey || gemKey === UNCLASSIFIED_GEM_KEY) return;
+     setGemRecommendationOpening(true);
+     try {
+       const clipboardPayload = buildTranscriptGemPayload({
+@@ -13022,7 +13078,12 @@ export function VideoDetailPanel({
+       onOpenChange={setShowGemModal}
+       video={gemSelectionVideo}
+       topics={videoTopics}
+-      recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
++      recommendedGemKey={tjsRecIsTrusted ? tjsRec.recommendedGemKey : (effectiveGemInfo?.gemKey || null)}
++      recommendedConfidencePct={
++        tjsRecIsTrusted
++          ? tjsRec.confidencePct
++          : (effectiveGemInfo ? effectiveGemInfo.confidencePct : null)
++      }
+       savedGemKey={gemOverride || null}
+       tjsRecommendation={tjsRec}
+       fullTranscriptText={fullTranscriptText}
+@@ -13326,6 +13387,39 @@ export function VideoDetailPanel({
+     />
+ 
+     {/* ── Save All Confirmation Dialog ─────────────────────── */}
++    {/* TRADINGBRAIN-FRESHIMPORT-COST-GUARD: gate before the paid Claude call
++        that "ייבא מחדש מאפס" would otherwise auto-fire with no confirmation. */}
++    <Dialog
++      open={freshImportConfirmPending}
++      onOpenChange={(nextOpen) => { if (!nextOpen) handleCancelFreshImportGate(); }}
++    >
++      <DialogContent className="max-w-md" dir="rtl">
++        <DialogHeader>
++          <DialogTitle className="text-right text-lg font-bold">⚠️ ניתוח AI חדש — פעולה בתשלום</DialogTitle>
++          <DialogDescription className="text-right text-sm text-slate-600 dark:text-zinc-400">
++            ייבוא מחדש מאפס שולף תמלול טרי ומריץ ניתוח Claude חדש על הסרטון — זו בקשה
++            אמיתית בתשלום ל-API, לא פעולה מקומית. להמשיך?
++          </DialogDescription>
++        </DialogHeader>
++        <div className="flex gap-3 justify-end pt-2">
++          <button
++            type="button"
++            onClick={handleCancelFreshImportGate}
++            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300"
++          >
++            ביטול
++          </button>
++          <button
++            type="button"
++            onClick={handleConfirmFreshImportGate}
++            className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
++          >
++            המשך לניתוח בתשלום
++          </button>
++        </div>
++      </DialogContent>
++    </Dialog>
++
+     <Dialog open={saveAllConfirmOpen} onOpenChange={setSaveAllConfirmOpen}>
+       <DialogContent className="max-w-md" dir="rtl">
+         <DialogHeader>
+@@ -13366,15 +13460,15 @@ export function VideoDetailPanel({
+       onOpenChange={setWorkspaceSaveOpen}
+       video={effectiveVideo}
+       sourceTab={workspaceSourceTab}
+-      onSaved={({ topicName, subTopicName, recordIds, persistenceResult } = {}) => {
+-        setWorkspaceSaveOpen(false);
++      onSaved={({ topicName, subTopicName, recordIds, persistenceResult } = {}) => {
++        setWorkspaceSaveOpen(false);
+         // Propagate topic change through React Query so video cards + header refresh
+         if (topicName) {
+           try { saveVideoFields({ category: topicName, subCategory: subTopicName || '' }); } catch {}
+-        }
+-        toast.success('✅ הסרטון נשמר ל-Workspace Library');
+-        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
+-      }}
++        }
++        toast.success('✅ הסרטון נשמר ל-Workspace Library');
++        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
++      }}
+     />
+ 
+     {/* ── Workspace Save Review Overlay ────────────────────── */}
+@@ -13385,10 +13479,10 @@ export function VideoDetailPanel({
+       currentAnalysisDraftItems={workspaceCurrentAnalysisItems}
+       defaultView={workspaceDraftDefaultView}
+       videoContext={workspaceDraftContext}
+-      onSaved={({ recordIds, persistenceResult } = {}) => {
+-        multiSelectClearWithBrain();
+-        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
+-      }}
++      onSaved={({ recordIds, persistenceResult } = {}) => {
++        multiSelectClearWithBrain();
++        if (recordIds?.length) navigateToSavedWorkspace(persistenceResult, recordIds);
++      }}
+       onOpenLibrary={() => navigateFromPanel('WorkspaceLibrary')}
+     />
+ 
+diff --git a/src/lib/gemRecommender.js b/src/lib/gemRecommender.js
+index ed1b775..447a9e5 100644
+--- a/src/lib/gemRecommender.js
++++ b/src/lib/gemRecommender.js
+@@ -5,6 +5,14 @@ import { getTopicRule } from "@/lib/topicRules";
+ import { detectVideoType } from "@/config/videoTabsConfig";
+ import { MARKET_BRIEF_GEM_KEY, MARKET_BRIEF_GEM_LABEL } from "@/lib/gemsConfig";
+ 
++// Decision 14 (docs/plan/TRADINGBRAIN-GEMS-TABS-MAPPING-PLAN.md): a video
++// with no real classification signal at all is a pending state, not a 5th
++// GEM and not the real 'general' (בריאות) GEM. A stable string key (not
++// null) so "we checked and found nothing" stays distinguishable from "the
++// field was never set" — exported so every consumer compares against one
++// source of truth instead of a hardcoded literal.
++export const UNCLASSIFIED_GEM_KEY = "unclassified";
++
+ export function isMarketBriefWorkflowVideo(video) {
+   const videoType = detectVideoType(video);
+   return videoType === "morningBrief" || videoType === "eveningBrief";
+@@ -34,7 +42,13 @@ export function resolveWorkflowGemRecommendation(video, recommendedGemKey = null
+ }
+ 
+ export function resolveWorkflowGemSelection({ video, savedGemKey = null, recommendedGemKey = null } = {}) {
+-  return savedGemKey || resolveWorkflowGemRecommendation(video, recommendedGemKey) || "general";
++  const recommendation = resolveWorkflowGemRecommendation(video, recommendedGemKey);
++  // UNCLASSIFIED_GEM_KEY is a real, truthy string but not a selectable GEM —
++  // it must not become the internal `selected` choice (no row in the picker
++  // has that key, so nothing would render as selected). Fall through to
++  // "general" exactly as when recommendedGemKey used to be null.
++  const selectableRecommendation = recommendation === UNCLASSIFIED_GEM_KEY ? null : recommendation;
++  return savedGemKey || selectableRecommendation || "general";
+ }
+ 
+ // Deterministic title overrides — checked before any keyword scoring.
+@@ -71,25 +85,40 @@ const GEM_RULES = [
+     icon: "📊",
+     titleKeywords: ["earnings", "valuation", "fundamental", "revenue", "income", "profit",
+       "pe ratio", "cash flow", "dividend", "acquisition", "growth", "analyst",
+-      "upgrade", "downgrade", "target price", "eps", "q1", "q2", "q3", "q4"],
++      "upgrade", "downgrade", "target price", "eps", "q1", "q2", "q3", "q4",
++      // Hebrew — decision 2: earnings/reports, revenue/margins, valuation/multiples, thesis
++      "דוח רבעוני", "דוחות כספיים", "עונת הדוחות", "תוצאות רבעון", "מכפיל רווח",
++      "תזת השקעה", "ניתוח פונדמנטלי"],
+     topicKeywords: ["fundamental", "stocks", "equity", "financial", "investing", "פונדמנטלי"],
+     transcriptKeywords: ["revenue", "earnings", "valuation", "margin", "guidance", "eps",
+       "profit", "pe ratio", "market cap", "cash flow", "balance sheet", "dividend",
+       "acquisition", "business model", "pricing power", "competitive advantage",
+-      "return on equity", "debt to equity", "net income", "gross profit"],
++      "return on equity", "debt to equity", "net income", "gross profit",
++      // Hebrew — mirrors the English list above; real Hebrew-language transcripts
++      // rarely contain the English finance terms, which left this rule at score 0
++      "דוח רבעוני", "דוחות כספיים", "עונת הדוחות", "תוצאות רבעון", "הכנסות החברה",
++      "שולי רווח", "רווח נקי", "מכפיל רווח", "שווי הוגן", "תמחור המניה",
++      "תזת השקעה", "דוח שנתי", "צמיחת הכנסות"],
+   },
+   {
+     key: "technical",
+     label: "טכני",
+     icon: "📈",
+     titleKeywords: ["technical", "chart", "trading", "setup", "breakout", "analysis",
+-      "price action", "trade setup"],
++      "price action", "trade setup",
++      // Hebrew — decision 2: chart reading, price levels, support/resistance, patterns, indicators, entries/stops
++      "ניתוח טכני", "רמת תמיכה", "רמת התנגדות", "תבנית מחיר", "נקודת כניסה"],
+     topicKeywords: ["technical", "trading", "charts", "טכני"],
+     transcriptKeywords: ["chart", "support", "resistance", "trend", "indicator", "rsi",
+       "macd", "moving average", "breakout", "candlestick", "fibonacci", "entry",
+       "exit", "stop loss", "price action", "volume", "ema", "sma", "bollinger",
+       "oversold", "overbought", "rally", "pullback", "neckline", "head and shoulders",
+-      "triangle pattern", "flag pattern"],
++      "triangle pattern", "flag pattern",
++      // Hebrew — mirrors the English list above; real Hebrew-language transcripts
++      // rarely contain the English TA terms, which left this rule at score 0
++      "ניתוח טכני", "רמת תמיכה", "רמת התנגדות", "תמיכה והתנגדות", "תבנית מחיר",
++      "ראש וכתפיים", "ממוצע נע", "רצועות בולינגר", "אינדיקטור", "נקודת כניסה",
++      "סטופ לוס", "יעד מחיר", "פריצת מחיר", "קו מגמה"],
+   },
+   {
+     key: "news",
+@@ -99,23 +128,51 @@ const GEM_RULES = [
+       "premarket", "afternoon", "wrap", "watchlist", "market open",
+       // Hebrew morning brief patterns — ensures title-only matching even without subCategory
+       "מבזק", "מבזק לייב", "פתיחת שוק", "סקירת בוקר"],
+-    topicKeywords: ["macro", "news", "market", "morning", "מבזק"],
++    // 'market'/'morning' identify a daily-cadence update; macro-topic words
++    // (fed/inflation/gdp/etc.) do NOT belong here — see transcriptKeywords note.
++    topicKeywords: ["news", "market", "morning", "מבזק"],
++    // Deliberately does NOT include macro-topic vocabulary (fed, interest
++    // rate, inflation, gdp, cpi, economic data, jobs report, unemployment,
++    // consumer price) even though daily briefs often discuss those topics —
++    // a periodic (monthly/quarterly/annual) retrospective discusses the same
++    // macro topics without being a daily brief, and used to win here purely
++    // by duplicating macro's own keyword list. What should identify a brief
++    // is its cadence/format ("today", "this week", "recap", "wrap"), not its
++    // economic subject matter, which macro already owns.
+     transcriptKeywords: ["morning brief", "market update", "daily update", "this week",
+-      "market recap", "headline", "fed", "interest rate", "inflation", "gdp", "cpi",
+-      "macro", "economic data", "jobs report", "unemployment", "consumer price",
+-      "today in markets", "market wrap"],
++      "market recap", "headline", "today in markets", "market wrap"],
+   },
+   {
+     key: "macro",
+     label: "מאקרו",
+     icon: "🌐",
++    // "מאקרו ושוק" bucket (user decision): macro proper, plus trading
++    // psychology/sentiment/education/methodology content — anything
++    // capital-market-related that is neither technical nor fundamental.
+     titleKeywords: ["macro", "economy", "fed", "recession", "inflation", "rate", "gdp",
+-      "central bank", "monetary", "fiscal"],
+-    topicKeywords: ["macro", "economy", "מאקרו"],
++      "central bank", "monetary", "fiscal",
++      "רגשות של סוחרים", "משמעת מסחר", "שיטת מסחר", "פחד ותאוות בצע",
++      // Hebrew — periodic/retrospective market summaries (monthly/quarterly/
++      // annual) are macro content, not a daily brief, even though both use
++      // "summary" framing — see the news rule's comment for the other half
++      // of this fix.
++      "סיכום חודש", "סיכום חודשי", "סיכום רבעון", "סיכום רבעוני",
++      "סיכום שנתי", "סיכום שנה", "מבט לחודש", "מבט לשנה"],
++    topicKeywords: ["macro", "economy", "מאקרו", "פסיכולוגיה", "סנטימנט"],
++    // titlePatterns: regex signals distinct from plain keyword substrings —
++    // covers "N שנה/שנים ל..." anniversary-retrospective titles ("50 שנה
++    // לסנפ 500", "10 שנים למשבר") generically, not just one exact phrasing.
++    titlePatterns: [/\d+\s*שנ(ה|ים)\s*ל/],
+     transcriptKeywords: ["macro", "federal reserve", "interest rate", "monetary policy",
+       "fiscal policy", "recession", "inflation", "gdp", "central bank", "yield curve",
+       "quantitative easing", "quantitative tightening", "fomc", "jackson hole",
+-      "balance sheet reduction"],
++      "balance sheet reduction",
++      // Hebrew — trading psychology/sentiment/education/methodology
++      "פסיכולוגיית מסחר", "פסיכולוגיה של מסחר", "רגשות של סוחרים",
++      "פחד ותאוות בצע", "משמעת מסחר", "ניהול רגשי", "סנטימנט שוק", "שיטת מסחר",
++      // Hebrew — periodic/retrospective summaries, mirrors titleKeywords above
++      "סיכום חודש", "סיכום חודשי", "סיכום רבעון", "סיכום רבעוני",
++      "סיכום שנתי", "סיכום שנה", "מבט לחודש", "מבט לשנה"],
+   },
+   {
+     key: "appBuilder",
+@@ -178,7 +235,10 @@ export const GEM_CATEGORY_MAP = {
+   fundamental: {
+     categoryCode: 'Markets',
+     categoryLabel: 'שוק ההון',
+-    defaultSubCategory: 'ניתוח שוק',
++    // 'פונדמנטלי' is the only value SUB_CATEGORY_SLUG_MAP (videoTabsConfig.js)
++    // recognizes for the 'fundamental-analysis' slug — the old default
++    // ('ניתוח שוק') never routed to Tab 7 correctly. See plan §2.3.
++    defaultSubCategory: 'פונדמנטלי',
+     subCategoryRules: [
+       { label: 'ניתוח יסודי',    keywords: ['earnings', 'revenue', 'valuation', 'pe ratio', 'eps', 'cash flow', 'profit margin', 'balance sheet', 'net income'] },
+       { label: 'בחירת מניות',    keywords: ['stock pick', 'undervalued', 'growth stock', 'value investing', 'dividend', 'acquisition', 'return on equity'] },
+@@ -344,12 +404,25 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
+     let score = 0;
+     score += countMatches(metaContext, rule.titleKeywords) * 2;
+     score += countMatches(metaContext, rule.topicKeywords) * 2;
++    // Regex signals distinct from plain keyword substrings — e.g. macro's
++    // "N שנה/שנים ל..." anniversary-retrospective pattern, which can't be
++    // expressed as a fixed keyword list without either missing most real
++    // titles or being so short it collides with unrelated phrases.
++    if (Array.isArray(rule.titlePatterns)) {
++      score += rule.titlePatterns.filter((pattern) => pattern.test(metaContext)).length * 2;
++    }
+     if (hasTranscript) {
+       score += countMatches(transcriptText, rule.transcriptKeywords);
+     }
+     return { ...rule, score };
+   });
+ 
++  // Captured before the explicit-category boost below (which can add +4 to a
++  // rule that matched zero keywords, purely from video.category) so that a
++  // video with no real keyword signal at all is never reported as a confident
++  // tie-break winner — the boost may only reinforce/order real matches.
++  const hadRealKeywordSignal = scores.some(s => s.score > 0);
++
+   scores.sort((a, b) => b.score - a.score);
+ 
+   // HARD RULE: Topic-driven enforcement (highest priority).
+@@ -390,20 +463,27 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
+ 
+   const fullText = `${metaContext} ${transcriptText}`;
+ 
+-  if (top.score === 0) {
++  if (!hadRealKeywordSignal) {
++    // Decision 14: no signal at all is a pending state, not an active
++    // recommendation — it must not silently resolve to the real 'general'
++    // (בריאות/health) GEM, which is an unrelated content category.
++    // Checked against the pre-boost signal, not top.score: the explicit-
++    // category boost above can push a zero-keyword-match rule to a nonzero
++    // score purely from video.category (declaration-order tie-break dressed
++    // up as a confident result) — that must never manufacture a winner.
+     return {
+-      gemKey: "general",
+-      gemLabel: "כללי",
+-      gemIcon: "💡",
+-      confidence: "low",
+-      confidenceLabel: "ביטחון נמוך",
+-      confidencePct: 30,
+-      reason: "לא זוהו אותות ברורים — מומלץ Gem כללי כברירת מחדל.",
++      gemKey: UNCLASSIFIED_GEM_KEY,
++      gemLabel: "ממתין לסיווג",
++      gemIcon: "⏳",
++      confidence: "none",
++      confidenceLabel: "טרם סווג",
++      confidencePct: 0,
++      reason: "לא זוהו אותות ברורים בכותרת או בתמלול — הווידאו ממתין לסיווג ידני דרך כפתור \"שנה GEM\".",
+       phase: hasTranscript ? "accurate" : "preliminary",
+-      recommendedCategoryCode: 'Health',
+-      recommendedCategoryLabel: 'בריאות',
+-      recommendedSubCategory: 'כללי',
+-      recommendedSubCategoryConfidencePct: 40,
++      recommendedCategoryCode: null,
++      recommendedCategoryLabel: null,
++      recommendedSubCategory: null,
++      recommendedSubCategoryConfidencePct: 0,
+     };
+   }
+ 
+@@ -478,12 +558,21 @@ const TJS_GEM_KEYWORDS = {
+     'jackson hole', 'gdp', 'economic data', 'yield curve',
+     'ריבית', 'אינפלציה', 'צמיחה', 'מיתון', 'בנק מרכזי', 'תשואה', 'פד',
+   ],
++  // Deliberately excludes generic technical-analysis vocabulary (breakout,
++  // support/resistance, entry, stop loss, price action — and their Hebrew
++  // equivalents פריצה/תמיכה/התנגדות/כניסה/יעד/סטופ) even though day-trading
++  // content uses it too: that same vocabulary is core to GEM_RULES.technical
++  // (classifyVideoForGem), so any technical-analysis video — regardless of
++  // timeframe — tripped this bucket and could outscore the classifier's
++  // correct "technical" answer once past the 60% trust floor (confirmed
++  // live: a video titled "ניתוח טכני" scored 66% dayTrading here). What
++  // should identify day trading is its timeframe/cadence, not shared TA
++  // vocabulary — mirrors the same fix already applied to GEM_RULES.news vs.
++  // GEM_RULES.macro.
+   dayTrading: [
+-    'breakout', 'support', 'resistance', 'entry', 'stop loss',
+-    'target', 'intraday', 'scalp', 'day trade', 'setup',
+-    'volume spike', 'price action', 'trade setup', 'momentum',
+-    'trigger', 'squeeze', 'gap up', 'gap down', 'levels',
+-    'פריצה', 'תמיכה', 'התנגדות', 'כניסה', 'יעד', 'סטופ', 'מסחר יומי',
++    'intraday', 'scalp', 'day trade', 'volume spike',
++    'gap up', 'gap down', 'squeeze', 'trade setup',
++    'מסחר יומי', 'סקאלפינג', 'תוך יומי',
+   ],
+   appBuilder: [
+     'app idea', 'dashboard', 'screener', 'automation', 'workflow',
+---UNTRACKED FILES---
+docs/plan/REPORT-TRADINGBRAIN-AAII-SENTIMENT-SAVE-DATALOSS.md
+docs/plan/REPORT-TRADINGBRAIN-SAVEDROW-STALE-TAG-ROOTCAUSE.md
+docs/plan/REPORT-TRADINGBRAIN-WIP-STAGING-PLAN.md
+docs/qa/WIP-SNAPSHOT-2026-09-06.patch
+docs/qa/pre-TRADINGBRAIN-WORKSPACE-STATUS-FLAGS-PLACEMENT.patch
+scripts/publish-date-header-coverage-qa.mjs
