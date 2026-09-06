@@ -2,7 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { ExternalLink, Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2, Moon, Sun, ClipboardList, Info, Trash2, Pin, Copy, CheckCircle2, AlertCircle, BookMarked, Zap, ChevronDown } from "lucide-react";
+import { Sparkles, Eye, X, Clock, StickyNote, Calendar, Link2, Moon, Sun, ClipboardList, Info, Trash2, Pin, Copy, CheckCircle2, AlertCircle, BookMarked, Zap, ChevronDown, Play, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { Video } from "@/api/entities";
 import { analyzeVideoWithAI } from "@/api/functions";
@@ -324,6 +324,96 @@ function PanelThumbnail({ video }) {
       onError={handleError}
       onLoad={handleLoad}
     />
+  );
+}
+
+// ── PanelInlineVideoPlayer ───────────────────────────────────────────────────
+// Wraps PanelThumbnail with click-to-play inline YouTube playback plus an
+// enlarge/shrink toggle. The iframe is mounted once (when playback starts)
+// and stays mounted at the same position in the tree for as long as playback
+// is active — enlarging/shrinking only swaps the wrapping element's
+// className (small in-card size ↔ large in-dialog overlay), so the iframe
+// never reloads and currentTime is preserved across the toggle. Playback is
+// reset (thumbnail restored) whenever the active video's youtubeId changes,
+// so a switched-away-from video never keeps playing in the background.
+function PanelInlineVideoPlayer({ video }) {
+  const youtubeId = video?.youtubeId || video?.videoId || getVideoIdFromUrl(getWatchUrl(video));
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setIsExpanded(false);
+  }, [youtubeId]);
+
+  const wrapperClass = isExpanded
+    ? "fixed inset-4 md:inset-10 z-[100] flex flex-col overflow-hidden rounded-2xl bg-black shadow-2xl"
+    : "absolute inset-0 flex flex-col overflow-hidden";
+
+  return (
+    <>
+      {!isPlaying && (
+        <>
+          <PanelThumbnail video={video} />
+          <button
+            type="button"
+            onClick={() => { if (youtubeId) setIsPlaying(true); }}
+            disabled={!youtubeId}
+            aria-label="הפעל את הסרטון"
+            className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
+          >
+            <div className="rounded-full bg-white/90 p-3 shadow-lg">
+              <Play className="h-5 w-5 text-slate-800" fill="currentColor" />
+            </div>
+          </button>
+        </>
+      )}
+
+      {isPlaying && youtubeId && (
+        <div className={wrapperClass}>
+          {isExpanded && (
+            <div dir="rtl" className="flex shrink-0 items-center justify-between gap-2 bg-zinc-900 px-3 py-2">
+              <span className="truncate text-sm font-semibold text-white">{video?.title}</span>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                aria-label="הקטן את הנגן"
+                className="shrink-0 rounded-full p-1.5 text-white transition-colors hover:bg-white/10"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <div className="relative min-h-0 flex-1">
+            <iframe
+              title={video?.title || "נגן וידאו"}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+            {!isExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                aria-label="הגדל את הנגן"
+                className="absolute end-2 top-2 z-10 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-[90] bg-black/70"
+          aria-hidden="true"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -9948,18 +10038,7 @@ export function VideoDetailPanel({
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 overflow-hidden">
                   <div className="relative aspect-video bg-slate-100 dark:bg-zinc-900">
-                    <PanelThumbnail video={video} />
-                    <a
-                      href={getWatchUrl(video) || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity"
-                      onClick={(e) => { if (!getWatchUrl(video)) e.preventDefault(); }}
-                    >
-                      <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                        <ExternalLink className="h-5 w-5 text-slate-800" />
-                      </div>
-                    </a>
+                    <PanelInlineVideoPlayer video={video} />
                   </div>
                 </div>
               )}
