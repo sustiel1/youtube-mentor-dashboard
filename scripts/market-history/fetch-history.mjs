@@ -18,6 +18,15 @@ const TMP_PATH = path.join(DATA_DIR, '.market-history.json.tmp');
 const UA = 'Mozilla/5.0';
 const EARLIEST_FALLBACK = '1990-01-01'; // used only when there is no prior run to resume from
 
+// Read only from the environment — never from a file this script writes or reads, never logged.
+const FRED_API_KEY = process.env.FRED_API_KEY || null;
+
+// Strip any api_key query param before a URL can reach a log line, error message, or thrown
+// Error — the only thing standing between the key and stdout/console/report output.
+function redact(url) {
+  return url.replace(/([?&]api_key=)[^&]+/i, '$1***');
+}
+
 // --- source configs -------------------------------------------------------
 
 // Equities/ETFs: fetch both raw close and dividend-adjusted close from Yahoo.
@@ -43,14 +52,17 @@ const FRED_SERIES = {
   BAA10Y: { label: 'PROXY, NOT HIGH-YIELD — Moody\'s Baa (investment-grade, lowest IG tier) corporate bond yield minus 10-year Treasury. Used as a long-history (1986+) credit-stress proxy because no free genuine junk/high-yield spread series has usable history (BAMLH0A0HYM2/EY both restart 2023-09-05, ICE licensing gap). Kept alongside BAMLH0A0HYM2 deliberately so the two can be compared where they overlap (2023-09-05+) to gauge how well this proxy tracks real HY stress. Any consumer/display of this series must label it "proxy" and never present it as a high-yield spread.' },
 };
 
-// ALFRED release-calendar pages (HTML scrape, no key). Release IDs verified via each page's <h1>
-// during the Phase 1 probe — do not add an ID here without the same verification.
-const ALFRED_RELEASES = {
-  CPI: { rid: 10, expectedTitle: 'Consumer Price Index' },
-  EMPLOYMENT_SITUATION: { rid: 50, expectedTitle: 'Employment Situation' },
-  INITIAL_CLAIMS: { rid: 180, expectedTitle: 'Unemployment Insurance Weekly Claims Report' },
-  // University of Michigan Consumer Sentiment release ID was NOT identified with confidence in
-  // the Phase 1 probe (a guessed ID landed on the wrong report). Left out rather than guessed.
+// Release-date sources, keyed by the FRED series whose release calendar we want. Preferred path:
+// official API resolves the correct release_id FROM the series id (fred/series/release) — no more
+// guessing. Fallback path (no FRED_API_KEY): scrape the public ALFRED HTML page for a rid verified
+// via the Phase 1 probe against its own <h1> — Michigan Sentiment has no verified rid and is
+// skipped on the fallback path only.
+const RELEASE_DATE_SERIES = {
+  CPI: { seriesId: 'CPILFESL', fallbackRid: 10, expectedTitle: 'Consumer Price Index' },
+  EMPLOYMENT_SITUATION: { seriesId: 'UNRATE', fallbackRid: 50, expectedTitle: 'Employment Situation' },
+  INITIAL_CLAIMS: { seriesId: 'ICSA', fallbackRid: 180, expectedTitle: 'Unemployment Insurance Weekly Claims Report' },
+  MICHIGAN_SENTIMENT: { seriesId: 'UMCSENT', fallbackRid: null, expectedTitle: null },
+  // University of Michigan Consumer Sentiment has no verified fallback rid — official-API-only.
 };
 
 const FOMC_CALENDAR_URL = 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm';
@@ -144,6 +156,49 @@ async function fetchAlfredReleaseDates(rid, expectedTitle) {
   }
   const dates = [...new Set([...body.matchAll(/release-date="(\d{4}-\d{2}-\d{2})"/g)].map((m) => m[1]))].sort();
   return { ok: true, title, dates };
+}
+
+// --- official FRED REST API (requires FRED_API_KEY) ------------------------
+
+async function fredApiGet(pathAndQuery) {
+  const url = `https://api.stlouisfed.org/fred/${pathAndQuery}&api_key=${FRED_API_KEY}&file_type=json`;
+  const res = await fetch(url);
+  const status = res.status;
+  const bodyText = await res.text();
+  if (!res.ok) return { ok: false, error: `HTTP ${status} for ${redact(url)}: ${bodyText.slice(0, 200)}` };
+  try {
+    return { ok: true, data: JSON.parse(bodyText) };
+  } catch (e) {
+    return { ok: false, error: `bad JSON from ${redact(url)}: ${e.message}` };
+  }
+}
+
+// Authoritative series -> release_id lookup. Replaces guessing a rid from memory.
+async function resolveSeriesReleaseId(seriesId) {
+  const res = await fredApiGet(`series/release?series_id=${encodeURIComponent(seriesId)}`);
+  if (!res.ok) return { ok: false, error: res.error };
+  const release = res.data?.releases?.[0];
+  if (!release) return { ok: false, error: `no release found for series ${seriesId}` };
+  return { ok: true, releaseId: release.id, releaseName: release.name };
+}
+
+// All real publication dates for a release, oldest first. Paginated defensively even though a
+// single release rarely exceeds 1000 dates across multiple decades.
+async function fetchOfficialReleaseDates(releaseId) {
+  const dates = [];
+  let offset = 0;
+  for (;;) {
+    const res = await fredApiGet(
+      `release/dates?release_id=${releaseId}&realtime_start=1900-01-01&realtime_end=9999-12-31` +
+      `&sort_order=asc&limit=1000&offset=${offset}&include_release_dates_with_no_data=true`
+    );
+    if (!res.ok) return { ok: false, error: res.error };
+    const batch = res.data?.release_dates || [];
+    for (const r of batch) dates.push(r.date);
+    if (batch.length < 1000) break;
+    offset += 1000;
+  }
+  return { ok: true, dates: [...new Set(dates)].sort() };
 }
 
 // The Fed's site uses three different URL schemes for a meeting's decision-date press
@@ -293,13 +348,29 @@ async function main() {
     runLog.series[seriesId] = `${res.rows.length} rows (full re-pull — FRED CSV has no incremental range API used here)`;
   }
 
-  // --- ALFRED release dates (best-effort, verified release IDs only) ---
+  // --- release dates: official FRED API when FRED_API_KEY is set, else the verified HTML scrape ---
   const alfredReleaseDates = {};
-  for (const [key, cfg] of Object.entries(ALFRED_RELEASES)) {
-    const res = await fetchAlfredReleaseDates(cfg.rid, cfg.expectedTitle);
-    if (!res.ok) { runLog.errors.push(`ALFRED ${key}: ${res.error}`); continue; }
-    alfredReleaseDates[key] = { rid: cfg.rid, title: res.title, dates: res.dates };
-    runLog.series[`ALFRED_${key}`] = `${res.dates.length} release dates`;
+  const releaseDateSourceUsed = FRED_API_KEY ? 'official-api' : 'alfred-html-scrape';
+  for (const [key, cfg] of Object.entries(RELEASE_DATE_SERIES)) {
+    if (FRED_API_KEY) {
+      const resolved = await resolveSeriesReleaseId(cfg.seriesId);
+      if (!resolved.ok) { runLog.errors.push(`${key} (${cfg.seriesId}): ${resolved.error}`); continue; }
+      const datesRes = await fetchOfficialReleaseDates(resolved.releaseId);
+      if (!datesRes.ok) { runLog.errors.push(`${key} release/dates: ${datesRes.error}`); continue; }
+      alfredReleaseDates[key] = {
+        release_id: resolved.releaseId,
+        title: resolved.releaseName,
+        dates: datesRes.dates,
+        source: 'official FRED API (fred/series/release + fred/release/dates)',
+      };
+      runLog.series[`RELEASE_${key}`] = `${datesRes.dates.length} release dates (official API, release_id ${resolved.releaseId} "${resolved.releaseName}")`;
+    } else {
+      if (!cfg.fallbackRid) { runLog.errors.push(`${key}: no FRED_API_KEY and no verified fallback rid — skipped`); continue; }
+      const res = await fetchAlfredReleaseDates(cfg.fallbackRid, cfg.expectedTitle);
+      if (!res.ok) { runLog.errors.push(`ALFRED ${key}: ${res.error}`); continue; }
+      alfredReleaseDates[key] = { rid: cfg.fallbackRid, title: res.title, dates: res.dates, source: 'alfred.stlouisfed.org HTML scrape (no key)' };
+      runLog.series[`RELEASE_${key}`] = `${res.dates.length} release dates (HTML scrape fallback)`;
+    }
   }
 
   // --- FOMC meeting dates ---
@@ -321,11 +392,13 @@ async function main() {
         'looked back — a value never appears before its own reference date), one assignment per observation, no ' +
         'carry-forward/forward-fill afterward. IMPORTANT: this uses the FRED reference date, NOT a verified publication ' +
         'date — a value can therefore appear on the row several days before the figure was actually released, which ' +
-        'is a look-ahead risk for any backtest. alfred_release_dates carries the real scraped publication dates for ' +
-        'CPI/Employment/Claims separately (not yet cross-joined into rows in this P0). fomc_meeting_dates is a ' +
-        'separate event list, also not merged into rows.',
+        'is a look-ahead risk for any backtest. alfred_release_dates carries the real verified publication dates for ' +
+        'CPI/Employment/Claims/Michigan Sentiment separately (not yet cross-joined into rows in this P0). ' +
+        'fomc_meeting_dates is a separate event list, also not merged into rows.',
       series: seriesMeta,
-      alfred_release_dates_note: 'HTML-scraped from alfred.stlouisfed.org, no API key. University of Michigan Consumer Sentiment release ID was not identified with confidence and is omitted.',
+      alfred_release_dates_note: FRED_API_KEY
+        ? 'Sourced from the official FRED REST API (fred/series/release to resolve the correct release_id per series, then fred/release/dates for the real publication dates) — no more HTML scraping or guessed release IDs in this run. The date list includes a handful of near-future SCHEDULED release dates (FRED publishes its release calendar in advance, e.g. next month\'s CPI print date) alongside historical actuals — a consumer wanting only confirmed-published dates should filter against this manifest\'s generated_at.'
+        : 'No FRED_API_KEY was set for this run — fell back to scraping alfred.stlouisfed.org HTML pages (verified release IDs only; University of Michigan Consumer Sentiment has no verified fallback ID and was skipped).',
       fomc_note: fomc.ok
         ? `HTML-scraped from ${FOMC_CALENDAR_URL} (rolling years: ${fomc.years.join(', ')}) plus the per-year archive fomchistorical<YYYY>.htm for ${fomc.archiveEarliestYear}-${Math.min(...fomc.years.map(Number)) - 1} (three URL eras handled: bare monetaryYYYYMMDDa.htm 2011+, newsevents/press/monetary/YYYYMMDDa.htm 2006-2010, boarddocs/press/monetary/YYYY/YYYYMMDD/ 2002-2005). Pre-2002 not scraped — the FOMC did not consistently issue a same-day statement under a verified URL pattern before then.${fomc.archiveErrors.length ? ` Archive fetch errors: ${fomc.archiveErrors.join('; ')}` : ''}`
         : `fetch failed: ${fomc.error}`,
