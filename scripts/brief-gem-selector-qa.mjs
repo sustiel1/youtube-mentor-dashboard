@@ -182,13 +182,27 @@ assert.ok(clipboardStartIndex >= 0, "clipboard write must start directly from th
 assert.ok(synchronousOpenIndex > clipboardStartIndex, "GEM open must start after initiating the clipboard write");
 assert.ok(clipboardAwaitIndex > synchronousOpenIndex, "GEM open must happen before the first clipboard await");
 assert.ok(modalSource.includes("const handleCopyOnly = async () =>"));
-assert.ok(modalSource.includes("renderSingleRow(MARKET_BRIEF_GEM)"));
-assert.ok(modalSource.includes("recommendedGem && !isMarketBriefWorkflow"));
+// The compact picker now opens unconditionally for every video (brief and
+// non-brief, any confidence level, including "ממתין לסיווג" with no
+// recommendation at all) — renderCompactTopRow() renders the generic
+// `recommendedGem` lookup (which resolves to MARKET_BRIEF_GEM for brief
+// videos — asserted behaviorally above via resolveWorkflowGemRecommendation)
+// via renderSingleRow's showConfidence option, or a non-interactive
+// "ממתין לסיווג" placeholder when there's no recommendation at all.
+// CLEAR_WINNER_CONFIDENCE_THRESHOLD no longer gates the layout — it only
+// styles the confidence badge (confident vs. weak match).
+// See TRADINGBRAIN-GEMPICKER-COMPACT-SCORING.
+assert.ok(modalSource.includes("renderCompactTopRow()"));
+assert.equal((modalSource.match(/renderCompactTopRow\(\)/g) || []).length, 1);
+assert.ok(modalSource.includes("return renderSingleRow(recommendedGem, null, { showConfidence: true });"));
+assert.ok(modalSource.includes("ממתין לסיווג"));
+assert.ok(modalSource.includes("CLEAR_WINNER_CONFIDENCE_THRESHOLD"));
+assert.ok(modalSource.includes("hasClearWinner(gem.key, recommendedConfidencePct)"));
+assert.doesNotMatch(modalSource, /isCompactPicker/);
 assert.ok(modalSource.includes("BRIEF_WORKFLOW_HIDDEN_LABELS"));
 assert.ok(modalSource.includes("visibleDynamicTopicGems.map((gem) => renderSingleRow(gem))"));
-assert.equal((modalSource.match(/renderSingleRow\(MARKET_BRIEF_GEM\)/g) || []).length, 1);
-assert.ok(modalSource.includes("shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })"));
-assert.ok(modalSource.includes("savedGemKey !== MARKET_BRIEF_GEM_KEY"));
+assert.ok(modalSource.includes("shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })"));
+assert.ok(modalSource.includes("savedGemKey !== workflowRecommendedGemKey"));
 assert.ok(modalSource.includes("setShowAdditionalOptions("));
 assert.ok(modalSource.includes("aria-expanded={showAdditionalOptions}"));
 assert.ok(modalSource.includes("aria-controls={additionalOptionsId}"));

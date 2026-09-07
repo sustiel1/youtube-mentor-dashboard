@@ -162,7 +162,7 @@ import {
   persistVerifiedLocalValue,
 } from "@/lib/gemsLocalPersistence";
 import { requestGemsJsonRepair } from "@/services/gemsJsonRepair";
-import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName, resolveCanonicalBriefWorkflowVideo } from "@/lib/gemRecommender";
+import { classifyVideoForGem, preGemClassifier, recommendTjsGemFromTranscript, GEM_ALT_OPTIONS, GEM_CATEGORY_MAP, getGemSubCategoryFallback, normalizeCategoryName, resolveCanonicalBriefWorkflowVideo, UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
 import { isTemporaryMarketFact } from "@/lib/knowledgeTypes";
 import { getGemConfigSnapshot, getGemUrl, MARKET_BRIEF_GEM_LABEL, openGeminiGemUrl, saveGemConfigSnapshot } from "@/lib/gemsConfig";
 import { resolveChannelToMentor, resolveMentorByName } from "@/lib/channelMentorResolver";
@@ -1046,6 +1046,11 @@ function buildAnalysisQualityExplanation({
 
 const PROVIDER_LABELS = { claude: "Claude", gemini: "Gemini", "llama3.2": "llama3.2", gems: "GEMS JSON" };
 const MARKET_GEM_KEYS = new Set(["fundamental", "technical", "news", "macro"]);
+// Minimum confidencePct for trusting recommendTjsGemFromTranscript's transcript-only,
+// 4-key result (news/macro/dayTrading/appBuilder) over classifyVideoForGem's full
+// 7-key result. Shared by displayGemInfo and the GemSelectionModal recommendation
+// props — see the tjsRecIsTrusted comment near `const tjsRec = ...` for why.
+const TJS_RECOMMENDATION_TRUST_THRESHOLD = 60;
 const POLITICS_CATEGORY = "פוליטיקה";
 const MARKET_CATEGORY = "שוק ההון";
 const BRAIN_CUSTOM_DESTS_KEY = "brain_custom_dests_v1";
@@ -2272,6 +2277,11 @@ export function VideoDetailPanel({
   const [isSavingManualTranscript, setIsSavingManualTranscript] = useState(false);
   const [isFetchingYtApiTranscript, setIsFetchingYtApiTranscript] = useState(false);
   const [isFreshImportRunning, setIsFreshImportRunning] = useState(false);
+  // TRADINGBRAIN-FRESHIMPORT-COST-GUARD: pendingFreshImport auto-opens this
+  // dialog instead of auto-running the paid Claude analysis — see the
+  // pendingFreshImport useEffect and handleConfirmFreshImportGate/
+  // handleCancelFreshImportGate below.
+  const [freshImportConfirmPending, setFreshImportConfirmPending] = useState(false);
   const [geminiStatus, setGeminiStatus] = useState("idle");
   const [geminiMessage, setGeminiMessage] = useState(null);
   const [geminiAnalysisMode, setGeminiAnalysisMode] = useState("smart");
@@ -3704,7 +3714,10 @@ export function VideoDetailPanel({
   // handleQuickCopy defined after videoDuration+fullTranscriptText to avoid TDZ — see below.
 
   const handleApplyRecommendation = useCallback(async () => {
-    if (!gemRec) return;
+    // Not currently wired to any button (dead code as of this audit — kept
+    // for whoever re-wires it later); guarded anyway so an unclassified
+    // video can never have its category silently blanked via this path.
+    if (!gemRec || gemRec.gemKey === UNCLASSIFIED_GEM_KEY) return;
     const catLabel = categoryOverride ?? gemRec.recommendedCategoryLabel ?? null;
     const subCat = subCategoryOverride ?? gemRec.recommendedSubCategory ?? 'כללי';
     const firstTopicId = Array.isArray(video?.topicIds) ? video.topicIds[0] : null;
@@ -8234,22 +8247,55 @@ export function VideoDetailPanel({
     const token = `${video.id}:${video.freshImportRequestedAt || "pending"}`;
     if (freshImportAutoRunRef.current === token) return;
     freshImportAutoRunRef.current = token;
-    runFreshImportPipeline({
-      resetBeforeAnalysis: false,
-      consumePending: true,
-      triggerSource: video.freshImportSource || "duplicate_modal",
-    }).catch((err) => {
-      console.error("[FreshImport] auto run failed:", err?.message);
-      toast.error(err?.message || "ייבוא מחדש מאפס נכשל");
-    });
+    // TRADINGBRAIN-FRESHIMPORT-COST-GUARD: this used to call
+    // runFreshImportPipeline directly here, auto-firing a real paid Claude
+    // request with no confirmation between the "ייבא מחדש מאפס" click and the
+    // charge. Now it only opens the confirm dialog — the pipeline itself
+    // (unchanged) runs from handleConfirmFreshImportGate below.
+    setFreshImportConfirmPending(true);
   }, [
     open,
-    runFreshImportPipeline,
     video?.freshImportRequestedAt,
     video?.freshImportSource,
     video?.id,
     video?.pendingFreshImport,
   ]);
+
+  const handleConfirmFreshImportGate = useCallback(() => {
+    setFreshImportConfirmPending(false);
+    runFreshImportPipeline({
+      resetBeforeAnalysis: false,
+      consumePending: true,
+      triggerSource: video?.freshImportSource || "duplicate_modal",
+    }).catch((err) => {
+      console.error("[FreshImport] auto run failed:", err?.message);
+      toast.error(err?.message || "ייבוא מחדש מאפס נכשל");
+    });
+  }, [runFreshImportPipeline, video?.freshImportSource]);
+
+  // Cancelling only clears the pending flag (so a later reload/reopen can't
+  // silently re-fire the paid request) — it does not touch transcript/
+  // analysis fields. Whatever "ייבא מחדש מאפס" already reset before the panel
+  // opened stays exactly as it was; nothing further is deleted or overwritten.
+  const handleCancelFreshImportGate = useCallback(() => {
+    setFreshImportConfirmPending(false);
+    if (video?.id && video?.pendingFreshImport) {
+      // Explicit false/null, not consumeFreshImportFlag's delete-based strip:
+      // forceUpsertVideo persists via `{...storedRecord, ...record}`, and a
+      // deleted (missing) key is invisible to that spread — it silently
+      // leaves the already-stored `pendingFreshImport: true` in place. Only
+      // an explicit override actually clears it. Confirmed live: the delete
+      // form left the flag `true` in storage after "ביטול".
+      persistFreshImportRecord({
+        ...video,
+        pendingFreshImport: false,
+        freshImportRequestedAt: null,
+        freshImportSource: null,
+      }, { syncRemote: false }).catch((err) => {
+        console.error("[FreshImport] cancel-clear failed:", err?.message);
+      });
+    }
+  }, [video, persistFreshImportRecord]);
 
   if (!video) return null;
 
@@ -8765,8 +8811,18 @@ export function VideoDetailPanel({
   const transcriptWordCount = fullTranscriptText ? fullTranscriptText.split(/\s+/).filter(Boolean).length : 0;
 
   const tjsRec = recommendTjsGemFromTranscript(fullTranscriptText);
+  // recommendTjsGemFromTranscript is a separate, transcript-only, 4-key
+  // recommender (news/macro/dayTrading/appBuilder) — distinct from
+  // classifyVideoForGem's 7-key classifier (effectiveGemInfo). Its own floor
+  // (topScore>=36 in gemRecommender.js) is low enough that generic overlap
+  // vocabulary (e.g. dayTrading's bare 'תמיכה'/'התנגדות' also matching
+  // technical-analysis content) can win with a low-confidence match. Only
+  // trust it over the 7-key classifier once it clears this bar — reused by
+  // both displayGemInfo below and the GemSelectionModal props further down,
+  // so the two never disagree about which recommender "won".
+  const tjsRecIsTrusted = Boolean(tjsRec?.recommendedGemKey) && tjsRec.confidencePct >= TJS_RECOMMENDATION_TRUST_THRESHOLD;
 
-  const displayGemInfo = (tjsRec?.recommendedGemKey && tjsRec.confidencePct >= 60)
+  const displayGemInfo = tjsRecIsTrusted
     ? { gemKey: tjsRec.gemKey, gemLabel: tjsRec.gemLabel, gemIcon: tjsRec.gemIcon, confidencePct: tjsRec.confidencePct, confidence: tjsRec.confidence, reason: tjsRec.reason, detectedKeywords: tjsRec.detectedKeywords, phase: 'accurate', isManual: false }
     : effectiveGemInfo ? { ...effectiveGemInfo, detectedKeywords: [] } : null;
 
@@ -8776,7 +8832,7 @@ export function VideoDetailPanel({
       toast.error("אין תמלול זמין לשליחה");
       return;
     }
-    if (!gemKey) return;
+    if (!gemKey || gemKey === UNCLASSIFIED_GEM_KEY) return;
     setGemRecommendationOpening(true);
     try {
       const clipboardPayload = buildTranscriptGemPayload({
@@ -13022,7 +13078,12 @@ export function VideoDetailPanel({
       onOpenChange={setShowGemModal}
       video={gemSelectionVideo}
       topics={videoTopics}
-      recommendedGemKey={tjsRec?.recommendedGemKey || effectiveGemInfo?.gemKey || null}
+      recommendedGemKey={tjsRecIsTrusted ? tjsRec.recommendedGemKey : (effectiveGemInfo?.gemKey || null)}
+      recommendedConfidencePct={
+        tjsRecIsTrusted
+          ? tjsRec.confidencePct
+          : (effectiveGemInfo ? effectiveGemInfo.confidencePct : null)
+      }
       savedGemKey={gemOverride || null}
       tjsRecommendation={tjsRec}
       fullTranscriptText={fullTranscriptText}
@@ -13326,6 +13387,39 @@ export function VideoDetailPanel({
     />
 
     {/* ── Save All Confirmation Dialog ─────────────────────── */}
+    {/* TRADINGBRAIN-FRESHIMPORT-COST-GUARD: gate before the paid Claude call
+        that "ייבא מחדש מאפס" would otherwise auto-fire with no confirmation. */}
+    <Dialog
+      open={freshImportConfirmPending}
+      onOpenChange={(nextOpen) => { if (!nextOpen) handleCancelFreshImportGate(); }}
+    >
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-right text-lg font-bold">⚠️ ניתוח AI חדש — פעולה בתשלום</DialogTitle>
+          <DialogDescription className="text-right text-sm text-slate-600 dark:text-zinc-400">
+            ייבוא מחדש מאפס שולף תמלול טרי ומריץ ניתוח Claude חדש על הסרטון — זו בקשה
+            אמיתית בתשלום ל-API, לא פעולה מקומית. להמשיך?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-3 justify-end pt-2">
+          <button
+            type="button"
+            onClick={handleCancelFreshImportGate}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300"
+          >
+            ביטול
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmFreshImportGate}
+            className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+          >
+            המשך לניתוח בתשלום
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <Dialog open={saveAllConfirmOpen} onOpenChange={setSaveAllConfirmOpen}>
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>

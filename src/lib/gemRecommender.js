@@ -5,6 +5,14 @@ import { getTopicRule } from "@/lib/topicRules";
 import { detectVideoType } from "@/config/videoTabsConfig";
 import { MARKET_BRIEF_GEM_KEY, MARKET_BRIEF_GEM_LABEL } from "@/lib/gemsConfig";
 
+// Decision 14 (docs/plan/TRADINGBRAIN-GEMS-TABS-MAPPING-PLAN.md): a video
+// with no real classification signal at all is a pending state, not a 5th
+// GEM and not the real 'general' (בריאות) GEM. A stable string key (not
+// null) so "we checked and found nothing" stays distinguishable from "the
+// field was never set" — exported so every consumer compares against one
+// source of truth instead of a hardcoded literal.
+export const UNCLASSIFIED_GEM_KEY = "unclassified";
+
 export function isMarketBriefWorkflowVideo(video) {
   const videoType = detectVideoType(video);
   return videoType === "morningBrief" || videoType === "eveningBrief";
@@ -34,7 +42,13 @@ export function resolveWorkflowGemRecommendation(video, recommendedGemKey = null
 }
 
 export function resolveWorkflowGemSelection({ video, savedGemKey = null, recommendedGemKey = null } = {}) {
-  return savedGemKey || resolveWorkflowGemRecommendation(video, recommendedGemKey) || "general";
+  const recommendation = resolveWorkflowGemRecommendation(video, recommendedGemKey);
+  // UNCLASSIFIED_GEM_KEY is a real, truthy string but not a selectable GEM —
+  // it must not become the internal `selected` choice (no row in the picker
+  // has that key, so nothing would render as selected). Fall through to
+  // "general" exactly as when recommendedGemKey used to be null.
+  const selectableRecommendation = recommendation === UNCLASSIFIED_GEM_KEY ? null : recommendation;
+  return savedGemKey || selectableRecommendation || "general";
 }
 
 // Deterministic title overrides — checked before any keyword scoring.
@@ -71,25 +85,40 @@ const GEM_RULES = [
     icon: "📊",
     titleKeywords: ["earnings", "valuation", "fundamental", "revenue", "income", "profit",
       "pe ratio", "cash flow", "dividend", "acquisition", "growth", "analyst",
-      "upgrade", "downgrade", "target price", "eps", "q1", "q2", "q3", "q4"],
+      "upgrade", "downgrade", "target price", "eps", "q1", "q2", "q3", "q4",
+      // Hebrew — decision 2: earnings/reports, revenue/margins, valuation/multiples, thesis
+      "דוח רבעוני", "דוחות כספיים", "עונת הדוחות", "תוצאות רבעון", "מכפיל רווח",
+      "תזת השקעה", "ניתוח פונדמנטלי"],
     topicKeywords: ["fundamental", "stocks", "equity", "financial", "investing", "פונדמנטלי"],
     transcriptKeywords: ["revenue", "earnings", "valuation", "margin", "guidance", "eps",
       "profit", "pe ratio", "market cap", "cash flow", "balance sheet", "dividend",
       "acquisition", "business model", "pricing power", "competitive advantage",
-      "return on equity", "debt to equity", "net income", "gross profit"],
+      "return on equity", "debt to equity", "net income", "gross profit",
+      // Hebrew — mirrors the English list above; real Hebrew-language transcripts
+      // rarely contain the English finance terms, which left this rule at score 0
+      "דוח רבעוני", "דוחות כספיים", "עונת הדוחות", "תוצאות רבעון", "הכנסות החברה",
+      "שולי רווח", "רווח נקי", "מכפיל רווח", "שווי הוגן", "תמחור המניה",
+      "תזת השקעה", "דוח שנתי", "צמיחת הכנסות"],
   },
   {
     key: "technical",
     label: "טכני",
     icon: "📈",
     titleKeywords: ["technical", "chart", "trading", "setup", "breakout", "analysis",
-      "price action", "trade setup"],
+      "price action", "trade setup",
+      // Hebrew — decision 2: chart reading, price levels, support/resistance, patterns, indicators, entries/stops
+      "ניתוח טכני", "רמת תמיכה", "רמת התנגדות", "תבנית מחיר", "נקודת כניסה"],
     topicKeywords: ["technical", "trading", "charts", "טכני"],
     transcriptKeywords: ["chart", "support", "resistance", "trend", "indicator", "rsi",
       "macd", "moving average", "breakout", "candlestick", "fibonacci", "entry",
       "exit", "stop loss", "price action", "volume", "ema", "sma", "bollinger",
       "oversold", "overbought", "rally", "pullback", "neckline", "head and shoulders",
-      "triangle pattern", "flag pattern"],
+      "triangle pattern", "flag pattern",
+      // Hebrew — mirrors the English list above; real Hebrew-language transcripts
+      // rarely contain the English TA terms, which left this rule at score 0
+      "ניתוח טכני", "רמת תמיכה", "רמת התנגדות", "תמיכה והתנגדות", "תבנית מחיר",
+      "ראש וכתפיים", "ממוצע נע", "רצועות בולינגר", "אינדיקטור", "נקודת כניסה",
+      "סטופ לוס", "יעד מחיר", "פריצת מחיר", "קו מגמה"],
   },
   {
     key: "news",
@@ -99,23 +128,51 @@ const GEM_RULES = [
       "premarket", "afternoon", "wrap", "watchlist", "market open",
       // Hebrew morning brief patterns — ensures title-only matching even without subCategory
       "מבזק", "מבזק לייב", "פתיחת שוק", "סקירת בוקר"],
-    topicKeywords: ["macro", "news", "market", "morning", "מבזק"],
+    // 'market'/'morning' identify a daily-cadence update; macro-topic words
+    // (fed/inflation/gdp/etc.) do NOT belong here — see transcriptKeywords note.
+    topicKeywords: ["news", "market", "morning", "מבזק"],
+    // Deliberately does NOT include macro-topic vocabulary (fed, interest
+    // rate, inflation, gdp, cpi, economic data, jobs report, unemployment,
+    // consumer price) even though daily briefs often discuss those topics —
+    // a periodic (monthly/quarterly/annual) retrospective discusses the same
+    // macro topics without being a daily brief, and used to win here purely
+    // by duplicating macro's own keyword list. What should identify a brief
+    // is its cadence/format ("today", "this week", "recap", "wrap"), not its
+    // economic subject matter, which macro already owns.
     transcriptKeywords: ["morning brief", "market update", "daily update", "this week",
-      "market recap", "headline", "fed", "interest rate", "inflation", "gdp", "cpi",
-      "macro", "economic data", "jobs report", "unemployment", "consumer price",
-      "today in markets", "market wrap"],
+      "market recap", "headline", "today in markets", "market wrap"],
   },
   {
     key: "macro",
     label: "מאקרו",
     icon: "🌐",
+    // "מאקרו ושוק" bucket (user decision): macro proper, plus trading
+    // psychology/sentiment/education/methodology content — anything
+    // capital-market-related that is neither technical nor fundamental.
     titleKeywords: ["macro", "economy", "fed", "recession", "inflation", "rate", "gdp",
-      "central bank", "monetary", "fiscal"],
-    topicKeywords: ["macro", "economy", "מאקרו"],
+      "central bank", "monetary", "fiscal",
+      "רגשות של סוחרים", "משמעת מסחר", "שיטת מסחר", "פחד ותאוות בצע",
+      // Hebrew — periodic/retrospective market summaries (monthly/quarterly/
+      // annual) are macro content, not a daily brief, even though both use
+      // "summary" framing — see the news rule's comment for the other half
+      // of this fix.
+      "סיכום חודש", "סיכום חודשי", "סיכום רבעון", "סיכום רבעוני",
+      "סיכום שנתי", "סיכום שנה", "מבט לחודש", "מבט לשנה"],
+    topicKeywords: ["macro", "economy", "מאקרו", "פסיכולוגיה", "סנטימנט"],
+    // titlePatterns: regex signals distinct from plain keyword substrings —
+    // covers "N שנה/שנים ל..." anniversary-retrospective titles ("50 שנה
+    // לסנפ 500", "10 שנים למשבר") generically, not just one exact phrasing.
+    titlePatterns: [/\d+\s*שנ(ה|ים)\s*ל/],
     transcriptKeywords: ["macro", "federal reserve", "interest rate", "monetary policy",
       "fiscal policy", "recession", "inflation", "gdp", "central bank", "yield curve",
       "quantitative easing", "quantitative tightening", "fomc", "jackson hole",
-      "balance sheet reduction"],
+      "balance sheet reduction",
+      // Hebrew — trading psychology/sentiment/education/methodology
+      "פסיכולוגיית מסחר", "פסיכולוגיה של מסחר", "רגשות של סוחרים",
+      "פחד ותאוות בצע", "משמעת מסחר", "ניהול רגשי", "סנטימנט שוק", "שיטת מסחר",
+      // Hebrew — periodic/retrospective summaries, mirrors titleKeywords above
+      "סיכום חודש", "סיכום חודשי", "סיכום רבעון", "סיכום רבעוני",
+      "סיכום שנתי", "סיכום שנה", "מבט לחודש", "מבט לשנה"],
   },
   {
     key: "appBuilder",
@@ -178,7 +235,10 @@ export const GEM_CATEGORY_MAP = {
   fundamental: {
     categoryCode: 'Markets',
     categoryLabel: 'שוק ההון',
-    defaultSubCategory: 'ניתוח שוק',
+    // 'פונדמנטלי' is the only value SUB_CATEGORY_SLUG_MAP (videoTabsConfig.js)
+    // recognizes for the 'fundamental-analysis' slug — the old default
+    // ('ניתוח שוק') never routed to Tab 7 correctly. See plan §2.3.
+    defaultSubCategory: 'פונדמנטלי',
     subCategoryRules: [
       { label: 'ניתוח יסודי',    keywords: ['earnings', 'revenue', 'valuation', 'pe ratio', 'eps', 'cash flow', 'profit margin', 'balance sheet', 'net income'] },
       { label: 'בחירת מניות',    keywords: ['stock pick', 'undervalued', 'growth stock', 'value investing', 'dividend', 'acquisition', 'return on equity'] },
@@ -344,11 +404,24 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
     let score = 0;
     score += countMatches(metaContext, rule.titleKeywords) * 2;
     score += countMatches(metaContext, rule.topicKeywords) * 2;
+    // Regex signals distinct from plain keyword substrings — e.g. macro's
+    // "N שנה/שנים ל..." anniversary-retrospective pattern, which can't be
+    // expressed as a fixed keyword list without either missing most real
+    // titles or being so short it collides with unrelated phrases.
+    if (Array.isArray(rule.titlePatterns)) {
+      score += rule.titlePatterns.filter((pattern) => pattern.test(metaContext)).length * 2;
+    }
     if (hasTranscript) {
       score += countMatches(transcriptText, rule.transcriptKeywords);
     }
     return { ...rule, score };
   });
+
+  // Captured before the explicit-category boost below (which can add +4 to a
+  // rule that matched zero keywords, purely from video.category) so that a
+  // video with no real keyword signal at all is never reported as a confident
+  // tie-break winner — the boost may only reinforce/order real matches.
+  const hadRealKeywordSignal = scores.some(s => s.score > 0);
 
   scores.sort((a, b) => b.score - a.score);
 
@@ -390,20 +463,27 @@ export function classifyVideoForGem(video, transcriptText = "", options = {}) {
 
   const fullText = `${metaContext} ${transcriptText}`;
 
-  if (top.score === 0) {
+  if (!hadRealKeywordSignal) {
+    // Decision 14: no signal at all is a pending state, not an active
+    // recommendation — it must not silently resolve to the real 'general'
+    // (בריאות/health) GEM, which is an unrelated content category.
+    // Checked against the pre-boost signal, not top.score: the explicit-
+    // category boost above can push a zero-keyword-match rule to a nonzero
+    // score purely from video.category (declaration-order tie-break dressed
+    // up as a confident result) — that must never manufacture a winner.
     return {
-      gemKey: "general",
-      gemLabel: "כללי",
-      gemIcon: "💡",
-      confidence: "low",
-      confidenceLabel: "ביטחון נמוך",
-      confidencePct: 30,
-      reason: "לא זוהו אותות ברורים — מומלץ Gem כללי כברירת מחדל.",
+      gemKey: UNCLASSIFIED_GEM_KEY,
+      gemLabel: "ממתין לסיווג",
+      gemIcon: "⏳",
+      confidence: "none",
+      confidenceLabel: "טרם סווג",
+      confidencePct: 0,
+      reason: "לא זוהו אותות ברורים בכותרת או בתמלול — הווידאו ממתין לסיווג ידני דרך כפתור \"שנה GEM\".",
       phase: hasTranscript ? "accurate" : "preliminary",
-      recommendedCategoryCode: 'Health',
-      recommendedCategoryLabel: 'בריאות',
-      recommendedSubCategory: 'כללי',
-      recommendedSubCategoryConfidencePct: 40,
+      recommendedCategoryCode: null,
+      recommendedCategoryLabel: null,
+      recommendedSubCategory: null,
+      recommendedSubCategoryConfidencePct: 0,
     };
   }
 
@@ -478,12 +558,21 @@ const TJS_GEM_KEYWORDS = {
     'jackson hole', 'gdp', 'economic data', 'yield curve',
     'ריבית', 'אינפלציה', 'צמיחה', 'מיתון', 'בנק מרכזי', 'תשואה', 'פד',
   ],
+  // Deliberately excludes generic technical-analysis vocabulary (breakout,
+  // support/resistance, entry, stop loss, price action — and their Hebrew
+  // equivalents פריצה/תמיכה/התנגדות/כניסה/יעד/סטופ) even though day-trading
+  // content uses it too: that same vocabulary is core to GEM_RULES.technical
+  // (classifyVideoForGem), so any technical-analysis video — regardless of
+  // timeframe — tripped this bucket and could outscore the classifier's
+  // correct "technical" answer once past the 60% trust floor (confirmed
+  // live: a video titled "ניתוח טכני" scored 66% dayTrading here). What
+  // should identify day trading is its timeframe/cadence, not shared TA
+  // vocabulary — mirrors the same fix already applied to GEM_RULES.news vs.
+  // GEM_RULES.macro.
   dayTrading: [
-    'breakout', 'support', 'resistance', 'entry', 'stop loss',
-    'target', 'intraday', 'scalp', 'day trade', 'setup',
-    'volume spike', 'price action', 'trade setup', 'momentum',
-    'trigger', 'squeeze', 'gap up', 'gap down', 'levels',
-    'פריצה', 'תמיכה', 'התנגדות', 'כניסה', 'יעד', 'סטופ', 'מסחר יומי',
+    'intraday', 'scalp', 'day trade', 'volume spike',
+    'gap up', 'gap down', 'squeeze', 'trade setup',
+    'מסחר יומי', 'סקאלפינג', 'תוך יומי',
   ],
   appBuilder: [
     'app idea', 'dashboard', 'screener', 'automation', 'workflow',

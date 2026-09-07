@@ -130,6 +130,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteManualContentToo, setDeleteManualContentToo] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [thumbnailUnavailable, setThumbnailUnavailable] = useState(false);
   const inputRef = useRef(null);
   const resetInFlightRef = useRef(false);
   const queryClient = useQueryClient();
@@ -150,6 +151,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     setDeleteConfirmOpen(false);
     setDeleteManualContentToo(false);
     setIsResetting(false);
+    setThumbnailUnavailable(false);
     resetInFlightRef.current = false;
     setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
@@ -178,6 +180,7 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
     setDuplicateVideo(null);
     setDeleteConfirmOpen(false);
     setDeleteManualContentToo(false);
+    setThumbnailUnavailable(false);
     if (phase === STATE.restore_prompt || phase === STATE.duplicate_prompt) {
       setPhase(STATE.idle);
     }
@@ -774,24 +777,55 @@ export function ExternalVideoModal({ open, onClose, onVideoAdded, mentors = [], 
 
           {isReadyState && videoId && !isRestorePrompt && (
             <div className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-2.5">
-              <img
-                src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                alt="תצוגה מקדימה"
-                className="w-24 h-14 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-zinc-700"
-                onError={(event) => {
-                  if (!event.target.dataset.triedHq) {
-                    event.target.dataset.triedHq = "1";
-                    event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-                  } else {
-                    event.target.style.display = "none";
-                  }
-                }}
-              />
+              {thumbnailUnavailable ? (
+                <div className="w-24 h-14 rounded-lg shrink-0 border border-dashed border-slate-300 dark:border-zinc-700 flex flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-zinc-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-[9px] leading-none">אין תמונה</span>
+                </div>
+              ) : (
+                <img
+                  key={videoId}
+                  src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                  alt="תצוגה מקדימה"
+                  className="w-24 h-14 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-zinc-700"
+                  onLoad={(event) => {
+                    // YouTube's thumbnail CDN returns HTTP 404 for a video that
+                    // doesn't exist (deleted/private/mistyped id) but WITH a
+                    // valid tiny placeholder JPEG body (120x90) — the browser
+                    // treats that as a successful <img> load, so onError never
+                    // fires and the old fallback chain silently did nothing.
+                    // Real thumbnails are always at least mqdefault (320x180).
+                    if (event.target.naturalWidth > 0 && event.target.naturalWidth <= 120) {
+                      if (!event.target.dataset.triedHq) {
+                        event.target.dataset.triedHq = "1";
+                        event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                      } else {
+                        setThumbnailUnavailable(true);
+                      }
+                    }
+                  }}
+                  onError={(event) => {
+                    if (!event.target.dataset.triedHq) {
+                      event.target.dataset.triedHq = "1";
+                      event.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                    } else {
+                      setThumbnailUnavailable(true);
+                    }
+                  }}
+                />
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">youtube.com/watch?v={videoId}</p>
-                <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
-                  אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, תובנות מרכזיות וייצוא.
-                </p>
+                {thumbnailUnavailable ? (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    לא נמצאה תמונה ממוזערת לסרטון הזה — ודא שהקישור וה-ID נכונים לפני ההוספה
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
+                    אחרי ההוספה הסרטון יופיע בדשבורד ויתמוך בתמלול, ניתוח AI, תובנות מרכזיות וייצוא.
+                  </p>
+                )}
               </div>
             </div>
           )}

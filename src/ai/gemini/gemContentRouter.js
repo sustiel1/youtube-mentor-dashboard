@@ -28,6 +28,8 @@
  *   - Ticker symbols and technical terms: English
  */
 
+import { UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
+
 // ── Fine-grained content type constants ──────────────────────────────────────
 export const CONTENT_TYPES = {
   MARKET_BRIEF:  'marketBrief',
@@ -256,14 +258,20 @@ export function resolveContentClassification(video, transcriptText = '') {
     };
   }
 
-  // Phase 4: General fallback
+  // Phase 4: no real signal at all — decision 14's pending state, not the
+  // real 'general' (כללי) content type/GEM. Unlike classifyVideoForGem() in
+  // gemRecommender.js, this function has no explicit-category-boost step
+  // that could manufacture a false score from category context alone —
+  // Phase 2/3 above already require a real keyword match (transcript
+  // score>=2 / title score>=1) before returning, so reaching here already
+  // means genuinely zero signal. No reordering needed, only the value below.
   return {
-    contentType:    CONTENT_TYPES.GENERAL,
-    recommendedGem: 'general',
-    confidence:     'low',
-    confidencePct:  30,
-    reason:         'לא זוהה תוכן ייעודי — כללי כברירת מחדל',
-    source:         'fallback',
+    contentType:    UNCLASSIFIED_GEM_KEY,
+    recommendedGem: UNCLASSIFIED_GEM_KEY,
+    confidence:     'none',
+    confidencePct:  0,
+    reason:         'לא זוהו אותות סיווג ברורים — ממתין לסיווג ידני',
+    source:         'unclassified',
   };
 }
 

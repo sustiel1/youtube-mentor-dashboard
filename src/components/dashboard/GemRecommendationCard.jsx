@@ -1,4 +1,4 @@
-import { getRelatedGemTemplates } from "@/lib/gemRecommender";
+import { getRelatedGemTemplates, UNCLASSIFIED_GEM_KEY } from "@/lib/gemRecommender";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,7 +12,12 @@ export function GemRecommendationCard({
   onDismiss,
   opening = false,
 }) {
-  if (!recommendation?.gemKey) return null;
+  // Unclassified is a real, truthy gemKey (decision 14) but not an actual
+  // recommendation — this card must stay hidden for it exactly as it was
+  // when gemKey used to be null, otherwise it renders a fake "GEM מומלץ"
+  // card whose "פתח GEM מומלץ" button would try to open a GEM that doesn't
+  // exist.
+  if (!recommendation?.gemKey || recommendation.gemKey === UNCLASSIFIED_GEM_KEY) return null;
 
   const confidencePct = Number(recommendation.confidencePct) || 0;
   const detectedKeywords = Array.isArray(recommendation.detectedKeywords) ? recommendation.detectedKeywords : [];

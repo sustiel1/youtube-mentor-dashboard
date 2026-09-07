@@ -55,8 +55,21 @@ const ALL_FIXED_GEMS = [...FIXED_GEMS_TOP, MARKET_BRIEF_GEM, ...TJS_GEMS, ...KNO
 // Keys that use saveGemConfigSnapshot (vs. direct localStorage for dynamic topics)
 const FIXED_GEM_KEYS = new Set(ALL_FIXED_GEMS.map((g) => g.key));
 
-const shouldExpandAdditionalOptions = ({ isMarketBriefWorkflow, savedGemKey }) =>
-  isMarketBriefWorkflow && Boolean(savedGemKey) && savedGemKey !== MARKET_BRIEF_GEM_KEY;
+// The compact picker (recommended GEM pinned at top, everything else
+// collapsed behind "אפשרויות נוספות") now opens for every video regardless
+// of confidence — it no longer gates the layout. Repurposed instead of
+// removed: it now decides how the confidence badge on that top row is
+// styled — "confident match" (amber) vs. "weak match" (muted), so the user
+// can tell at a glance. 70 sits just below the confidencePct a "high
+// confidence" classifyVideoForGem() match produces (score>=6 && margin>=3 →
+// confidencePct ~74+).
+const CLEAR_WINNER_CONFIDENCE_THRESHOLD = 70;
+
+const hasClearWinner = (gemKey, confidencePct) =>
+  Boolean(gemKey) && typeof confidencePct === "number" && confidencePct >= CLEAR_WINNER_CONFIDENCE_THRESHOLD;
+
+const shouldExpandAdditionalOptions = ({ savedGemKey, workflowRecommendedGemKey }) =>
+  Boolean(savedGemKey) && savedGemKey !== workflowRecommendedGemKey;
 
 // Topic IDs already covered by fixed GEMs — excluded from dynamic list
 const EXCLUDED_TOPIC_IDS = new Set(["t2", "t_pol"]);
@@ -119,6 +132,7 @@ export function GemSelectionModal({
   video,
   topics = [],
   recommendedGemKey,
+  recommendedConfidencePct = null,
   savedGemKey,
   onSave,
   fullTranscriptText = "",
@@ -148,7 +162,7 @@ export function GemSelectionModal({
   const [summaryDraft, setSummaryDraft]         = useState('');
   const [summaryError, setSummaryError]         = useState('');
   const [showAdditionalOptions, setShowAdditionalOptions] = useState(() =>
-    shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
+    shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })
   );
   const wasOpenRef = useRef(false);
   const [expandedCategory, setExpandedCategory] = useState(() =>
@@ -201,7 +215,7 @@ export function GemSelectionModal({
       refreshUrls();
       setExpandedCategory(getCategoryForKey(initialKey, dynamicTopicGems));
       setShowAdditionalOptions(
-        shouldExpandAdditionalOptions({ isMarketBriefWorkflow, savedGemKey })
+        shouldExpandAdditionalOptions({ savedGemKey, workflowRecommendedGemKey })
       );
       const vid = video?.id;
       const alreadyHasSummary = Boolean(video?.gemSummary);
@@ -373,11 +387,15 @@ export function GemSelectionModal({
 
   // ── Accordion rows ────────────────────────────────────────────────────────
 
-  const renderSingleRow = (gem, icon) => {
+  const renderSingleRow = (gem, icon, { showConfidence = false } = {}) => {
     const isSel    = gem.key === selected;
     const isRec    = gem.key === workflowRecommendedGemKey;
     const isSavedK = gem.key === savedGemKey;
     const hasUrl   = isGeminiGemUrl(gemUrls[gem.key] || getGemUrl(gem.key) || "");
+    // Only the compact top row passes showConfidence — everywhere else (the
+    // collapsed "additional options" list, TJS accordion children) keeps the
+    // plain "AI מומלץ" badge unchanged.
+    const isConfidentRec = showConfidence && hasClearWinner(gem.key, recommendedConfidencePct);
     return (
       <button
         key={gem.key}
@@ -394,12 +412,37 @@ export function GemSelectionModal({
       >
         <span className="text-base leading-none shrink-0">{icon || gem.icon}</span>
         <span className="text-sm font-semibold flex-1">{gem.label}</span>
-        {isRec && <span className="rounded-full bg-amber-400 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">AI מומלץ</span>}
+        {isRec && (
+          <span className={cn(
+            "rounded-full text-[9px] font-bold px-1.5 py-0.5 shrink-0",
+            showConfidence && !isConfidentRec
+              ? "bg-slate-300 text-slate-700 dark:bg-zinc-600 dark:text-zinc-200"
+              : "bg-amber-400 text-white"
+          )}>
+            AI מומלץ{showConfidence && typeof recommendedConfidencePct === "number" ? ` ${recommendedConfidencePct}%` : ''}
+          </span>
+        )}
         {isSavedK && !isSel && <span className="rounded-full bg-emerald-500 text-[9px] font-bold text-white px-1.5 py-0.5 shrink-0">✓ נשמר</span>}
         {isSel && <span className="text-[10px] opacity-70 shrink-0">✓ נבחר</span>}
         {!hasUrl && <span className="text-[10px] opacity-50 shrink-0" title="אין URL">⚠</span>}
       </button>
     );
+  };
+
+  const renderCompactTopRow = () => {
+    if (!recommendedGem) {
+      // Unclassified: no GEM to preselect — a non-interactive placeholder
+      // row instead of a broken/empty one. The user's next click goes
+      // straight into the options list below.
+      return (
+        <div className="w-full flex items-center gap-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-right dark:border-zinc-700 dark:bg-zinc-900/50">
+          <span className="text-base leading-none shrink-0">⏳</span>
+          <span className="text-sm font-semibold flex-1 text-slate-500 dark:text-zinc-400">ממתין לסיווג</span>
+          <span className="text-[10px] text-slate-400 dark:text-zinc-500 shrink-0">בחר GEM למטה</span>
+        </div>
+      );
+    }
+    return renderSingleRow(recommendedGem, null, { showConfidence: true });
   };
 
   const renderTJSAccordion = () => {
@@ -439,6 +482,17 @@ export function GemSelectionModal({
       </div>
     );
   };
+
+  const renderFullGemOptionsList = () => (
+    <>
+      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
+      {renderTJSAccordion()}
+      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
+      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
+      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
+      {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
+    </>
+  );
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -481,35 +535,9 @@ export function GemSelectionModal({
                 </div>
               </div>
 
-              {/* ── 2. Recommended GEM card ───────────────── */}
-              {recommendedGem && !isMarketBriefWorkflow && (
-                <button
-                  type="button"
-                  onClick={() => handleSelect(recommendedGem.key)}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-right transition-all",
-                    selected === recommendedGem.key
-                      ? "border-amber-400 bg-amber-500 text-white shadow-md"
-                      : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30"
-                  )}
-                >
-                  <span className="text-xl leading-none shrink-0">{recommendedGem.icon}</span>
-                  <div className="flex-1 min-w-0 text-right">
-                    <div className="text-sm font-bold leading-snug">{recommendedGem.label}</div>
-                    <div className="text-[10px] opacity-70 leading-snug line-clamp-1">{recommendedGem.description}</div>
-                  </div>
-                  <span className={cn(
-                    "rounded-full text-[9px] font-bold px-2 py-0.5 shrink-0",
-                    selected === recommendedGem.key
-                      ? "bg-white/25 text-white"
-                      : "bg-amber-200 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300"
-                  )}>
-                    ⭐ AI מומלץ
-                  </span>
-                </button>
-              )}
-
-              {/* ── 3. Accordion category list ────────────── */}
+              {/* ── 2. Accordion category list — always compact: recommended
+                   GEM (or "ממתין לסיווג") pinned at top, everything else
+                   collapsed behind "אפשרויות נוספות" ──────────────────── */}
               <div>
                 <div className="mb-2.5 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500">בחר GEM</span>
@@ -520,51 +548,44 @@ export function GemSelectionModal({
                 </div>
 
                 <div className="space-y-1.5">
-                  {isMarketBriefWorkflow ? (
-                    <>
-                      {renderSingleRow(MARKET_BRIEF_GEM)}
-                      <button
-                        type="button"
-                        aria-expanded={showAdditionalOptions}
-                        aria-controls={additionalOptionsId}
-                        onClick={() => setShowAdditionalOptions((isExpanded) => !isExpanded)}
-                        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 dark:focus-visible:ring-offset-zinc-950"
-                      >
-                        <span>אפשרויות נוספות</span>
-                        <ChevronDown
-                          aria-hidden="true"
-                          className={cn(
-                            "h-4 w-4 shrink-0 transition-transform duration-200",
-                            showAdditionalOptions && "rotate-180"
-                          )}
-                        />
-                      </button>
-                      <div
-                        id={additionalOptionsId}
-                        hidden={!showAdditionalOptions}
-                        className="space-y-1.5 border-r-2 border-indigo-100 pr-2 dark:border-indigo-900/60"
-                      >
+                  {renderCompactTopRow()}
+                  <button
+                    type="button"
+                    aria-expanded={showAdditionalOptions}
+                    aria-controls={additionalOptionsId}
+                    onClick={() => setShowAdditionalOptions((isExpanded) => !isExpanded)}
+                    className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300 dark:focus-visible:ring-offset-zinc-950"
+                  >
+                    <span>אפשרויות נוספות</span>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn(
+                        "h-4 w-4 shrink-0 transition-transform duration-200",
+                        showAdditionalOptions && "rotate-180"
+                      )}
+                    />
+                  </button>
+                  <div
+                    id={additionalOptionsId}
+                    hidden={!showAdditionalOptions}
+                    className="space-y-1.5 border-r-2 border-indigo-100 pr-2 dark:border-indigo-900/60"
+                  >
+                    {isMarketBriefWorkflow ? (
+                      <>
                         {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
                         {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
                         {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
                         {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
                         {visibleDynamicTopicGems.map((gem) => renderSingleRow(gem))}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "political"))}
-                      {renderTJSAccordion()}
-                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "technical"))}
-                      {renderSingleRow(KNOWLEDGE_MARKET_GEMS.find((g) => g.key === "fundamental"))}
-                      {renderSingleRow(FIXED_GEMS_TOP.find((g) => g.key === "general"))}
-                      {dynamicTopicGems.map((gem) => renderSingleRow(gem))}
-                    </>
-                  )}
+                      </>
+                    ) : (
+                      renderFullGemOptionsList()
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* ── 4. Selected GEM details + URL ─────────── */}
+              {/* ── 3. Selected GEM details + URL ─────────── */}
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3 dark:border-zinc-700 dark:bg-zinc-900">
                 <div className="flex items-center gap-2">
                   <span className="text-lg leading-none">{selectedGem.icon}</span>
