@@ -1,0 +1,2 @@
+# Historical market/macro data is data, not source — never commit it.
+data/
