@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.youtube.com/feeds/videos.xml?channel_id=UCrQmXSenNhePSOiCTdnhwRg\" -A \"Mozilla/5.0 \\(compatible; RSS reader\\)\")",
       "Bash(curl -v \"https://www.youtube.com/feeds/videos.xml?channel_id=UCFkwdS-osDYKdz4TCe7XIXA\" -A \"Mozilla/5.0 \\(compatible; RSS reader\\)\")",
       "Bash(curl -s -o /dev/null -w \"EdHillAI: %{http_code}\\\\n\" \"https://www.youtube.com/feeds/videos.xml?channel_id=UC5_2We-HeVdEeHcIyfmMHOg\" -A \"Mozilla/5.0 \\(compatible; RSS reader\\)\")",
@@ -34,7 +33,6 @@
       "PowerShell(cd \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\"; $output = & node_modules/.bin/vite build 2>&1; $output | Select-Object -First 50; Write-Host \"---EXIT: $LASTEXITCODE\")",
       "PowerShell(cd \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\"; $result = & node_modules/.bin/vite build 2>&1; Write-Host \"Exit: $LASTEXITCODE\"; $result | Where-Object { $_ -match \"error|warn|Error\" } | Select-Object -First 20)",
       "PowerShell(cd \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\"; $result = & node_modules/.bin/vite build 2>&1; Write-Host \"Exit: $LASTEXITCODE\"; $result | Where-Object { $_ -match \"error|Error\" } | Select-Object -First 10)",
-      "Bash(git stash *)",
       "Bash(tee /tmp/build_test.txt)",
       "Bash(Select-String -Pattern \"error|warn|Error|Warning|✓|built\")",
       "PowerShell(cd \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\"; $proc = Start-Process -FilePath \"npm\" -ArgumentList \"run\", \"build\" -WorkingDirectory \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\" -RedirectStandardOutput \"c:\\\\tmp\\\\build_out.txt\" -RedirectStandardError \"c:\\\\tmp\\\\build_err.txt\" -PassThru -NoNewWindow; Start-Sleep -Seconds 40; $proc.Kill\\(\\); Get-Content \"c:\\\\tmp\\\\build_out.txt\"; Get-Content \"c:\\\\tmp\\\\build_err.txt\")",
@@ -47,8 +45,6 @@
       "Bash(Get-Content \"C:\\\\Users\\\\11\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-11-Desktop-Workspace-new-project-projects-youtube-mentor-dashboard\\\\b15b64ca-7f5d-4772-8b25-bde2b283c5c4\\\\tasks\\\\bdnw883n9.output\")",
       "Bash(Select-Object -Last 15)",
       "PowerShell(cd \"c:\\\\Users\\\\11\\\\Desktop\\\\Workspace\\\\new-project\\\\projects\\\\youtube-mentor-dashboard\"; $result = npm run build 2>&1; $result; Write-Host \"Exit: $LASTEXITCODE\")",
-      "Bash(git commit -m ' *)",
-      "Bash(git branch *)",
       "Bash(git -C \"c:/Users/11/Desktop/Workspace/new-project/projects/youtube-mentor-dashboard\" status --short)",
       "Bash(git -C \"c:/Users/11/Desktop/Workspace/new-project/projects/youtube-mentor-dashboard\" add src/lib/morningBriefBulkSections.js docs/SPECIALIZED_OPPORTUNITY_SAVE_RULE.md)",
       "Bash(git -C c:/Users/11/Desktop/Workspace/new-project/projects/youtube-mentor-dashboard commit -m ' *)",
@@ -211,7 +207,25 @@
       "Bash(echo \"=== EXIT $? ===\")",
       "Bash(echo \"---exit:$?---\")",
       "Bash(git show *)",
-      "Bash(rm head_video_panel_check.tmp)"
+      "Bash(rm head_video_panel_check.tmp)",
+      "Bash(node --check src/pages/WorkspaceLibrary.jsx)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\\\Users\\\\11\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\User Data\" --profile-directory=\"Default\" \"http://localhost:5184\")",
+      "Bash(curl -s http://localhost:9222/json/version)",
+      "Bash(curl -s http://localhost:9222/json)",
+      "Bash(curl -s \"http://localhost:9222/json/close/C83C626858BB9A186005663DFD62E502\")",
+      "Bash(curl -s \"http://localhost:9222/json/close/F207DBB681F7AEAFFF6E1DCCEFC66B46\")",
+      "Bash(curl -s \"http://localhost:9222/json\")",
+      "Bash(curl -s -X PUT \"http://localhost:9222/json/new?http://localhost:5184/workspace-library\")",
+      "Bash(node --import ./scripts/register-src-aliases.mjs scripts/pinned-recent-video-card-qa.mjs)",
+      "Bash(echo \"COMMIT_EXIT=$?\")",
+      "Bash(curl -s -m 20 \"https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=max&interval=1d&events=div,splits\" -H \"User-Agent: Mozilla/5.0\" -o /tmp/spy_max.json -w \"HTTP:%{http_code} size:%{size_download}\\\\n\")",
+      "Bash(curl -s -m 20 'https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=max&interval=1d&events=div,splits' -H 'User-Agent: Mozilla/5.0' -o /c/Users/11/AppData/Local/Temp/claude/c--Users-11-Desktop-Workspace-new-project-projects-youtube-mentor-dashboard/58296460-665a-488a-bd9b-cfc138019ee5/scratchpad/spy_max.json -w 'HTTP:%{http_code} size:%{size_download}\\\\n')",
+      "Bash(curl -s -m 20 https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10 -H 'User-Agent: Mozilla/5.0' -o C:/Users/11/AppData/Local/Temp/claude/c--Users-11-Desktop-Workspace-new-project-projects-youtube-mentor-dashboard/58296460-665a-488a-bd9b-cfc138019ee5/scratchpad/dgs10.csv -w 'HTTP:%{http_code} size:%{size_download}\\\\n')",
+      "Bash(curl -s -m 20 https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPILFESL -H 'User-Agent: Mozilla/5.0' -o C:/Users/11/AppData/Local/Temp/claude/c--Users-11-Desktop-Workspace-new-project-projects-youtube-mentor-dashboard/58296460-665a-488a-bd9b-cfc138019ee5/scratchpad/alfred_cpi.csv -w 'HTTP:%{http_code} size:%{size_download}\\\\n')",
+      "Read(//c/tmp/ymd-daily-direction-stats-worktree/**)",
+      "Bash(node scripts/market-history/validate-history.mjs)",
+      "Bash(cat)",
+      "Bash(rm /c/Users/11/AppData/Local/Temp/claude/c--Users-11-Desktop-Workspace-new-project-projects-youtube-mentor-dashboard/1c86fb51-5588-4799-b240-fa55d5ca2f0b/scratchpad/new_ledger_row.txt)"
     ],
     "additionalDirectories": [
       "C:\\Users\\11\\.cursor",
