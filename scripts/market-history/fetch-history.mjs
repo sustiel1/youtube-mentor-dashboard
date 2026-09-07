@@ -40,6 +40,7 @@ const FRED_SERIES = {
   UMCSENT: { label: 'U. Michigan consumer sentiment, monthly' },
   DTWEXBGS: { label: 'Trade-weighted US dollar index (broad, goods & services)' },
   BAMLH0A0HYM2: { label: 'ICE BofA US High Yield OAS spread — FRED history restarts 2023-09-05 after an ICE licensing gap; NOT 10+ years, flagged in validation' },
+  BAA10Y: { label: 'PROXY, NOT HIGH-YIELD — Moody\'s Baa (investment-grade, lowest IG tier) corporate bond yield minus 10-year Treasury. Used as a long-history (1986+) credit-stress proxy because no free genuine junk/high-yield spread series has usable history (BAMLH0A0HYM2/EY both restart 2023-09-05, ICE licensing gap). Kept alongside BAMLH0A0HYM2 deliberately so the two can be compared where they overlap (2023-09-05+) to gauge how well this proxy tracks real HY stress. Any consumer/display of this series must label it "proxy" and never present it as a high-yield spread.' },
 };
 
 // ALFRED release-calendar pages (HTML scrape, no key). Release IDs verified via each page's <h1>
@@ -145,18 +146,46 @@ async function fetchAlfredReleaseDates(rid, expectedTitle) {
   return { ok: true, title, dates };
 }
 
+// The Fed's site uses three different URL schemes for a meeting's decision-date press
+// release across eras — verified against real pages, not assumed:
+//   2011-present : monetaryYYYYMMDDa.htm            (bare, on the rolling calendar page)
+//   2006-2010    : newsevents/press/monetary/YYYYMMDDa.htm
+//   2002-2005    : boarddocs/press/monetary/YYYY/YYYYMMDD/ (no "a.htm" suffix)
+// Before 2002 the FOMC did not consistently issue a same-day statement with this URL
+// shape (statements after every meeting only became standard practice in 1999, and the
+// pre-2002 archive pages use a different, unverified structure) — not scraped here.
+const FOMC_ARCHIVE_EARLIEST_YEAR = 2002;
+
+function extractMonetaryDates(html) {
+  const modernOrMid = [...html.matchAll(/monetary\/?(\d{8})[ab]?\.htm/g)].map((m) => m[1]);
+  const boarddocs = [...html.matchAll(/boarddocs\/press\/monetary\/\d{4}\/(\d{8})/g)].map((m) => m[1]);
+  return [...modernOrMid, ...boarddocs];
+}
+
 async function fetchFomcMeetingDates() {
   const { ok, status, body } = await fetchText(FOMC_CALENDAR_URL, { ua: UA });
   if (!ok) return { ok: false, error: `HTTP ${status}` };
   const years = [...body.matchAll(/<a id="\d+">(\d{4}) FOMC Meetings<\/a>/g)].map((m) => m[1]);
-  // Each press-release link embeds the meeting's decision date as YYYYMMDD
-  // (e.g. .../monetary20260128a.htm) — far more robust than parsing the "27-28"-style
-  // day-range table cells, which vary in format (single day, range, trailing "*").
-  const rawDates = [...new Set([...body.matchAll(/monetary(\d{8})[ab]\.htm/g)].map((m) => m[1]))];
-  const dates = rawDates
+  const currentPageEarliestYear = Math.min(...years.map(Number));
+
+  const rawDatesSet = new Set(extractMonetaryDates(body));
+  const archiveErrors = [];
+  for (let y = FOMC_ARCHIVE_EARLIEST_YEAR; y < currentPageEarliestYear; y++) {
+    const res = await fetchText(`https://www.federalreserve.gov/monetarypolicy/fomchistorical${y}.htm`, { ua: UA });
+    if (!res.ok) { archiveErrors.push(`${y}: HTTP ${res.status}`); continue; }
+    for (const d of extractMonetaryDates(res.body)) rawDatesSet.add(d);
+  }
+
+  const dates = [...rawDatesSet]
     .map((d) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`)
     .sort();
-  return { ok: true, years: [...new Set(years)].sort(), dates };
+  return {
+    ok: true,
+    years: [...new Set(years)].sort(),
+    dates,
+    archiveEarliestYear: FOMC_ARCHIVE_EARLIEST_YEAR,
+    archiveErrors,
+  };
 }
 
 // --- manifest / incremental resume ---------------------------------------
@@ -298,7 +327,7 @@ async function main() {
       series: seriesMeta,
       alfred_release_dates_note: 'HTML-scraped from alfred.stlouisfed.org, no API key. University of Michigan Consumer Sentiment release ID was not identified with confidence and is omitted.',
       fomc_note: fomc.ok
-        ? `HTML-scraped from ${FOMC_CALENDAR_URL} (decision date parsed from each press-release URL's YYYYMMDD); years covered on this page: ${fomc.years.join(', ')} (federalreserve.gov only publishes recent years on this page — see fomc_historical.htm for older archives, not scraped in this pass)`
+        ? `HTML-scraped from ${FOMC_CALENDAR_URL} (rolling years: ${fomc.years.join(', ')}) plus the per-year archive fomchistorical<YYYY>.htm for ${fomc.archiveEarliestYear}-${Math.min(...fomc.years.map(Number)) - 1} (three URL eras handled: bare monetaryYYYYMMDDa.htm 2011+, newsevents/press/monetary/YYYYMMDDa.htm 2006-2010, boarddocs/press/monetary/YYYY/YYYYMMDD/ 2002-2005). Pre-2002 not scraped — the FOMC did not consistently issue a same-day statement under a verified URL pattern before then.${fomc.archiveErrors.length ? ` Archive fetch errors: ${fomc.archiveErrors.join('; ')}` : ''}`
         : `fetch failed: ${fomc.error}`,
     },
     trading_dates: tradingDates,
