@@ -18,6 +18,14 @@ export function BrainSelectableItem({
   onToggleOpponent,
   opponentResponse = null,
   onSaveResponse,
+  // optional override for the default (non-opponent, non-selected) text color
+  textClassName,
+  // optional override for the text size/weight (default: text-sm)
+  textSizeClassName = "text-sm",
+  // optional custom body — when provided, rendered instead of the plain
+  // `text` span (e.g. multi-paragraph content); `text` is still used for
+  // save/copy/dedupe since those operate on the underlying string.
+  children = null,
 }) {
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState("");
@@ -131,19 +139,22 @@ export function BrainSelectableItem({
           </div>
         )}
       >
-        <span
-          className={cn(
-            "block text-sm leading-relaxed",
-            isOpponent
-              ? "text-rose-800 dark:text-rose-300"
-              : isSelected
-                ? "text-indigo-700 dark:text-indigo-300"
-                : "text-slate-700 dark:text-zinc-300"
-          )}
-        >
-          {isOpponent && <span className="text-rose-400 mr-1 text-xs">⚔️</span>}
-          {text}
-        </span>
+        {children ?? (
+          <span
+            className={cn(
+              "block leading-relaxed",
+              textSizeClassName,
+              isOpponent
+                ? "text-rose-800 dark:text-rose-300"
+                : isSelected
+                  ? "text-indigo-700 dark:text-indigo-300"
+                  : textClassName || "text-slate-700 dark:text-zinc-300"
+            )}
+          >
+            {isOpponent && <span className="text-rose-400 mr-1 text-xs">⚔️</span>}
+            {text}
+          </span>
+        )}
       </UniversalTabSelectRow>
 
       {/* Inline note input */}

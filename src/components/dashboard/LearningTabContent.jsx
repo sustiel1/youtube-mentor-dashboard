@@ -5,13 +5,16 @@ import { formatStockStatusText, getStockStatusVisual } from "@/lib/stockStatusDi
 import { StockStatusLine } from "@/components/dashboard/StockStatusLine";
 import {
   DASHBOARD_TABLE_CELL_BODY_CLS,
+  DASHBOARD_TABLE_HEAD_CLS,
   NumericChangeSpan,
 } from "./MorningBriefVisualPrimitives";
 import {
   SavedRowIndicator,
+  UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS,
   UniversalTabCheckbox,
   UniversalTabSelectRow,
 } from "@/components/shared/UniversalTabSelectRow";
+import { BriefTableWrapper, BRIEF_TABLE_CLS, BRIEF_TABLE_HEAD_ROW_CLS } from "./briefTableLayout";
 import { UniversalTabQuickSaveFromBulk } from "@/components/shared/UniversalTabQuickSaveActions";
 import { mergeBulkSelection } from "@/lib/universalTabBulkItems";
 import { isRowAlreadySaved } from "@/utils/workspaceSavedRowLookup";
@@ -45,6 +48,119 @@ function formatItem(item) {
   return val ? localizeStructuredDisplayText(val) : '';
 }
 
+// Matches a trailing "🧠 מומלץ לשמור למוח · סיבה: <reason>" marker the GEM may append
+// to an item's text. Stripped from display/copy/save and rendered as a small badge.
+const BRAIN_BADGE_RE = /\s*·?\s*🧠\s*מומלץ לשמור למוח\s*·\s*סיבה:\s*(.+)$/;
+
+function extractBrainBadge(text) {
+  if (typeof text !== 'string') return { text, reason: null };
+  const match = text.match(BRAIN_BADGE_RE);
+  if (!match) return { text, reason: null };
+  return { text: text.slice(0, match.index).trim(), reason: match[1].trim() || null };
+}
+
+function BrainRecommendedBadge({ reason }) {
+  return (
+    <span
+      title={reason || undefined}
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-indigo-50 px-1.5 py-0.5 align-middle text-[10px] font-semibold leading-none text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300"
+    >
+      🧠 מומלץ לשמור למוח
+    </span>
+  );
+}
+
+// The fixed GEM item template is a " · "-joined "תווית: ערך" sequence — e.g.
+// "מושג: X · הגדרה קצרה: Y · מתי זה תקף: Z · ... · מקור: W" (learning fields) or
+// "מטרה: X · פרומפט: \"Y\" · מקור: Z" (promptTemplates). Parsed at display time only;
+// the stored string itself is never rewritten. Falls back to null (plain rendering)
+// for anything that isn't a clean multi-segment label:value sequence.
+function parseTemplateItem(text) {
+  if (typeof text !== 'string' || !text.includes(' · ')) return null;
+  const segments = text.split(' · ').map((s) => s.trim()).filter(Boolean);
+  if (segments.length < 2) return null;
+  const parsed = segments.map((segment) => {
+    const match = segment.match(/^([^:·]{1,40}):\s*(.*)$/s);
+    return match ? { label: match[1].trim(), value: match[2].trim() } : null;
+  });
+  if (parsed.some((part) => !part)) return null;
+  const [titlePart, ...rest] = parsed;
+  if (!titlePart.value) return null;
+  const rows = rest.filter((part) => part.value && part.value !== '-');
+  return { title: titlePart.value, rows };
+}
+
+function TemplateItemContent({ text }) {
+  const parsed = parseTemplateItem(text);
+  if (!parsed) {
+    return <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(text)}</span>;
+  }
+  return (
+    <div className="w-full">
+      <p className="text-[15px] font-semibold leading-snug text-slate-900 dark:text-zinc-100">{parsed.title}</p>
+      {parsed.rows.length > 0 && (
+        <dl className="mt-1 space-y-0.5">
+          {parsed.rows.map((row, i) => (
+            <div key={i} className="flex flex-wrap gap-x-1.5 text-[15px] font-semibold leading-snug text-slate-900 dark:text-zinc-100">
+              <dt className="shrink-0">{row.label}:</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
+// Column split for the fixed learning-item template (מושג / הגדרה קצרה / מתי זה
+// תקף / מתי זה לא תקף / איך מודדים או איפה רואים את זה / מקור) — only promotes an
+// item to the real-table layout when at least one of the two named table columns is
+// actually present; other " · "-joined templates that pass parseTemplateItem (e.g.
+// promptTemplates' מטרה/פרומפט/מקור) keep the existing stacked TemplateItemContent
+// rendering instead of forcing two permanently-empty "—" columns.
+const DEFINITION_LABEL_HINTS = ['הגדרה קצרה', 'הגדרה'];
+const HOW_TO_MEASURE_LABEL_HINTS = ['איך מודדים', 'איפה רואים'];
+
+function takeMatchingRow(rows, hints) {
+  const idx = rows.findIndex((row) => hints.some((hint) => row.label.includes(hint)));
+  if (idx === -1) return null;
+  return rows.splice(idx, 1)[0];
+}
+
+function parseLearningTemplateItem(text) {
+  const parsed = parseTemplateItem(text);
+  if (!parsed) return null;
+  const rest = [...parsed.rows];
+  const definition = takeMatchingRow(rest, DEFINITION_LABEL_HINTS);
+  const howToMeasure = takeMatchingRow(rest, HOW_TO_MEASURE_LABEL_HINTS);
+  if (!definition && !howToMeasure) return null;
+  return { title: parsed.title, definition, howToMeasure, rest };
+}
+
+const TEMPLATE_TABLE_COL = {
+  checkbox: '2rem',
+  concept: '20%',
+  definition: '30%',
+  howToMeasure: '30%',
+  info: '2.25rem',
+};
+
+/** Rare/longer template fields (מתי זה תקף, מתי זה לא תקף, מקור) behind a tooltip
+ * instead of widening the table — only rendered when at least one is present. */
+function TemplateRowExtraInfo({ rest }) {
+  if (!rest.length) return null;
+  const tooltip = rest.map((row) => `${row.label}: ${row.value}`).join('\n');
+  return (
+    <span
+      title={tooltip}
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 cursor-help"
+      aria-label="פרטים נוספים"
+    >
+      ℹ️
+    </span>
+  );
+}
+
 function copyText(text) {
   navigator.clipboard.writeText(text)
     .then(() => toast.success('הועתק ✓'))
@@ -69,23 +185,20 @@ function buildPxUrl(text) {
   return `https://www.perplexity.ai/search?q=${encodeURIComponent(text.trim())}`;
 }
 
-function ItemRow({
+/** Per-row hover toolbar: timestamp link, quick-save-to-brain, copy, saved indicator.
+ * Shared by the plain stacked row (ItemRow) and the real-table row (TemplateTableRow)
+ * so both layouts keep byte-identical action behaviour. */
+function ItemRowActions({
   text,
-  sourceItem = null,
   videoId = null,
+  sourceItem = null,
   productionRowId = null,
   rowTimestampSection = null,
-  stockVisual = null,
-  onBrain,
+  connectButton = null,
   saved,
-  macroDirection = false,
-  bulkSelected = false,
-  onBulkToggle = null,
+  onBrain,
   bulkSelection = null,
   pxUrl = null,
-  url = null,
-  connectButton = null,
-  rowClassName = 'group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors',
 }) {
   const alreadySaved = isRowAlreadySaved(
     text,
@@ -93,7 +206,7 @@ function ItemRow({
     bulkSelection?.savedRowIndex,
   );
 
-  const actions = (
+  return (
     <div className="flex items-center gap-0.5 shrink-0">
       <StaticVideoTimestampLink
         videoId={videoId}
@@ -138,6 +251,41 @@ function ItemRow({
       {alreadySaved && <SavedRowIndicator />}
     </div>
   );
+}
+
+function ItemRow({
+  text,
+  brainReason = null,
+  sourceItem = null,
+  videoId = null,
+  productionRowId = null,
+  rowTimestampSection = null,
+  stockVisual = null,
+  onBrain,
+  saved,
+  macroDirection = false,
+  bulkSelected = false,
+  onBulkToggle = null,
+  bulkSelection = null,
+  pxUrl = null,
+  url = null,
+  connectButton = null,
+  rowClassName = 'group rounded-lg px-2 py-2 hover:bg-white/80 dark:hover:bg-zinc-800/60 transition-colors',
+}) {
+  const actions = (
+    <ItemRowActions
+      text={text}
+      videoId={videoId}
+      sourceItem={sourceItem}
+      productionRowId={productionRowId}
+      rowTimestampSection={rowTimestampSection}
+      connectButton={connectButton}
+      saved={saved}
+      onBrain={onBrain}
+      bulkSelection={bulkSelection}
+      pxUrl={pxUrl}
+    />
+  );
 
   return (
     <UniversalTabSelectRow
@@ -164,10 +312,156 @@ function ItemRow({
             {text}
           </a>
         ) : (
-          <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{renderLinkedMarketText(text)}</span>
+          <TemplateItemContent text={text} />
+        )}
+        {brainReason && (
+          <span className="mt-1 block">
+            <BrainRecommendedBadge reason={brainReason} />
+          </span>
         )}
       </span>
     </UniversalTabSelectRow>
+  );
+}
+
+/**
+ * One real table row for a parsed learning-template item — מושג | הגדרה קצרה |
+ * איך מודדים as their own columns, the rarer fields (מתי זה תקף/לא תקף, מקור)
+ * behind the ℹ️ tooltip, the 🧠 badge as a marker on the מושג cell. Row actions
+ * reuse ItemRowActions verbatim so checkbox / save-to-brain / copy / saved-indicator
+ * behave identically to the stacked (non-table) row.
+ */
+function TemplateTableRow({
+  entry,
+  index,
+  videoId,
+  bulkSelection,
+  bulkId,
+  bulkSelected,
+  onBulkToggle,
+  connectButton,
+  onBrain,
+  saved,
+  pxUrl,
+}) {
+  const { text, sourceItem, brainReason } = entry;
+  const parsed = parseLearningTemplateItem(text);
+  if (!parsed) return null;
+
+  return (
+    <tr
+      key={index}
+      className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group"
+      data-static-time-candidate={videoId ? 'true' : undefined}
+    >
+      <td className={UNIVERSAL_TAB_TABLE_CHECKBOX_CELL_CLASS}>
+        {onBulkToggle ? (
+          <UniversalTabCheckbox checked={bulkSelected} onChange={onBulkToggle} />
+        ) : null}
+      </td>
+      <td className="px-2 py-2 align-top text-right">
+        <p className="text-[15px] font-semibold leading-snug text-slate-900 dark:text-zinc-100">
+          {parsed.title}
+        </p>
+        {brainReason && (
+          <span className="mt-1 block">
+            <BrainRecommendedBadge reason={brainReason} />
+          </span>
+        )}
+      </td>
+      <td className="px-2 py-2 align-top text-right text-[15px] font-semibold leading-snug text-slate-900 dark:text-zinc-100">
+        {parsed.definition ? parsed.definition.value : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+      </td>
+      <td className="px-2 py-2 align-top text-right text-[15px] font-semibold leading-snug text-slate-900 dark:text-zinc-100">
+        {parsed.howToMeasure ? parsed.howToMeasure.value : <span className="text-slate-300 dark:text-zinc-600">—</span>}
+      </td>
+      <td className="px-1 py-2 align-top text-center">
+        <TemplateRowExtraInfo rest={parsed.rest} />
+      </td>
+      <td className="py-2 pl-1 pr-0 align-top">
+        <ItemRowActions
+          text={text}
+          videoId={videoId}
+          sourceItem={sourceItem}
+          productionRowId={bulkId}
+          rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
+          connectButton={connectButton}
+          saved={saved}
+          onBrain={onBrain}
+          bulkSelection={bulkSelection}
+          pxUrl={pxUrl}
+        />
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * Real table (column headers, aligned cells) for the subset of a section's items
+ * that match the fixed learning template — mirrors the מבזק בוקר/ערב table shell
+ * (BRIEF_TABLE_CLS / BriefTableWrapper) rather than a parallel implementation.
+ */
+function TemplateItemsTable({
+  rows,
+  videoId,
+  bulkSelection,
+  onSaveToBrain,
+  isSaved,
+  getConnectButton,
+  items,
+}) {
+  return (
+    <BriefTableWrapper>
+      <table className={BRIEF_TABLE_CLS} dir="rtl">
+        <colgroup>
+          <col style={{ width: TEMPLATE_TABLE_COL.checkbox }} />
+          <col style={{ width: TEMPLATE_TABLE_COL.concept }} />
+          <col style={{ width: TEMPLATE_TABLE_COL.definition }} />
+          <col style={{ width: TEMPLATE_TABLE_COL.howToMeasure }} />
+          <col style={{ width: TEMPLATE_TABLE_COL.info }} />
+          <col />
+        </colgroup>
+        <thead>
+          <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+            <th className="py-1.5 pr-2 pl-0" aria-label="בחירה" />
+            <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>מושג</th>
+            <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>הגדרה קצרה</th>
+            <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>איך מודדים או איפה רואים את זה</th>
+            <th className="py-1.5" aria-label="פרטים נוספים" />
+            <th className="py-1.5" aria-label="פעולות" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ text, sourceItem, brainReason, i }) => {
+            const entry = { text, sourceItem, brainReason };
+            const bulkId = bulkSelection ? `${bulkSelection.idPrefix}:${i}` : null;
+            const bulkSelected = !!(bulkId && bulkSelection?.multiSelected?.has(bulkId));
+            const connectButton = getConnectButton ? getConnectButton(text, items[i]) : null;
+            return (
+              <TemplateTableRow
+                key={i}
+                index={i}
+                entry={entry}
+                videoId={videoId}
+                bulkSelection={bulkSelection}
+                bulkId={bulkId}
+                bulkSelected={bulkSelected}
+                onBulkToggle={bulkId && bulkSelection?.onToggle ? () => bulkSelection.onToggle(bulkId, {
+                  text,
+                  sectionLabel: bulkSelection.sectionLabel || '',
+                  type: bulkSelection.type || bulkSelection.tabScope,
+                  tabScope: bulkSelection.tabScope,
+                }) : null}
+                connectButton={connectButton}
+                onBrain={onSaveToBrain ? () => onSaveToBrain(text) : null}
+                saved={isSaved ? isSaved(text) : false}
+                pxUrl={buildPxUrl(text)}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </BriefTableWrapper>
   );
 }
 
@@ -219,9 +513,16 @@ export function LearningTabContent({
   getItemUrl = null,
   getConnectButton = null,
   rowClassName,
+  // Opt-in only — the fixed-template useful-knowledge section (tab 4) passes this;
+  // every other caller (the morning/evening brief's SummaryBriefingView included)
+  // leaves it false and keeps the exact stacked-row rendering below unchanged.
+  templateTable = false,
 }) {
   const formatted = items
-    .map((sourceItem) => ({ sourceItem, text: formatItem(sourceItem) }))
+    .map((sourceItem) => {
+      const { text, reason } = extractBrainBadge(formatItem(sourceItem));
+      return { sourceItem, text, brainReason: reason };
+    })
     .filter(({ text }) => Boolean(text));
 
   if (formatted.length === 0) {
@@ -233,43 +534,110 @@ export function LearningTabContent({
     );
   }
 
+  if (!templateTable) {
+    return (
+      <div className="space-y-0.5" dir="rtl">
+        {formatted.map(({ text, sourceItem, brainReason }, i) => {
+          const stockVisual = getStockStatusVisual(sourceItem);
+          const bulkId = bulkSelection
+            ? `${bulkSelection.idPrefix}:${i}`
+            : null;
+          const bulkSelected = bulkId && bulkSelection?.multiSelected?.has(bulkId);
+          const url = getItemUrl ? getItemUrl(text, items[i]) : null;
+          const connectButton = getConnectButton ? getConnectButton(text, items[i]) : null;
+          return (
+            <ItemRow
+              key={i}
+              text={text}
+              brainReason={brainReason}
+              sourceItem={sourceItem}
+              videoId={videoId}
+              productionRowId={bulkId}
+              rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
+              url={url}
+              connectButton={connectButton}
+              stockVisual={stockVisual}
+              macroDirection={macroDirection}
+              saved={isSaved ? isSaved(text) : false}
+              onBrain={onSaveToBrain ? () => onSaveToBrain(text) : null}
+              bulkSelected={!!bulkSelected}
+              onBulkToggle={bulkId && bulkSelection?.onToggle ? () => bulkSelection.onToggle(bulkId, {
+                text,
+                sectionLabel: bulkSelection.sectionLabel || '',
+                type: bulkSelection.type || bulkSelection.tabScope,
+                tabScope: bulkSelection.tabScope,
+              }) : null}
+              bulkSelection={bulkSelection}
+              pxUrl={buildPxUrl(text)}
+              rowClassName={rowClassName}
+            />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // templateTable === true: items matching the fixed learning template (at least one
+  // of הגדרה קצרה / איך מודדים present) render as a real table; anything else — an
+  // item that doesn't match at all, or a promptTemplates-style item with neither
+  // named column — falls back to the exact same stacked ItemRow used above.
+  const withIndex = formatted.map((entry, i) => ({ ...entry, i }));
+  const tableRows = withIndex.filter(({ text }) => !!parseLearningTemplateItem(text));
+  const plainRows = withIndex.filter(({ text }) => !parseLearningTemplateItem(text));
+
   return (
-    <div className="space-y-0.5" dir="rtl">
-      {formatted.map(({ text, sourceItem }, i) => {
-        const stockVisual = getStockStatusVisual(sourceItem);
-        const bulkId = bulkSelection
-          ? `${bulkSelection.idPrefix}:${i}`
-          : null;
-        const bulkSelected = bulkId && bulkSelection?.multiSelected?.has(bulkId);
-        const url = getItemUrl ? getItemUrl(text, items[i]) : null;
-        const connectButton = getConnectButton ? getConnectButton(text, items[i]) : null;
-        return (
-          <ItemRow
-            key={i}
-            text={text}
-            sourceItem={sourceItem}
-            videoId={videoId}
-            productionRowId={bulkId}
-            rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
-            url={url}
-            connectButton={connectButton}
-            stockVisual={stockVisual}
-            macroDirection={macroDirection}
-            saved={isSaved ? isSaved(text) : false}
-            onBrain={onSaveToBrain ? () => onSaveToBrain(text) : null}
-            bulkSelected={!!bulkSelected}
-            onBulkToggle={bulkId && bulkSelection?.onToggle ? () => bulkSelection.onToggle(bulkId, {
-              text,
-              sectionLabel: bulkSelection.sectionLabel || '',
-              type: bulkSelection.type || bulkSelection.tabScope,
-              tabScope: bulkSelection.tabScope,
-            }) : null}
-            bulkSelection={bulkSelection}
-            pxUrl={buildPxUrl(text)}
-            rowClassName={rowClassName}
-          />
-        );
-      })}
+    <div className="space-y-3" dir="rtl">
+      {tableRows.length > 0 && (
+        <TemplateItemsTable
+          rows={tableRows}
+          videoId={videoId}
+          bulkSelection={bulkSelection}
+          onSaveToBrain={onSaveToBrain}
+          isSaved={isSaved}
+          getConnectButton={getConnectButton}
+          items={items}
+        />
+      )}
+      {plainRows.length > 0 && (
+        <div className="space-y-0.5">
+          {plainRows.map(({ text, sourceItem, brainReason, i }) => {
+            const stockVisual = getStockStatusVisual(sourceItem);
+            const bulkId = bulkSelection
+              ? `${bulkSelection.idPrefix}:${i}`
+              : null;
+            const bulkSelected = bulkId && bulkSelection?.multiSelected?.has(bulkId);
+            const url = getItemUrl ? getItemUrl(text, items[i]) : null;
+            const connectButton = getConnectButton ? getConnectButton(text, items[i]) : null;
+            return (
+              <ItemRow
+                key={i}
+                text={text}
+                brainReason={brainReason}
+                sourceItem={sourceItem}
+                videoId={videoId}
+                productionRowId={bulkId}
+                rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
+                url={url}
+                connectButton={connectButton}
+                stockVisual={stockVisual}
+                macroDirection={macroDirection}
+                saved={isSaved ? isSaved(text) : false}
+                onBrain={onSaveToBrain ? () => onSaveToBrain(text) : null}
+                bulkSelected={!!bulkSelected}
+                onBulkToggle={bulkId && bulkSelection?.onToggle ? () => bulkSelection.onToggle(bulkId, {
+                  text,
+                  sectionLabel: bulkSelection.sectionLabel || '',
+                  type: bulkSelection.type || bulkSelection.tabScope,
+                  tabScope: bulkSelection.tabScope,
+                }) : null}
+                bulkSelection={bulkSelection}
+                pxUrl={buildPxUrl(text)}
+                rowClassName={rowClassName}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

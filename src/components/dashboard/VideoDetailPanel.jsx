@@ -137,6 +137,7 @@ import { MarketIndicesTable } from "./MarketIndicesTable";
 import { SpecializedContentRenderer } from "./SpecializedContentRenderer";
 import { BriefContextHeader } from "./BriefContextHeader";
 import { detectVideoType, extractVideoTabItems, getBriefDisplayClassification, getTabBadge, normalizeSubCategory, getMorningBriefFieldMapping, UNIVERSAL_TABS, LEARNING_SUB_TAB_VALUES } from "@/config/videoTabsConfig";
+import { resolveSubCategorySlugFromTopics } from "@/utils/subCategoryTopicResolver";
 import {
   createWorkspaceProvenance,
   getWorkspaceHeadingBySourceTab,
@@ -255,6 +256,7 @@ import {
   buildChaptersBulkItems,
 } from "@/lib/universalTabBulkItems";
 import { SummaryBriefingView } from "@/components/dashboard/SummaryBriefingView";
+import { FullSummaryParagraphs } from "@/components/dashboard/FullSummaryParagraphs";
 import { SUMMARY_CARD_CLASS, SUMMARY_CARD_TITLE_CLASS, SUMMARY_LEAD_CLASS } from "@/lib/summaryCardStyles";
 import { buildDailyBriefingView } from "@/lib/summaryBriefingDisplay";
 import { collectVideoKnowledgePackage } from "@/lib/videoKnowledgePackage";
@@ -2749,8 +2751,13 @@ export function VideoDetailPanel({
       ? String(video.confirmedSubCategory).trim()
       : null;
     const rawValue = confirmedVal ?? subCategoryOverride ?? video?.subCategory ?? videoProp?.subCategory;
-    return typeof rawValue === "string" ? String(rawValue).trim() : "";
-  }, [subCategoryOverride, video?.confirmedSubCategory, video?.userConfirmedSubCategory, video?.subCategory, videoProp?.subCategory]);
+    const trimmed = typeof rawValue === "string" ? String(rawValue).trim() : "";
+    if (trimmed) return trimmed;
+    // No subCategory/confirmedSubCategory was ever recorded on this video (e.g.
+    // classified only via the knowledge-taxonomy topic picker) — fall back to
+    // the topicIds → subCategory slug resolver as a last resort.
+    return resolveSubCategorySlugFromTopics(video?.topicIds || videoProp?.topicIds) || "";
+  }, [subCategoryOverride, video?.confirmedSubCategory, video?.userConfirmedSubCategory, video?.subCategory, videoProp?.subCategory, video?.topicIds, videoProp?.topicIds]);
 
   const effectiveVideo = useMemo(() => {
     if (!timestampedVideo) return timestampedVideo;
@@ -7078,7 +7085,7 @@ export function VideoDetailPanel({
 
   const currentGemsJsonValidation = useMemo(() => {
     const raw = gemsPasteInput.trim();
-    if (!raw) return { hasValue: false, isValid: false, parseValid: false, schemaValid: false, error: null, result: null };
+    if (!raw) return { hasValue: false, isValid: false, parseValid: false, schemaValid: false, error: null, result: null, densityWarnings: [] };
     const result = parseAndValidateGemsJson(raw);
     const error = result.diagnostics
       ? new Error(result.diagnostics.message)
@@ -7090,6 +7097,7 @@ export function VideoDetailPanel({
       schemaValid: Boolean(result.validation?.ok),
       error,
       result,
+      densityWarnings: result.validation?.densityWarnings || [],
     };
   }, [gemsPasteInput]);
 
@@ -9592,6 +9600,28 @@ export function VideoDetailPanel({
                         }}
                       />
                     )}
+                    {/* ── Cross-content signal: fundamental video with technical fields
+                         populated (or vice versa) — signal-based only, never a guessed
+                         classification. Uses the real GEM output fields already on the
+                         video record; shows nothing when those fields are empty. ── */}
+                    {(() => {
+                      const hasItems = (...arrs) => arrs.some((a) => Array.isArray(a) && a.length > 0);
+                      let crossSignal = null;
+                      if (effectiveSubCategory === 'fundamental-analysis' && hasItems(effectiveVideo?.indicators, effectiveVideo?.setups, effectiveVideo?.patterns)) {
+                        crossSignal = '🔧 כולל גם תוכן טכני';
+                      } else if (effectiveSubCategory === 'technical-analysis' && hasItems(effectiveVideo?.frameworks, effectiveVideo?.financialMetrics, effectiveVideo?.valuation, effectiveVideo?.investmentChecklist)) {
+                        crossSignal = '📊 כולל גם תוכן פונדמנטלי';
+                      }
+                      if (!crossSignal) return null;
+                      return (
+                        <span
+                          className={`${BASE} ${MUTED}`}
+                          title="מבוסס על שדות תוכן שבפועל קיימים בניתוח — לא סיווג משוער"
+                        >
+                          {crossSignal}
+                        </span>
+                      );
+                    })()}
                     {/* ── Field 3: כותרת (optional) ─────────────────── */}
                     {isSubtitleEditing ? (
                       <span
@@ -11067,66 +11097,144 @@ export function VideoDetailPanel({
                               )}
                             </div>
                           </div>
-                          <p className={SUMMARY_LEAD_CLASS} data-section-content="סיכום">{summaryShort}</p>
+                          <BrainSelectableItem
+                            id="summary:short"
+                            text={summaryShort}
+                            isSelected={multiSelected.has('summary:short')}
+                            isSaved={isBrainItemSaved(summaryShort, 'summary')}
+                            onToggle={() => toggleMultiSelect('summary:short', { text: summaryShort, sectionLabel: 'סיכום', type: 'summary' })}
+                            onSaveSingle={(note) => saveSingleItemToBrain(summaryShort, 'summary', 'סיכום', note)}
+                            onCopy={() => navigator.clipboard.writeText(summaryShort).then(() => toast.success('הועתק'))}
+                          >
+                            <p className={SUMMARY_LEAD_CLASS} data-section-content="סיכום">{summaryShort}</p>
+                          </BrainSelectableItem>
                         </div>
                         )}
-                        {Array.isArray(effectiveVideo.keyPoints) && effectiveVideo.keyPoints.length > 0 ? (
-                          <>
-                            <ul className="space-y-3 text-right" dir="rtl">
-                      {effectiveVideo.keyPoints.map((point, i) => {
-                        const pointText = typeof point === 'string'
-                          ? point
-                          : String(point?.text || point?.title || point?.content || point?.summary || '').trim();
-                        if (!pointText) return null;
-                        const itemId = `keypoints:${i}`;
-                        const sentenceIsOpponent = opponentSentences.some(s => s.id === itemId);
-                        const sentenceObj = opponentSentences.find(s => s.id === itemId);
-                        if (keyPointsFilter === 'mine' && sentenceIsOpponent) return null;
-                        if (keyPointsFilter === 'opponent' && !sentenceIsOpponent) return null;
-                        return (
-                          <li key={i} data-static-time-candidate="true" className="flex items-start gap-2">
-                            <span className={`mt-2.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                              sentenceIsOpponent
-                                ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
-                                : 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
-                            }`}>
-                              {i + 1}
-                            </span>
-                            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
-                              <BrainSelectableItem
-                                id={itemId}
-                                text={pointText}
-                                isSelected={multiSelected.has(itemId)}
-                                isSaved={isBrainItemSaved(pointText, 'keypoints')}
-                                onToggle={() => toggleMultiSelect(itemId, { text: pointText, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
-                                onSaveSingle={(note) => saveSingleItemToBrain(pointText, 'keypoints', 'נקודות מפתח', note)}
-                                onCopy={() => navigator.clipboard.writeText(pointText).then(() => toast.success('הועתק'))}
-                                isPolitical={effectiveGemInfo?.gemKey === 'political'}
-                                isOpponent={sentenceIsOpponent}
-                                onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: pointText, sourceTab: 'keypoints', sourceIndex: i })}
-                                opponentResponse={sentenceObj?.response || null}
-                                onSaveResponse={handleSaveOpponentResponse}
-                              />
-                              <StaticVideoTimestampLink
-                                videoId={rowTimestampYoutubeId}
-                                item={point}
-                              />
+                        {Array.isArray(effectiveVideo.keyPoints) && effectiveVideo.keyPoints.length > 0 ? (() => {
+                          const visibleKeyPoints = effectiveVideo.keyPoints
+                            .map((point, i) => {
+                              const pointText = typeof point === 'string'
+                                ? point
+                                : String(point?.text || point?.title || point?.content || point?.summary || '').trim();
+                              return { point, pointText, i };
+                            })
+                            .filter(({ pointText, i }) => {
+                              if (!pointText) return false;
+                              const itemId = `keypoints:${i}`;
+                              const sentenceIsOpponent = opponentSentences.some(s => s.id === itemId);
+                              if (keyPointsFilter === 'mine' && sentenceIsOpponent) return false;
+                              if (keyPointsFilter === 'opponent' && !sentenceIsOpponent) return false;
+                              return true;
+                            });
+                          if (visibleKeyPoints.length === 0) {
+                            return keyPointsFilter === 'opponent' ? (
+                              <div className="flex min-h-[100px] items-center justify-center rounded-xl border border-dashed border-rose-200 bg-rose-50/50 px-4 text-sm text-rose-400 dark:border-rose-900/40 dark:bg-rose-950/10">
+                                לא סומנו משפטים כדעת האויב
+                              </div>
+                            ) : null;
+                          }
+                          return (
+                            <div data-section="נקודות מפתח" className={SUMMARY_CARD_CLASS}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={SUMMARY_CARD_TITLE_CLASS}>🎯 נקודות מפתח</span>
+                                <div className="relative" data-pcard-drop>
+                                  <button type="button" onClick={() => setPsCardDropOpen(psCardDropOpen === 'nonPoliticalKeyPoints' ? null : 'nonPoliticalKeyPoints')} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${psCardDropOpen === 'nonPoliticalKeyPoints' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/30 dark:text-indigo-300' : 'border-transparent text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-950/30'}`}>🧠 שמור ▾</button>
+                                  {psCardDropOpen === 'nonPoliticalKeyPoints' && (
+                                    <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 overflow-hidden">
+                                      {[
+                                        { dest: 'brain', label: '🧠 שמור למוח' },
+                                        { dest: 'obsidian' },
+                                        { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
+                                      ].map(({ dest, label }) => (
+                                        <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalKeyPoints', 'נקודות מפתח', visibleKeyPoints.map((vp) => vp.pointText), dest); setPsCardDropOpen(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">
+                                          {dest === 'obsidian' ? <ObsidianSaveLabel /> : label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <ul className="divide-y divide-slate-100 dark:divide-zinc-800 text-right" dir="rtl" data-section-content="נקודות מפתח">
+                                {visibleKeyPoints.map(({ point, pointText, i }) => {
+                                  const itemId = `keypoints:${i}`;
+                                  const sentenceIsOpponent = opponentSentences.some(s => s.id === itemId);
+                                  const sentenceObj = opponentSentences.find(s => s.id === itemId);
+                                  return (
+                                    <li key={i} data-static-time-candidate="true" className="flex items-start gap-2 py-3 first:pt-0 last:pb-0">
+                                      <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                        sentenceIsOpponent
+                                          ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                                          : 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
+                                      }`}>
+                                        {i + 1}
+                                      </span>
+                                      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+                                        <BrainSelectableItem
+                                          id={itemId}
+                                          text={pointText}
+                                          isSelected={multiSelected.has(itemId)}
+                                          isSaved={isBrainItemSaved(pointText, 'keypoints')}
+                                          onToggle={() => toggleMultiSelect(itemId, { text: pointText, sectionLabel: 'נקודות מפתח', type: 'keypoints' })}
+                                          onSaveSingle={(note) => saveSingleItemToBrain(pointText, 'keypoints', 'נקודות מפתח', note)}
+                                          onCopy={() => navigator.clipboard.writeText(pointText).then(() => toast.success('הועתק'))}
+                                          isPolitical={effectiveGemInfo?.gemKey === 'political'}
+                                          isOpponent={sentenceIsOpponent}
+                                          onToggleOpponent={() => handleToggleSentenceOpponent({ id: itemId, text: pointText, sourceTab: 'keypoints', sourceIndex: i })}
+                                          opponentResponse={sentenceObj?.response || null}
+                                          onSaveResponse={handleSaveOpponentResponse}
+                                          textClassName="text-slate-900 dark:text-zinc-100"
+                                          textSizeClassName="text-base sm:text-[1.05rem] font-medium"
+                                        />
+                                        <StaticVideoTimestampLink
+                                          videoId={rowTimestampYoutubeId}
+                                          item={point}
+                                        />
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
                             </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {keyPointsFilter === 'opponent' && opponentSentences.filter(s => s.sourceTab === 'keypoints').length === 0 && (
-                      <div className="flex min-h-[100px] items-center justify-center rounded-xl border border-dashed border-rose-200 bg-rose-50/50 px-4 text-sm text-rose-400 dark:border-rose-900/40 dark:bg-rose-950/10">
-                        לא סומנו משפטים כדעת האויב
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-400">
-                    אין נקודות מפתח זמינות
-                  </div>
-                )}
+                          );
+                        })() : (
+                          <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-400">
+                            אין נקודות מפתח זמינות
+                          </div>
+                        )}
+                        {!hideStandaloneSummaryCard && effectiveVideo.fullSummary && effectiveVideo.fullSummary.trim() && effectiveVideo.fullSummary.trim() !== summaryShort?.trim() && (
+                        <div data-section="סיכום מלא" className={SUMMARY_CARD_CLASS}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={SUMMARY_CARD_TITLE_CLASS}>📖 סיכום מלא</span>
+                            <div className="relative" data-pcard-drop>
+                              <button type="button" onClick={() => setPsCardDropOpen(psCardDropOpen === 'nonPoliticalFullSummary' ? null : 'nonPoliticalFullSummary')} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border transition-colors ${psCardDropOpen === 'nonPoliticalFullSummary' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/30 dark:text-indigo-300' : 'border-transparent text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-950/30'}`}>🧠 שמור ▾</button>
+                              {psCardDropOpen === 'nonPoliticalFullSummary' && (
+                                <div data-pcard-drop className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 overflow-hidden">
+                                  {[
+                                    { dest: 'brain', label: '🧠 שמור למוח' },
+                                    { dest: 'obsidian' },
+                                    { dest: 'workspace', label: '⭐ שמור ל-Workspace' },
+                                  ].map(({ dest, label }) => (
+                                    <button key={dest} type="button" onClick={() => { handleSavePsSectionTo('nonPoliticalFullSummary', 'סיכום מלא', effectiveVideo.fullSummary, dest); setPsCardDropOpen(null); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-right text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-900 transition-colors">
+                                      {dest === 'obsidian' ? <ObsidianSaveLabel /> : label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <BrainSelectableItem
+                            id="summary:full"
+                            text={effectiveVideo.fullSummary}
+                            isSelected={multiSelected.has('summary:full')}
+                            isSaved={isBrainItemSaved(effectiveVideo.fullSummary, 'summary')}
+                            onToggle={() => toggleMultiSelect('summary:full', { text: effectiveVideo.fullSummary, sectionLabel: 'סיכום מלא', type: 'summary' })}
+                            onSaveSingle={(note) => saveSingleItemToBrain(effectiveVideo.fullSummary, 'summary', 'סיכום מלא', note)}
+                            onCopy={() => navigator.clipboard.writeText(effectiveVideo.fullSummary).then(() => toast.success('הועתק'))}
+                          >
+                            <FullSummaryParagraphs text={effectiveVideo.fullSummary} dataSectionContent="סיכום מלא" />
+                          </BrainSelectableItem>
+                        </div>
+                        )}
                 {video.tags && video.tags.length > 0 && (
                   <div className="text-right pt-2">
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">תגיות</h4>
@@ -12420,6 +12528,66 @@ export function VideoDetailPanel({
                           tabKey: 'useful-knowledge',
                         },
                         {
+                          key: 'analysis-frameworks',
+                          label: '⚙️ מסגרות ניתוח',
+                          items: extractVideoTabItems(effectiveVideo, 'analysis-frameworks', marketBriefData),
+                          tabKey: 'analysis-frameworks',
+                        },
+                        {
+                          key: 'financial-metrics',
+                          label: '📈 מדדים פיננסיים',
+                          items: extractVideoTabItems(effectiveVideo, 'financial-metrics', marketBriefData),
+                          tabKey: 'financial-metrics',
+                        },
+                        {
+                          key: 'valuation',
+                          label: '💰 הערכת שווי',
+                          items: extractVideoTabItems(effectiveVideo, 'valuation', marketBriefData),
+                          tabKey: 'valuation',
+                        },
+                        {
+                          key: 'investment-checklist',
+                          label: "📋 צ'קליסט השקעה",
+                          items: extractVideoTabItems(effectiveVideo, 'investment-checklist', marketBriefData),
+                          tabKey: 'investment-checklist',
+                        },
+                        {
+                          key: 'prompt-templates',
+                          label: '📜 תבניות פרומפט',
+                          items: extractVideoTabItems(effectiveVideo, 'prompt-templates', marketBriefData),
+                          tabKey: 'prompt-templates',
+                        },
+                        {
+                          key: 'indicators',
+                          label: '📈 אינדיקטורים',
+                          items: extractVideoTabItems(effectiveVideo, 'indicators', marketBriefData),
+                          tabKey: 'indicators',
+                        },
+                        {
+                          key: 'setups',
+                          label: '🎯 סטאפים',
+                          items: extractVideoTabItems(effectiveVideo, 'setups', marketBriefData),
+                          tabKey: 'setups',
+                        },
+                        {
+                          key: 'patterns',
+                          label: '📊 פטרנים',
+                          items: extractVideoTabItems(effectiveVideo, 'patterns', marketBriefData),
+                          tabKey: 'patterns',
+                        },
+                        {
+                          key: 'cause-effect',
+                          label: '🔗 סיבה ותוצאה',
+                          items: extractVideoTabItems(effectiveVideo, 'cause-effect', marketBriefData),
+                          tabKey: 'cause-effect',
+                        },
+                        {
+                          key: 'market-impact',
+                          label: '🌎 השפעה על השוק',
+                          items: extractVideoTabItems(effectiveVideo, 'market-impact', marketBriefData),
+                          tabKey: 'market-impact',
+                        },
+                        {
                           key: 'temporary',
                           label: '⏳ עובדות שוק זמניות',
                           items: temporaryItems,
@@ -12473,6 +12641,7 @@ export function VideoDetailPanel({
                               type: tabKey,
                               tabScope: 'useful-knowledge',
                             })}
+                            templateTable={!hasStructuredSections}
                           />
                         </div>
                       ))}
@@ -13560,6 +13729,18 @@ export function VideoDetailPanel({
             <span>✅</span>
             <span>JSON עבר parse ואימות סכמה</span>
           </p>
+        )}
+        {currentGemsJsonValidation.densityWarnings?.length > 0 && (
+          <div
+            data-testid="gems-density-warning"
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-right text-xs font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
+            role="status"
+          >
+            <p>⚠️ תוכן דליל — ייתכן שה-GEM סיכם ולא פירט</p>
+            {currentGemsJsonValidation.densityWarnings.map((w, i) => (
+              <p key={i} className="mt-1 font-normal">{w}</p>
+            ))}
+          </div>
         )}
         {gemsDraftPersistenceWarning && (
           <div
