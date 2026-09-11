@@ -1,4 +1,3 @@
-import { LearningTabContent } from "./LearningTabContent";
 import { DedicatedContentSection } from "./DedicatedContentSection";
 import { MarketIndicesTable } from "./MarketIndicesTable";
 import { MorningBriefDashboard } from "./MorningBriefDashboard";
@@ -29,6 +28,22 @@ const STATIC_TIME_NARRATIVE_TAB_KEYS = new Set([
   'political-ideology', 'political-theology', 'political-liberal',
   'political-for', 'political-against', 'political-debates', 'political-reusable',
 ]);
+
+// Same field groups the header's cross-content-signal chip already uses
+// (VideoDetailPanel.jsx, ~line 9609) to detect fundamental vs. technical
+// content — exclusive to those two GEM families, unlike keyInsights/
+// checklists/mistakes/promptTemplates which general-purpose GEM output can
+// also populate. Deliberately narrow: a video only counts as fundamental/
+// technical here when it carries one of these specific fields, not any
+// learning content whatsoever.
+const FUNDAMENTAL_SIGNAL_FIELDS = ['frameworks', 'analysisFrameworks', 'financialMetrics', 'valuation', 'investmentChecklist'];
+const TECHNICAL_SIGNAL_FIELDS = ['indicators', 'setups', 'tradingSetups', 'patterns', 'tradingPatterns'];
+function hasNonEmptyArrayField(video, keys) {
+  return keys.some((k) => Array.isArray(video?.[k]) && video[k].length > 0);
+}
+function looksLikeFundamentalOrTechnical(video) {
+  return hasNonEmptyArrayField(video, FUNDAMENTAL_SIGNAL_FIELDS) || hasNonEmptyArrayField(video, TECHNICAL_SIGNAL_FIELDS);
+}
 
 function Section({ label, items, tabKey, sectionKey, videoId, onSaveToBrain, checkSaved, bulkSelection }) {
   return (
@@ -101,45 +116,44 @@ export function SpecializedContentRenderer({
     );
   };
 
-  // ── Fundamental Analysis ─────────────────────────────────────────
-  if (slug === 'fundamental-analysis') {
-    const sectionDefs = [
-      { key: 'financial-metrics', label: '📈 מדדים פיננסיים', items: extractVideoTabItems(effectiveVideo, 'financial-metrics', marketBriefData), tabKey: 'financial-metrics' },
-      { key: 'valuation', label: '💰 הערכת שווי', items: extractVideoTabItems(effectiveVideo, 'valuation', marketBriefData), tabKey: 'valuation' },
-      { key: 'analysis-frameworks', label: '⚙️ מסגרות ניתוח', items: extractVideoTabItems(effectiveVideo, 'analysis-frameworks', marketBriefData), tabKey: 'analysis-frameworks' },
-      { key: 'investment-checklist', label: "📋 צ'קליסט השקעה", items: extractVideoTabItems(effectiveVideo, 'investment-checklist', marketBriefData), tabKey: 'investment-checklist' },
-      { key: 'mistakes', label: '⚠️ סיכונים', items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData), tabKey: 'mistakes' },
-      { key: 'checklists', label: '✅ כללים', items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData), tabKey: 'checklists' },
-    ].filter((d) => d.items.length > 0);
-    const sects = sectionDefs.map((d) => sect(d.label, d.items, d.tabKey, d.key));
-
-    if (sects.length === 0) return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
-        <span className="text-3xl mb-2 opacity-30">📊</span>
-        <p className="text-sm">אין עדיין נתונים פונדמנטליים — נתח את הסרטון</p>
-      </div>
-    );
-    return renderBulkShell(sectionDefs, sects);
-  }
-
-  // ── Technical Analysis ───────────────────────────────────────────
-  if (slug === 'technical-analysis') {
-    const sectionDefs = [
-      { key: 'indicators', label: '📈 אינדיקטורים', items: extractVideoTabItems(effectiveVideo, 'indicators', marketBriefData), tabKey: 'indicators' },
-      { key: 'setups', label: '🎯 סטאפים', items: extractVideoTabItems(effectiveVideo, 'setups', marketBriefData), tabKey: 'setups' },
-      { key: 'patterns', label: '📊 פטרנים', items: extractVideoTabItems(effectiveVideo, 'patterns', marketBriefData), tabKey: 'patterns' },
-      { key: 'checklists', label: '✅ כללים', items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData), tabKey: 'checklists' },
-      { key: 'mistakes', label: '⚠️ טעויות', items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData), tabKey: 'mistakes' },
-    ].filter((d) => d.items.length > 0);
-    const sects = sectionDefs.map((d) => sect(d.label, d.items, d.tabKey, d.key));
-
-    if (sects.length === 0) return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
-        <span className="text-3xl mb-2 opacity-30">📊</span>
-        <p className="text-sm">אין עדיין נתונים טכניים — נתח את הסרטון</p>
-      </div>
-    );
-    return renderBulkShell(sectionDefs, sects);
+  // ── Fundamental / Technical Analysis ──────────────────────────────
+  // Tab 7 is for that day's stock/company content only — learning material
+  // (frameworks, checklists, mistakes, financial metrics, valuation,
+  // indicators, setups, patterns) lives in tabs 3/4 instead (see
+  // VideoDetailPanel.jsx's useful-knowledge section array).
+  // Renders the exact same 9-section dashboard the morning/evening brief
+  // uses (MorningBriefDashboard + buildMorningBriefBulkSections) — not a
+  // parallel implementation. Every extractVideoTabItems() case it calls
+  // already has a flat/legacy fallback for videos with no marketBriefData,
+  // so this works for a plain GEMS-paste video, not just a real brief.
+  //
+  // Trigger condition is broader than `slug === 'fundamental-analysis' ||
+  // 'technical-analysis'` on purpose: subCategory is a free-text field the
+  // paste flow never sets automatically (confirmed live — a real
+  // GEMS-pasted fundamental video has subCategory === ''), so `slug` is
+  // null for most real fundamental/technical videos and they would never
+  // reach this branch on slug alone. looksLikeFundamentalOrTechnical()
+  // mirrors the same field groups the header's cross-content-signal chip
+  // already uses (VideoDetailPanel.jsx, ~line 9609) so a video only
+  // qualifies when it actually carries fundamental- or technical-specific
+  // content, not any GEM output in general.
+  if (
+    slug === 'fundamental-analysis' ||
+    slug === 'technical-analysis' ||
+    (!slug && looksLikeFundamentalOrTechnical(effectiveVideo))
+  ) {
+    const fundamentalBulkDefs = buildMorningBriefBulkSections(effectiveVideo, marketBriefData);
+    return renderBulkShell(fundamentalBulkDefs, (
+      <MorningBriefDashboard
+        effectiveVideo={effectiveVideo}
+        marketBriefData={marketBriefData}
+        onSaveToBrain={onSaveToBrain}
+        onSaveMarketBriefSection={onSaveMarketBriefSection}
+        bulkSelection={bulkSelection}
+        bulkSections={fundamentalBulkDefs}
+        presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+      />
+    ));
   }
 
   // ── Morning Brief — fixed 10-section dashboard ─────────────────────
@@ -407,22 +421,19 @@ export function SpecializedContentRenderer({
     return renderBulkShell(politicalSectionDefs, sects);
   }
 
-  // ── Default: show any available specialized content ─────────────
-  const defaultSectionDefs = [
-    { key: 'trading-brain', label: '🧠 תובנות מפתח', items: extractVideoTabItems(effectiveVideo, 'trading-brain', marketBriefData), tabKey: 'trading-brain' },
-    { key: 'indicators', label: '📈 אינדיקטורים', items: extractVideoTabItems(effectiveVideo, 'indicators', marketBriefData), tabKey: 'indicators' },
-    { key: 'setups', label: '🎯 סטאפים', items: extractVideoTabItems(effectiveVideo, 'setups', marketBriefData), tabKey: 'setups' },
-    { key: 'patterns', label: '📊 פטרנים', items: extractVideoTabItems(effectiveVideo, 'patterns', marketBriefData), tabKey: 'patterns' },
-    { key: 'checklists', label: '✅ כללים', items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData), tabKey: 'checklists' },
-    { key: 'mistakes', label: '⚠️ טעויות', items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData), tabKey: 'mistakes' },
-    { key: 'valuation', label: '💰 הערכת שווי', items: extractVideoTabItems(effectiveVideo, 'valuation', marketBriefData), tabKey: 'valuation' },
-    { key: 'financial-metrics', label: '📊 מדדים פיננסיים', items: extractVideoTabItems(effectiveVideo, 'financial-metrics', marketBriefData), tabKey: 'financial-metrics' },
-    { key: 'cause-effect', label: '🔗 סיבה ותוצאה', items: extractVideoTabItems(effectiveVideo, 'cause-effect', marketBriefData), tabKey: 'cause-effect' },
-    { key: 'market-impact', label: '🌎 השפעה על השוק', items: extractVideoTabItems(effectiveVideo, 'market-impact', marketBriefData), tabKey: 'market-impact' },
-  ].filter((d) => d.items.length > 0);
-  const defaultSects = defaultSectionDefs.map((d) => sect(d.label, d.items, d.tabKey, d.key));
-
-  if (defaultSects.length === 0) return (
+  // ── Default: no dedicated (daily stock/company) content for this video ──
+  // All 10 fields formerly rendered here as per-field cards (trading-brain,
+  // indicators, setups, patterns, checklists, mistakes, valuation,
+  // financial-metrics, cause-effect, market-impact) are rendered
+  // unconditionally elsewhere regardless of which branch of this function
+  // runs: trading-brain's own fields (mainLesson/brainHighlights/
+  // tradingPrinciples/mentalModels/keyInsights) are already covered by tab
+  // 3's lesson/insights/principles/thesis sections, and the other 9 are
+  // covered by tab 4's useful-knowledge section array (VideoDetailPanel.jsx)
+  // — neither depends on normalizedSubCategory, so removing them here can't
+  // lose data. A video with real fundamental/technical signal never reaches
+  // this point at all (see looksLikeFundamentalOrTechnical() above).
+  return (
     <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-zinc-500">
       <span className="text-3xl mb-2 opacity-30">🎯</span>
       <p className="text-sm">אין תוכן ייעודי לסרטון זה</p>
@@ -434,5 +445,4 @@ export function SpecializedContentRenderer({
       )}
     </div>
   );
-  return renderBulkShell(defaultSectionDefs, defaultSects);
 }

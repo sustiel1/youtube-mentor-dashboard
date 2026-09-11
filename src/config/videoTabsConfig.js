@@ -686,7 +686,12 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       }
       if (import.meta.env.DEV) console.log('[UNIVERSAL TAB TRACE] tab: summary | sourcePath: legacy | exists:', !!(marketBriefData || video.shortSummary));
       return [
-        ...pickStringAsArray(video, 'shortSummary', 'fullSummary', 'gemSummary', 'summary', 'mainLesson'),
+        // shortSummary/fullSummary/gemSummary/summary are aliases for the same
+        // "summary text" concept — first one present wins. mainLesson is a
+        // distinct takeaway, not an alias, so it is appended separately instead
+        // of only showing when the summary aliases are all empty.
+        ...pickStringAsArray(video, 'shortSummary', 'fullSummary', 'gemSummary', 'summary'),
+        ...pickStringAsArray(video, 'mainLesson'),
         ...(marketBriefData && !(video.shortSummary || video.fullSummary)
           ? pickArray(marketBriefData, 'top5Insights', 'reusableKnowledge').slice(0, 3)
           : []),
@@ -779,8 +784,13 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
       ];
 
     case 'mistakes':
+      // mistakesToAvoid/warnings/riskRules are distinct content, not aliases of
+      // each other (GEMs can and do populate more than one) — merge all three
+      // instead of returning only the first non-empty one.
       return [
-        ...pickArray(video, 'mistakesToAvoid', 'warnings', 'riskRules'),
+        ...pickArray(video, 'mistakesToAvoid'),
+        ...pickArray(video, 'warnings'),
+        ...pickArray(video, 'riskRules'),
         ...pickArray(al, 'mistakes', 'mistakesToAvoid'),
         ...pickArray(a, 'warnings', 'mistakesToAvoid'),
       ];
@@ -930,11 +940,18 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(a, 'frameworks', 'analysisFrameworks'),
       ];
 
-    case 'investment-checklist':
+    case 'investment-checklist': {
+      // investmentChecklist is distinct content from checklists (governance/sentiment
+      // items vs general reusable checklists) — only fall back to checklists when
+      // investmentChecklist itself is unmapped, not unconditionally.
+      const primary = [...pickArray(video, 'investmentChecklist'), ...pickArray(a, 'investmentChecklist')];
+      return primary.length > 0 ? primary : pickArray(video, 'checklists');
+    }
+
+    case 'prompt-templates':
       return [
-        ...pickArray(video, 'investmentChecklist'),
-        ...pickArray(a, 'investmentChecklist'),
-        ...pickArray(video, 'checklists'), // graceful fallback
+        ...pickArray(video, 'promptTemplates'),
+        ...pickArray(a, 'promptTemplates'),
       ];
 
     // ── Macro ─────────────────────────────────────────────────────────

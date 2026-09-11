@@ -233,6 +233,12 @@ function BriefRowSaveActions({
   );
 }
 
+// Stable reference for the "no marketBriefData" fallback below — useBriefSectionManualEdit's
+// own useEffect depends on this value, so a fresh `{}` literal on every render (the video has
+// no marketBriefData at all, e.g. a fundamental/technical GEMS-paste video) would change on
+// every render and loop (setDraft → render → new {} → effect fires → setDraft → ...).
+const EMPTY_MARKET_BRIEF_DATA = {};
+
 function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo, onSaveMarketBriefSection, newsItems, presentation }) {
   const ui = resolveMorningBriefPresentation(presentation);
   const enabled = Boolean(onSaveMarketBriefSection && marketBriefData);
@@ -243,7 +249,7 @@ function useMorningBriefSectionEdit(sectionId, { marketBriefData, effectiveVideo
 
   const edit = useBriefSectionManualEdit({
     sectionId,
-    marketBriefData: marketBriefData || {},
+    marketBriefData: marketBriefData || EMPTY_MARKET_BRIEF_DATA,
     getDraftRows,
     onSaveSection: onSaveMarketBriefSection || (async () => {}),
   });
@@ -2613,7 +2619,11 @@ export function OpportunitiesRisksDashboard({
                   const saveText = [title, description].filter(Boolean).join(' — ');
                   const selectionText = formatMorningBriefOpportunityText(idea);
                   const pillLabel = String(idea.kindLabel || '').trim();
-                  const style = getMacroOppStyle(pillLabel, title);
+                  const style = {
+                    ...getMacroOppStyle(pillLabel, title),
+                    bg: 'bg-emerald-50/80 dark:bg-emerald-950/20',
+                    border: 'border-emerald-200 dark:border-emerald-800',
+                  };
                   return (
                     <MacroStyleOpportunityCard
                       key={`opp-${i}-${title}`}
@@ -2666,7 +2676,11 @@ export function OpportunitiesRisksDashboard({
                   }
                   const { title, description, severity, tag } = parseRiskDisplay(risk);
                   const pillLabel = (severity ? translateImportanceLevel(severity) : null) || tag || '';
-                  const style = getMacroRiskStyle(severity || tag || '');
+                  const style = {
+                    ...getMacroRiskStyle(severity || tag || ''),
+                    bg: 'bg-rose-50/80 dark:bg-rose-950/20',
+                    border: 'border-rose-200 dark:border-rose-800',
+                  };
                   return (
                     <MacroStyleRiskCard
                       key={`risk-${i}-${title}`}

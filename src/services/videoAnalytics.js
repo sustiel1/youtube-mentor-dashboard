@@ -1204,6 +1204,10 @@ export function normalizeAiAnalysisResult(result) {
     frameworks: normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks).length > 0
       ? normalizeLearningArray(merged.frameworks || nested.frameworks || learning.frameworks)
       : fallbackFrameworks,
+    financialMetrics: normalizeLearningArray(merged.financialMetrics || nested.financialMetrics),
+    valuation: normalizeLearningArray(merged.valuation || nested.valuation),
+    investmentChecklist: normalizeLearningArray(merged.investmentChecklist || nested.investmentChecklist),
+    promptTemplates: normalizeLearningArray(merged.promptTemplates || nested.promptTemplates),
     concepts: normalizeStringArray(merged.concepts || nested.concepts).length > 0
       ? normalizeStringArray(merged.concepts || nested.concepts)
       : fallbackConcepts,
@@ -1225,6 +1229,14 @@ export function normalizeAiAnalysisResult(result) {
     usefulKnowledge: normalizeLearningArray(merged.usefulKnowledge || nested.usefulKnowledge || learning.usefulKnowledge || learning.keyTakeaways),
     keyTakeaways: normalizeLearningArray(merged.keyTakeaways || nested.keyTakeaways || learning.keyTakeaways),
     chapters,
+    // A pasted GEMS chapters array must fully replace any stale `aiChapters` from an
+    // earlier automatic analysis — resolveVideoChapters() (videoAnalytics.js) and
+    // mergeChapterSources() (chapterEnrichment.js) both read `aiChapters` as a parallel
+    // source, so leaving it untouched lets old and new chapters interleave in the
+    // displayed list instead of the new paste cleanly replacing the old one.
+    // Mirroring `chapters` into `aiChapters` (rather than clearing it) also sidesteps
+    // updateStoredVideo()'s hasNonEmptyChapters guard, which strips an empty array.
+    ...(chapters.length > 0 ? { aiChapters: chapters, chapterSource: 'gems_analysis' } : {}),
     brainSummary: String(merged.brainSummary || nested.brainSummary || "").trim() || derivedBrainSummary || null,
     atomicKnowledge,
     raw: result,

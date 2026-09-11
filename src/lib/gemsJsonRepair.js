@@ -8,6 +8,37 @@ const UNIVERSAL_TAB_TYPES = {
   specialized: ['object'],
 };
 
+// Soft, non-blocking content-density hints for the fundamental-analysis GEM
+// family (docs/gems/GEM-FUNDAMENTAL-*) — never flips `ok`, never fires on a
+// field that is simply absent (technical/macro/brief payloads legitimately
+// never populate these), only on a field that is present but thin (0-1
+// items), signalling the GEM likely summarized instead of enumerating.
+const DENSITY_CHECK_FIELDS = {
+  financialMetrics: 'מדדים פיננסיים',
+  valuation: 'הערכת שווי',
+  investmentChecklist: "צ'קליסט השקעה",
+  promptTemplates: 'תבניות פרומפט',
+};
+
+function computeDensityWarnings(value) {
+  if (!isPlainObject(value)) return [];
+  // Scoped to the fundamental-analysis GEM's own signature — frameworks,
+  // checklists and mistakesToAvoid are never all three present together on
+  // any brief/technical/macro/political schema in this app.
+  const hasFundamentalShape = Array.isArray(value.frameworks)
+    && Array.isArray(value.checklists)
+    && Array.isArray(value.mistakesToAvoid);
+  if (!hasFundamentalShape) return [];
+  const warnings = [];
+  for (const [key, label] of Object.entries(DENSITY_CHECK_FIELDS)) {
+    const arr = value[key];
+    if (Array.isArray(arr) && arr.length > 0 && arr.length <= 1) {
+      warnings.push(`השדה "${label}" (${key}) מכיל רק פריט אחד — ייתכן שה-GEM סיכם במקום למנות כל פריט בנפרד.`);
+    }
+  }
+  return warnings;
+}
+
 const LEGACY_MARKET_FIELDS = [
   'shortSummary',
   'fullSummary',
@@ -248,7 +279,7 @@ export function getJsonParserDiagnostics(rawText, error) {
 export function validateGemsJsonValue(value) {
   const errors = [];
   if (!isPlainObject(value)) {
-    return { ok: false, schema: null, errors: ['Root value must be a JSON object.'] };
+    return { ok: false, schema: null, errors: ['Root value must be a JSON object.'], densityWarnings: [] };
   }
 
   if (hasOwn(value, 'contentType') && typeof value.contentType !== 'string') {
@@ -279,25 +310,25 @@ export function validateGemsJsonValue(value) {
       const hasContentSection = ['chapters', 'insights', 'usefulKnowledge', 'specialized']
         .some((key) => hasOwn(universalTabs, key));
       if (!hasContentSection) errors.push('Canonical marketBrief requires at least one content section besides summary.');
-      return { ok: errors.length === 0, schema: 'marketBrief-canonical', errors };
+      return { ok: errors.length === 0, schema: 'marketBrief-canonical', errors, densityWarnings: [] };
     }
 
     const legacyFields = LEGACY_MARKET_FIELDS.filter((key) => hasOwn(value, key));
     if (legacyFields.length < 2) {
       errors.push('Legacy marketBrief requires at least two recognized top-level content fields.');
     }
-    return { ok: errors.length === 0, schema: 'marketBrief-legacy', errors };
+    return { ok: errors.length === 0, schema: 'marketBrief-legacy', errors, densityWarnings: [] };
   }
 
   if (isPlainObject(universalTabs)) {
-    return { ok: errors.length === 0, schema: 'universal-tabs', errors };
+    return { ok: errors.length === 0, schema: 'universal-tabs', errors, densityWarnings: [] };
   }
 
   const genericFields = GENERIC_ANALYSIS_FIELDS.filter((key) => hasOwn(value, key));
   if (genericFields.length === 0) {
     errors.push('No recognized GEMS analysis fields were found.');
   }
-  return { ok: errors.length === 0, schema: 'analysis-legacy', errors };
+  return { ok: errors.length === 0, schema: 'analysis-legacy', errors, densityWarnings: computeDensityWarnings(value) };
 }
 
 export function parseAndValidateGemsJson(rawText) {
@@ -307,7 +338,7 @@ export function parseAndValidateGemsJson(rawText) {
       ok: false,
       value: null,
       diagnostics: getJsonParserDiagnostics('', new Error('JSON input is empty.')),
-      validation: { ok: false, schema: null, errors: ['JSON input is empty.'] },
+      validation: { ok: false, schema: null, errors: ['JSON input is empty.'], densityWarnings: [] },
     };
   }
 
