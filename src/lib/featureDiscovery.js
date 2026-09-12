@@ -1672,6 +1672,91 @@ export function normalizeDiscoveryIdea(raw, index = 0) {
   });
 }
 
+/** mm:ss for an optional estimated-seconds value; '' when absent/invalid. */
+export function formatDiscoveryTimestamp(totalSeconds) {
+  const n = Number(totalSeconds);
+  if (!Number.isFinite(n) || n < 0) return '';
+  const m = Math.floor(n / 60);
+  const sec = Math.floor(n % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/**
+ * Normalizes one video.appBuilding.suggestedFeatures[] item (fundamental-analysis
+ * GEM schema — feature/whatItDoes/reason/integration/coreFeatures/confidence/...)
+ * into the same card-ready idea shape ProductIdeaGrid already renders.
+ * Mirrors the GEM's own drop rules client-side as a defensive fallback:
+ * missing feature/whatItDoes/reason, or confidence "low" with no sourceQuote → drop.
+ */
+export function normalizeSuggestedFeature(raw, index = 0) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const feature = s(raw.feature);
+  const whatItDoes = s(raw.whatItDoes);
+  const reason = s(raw.reason);
+  if (!feature || !whatItDoes || !reason) return null;
+
+  const confidence = ['high', 'medium', 'low'].includes(raw.confidence) ? raw.confidence : 'medium';
+  const sourceQuote = s(raw.sourceQuote);
+  if (confidence === 'low' && !sourceQuote) return null;
+
+  const coreFeatures = (Array.isArray(raw.coreFeatures) ? raw.coreFeatures : [])
+    .map(s).filter(Boolean).slice(0, 5);
+  const dataInputs = (Array.isArray(raw.dataInputs) ? raw.dataInputs : [])
+    .map(s).filter(Boolean).slice(0, 6);
+  const integration = s(raw.integration);
+  const targetAudience = s(raw.targetAudience);
+  const category = inferCategory(feature, coreFeatures.length ? coreFeatures : [integration], 'gem-app-building');
+  const estimatedStartSeconds = Number.isFinite(raw.estimatedStartSeconds) ? raw.estimatedStartSeconds : null;
+
+  return {
+    id: raw.id || `app-building-${index}-${feature}`.toLowerCase().replace(/[^a-z0-9֐-׿]+/g, '-').slice(0, 80),
+    titleHe: feature,
+    titleEn: '',
+    productIdea: feature,
+    category,
+    valueDescription: whatItDoes,
+    sourceInsight: sourceQuote,
+    whyItMatters: reason,
+    components: coreFeatures,
+    integration: integration || null,
+    targetAudience: targetAudience || null,
+    dataInputs,
+    priority: ['high', 'medium', 'low'].includes(raw.priority) ? raw.priority : 'medium',
+    buildEffort: ['small', 'medium', 'large'].includes(raw.buildEffort) ? raw.buildEffort : null,
+    confidence,
+    evidenceType: raw.evidenceType === 'implied' ? 'implied' : 'stated',
+    estimatedStartSeconds,
+    timestampKind: estimatedStartSeconds != null ? (raw.timestampKind || 'estimated') : null,
+    sourceType: 'gem-app-building',
+    worthBuilding: null,
+    appFitScore: null,
+    reusabilityScore: null,
+    aiBuilderBrief: null,
+  };
+}
+
+/**
+ * Reads video.appBuilding.suggestedFeatures[] (the fundamental-analysis GEM's own
+ * curated 0-5 ideas) into card-ready ideas. Independent of discoverFeaturesFromMacro —
+ * this source is already GEM-curated, so none of the heuristic confidence/appFit
+ * gates from finalizeIdea() apply here.
+ */
+export function discoverFeaturesFromAppBuilding(appBuilding) {
+  const list = Array.isArray(appBuilding?.suggestedFeatures) ? appBuilding.suggestedFeatures : [];
+  const seen = new Set();
+  const ideas = [];
+  list.forEach((raw, i) => {
+    const idea = normalizeSuggestedFeature(raw, i);
+    if (!idea) return;
+    const key = idea.titleHe.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    ideas.push(idea);
+  });
+  return ideas.slice(0, 5);
+}
+
 export function discoverFeaturesFromMacro(marketBriefData) {
   if (!marketBriefData) return [];
 
@@ -1881,8 +1966,10 @@ export function buildDiscoveryGemBrief(idea, video, topicName = '') {
   const vId = video?.videoId || video?.id || '';
   const url = vId ? `https://www.youtube.com/watch?v=${encodeURIComponent(vId)}` : null;
   const comps = (idea.components || []).map((c) => `• ${c}`).join('\n');
-  const nameHe = idea.titleHe || idea.productIdea;
-  const nameEn = idea.titleEn || idea.productIdea;
+  const dataInputs = (idea.dataInputs || []).map((d) => `• ${d}`).join('\n');
+  const nameHe = idea.titleHe || idea.productIdea || '—';
+  const nameEn = idea.titleEn || idea.productIdea || idea.titleHe || '—';
+  const timestamp = formatDiscoveryTimestamp(idea.estimatedStartSeconds);
 
   return [
     '# Feature Discovery — App Builder GEM Input',
@@ -1896,19 +1983,26 @@ export function buildDiscoveryGemBrief(idea, video, topicName = '') {
     `**Name (EN):** ${nameEn}`,
     `**Category:** ${idea.category || '—'} (${getCategoryDisplayLabel(idea.category)})`,
     `**Value proposition:** ${idea.valueDescription || idea.whatItDoes || '—'}`,
-    `**Source insight:** ${idea.sourceInsight}`,
-    `**Why it matters:** ${idea.whyItMatters}`,
+    `**Source insight:** ${idea.sourceInsight || '—'}${timestamp ? ` (${timestamp})` : ''}`,
+    `**Why it matters:** ${idea.whyItMatters || '—'}`,
+    idea.targetAudience ? `**Target audience:** ${idea.targetAudience}` : null,
+    idea.integration ? `**Integration:** ${idea.integration}` : null,
     '',
     '## AI Builder Brief',
     idea.aiBuilderBrief || '—',
     '',
     '## Suggested Components',
     comps || '—',
+    ...(dataInputs ? ['', '## Data Inputs', dataInputs] : []),
     '',
     '## Evaluation',
-    `• App Fit Score: ${idea.appFitScore}/10`,
-    `• Reusability Score: ${idea.reusabilityScore}/10`,
-    `• Worth building: ${idea.worthBuilding}`,
+    idea.appFitScore != null ? `• App Fit Score: ${idea.appFitScore}/10` : null,
+    idea.reusabilityScore != null ? `• Reusability Score: ${idea.reusabilityScore}/10` : null,
+    idea.worthBuilding ? `• Worth building: ${idea.worthBuilding}` : null,
+    idea.priority ? `• Priority: ${idea.priority}` : null,
+    idea.buildEffort ? `• Build effort: ${idea.buildEffort}` : null,
+    typeof idea.confidence === 'string' ? `• Confidence: ${idea.confidence}` : null,
+    idea.evidenceType ? `• Evidence: ${idea.evidenceType}` : null,
     '',
     '## Instructions for GEM',
     'Expand the AI Builder Brief above into a full PRD, technical specification, database schema (from Data Model), UI component tree and ordered development tasks.',

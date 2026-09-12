@@ -6,6 +6,7 @@ import { TabBulkItemsRegistrar } from "@/components/dashboard/TabBulkItemsRegist
 import { useUniversalTabBulk } from "@/context/UniversalTabBulkContext";
 import {
   discoverFeaturesFromMacro,
+  discoverFeaturesFromAppBuilding,
   buildDiscoveryGemBrief,
 } from "@/lib/featureDiscovery";
 import { toast } from "sonner";
@@ -13,6 +14,9 @@ import { toast } from "sonner";
 /**
  * APP tab — Product Opportunity Discovery only.
  * No PRD, prompts, or builder sections. User copies selection to App Builder GEM manually.
+ * Ideas come from two independent sources: the fundamental-analysis GEM's own curated
+ * video.appBuilding.suggestedFeatures (when present), topped up with macro heuristic
+ * ideas derived from marketBriefData.
  */
 export function AppBuilderTab({
   video,
@@ -29,10 +33,19 @@ export function AppBuilderTab({
     setSelectedId(null);
   }, [videoId]);
 
-  const discoveredIdeas = useMemo(
-    () => discoverFeaturesFromMacro(marketBriefData),
-    [marketBriefData],
-  );
+  const discoveredIdeas = useMemo(() => {
+    // GEM-authored ideas (fundamental-analysis path, video.appBuilding.suggestedFeatures)
+    // are already curated — show them first, then fill in with the macro heuristic
+    // ideas derived from marketBriefData, skipping any title collision.
+    const gemIdeas = discoverFeaturesFromAppBuilding(video?.appBuilding);
+    const macroIdeas = discoverFeaturesFromMacro(marketBriefData);
+    if (!gemIdeas.length) return macroIdeas;
+    const seen = new Set(gemIdeas.map((idea) => idea.titleHe.toLowerCase()));
+    return [
+      ...gemIdeas,
+      ...macroIdeas.filter((idea) => !seen.has(String(idea.titleHe || '').toLowerCase())),
+    ];
+  }, [marketBriefData, video]);
 
   const featureBulkItems = useMemo(
     () => discoveredIdeas.map((idea, index) => {

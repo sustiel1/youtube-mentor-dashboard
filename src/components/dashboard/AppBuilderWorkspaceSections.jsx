@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { Plus, Trash2, ChevronDown, Copy } from 'lucide-react';
-import { getCategoryDisplayLabel } from '@/lib/featureDiscovery';
+import { getCategoryDisplayLabel, formatDiscoveryTimestamp } from '@/lib/featureDiscovery';
 import { toast } from 'sonner';
 import {
   mergeTriggersAndRisks,
@@ -472,6 +472,8 @@ export function TriggersCardsSection({
 // ── Feature Discovery Cards ──────────────────────────────────────────────────
 
 const WORTH_BUILDING_HE = { Yes: 'כן', Maybe: 'אולי', No: 'לא' };
+const PRIORITY_HE = { high: 'גבוהה', medium: 'בינונית', low: 'נמוכה' };
+const BUILD_EFFORT_HE = { small: 'קטן', medium: 'בינוני', large: 'גדול' };
 
 const WORTH_STYLES = {
   Yes: 'bg-emerald-50/90 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-800/60',
@@ -578,6 +580,7 @@ function AiBuilderBriefPanel({ brief }) {
 
 function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
   const components = (idea.components || []).slice(0, 4);
+  const discoveryTimestamp = formatDiscoveryTimestamp(idea.estimatedStartSeconds);
   const categoryStyle = CATEGORY_STYLES[idea.category] || CATEGORY_STYLES.Dashboard;
   const worthStyle = WORTH_STYLES[idea.worthBuilding] || WORTH_STYLES.Maybe;
   const categoryLabel = getCategoryDisplayLabel(idea.category);
@@ -643,10 +646,13 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
         </div>
       </div>
 
-      {/* Source insight */}
-      {idea.sourceInsight && (
+      {/* Source insight — quote and/or timestamp, whichever is present */}
+      {(idea.sourceInsight || discoveryTimestamp) && (
         <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1.5 pr-6 leading-snug">
-          📌 {idea.sourceInsight}
+          📌 {idea.sourceInsight || 'לא נאמר בסרטון'}
+          {discoveryTimestamp && (
+            <span className="text-slate-400 dark:text-zinc-500" dir="ltr"> · {discoveryTimestamp}</span>
+          )}
         </p>
       )}
 
@@ -658,10 +664,29 @@ function DiscoveryOpportunityCard({ idea, rank, isSelected, onSelect }) {
         </p>
       )}
 
+      {/* GEM-authored metadata (fundamental-analysis appBuilding source only) */}
+      {(idea.targetAudience || idea.integration) && (
+        <p className="text-xs text-slate-500 dark:text-zinc-400 mb-2 pr-6 leading-relaxed">
+          {idea.targetAudience && <span>🎯 {idea.targetAudience}</span>}
+          {idea.targetAudience && idea.integration && <span> · </span>}
+          {idea.integration && <span>🔌 {idea.integration}</span>}
+        </p>
+      )}
+
       {/* Scores row */}
       <div className="flex items-center gap-2.5 flex-wrap pt-2.5 border-t border-slate-100 dark:border-zinc-800 pr-6">
         <ScorePill icon="♻️" label="שימוש חוזר" value={idea.reusabilityScore} />
         <ScorePill icon="⭐" label="התאמה" value={idea.appFitScore} />
+        {idea.priority && (
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+            עדיפות: {PRIORITY_HE[idea.priority] || idea.priority}
+          </span>
+        )}
+        {idea.buildEffort && (
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+            מאמץ פיתוח: {BUILD_EFFORT_HE[idea.buildEffort] || idea.buildEffort}
+          </span>
+        )}
         {idea.worthBuilding && (
           <span className={`${DISCOVERY_BADGE_BASE} font-bold mr-auto ${worthStyle}`}>
             <span aria-hidden>🔥</span>
