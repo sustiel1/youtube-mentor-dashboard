@@ -296,8 +296,8 @@ for (const componentPath of [
   assert.ok(assetHeading >= 0 && linksHeading > assetHeading, `${componentPath} links column follows asset`);
   assert.ok(source.includes('<MarketAssetDescriptionTooltip'));
   if (componentPath.includes('MorningBriefMarketsTable')) {
-    // Live table: inline provider pills, Finviz hidden (still reachable via the asset-name preferred link).
-    assert.ok(source.includes('<MarketAssetProviderLinks'), `${componentPath} keeps the inline provider pills`);
+    // Live table: same compact links-chip menu as the saved snapshot table (parity change), Finviz hidden.
+    assert.ok(source.includes('<MarketAssetLinksMenu'), `${componentPath} consolidates provider links into the compact menu`);
     assert.ok(source.includes('hiddenProviders={MARKETS_TABLE_HIDDEN_PROVIDERS}'));
   } else {
     // Saved snapshot: same links consolidated into one compact popover menu, Finviz hidden for parity.

@@ -25,10 +25,8 @@ import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
-import {
-  MarketAssetFuturesLink,
-  MarketAssetProviderLinks,
-} from '@/components/shared/MarketAssetProviderLinks';
+import { MarketAssetFuturesLink } from '@/components/shared/MarketAssetProviderLinks';
+import { MarketAssetLinksMenu } from '@/components/shared/MarketAssetLinksMenu';
 import {
   BRIEF_MARKETS_CELL,
   BRIEF_MARKETS_COL,
@@ -212,7 +210,7 @@ export function MorningBriefMarketsTable({
                   <MarketAssetFuturesLink asset={row.asset} />
                 </td>
                 <td className={`${BRIEF_MARKETS_CELL.links} min-w-0`} data-markets-provider-links-cell>
-                  <MarketAssetProviderLinks
+                  <MarketAssetLinksMenu
                     asset={row.asset}
                     hiddenProviders={MARKETS_TABLE_HIDDEN_PROVIDERS}
                   />
