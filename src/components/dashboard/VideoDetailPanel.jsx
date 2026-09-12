@@ -4457,7 +4457,10 @@ export function VideoDetailPanel({
     localStorage.removeItem(key);
   }, [video]);
 
-  // Auto-generate political summary when video opens and has transcript but no stored summary.
+  // Builds a free local political-summary fallback from existing analysis fields when
+  // available (zero-cost, no network call). Does NOT auto-fire the paid
+  // /api/political-summary request — see YMD-POLITICAL-AUTOFIRE-STOP. The user must
+  // press the existing "🏛️ צור סיכום פוליטי" button (~line 10528) to run that.
   // Deps: video id + gem key only — does NOT trigger on manual delete (by design).
   useEffect(() => {
     const isPolitical = resolvedVideoMode.mode === "politics" && effectiveGemInfo?.gemKey === 'political';
@@ -4504,9 +4507,8 @@ export function VideoDetailPanel({
       return;
     }
 
-    // Has transcript — call API for full analysis
-    console.log(`[PoliticalSummary] auto generation started for videoId=${videoId}`);
-    handleGeneratePoliticalSummary();
+    // Has transcript but no local analysis data — leave it to the explicit
+    // "צור סיכום פוליטי" button (~line 10528). No automatic paid request here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [video?.id, video?.youtubeId, effectiveGemInfo?.gemKey, resolvedVideoMode.mode]);
 
@@ -10964,6 +10966,7 @@ export function VideoDetailPanel({
                           <TabBulkItemsRegistrar tab="summary" items={summarySectionsBulkItems} />
                           <SummaryBriefingView
                             briefing={dailyBriefingForSections}
+                            videoId={rowTimestampYoutubeId}
                             effectiveVideo={effectiveVideo}
                             marketBriefData={marketBriefData}
                             summaryShort={summaryShort}
@@ -11008,6 +11011,7 @@ export function VideoDetailPanel({
                         <TabBulkItemsRegistrar tab="summary" items={summaryBulkItems} />
                         <SummaryBriefingView
                           briefing={dailyBriefingForGem}
+                          videoId={rowTimestampYoutubeId}
                           effectiveVideo={effectiveVideo}
                           marketBriefData={marketBriefData}
                           summaryShort={summaryShort}
@@ -11070,6 +11074,7 @@ export function VideoDetailPanel({
                         {showDailyBriefing && (
                           <SummaryBriefingView
                             briefing={dailyBriefing}
+                            videoId={rowTimestampYoutubeId}
                             fullSummaryStorageKey={fullSummaryStorageKey}
                             onSaveToBrain={saveSingleItemToBrain}
                             isSaved={(text, tabKey) => savedItemKeys.has(itemDedupeKey(video?.youtubeId || video?.id, tabKey, text))}
@@ -12498,33 +12503,33 @@ export function VideoDetailPanel({
                           tabKey: 'useful-knowledge',
                         },
                         {
-                          key: 'mental-models',
-                          label: '🧩 מודלים מנטליים',
-                          items: rawMentalModels,
-                          tabKey: 'useful-knowledge',
-                        },
-                        {
                           key: 'checklists',
                           label: '✅ צ\'קליסטים',
                           items: extractVideoTabItems(effectiveVideo, 'checklists', marketBriefData),
                           tabKey: 'checklists',
-                        },
-                        {
-                          key: 'risk',
-                          label: '⚠️ ניהול סיכונים',
-                          items: rawRiskMgmt,
-                          tabKey: 'useful-knowledge',
+                          alwaysShow: true,
+                          emptyLabel: "אין צ'קליסטים לסרטון זה",
                         },
                         {
                           key: 'mistakes',
                           label: '❌ טעויות נפוצות',
                           items: extractVideoTabItems(effectiveVideo, 'mistakes', marketBriefData),
                           tabKey: 'mistakes',
+                          alwaysShow: true,
+                          emptyLabel: 'אין טעויות נפוצות לסרטון זה',
                         },
                         {
                           key: 'rules',
                           label: '📏 כללי מסחר',
                           items: rawRules,
+                          tabKey: 'useful-knowledge',
+                          alwaysShow: true,
+                          emptyLabel: 'אין כללי מסחר לסרטון זה',
+                        },
+                        {
+                          key: 'mental-models',
+                          label: '🧩 מודלים מנטליים',
+                          items: rawMentalModels,
                           tabKey: 'useful-knowledge',
                         },
                         {
@@ -12588,6 +12593,12 @@ export function VideoDetailPanel({
                           tabKey: 'market-impact',
                         },
                         {
+                          key: 'risk',
+                          label: '⚠️ ניהול סיכונים',
+                          items: rawRiskMgmt,
+                          tabKey: 'useful-knowledge',
+                        },
+                        {
                           key: 'temporary',
                           label: '⏳ עובדות שוק זמניות',
                           items: temporaryItems,
@@ -12595,7 +12606,7 @@ export function VideoDetailPanel({
                           isTemporary: true,
                         },
                       ];
-                  const populated = sections.filter(s => s.items.length > 0);
+                  const populated = sections.filter(s => s.items.length > 0 || s.alwaysShow);
                   if (populated.length === 0) {
                     return (
                       <>
@@ -12613,7 +12624,7 @@ export function VideoDetailPanel({
                     <div className="space-y-3">
                       <TabBulkItemsRegistrar tab="useful-knowledge" items={ukBulkItems} />
                       <UsefulKnowledgeSourceLine video={effectiveVideo} mentorName={mentorName} />
-                      {populated.map(({ key, label, items, tabKey, isTemporary }) => (
+                      {populated.map(({ key, label, items, tabKey, isTemporary, emptyLabel }) => (
                         <div key={key} className={`rounded-xl border px-3 py-2 ${isTemporary ? 'border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20' : 'border-slate-200 bg-slate-50/80 dark:border-zinc-800 dark:bg-zinc-900'}`}>
                           <UniversalTabSectionLabelRow
                             label={label}
@@ -12632,7 +12643,7 @@ export function VideoDetailPanel({
                           <LearningTabContent
                             items={items}
                             videoId={rowTimestampYoutubeId}
-                            emptyLabel=""
+                            emptyLabel={emptyLabel || ''}
                             onSaveToBrain={(text) => saveSingleItemToBrain(text, tabKey, label, '')}
                             isSaved={(text) => isBrainItemSaved(text, tabKey)}
                             bulkSelection={mergeBulkSelection(bulkSelectionShare, {
