@@ -64,6 +64,12 @@ const GENERIC_ANALYSIS_FIELDS = [
 | **`investmentChecklist`** (חדש, 2026-09-10) | `normalizeLearningArray(merged.investmentChecklist \|\| nested.investmentChecklist)` | `:1209` |
 | **`promptTemplates`** (חדש, 2026-09-10) | `normalizeLearningArray(merged.promptTemplates \|\| nested.promptTemplates)` | `:1210` |
 
+**עדכון (2026-09-11, WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY):**
+
+| **`stockFundamentals`** (חדש, 2026-09-11) | `normalizeStockFundamentalsArray(merged.stockFundamentals \|\| nested.stockFundamentals)` — normalizer ייעודי, **לא** `normalizeLearningArray` (שקורס אובייקטים למחרוזת-תצוגה) | `videoAnalytics.js` (ליד שורה 1209-1210, פונקציית `normalizeStockDataPointItem`) |
+
+שלא כמו 8 השדות בטבלה למעלה, `stockFundamentals` הוא **תמיד** מערך אובייקטים מובנים (`{ticker, company, metric, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind}`), לא טקסט. הנורמליזר **דורש** `ticker`+`metric`+`value` — פריט חסר אחד משלושתם מוחזר `null` ומסונן בשקט (`Array.prototype.filter(Boolean)`), לא שגיאת-parse. ר' §10 למטה לפירוט המלא (שדה, מיפוי, רינדור, gate).
+
 **עדכון (2026-09-10):** 4 השדות האחרונים בטבלה נוספו כעת — סוגר את הפער ההיסטורי (ראו למטה, §4/§5/§8 היו). **עדיין לא ממופים בכלל**, מאומת בקריאת הפונקציה השלמה: `analysisFrameworks` (רק `frameworks` ממופה — שם השדה הנכון הוא `frameworks`, **לא** `analysisFrameworks`), `riskRules`. אם ה-GEM יחזיר אחד משני אלה, הם פשוט **יושמטו בשקט**.
 
 **✅ תוקן — `warnings`, `fullSummary`, `mainLesson` ממופים כאן וכעת גם מוצגים, כל אחד במסלול משלו (`mainLesson`/`warnings`: ledger "Recently resolved", 2026-09-10; `fullSummary`: שורת ledger 2026-09-11, "Key-points card restyle"):** הטבלה למעלה נכונה — `normalizeAiAnalysisResult` כותבת את שלושת השדות האלה על `video`. עד 2026-09-10 השכבה הבאה — `extractVideoTabItems()` ב-`videoTabsConfig.js` — השתמשה ב-`pickArray`/`pickStringAsArray` "ראשון-לא-ריק-מנצח, לא ממזג", מה שגרם לשלושת השדות האלה לא להיקרא בפועל כש-`shortSummary`/`mistakesToAvoid` היו מלאים. **קריאה ישירה של הקוד הנוכחי מצאה ששלושתם תוקנו, בשני מנגנונים נפרדים**: (א) `case 'mistakes'` (`videoTabsConfig.js`, ליד שורה 783) מריץ כעת שלוש קריאות `pickArray` נפרדות ל-`mistakesToAvoid`/`warnings`/`riskRules`, ממוזגות יחד — `warnings` מוצג עכשיו בטאב 4 יחד עם `mistakesToAvoid`; (ב) `case 'summary'` (ליד שורה 689) מריץ כעת שתי קריאות `pickStringAsArray` נפרדות — שרשרת האליאסים `shortSummary`/`fullSummary`/`gemSummary`/`summary` (ראשון-לא-ריק-מנצח, ללא שינוי) ואז `mainLesson` בנפרד, שמוצג כעת תמיד בנוסף — `fullSummary` **עדיין** נחשב אליאס בתוך `case 'summary'` עצמו ולכן לא נבדק שם כש-`shortSummary` מלא; אך הוא כעת מוצג דרך מסלול נפרד וחדש: `FullSummaryParagraphs` (`src/components/dashboard/FullSummaryParagraphs.jsx`, קומפוננטה חדשה) מרונדרת ב-`VideoDetailPanel.jsx:11234` כ-`<FullSummaryParagraphs text={effectiveVideo.fullSummary} .../>` — כרטיס "📖 סיכום מלא" עצמאי, בלתי-תלוי ב-`extractVideoTabItems('summary')`. פירוט מלא בסעיף 6.1 למטה, שעודכן בהתאם.
@@ -128,7 +134,8 @@ case 'investment-checklist': {
 | — | APP (5) | — | ❌ **לא** — ראו סעיף 6 | `AppBuilderTab.jsx` |
 | `tags`/`obsidianTopics`/`metadataTopics` | נושאים ותתי־נושאים (6) | — | ✅ כן (`tags` מומלץ) | case `'topics-subtopics'` legacy (`videoTabsConfig.js:1196-1199`) |
 | `warnings` | ידע שימושי (4) — ❌ טעויות נפוצות (ממוזג עם `mistakesToAvoid`) | — | ✅ **כן, תוקן 2026-09-11** — ר' §6.1 | case `'mistakes'` (`~783`), קריאת `pickArray` נפרדת ל-`warnings`, ממוזגת עם `mistakesToAvoid`/`riskRules` |
-| — | תוכן ייעודי (7) | — | **מוצג — דשבורד-מבזק בן 9 סעיפים, כל סעיף עם empty-state עצמאי; הוכרע 2026-09-11, ר' `FUNDAMENTAL-OVERVIEW.md` §7** | `SpecializedContentRenderer.jsx`'s `fundamental-analysis`/`technical-analysis` branches מרנדרות `<MorningBriefDashboard>`; הג'ם עצמו עדיין לא כותב שום שדה שמזין את הסעיפים — הם ריקים במובן "אין `marketBriefData`", לא במובן "אין רינדור" |
+| `stockFundamentals` (חדש) | תוכן ייעודי (7) | 📊 נתונים פונדמנטליים (**חדש, מעל "⭐ מניות שהוזכרו"**) | ✅ כן — case `'stock-fundamentals'` ב-`extractVideoTabItems` | `videoTabsConfig.js`, מיד אחרי case `'prompt-templates'` |
+| — | תוכן ייעודי (7) | — | **מוצג — דשבורד-מבזק בן 9+2 סעיפים (2 החדשים רק לוידאו פונדמנטלי/טכני, ר' §10), כל סעיף עם empty-state עצמאי; הוכרע 2026-09-11, ר' `FUNDAMENTAL-OVERVIEW.md` §7** | `SpecializedContentRenderer.jsx`'s `fundamental-analysis`/`technical-analysis` branches מרנדרות `<MorningBriefDashboard showStockDataSections>`; שאר סעיפי-המבזק ריקים במובן "אין `marketBriefData`" — לא ב-`stockFundamentals`/`stockTechnicals` |
 
 ---
 
@@ -191,7 +198,7 @@ function pickStringAsArray(obj, ...keys) {
 | valuation לא נגיש | ✅ **נסגר 2026-09-10** | `valuation` ממופה כעת (§3), מוצג בטאב 4 |
 | APP (tab 5) לא נגיש דרך JSON שטוח | פתוח | לא טופל בקוד הסבב הזה — הוראות ה-GEM לא מנסות למלא אותו |
 | `checklists`/`investment-checklist` — כפילות מבנית | ✅ **נסגר 2026-09-10** | `investmentChecklist` ממופה + גייט fallback (§4-ii) — שני הסעיפים מציגים תוכן שונה כשה-GEM ממלא את שניהם |
-| אין טבלת מניות ייעודית בטאב 7 לפונדמנטלי | פתוח, Decision 3 עדיין בתוקף | הג'ם עצמו עדיין לא כותב שום שדה-מניה יומי; טאב 7 מציג כעת מבנה-מבזק מלא (ר' §5/§7-בקובץ-האח) אך כל סעיפיו ריקים למניה זו עד שיהיה שדה כזה |
+| אין טבלת מניות ייעודית בטאב 7 לפונדמנטלי | ✅ **נסגר חלקית 2026-09-11** (WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY) | `stockFundamentals` (הג'ם כותב) + `stockTechnicals` (סכימה מוגדרת, GEM טכני נפרד עדיין לא כותב) — שני סעיפי-טבלה חדשים בטאב 7, ר' §10. "חלקית" כי רק הפונדמנטלי מוזן כרגע. |
 | טאב 7 מציג תוכן לימודי (frameworks/checklists/mistakes) | ✅ **תוקן 2026-09-10 — הוסר לגמרי** | הועבר לטאב 4 בעקבות כלל "טאב 7 = תוכן יומי בלבד"; חל גם על `technical-analysis`; `macro` נבדק ונמצא כבר תואם, לא נגע בו; מבזקים לא נגעו בהם |
 | טאב 7 חוזר להציג מבנה מלא (דשבורד-מבזק בן 9 סעיפים) במקום empty-state כולל-אחד | **✅ הכרעת משתמש 2026-09-11 — זו ההתנהגות המבוקשת, ר' `FUNDAMENTAL-OVERVIEW.md` §7** | מבטל את השורה שלמעלה עבור טאב 7 בלבד — התוכן הלימודי (frameworks/checklists/mistakes) עדיין בטאב 4, לא חזר לטאב 7 |
 | `promptTemplates`/26 מדדי KPI/4 דשבורדי-על לא נתפסים | ✅ **נסגר 2026-09-10** | `promptTemplates` שדה חדש + `financialMetrics`/`valuation` מכסים את מפת ה-KPI + `frameworks` מכסה את הדשבורדים (ר' `GEM-FUNDAMENTAL-INSTRUCTIONS.md`) |
@@ -232,6 +239,46 @@ function pickStringAsArray(obj, ...keys) {
 
 ---
 
-## 10. הכנה ל-GEM הטכני (מחר) — ראו מסמך נפרד
+## 10. `stockFundamentals` / `stockTechnicals` — טבלאות תוכן ייעודי בטאב 7 (2026-09-11, WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY)
+
+### 10.1 `stockFundamentals` — הג'ם הזה כן כותב אותו
+
+צורת הפריט, הרחבה מלאה בהוראות (`GEM-FUNDAMENTAL-INSTRUCTIONS.md`'s סעיף `stockFundamentals`), נורמליזציה ב-`normalizeStockDataPointItem(value, 'metric')` (`videoAnalytics.js`):
+
+```js
+{ ticker, company, metric, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind }
+```
+
+חובה: `ticker` (מנורמל ל-uppercase+trim), `metric` (string לא-ריק), `value` (כל טיפוס, רק נבדק שאינו ריק/undefined/null). פריט חסר אחד מאלה מוחזר `null` ומסונן — **אין שגיאת-parse, אין אזהרה, פשוט לא מופיע**. שדות אחרים (`company`/`interpretation`/`asOf`/`sourceQuote`) אופציונליים, trim בלבד. `estimatedStartSeconds`/`timestampKind` — אותה לוגיקה בדיוק כמו `normalizeTimedNarrativeItem` (שדה-מספר תקין + `timestampKind` מ-`{exact,estimated}`, ברירת מחדל `estimated` אם יש `estimatedStartSeconds` בלי `timestampKind`).
+
+### 10.2 `stockTechnicals` — **סכימה בלבד כאן, אין הוראות-GEM עדיין**
+
+**⚠️ מחוץ להיקף המסמך הזה:** ההוראות לג'ם שיכתוב את השדה הזה בפועל שייכות ל-WORK-ID נפרד, `TRADINGBRAIN-GEM-TECHNICAL-SCHEMA` — **טרם נכתבו** (ר' `docs/gems/GEM-TECHNICAL-PREP-NOTES.md`, הכנה בלבד). הקוד (normalizer + case + רינדור) כן קיים ומוכן לקבל את השדה ברגע שייכתב, אך שום GEM לא פולט אותו כיום — הסעיף "📐 נתונים טכניים" בטאב 7 יציג empty-state עד אז.
+
+צורת הפריט (זהה במבנה ל-`stockFundamentals`, רק `metric`→`levelType`), נורמליזציה ב-`normalizeStockDataPointItem(value, 'levelType')`:
+
+```js
+{ ticker, company, levelType, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind }
+```
+
+חובה: `ticker`, `levelType` (string לא-ריק — ערכים מוצעים: תמיכה / התנגדות / ממוצע נע / פער מחיר / קו מגמה / נפח, **לא נאכף בקוד**, הנחיה בלבד לג'ם העתידי), `value`.
+
+### 10.3 מיפוי שדה→תצוגה (שני השדות, אותה שרשרת בדיוק)
+
+| שלב | `stockFundamentals` | `stockTechnicals` |
+|---|---|---|
+| Normalize | `normalizeStockFundamentalsArray` → `video.stockFundamentals` | `normalizeStockTechnicalsArray` → `video.stockTechnicals` |
+| Extract (tab-7) | `extractVideoTabItems(video, 'stock-fundamentals', marketBriefData)` — `videoTabsConfig.js`, אותו pattern כמו `financial-metrics` (`resolveSpecialized` קודם, נופל ל-`video`/`video.analysis`) | `extractVideoTabItems(video, 'stock-technicals', marketBriefData)` |
+| Bulk-section (בחר הכל) | `buildMorningBriefBulkSections` (`morningBriefBulkSections.js`) — פריט `{key:'stock-fundamentals', label:'📊 נתונים פונדמנטליים', ...}`, מתווסף **רק אם** יש לפחות שורה אחת (כמו כל שאר הסעיפים בפונקציה הזו) | זהה, `key:'stock-technicals'`, `label:'📐 נתונים טכניים'` |
+| Render | `<StockFundamentalsSection>` (`MorningBriefPanels.jsx`) — עמודות: סימול / מדד / ערך / משמעות / תאריך | `<StockTechnicalsSection>` — עמודות: סימול / סוג רמה / ערך / משמעות / תאריך |
+| Gate | שני הסעיפים מותנים יחד ב-`showStockDataSections` (prop בוליאני על `MorningBriefDashboard`, ברירת מחדל `false`) — ר' §10.4 |
+
+### 10.4 ה-gate — שני הסעיפים לעולם לא מופיעים במבזק בוקר/ערב
+
+`MorningBriefDashboard.jsx` הוא הרכיב המשותף היחיד בין 4 ה-slugs (`fundamental-analysis`/`technical-analysis`/`morning-brief`/`evening-brief`, ר' `AUDIT-TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY.md` Step 12). ה-prop `showStockDataSections` (ברירת מחדל `false`) עוטף את שני הסעיפים החדשים ב-JSX (`{showStockDataSections ? <>...</> : null}`) — **רק** `SpecializedContentRenderer.jsx`'s `fundamental-analysis`/`technical-analysis` branch (שורה ~148) מעביר `showStockDataSections` (בוליאני `true`, ללא ערך = `true` ב-JSX). ה-branch של `morning-brief`/`evening-brief` (שורה ~165) ו-`weekly-brief`/`earnings-brief` (שאינם קוראים ל-`MorningBriefDashboard` בכלל, יש להם רינדור עצמאי) לא נוגעים ולא מעבירים את ה-prop — כלומר גם אם `video.stockFundamentals` היה איכשהו מתמלא על וידאו-מבזק (לא קורה בפועל, אף GEM-מבזק לא כותב את השדה הזה), הסעיף **לא היה מרונדר בכלל**, לא רק ריק — `{false ? ... : null}` לא מכניס אף DOM node, לא SectionCard ריק.
+
+---
+
+## 11. הכנה ל-GEM הטכני (מחר) — ראו מסמך נפרד
 
 **עדכון (2026-09-11):** נכתב מסמך הכנה נפרד, `docs/gems/GEM-TECHNICAL-PREP-NOTES.md`, לקראת בניית ה-GEM הטכני על אותו עיקרון. הוא מתעד מה ניתן לשימוש חוזר כמו-שהוא, מה ספציפי-לפונדמנטלי וצריך תחליף, אילו שדות (`indicators`/`setups`/`patterns`) הנתיב הטכני כבר קורא היום עם file:line, ותיקון-דיוק ל-§7 למעלה (`indicators` **כן** ממופה ע"י `normalizeAiAnalysisResult`, בניגוד למה שכתוב שם). **לא בוצע שום שינוי קוד או כתיבת הוראות ל-GEM הטכני** — מסמך תיעוד-הכנה בלבד.

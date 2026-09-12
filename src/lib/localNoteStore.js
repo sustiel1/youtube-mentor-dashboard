@@ -4,6 +4,8 @@
 //
 // Note structure: { id, videoId, content, createdAt, updatedAt }
 // (field is "content" to match existing NoteEditor and Note entity schema)
+// rowId/rowLabel are optional — present only for a row-level note (see src/lib/rowNotes.js);
+// absent (undefined) for a regular whole-video note, so old notes keep working unchanged.
 //
 // Priority chain in useNotesByVideo:
 //   1. Base44 (when connected)
@@ -29,7 +31,7 @@ export function getNotesByVideoId(videoId) {
 
 // Create a new note and persist it; returns the saved record
 // timestampSeconds / timestampLabel / images are optional — backward-compatible with old notes
-export function createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images }) {
+export function createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images, rowId, rowLabel }) {
   const notes = getLocalNotes();
   const note = {
     id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -37,6 +39,7 @@ export function createLocalNote({ videoId, content, timestampSeconds, timestampL
     content,
     ...(timestampSeconds != null && { timestampSeconds, timestampLabel }),
     ...(Array.isArray(images) && images.length > 0 && { images }),
+    ...(rowId && { rowId, rowLabel }),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

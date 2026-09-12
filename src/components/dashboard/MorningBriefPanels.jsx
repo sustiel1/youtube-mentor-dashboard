@@ -102,8 +102,11 @@ import {
   formatMorningBriefRegimeText,
   formatMorningBriefSectorText,
   formatMorningBriefStockText,
+  formatMorningBriefStockFundamentalText,
+  formatMorningBriefStockTechnicalText,
   getMorningBriefMarketRows,
 } from '@/lib/morningBriefBulkSections';
+import { extractVideoTabItems } from '@/config/videoTabsConfig';
 import {
   BriefSectionManualHeaderExtras,
   ManualEditGrid,
@@ -3173,6 +3176,203 @@ export function StocksMentionedSection({
       </div>
       )}
     </SectionCard>
+  );
+}
+
+// ── Stock fundamentals / technicals (WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY) ──
+// Structured per-ticker data points extracted by the fundamental/technical GEM
+// (video.stockFundamentals / video.stockTechnicals, see videoAnalytics.js).
+// Rendered ONLY when the caller explicitly opts in (MorningBriefDashboard's
+// showStockDataSections prop) — never on a real morning/evening brief, since
+// these two share the exact same dashboard component. See SpecializedContentRenderer.jsx.
+
+function StockDataTableRow({
+  row,
+  typeField,
+  formatText,
+  sectionKey,
+  sectionLabel,
+  onSaveToBrain,
+  bulkSelection = null,
+  bulkSections = [],
+}) {
+  const ticker = String(row.ticker || '').trim();
+  const typeValue = String(row[typeField] || '').trim();
+  const valueText = row.value != null && String(row.value).trim() ? String(row.value) : '';
+  const summary = formatText(row);
+  const selectionText = summary;
+
+  return (
+    <tr className="border-b border-slate-200/70 dark:border-zinc-700/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/25 group" data-stock-data-item>
+      <td className={BRIEF_CELL.checkbox}>
+        <div className="flex flex-col items-center gap-1">
+          <MorningBriefBulkCheckbox
+            bulkSections={bulkSections}
+            sectionKey={sectionKey}
+            text={selectionText}
+            sectionLabel={sectionLabel}
+            tabKey={sectionKey}
+            bulkSelection={bulkSelection}
+          />
+        </div>
+      </td>
+      {/* טיקר */}
+      <td className={BRIEF_CELL.short}>
+        {ticker ? (
+          <a
+            href={`https://finviz.com/quote.ashx?t=${encodeURIComponent(ticker)}&p=d`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={row.company ? `${ticker} — ${row.company}` : `Open ${ticker} in Finviz`}
+            aria-label={`Open ${ticker} in Finviz`}
+            className={`${DASHBOARD_TABLE_CELL_PRIMARY_CLS} hover:underline cursor-pointer`}
+          >
+            {ticker}
+          </a>
+        ) : <span className="text-slate-400 dark:text-zinc-500">—</span>}
+      </td>
+      {/* מדד / סוג רמה */}
+      <td className={BRIEF_CELL.short}>
+        <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{typeValue || '—'}</span>
+      </td>
+      {/* ערך */}
+      <td className={BRIEF_CELL.change}>
+        {valueText
+          ? <span className={DASHBOARD_TABLE_CELL_BODY_CLS}>{valueText}</span>
+          : <span className={`${DASHBOARD_TABLE_CELL_MUTED_CLS} text-slate-300 dark:text-zinc-600`}>—</span>
+        }
+      </td>
+      {/* משמעות */}
+      <td className={BRIEF_CELL.notes}>
+        <p className={`${BRIEF_NOTES_TEXT_CLS} line-clamp-3`} title={row.interpretation || undefined}>
+          {row.interpretation || '—'}
+        </p>
+      </td>
+      {/* תאריך */}
+      <td className={BRIEF_CELL.short}>
+        <p className={`${DASHBOARD_TABLE_CELL_DATE_CLS} whitespace-nowrap`}>{row.asOf || '—'}</p>
+      </td>
+      <td className="py-2 pl-1 pr-0 align-middle">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <StaticVideoTimestampLink
+            items={[row]}
+            section={sectionKey}
+            productionRowId={`specialized:${sectionKey}:${ticker}:${typeValue}`}
+            displayText={summary}
+          />
+          <BriefRowSaveActions
+            bulkSelection={bulkSelection}
+            text={summary}
+            sectionLabel={sectionLabel}
+            tabKey={sectionKey}
+            onSaveToBrain={onSaveToBrain}
+          />
+        </div>
+        {isRowAlreadySaved(selectionText, sectionKey, bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
+      </td>
+    </tr>
+  );
+}
+
+function StockDataSection({
+  title,
+  emptyMessage,
+  typeColumnLabel,
+  typeField,
+  formatText,
+  sectionKey,
+  effectiveVideo,
+  marketBriefData,
+  onSaveToBrain,
+  bulkSelection = null,
+  bulkSections = [],
+  presentation,
+}) {
+  const rows = extractVideoTabItems(effectiveVideo, sectionKey, marketBriefData);
+
+  return (
+    <SectionCard
+      title={title}
+      count={morningBriefSectionCount(presentation, rows.length)}
+      tone={TONE.NEUTRAL}
+      isEmpty={rows.length === 0}
+      emptyMessage={emptyMessage}
+      plainSurface
+      cardBulk={morningBriefCardBulk(bulkSections, bulkSelection, sectionKey, title)}
+      sectionSelectAllItems={resolveMorningBriefSectionChildItems(bulkSections, sectionKey)}
+      bulkSelection={bulkSelection}
+    >
+      <div dir="rtl" data-stock-data-section={sectionKey}>
+        <BriefTableWrapper>
+          <table className={BRIEF_TABLE_CLS} dir="rtl">
+            <colgroup>
+              <col style={{ width: BRIEF_COL.checkbox }} />
+              <col style={{ width: BRIEF_COL.symbol }} />
+              <col style={{ width: BRIEF_COL.type }} />
+              <col style={{ width: BRIEF_COL.change }} />
+              <col />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: BRIEF_COL.save }} />
+            </colgroup>
+            <thead>
+              <tr className={BRIEF_TABLE_HEAD_ROW_CLS}>
+                <th className="py-1.5 pr-2 pl-0" />
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>טיקר</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>{typeColumnLabel}</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>ערך</th>
+                <th className={`px-2 py-1.5 text-right ${DASHBOARD_TABLE_HEAD_CLS}`}>משמעות</th>
+                <th className={`px-2 py-1.5 text-right whitespace-nowrap ${DASHBOARD_TABLE_HEAD_CLS}`}>תאריך</th>
+                <th className="py-1.5 pl-1 pr-0" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <StockDataTableRow
+                  key={`${row.ticker}-${i}`}
+                  row={row}
+                  typeField={typeField}
+                  formatText={formatText}
+                  sectionKey={sectionKey}
+                  sectionLabel={title}
+                  onSaveToBrain={onSaveToBrain}
+                  bulkSelection={bulkSelection}
+                  bulkSections={bulkSections}
+                />
+              ))}
+            </tbody>
+          </table>
+        </BriefTableWrapper>
+      </div>
+    </SectionCard>
+  );
+}
+
+export function StockFundamentalsSection(props) {
+  return (
+    <StockDataSection
+      title="📊 נתונים פונדמנטליים"
+      emptyMessage="מדדים פונדמנטליים לטיקר — ערך ותאריך — יוצגו כאן"
+      typeColumnLabel="מדד"
+      typeField="metric"
+      formatText={formatMorningBriefStockFundamentalText}
+      sectionKey="stock-fundamentals"
+      {...props}
+    />
+  );
+}
+
+export function StockTechnicalsSection(props) {
+  return (
+    <StockDataSection
+      title="📐 נתונים טכניים"
+      emptyMessage="רמות תמיכה/התנגדות לטיקר — ערך ותאריך — יוצגו כאן"
+      typeColumnLabel="סוג רמה"
+      typeField="levelType"
+      formatText={formatMorningBriefStockTechnicalText}
+      sectionKey="stock-technicals"
+      {...props}
+    />
   );
 }
 

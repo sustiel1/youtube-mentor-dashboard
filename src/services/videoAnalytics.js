@@ -672,6 +672,53 @@ function normalizeLearningArray(values) {
   return values.map(normalizeLearningItem).filter(Boolean);
 }
 
+// ── stockFundamentals / stockTechnicals — structured per-ticker data points ──
+// Unlike normalizeLearningArray (which collapses everything to a display
+// string), these preserve ticker/metric-or-levelType/value as distinct
+// fields so the tab-7 table can render real columns. A row missing any
+// required field (ticker + metric/levelType + value) is dropped silently —
+// no estimates, no partial rows (WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY).
+const STOCK_DATA_TIMESTAMP_KINDS = new Set(['exact', 'estimated']);
+
+function stockDataFiniteSeconds(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function normalizeStockDataPointItem(value, typeKey) {
+  if (!value || typeof value !== 'object') return null;
+  const ticker = String(value.ticker || '').trim().toUpperCase();
+  const typeValue = typeof value[typeKey] === 'string' ? value[typeKey].trim() : '';
+  const hasValue = value.value !== undefined && value.value !== null && String(value.value).trim() !== '';
+  if (!ticker || !typeValue || !hasValue) return null;
+
+  const estimatedStartSeconds = stockDataFiniteSeconds(value.estimatedStartSeconds);
+  const timestampKind = STOCK_DATA_TIMESTAMP_KINDS.has(value.timestampKind)
+    ? value.timestampKind
+    : (estimatedStartSeconds != null ? 'estimated' : undefined);
+
+  return {
+    ticker,
+    company: typeof value.company === 'string' ? value.company.trim() : '',
+    [typeKey]: typeValue,
+    value: value.value,
+    interpretation: typeof value.interpretation === 'string' ? value.interpretation.trim() : '',
+    asOf: typeof value.asOf === 'string' ? value.asOf.trim() : '',
+    sourceQuote: typeof value.sourceQuote === 'string' ? value.sourceQuote.trim() : '',
+    ...(estimatedStartSeconds != null ? { estimatedStartSeconds } : {}),
+    ...(timestampKind ? { timestampKind } : {}),
+  };
+}
+
+function normalizeStockFundamentalsArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map((v) => normalizeStockDataPointItem(v, 'metric')).filter(Boolean);
+}
+
+function normalizeStockTechnicalsArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map((v) => normalizeStockDataPointItem(v, 'levelType')).filter(Boolean);
+}
+
 function normalizeAtomicTags(values) {
   return normalizeStringArray(values).slice(0, 6);
 }
@@ -1208,6 +1255,8 @@ export function normalizeAiAnalysisResult(result) {
     valuation: normalizeLearningArray(merged.valuation || nested.valuation),
     investmentChecklist: normalizeLearningArray(merged.investmentChecklist || nested.investmentChecklist),
     promptTemplates: normalizeLearningArray(merged.promptTemplates || nested.promptTemplates),
+    stockFundamentals: normalizeStockFundamentalsArray(merged.stockFundamentals || nested.stockFundamentals),
+    stockTechnicals: normalizeStockTechnicalsArray(merged.stockTechnicals || nested.stockTechnicals),
     concepts: normalizeStringArray(merged.concepts || nested.concepts).length > 0
       ? normalizeStringArray(merged.concepts || nested.concepts)
       : fallbackConcepts,
@@ -1286,8 +1335,19 @@ export function normalizeAiAnalysisResult(result) {
         .filter(x => x?.feature)
         .map(x => ({
           feature: String(x.feature || '').trim(),
+          whatItDoes: String(x.whatItDoes || '').trim(),
           reason: String(x.reason || x.explanation || '').trim(),
+          integration: String(x.integration || '').trim(),
           priority: ['high', 'medium', 'low'].includes(x.priority) ? x.priority : 'medium',
+          targetAudience: String(x.targetAudience || '').trim(),
+          coreFeatures: safeArr(x.coreFeatures).map(v => String(v || '').trim()).filter(Boolean),
+          dataInputs: safeArr(x.dataInputs).map(v => String(v || '').trim()).filter(Boolean),
+          confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
+          evidenceType: ['stated', 'implied'].includes(x.evidenceType) ? x.evidenceType : 'stated',
+          sourceQuote: String(x.sourceQuote || '').trim(),
+          estimatedStartSeconds: Number.isFinite(x.estimatedStartSeconds) ? x.estimatedStartSeconds : null,
+          timestampKind: typeof x.timestampKind === 'string' ? x.timestampKind : null,
+          buildEffort: ['small', 'medium', 'large'].includes(x.buildEffort) ? x.buildEffort : null,
         }));
       const hasData = kpiList.length > 0 || dashboards.length > 0 || prompts.length > 0
         || screeningCriteria.length > 0 || dataFields.length > 0 || suggestedFeatures.length > 0;

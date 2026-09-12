@@ -10,6 +10,8 @@ import {
   OpportunitiesRisksDashboard,
   SectorOverviewSection,
   SentimentSection,
+  StockFundamentalsSection,
+  StockTechnicalsSection,
   StocksMentionedSection,
 } from './MorningBriefPanels';
 
@@ -48,6 +50,13 @@ export function MorningBriefDashboard({
   bulkSelection = null,
   bulkSections = [],
   presentation = MORNING_BRIEF_SPECIALIZED_PRESENTATION,
+  // Opt-in only — default false so this exact same dashboard, when rendered
+  // for a real morning/evening brief (SpecializedContentRenderer.jsx's
+  // morning-brief/evening-brief/weekly-brief/earnings-brief branches, which
+  // never pass this prop), never shows these two sections — not even their
+  // empty state. Only the fundamental-analysis/technical-analysis branch
+  // passes true. See docs/plan/AUDIT-TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY.md Step 12.
+  showStockDataSections = false,
 }) {
   const indicesItems = extractVideoTabItems(effectiveVideo, 'indices', marketBriefData);
   const allNewsItems = extractVideoTabItems(effectiveVideo, 'market-news', marketBriefData);
@@ -106,6 +115,22 @@ export function MorningBriefDashboard({
         onSaveMarketBriefSection={onSaveMarketBriefSection}
         {...shared}
       />
+      {showStockDataSections ? (
+        <>
+          <StockFundamentalsSection
+            marketBriefData={marketBriefData}
+            effectiveVideo={effectiveVideo}
+            onSaveToBrain={onSaveToBrain}
+            {...shared}
+          />
+          <StockTechnicalsSection
+            marketBriefData={marketBriefData}
+            effectiveVideo={effectiveVideo}
+            onSaveToBrain={onSaveToBrain}
+            {...shared}
+          />
+        </>
+      ) : null}
       <StocksMentionedSection
         marketBriefData={marketBriefData}
         effectiveVideo={effectiveVideo}

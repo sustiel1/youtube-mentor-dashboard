@@ -154,6 +154,7 @@ function MarketStatusBlock({ status }) {
  */
 export function SummaryBriefingView({
   effectiveVideo,
+  videoId = null,
   marketBriefData,
   summaryShort = '',
   fullSummary = '',
@@ -237,6 +238,7 @@ export function SummaryBriefingView({
           {brain ? (
             <LearningTabContent
               items={briefing.thirtySecond}
+              noteVideoId={videoId}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'סיכום ב-30 שניות')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -269,6 +271,7 @@ export function SummaryBriefingView({
               )}
               <LearningTabContent
                 items={marketStatusItems}
+                noteVideoId={videoId}
                 emptyLabel=""
                 onSaveToBrain={(text) => brain(text, 'מצב השוק')}
                 isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -296,6 +299,7 @@ export function SummaryBriefingView({
           {brain ? (
             <LearningTabContent
               items={watchTexts}
+              noteVideoId={videoId}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'מה לעקוב היום')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -324,6 +328,7 @@ export function SummaryBriefingView({
           {brain ? (
             <LearningTabContent
               items={briefing.keyInsights}
+              noteVideoId={videoId}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'תובנות מרכזיות')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -350,6 +355,7 @@ export function SummaryBriefingView({
           {brain ? (
             <LearningTabContent
               items={briefing.keyRisks}
+              noteVideoId={videoId}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'סיכונים')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -376,6 +382,7 @@ export function SummaryBriefingView({
           {brain ? (
             <LearningTabContent
               items={briefing.actionChecklist}
+              noteVideoId={videoId}
               emptyLabel=""
               onSaveToBrain={(text) => brain(text, 'צ\'קליסט פעולה')}
               isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}
@@ -403,6 +410,7 @@ export function SummaryBriefingView({
             brain ? (
               <LearningTabContent
                 items={execItems}
+                noteVideoId={videoId}
                 emptyLabel=""
                 onSaveToBrain={(text) => brain(text, 'מסקנה מנהלים')}
                 isSaved={isSaved ? (text) => isSaved(text, 'summary') : undefined}

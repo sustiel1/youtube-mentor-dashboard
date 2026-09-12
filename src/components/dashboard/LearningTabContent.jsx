@@ -1,4 +1,5 @@
-import { Copy } from "lucide-react";
+import { useState } from "react";
+import { Copy, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { formatMacroDirection } from "@/lib/morningBriefVisuals";
 import { formatStockStatusText, getStockStatusVisual } from "@/lib/stockStatusDisplay";
@@ -21,6 +22,9 @@ import { isRowAlreadySaved } from "@/utils/workspaceSavedRowLookup";
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
 import { localizeStructuredDisplayText } from '@/lib/structuredDisplayText';
+import { isRowNotesEnabledForPrefix, buildRowNoteId } from '@/lib/rowNotes';
+import { useRowNotes } from '@/hooks/useNotes';
+import { RowNoteModal } from './RowNoteModal';
 
 function formatItem(item) {
   const stockLine = formatStockStatusText(item);
@@ -191,6 +195,7 @@ function buildPxUrl(text) {
 function ItemRowActions({
   text,
   videoId = null,
+  noteVideoId = null,
   sourceItem = null,
   productionRowId = null,
   rowTimestampSection = null,
@@ -205,6 +210,18 @@ function ItemRowActions({
     bulkSelection?.type || bulkSelection?.tabScope || null,
     bulkSelection?.savedRowIndex,
   );
+
+  // Row-level notes — every row with a section identity (bulkSelection.idPrefix) and
+  // a known video qualifies, see src/lib/rowNotes.js. noteVideoId is independent of
+  // videoId (which some tabs deliberately null out for timestamp-linking only —
+  // see SpecializedContentRenderer's STATIC_TIME_NARRATIVE_TAB_KEYS) so notes still
+  // work on tabs where a "jump to this moment" link wouldn't make sense.
+  const effectiveNoteVideoId = noteVideoId || videoId;
+  const rowNotesEnabled = isRowNotesEnabledForPrefix(bulkSelection?.idPrefix) && !!effectiveNoteVideoId;
+  const rowNoteId = rowNotesEnabled ? buildRowNoteId(bulkSelection.idPrefix, text) : null;
+  const [rowNoteModalOpen, setRowNoteModalOpen] = useState(false);
+  const { data: rowNotes = [] } = useRowNotes(rowNotesEnabled ? effectiveNoteVideoId : null, rowNoteId);
+  const hasRowNote = rowNotes.length > 0;
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
@@ -249,6 +266,29 @@ function ItemRowActions({
         <Copy className="h-3 w-3" />
       </button>
       {alreadySaved && <SavedRowIndicator />}
+      {rowNotesEnabled && (
+        <>
+          <button
+            type="button"
+            onClick={() => setRowNoteModalOpen(true)}
+            title={hasRowNote ? 'יש הערה לשורה זו — לחץ לצפייה/עריכה' : 'הוסף הערה לשורה'}
+            className={
+              hasRowNote
+                ? 'p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-sm leading-none transition-colors opacity-100'
+                : 'p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-700 transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100'
+            }
+          >
+            <StickyNote className="h-3 w-3" fill={hasRowNote ? 'currentColor' : 'none'} />
+          </button>
+          <RowNoteModal
+            open={rowNoteModalOpen}
+            onOpenChange={setRowNoteModalOpen}
+            videoId={effectiveNoteVideoId}
+            rowId={rowNoteId}
+            rowLabel={text}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -258,6 +298,7 @@ function ItemRow({
   brainReason = null,
   sourceItem = null,
   videoId = null,
+  noteVideoId = null,
   productionRowId = null,
   rowTimestampSection = null,
   stockVisual = null,
@@ -276,6 +317,7 @@ function ItemRow({
     <ItemRowActions
       text={text}
       videoId={videoId}
+      noteVideoId={noteVideoId}
       sourceItem={sourceItem}
       productionRowId={productionRowId}
       rowTimestampSection={rowTimestampSection}
@@ -335,6 +377,7 @@ function TemplateTableRow({
   entry,
   index,
   videoId,
+  noteVideoId,
   bulkSelection,
   bulkId,
   bulkSelected,
@@ -382,6 +425,7 @@ function TemplateTableRow({
         <ItemRowActions
           text={text}
           videoId={videoId}
+          noteVideoId={noteVideoId}
           sourceItem={sourceItem}
           productionRowId={bulkId}
           rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
@@ -404,6 +448,7 @@ function TemplateTableRow({
 function TemplateItemsTable({
   rows,
   videoId,
+  noteVideoId,
   bulkSelection,
   onSaveToBrain,
   isSaved,
@@ -443,6 +488,7 @@ function TemplateItemsTable({
                 index={i}
                 entry={entry}
                 videoId={videoId}
+                noteVideoId={noteVideoId}
                 bulkSelection={bulkSelection}
                 bulkId={bulkId}
                 bulkSelected={bulkSelected}
@@ -505,6 +551,10 @@ export function UsefulKnowledgeSourceLine({ video, mentorName = '' }) {
 export function LearningTabContent({
   items = [],
   videoId = null,
+  // Independent of videoId — some tabs pass videoId=null there on purpose (timestamp
+  // linking only makes sense on a curated subset of tabs), but row notes should still
+  // work everywhere a video is actually known. Falls back to videoId when not given.
+  noteVideoId = null,
   emptyLabel = 'אין עדיין נתונים בסעיף הזה',
   onSaveToBrain,
   isSaved,
@@ -552,6 +602,7 @@ export function LearningTabContent({
               brainReason={brainReason}
               sourceItem={sourceItem}
               videoId={videoId}
+              noteVideoId={noteVideoId}
               productionRowId={bulkId}
               rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
               url={url}
@@ -591,6 +642,7 @@ export function LearningTabContent({
         <TemplateItemsTable
           rows={tableRows}
           videoId={videoId}
+          noteVideoId={noteVideoId}
           bulkSelection={bulkSelection}
           onSaveToBrain={onSaveToBrain}
           isSaved={isSaved}
@@ -615,6 +667,7 @@ export function LearningTabContent({
                 brainReason={brainReason}
                 sourceItem={sourceItem}
                 videoId={videoId}
+                noteVideoId={noteVideoId}
                 productionRowId={bulkId}
                 rowTimestampSection={bulkSelection?.sectionLabel || bulkSelection?.type || null}
                 url={url}

@@ -21,6 +21,7 @@ export function DedicatedContentSection({
   bulkSelection = null,
   macroDirection = false,
   videoId = null,
+  noteVideoId = null,
 }) {
   const safe = Array.isArray(items) ? items.filter(Boolean) : [];
   if (safe.length === 0) return null;
@@ -59,6 +60,7 @@ export function DedicatedContentSection({
         <LearningTabContent
           items={safe}
           videoId={videoId}
+          noteVideoId={noteVideoId}
           emptyLabel=""
           macroDirection={macroDirection}
           onSaveToBrain={onSaveToBrain ? (text) => onSaveToBrain(text, tabKey, label) : undefined}

@@ -32,6 +32,7 @@ GEM ב-Gemini (מוגדר חוץ-לאפליקציה, טקסט ה-System Instruct
 | `investmentChecklist` | `:1209` (נוסף 2026-09-10) | 4 — 📋 צ'קליסט השקעה | case `'investment-checklist'` — fallback ל-`checklists` רק אם ריק |
 | `promptTemplates` | `:1210` (נוסף 2026-09-10) | 4 — 📜 תבניות פרומפט | case `'prompt-templates'` (חדש) |
 | `tags` | `:1180` | 6 (נושאים ותתי־נושאים) | case `'topics-subtopics'` legacy |
+| `stockFundamentals` | `:1213-1214` (נוסף 2026-09-11, normalizer ייעודי — לא `normalizeLearningArray`) | 7 (תוכן ייעודי) — 📊 נתונים פונדמנטליים (**חדש**) | case `'stock-fundamentals'` (`videoTabsConfig.js`) → `<StockFundamentalsSection>` |
 | — | — | 5 (APP) | **לא נגיש כלל** — `AppBuilderTab.jsx` תלוי רק ב-`marketBriefData`, שלעולם `null` בנתיב הזה (`GEM-FUNDAMENTAL-SCHEMA.md` §6) |
 | — | — | 7 (תוכן ייעודי) | **ר' §7 — זו הסתירה המרכזית של המסמך הזה** |
 
@@ -110,6 +111,8 @@ return resolveSubCategorySlugFromTopics(video?.topicIds || videoProp?.topicIds) 
 | דוגמת ה-GEM משתמשת בתיאורי-חברה מוכללים, לא בטיקרים אמיתיים — לא בודקת stock-linkification | פתוח, `architect-reviewer` |
 
 ## 9. Changelog
+
+**2026-09-11 (מאוחר, WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY) — `stockFundamentals`/`stockTechnicals`, שני סעיפי-טבלה חדשים בטאב 7:** הג'ם הפונדמנטלי כעת **כן** כותב שדה שמזין את טאב 7 — `stockFundamentals` (נקודות-נתון פונדמנטליות אמיתיות לפי טיקר, שונה מהותית מ-`financialMetrics`/`valuation` הלימודיים). מוצג בסעיף חדש "📊 נתונים פונדמנטליים", מעל "⭐ מניות שהוזכרו". שדה-אח, `stockTechnicals` (סכימה בלבד — GEM טכני נפרד עדיין לא כותב אותו), מוצג ב-"📐 נתונים טכניים" מעל אותו סעיף. שני הסעיפים מותנים יחד ב-`showStockDataSections` prop על `MorningBriefDashboard.jsx` (ברירת מחדל `false`) — מונע דליפה למבזק בוקר/ערב שחולקים את אותו רכיב בדיוק. §7 למעלה (טאב 7 = דשבורד-מבזק מלא) עדיין נכון — זה תוסף, לא סתירה: הג'ם עדיין לא כותב שום דבר לשאר 9 הסעיפים, רק לשני החדשים. פירוט מלא: `docs/plan/AUDIT-TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY.md`, `GEM-FUNDAMENTAL-SCHEMA.md` §10.
 
 **2026-09-11 (לילה) — הכרעת טאב 7 + תיקון תיעוד stale:** המשתמש הכריע את §7 (הקוד נכון, נשאר) ואישר commit+push. `GEM-FUNDAMENTAL-SCHEMA.md`/`GEM-FUNDAMENTAL-INSTRUCTIONS.md` עודכנו לתאר את מה שהקוד עושה בפועל (לא נכתבו-מחדש — עודכנו נקודתית, ר' הערות "עדכון 2026-09-11" בתוכם); `fullSummary`/`mainLesson`/`warnings` תוקנו משלוש הצהרות "לא מוצג" ל-"מוצג, ר' file:line"; שורת ledger נוספה המתעדת את תיקון ה-merge ב-`videoTabsConfig.js` שלא היה מיוחס קודם.
 

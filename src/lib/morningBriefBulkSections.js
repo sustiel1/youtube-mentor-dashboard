@@ -122,6 +122,28 @@ export function formatMorningBriefStockText(stock) {
   ].filter(Boolean).join(' · ');
 }
 
+export function formatMorningBriefStockFundamentalText(row) {
+  return [
+    row.ticker,
+    row.company,
+    row.metric,
+    row.value != null && String(row.value).trim() && String(row.value),
+    row.interpretation,
+    row.asOf,
+  ].filter(Boolean).join(' · ');
+}
+
+export function formatMorningBriefStockTechnicalText(row) {
+  return [
+    row.ticker,
+    row.company,
+    row.levelType,
+    row.value != null && String(row.value).trim() && String(row.value),
+    row.interpretation,
+    row.asOf,
+  ].filter(Boolean).join(' · ');
+}
+
 function formatLevelRowText(row) {
   return [
     row.symbol,
@@ -246,6 +268,20 @@ export function buildMorningBriefBulkSections(effectiveVideo = {}, marketBriefDa
   const riskItems = extractRiskItems(src).map((r) => r.text).filter(Boolean);
   if (riskItems.length) {
     sections.push({ key: 'risks', label: '⚠️ סיכונים', items: riskItems, tabKey: 'brief-risks' });
+  }
+
+  const stockFundamentalItems = extractVideoTabItems(effectiveVideo, 'stock-fundamentals', marketBriefData)
+    .map(formatMorningBriefStockFundamentalText)
+    .filter(Boolean);
+  if (stockFundamentalItems.length) {
+    sections.push({ key: 'stock-fundamentals', label: '📊 נתונים פונדמנטליים', items: stockFundamentalItems, tabKey: 'stock-fundamentals' });
+  }
+
+  const stockTechnicalItems = extractVideoTabItems(effectiveVideo, 'stock-technicals', marketBriefData)
+    .map(formatMorningBriefStockTechnicalText)
+    .filter(Boolean);
+  if (stockTechnicalItems.length) {
+    sections.push({ key: 'stock-technicals', label: '📐 נתונים טכניים', items: stockTechnicalItems, tabKey: 'stock-technicals' });
   }
 
   const stockItems = extractUnifiedStocks(marketBriefData, effectiveVideo)

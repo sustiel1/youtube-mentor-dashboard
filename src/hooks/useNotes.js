@@ -74,6 +74,15 @@ export function useNotesByVideo(videoId) {
   });
 }
 
+// Notes attached to one specific row (see src/lib/rowNotes.js for rowId derivation).
+// Reuses the useNotesByVideo query/cache (same videoId → same queryKey) and just
+// filters client-side, so a row note and the video's general Notes tab always agree.
+export function useRowNotes(videoId, rowId) {
+  const query = useNotesByVideo(videoId);
+  const rowNotes = rowId ? (query.data || []).filter((n) => n.rowId === rowId) : [];
+  return { ...query, data: rowNotes };
+}
+
 export function useNotesByTopic(topicId) {
   return useQuery({
     queryKey: ['notes', 'topic', topicId],
@@ -98,10 +107,10 @@ export function useNotesByTopic(topicId) {
 export function useCreateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ videoId, topicId, content, timestampSeconds, timestampLabel, images }) => {
+    mutationFn: async ({ videoId, topicId, content, timestampSeconds, timestampLabel, images, rowId, rowLabel }) => {
       if (!isBase44Enabled()) {
         if (videoId) {
-          return createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images });
+          return createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images, rowId, rowLabel });
         }
         throw new Error('מצב local-first: הערות נושא מחוץ-וידאו אינן נתמכות מקומית');
       }
@@ -112,11 +121,12 @@ export function useCreateNote() {
           content,
           ...(timestampSeconds != null && { timestampSeconds, timestampLabel }),
           ...(Array.isArray(images) && images.length > 0 && { images }),
+          ...(rowId && { rowId, rowLabel }),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
       } catch {
-        if (videoId) return createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images });
+        if (videoId) return createLocalNote({ videoId, content, timestampSeconds, timestampLabel, images, rowId, rowLabel });
         throw new Error('שמירת הערת נושא נכשלה — Base44 לא זמין');
       }
     },

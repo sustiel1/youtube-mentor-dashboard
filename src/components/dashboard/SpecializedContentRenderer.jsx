@@ -53,6 +53,7 @@ function Section({ label, items, tabKey, sectionKey, videoId, onSaveToBrain, che
       tabKey={tabKey}
       sectionKey={sectionKey}
       videoId={STATIC_TIME_NARRATIVE_TAB_KEYS.has(tabKey) ? videoId : null}
+      noteVideoId={videoId}
       onSaveToBrain={onSaveToBrain}
       checkSaved={checkSaved}
       bulkSelection={bulkSelection}
@@ -152,6 +153,7 @@ export function SpecializedContentRenderer({
         bulkSelection={bulkSelection}
         bulkSections={fundamentalBulkDefs}
         presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+        showStockDataSections
       />
     ));
   }

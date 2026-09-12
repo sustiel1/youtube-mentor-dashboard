@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Trash2, Send, Check, AlertCircle, Clock, X, Image as ImageIcon } from "lucide-react";
-import { useNotesByVideo, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
+import { Trash2, Send, Check, AlertCircle, Clock, X, Image as ImageIcon, StickyNote } from "lucide-react";
+import { useNotesByVideo, useRowNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
 
 function formatTime(seconds) {
   const s = Math.floor(seconds);
@@ -48,13 +48,18 @@ async function fileToResizedDataUrl(file) {
 //   getPlayerTime — optional () => number | null
 //   onSeek        — optional (seconds: number) => void
 //   hideEmptyState — optional boolean
-export function NoteEditor({ videoId, getPlayerTime, onSeek, hideEmptyState = false, maxNotesHeight }) {
+//   rowId         — optional: when set, this editor is scoped to one list/checklist
+//                    row instead of the whole video (shows/creates only that row's notes)
+//   rowLabel      — optional: the row's own text, stored on the note for context
+export function NoteEditor({ videoId, getPlayerTime, onSeek, hideEmptyState = false, maxNotesHeight, rowId = null, rowLabel = null }) {
   const [newNote, setNewNote] = useState("");
   const [noteTimestamp, setNoteTimestamp] = useState(null);
   const [pendingImages, setPendingImages] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
-  const { data: notes = [], isLoading } = useNotesByVideo(videoId);
+  const videoNotes = useNotesByVideo(rowId ? null : videoId);
+  const rowNotes = useRowNotes(rowId ? videoId : null, rowId);
+  const { data: notes = [], isLoading } = rowId ? rowNotes : videoNotes;
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
 
@@ -104,6 +109,7 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek, hideEmptyState = fa
         timestampSeconds: noteTimestamp.seconds,
         timestampLabel: noteTimestamp.label,
       }),
+      ...(rowId && { rowId, rowLabel }),
     });
     setNewNote("");
     setNoteTimestamp(null);
@@ -306,6 +312,17 @@ export function NoteEditor({ videoId, getPlayerTime, onSeek, hideEmptyState = fa
                       onClick={() => setPreviewImage(img)}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Row context — only shown in the general (non-row-scoped) notes list,
+                  so a row-level note doesn't look like an unexplained fragment there */}
+              {!rowId && note.rowId && note.rowLabel && (
+                <div className="mb-2 flex items-center gap-1.5 flex-row-reverse">
+                  <StickyNote className="h-3 w-3 text-amber-500 shrink-0" />
+                  <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 truncate dark:text-amber-300 dark:bg-amber-950/30 dark:border-amber-800/40">
+                    {note.rowLabel}
+                  </span>
                 </div>
               )}
 

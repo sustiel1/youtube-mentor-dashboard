@@ -954,6 +954,24 @@ export function extractVideoTabItems(video, tabValue, marketBriefData = null) {
         ...pickArray(a, 'promptTemplates'),
       ];
 
+    // Structured per-ticker data points (WORK-ID TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY).
+    // Items are objects ({ticker, metric/levelType, value, ...}), not display
+    // strings — normalizeAiAnalysisResult already drops rows missing required
+    // fields, so nothing further to validate here.
+    case 'stock-fundamentals': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'stockFundamentals')
+        : [...pickArray(video, 'stockFundamentals'), ...pickArray(a, 'stockFundamentals')];
+    }
+
+    case 'stock-technicals': {
+      const src = resolveSpecialized(marketBriefData);
+      return src
+        ? pickArray(src, 'stockTechnicals')
+        : [...pickArray(video, 'stockTechnicals'), ...pickArray(a, 'stockTechnicals')];
+    }
+
     // ── Macro ─────────────────────────────────────────────────────────
     case 'cause-effect':
       return [
