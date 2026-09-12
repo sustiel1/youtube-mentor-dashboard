@@ -71,3 +71,28 @@ workspace-library-menu.png
 # Temporary audit artifacts (generated at runtime, not committed)
 scripts/tmp-*.json
 scripts/runtime-tabs-audit-compute.mjs
+
+# Personal settings backups (WORK-ID TRADINGBRAIN-WIP-SAFETY-CHECKPOINT, 2026-09-12)
+.claude/*.bak-*
+
+# Throwaway verification harness scripts — never committed
+scripts/tmp/
+
+# Ad-hoc QA screenshots/page-source dumps captured directly in repo root
+brief-*
+home*.txt
+lightnight-*
+row-note-*
+row-badge-*
+dedicated-*.txt
+summary-*
+search-results.png
+general-notes-tab.png
+useful-knowledge-tab.png
+video-detail-opened.png
+youtube-dashboard-*.png
+tradingbrain-*.png
+dashboard-home.png
+reload-persist-check.png
+reopen-detail.txt
+detail-panel-snapshot.txt
