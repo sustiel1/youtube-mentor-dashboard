@@ -188,6 +188,14 @@ export function extractTimestampsFromDescription(description, options = {}) {
 
   // Sort ascending
   chapters.sort((a, b) => a.startSeconds - b.startSeconds);
+
+  // YouTube requires the first chapter to start at 0:00 — normalize here so a
+  // description whose first real timestamp is slightly off (e.g. "0:03 Intro")
+  // still anchors the timeline at the true start of the video.
+  if (chapters[0].startSeconds !== 0) {
+    chapters[0] = { ...chapters[0], startSeconds: 0, timestamp: '0:00' };
+  }
+
   debug.valid = chapters.length;
 
   const result = chapters.map((chapter, index, arr) => {

@@ -16,7 +16,7 @@ import {
   getHebrewTitlesErrorMessage,
   mergeChapterSources,
 } from '../src/lib/chapterEnrichment.js';
-import { buildTimestampUrl } from '../src/services/youtubeMetadata.js';
+import { buildTimestampUrl, extractTimestampsFromDescription } from '../src/services/youtubeMetadata.js';
 
 assert.equal(parseChapterTimeToSeconds('03:42'), 222, 'MM:SS converts to seconds');
 assert.equal(parseChapterTimeToSeconds('1:02:03'), 3723, 'HH:MM:SS converts to seconds');
@@ -321,5 +321,20 @@ try {
 } finally {
   await server.close();
 }
+
+// YMD-CHAPTERS-YOUTUBE-SOURCE: description-timestamp parsing must anchor the
+// first chapter at 0:00 and never require a model call.
+const offByOneFirstChapter = extractTimestampsFromDescription(
+  '0:03 Intro\n2:15 Market overview\n5:40 Wrap-up',
+);
+assert.equal(offByOneFirstChapter[0].startSeconds, 0, 'the first chapter is normalized to 0:00 even if the description starts later');
+assert.equal(offByOneFirstChapter[0].timestamp, '0:00', 'the normalized first chapter timestamp label reads 0:00');
+assert.equal(offByOneFirstChapter[1].startSeconds, 135, 'later chapters keep their real parsed timestamps unchanged');
+
+const alreadyZero = extractTimestampsFromDescription('0:00 Intro\n1:30 Segment two');
+assert.equal(alreadyZero[0].startSeconds, 0, 'a description that already starts at 0:00 is left unchanged');
+
+const tooFewTimestamps = extractTimestampsFromDescription('0:03 Intro only, no second timestamp');
+assert.equal(tooFewTimestamps.length, 0, 'a single timestamp is not treated as chapters (needs >= 2)');
 
 console.log('chapter timestamp QA passed');

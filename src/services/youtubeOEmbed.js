@@ -7,6 +7,7 @@
 import { buildYouTubeUrl } from '@/lib/youtubeUrlParser';
 import { fetchVideoMetadata } from '@/services/youtubeApi';
 import { resolveChannelToMentor } from '@/lib/channelMentorResolver';
+import { extractTimestampsFromDescription } from '@/services/youtubeMetadata';
 
 // Thumbnail quality ladder — maxresdefault (1280px) first, hqdefault (480px) as fallback.
 // VideoCard/VideoDetailPanel handle the onError chain down to hqdefault via the img element.
@@ -61,6 +62,7 @@ export async function buildExternalVideoObject(videoId, options = {}) {
   let publishedAt = null;
   let duration = null;
   let viewCount = null;
+  let description = '';
 
   console.log('[buildExternalVideo] start — videoId:', videoId);
 
@@ -89,9 +91,21 @@ export async function buildExternalVideoObject(videoId, options = {}) {
     if (metadata?.publishedAt) publishedAt = String(metadata.publishedAt);
     if (metadata?.duration) duration = String(metadata.duration);
     if (metadata?.viewCount != null) viewCount = Number(metadata.viewCount);
+    if (typeof metadata?.description === 'string') description = metadata.description;
   } catch {
     // keep external add lightweight even if extended metadata fails
   }
+
+  // Native/description chapters — pure local parsing of text already fetched above.
+  // No model call of any kind; resolution order (per YMD-CHAPTERS-YOUTUBE-SOURCE)
+  // requires these to be available before any AI path is ever considered.
+  let descriptionChapters = [];
+  try {
+    descriptionChapters = extractTimestampsFromDescription(description);
+  } catch {
+    // malformed description text — leave chapters empty, not fatal
+  }
+  const hasDescriptionChapters = Array.isArray(descriptionChapters) && descriptionChapters.length > 0;
 
   // Auto-match channel → existing mentor (channelId > channelUrl > name)
   // Only runs when user did not explicitly pick a mentor in the add dialog.
@@ -145,9 +159,13 @@ export async function buildExternalVideoObject(videoId, options = {}) {
     topicIds: safeTopicIds,
     ...(duration ? { duration } : {}),
     ...(viewCount != null ? { viewCount } : {}),
+    ...(description ? { description } : {}),
     tags: [],
-    aiChapters: [],
-    chapters: [],
+    aiChapters: hasDescriptionChapters ? descriptionChapters : [],
+    chapters: hasDescriptionChapters ? descriptionChapters : [],
+    ...(hasDescriptionChapters
+      ? { descriptionChapters, chapterSource: 'description_timestamp', analysisQuality: 'medium' }
+      : {}),
     keyPoints: [],
   };
 
