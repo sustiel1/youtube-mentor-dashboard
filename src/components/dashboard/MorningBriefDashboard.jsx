@@ -31,10 +31,11 @@ function looksLikeMarketIndex(item) {
   return tickerPart.length <= 12 && MARKET_FIELD_RE.test(rest);
 }
 
-const sectionProps = (presentation, bulkSelection, bulkSections) => ({
+const sectionProps = (presentation, bulkSelection, bulkSections, noteVideoId) => ({
   presentation,
   bulkSelection,
   bulkSections,
+  noteVideoId,
 });
 
 /**
@@ -50,6 +51,11 @@ export function MorningBriefDashboard({
   bulkSelection = null,
   bulkSections = [],
   presentation = MORNING_BRIEF_SPECIALIZED_PRESENTATION,
+  // Row-note button video id (see RowNoteButton.jsx) — threaded through every
+  // section below via sectionProps()'s {...shared} spread, same convention as
+  // MacroGemDashboard.jsx. null by default so a caller that omits it simply
+  // renders no note buttons, exactly like a missing videoId.
+  noteVideoId = null,
   // Opt-in only — default false so this exact same dashboard, when rendered
   // for a real morning/evening brief (SpecializedContentRenderer.jsx's
   // morning-brief/evening-brief/weekly-brief/earnings-brief branches, which
@@ -64,7 +70,7 @@ export function MorningBriefDashboard({
     .filter((i) => !looksLikeMarketIndex(i))
     .filter((i) => typeof i !== 'string' || !isRegimeDuplicateString(i));
   const macroItems = extractVideoTabItems(effectiveVideo, 'brief-macro', marketBriefData);
-  const shared = sectionProps(presentation, bulkSelection, bulkSections);
+  const shared = sectionProps(presentation, bulkSelection, bulkSections, noteVideoId);
 
   return (
     <div className="space-y-3" dir="rtl" data-morning-brief-dashboard>

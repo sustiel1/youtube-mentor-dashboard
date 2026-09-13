@@ -3,6 +3,7 @@ import { NumericChangeSpan } from './MorningBriefVisualPrimitives';
 import { getExternalSymbolUrl } from '@/utils/finvizLinks';
 import { getHebrewDisplayLabel } from '@/lib/marketLabelTranslations';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
+import { RowNoteButton } from './RowNoteButton';
 
 function parseIndexItem(raw) {
   if (!raw) return null;
@@ -78,7 +79,7 @@ function formatKvValue(val) {
   return JSON.stringify(val);
 }
 
-function KeyValueFallback({ items = [], onSaveToBrain }) {
+function KeyValueFallback({ items = [], onSaveToBrain, noteVideoId = null, idPrefix = null }) {
   return (
     <div className="space-y-2" dir="rtl">
       {items.map((raw, i) => {
@@ -105,15 +106,18 @@ function KeyValueFallback({ items = [], onSaveToBrain }) {
                 </div>
               ))}
             </dl>
-            {onSaveToBrain && (
-              <button
-                type="button"
-                onClick={() => onSaveToBrain(summary)}
-                className="mt-1.5 text-xs text-indigo-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                🧠 שמור
-              </button>
-            )}
+            <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onSaveToBrain && (
+                <button
+                  type="button"
+                  onClick={() => onSaveToBrain(summary)}
+                  className="text-xs text-indigo-400 hover:text-indigo-600"
+                >
+                  🧠 שמור
+                </button>
+              )}
+              <RowNoteButton videoId={noteVideoId} idPrefix={idPrefix} text={summary} />
+            </div>
           </div>
         );
       })}
@@ -129,7 +133,15 @@ const TABLE_COLS = [
   { key: 'note', label: 'הערה', pick: (r) => r.note },
 ];
 
-export function MarketIndicesTable({ items = [], onSaveToBrain }) {
+/**
+ * @param {string|null} sectionKey — stable scope for row notes (see RowNoteButton.jsx),
+ *   e.g. 'indices' or 'market-news' — matches the tabKey this table's onSaveToBrain
+ *   callback is already bound to at each SpecializedContentRenderer.jsx call site.
+ *   Combined into an idPrefix distinct from every other row-note pipeline in the app
+ *   (morning-brief:*, macro-gem:*) so notes never merge across unrelated tables.
+ */
+export function MarketIndicesTable({ items = [], onSaveToBrain, noteVideoId = null, sectionKey = null }) {
+  const idPrefix = sectionKey ? `market-indices-table:${sectionKey}` : null;
   const rows = items.map(parseIndexItem).filter(Boolean);
 
   if (rows.length === 0) {
@@ -143,7 +155,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
 
   const structuredRows = rows.filter(isStructuredRow);
   if (structuredRows.length === 0) {
-    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} />;
+    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} noteVideoId={noteVideoId} idPrefix={idPrefix} />;
   }
 
   const activeCols = TABLE_COLS.filter((col) => {
@@ -155,7 +167,7 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
   });
 
   if (activeCols.length <= 1) {
-    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} />;
+    return <KeyValueFallback items={items} onSaveToBrain={onSaveToBrain} noteVideoId={noteVideoId} idPrefix={idPrefix} />;
   }
 
   return (
@@ -240,17 +252,24 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                   })}
                   {onSaveToBrain && (
                     <td style={{ width: 36 }} className="px-2 py-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
-                          onSaveToBrain(text);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-all"
-                        title="שמור למוח"
-                      >
-                        🧠
-                      </button>
+                      <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
+                            onSaveToBrain(text);
+                          }}
+                          className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none"
+                          title="שמור למוח"
+                        >
+                          🧠
+                        </button>
+                        <RowNoteButton
+                          videoId={noteVideoId}
+                          idPrefix={idPrefix}
+                          text={[row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ')}
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -305,16 +324,23 @@ export function MarketIndicesTable({ items = [], onSaveToBrain }) {
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">{renderLinkedMarketText(row.note)}</p>
               )}
               {onSaveToBrain && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
-                    onSaveToBrain(text);
-                  }}
-                  className="mt-1.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors"
-                >
-                  🧠 שמור
-                </button>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = [row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ');
+                      onSaveToBrain(text);
+                    }}
+                    className="text-xs text-indigo-400 hover:text-indigo-600 transition-colors"
+                  >
+                    🧠 שמור
+                  </button>
+                  <RowNoteButton
+                    videoId={noteVideoId}
+                    idPrefix={idPrefix}
+                    text={[row.name, row.level, row.change, dir.label, row.note].filter(Boolean).join(' · ')}
+                  />
+                </div>
               )}
             </div>
           );

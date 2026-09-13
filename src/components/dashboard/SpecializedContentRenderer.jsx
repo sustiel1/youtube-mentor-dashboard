@@ -154,6 +154,7 @@ export function SpecializedContentRenderer({
         bulkSections={fundamentalBulkDefs}
         presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
         showStockDataSections
+        noteVideoId={timestampYoutubeId}
       />
     ));
   }
@@ -170,6 +171,7 @@ export function SpecializedContentRenderer({
         bulkSelection={bulkSelection}
         bulkSections={morningBulkDefs}
         presentation={MORNING_BRIEF_SPECIALIZED_PRESENTATION}
+        noteVideoId={timestampYoutubeId}
       />
     ));
   }
@@ -246,6 +248,8 @@ export function SpecializedContentRenderer({
         <MarketIndicesTable
           items={indicesItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 ביצועי שוק')}
+          sectionKey="indices"
+          noteVideoId={timestampYoutubeId}
         />
       </div>
     ) : null;
@@ -260,6 +264,8 @@ export function SpecializedContentRenderer({
         <MarketIndicesTable
           items={marketIndexItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 סיכום שוק')}
+          sectionKey="market-news"
+          noteVideoId={timestampYoutubeId}
         />
       </div>
     ) : null;
@@ -311,6 +317,8 @@ export function SpecializedContentRenderer({
         <MarketIndicesTable
           items={indicesItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'indices', '📊 שווקים')}
+          sectionKey="indices"
+          noteVideoId={timestampYoutubeId}
         />
       </div>
     ) : null;
@@ -325,6 +333,8 @@ export function SpecializedContentRenderer({
         <MarketIndicesTable
           items={marketIndexItems}
           onSaveToBrain={(text) => onSaveToBrain(text, 'market-news', '📰 רקע שוק')}
+          sectionKey="market-news"
+          noteVideoId={timestampYoutubeId}
         />
       </div>
     ) : null;
@@ -376,6 +386,7 @@ export function SpecializedContentRenderer({
         effectiveVideo={effectiveVideo}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={timestampYoutubeId}
       />
     );
   }

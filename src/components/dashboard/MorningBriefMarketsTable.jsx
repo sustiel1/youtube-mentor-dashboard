@@ -27,6 +27,7 @@ import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimesta
 import { MarketAssetDescriptionTooltip } from '@/components/shared/MarketAssetDescriptionTooltip';
 import { MarketAssetFuturesLink } from '@/components/shared/MarketAssetProviderLinks';
 import { MarketAssetLinksMenu } from '@/components/shared/MarketAssetLinksMenu';
+import { RowNoteButton } from './RowNoteButton';
 import {
   BRIEF_MARKETS_CELL,
   BRIEF_MARKETS_COL,
@@ -74,24 +75,32 @@ function MarketsTableSentimentBadge({ sentKey }) {
   );
 }
 
-function MarketRowSaveActions({ bulkSelection, mergedBulk, text, onSaveToBrain }) {
+function MarketRowSaveActions({ bulkSelection, mergedBulk, text, onSaveToBrain, noteVideoId = null }) {
   const hasQuick =
     bulkSelection?.onQuickSaveBrain
     || bulkSelection?.onQuickSaveObsidian
     || bulkSelection?.onQuickSaveWorkspace;
   if (hasQuick) {
-    return <UniversalTabQuickSaveFromBulk bulkSelection={mergedBulk} text={text} />;
+    return (
+      <>
+        <UniversalTabQuickSaveFromBulk bulkSelection={mergedBulk} text={text} />
+        <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:indices" text={text} />
+      </>
+    );
   }
   if (!onSaveToBrain) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onSaveToBrain(text)}
-      title="שמור למוח"
-      className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
-    >
-      🧠
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => onSaveToBrain(text)}
+        title="שמור למוח"
+        className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
+      >
+        🧠
+      </button>
+      <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:indices" text={text} />
+    </>
   );
 }
 
@@ -107,6 +116,7 @@ export function MorningBriefMarketsTable({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const fromSrc = extractMarketDashboardRows(getSpecializedSrc(marketBriefData));
   const fromItems = items
@@ -243,6 +253,7 @@ export function MorningBriefMarketsTable({
                       mergedBulk={mergedBulk}
                       text={summary}
                       onSaveToBrain={onSaveToBrain}
+                      noteVideoId={noteVideoId}
                     />
                     {isRowAlreadySaved(summary, 'indices', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                   </div>

@@ -17,6 +17,7 @@ import { SavedRowIndicator, UniversalTabCheckbox } from '@/components/shared/Uni
 import { UniversalTabQuickSaveFromBulk, UniversalTabQuickSaveActions } from '@/components/shared/UniversalTabQuickSaveActions';
 import { ResearchDropdownCompact } from '@/components/shared/ResearchDropdown';
 import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
+import { RowNoteButton } from './RowNoteButton';
 
 // ── Hebrew label map for raw English GEM keys ────────────────────────
 
@@ -153,7 +154,7 @@ function MacroSaveCluster({ text, sectionKey, sectionLabel, onSaveToBrain, bulkS
 
 // ── Object section (key-value table) ────────────────────────────────
 
-function ObjectRows({ obj, groupLabel, sectionKey, sectionLabel, onSaveToBrain, bulkSelection }) {
+function ObjectRows({ obj, groupLabel, sectionKey, sectionLabel, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
   const entries = Object.entries(obj).filter(([, v]) => v != null && v !== '');
   if (!entries.length) return null;
@@ -193,8 +194,9 @@ function ObjectRows({ obj, groupLabel, sectionKey, sectionLabel, onSaveToBrain, 
               </p>
             </td>
             {/* Save col */}
-            <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity">
+            <td className="py-2 pl-1 pr-0 w-8 align-middle opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
               <MacroSaveCluster text={rowText} sectionKey={sectionKey} sectionLabel={sectionLabel} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} />
+              <RowNoteButton videoId={noteVideoId} idPrefix={`macro-gem:${sectionKey}`} text={rowText} />
             </td>
           </tr>
         );
@@ -203,7 +205,7 @@ function ObjectRows({ obj, groupLabel, sectionKey, sectionLabel, onSaveToBrain, 
   );
 }
 
-function MacroObjectSection({ title, objects, sectionKey, onSaveToBrain, bulkSelection }) {
+function MacroObjectSection({ title, objects, sectionKey, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const valid = objects.filter(({ obj }) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
     return Object.keys(obj).length > 0;
@@ -234,6 +236,7 @@ function MacroObjectSection({ title, objects, sectionKey, onSaveToBrain, bulkSel
                 sectionLabel={title}
                 onSaveToBrain={onSaveToBrain}
                 bulkSelection={bulkSelection}
+                noteVideoId={noteVideoId}
               />
             ))}
           </tbody>
@@ -276,7 +279,7 @@ const MCOL = {
   indices: { name: '27%', change: '11%' },
 };
 
-function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
+function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = Array.isArray(stocks) ? stocks.filter(Boolean) : [];
   if (!safe.length) return null;
 
@@ -340,8 +343,9 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                       )}
                     </td>
                     <td className="py-2 pl-1 pr-0 w-8 align-middle">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                         <MacroSaveCluster text={item} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={strPxUrl} />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:stocks-mentioned" text={item} />
                       </div>
                       {isRowAlreadySaved(item, 'stocks-mentioned', merged?.savedRowIndex) && <SavedRowIndicator />}
                     </td>
@@ -395,8 +399,9 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
                     </p>
                   </td>
                   <td className="py-2 pl-1 pr-0 w-8 align-middle">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                       <MacroSaveCluster text={rowText} sectionKey="stocks-mentioned" sectionLabel="🎯 מניות שהוזכרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={stockPxUrl} />
+                      <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:stocks-mentioned" text={rowText} />
                     </div>
                     {isRowAlreadySaved(rowText, 'stocks-mentioned', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </td>
@@ -413,7 +418,7 @@ function MacroStocksSection({ stocks, onSaveToBrain, bulkSelection }) {
 // ── Sectors table ────────────────────────────────────────────────────
 
 
-function MacroSectorsSection({ sectors, onSaveToBrain, bulkSelection }) {
+function MacroSectorsSection({ sectors, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = Array.isArray(sectors) ? sectors.filter(Boolean) : [];
   if (!safe.length) return null;
 
@@ -432,14 +437,17 @@ function MacroSectorsSection({ sectors, onSaveToBrain, bulkSelection }) {
         rows={safe}
         renderLeadingCell={() => null}
         renderTrailingCell={(item, _i, normalized) => (
-          <MacroSaveCluster
-            text={normalized.rowText}
-            sectionKey="brief-sectors"
-            sectionLabel="🏭 סקטורים"
-            onSaveToBrain={onSaveToBrain}
-            bulkSelection={merged}
-            pxUrl={buildPerplexityResearchQuery(item, 'sectors')}
-          />
+          <div className="flex items-center gap-1">
+            <MacroSaveCluster
+              text={normalized.rowText}
+              sectionKey="brief-sectors"
+              sectionLabel="🏭 סקטורים"
+              onSaveToBrain={onSaveToBrain}
+              bulkSelection={merged}
+              pxUrl={buildPerplexityResearchQuery(item, 'sectors')}
+            />
+            <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:brief-sectors" text={normalized.rowText} />
+          </div>
         )}
         renderTrailingBadge={(_item, _i, normalized) => (
           isRowAlreadySaved(normalized.rowText, 'brief-sectors', merged?.savedRowIndex)
@@ -720,7 +728,7 @@ function getHighlightTone(item) {
   return 'amber';
 }
 
-function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
+function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -805,6 +813,7 @@ function MacroHighlightsSection({ items, onSaveToBrain, bulkSelection }) {
                 <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100/80 dark:border-zinc-800/60 flex-wrap">
                   <div className="mr-auto flex items-center gap-1">
                     <MacroSaveCluster text={rowText} sectionKey="macro-highlights" sectionLabel="⭐ היילייטים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
+                    <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-highlights" text={rowText} />
                     {isRowAlreadySaved(rowText, 'macro-highlights', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </div>
                 </div>
@@ -877,7 +886,7 @@ function resolveWarningDate(item) {
   return (item.date || item.time || item.when || item.timestamp || '').trim() || null;
 }
 
-function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
+function MacroWarningsSection({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -958,6 +967,7 @@ function MacroWarningsSection({ items, onSaveToBrain, bulkSelection }) {
               {/* Save — far left in RTL */}
               <div className="shrink-0 flex items-center gap-1">
                 <MacroSaveCluster text={rowText} sectionKey="macro-warnings" sectionLabel="🔔 אזהרות ופעולות למעקב" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={buildPerplexityResearchQuery(item, 'warnings')} />
+                <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-warnings" text={rowText} />
                 {isRowAlreadySaved(rowText, 'macro-warnings', merged?.savedRowIndex) && <SavedRowIndicator />}
               </div>
             </div>
@@ -995,7 +1005,7 @@ function getEventIcon(item) {
 
 // ── MacroEventCardsSection — premium terminal-style cards ─────────────
 
-function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
+function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -1123,6 +1133,7 @@ function MacroEventCardsSection({ items, onSaveToBrain, bulkSelection }) {
                         </a>
                       )}
                       <MacroSaveCluster text={rowText} sectionKey="brief-macro" sectionLabel="🌍 אירועי מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={merged} compact={true} pxUrl={pxUrl} />
+                      <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:brief-macro" text={rowText} />
                       {isRowAlreadySaved(rowText, 'brief-macro', merged?.savedRowIndex) && <SavedRowIndicator />}
                     </div>
                   </td>
@@ -1226,7 +1237,7 @@ function getOppStyle(type, assets) {
 
 // ── MacroOpportunityCardsSection ──────────────────────────────────────
 
-function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
+function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -1299,6 +1310,7 @@ function MacroOpportunityCardsSection({ items, onSaveToBrain, bulkSelection }) {
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
                 <div className="mr-auto flex items-center gap-1">
                   <MacroSaveCluster text={rowText} sectionKey="brief-opportunities" sectionLabel="💡 הזדמנויות" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+                  <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:brief-opportunities" text={rowText} />
                   {isRowAlreadySaved(rowText, 'brief-opportunities', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </div>
               </div>
@@ -1325,7 +1337,7 @@ function getRiskStyle(severity) {
 
 // ── MacroRiskCardsSection ─────────────────────────────────────────────
 
-function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
+function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -1394,6 +1406,7 @@ function MacroRiskCardsSection({ items, onSaveToBrain, bulkSelection }) {
               <div className="flex items-center gap-1.5 mt-auto pt-2 flex-wrap">
                 <div className="mr-auto flex items-center gap-1">
                   <MacroSaveCluster text={rowText} sectionKey="brief-risks" sectionLabel="⚠️ סיכונים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={pxUrl} />
+                  <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:brief-risks" text={rowText} />
                   {isRowAlreadySaved(rowText, 'brief-risks', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </div>
               </div>
@@ -1573,7 +1586,7 @@ function resolveGemSectorLink(sectorStr) {
 
 // ── Custom indices table: checkbox | מדד/נכס | שינוי | סנטימנט | סיבה | save ──
 
-function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
+function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const safe = (Array.isArray(items) ? items : []).filter(Boolean);
   if (!safe.length) return null;
 
@@ -1634,8 +1647,9 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                     )}
                   </td>
                   <td className="py-2 pl-1 pr-0 w-8 align-middle">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                       <MacroSaveCluster text={item} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxStrPxUrl} />
+                      <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:indices" text={item} />
                     </div>
                     {isRowAlreadySaved(item, 'indices', merged?.savedRowIndex) && <SavedRowIndicator />}
                   </td>
@@ -1685,8 +1699,9 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
                   <p className={`${DASHBOARD_TABLE_CELL_BODY_CLS} line-clamp-2 break-words`}>{renderLinkedMarketText(reason) || '—'}</p>
                 </td>
                 <td className="py-2 pl-1 pr-0 w-8 align-middle">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     <MacroSaveCluster text={rowText} sectionKey="indices" sectionLabel="📈 מדדים" onSaveToBrain={onSaveToBrain} bulkSelection={merged} pxUrl={idxPxUrl} />
+                    <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:indices" text={rowText} />
                   </div>
                   {isRowAlreadySaved(rowText, 'indices', merged?.savedRowIndex) && <SavedRowIndicator />}
                 </td>
@@ -1699,7 +1714,7 @@ function MacroGemIndicesTable({ items, onSaveToBrain, bulkSelection }) {
   );
 }
 
-function MacroIndicesSection({ indicesItems, onSaveToBrain, bulkSelection }) {
+function MacroIndicesSection({ indicesItems, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   if (!indicesItems || indicesItems.length === 0) return null;
   return (
     <SectionCard title="📈 מדדים" count={indicesItems.length} tone={TONE.NEUTRAL}>
@@ -1707,6 +1722,7 @@ function MacroIndicesSection({ indicesItems, onSaveToBrain, bulkSelection }) {
         items={indicesItems}
         onSaveToBrain={onSaveToBrain ? (text) => onSaveToBrain(text, 'indices', '📈 מדדים') : undefined}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
     </SectionCard>
   );
@@ -1873,7 +1889,7 @@ const SC = {
 };
 
 function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText, badge, ctaLabel, ctaHref, researchHref, isEmpty = false, emptyTitle,
-  saveText, onSaveToBrain, bulkSelection, sectionKey }) {
+  saveText, onSaveToBrain, bulkSelection, sectionKey, noteVideoId = null }) {
   const s = SC[accent] ?? SC.amber;
   return (
     <div className={`rounded-xl border ${s.border} ${s.bg} p-5 flex flex-col min-h-[11rem] transition-shadow hover:shadow-md`} dir="rtl">
@@ -1925,15 +1941,18 @@ function StatusCard({ accent = 'amber', icon, category, title, subLine, bodyText
           </span>
         ) : null}
         {!isEmpty && (researchHref || saveText) && (
-          <MacroSaveCluster
-            text={saveText || title || category || ''}
-            sectionKey={sectionKey || 'snapshot'}
-            sectionLabel="🌍 תמונת מצב מהירה"
-            onSaveToBrain={onSaveToBrain}
-            bulkSelection={bulkSelection}
-            pxUrl={researchHref}
-            compact
-          />
+          <>
+            <MacroSaveCluster
+              text={saveText || title || category || ''}
+              sectionKey={sectionKey || 'snapshot'}
+              sectionLabel="🌍 תמונת מצב מהירה"
+              onSaveToBrain={onSaveToBrain}
+              bulkSelection={bulkSelection}
+              pxUrl={researchHref}
+              compact
+            />
+            <RowNoteButton videoId={noteVideoId} idPrefix={`macro-gem:${sectionKey || 'snapshot'}`} text={saveText || title || category || ''} />
+          </>
         )}
       </div>
     </div>
@@ -2050,7 +2069,7 @@ function MacroActionsBlock({ actions }) {
   );
 }
 
-function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
+function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   if (!macroOverview || typeof macroOverview !== 'object' || Array.isArray(macroOverview)) return null;
   const entries = Object.entries(macroOverview).filter(([, v]) => v != null && String(v).trim());
   if (!entries.length) return null;
@@ -2130,7 +2149,10 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainTheme}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster text={mainTheme} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainThemeUrl} compact />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster text={mainTheme} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainThemeUrl} compact />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={mainTheme} />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -2143,7 +2165,10 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{mainConclusion}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster text={mainConclusion} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainConclusionUrl} compact />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster text={mainConclusion} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={mainConclusionUrl} compact />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={mainConclusion} />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -2156,7 +2181,10 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm font-medium text-slate-800 dark:text-zinc-100 leading-relaxed break-words [overflow-wrap:anywhere]">{marketImplication}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster text={marketImplication} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={marketImplicationUrl} compact />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster text={marketImplication} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={marketImplicationUrl} compact />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={marketImplication} />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -2186,17 +2214,27 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       </div>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster
-                        text={[
-                          winners.length && `מרוויחים: ${winners.join(', ')}`,
-                          losers.length  && `תחת לחץ: ${losers.join(', ')}`,
-                        ].filter(Boolean).join('\n')}
-                        sectionKey="macro-overview"
-                        sectionLabel="🌐 תמונת מאקרו"
-                        onSaveToBrain={onSaveToBrain}
-                        bulkSelection={bulkSelection}
-                        compact
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster
+                          text={[
+                            winners.length && `מרוויחים: ${winners.join(', ')}`,
+                            losers.length  && `תחת לחץ: ${losers.join(', ')}`,
+                          ].filter(Boolean).join('\n')}
+                          sectionKey="macro-overview"
+                          sectionLabel="🌐 תמונת מאקרו"
+                          onSaveToBrain={onSaveToBrain}
+                          bulkSelection={bulkSelection}
+                          compact
+                        />
+                        <RowNoteButton
+                          videoId={noteVideoId}
+                          idPrefix="macro-gem:macro-overview"
+                          text={[
+                            winners.length && `מרוויחים: ${winners.join(', ')}`,
+                            losers.length  && `תחת לחץ: ${losers.join(', ')}`,
+                          ].filter(Boolean).join('\n')}
+                        />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -2216,7 +2254,10 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       </ul>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster text={actions.join(' • ')} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={actionsUrl} compact />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster text={actions.join(' • ')} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} pxUrl={actionsUrl} compact />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={actions.join(' • ')} />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -2229,14 +2270,17 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
                       <p className="text-sm text-slate-700 dark:text-zinc-200 break-words [overflow-wrap:anywhere]">{String(v).trim()}</p>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      <MacroSaveCluster
-                        text={`${heLabel(k)}: ${String(v).trim()}`}
-                        sectionKey="macro-overview"
-                        sectionLabel="🌐 תמונת מאקרו"
-                        onSaveToBrain={onSaveToBrain}
-                        bulkSelection={bulkSelection}
-                        compact
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <MacroSaveCluster
+                          text={`${heLabel(k)}: ${String(v).trim()}`}
+                          sectionKey="macro-overview"
+                          sectionLabel="🌐 תמונת מאקרו"
+                          onSaveToBrain={onSaveToBrain}
+                          bulkSelection={bulkSelection}
+                          compact
+                        />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={`${heLabel(k)}: ${String(v).trim()}`} />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -2248,8 +2292,9 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
       </div>
 
       {fullText && (
-        <div className="flex justify-end mt-3 px-1">
+        <div className="flex items-center gap-1 justify-end mt-3 px-1">
           <MacroSaveCluster text={fullText} sectionKey="macro-overview" sectionLabel="🌐 תמונת מאקרו" onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} />
+          <RowNoteButton videoId={noteVideoId} idPrefix="macro-gem:macro-overview" text={fullText} />
         </div>
       )}
     </SectionCard>
@@ -2258,7 +2303,7 @@ function MacroOverviewCard({ macroOverview, onSaveToBrain, bulkSelection }) {
 
 // ── Executive Snapshot (quick-glance cards row) ───────────────────────
 
-function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates, inflation, bondYields, oilEnergy, dollar, onSaveToBrain, bulkSelection }) {
+function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates, inflation, bondYields, oilEnergy, dollar, onSaveToBrain, bulkSelection, noteVideoId = null }) {
   const mood    = macroOverview?.macroMood || macroOverview?.mainTheme || '';
   const riskStr = macroOverview?.riskOnRiskOff || '';
   const summary = (macroOverview?.mainConclusion || macroOverview?.marketImplication || macroOverview?.summary || '').trim();
@@ -2358,6 +2403,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
           sectionKey="snapshot"
+          noteVideoId={noteVideoId}
         />
         <StatusCard
           accent={riskAccent}
@@ -2373,6 +2419,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
           sectionKey="snapshot"
+          noteVideoId={noteVideoId}
         />
         <StatusCard
           accent="green"
@@ -2390,6 +2437,7 @@ function ExecutiveSnapshot({ macroOverview, opportunities, risks, interestRates,
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
           sectionKey="snapshot"
+          noteVideoId={noteVideoId}
         />
       </div>
 
@@ -2422,6 +2470,7 @@ export function MacroGemDashboard({
   effectiveVideo,
   onSaveToBrain,
   bulkSelection = null,
+  noteVideoId = null,
 }) {
   const raw = marketBriefData?.rawData || {};
   const spec = marketBriefData?.universalTabs?.specialized || {};
@@ -2516,6 +2565,7 @@ export function MacroGemDashboard({
           dollar={dollar}
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
+          noteVideoId={noteVideoId}
         />
       </SectionCard>
 
@@ -2524,6 +2574,7 @@ export function MacroGemDashboard({
         items={macroHighlights}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       {/* 2. אירועי מאקרו — מה קרה? */}
@@ -2531,6 +2582,7 @@ export function MacroGemDashboard({
         items={macroEvents}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       {/* 3. תמונת מאקרו — מה זה אומר? */}
@@ -2538,6 +2590,7 @@ export function MacroGemDashboard({
         macroOverview={macroOverview}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       {/* 4. סיכונים */}
@@ -2545,6 +2598,7 @@ export function MacroGemDashboard({
         items={risks}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       {/* 5. הזדמנויות */}
@@ -2552,6 +2606,7 @@ export function MacroGemDashboard({
         items={opportunities}
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       {/* 6. אזהרות ופעולות למעקב */}
@@ -2560,17 +2615,18 @@ export function MacroGemDashboard({
           items={warningsAndActions}
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
+          noteVideoId={noteVideoId}
         />
       )}
 
       {/* 7. סקטורים */}
-      <MacroSectorsSection sectors={sectors} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} />
+      <MacroSectorsSection sectors={sectors} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} noteVideoId={noteVideoId} />
 
       {/* 8. מניות שהוזכרו */}
-      <MacroStocksSection stocks={stocksMentioned} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} />
+      <MacroStocksSection stocks={stocksMentioned} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} noteVideoId={noteVideoId} />
 
       {/* 9. מדדים ואינדיקטורים */}
-      <MacroIndicesSection indicesItems={indicesItems} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} />
+      <MacroIndicesSection indicesItems={indicesItems} onSaveToBrain={onSaveToBrain} bulkSelection={bulkSelection} noteVideoId={noteVideoId} />
 
       <MacroObjectSection
         title="🏦 מדיניות הפד וריבית"
@@ -2581,6 +2637,7 @@ export function MacroGemDashboard({
         sectionKey="fed-rates"
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
       <MacroObjectSection
@@ -2597,6 +2654,7 @@ export function MacroGemDashboard({
         sectionKey="economic-factors"
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
+        noteVideoId={noteVideoId}
       />
 
     </div>

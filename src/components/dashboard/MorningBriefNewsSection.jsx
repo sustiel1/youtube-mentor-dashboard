@@ -16,6 +16,7 @@ import { mergeBulkSelection } from '@/lib/universalTabBulkItems';
 import { isRowAlreadySaved } from '@/utils/workspaceSavedRowLookup';
 import { renderLinkedMarketText } from '@/components/shared/LinkedMarketText';
 import { StaticVideoTimestampLink } from '@/components/shared/StaticVideoTimestampLink';
+import { RowNoteButton } from './RowNoteButton';
 
 const NEWS_CARD_SENTIMENT = {
   positive: {
@@ -42,33 +43,40 @@ function NewsCardSaveActions({
   tabKey,
   onSaveToBrain,
   selectionPayload,
+  noteVideoId = null,
 }) {
   const hasQuick = bulkSelection?.onQuickSaveBrain
     || bulkSelection?.onQuickSaveObsidian
     || bulkSelection?.onQuickSaveWorkspace;
   if (hasQuick) {
     return (
-      <UniversalTabQuickSaveFromBulk
-        bulkSelection={mergeBulkSelection(bulkSelection, {
-          sectionLabel,
-          type: tabKey,
-          tabScope: 'specialized',
-        })}
-        text={text}
-        selectionPayload={selectionPayload}
-      />
+      <>
+        <UniversalTabQuickSaveFromBulk
+          bulkSelection={mergeBulkSelection(bulkSelection, {
+            sectionLabel,
+            type: tabKey,
+            tabScope: 'specialized',
+          })}
+          text={text}
+          selectionPayload={selectionPayload}
+        />
+        <RowNoteButton videoId={noteVideoId} idPrefix={`morning-brief:${tabKey}`} text={text} />
+      </>
     );
   }
   if (!onSaveToBrain) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onSaveToBrain(text, tabKey, sectionLabel)}
-      title="שמור למוח"
-      className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
-    >
-      🧠
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => onSaveToBrain(text, tabKey, sectionLabel)}
+        title="שמור למוח"
+        className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
+      >
+        🧠
+      </button>
+      <RowNoteButton videoId={noteVideoId} idPrefix={`morning-brief:${tabKey}`} text={text} />
+    </>
   );
 }
 
@@ -77,6 +85,7 @@ export function MorningBriefNewsCard({
   onSaveToBrain,
   bulkSelection = null,
   bulkSections = [],
+  noteVideoId = null,
 }) {
   const sentKey = NEWS_CARD_SENTIMENT[item.sentiment] ? item.sentiment : 'neutral';
   const sentStyle = NEWS_CARD_SENTIMENT[sentKey];
@@ -161,6 +170,7 @@ export function MorningBriefNewsCard({
           tabKey="market-news"
           onSaveToBrain={onSaveToBrain}
           selectionPayload={{ newsMetadata: item.newsMetadata }}
+          noteVideoId={noteVideoId}
         />
         {isRowAlreadySaved(saveText, 'market-news', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
       </div>
@@ -173,6 +183,7 @@ export function MorningBriefNewsSection({
   onSaveToBrain,
   bulkSelection = null,
   bulkSections = [],
+  noteVideoId = null,
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -197,6 +208,7 @@ export function MorningBriefNewsSection({
           onSaveToBrain={onSaveToBrain}
           bulkSelection={bulkSelection}
           bulkSections={bulkSections}
+          noteVideoId={noteVideoId}
         />
       ))}
 

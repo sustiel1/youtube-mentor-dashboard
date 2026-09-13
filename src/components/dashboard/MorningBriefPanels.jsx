@@ -152,6 +152,7 @@ import {
   EconomicCalendarHeaderLinks,
   EconomicCalendarTitleLink,
 } from './EconomicCalendarHeaderLinks';
+import { RowNoteButton } from './RowNoteButton';
 
 function morningBriefCardBulk(bulkSections, bulkSelection, sectionKey, title, { disabled = false, cardId, type } = {}) {
   if (!bulkSelection || disabled) return null;
@@ -208,31 +209,38 @@ function BriefRowSaveActions({
   tabKey,
   onSaveToBrain,
   tabScope = 'specialized',
+  noteVideoId = null,
 }) {
   const hasQuick = bulkSelection?.onQuickSaveBrain
     || bulkSelection?.onQuickSaveObsidian
     || bulkSelection?.onQuickSaveWorkspace;
   if (hasQuick) {
     return (
-      <BriefQuickSaveActions
-        bulkSelection={bulkSelection}
-        text={text}
-        sectionLabel={sectionLabel}
-        tabKey={tabKey}
-        tabScope={tabScope}
-      />
+      <>
+        <BriefQuickSaveActions
+          bulkSelection={bulkSelection}
+          text={text}
+          sectionLabel={sectionLabel}
+          tabKey={tabKey}
+          tabScope={tabScope}
+        />
+        <RowNoteButton videoId={noteVideoId} idPrefix={`morning-brief:${tabKey}`} text={text} />
+      </>
     );
   }
   if (!onSaveToBrain) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onSaveToBrain(text, tabKey, sectionLabel)}
-      title="שמור למוח"
-      className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
-    >
-      🧠
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => onSaveToBrain(text, tabKey, sectionLabel)}
+        title="שמור למוח"
+        className="p-1 rounded text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-sm leading-none transition-colors opacity-100 max-md:opacity-90 md:opacity-0 md:group-hover:opacity-100"
+      >
+        🧠
+      </button>
+      <RowNoteButton videoId={noteVideoId} idPrefix={`morning-brief:${tabKey}`} text={text} />
+    </>
   );
 }
 
@@ -1067,7 +1075,7 @@ function RegimeNeutralBlock({ cards, scrollable = false, bulkSelection = null, b
 
 
 /** Compact מצב שוק table: ☐ | אינדיקטור | סנטימנט | הערה / סיבה | save */
-function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
+function MarketRegimeTable({ rows, bulkSections, bulkSelection, noteVideoId = null }) {
   if (!rows.length) return null;
 
   return (
@@ -1146,13 +1154,14 @@ function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
                   <BriefNewsNotesText text={displayValue} row={rowCtx} translateIndicatorEnums />
                 </td>
                 <td className="py-2 pl-1 pr-0 align-middle">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     <BriefQuickSaveActions
                       bulkSelection={bulkSelection}
                       text={displayText}
                       sectionLabel="📊 מצב שוק"
                       tabKey="market-regime"
                     />
+                    <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:market-regime" text={displayText} />
                   </div>
                   {isRowAlreadySaved(displayText, 'market-regime', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                 </td>
@@ -1166,7 +1175,7 @@ function MarketRegimeTable({ rows, bulkSections, bulkSelection }) {
 }
 
 // ── 1. Market Regime ─────────────────────────────────────────────────
-export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation }) {
+export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation, noteVideoId = null }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.marketRegime, { marketBriefData, onSaveMarketBriefSection, presentation });
   const cards = extractMarketRegimeCards(getSpecializedSrc(marketBriefData));
   const split = splitNewsByTone(cards, (c) => stripInternalFieldLabels(c.value));
@@ -1213,6 +1222,7 @@ export function MarketRegimeSection({ marketBriefData, onSaveMarketBriefSection,
           ]}
           bulkSections={bulkSections}
           bulkSelection={bulkSelection}
+          noteVideoId={noteVideoId}
         />
       </div>
       )}
@@ -1229,6 +1239,7 @@ export function MarketsSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.markets, { marketBriefData, onSaveMarketBriefSection, presentation });
   const marketRows = getMorningBriefMarketRows(marketBriefData, indicesItems);
@@ -1273,6 +1284,7 @@ export function MarketsSection({
           bulkSelection={bulkSelection}
           bulkSections={bulkSections}
           presentation={presentation}
+          noteVideoId={noteVideoId}
         />
       </div>
       )}
@@ -1431,7 +1443,7 @@ function SectorGroupsHeaderLink() {
   );
 }
 
-export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation }) {
+export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSection, bulkSelection = null, bulkSections = [], presentation, noteVideoId = null }) {
   const ui = resolveMorningBriefPresentation(presentation);
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.sectors, { marketBriefData, onSaveMarketBriefSection, presentation });
   const rows = extractSectorRows(getSpecializedSrc(marketBriefData));
@@ -1489,12 +1501,15 @@ export function SectorOverviewSection({ marketBriefData, onSaveMarketBriefSectio
             </div>
           )}
           renderTrailingCell={(row, _i, normalized) => (
-            <BriefQuickSaveActions
-              bulkSelection={bulkSelection}
-              text={normalized.rowText}
-              sectionLabel="🏭 סקטורים"
-              tabKey="brief-sectors"
-            />
+            <>
+              <BriefQuickSaveActions
+                bulkSelection={bulkSelection}
+                text={normalized.rowText}
+                sectionLabel="🏭 סקטורים"
+                tabKey="brief-sectors"
+              />
+              <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:brief-sectors" text={normalized.rowText} />
+            </>
           )}
           renderTrailingBadge={(row, _i) => (
             isRowAlreadySaved(formatMorningBriefSectorText(row), 'brief-sectors', bulkSelection?.savedRowIndex)
@@ -1585,6 +1600,7 @@ export function NewsSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.news, {
     marketBriefData,
@@ -1620,6 +1636,7 @@ export function NewsSection({
         onSaveToBrain={onSaveToBrain}
         bulkSelection={bulkSelection}
         bulkSections={bulkSections}
+        noteVideoId={noteVideoId}
       />
       )}
     </SectionCard>
@@ -1657,6 +1674,7 @@ export function MacroSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const ui = resolveMorningBriefPresentation(presentation);
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.macro, { marketBriefData, onSaveMarketBriefSection, presentation });
@@ -1820,14 +1838,18 @@ export function MacroSection({
                             sectionLabel="🌍 מאקרו"
                             tabKey="brief-macro"
                             onSaveToBrain={onSaveToBrain}
+                            noteVideoId={noteVideoId}
                           />
                         ) : (
-                          <BriefQuickSaveActions
-                            bulkSelection={bulkSelection}
-                            text={summary}
-                            sectionLabel="🌍 מאקרו"
-                            tabKey="brief-macro"
-                          />
+                          <>
+                            <BriefQuickSaveActions
+                              bulkSelection={bulkSelection}
+                              text={summary}
+                              sectionLabel="🌍 מאקרו"
+                              tabKey="brief-macro"
+                            />
+                            <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:brief-macro" text={summary} />
+                          </>
                         )}
                       </div>
                       {isRowAlreadySaved(summary, 'brief-macro', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
@@ -1969,6 +1991,7 @@ export function SentimentSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const items = extractSentimentItems(getSpecializedSrc(marketBriefData));
   const tone = items.length > 0
@@ -2079,13 +2102,14 @@ export function SentimentSection({
                       </p>
                     </td>
                     <td className="py-2 pl-1 pr-0 align-middle">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                         <BriefQuickSaveActions
                           bulkSelection={bulkSelection}
                           text={bulkText}
                           sectionLabel="📊 סנטימנט"
                           tabKey="brief-sentiment"
                         />
+                        <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:brief-sentiment" text={bulkText} />
                       </div>
                       {isRowAlreadySaved(bulkText, 'brief-sentiment', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                     </td>
@@ -2134,7 +2158,7 @@ function CalendarImportanceDot({ level }) {
   );
 }
 
-function CalendarTableRow({ row, bulkSections, bulkSelection }) {
+function CalendarTableRow({ row, bulkSections, bulkSelection, noteVideoId = null }) {
   const calendarText = [row.event, row.date, row.importance, row.impact].filter(Boolean).join(' · ');
   const calendarBulkText = formatMorningBriefCalendarText(row);
 
@@ -2178,13 +2202,14 @@ function CalendarTableRow({ row, bulkSections, bulkSelection }) {
         )}
       </td>
       <td className="py-2 pl-1 pr-0 align-middle">
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
           <BriefQuickSaveActions
             bulkSelection={bulkSelection}
             text={calendarText}
             sectionLabel="📅 לוח כלכלי"
             tabKey="brief-calendar"
           />
+          <RowNoteButton videoId={noteVideoId} idPrefix="morning-brief:brief-calendar" text={calendarText} />
         </div>
         {isRowAlreadySaved(calendarBulkText, 'brief-calendar', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
       </td>
@@ -2198,6 +2223,7 @@ export function EconomicCalendarSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.economicCalendar, { marketBriefData, onSaveMarketBriefSection, presentation });
   const rows = mergeCalendarRows(extractCalendarRows(getSpecializedSrc(marketBriefData)));
@@ -2261,6 +2287,7 @@ export function EconomicCalendarSection({
                   row={row}
                   bulkSections={bulkSections}
                   bulkSelection={bulkSelection}
+                  noteVideoId={noteVideoId}
                 />
               ))}
             </tbody>
@@ -2552,6 +2579,7 @@ export function OpportunitiesRisksDashboard({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const edit = useMorningBriefSectionEdit(BRIEF_MANUAL_SECTION_IDS.opportunitiesRisks, {
     marketBriefData,
@@ -2656,6 +2684,7 @@ export function OpportunitiesRisksDashboard({
                             sectionLabel="🎯 הזדמנויות"
                             tabKey="brief-opportunities"
                             onSaveToBrain={onSaveToBrain}
+                            noteVideoId={noteVideoId}
                           />
                           {isRowAlreadySaved(selectionText, 'brief-opportunities', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                         </>
@@ -2713,6 +2742,7 @@ export function OpportunitiesRisksDashboard({
                             sectionLabel="⚠️ סיכונים"
                             tabKey="brief-risks"
                             onSaveToBrain={onSaveToBrain}
+                            noteVideoId={noteVideoId}
                           />
                           {isRowAlreadySaved(risk.text, 'brief-risks', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
                         </>
@@ -2919,6 +2949,7 @@ function StockMentionTableRow({
   bulkSelection = null,
   bulkSections = [],
   showStockExternalLinks = true,
+  noteVideoId = null,
 }) {
   const summary = [stock.ticker, stock.company, stock.context, stock.sentiment].filter(Boolean).join(' · ');
   const selectionText = formatMorningBriefStockText(stock);
@@ -3036,6 +3067,7 @@ function StockMentionTableRow({
             sectionLabel="⭐ מניות שהוזכרו"
             tabKey="stocks-mentioned"
             onSaveToBrain={onSaveToBrain}
+            noteVideoId={noteVideoId}
           />
         </div>
         {isRowAlreadySaved(selectionText, 'stocks-mentioned', bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
@@ -3052,6 +3084,7 @@ export function StocksMentionedSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const ui = resolveMorningBriefPresentation(presentation);
   const [sortBy, setSortBy] = useState('sentiment');
@@ -3168,6 +3201,7 @@ export function StocksMentionedSection({
                   bulkSelection={bulkSelection}
                   bulkSections={bulkSections}
                   showStockExternalLinks={ui.showStockExternalLinks}
+                  noteVideoId={noteVideoId}
                 />
               ))}
             </tbody>
@@ -3195,6 +3229,7 @@ function StockDataTableRow({
   onSaveToBrain,
   bulkSelection = null,
   bulkSections = [],
+  noteVideoId = null,
 }) {
   const ticker = String(row.ticker || '').trim();
   const typeValue = String(row[typeField] || '').trim();
@@ -3267,6 +3302,7 @@ function StockDataTableRow({
             sectionLabel={sectionLabel}
             tabKey={sectionKey}
             onSaveToBrain={onSaveToBrain}
+            noteVideoId={noteVideoId}
           />
         </div>
         {isRowAlreadySaved(selectionText, sectionKey, bulkSelection?.savedRowIndex) && <SavedRowIndicator />}
@@ -3288,6 +3324,7 @@ function StockDataSection({
   bulkSelection = null,
   bulkSections = [],
   presentation,
+  noteVideoId = null,
 }) {
   const rows = extractVideoTabItems(effectiveVideo, sectionKey, marketBriefData);
 
@@ -3338,6 +3375,7 @@ function StockDataSection({
                   onSaveToBrain={onSaveToBrain}
                   bulkSelection={bulkSelection}
                   bulkSections={bulkSections}
+                  noteVideoId={noteVideoId}
                 />
               ))}
             </tbody>
