@@ -10072,11 +10072,24 @@ export function VideoDetailPanel({
                   )}
                   {[
                     {
-                      id: 'fresh-reimport',
+                      id: 'delete-history',
                       emoji: '🧹',
-                      label: isFreshImportRunning ? 'מייבא מחדש...' : 'מחק היסטוריה ונתח מחדש',
+                      label: 'מחק היסטוריה',
+                      cn: 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300',
+                      onClick: handleDeleteTranscript,
+                      disabled: isFreshImportRunning || isAnalyzing || isReanalyzing,
+                    },
+                    {
+                      id: 'reanalyze-paid',
+                      emoji: '💳',
+                      label: isFreshImportRunning ? 'מנתח מחדש...' : 'נתח מחדש (בתשלום)',
                       cn: 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-300',
-                      onClick: handleFreshImportReset,
+                      // YMD-RESET-BUTTON-SPLIT: reuses the existing confirm gate
+                      // (freshImportConfirmPending / handleConfirmFreshImportGate /
+                      // handleCancelFreshImportGate + Dialog below) built for
+                      // TRADINGBRAIN-FRESHIMPORT-COST-GUARD — same pipeline call,
+                      // same paid-AI warning dialog. Nothing destructive runs before confirm.
+                      onClick: () => setFreshImportConfirmPending(true),
                       disabled: isFreshImportRunning || isAnalyzing || isReanalyzing,
                     },
                     {
