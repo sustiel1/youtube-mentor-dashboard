@@ -12411,6 +12411,14 @@ export function VideoDetailPanel({
                       }))
                     : [
                         {
+                          key: 'rules',
+                          label: '📏 כללי מסחר',
+                          items: rawRules,
+                          tabKey: 'useful-knowledge',
+                          alwaysShow: true,
+                          emptyLabel: 'אין כללי מסחר לסרטון זה',
+                        },
+                        {
                           key: 'reusable',
                           label: '📚 ידע לשימוש חוזר',
                           items: evergreenItems,
@@ -12431,14 +12439,6 @@ export function VideoDetailPanel({
                           tabKey: 'mistakes',
                           alwaysShow: true,
                           emptyLabel: 'אין טעויות נפוצות לסרטון זה',
-                        },
-                        {
-                          key: 'rules',
-                          label: '📏 כללי מסחר',
-                          items: rawRules,
-                          tabKey: 'useful-knowledge',
-                          alwaysShow: true,
-                          emptyLabel: 'אין כללי מסחר לסרטון זה',
                         },
                         {
                           key: 'mental-models',
