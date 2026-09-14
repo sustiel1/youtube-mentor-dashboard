@@ -246,8 +246,10 @@ function pickStringAsArray(obj, ...keys) {
 צורת הפריט, הרחבה מלאה בהוראות (`GEM-FUNDAMENTAL-INSTRUCTIONS.md`'s סעיף `stockFundamentals`), נורמליזציה ב-`normalizeStockDataPointItem(value, 'metric')` (`videoAnalytics.js`):
 
 ```js
-{ ticker, company, metric, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind }
+{ ticker, company, metric, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind, liveDataAvailable, liveDataNote }
 ```
+
+**⚠️ `liveDataAvailable`/`liveDataNote` הם תוספת הוראות בלבד (2026-09-14, WORK-ID `TRADINGBRAIN-GEM-FUNDAMENTAL-LIVEDATA`) — `normalizeStockDataPointItem` (למטה) עדיין לא קורא אותם, ר' §10.5.**
 
 חובה: `ticker` (מנורמל ל-uppercase+trim), `metric` (string לא-ריק), `value` (כל טיפוס, רק נבדק שאינו ריק/undefined/null). פריט חסר אחד מאלה מוחזר `null` ומסונן — **אין שגיאת-parse, אין אזהרה, פשוט לא מופיע**. שדות אחרים (`company`/`interpretation`/`asOf`/`sourceQuote`) אופציונליים, trim בלבד. `estimatedStartSeconds`/`timestampKind` — אותה לוגיקה בדיוק כמו `normalizeTimedNarrativeItem` (שדה-מספר תקין + `timestampKind` מ-`{exact,estimated}`, ברירת מחדל `estimated` אם יש `estimatedStartSeconds` בלי `timestampKind`).
 
@@ -258,10 +260,10 @@ function pickStringAsArray(obj, ...keys) {
 צורת הפריט (זהה במבנה ל-`stockFundamentals`, רק `metric`→`levelType`), נורמליזציה ב-`normalizeStockDataPointItem(value, 'levelType')`:
 
 ```js
-{ ticker, company, levelType, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind }
+{ ticker, company, levelType, value, interpretation, asOf, sourceQuote, estimatedStartSeconds, timestampKind, liveDataAvailable, liveDataNote }
 ```
 
-חובה: `ticker`, `levelType` (string לא-ריק — ערכים מוצעים: תמיכה / התנגדות / ממוצע נע / פער מחיר / קו מגמה / נפח, **לא נאכף בקוד**, הנחיה בלבד לג'ם העתידי), `value`.
+חובה: `ticker`, `levelType` (string לא-ריק — ערכים מוצעים: תמיכה / התנגדות / ממוצע נע / פער מחיר / קו מגמה / נפח, **לא נאכף בקוד**, הנחיה בלבד לג'ם העתידי), `value`. `liveDataAvailable`/`liveDataNote` (2026-09-14, WORK-ID `TRADINGBRAIN-GEM-FUNDAMENTAL-LIVEDATA`) — אותה צורה בדיוק כמו ב-`stockFundamentals` למעלה, מוגדרים כאן מראש לקראת ההוראות הטכניות העתידיות; ר' §10.5.
 
 ### 10.3 מיפוי שדה→תצוגה (שני השדות, אותה שרשרת בדיוק)
 
@@ -276,6 +278,15 @@ function pickStringAsArray(obj, ...keys) {
 ### 10.4 ה-gate — שני הסעיפים לעולם לא מופיעים במבזק בוקר/ערב
 
 `MorningBriefDashboard.jsx` הוא הרכיב המשותף היחיד בין 4 ה-slugs (`fundamental-analysis`/`technical-analysis`/`morning-brief`/`evening-brief`, ר' `AUDIT-TRADINGBRAIN-STOCK-FUNDAMENTAL-HISTORY.md` Step 12). ה-prop `showStockDataSections` (ברירת מחדל `false`) עוטף את שני הסעיפים החדשים ב-JSX (`{showStockDataSections ? <>...</> : null}`) — **רק** `SpecializedContentRenderer.jsx`'s `fundamental-analysis`/`technical-analysis` branch (שורה ~148) מעביר `showStockDataSections` (בוליאני `true`, ללא ערך = `true` ב-JSX). ה-branch של `morning-brief`/`evening-brief` (שורה ~165) ו-`weekly-brief`/`earnings-brief` (שאינם קוראים ל-`MorningBriefDashboard` בכלל, יש להם רינדור עצמאי) לא נוגעים ולא מעבירים את ה-prop — כלומר גם אם `video.stockFundamentals` היה איכשהו מתמלא על וידאו-מבזק (לא קורה בפועל, אף GEM-מבזק לא כותב את השדה הזה), הסעיף **לא היה מרונדר בכלל**, לא רק ריק — `{false ? ... : null}` לא מכניס אף DOM node, לא SectionCard ריק.
+
+### 10.5 `liveDataAvailable`/`liveDataNote` — דגל חדש (2026-09-14, WORK-ID `TRADINGBRAIN-GEM-FUNDAMENTAL-LIVEDATA`) — **לא ממופה, אין רכיב-תצוגה**
+
+**⚠️ אותו סטטוס בדיוק כמו §12 (`methodologicalRules`/`marketObservations`):** שני שדות אופציונליים-מבחינת-קוד (אך חובה-מבחינת-הוראות, ר' `GEM-FUNDAMENTAL-INSTRUCTIONS.md`) נוספו לצורת הפריט של `stockFundamentals`/`stockTechnicals` (§10.1/§10.2 למעלה). מסמכים בלבד, אפס שינוי קוד — **שום קוד לא קורא או מציג אותם כיום**:
+
+- **Normalize** — `normalizeStockDataPointItem(value, typeKey)` (`src/services/videoAnalytics.js:687-710`) בונה את אובייקט-ההחזרה שלו כרשימה מפורשת וסגורה של שדות (`ticker`/`company`/`[metric|levelType]`/`value`/`interpretation`/`asOf`/`sourceQuote`/`estimatedStartSeconds`/`timestampKind` — ללא `...spread`). `liveDataAvailable`/`liveDataNote` **אינם ברשימה** — גם אם ה-JSON הנכנס יכיל אותם, הם יושמטו בשקט באותו האופן בדיוק כמו `methodologicalRules`/`marketObservations` (§12.2), **ללא שגיאה** (אין דחיית-JSON, ר' §2 — אין בדיקת שדות-לא-מוכרים בנתיב הזה).
+- **Render** — `StockDataTableRow` (`src/components/dashboard/MorningBriefPanels.jsx:3223-3309`) מרנדר עמודות קבועות בלבד: תיבת-בחירה, טיקר (קישור Finviz), מדד/סוג-רמה, ערך, משמעות (`row.interpretation`), תאריך (`row.asOf`), ופעולות-שורה (שמירה/הערה/חותמת-זמן). **אין עמודת/אינדיקציית "נתונים חיים" בטבלה** — גם אם `liveDataAvailable`/`liveDataNote` היו מגיעים בשלמותם עד ל-props של הרכיב הזה (מה שלא קורה, בגלל ה-whitelist למעלה), שום JSX בקובץ לא קורא את שני השמות האלה.
+- **מסקנה:** ניתן להדביק JSON עם שני השדות האלה לאפליקציה הקיימת בלי סיכון לשגיאה — התוכן החדש פשוט לא יוצג בשום מקום, אין נזק. אין קשר/תלות בין הבלוק הזה לבין §12 — שני שינויי-הוראות נפרדים ובלתי-תלויים, שנתקלו באותו דפוס-פער בדיוק (הוראות מתעדכנות, קוד לא).
+- **מה נדרש בעתיד כדי לחבר בפועל (מחוץ להיקף המסמך הזה):** הוספת שני השדות לרשימת ה-whitelist ב-`normalizeStockDataPointItem`, והוספת אינדיקציה חזותית (סמל/badge/עמודה) ב-`StockDataTableRow` — טרם הוחלט אם/מתי.
 
 ---
 
