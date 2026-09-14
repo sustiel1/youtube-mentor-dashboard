@@ -1206,7 +1206,7 @@ const DYNAMIC_TAB_EMPTY_LABELS = {
   "earnings-commentary": "אין עדיין פרשנות הנהלה",
 };
 
-const SUPPLEMENTARY_ALLOWED_TABS = new Set(["notes", "transcript", "brain-select"]);
+const SUPPLEMENTARY_ALLOWED_TABS = new Set(["notes", "transcript"]);
 
 function resolveGemKeyFromSubCategory(subCategory) {
   switch (normalizeSubCategory(subCategory)) {
@@ -12230,105 +12230,6 @@ export function VideoDetailPanel({
                         </details>
                       );
                     })()}
-                  </div>
-                </TabsContent>
-
-                {/* ── Brain select tab ── */}
-                <TabsContent value="brain-select" className="mt-4 min-h-[320px]" dir="rtl">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    {selectableAtomicFields.length === 0 ? (
-                      <div className="flex flex-col items-end gap-3 py-8 text-right" dir="rtl">
-                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">עדיין אין פריטי ידע — יש לבצע ניתוח AI תחילה</p>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("ai-analysis")}
-                          className="inline-flex items-center gap-1.5 flex-row-reverse rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/50 dark:bg-indigo-950/30 dark:text-indigo-300"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          עבור לניתוח AI
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                          <div className="flex items-center gap-2 flex-row-reverse">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">💾 שמור ידע למוח</h4>
-                            {totalSelectedKnowledgeItems > 0 && (
-                              <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-medium">{totalSelectedKnowledgeItems}</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = {};
-                                selectableAtomicFields.forEach(({ key, items }) => {
-                                  items.forEach((_, idx) => { next[`${key}:${idx}`] = true; });
-                                });
-                                persistSelectedItems(next);
-                              }}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400"
-                            >
-                              בחר הכל
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => persistSelectedItems({})}
-                              className="text-xs text-slate-400 hover:text-slate-600"
-                            >
-                              נקה
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 dark:text-zinc-500 text-right mb-3">
-                          {totalSelectedKnowledgeItems > 0
-                            ? `נבחרו ${totalSelectedKnowledgeItems} מתוך ${totalSelectableKnowledgeItems}`
-                            : 'בחר פריטים כדי לשמור למוח'}
-                        </p>
-                        <div className="space-y-4 max-h-[420px] overflow-auto pr-1">
-                          {selectableAtomicFields.map(({ key: fieldKey, emoji, label, items }) => {
-                            const sectionSelected = items.filter((_, idx) => !!selectedItems[`${fieldKey}:${idx}`]).length;
-                            return (
-                              <div key={fieldKey}>
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">{emoji} {label}</span>
-                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">({sectionSelected}/{items.length})</span>
-                                </div>
-                                <div className="space-y-1.5">
-                                  {items.map((item, idx) => {
-                                    const itemKey = `${fieldKey}:${idx}`;
-                                    const isSelected = !!selectedItems[itemKey];
-                                    return (
-                                      <button
-                                        key={itemKey}
-                                        type="button"
-                                        onClick={() => persistSelectedItems({ ...selectedItems, [itemKey]: !isSelected })}
-                                        className={`w-full flex items-start gap-2 rounded-xl border px-3 py-2.5 shadow-sm text-right transition-all ${isSelected ? 'border-indigo-300 bg-indigo-50/80 dark:border-indigo-700 dark:bg-indigo-950/40' : 'border-slate-200 bg-slate-50/70 dark:border-zinc-700 dark:bg-zinc-900 hover:border-indigo-200'}`}
-                                        dir="rtl"
-                                      >
-                                        <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 text-[9px] font-bold ${isSelected ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-300 bg-white text-transparent dark:border-zinc-600 dark:bg-zinc-800'}`}>✓</span>
-                                        <span className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700 dark:text-zinc-300">{item}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {totalSelectedKnowledgeItems > 0 && (
-                          <div className="mt-4 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={handleSaveAllToBrain}
-                              className="inline-flex items-center gap-2 flex-row-reverse rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
-                            >
-                              💾 שמור {totalSelectedKnowledgeItems} פריטים למוח
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
                 </TabsContent>
 
