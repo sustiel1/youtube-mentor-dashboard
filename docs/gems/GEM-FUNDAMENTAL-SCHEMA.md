@@ -293,3 +293,108 @@ function pickStringAsArray(obj, ...keys) {
 ## 11. הכנה ל-GEM הטכני (מחר) — ראו מסמך נפרד
 
 **עדכון (2026-09-11):** נכתב מסמך הכנה נפרד, `docs/gems/GEM-TECHNICAL-PREP-NOTES.md`, לקראת בניית ה-GEM הטכני על אותו עיקרון. הוא מתעד מה ניתן לשימוש חוזר כמו-שהוא, מה ספציפי-לפונדמנטלי וצריך תחליף, אילו שדות (`indicators`/`setups`/`patterns`) הנתיב הטכני כבר קורא היום עם file:line, ותיקון-דיוק ל-§7 למעלה (`indicators` **כן** ממופה ע"י `normalizeAiAnalysisResult`, בניגוד למה שכתוב שם). **לא בוצע שום שינוי קוד או כתיבת הוראות ל-GEM הטכני** — מסמך תיעוד-הכנה בלבד.
+
+---
+
+## 12. חילוץ כללי מסחר (פיילוט) — `methodologicalRules`/`marketObservations`, WORK-ID TRADINGBRAIN-RULES-EXTRACTION-PILOT (2026-09-14)
+
+**⚠️ שונה מהותית מ-§10 בסטטוס:** ב-§10 (`stockFundamentals`/`stockTechnicals`), לפחות עבור `stockFundamentals`, הקוד (normalizer, `case`, רכיב-תצוגה) **קיים ומחובר** — רק ההוראות ל-`stockTechnicals` חסרות. כאן, לשני השדות **גם יחד**, **שום קוד לא קיים** — לא normalizer, לא `case` ב-`extractVideoTabItems`, לא רכיב-תצוגה, לא gate. זהו שלב תכנון-ותוכן-בלבד (פיילוט) שקדם בכוונה לכל שינוי קוד — ר' `docs/plan/PILOT-TRADINGBRAIN-RULES-EXTRACTION.md` להנמקה המלאה, להפרדה בין תצפית/כלל-מתודולוגי/כלל-מאומץ, ולרשימת ה-QA/קריטריון-הכישלון של הפיילוט.
+
+**⚠️ עדכון-דיוק (2026-09-14, WORK-ID `TRADINGBRAIN-RULES-DISPLAY-WIRING`) — הפסקה למעלה כבר לא מדויקת עבור `methodologicalRules` בלבד:** `methodologicalRules` **חובר לתצוגה** (לא ל"מנוע הערכת-עסקה" — זה עדיין לא קיים, ר' §12.4 המקורי למטה, עדיין נכון). `marketObservations` **נשאר בדיוק כפי שתואר למעלה — שום קוד לא נוגע בו, לא השתנה בסבב הזה**. פירוט מלא, מאומת מול קוד חי: §12.5.
+
+### 12.1 מה השתנה בפועל
+
+שני שדות שורש חדשים, אופציונליים, נוספו להוראות ה-GEM (`GEM-FUNDAMENTAL-INSTRUCTIONS.md`, חטיבת "חילוץ כללי מסחר (פיילוט)"): `methodologicalRules` (כללים חוזרים, בצורת predicate ניתנת-להערכה) ו-`marketObservations` (מקרים ספציפיים, לא-ניתנים-להכללה). שום דבר אחר בסכימה לא השתנה.
+
+### 12.2 מסלול-קליטה בפועל אם המשתמש ידביק JSON כזה לאפליקציה היום
+
+נבדק מול §1-§3 למעלה, **בלי לשנות קוד**: JSON עם `methodologicalRules`/`marketObservations` ברמת השורש עדיין נכנס לנתיב 4 של `_applyParsedGems` (כל עוד אין `universalTabs`) → `validateGemsJsonValue` (§2) בודקת נוכחות שדה אחד לפחות מתוך `GENERIC_ANALYSIS_FIELDS` — **לא** בודקת/דוחה שדות לא-מוכרים, כך ששני השדות החדשים לא יגרמו לדחיית ה-JSON כל עוד `shortSummary` וכו' עדיין ממולאים כרגיל. `normalizeAiAnalysisResult` (§3) קוראת רק שדות ברשימת ה-mapping שלה — `methodologicalRules`/`marketObservations` **לא** ברשימה, ולכן **יושמטו בשקט**, בדיוק כמו `analysisFrameworks`/`riskRules` המתועדים כבר ב-§4(i)/§8. **מסקנה: ניתן להדביק JSON-פיילוט לאפליקציה הקיימת בלי סיכון לשגיאה — התוכן החדש פשוט לא יוצג בשום מקום, לא נגרם נזק.** אין צורך בהדבקה כזו כדי להריץ את הפיילוט עצמו — הבדיקה (`docs/plan/PILOT-TRADINGBRAIN-RULES-EXTRACTION.md` §8) מתבצעת על ה-JSON הגולמי שחוזר מ-Gemini, לפני כל הדבקה.
+
+### 12.3 צורת הנתונים המלאה — דוגמה מלאה אחת (הרציונל המלא לכל שדה נמצא במסמך הפיילוט, לא כופל כאן)
+
+```json
+{
+  "methodologicalRules": [
+    {
+      "ruleName": "מכירה חלקית כשה-RSI היומי חוצה מעלה 70 במגמת עלייה",
+      "entryCondition": [
+        {
+          "indicator": "RSI (מדד עוצמה יחסית)",
+          "comparator": ">",
+          "value": 70,
+          "unit": null,
+          "timeframe": "יומי",
+          "assetType": "מניה",
+          "rawPhrase": "כשה-RSI עולה מעל 70 בגרף היומי",
+          "thresholdDefined": true
+        },
+        {
+          "indicator": "נפח מסחר",
+          "comparator": "מצב-איכותי",
+          "value": null,
+          "unit": null,
+          "timeframe": "לא צוין",
+          "assetType": "מניה",
+          "rawPhrase": "כשהנפח באותו יום חזק במיוחד",
+          "thresholdDefined": false
+        }
+      ],
+      "invalidationCondition": [
+        {
+          "indicator": "RSI (מדד עוצמה יחסית)",
+          "comparator": "<",
+          "value": 70,
+          "unit": null,
+          "timeframe": "יומי",
+          "assetType": "מניה",
+          "rawPhrase": "אם ה-RSI חוזר מתחת ל-70 באותו יום מסחר",
+          "thresholdDefined": true
+        }
+      ],
+      "exitCondition": [],
+      "scopeOfApplicability": "רלוונטי רק במגמת עלייה מאושרת (מעל ממוצע נע 50), לא בשוק דובי — כפי שנאמר בסרטון",
+      "requiredMeasurement": "RSI ל-14 ימים על גרף יומי, בכלי צ'ארטינג רגיל",
+      "confidenceLanguage": "הדובר אמר \"ברוב המקרים\" — לא \"תמיד\"",
+      "source": {
+        "sourceQuote": "ברוב המקרים, כשה-RSI היומי חוצה 70 במגמת עלייה עם נפח חזק, זה סימן טוב למכור חלק מהפוזיציה",
+        "estimatedStartSeconds": 512,
+        "timestampKind": "estimated"
+      },
+      "extractionType": "methodologicalRule"
+    }
+  ],
+  "marketObservations": [
+    {
+      "asset": "NVDA",
+      "dateOrContext": "בדוח הרבעוני שהוצג בסרטון, ספטמבר 2026",
+      "whatWasObserved": "המניה ירדה 8% ביום המסחר שאחרי פרסום הדוח",
+      "statedOutcome": "הדובר ייחס את הירידה לציפיות-צמיחה גבוהות מדי בתחום הענן; לא נאמר אם המניה התאוששה בהמשך",
+      "source": {
+        "sourceQuote": "אנבידיה ירדה כמעט 8% למחרת הדוח, למרות תוצאות טובות, כי הציפיות לצמיחה בענן היו פשוט גבוהות מדי",
+        "estimatedStartSeconds": 320,
+        "timestampKind": "estimated"
+      },
+      "extractionType": "observation"
+    }
+  ]
+}
+```
+
+### 12.4 מה עדיין חסר לפני שאפשר לשקול קוד (לא בהיקף הפיילוט)
+
+- Normalizer ב-`videoAnalytics.js` שיקרא את שני השדות מ-`merged`/`nested` (בדומה ל-§3).
+- `case`-ים חדשים ב-`extractVideoTabItems` (`videoTabsConfig.js`) — יעד-תצוגה טרם הוחלט (טאב 4? טאב 7? טאב חדש? תלוי בתוצאות הפיילוט ובהחלטת המשתמש).
+- מבנה "כלל מאומץ" (adopted rule) בצד-האפליקציה — לא קיים כלל היום, גם לא כתכנון-קוד; מתועד רק כמבנה-נתונים עתידי ב-`docs/plan/PILOT-TRADINGBRAIN-RULES-EXTRACTION.md` §2/§6.
+- מנוע הערכת-עסקה-מול-כלל (שם, §5) — תכנון-בלבד, אין שום קוד.
+
+כל אלה **לא בהיקף** — ייפתחו רק אם הפיילוט (10 סרטונים, QA ידני) יעבור את הבדיקה המתועדת ב-`docs/plan/PILOT-TRADINGBRAIN-RULES-EXTRACTION.md` §8-9.
+
+### 12.5 `methodologicalRules` חובר לתצוגה (2026-09-14, WORK-ID `TRADINGBRAIN-RULES-DISPLAY-WIRING`) — `marketObservations` נשאר לא-מחובר
+
+**Normalize** — נוסף `normalizeMethodologicalRulesArray`/`normalizeMethodologicalRuleItem`/`normalizeConditionPredicate` (`src/services/videoAnalytics.js`, ליד בלוק `stockFundamentals`/`stockTechnicals`) ושורת מיפוי חדשה ב-`normalizeAiAnalysisResult`: `methodologicalRules: normalizeMethodologicalRulesArray(merged.methodologicalRules || nested.methodologicalRules)`. **בכוונה נשאר structured, לא flattened** — הפריט המאוחסן על `video.methodologicalRules` הוא עדיין אובייקט `{ruleName, entryCondition[], invalidationCondition[], exitCondition[], scopeOfApplicability, requiredMeasurement, confidenceLanguage, source, extractionType}` מלא (בדיוק כמו §12.3), לא מחרוזת — כדי לשמר את הנתון המובנה למנוע הערכת-עסקה העתידי (§12.4 למעלה, עדיין לא קיים). פריט בלי `ruleName` או בלי `entryCondition` אמיתי (מערך ריק) נזרק בשקט, אותו עיקרון אנטי-פברוקציה כמו שאר הנורמלייזרים בקובץ.
+
+**Render** — הצגה בפועל קורית **רק** בדף-התצוגה (`VideoDetailPanel.jsx`), לא ב-normalizer: פונקציה חדשה מיוצאת `formatMethodologicalRuleAsLearningItem(rule)` (`videoAnalytics.js`) הופכת פריט structured אחד למחרוזת-תבנית "מושג: X · הגדרה קצרה: Y · מתי זה תקף: ... · מתי זה לא תקף: ... · איך מודדים או איפה רואים את זה: ... · מקור: MM:SS" — **אותה תבנית קבועה בדיוק** שכבר בשימוש ב-`frameworks`/`checklists`/`mistakesToAvoid` (מוגדרת ב-`GEM-FUNDAMENTAL-INSTRUCTIONS.md`), כדי לרנדר דרך `LearningTabContent.jsx`'s parser הקיים (`parseTemplateItem`/`parseLearningTemplateItem`) **בלי שום שינוי ב-UI component**. `entryCondition`/`invalidationCondition`/`exitCondition` מקובצים לפי `rawPhrase` (מחובר ב-" וגם "); `confidenceLanguage`/`exitCondition` מתווספים כשורות-תבנית נוספות (מוצגות ב-tooltip ℹ️ דרך `TemplateRowExtraInfo` הקיים — לא נדרש שינוי שם). פריט בלי `entryCondition` עם `rawPhrase` אמיתי מחזיר `null` ולא מוצג. אומת סטנדלונית מול הדוגמה המדויקת ב-§12.3 (round-trip פורמט→parse) — תוצאה נכונה, `title`/`definition`/`howToMeasure` מזוהים נכון, `rest` מכיל את שאר השדות.
+
+**חיווט בפועל** — `VideoDetailPanel.jsx`'s `rawRules` (המערך שמזין את סעיף "📏 כללי מסחר" הקבוע בטאב 4, ר' `TRADINGBRAIN-LEARNING-TAB-RULES-FIRST`) **ממוזג**, לא מוחלף: `effectiveVideo.rules` (השדה הישן, עדיין לא נכתב ע"י אף GEM מתועד — נשאר כפי שהוא ליתר ביטחון) + `effectiveVideo.analysis.rules` (legacy) + `effectiveVideo.methodologicalRules.map(formatMethodologicalRuleAsLearningItem).filter(Boolean)` (חדש). **לא נוסף `case` ב-`extractVideoTabItems`** (`videoTabsConfig.js`) — `rules` מעולם לא עבר דרך שם, אלא נקרא ישירות ברכיב; `methodologicalRules` הלך באותו נתיב-ישיר בדיוק, לא נתיב חדש.
+
+**מסקנה:** JSON עם `methodologicalRules` מלא היום **כן** יוצג בפועל בסעיף "📏 כללי מסחר", עם קישור-זמן אמיתי אם `source.estimatedStartSeconds` קיים. `marketObservations` **נשאר בדיוק כפי שתועד ב-§12.2** — שום קוד לא קורא אותו, סבב זה לא נגע בו כלל (מחוץ להיקף המפורש של המשימה).
