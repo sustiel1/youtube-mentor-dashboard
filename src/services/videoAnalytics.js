@@ -719,6 +719,127 @@ function normalizeStockTechnicalsArray(values) {
   return values.map((v) => normalizeStockDataPointItem(v, 'levelType')).filter(Boolean);
 }
 
+// ── methodologicalRules — structured predicate objects (WORK-ID
+// TRADINGBRAIN-RULES-EXTRACTION-PILOT / TRADINGBRAIN-RULES-DISPLAY-WIRING) ──
+// Kept structured, not flattened to a display string, so a future rule-evaluation
+// engine (docs/plan/PILOT-TRADINGBRAIN-RULES-EXTRACTION.md §5) can judge a real
+// trade against the actual predicates later — same "preserve structure" choice
+// already made for stockFundamentals/stockTechnicals above. The "📏 כללי מסחר"
+// section (VideoDetailPanel.jsx) is the only current consumer, and formats each
+// item into the shared learning-item template at display time via
+// formatMethodologicalRuleAsLearningItem() below — the persisted shape itself
+// never changes.
+function normalizeConditionPredicate(value) {
+  if (!value || typeof value !== 'object') return null;
+  const indicator = String(value.indicator || '').trim();
+  if (!indicator) return null;
+  return {
+    indicator,
+    comparator: String(value.comparator || '').trim() || 'מצב-איכותי',
+    value: value.value ?? null,
+    unit: value.unit ?? null,
+    timeframe: String(value.timeframe || '').trim() || 'לא צוין',
+    assetType: String(value.assetType || '').trim() || 'כללי',
+    rawPhrase: String(value.rawPhrase || '').trim(),
+    thresholdDefined: value.thresholdDefined === true,
+  };
+}
+
+function normalizeConditionList(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map(normalizeConditionPredicate).filter(Boolean);
+}
+
+function normalizeMethodologicalRuleItem(value) {
+  if (!value || typeof value !== 'object') return null;
+  const ruleName = String(value.ruleName || '').trim();
+  const entryCondition = normalizeConditionList(value.entryCondition);
+  // A rule with no real entry predicate has nothing a future engine could judge
+  // against — drop it rather than persist a name-only stub (same anti-fabrication
+  // spirit as the GEM instructions: partial-and-honest beats complete-and-invented).
+  if (!ruleName || entryCondition.length === 0) return null;
+  const source = value.source && typeof value.source === 'object' ? value.source : {};
+  const estimatedStartSeconds = stockDataFiniteSeconds(source.estimatedStartSeconds);
+  const timestampKind = STOCK_DATA_TIMESTAMP_KINDS.has(source.timestampKind)
+    ? source.timestampKind
+    : (estimatedStartSeconds != null ? 'estimated' : undefined);
+  return {
+    ruleName,
+    entryCondition,
+    invalidationCondition: normalizeConditionList(value.invalidationCondition),
+    exitCondition: normalizeConditionList(value.exitCondition),
+    scopeOfApplicability: String(value.scopeOfApplicability || '').trim() || 'לא צוין',
+    requiredMeasurement: String(value.requiredMeasurement || '').trim(),
+    confidenceLanguage: String(value.confidenceLanguage || '').trim() || 'לא צוין',
+    source: {
+      sourceQuote: typeof source.sourceQuote === 'string' ? source.sourceQuote.trim() : '',
+      ...(estimatedStartSeconds != null ? { estimatedStartSeconds } : {}),
+      ...(timestampKind ? { timestampKind } : {}),
+    },
+    extractionType: 'methodologicalRule',
+  };
+}
+
+function normalizeMethodologicalRulesArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map(normalizeMethodologicalRuleItem).filter(Boolean);
+}
+
+/** Join predicate rawPhrase values into one readable clause; empty/missing -> ''. */
+function joinConditionPhrases(conditions) {
+  if (!Array.isArray(conditions)) return '';
+  return conditions.map((c) => String(c?.rawPhrase || '').trim()).filter(Boolean).join(' וגם ');
+}
+
+/**
+ * Flatten one persisted (structured) methodologicalRules item into the shared
+ * "מושג: X · הגדרה קצרה: Y · ..." learning-item template — same convention as
+ * frameworks/checklists/mistakesToAvoid — so it renders through
+ * LearningTabContent's existing template-table parser with zero UI changes.
+ * Returns the timed-object shape ({text, estimatedStartSeconds, timestampKind,
+ * sourceQuote}) so the real source timestamp still drives a clickable link.
+ * @param {object} rule - an already-normalized methodologicalRules item
+ * @returns {{text:string, estimatedStartSeconds?:number, timestampKind?:string, sourceQuote?:string}|null}
+ */
+export function formatMethodologicalRuleAsLearningItem(rule) {
+  if (!rule || typeof rule !== 'object') return null;
+  const ruleName = String(rule.ruleName || '').trim();
+  const entryPhrase = joinConditionPhrases(rule.entryCondition);
+  if (!ruleName || !entryPhrase) return null;
+
+  const invalidationPhrase = joinConditionPhrases(rule.invalidationCondition);
+  const exitPhrase = joinConditionPhrases(rule.exitCondition);
+  const source = rule.source && typeof rule.source === 'object' ? rule.source : {};
+  const estimatedStartSeconds = stockDataFiniteSeconds(source.estimatedStartSeconds);
+  const sourceLabel = estimatedStartSeconds != null ? formatMmSsFromSeconds(estimatedStartSeconds) : 'לא נאמר בסרטון';
+
+  const segments = [
+    `מושג: ${ruleName}`,
+    `הגדרה קצרה: ${entryPhrase}`,
+    `מתי זה תקף: ${rule.scopeOfApplicability || 'לא צוין'}`,
+    `מתי זה לא תקף: ${invalidationPhrase || '-'}`,
+    `איך מודדים או איפה רואים את זה: ${rule.requiredMeasurement || 'לא צוין'}`,
+    `מקור: ${sourceLabel}`,
+  ];
+  if (rule.confidenceLanguage && rule.confidenceLanguage !== 'לא צוין') {
+    segments.push(`רמת ודאות שצוינה: ${rule.confidenceLanguage}`);
+  }
+  if (exitPhrase) segments.push(`תנאי יציאה: ${exitPhrase}`);
+
+  const text = cleanAtomicText(segments.join(' · '));
+  const timestampKind = STOCK_DATA_TIMESTAMP_KINDS.has(source.timestampKind)
+    ? source.timestampKind
+    : (estimatedStartSeconds != null ? 'estimated' : undefined);
+  const sourceQuote = typeof source.sourceQuote === 'string' ? source.sourceQuote.trim() : '';
+
+  return {
+    text,
+    ...(estimatedStartSeconds != null ? { estimatedStartSeconds } : {}),
+    ...(timestampKind ? { timestampKind } : {}),
+    ...(sourceQuote ? { sourceQuote } : {}),
+  };
+}
+
 function normalizeAtomicTags(values) {
   return normalizeStringArray(values).slice(0, 6);
 }
@@ -1257,6 +1378,7 @@ export function normalizeAiAnalysisResult(result) {
     promptTemplates: normalizeLearningArray(merged.promptTemplates || nested.promptTemplates),
     stockFundamentals: normalizeStockFundamentalsArray(merged.stockFundamentals || nested.stockFundamentals),
     stockTechnicals: normalizeStockTechnicalsArray(merged.stockTechnicals || nested.stockTechnicals),
+    methodologicalRules: normalizeMethodologicalRulesArray(merged.methodologicalRules || nested.methodologicalRules),
     concepts: normalizeStringArray(merged.concepts || nested.concepts).length > 0
       ? normalizeStringArray(merged.concepts || nested.concepts)
       : fallbackConcepts,

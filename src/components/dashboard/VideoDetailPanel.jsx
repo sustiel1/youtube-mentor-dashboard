@@ -31,6 +31,7 @@ import {
   analyzeVideo,
   buildFallbackAiChapters,
   chaptersToVideoTopics,
+  formatMethodologicalRuleAsLearningItem,
   generateChaptersFromTranscript,
   getChapterSource,
   getVideoDurationSeconds,
@@ -12368,6 +12369,14 @@ export function VideoDetailPanel({
                   const rawRules = [
                     ...(Array.isArray(effectiveVideo?.rules)          ? effectiveVideo.rules          : []),
                     ...(Array.isArray(effectiveVideo?.analysis?.rules) ? effectiveVideo.analysis.rules : []),
+                    // methodologicalRules (WORK-ID TRADINGBRAIN-RULES-DISPLAY-WIRING) — merged
+                    // alongside the legacy `rules` field rather than replacing it, since no GEM
+                    // instructions currently write `rules` but nothing rules out some other GEM
+                    // doing so later; each structured predicate item is flattened to the shared
+                    // learning-item template only here, at display time.
+                    ...(Array.isArray(effectiveVideo?.methodologicalRules)
+                      ? effectiveVideo.methodologicalRules.map(formatMethodologicalRuleAsLearningItem).filter(Boolean)
+                      : []),
                   ].filter(Boolean);
                   const practicalItems = ukShaped?.mode === 'flat' && ukShaped.items.length > 0
                     ? ukShaped.items
