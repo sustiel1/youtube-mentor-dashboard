@@ -297,7 +297,11 @@
       "Bash(echo \"APPLY_EXIT=$?\")",
       "Bash(echo \"CHECK_EXIT=$?\")",
       "Bash(echo \"CHECK_WORKTREE_EXIT=$?\")",
-      "Bash(grep -iE \"sk-ant-|sk-proj-|AIza[0-9A-Za-z_-]{20,}|password[\\\\\"']?\\\\s*[:=]\")"
+      "Bash(grep -iE \"sk-ant-|sk-proj-|AIza[0-9A-Za-z_-]{20,}|password[\\\\\"']?\\\\s*[:=]\")",
+      "Bash(node --check /tmp/_extracted_script.js)",
+      "Bash(node --check _extracted_script_check.js)",
+      "Bash(rm -f _extracted_script_check.js)",
+      "Bash(curl -s http://localhost:3000/)"
     ],
     "additionalDirectories": [
       "C:\\Users\\11\\.cursor",
