@@ -8600,7 +8600,9 @@ export function VideoDetailPanel({
       try { deleteChunks(video.id); cleared++; console.log(`[Transcript Delete] cleared chunks for ${video.id}`); } catch { /* ok */ }
     }
 
-    // Clear all transcript + analysis fields from video record
+    // Clear all transcript + analysis fields from video record — every tab-content
+    // field normalizeAiAnalysisResult() can populate, so "מחק היסטוריה" actually
+    // empties the tabs instead of leaving stale content next to a cleared transcript.
     persistAnalysisState({
       transcript: null,
       manualTranscript: null,
@@ -8615,6 +8617,34 @@ export function VideoDetailPanel({
       chapters: [],
       aiChapters: [],
       chapterSource: null,
+      shortSummary: null,
+      fullSummary: null,
+      summary: null,
+      aiSummary: null,
+      aiSummaryShort: null,
+      aiSummaryLong: null,
+      brainSummary: null,
+      analysisSummary: null,
+      gemSummary: null,
+      mainLesson: null,
+      keyPoints: [],
+      keyInsights: [],
+      tags: [],
+      concepts: [],
+      frameworks: [],
+      checklists: [],
+      mistakesToAvoid: [],
+      financialMetrics: [],
+      valuation: [],
+      investmentChecklist: [],
+      promptTemplates: [],
+      usefulKnowledge: [],
+      stockFundamentals: [],
+      stockTechnicals: [],
+      rules: [],
+      methodologicalRules: [],
+      marketObservations: [],
+      appBuilding: null,
       analysisStatus: "not_analyzed",
       analysisError: null,
     });

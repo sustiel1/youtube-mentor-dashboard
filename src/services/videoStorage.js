@@ -269,13 +269,17 @@ export function updateStoredVideo(id, updates) {
     };
   }
   const safeUpdates = { ...updates };
-  if (!hasNonEmptyChapters(safeUpdates.aiChapters)) {
+  // An explicit array (including []) is a caller's intentional value — e.g. a
+  // clear-history action — and must be kept. Only a missing/non-array value
+  // (the field wasn't part of this partial update) gets stripped, so callers
+  // that don't mention chapters at all can't accidentally wipe existing ones.
+  if (!Array.isArray(safeUpdates.aiChapters)) {
     delete safeUpdates.aiChapters;
   }
-  if (!hasNonEmptyChapters(safeUpdates.chapters)) {
+  if (!Array.isArray(safeUpdates.chapters)) {
     delete safeUpdates.chapters;
   }
-  if (!hasNonEmptyChapters(safeUpdates.descriptionChapters)) {
+  if (!Array.isArray(safeUpdates.descriptionChapters)) {
     delete safeUpdates.descriptionChapters;
   }
   if (safeUpdates.aiChapters) {
