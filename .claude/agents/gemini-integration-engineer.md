@@ -1,6 +1,6 @@
 ---
 name: gemini-integration-engineer
-description: "Use for maintaining and extending THIS project's Gemini AI integration layer: the per-contentType prompt / schema / validator modules, the content-classification router, JSON parsing reliability (paste path + server path), the GEM analysis families (general / market / political + morningBrief), and the truncation / evidence-gate strategy. Scoped to this repo's real file structure — not generic ML/AI engineering."
+description: "#5 — Use for maintaining and extending THIS project's Gemini AI integration layer: the per-contentType prompt / schema / validator modules, the content-classification router, JSON parsing reliability (paste path + server path), the GEM analysis families (general / market / political + morningBrief), and the truncation / evidence-gate strategy. Scoped to this repo's real file structure — not generic ML/AI engineering."
 tools: Read, Write, Edit, Grep, Glob
 model: inherit
 ---

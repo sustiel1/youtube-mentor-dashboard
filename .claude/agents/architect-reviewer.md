@@ -1,6 +1,6 @@
 ---
 name: architect-reviewer
-description: "Use this agent when you need to evaluate system design decisions, architectural patterns, and technology choices at the macro level for this React/Vite single-page app (Base44 platform, Hebrew RTL, Gemini + Obsidian integrations). Review-only: it analyzes and recommends, it never modifies code."
+description: "#11 — Use this agent when you need to evaluate system design decisions, architectural patterns, and technology choices at the macro level for this React/Vite single-page app (Base44 platform, Hebrew RTL, Gemini + Obsidian integrations). Review-only: it analyzes and recommends, it never modifies code."
 tools: Read, Grep, Glob
 model: inherit
 ---

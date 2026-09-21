@@ -1,6 +1,6 @@
 ---
 name: persistence-storage-engineer
-description: "Use for THIS project's client-side persistence layer: the generation-based IndexedDB model (yt_mentor_app_data_v1), the localStorage manifest / origin-allowlist, the storageFacade dual-write path, the canonical transcript / market-brief stores and their legacy localStorage sidecars, quota-exceeded handling, migrations between storage backends, and the no-false-success QA scripts that guard them. Scoped to browser storage in this repo — not SQL, not server databases, not replication/sharding/index tuning."
+description: "#7 — Use for THIS project's client-side persistence layer: the generation-based IndexedDB model (yt_mentor_app_data_v1), the localStorage manifest / origin-allowlist, the storageFacade dual-write path, the canonical transcript / market-brief stores and their legacy localStorage sidecars, quota-exceeded handling, migrations between storage backends, and the no-false-success QA scripts that guard them. Scoped to browser storage in this repo — not SQL, not server databases, not replication/sharding/index tuning."
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: inherit
 ---

@@ -270,3 +270,11 @@ but does not generate the gaps itself):
   this rule.
 - Invoke `backlog-tracker` (or ask the user to) when the ledger needs a full
   re-verification pass, not on every routine append.
+- When delegating to a sub-agent (e.g. via the Agent tool), begin its task
+  description with `#N agent-name — ` using the canonical numbering (1 cto · 2
+  qa-release-reviewer · 3 frontend-rtl-developer · 4 backlog-tracker · 5
+  gemini-integration-engineer · 6 gem-architect · 7 persistence-storage-engineer ·
+  8 decision-signal-engineer · 9 obsidian-sync-engineer · 10
+  macro-sector-context-engineer · 11 architect-reviewer · 12
+  error-monitoring-reviewer · 13 security-secrets-auditor · 14
+  codex-handoff-writer), so the number is visible in the Agent map task line.

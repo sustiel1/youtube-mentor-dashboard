@@ -1,6 +1,6 @@
 ---
 name: security-secrets-auditor
-description: "Use this agent to scan the codebase for hardcoded secrets and sensitive-data leakage risks — API keys, tokens, passwords, or credentials embedded in source; .env files not covered by .gitignore; secrets or PII written to logs/console; config files committed with real credentials instead of placeholders. Read-only: it reports findings, it never edits."
+description: "#13 — Use this agent to scan the codebase for hardcoded secrets and sensitive-data leakage risks — API keys, tokens, passwords, or credentials embedded in source; .env files not covered by .gitignore; secrets or PII written to logs/console; config files committed with real credentials instead of placeholders. Read-only: it reports findings, it never edits."
 tools: Read, Grep, Glob
 model: inherit
 ---

@@ -1,6 +1,6 @@
 ---
 name: qa-release-reviewer
-description: "Use before merge/publish to verify a change is release-ready in THIS project: runs the real build, the relevant scripts/*-qa.mjs node checks and e2e/*.qa.spec.js Playwright specs, a dev-server runtime sanity pass, and reviews the diff for persistence-contract, Hebrew-RTL, protected-AI-settings, and QA-coverage regressions. Read-and-run only: it produces one pass/fail report and never commits, pushes, deploys, or auto-fixes."
+description: "#2 — Use before merge/publish to verify a change is release-ready in THIS project: runs the real build, the relevant scripts/*-qa.mjs node checks and e2e/*.qa.spec.js Playwright specs, a dev-server runtime sanity pass, and reviews the diff for persistence-contract, Hebrew-RTL, protected-AI-settings, and QA-coverage regressions. Read-and-run only: it produces one pass/fail report and never commits, pushes, deploys, or auto-fixes."
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---

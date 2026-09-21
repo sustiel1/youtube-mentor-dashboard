@@ -1,6 +1,6 @@
 ---
 name: gem-architect
-description: "Writes and revises Gemini GEM instruction documents for this project. Use when creating a new GEM (technical, macro, brief), revising an existing GEM's instructions, or diagnosing why a GEM's output is thin, generic, duplicated or missing from the app. Does not write application code."
+description: "#6 — Writes and revises Gemini GEM instruction documents for this project. Use when creating a new GEM (technical, macro, brief), revising an existing GEM's instructions, or diagnosing why a GEM's output is thin, generic, duplicated or missing from the app. Does not write application code."
 tools: Read, Grep, Glob, Write, Edit
 model: inherit
 ---

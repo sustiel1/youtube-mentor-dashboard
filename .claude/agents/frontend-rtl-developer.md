@@ -1,6 +1,6 @@
 ---
 name: frontend-rtl-developer
-description: "Use when building or modifying frontend UI in THIS project: React 18 + Vite, Tailwind CSS, shadcn/ui, Hebrew RTL throughout. Covers component work, responsive layouts, accessibility, and correct right-to-left / bidirectional behavior for Hebrew. Not for backend, non-React frameworks, or native mobile RTL."
+description: "#3 — Use when building or modifying frontend UI in THIS project: React 18 + Vite, Tailwind CSS, shadcn/ui, Hebrew RTL throughout. Covers component work, responsive layouts, accessibility, and correct right-to-left / bidirectional behavior for Hebrew. Not for backend, non-React frameworks, or native mobile RTL."
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: inherit
 ---

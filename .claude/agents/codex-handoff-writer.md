@@ -1,6 +1,6 @@
 ---
 name: codex-handoff-writer
-description: "Use when a task has already been decided to go to Codex (not a Claude Code sub-agent) and you need the actual handoff instruction written. Produces ONE complete, ready-to-copy Codex handoff prompt in this repo's existing fixed format (mirroring src/lib/gemsImportDiagnosticReport.js), shows it for copy-paste, and saves an identical copy to docs/handoffs/<WORK-ID>.md. Reads docs/open-items-ledger.md (if present) to keep the WORK-ID consistent between the ledger and the handoff file, but never writes to the ledger. Does not decide whether Codex is the right target, does not set priority or sequencing, does not implement anything."
+description: "#14 — Use when a task has already been decided to go to Codex (not a Claude Code sub-agent) and you need the actual handoff instruction written. Produces ONE complete, ready-to-copy Codex handoff prompt in this repo's existing fixed format (mirroring src/lib/gemsImportDiagnosticReport.js), shows it for copy-paste, and saves an identical copy to docs/handoffs/<WORK-ID>.md. Reads docs/open-items-ledger.md (if present) to keep the WORK-ID consistent between the ledger and the handoff file, but never writes to the ledger. Does not decide whether Codex is the right target, does not set priority or sequencing, does not implement anything."
 tools: Read, Grep, Glob, Bash, Write
 model: inherit
 ---

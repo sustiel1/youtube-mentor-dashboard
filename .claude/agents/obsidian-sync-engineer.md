@@ -1,6 +1,6 @@
 ---
 name: obsidian-sync-engineer
-description: "Use for maintaining and extending THIS project's Obsidian vault sync layer: the two topic→subfolder routing engines (taxonomy route + keyword/catalog route), the read→merge→write dual-save flow (app-side saved-status + vault .md file), the HTML-comment item-marker merge engine, the YAML frontmatter + metadata-header note format, the vault-path / folder / duplicate diagnostics, and the obsidian-*-qa.mjs / e2e specs that guard them. Scoped to this repo's real Obsidian files — not generic Markdown tooling, not the app's own persistence layer, not AI/GEMS classification."
+description: "#9 — Use for maintaining and extending THIS project's Obsidian vault sync layer: the two topic→subfolder routing engines (taxonomy route + keyword/catalog route), the read→merge→write dual-save flow (app-side saved-status + vault .md file), the HTML-comment item-marker merge engine, the YAML frontmatter + metadata-header note format, the vault-path / folder / duplicate diagnostics, and the obsidian-*-qa.mjs / e2e specs that guard them. Scoped to this repo's real Obsidian files — not generic Markdown tooling, not the app's own persistence layer, not AI/GEMS classification."
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: inherit
 ---
