@@ -7367,8 +7367,15 @@ export function VideoDetailPanel({
   };
 
   const clearAiAnalysisFields = (analysisError) => ({
-    chapters: [],
-    aiChapters: [],
+    // YMD-ANALYSIS-FAIL-KEEPS-CHAPTERS: this patch is used by analysis-FAILURE
+    // paths only, and those must never destroy already-saved chapters.
+    // `chapters` / `aiChapters` are deliberately omitted here: updateStoredVideo()
+    // strips any chapter field that is not an array from a partial update, so
+    // leaving them out preserves the stored chapters, while passing `[]` would be
+    // read as an intentional value and overwrite them.
+    // Intentional chapter deletion still happens where it belongs — the
+    // "מחק היסטוריה" flow and handleDeleteSavedAnalysis() each send their own
+    // explicit `chapters: []` / `aiChapters: []`.
     shortSummary: null,
     fullSummary: null,
     aiSummaryShort: null,

@@ -42,6 +42,7 @@
     "test:claude-json-repair": "node --import ./scripts/register-src-aliases.mjs scripts/claude-json-repair-qa.mjs",
     "test:row-timestamp-annotation": "node --import ./scripts/register-src-aliases.mjs scripts/row-timestamp-annotation-qa.mjs",
     "test:gems-analyzed-status": "node --import ./scripts/register-src-aliases.mjs scripts/gems-analyzed-status-qa.mjs",
+    "test:analysis-failure-keeps-chapters": "node --import ./scripts/register-src-aliases.mjs scripts/analysis-failure-keeps-chapters-qa.mjs",
     "test:fear-greed-card": "node scripts/fear-greed-score-card-qa.mjs",
     "test:fear-greed-live-fetch": "node scripts/fear-greed-live-fetch-qa.mjs",
     "test:fear-greed-indicators-grid": "node scripts/fear-greed-indicators-grid-qa.mjs",
